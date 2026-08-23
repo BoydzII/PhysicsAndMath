@@ -31,7 +31,7 @@
 | โฟลเดอร์ | [`PhysicsAutoSheet/`](PhysicsAutoSheet/) | [`MathAutoSheet/`](MathAutoSheet/) |
 | ไฟล์ต้นฉบับของครู | `physics.html` | `math.html` |
 | ไฟล์ฉบับขึ้นเว็บ | `index.html` | `index.html` |
-| เนื้อหา | 7 บท + แนวข้อสอบเข้ามหาวิทยาลัย · 236 แม่แบบ | ม.1 ครบ 5 บท · 75 แม่แบบ |
+| เนื้อหา | 7 บท + แนวข้อสอบเข้ามหาวิทยาลัย · 236 แม่แบบ | ม.1 และ ม.2 ครบชั้นละ 5 บท · 150 แม่แบบ |
 | เชื่อม Google Sheet | ✅ มอบหมายใบงานด้วยรหัส · ส่งผลกลับอัตโนมัติ | ❌ ออฟไลน์ล้วน (เฟสถัดไป) |
 | คู่มือ | [README-physics.md](PhysicsAutoSheet/README-physics.md) | [README-math.md](MathAutoSheet/README-math.md) |
 
