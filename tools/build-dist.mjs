@@ -19,7 +19,7 @@ import { fileURLToPath } from 'url';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 // ที่อยู่เว็บแอปของ Google Apps Script — ต้องตรงกับที่ตั้งไว้ใน index.html หน้าพอร์ทัล
-const APPS_URL = 'https://script.google.com/macros/s/AKfycbw4lh6BTvVZ4_YUBYGQD8ia2lLkyKPfdftUwLuO7msDwo45qDTqnCmpFy0lNsiBrIyq/exec';
+const APPS_URL = 'https://script.google.com/macros/s/AKfycbzNfunJ0VIQlC-_CvUWA4VuFlQ1IGUyrzEjTQLTGV0Mqi-k_KnDWnspzcA9yOXQ2vwE/exec';
 
 const TARGETS = [
   {
