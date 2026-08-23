@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#2563eb">
+<meta name="description" content="คลังโจทย์ฟิสิกส์และคณิตศาสตร์ โรงเรียนปากช่อง — สุ่มโจทย์ ทำในเครื่อง ตรวจคำตอบ ดูวิธีทำ 7 ขั้น">
+<title>คลังโจทย์ฟิสิกส์และคณิตศาสตร์ · โรงเรียนปากช่อง</title>
+<style>
+:root{
+  --bg:#f4f6fa; --panel:#ffffff; --ink:#16202e; --muted:#67748a;
+  --line:#dde3ec; --brand:#1f6feb; --brand-ink:#fff;
+  --shadow:0 1px 2px rgba(16,30,54,.06),0 8px 24px rgba(16,30,54,.08); --r:14px;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#0f151d; --panel:#161d27; --ink:#e6edf6; --muted:#94a3b8;
+    --line:#2b3441; --brand:#4d8dfb; --brand-ink:#0b1220;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.35);
+  }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);line-height:1.7;
+  font-family:"Noto Sans Thai","Sarabun",system-ui,-apple-system,"Segoe UI",sans-serif;
+  padding:32px 18px calc(40px + env(safe-area-inset-bottom))}
+.wrap{max-width:760px;margin:0 auto}
+header{text-align:center;margin-bottom:30px}
+h1{font-size:26px;margin:0 0 6px;letter-spacing:-.2px}
+.sub{color:var(--muted);font-size:15px;margin:0}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
+  padding:22px;box-shadow:var(--shadow);display:flex;flex-direction:column}
+.card h2{margin:0 0 2px;font-size:19px}
+.tag{display:inline-block;font-size:12px;font-weight:700;letter-spacing:.3px;
+  color:var(--brand);background:rgba(31,111,235,.12);border-radius:999px;padding:2px 11px;margin-bottom:10px}
+.card p{margin:0 0 16px;color:var(--muted);font-size:14.5px;flex:1}
+.card ul{margin:0 0 16px;padding-left:20px;color:var(--muted);font-size:14px;flex:1}
+.card li{margin:3px 0}
+a.go{display:block;text-align:center;background:var(--brand);color:var(--brand-ink);
+  text-decoration:none;font-weight:700;padding:13px 16px;border-radius:10px;min-height:48px}
+a.go:hover{filter:brightness(1.07)}
+a.go.off{background:transparent;color:var(--muted);border:1px solid var(--line);font-weight:600}
+.note{margin-top:26px;background:var(--panel);border:1px solid var(--line);
+  border-radius:var(--r);padding:18px 20px;font-size:14px;color:var(--muted)}
+.note b{color:var(--ink)}
+footer{margin-top:28px;text-align:center;color:var(--muted);font-size:13px;line-height:1.9}
+footer a{color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>คลังโจทย์ฟิสิกส์และคณิตศาสตร์</h1>
+  <p class="sub">โรงเรียนปากช่อง จังหวัดนครราชสีมา</p>
+</header>
+
+<div class="cards">
+
+  <div class="card">
+    <span class="tag">ม.1</span>
+    <h2>📐 คณิตศาสตร์ ม.ต้น</h2>
+    <ul>
+      <li>5 บท · 75 แม่แบบ · สุ่มตัวเลขใหม่ได้ไม่จำกัด</li>
+      <li>ตรวจคำตอบทันที ตอบเป็นเศษส่วนได้</li>
+      <li>วิธีทำละเอียด 7 ขั้นทุกข้อ</li>
+      <li>ใช้ได้แม้ไม่มีอินเทอร์เน็ต</li>
+    </ul>
+    <a class="go" href="MathAutoSheet/index.html">เปิดใช้งาน</a>
+  </div>
+
+  <div class="card">
+    <span class="tag">ม.4</span>
+    <h2>⚛️ ฟิสิกส์ ม.4</h2>
+    <ul>
+      <li>7 บท + แนวข้อสอบเข้ามหาวิทยาลัย</li>
+      <li>236 แม่แบบ พร้อมรูปประกอบ</li>
+      <li>วิธีทำละเอียด 7 ขั้นทุกข้อ</li>
+      <li>รับใบงานจากครูด้วยรหัส และส่งผลกลับได้</li>
+    </ul>
+    <a class="go off" href="PhysicsAutoSheet/README-physics.md">อ่านคู่มือ · ใช้งานที่ลิงก์ที่ครูแจก</a>
+  </div>
+
+</div>
+
+<div class="note">
+  <b>นักเรียนใช้อย่างไร</b><br>
+  เปิดลิงก์แล้วกด <b>แชร์ → เพิ่มไปยังหน้าจอโฮม</b> จะได้ใช้เหมือนแอปจริง
+  เปิดครั้งต่อไปไม่ต้องต่อเน็ตก็ได้ · ผลการทำเก็บอยู่ในเครื่องของแต่ละคน
+  <br><br>
+  <b>ทำไมฟิสิกส์ไม่ได้อยู่ที่นี่</b><br>
+  ไฟล์ฟิสิกส์ฉบับใช้งานจริงฝังที่อยู่ Google Sheet ของห้องเรียนไว้ข้างใน
+  จึงไม่เอาขึ้นที่สาธารณะ — ใช้ลิงก์ที่ครูแจกในไลน์กลุ่มแทน
+  ส่วนโค้ดต้นฉบับอยู่ในรีโพนี้ครบ
+</div>
+
+<footer>
+  พัฒนาโดย <b>นายรังสรรค์ กรีกูล</b><br>
+  กลุ่มสาระการเรียนรู้วิทยาศาสตร์และเทคโนโลยี · โรงเรียนปากช่อง<br>
+  <a href="https://github.com/BoydzII/PhysicsAndMath">โค้ดต้นฉบับบน GitHub</a>
+</footer>
+
+</div>
+</body>
+</html>

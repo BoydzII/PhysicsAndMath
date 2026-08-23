@@ -1,0 +1,429 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ตรวจรูปประกอบคณิตศาสตร์</title>
+<style>
+/* ============================================================
+   ธีมและตัวแปรสี — ชุดเดียวกับ gradebook.html
+   ============================================================ */
+:root{
+  --bg:#f4f6fa; --panel:#ffffff; --panel2:#f9fafc; --ink:#16202e; --muted:#67748a;
+  --line:#dde3ec; --line2:#eef2f7; --brand:#1f6feb; --brand-ink:#ffffff;
+  --ok:#0f8a53; --ok-bg:#e6f6ee; --bad:#c62828; --bad-bg:#fdecec;
+  --warn:#a05a00; --warn-bg:#fff5e2; --group:#6b3fd4; --group-bg:#f1ecfd;
+  --lv1:#0f8a53; --lv2:#a05a00; --lv3:#c62828;   /* ง่าย / ปานกลาง / ยาก */
+  --shadow:0 1px 2px rgba(16,30,54,.06),0 8px 24px rgba(16,30,54,.08);
+  --r:10px;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#11151c; --panel:#181e27; --panel2:#1e2530; --ink:#e6ecf5; --muted:#95a3b8;
+    --line:#2b3441; --line2:#232b36; --brand:#4d8dfb; --brand-ink:#0b1220;
+    --ok:#4bd08b; --ok-bg:#123024; --bad:#ff7b7b; --bad-bg:#3a1c1c;
+    --warn:#ffc46b; --warn-bg:#3a2c12; --group:#b79bff; --group-bg:#2a2340;
+    --lv1:#4bd08b; --lv2:#ffc46b; --lv3:#ff7b7b;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.35);
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  background:var(--bg); color:var(--ink);
+  font-family:"Sarabun","Leelawadee UI","Noto Sans Thai","Segoe UI",Tahoma,sans-serif;
+  font-size:16px; line-height:1.6;
+  padding-left:env(safe-area-inset-left); padding-right:env(safe-area-inset-right);
+  -webkit-tap-highlight-color:transparent;
+}
+button,input,select,textarea{font-family:inherit;font-size:16px;color:inherit;touch-action:manipulation}
+
+/* ---------- แถบบนสุด ---------- */
+.stickytop{position:sticky; top:0; z-index:40; background:var(--bg); padding-top:env(safe-area-inset-top)}
+.topbar{
+  background:var(--panel); border-bottom:1px solid var(--line); padding:8px 14px;
+  display:flex; flex-wrap:wrap; gap:10px; align-items:center; box-shadow:var(--shadow);
+}
+.brand{font-weight:700; font-size:17px; white-space:nowrap; display:flex; align-items:center; gap:7px}
+.brand .dot{width:10px;height:10px;border-radius:3px;background:var(--brand);display:inline-block}
+.who{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--muted);flex-wrap:wrap}
+.spacer{flex:1 1 auto}
+.savestate{font-size:12.5px;color:var(--muted);white-space:nowrap;min-width:80px;text-align:right}
+.savestate.on{color:var(--ok)}
+
+select,input[type=text],input[type=number],textarea{
+  background:var(--panel2); border:1px solid var(--line); border-radius:8px;
+  padding:8px 10px; outline:none; max-width:100%; min-height:40px;
+}
+select:focus,input:focus,textarea:focus{border-color:var(--brand);box-shadow:0 0 0 3px rgba(31,111,235,.15)}
+button{
+  background:var(--panel2); border:1px solid var(--line); border-radius:8px;
+  padding:9px 14px; cursor:pointer; white-space:nowrap; min-height:44px;
+}
+button.primary{background:var(--brand);color:var(--brand-ink);border-color:var(--brand);font-weight:600}
+button.danger{color:var(--bad);border-color:var(--line)}
+button.ghost{background:transparent}
+button.sm{padding:5px 10px;font-size:14px;border-radius:7px;min-height:36px}
+button:disabled{opacity:.45;cursor:not-allowed}
+@media (hover:hover){
+  button:hover{border-color:var(--brand)}
+  button.primary:hover{filter:brightness(1.08)}
+  button.danger:hover{border-color:var(--bad);background:var(--bad-bg)}
+}
+
+/* ---------- แท็บ ---------- */
+.tabs{
+  display:flex; gap:2px; padding:0 10px;
+  background:var(--bg); border-bottom:1px solid var(--line);
+  overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none;
+}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{
+  border:none;background:none;border-radius:0;border-bottom:3px solid transparent;
+  padding:11px 13px;color:var(--muted);font-weight:600;min-height:46px;font-size:15px;
+}
+.tabs button.active{color:var(--brand);border-bottom-color:var(--brand)}
+
+main{padding:16px 14px 60px; max-width:1180px; margin:0 auto}
+section.tabpane{display:none}
+section.tabpane.active{display:block}
+
+/* ---------- การ์ด ---------- */
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
+      padding:14px 16px;box-shadow:var(--shadow);margin-bottom:14px}
+.card>h3{margin:0 0 10px;font-size:16px}
+.card>h3 .sub{font-weight:400;color:var(--muted);font-size:14px;margin-left:6px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.grow{flex:1 1 auto}
+.hint{font-size:13.5px;color:var(--muted)}
+.notice{border-radius:var(--r);padding:10px 13px;margin-bottom:12px;font-size:14.5px}
+.notice.bad{background:var(--bad-bg);color:var(--bad);border:1px solid var(--bad)}
+.notice.warn{background:var(--warn-bg);color:var(--warn);border:1px solid var(--warn)}
+.notice.info{background:var(--panel2);border:1px solid var(--line);color:var(--muted)}
+
+/* ---------- ตาราง ---------- */
+.tablewrap{overflow:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);border-radius:var(--r)}
+table{border-collapse:collapse;width:100%;font-size:14.5px}
+th,td{padding:7px 9px;text-align:left;border-bottom:1px solid var(--line2);white-space:nowrap}
+th{background:var(--panel2);position:sticky;top:0;font-weight:600;font-size:13.5px;color:var(--muted);z-index:1}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+tbody tr:last-child td{border-bottom:none}
+
+/* ---------- สถิติ / แถบ ---------- */
+.statgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+.stat{background:var(--panel2);border:1px solid var(--line);border-radius:var(--r);padding:10px 12px}
+.stat .v{font-size:24px;font-weight:700;font-variant-numeric:tabular-nums}
+.stat .k{font-size:12.5px;color:var(--muted)}
+.bar{height:9px;border-radius:5px;background:var(--line2);overflow:hidden}
+.bar>i{display:block;height:100%;background:var(--brand);transition:width .25s}
+.bar.ok>i{background:var(--ok)} .bar.warn>i{background:var(--warn)} .bar.bad>i{background:var(--bad)}
+
+/* ---------- ป้ายระดับ / เรื่อง ---------- */
+.tag{display:inline-block;padding:1px 9px;border-radius:20px;font-size:12.5px;font-weight:600;
+     border:1px solid currentColor;white-space:nowrap}
+.tag.l0{color:var(--group)}
+.tag.l1{color:var(--lv1)} .tag.l2{color:var(--lv2)} .tag.l3{color:var(--lv3)}
+.tag.t{color:var(--muted);font-weight:400}
+
+/* ---------- โมดัล ---------- */
+.modal-bg{position:fixed;inset:0;background:rgba(10,16,26,.5);display:flex;
+          align-items:center;justify-content:center;z-index:100;padding:14px}
+.modal{background:var(--panel);border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.3);
+       width:100%;max-width:640px;max-height:92vh;display:flex;flex-direction:column}
+.modal header{padding:13px 16px;border-bottom:1px solid var(--line);font-weight:700;display:flex;align-items:center}
+.modal .body{padding:16px;overflow:auto;flex:1 1 auto}
+.modal footer{padding:12px 16px;border-top:1px solid var(--line);display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.modal .x{margin-left:auto;background:none;border:none;font-size:24px;line-height:1;padding:0 4px;color:var(--muted);min-height:auto}
+
+/* ---------- toast ---------- */
+/* หน้าเข้าใช้งาน — คลุมทั้งจอเมื่อเชื่อมชีตแล้วแต่ยังไม่ได้ลงชื่อเข้าใช้ */
+.gate{display:none;position:fixed;inset:0;z-index:150;background:var(--bg);
+  overflow:auto;padding:24px 16px calc(24px + env(safe-area-inset-bottom))}
+.gate .box{max-width:430px;margin:6vh auto;background:var(--card);border:1px solid var(--line);
+  border-radius:var(--r);padding:22px;box-shadow:0 6px 26px rgba(0,0,0,.09)}
+.gate .glogo{display:block;margin:0 auto 12px;max-height:110px;max-width:150px;object-fit:contain}
+.gate .credit{margin-top:16px;text-align:center;font-size:12px;color:var(--muted);line-height:1.7}
+.brandlogo{height:30px;width:auto;max-width:44px;object-fit:contain;margin-right:8px;vertical-align:middle;flex:none}
+.logopick{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.logobox{width:96px;height:96px;border:1px dashed var(--line);border-radius:var(--r);
+  display:flex;align-items:center;justify-content:center;background:var(--bg);flex:none;overflow:hidden}
+.logobox img{max-width:88px;max-height:88px;object-fit:contain}
+.credit-print{margin-top:14px;padding-top:8px;border-top:1px solid #ccc;
+  font-size:9pt;color:#555;text-align:center;line-height:1.6}
+.gate h2{margin:0 0 4px;font-size:20px}
+.gate .lead{color:var(--muted);font-size:13.5px;margin-bottom:16px;line-height:1.7}
+.gate label.f{display:block;font-size:13px;color:var(--muted);margin:11px 0 4px}
+.gate input{width:100%;font-size:16px}
+.gate .actions{margin-top:16px;display:flex;gap:9px;flex-wrap:wrap}
+.gate .alt{margin-top:15px;padding-top:13px;border-top:1px solid var(--line);
+  font-size:13px;color:var(--muted)}
+.gate .msg{margin-top:12px}
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:200;
+       display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none}
+.toast{background:#1e2732;color:#fff;padding:10px 18px;border-radius:22px;
+       box-shadow:0 8px 24px rgba(0,0,0,.3);font-size:14.5px;animation:tin .2s ease;max-width:88vw;text-align:center}
+.toast.bad{background:var(--bad)} .toast.ok{background:var(--ok)} .toast.warn{background:var(--warn)}
+@keyframes tin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* ============================================================
+   ส่วนของโจทย์และวิธีทำ
+   ============================================================ */
+.qhead{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+.qno{font-weight:700;font-size:17px}
+.stem{font-size:17px;line-height:1.75;margin:8px 0}
+.fig{margin:14px 0;text-align:center}
+.fig svg{max-width:100%;height:auto;display:inline-block}
+svg .ln{stroke:var(--ink);fill:none;stroke-width:1.6}
+svg .ln2{stroke:var(--muted);fill:none;stroke-width:1.2}
+svg .dash{stroke:var(--muted);fill:none;stroke-width:1.2;stroke-dasharray:4 3}
+svg .frc{stroke:var(--brand);fill:none;stroke-width:2}
+svg .bdy{fill:var(--line2);stroke:var(--ink);stroke-width:1.6}
+svg .hat{fill:var(--muted)}
+/* paint-order ทำให้วาดเส้นขอบก่อนแล้วค่อยทับด้วยตัวอักษร
+   ได้ผลเป็น "ขอบสีพื้นหลัง" รอบตัวเลข ทำให้อ่านออกเสมอแม้ตัวเลขจะพาดทับเส้นแรง */
+svg text{fill:var(--ink);font-size:14.5px;font-family:inherit;
+  paint-order:stroke fill;stroke:var(--panel);stroke-width:3.4px;stroke-linejoin:round;
+  stroke-linecap:round;font-weight:500}
+svg text.mut{fill:var(--muted);font-size:13px;stroke-width:3px}
+svg .arh{fill:var(--brand);stroke:none}
+svg .arh2{fill:var(--ink);stroke:none}
+/* คลาสของรูปคณิตศาสตร์ — ขึ้นต้นด้วย f ทุกตัวเพื่อไม่ให้ชนกับคลาสของหน้าเว็บ
+   (เบราว์เซอร์ถือ width/height ของ SVG เป็นสมบัติ CSS ด้วย ถ้าชนกับ .bar ของ
+   แถบสถิติ ความสูงของแท่งกราฟจะถูกทับจนกลายเป็นขีดสั้น ๆ ลอยอยู่กลางอากาศ) */
+svg .fbox{fill:none;stroke:var(--ink);stroke-width:1.5}
+svg .ffil{fill:var(--brand);opacity:.3;stroke:none}
+svg .fgrd{stroke:var(--line);fill:none;stroke-width:1}
+svg .fbar{fill:var(--brand);opacity:.72;stroke:none}
+svg .fpt{fill:var(--brand);stroke:var(--panel);stroke-width:1.8}
+
+/* สมการ */
+.eq{font-family:"Cambria Math","Times New Roman",Georgia,serif;font-size:18px;
+    font-style:italic;white-space:nowrap;display:inline-block}
+.eq .u{font-style:normal}            /* หน่วยและตัวเลข ไม่เอียง */
+.eqblk{margin:5px 0 5px 8px}
+.eqblk .eq{font-size:18.5px}
+/* เศษส่วนซ้อนสองชั้น — เขียนแบบเดียวกับที่นักเรียนเขียนในสมุด */
+.frac{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;
+      margin:0 2px;font-style:normal;font-size:.9em;line-height:1.1}
+.frac .fn{padding:0 4px 1px}
+.frac .fd{padding:1px 4px 0;border-top:1.4px solid currentColor}
+/* รากที่สองและรากที่สาม */
+.sqrt{display:inline-block;font-style:normal;white-space:nowrap}
+.sqrt .sg{margin-right:0}
+.sqrt .sr{border-top:1.3px solid currentColor;padding:0 3px 0 1px;margin-left:-1px}
+.sqrt .si{font-size:.62em;vertical-align:.55em;margin-right:-3px}
+
+/* กล่องวิธีทำ 7 ขั้น */
+.sol{border:1px solid var(--line);border-radius:var(--r);overflow:hidden;margin-top:12px}
+.solstep{border-bottom:1px solid var(--line2)}
+.solstep:last-child{border-bottom:none}
+.solstep>.h{display:flex;gap:9px;align-items:center;padding:9px 12px;background:var(--panel2);
+            cursor:pointer;font-weight:600;font-size:14.5px;user-select:none}
+.solstep>.h .n{background:var(--brand);color:var(--brand-ink);width:23px;height:23px;border-radius:50%;
+               display:flex;align-items:center;justify-content:center;font-size:13px;flex:0 0 auto}
+.solstep>.h .cv{margin-left:auto;color:var(--muted);font-size:13px;font-weight:400}
+.solstep>.b{padding:11px 13px 13px 44px}
+.solstep.closed>.b{display:none}
+.solstep .why{color:var(--muted);font-size:14px;margin-top:3px}
+
+/* ตารางสิ่งที่กำหนดให้ */
+table.given{width:auto;font-size:15px;border:1px solid var(--line);border-radius:8px}
+table.given td{border-bottom:1px solid var(--line2);padding:5px 11px;white-space:nowrap}
+table.given td.s{font-family:"Cambria Math","Times New Roman",Georgia,serif;font-style:italic;
+                 font-size:17px;text-align:right;padding-right:2px}
+table.given td.e{padding:0 3px;color:var(--muted)}
+table.given td.v{font-variant-numeric:tabular-nums;font-weight:600}
+table.given td.d{color:var(--muted);font-size:13.5px}
+
+/* ---------- ช่องตอบ ---------- */
+.ansbox{margin-top:14px;padding:13px;border:1px solid var(--line);border-radius:var(--r);background:var(--panel2)}
+.ansrow{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+.ansrow label{font-size:15px;min-width:150px}
+.ansrow .lab .eq{font-size:17px}
+input.numin{width:150px;text-align:right;font-variant-numeric:tabular-nums;font-size:17px}
+input.numin.ok{border-color:var(--ok);background:var(--ok-bg)}
+input.numin.bad{border-color:var(--bad);background:var(--bad-bg)}
+.unit{color:var(--muted);font-size:15px;min-width:64px}
+.choices{display:grid;gap:9px;grid-template-columns:1fr 1fr}
+@media (max-width:620px){.choices{grid-template-columns:1fr}}
+.choices.txt{grid-template-columns:1fr}
+.choices.txt .choice{align-items:flex-start}
+.choices.txt .choice>span:last-child{white-space:normal;line-height:1.6}
+.whylist{display:flex;flex-direction:column;gap:7px}
+.whyrow{border-left:3px solid var(--line);padding:4px 0 4px 10px;font-size:14.5px}
+.whyrow.ok{border-left-color:var(--ok)}
+.whyrow.no{border-left-color:var(--bad)}
+.whyrow .wk{font-weight:700;color:var(--muted);margin-right:5px}
+.whyrow .wm{font-weight:700;margin-left:6px;font-size:13px}
+.whyrow.ok .wm{color:var(--ok)} .whyrow.no .wm{color:var(--bad)}
+.whyrow .wd{color:var(--muted);font-size:13.5px;line-height:1.6;margin-top:2px}
+#printarea .whyrow{border-left:2px solid #666} #printarea .whyrow .wd{color:#444}
+.choice{display:flex;gap:10px;align-items:center;padding:11px 13px;border:1px solid var(--line);
+        border-radius:var(--r);background:var(--panel);cursor:pointer;text-align:left;min-height:52px;width:100%}
+.choice .k{font-weight:700;color:var(--muted);flex:0 0 auto}
+.choice.sel{border-color:var(--brand);box-shadow:0 0 0 3px rgba(31,111,235,.15)}
+.choice.ok{border-color:var(--ok);background:var(--ok-bg)}
+.choice.bad{border-color:var(--bad);background:var(--bad-bg)}
+.verdict{font-weight:700;margin-top:9px}
+.verdict.ok{color:var(--ok)} .verdict.bad{color:var(--bad)}
+
+/* ---------- แถบความคืบหน้าข้อ ---------- */
+.qnav{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.qnav button{width:40px;height:40px;min-height:40px;padding:0;border-radius:9px;font-weight:600;font-size:14px}
+.qnav button.cur{border-color:var(--brand);box-shadow:0 0 0 3px rgba(31,111,235,.15)}
+.qnav button.ok{background:var(--ok-bg);border-color:var(--ok);color:var(--ok)}
+.qnav button.bad{background:var(--bad-bg);border-color:var(--bad);color:var(--bad)}
+.qnav button.half{background:var(--warn-bg);border-color:var(--warn);color:var(--warn)}
+
+/* ---------- ตัวเลือกในแท็บสร้างชุด ---------- */
+.chk{display:flex;gap:9px;align-items:flex-start;padding:9px 11px;border:1px solid var(--line);
+     border-radius:var(--r);background:var(--panel2);cursor:pointer;min-height:44px}
+.chk.on{border-color:var(--brand);background:rgba(31,111,235,.07)}
+.chk input{margin:3px 0 0;width:19px;height:19px;flex:0 0 auto;min-height:auto}
+.chk .t{font-weight:600;font-size:15px}
+.chk .d{font-size:13px;color:var(--muted)}
+.gridcards{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px}
+.subgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:7px;
+         margin:9px 0 0 6px;padding-left:12px;border-left:2px solid var(--line)}
+.subchk{display:flex;gap:7px;align-items:center;font-size:14px;padding:5px 0;cursor:pointer;min-height:34px}
+.subchk input{width:17px;height:17px;min-height:auto}
+
+/* ---------- การ์ดเลือกบท ---------- */
+.topiccard{align-self:start}
+.topiccard .chk{position:relative;flex-direction:column;align-items:stretch;padding-right:38px}
+.topiccard .chk>span{display:block}
+.topiccard .chk input{position:absolute;top:11px;right:11px;margin:0}
+.chk .ch{display:inline-block;font-size:11.5px;font-weight:700;letter-spacing:.3px;
+  color:var(--brand);background:rgba(31,111,235,.12);border-radius:5px;padding:1px 7px;margin-bottom:5px}
+.topiccard.exam .chk{border-color:var(--group)}
+.topiccard.exam .chk.on{background:var(--group-bg)}
+.topiccard.exam .ch{color:var(--group);background:var(--group-bg)}
+/* หัวข้อคั่นกลุ่มระดับชั้นในหน้าเลือกเรื่อง */
+.gradehead{display:flex;align-items:center;gap:8px;margin:16px 0 8px;font-weight:700;font-size:15px}
+.gradehead:first-of-type{margin-top:2px}
+.gradehead .gb{color:var(--brand);background:rgba(31,111,235,.12);border-radius:999px;
+  padding:2px 12px;font-size:13px;font-weight:800;letter-spacing:.3px}
+.gradehead .gn{color:var(--muted);font-weight:500;font-size:13px}
+.lvdots{display:flex;gap:5px;flex-wrap:wrap;margin:6px 0 3px}
+.lvdot{font-size:11.5px;font-weight:600;padding:0 7px;border-radius:20px;border:1px solid currentColor;white-space:nowrap}
+.lvdot.l0{color:var(--group)}
+.lvdot.l1{color:var(--lv1)} .lvdot.l2{color:var(--lv2)} .lvdot.l3{color:var(--lv3)}
+.fxbtn{margin:6px 0 0 2px;font-size:12.5px;padding:3px 10px;min-height:30px;
+  border-radius:7px;background:transparent;color:var(--muted)}
+@media (hover:hover){.fxbtn:hover{color:var(--brand);border-color:var(--brand)}}
+
+/* ---------- ปุ่มชุดลัด ---------- */
+.presetbtn{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;
+  padding:12px 14px;height:100%;white-space:normal;border-radius:var(--r);background:var(--panel2)}
+.presetbtn .pi{font-size:22px;line-height:1.2}
+.presetbtn .pt{font-weight:700;font-size:15px}
+.presetbtn .pd{font-size:12.5px;color:var(--muted);line-height:1.5}
+.presetbtn.hot{border-color:var(--group);background:var(--group-bg)}
+.presetbtn.hot .pt{color:var(--group)}
+@media (hover:hover){.presetbtn:hover{border-color:var(--brand);transform:translateY(-1px)}}
+.presetbtn{transition:transform .12s,border-color .12s}
+
+/* ---------- ใบสรุปสูตร ---------- */
+.fxhead{font-weight:700;font-size:15.5px;margin:0 0 8px;padding-bottom:5px;border-bottom:2px solid var(--line)}
+.fxlist{display:flex;flex-direction:column;gap:8px}
+.fxrow{border-left:3px solid var(--brand);padding:2px 0 2px 11px}
+.fxrow .fxe{font-size:16px}
+.fxrow .fxd{font-size:13px;color:var(--muted);line-height:1.55;margin-top:2px}
+#printarea .fxhead{border-bottom:1.5px solid #000;font-size:13pt;margin-top:6px}
+#printarea .fxrow{border-left:2px solid #666}
+#printarea .fxrow .fxd{color:#444;font-size:10pt}
+
+.segbtn{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+.segbtn button{border:none;border-radius:0;border-right:1px solid var(--line);background:var(--panel2);flex:1 1 auto}
+.segbtn button:last-child{border-right:none}
+.segbtn button.on{background:var(--brand);color:var(--brand-ink);font-weight:600}
+
+/* ============================================================
+   หน้าเอกสารสำหรับพิมพ์
+   ============================================================ */
+#printarea{display:none}
+.docpreview #printarea{display:block;background:#fff;color:#000;padding:16px;
+                       border:1px solid var(--line);border-radius:var(--r)}
+
+@media print{
+  @page{size:A4 portrait; margin:15mm 14mm}
+  html,body{background:#fff !important;color:#000 !important;font-size:12.5pt}
+  .stickytop,.tabs,.topbar,#toast,#modal-root,.noprint,main{display:none !important}
+  #printarea{display:block !important;padding:0;border:none;color:#000}
+  #printarea *{color:#000 !important}
+  #printarea svg .ln,#printarea svg .ln2,#printarea svg .dash,#printarea svg .frc{stroke:#000}
+  #printarea svg .bdy{fill:#e8e8e8;stroke:#000}
+  #printarea svg .arh,#printarea svg .arh2{fill:#000}
+  #printarea svg text{fill:#000;stroke:#fff;stroke-width:3px;paint-order:stroke fill}
+  .pg{page-break-after:always}
+  .pg:last-child{page-break-after:auto}
+  .pitem{page-break-inside:avoid}
+  a[href]:after{content:none !important}
+}
+
+/* สไตล์เอกสาร ใช้ทั้งตอนพิมพ์และตอนดูตัวอย่าง */
+#printarea{font-size:12.5pt;line-height:1.65}
+#printarea .phead{text-align:center;margin-bottom:10px}
+#printarea .phead .plogo{display:block;margin:0 auto 5px;height:64px;width:auto;max-width:110px;object-fit:contain}
+#printarea .phead .t1{font-size:15pt;font-weight:700}
+#printarea .phead .t2{font-size:12pt}
+#printarea .phead .t3{font-size:10.5pt}
+#printarea .prule{border:none;border-top:1.5px solid #000;margin:8px 0 12px}
+#printarea .pfields{display:flex;gap:18px;flex-wrap:wrap;font-size:11.5pt;margin-bottom:12px}
+#printarea .pitem{margin-bottom:14px}
+#printarea .pitem .pq{display:flex;gap:8px;align-items:baseline}
+#printarea .pitem .pn{font-weight:700;flex:0 0 auto}
+#printarea .work{border:1px solid #999;border-radius:4px;margin-top:6px}
+#printarea .work .wl{border-bottom:1px dotted #aaa;height:26px}
+#printarea .work .wl:last-child{border-bottom:none}
+#printarea .work .wcap{font-size:9.5pt;color:#555;padding:2px 6px;border-bottom:1px solid #ccc;background:#f4f4f4}
+#printarea table{font-size:11pt;border-collapse:collapse;width:100%}
+#printarea table th,#printarea table td{border:1px solid #888;padding:3px 6px;white-space:normal}
+#printarea table th{background:#eee;position:static}
+#printarea .sol{border:1px solid #999;margin-top:8px;border-radius:4px}
+#printarea .solstep>.h{background:#f0f0f0;cursor:default;padding:5px 9px;font-size:11pt}
+#printarea .solstep>.h .n{background:#333;color:#fff;width:19px;height:19px;font-size:10pt}
+#printarea .solstep>.h .cv{display:none}
+#printarea .solstep>.b{display:block !important;padding:7px 9px 9px 33px}
+#printarea .sign{margin-top:26px;display:flex;gap:40px;justify-content:flex-end;font-size:11pt;text-align:center}
+#printarea .sign div{min-width:190px}
+#printarea .sign .sl{border-bottom:1px dotted #000;height:30px;margin-bottom:3px}
+#printarea .tag{border:1px solid #666;color:#000}
+#printarea .fig{margin:8px 0;text-align:center}
+#printarea .fig svg{width:100%;max-width:74mm;height:auto}
+
+/* เฉพาะหน้าตรวจรูปนี้ */
+body{padding:18px}
+.figgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+.figcell{border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--panel)}
+.figcell h4{margin:0 0 6px;font-size:13.5px;color:var(--muted);font-weight:600}
+</style>
+</head>
+<body>
+<h2 style="margin:0 0 4px">ตรวจรูปประกอบ — คลังโจทย์คณิตศาสตร์</h2>
+<div class="hint" style="margin-bottom:14px">สร้างจาก math.html · 22 รูป · ตรวจว่าไม่มีตัวเลขล้นกรอบ เส้นทับตัวอักษร หรือรูปเบี้ยว และลองสลับโหมดมืด-สว่างของเครื่องดูด้วย</div>
+<div class="figgrid"><div class="figcell"><h4>figNumberLine · บวกจำนวนเต็ม</h4><svg viewBox="0 0 380 96" style="width:100%;max-width:589px" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" role="img"><line class="ln" x1="16" y1="62" x2="364" y2="62"/><line class="ln2" x1="354" y1="62" x2="357" y2="62"/><polygon class="arh2" points="367,62 357,66.6 357,57.4"/><line class="ln2" x1="26" y1="62" x2="23" y2="62"/><polygon class="arh2" points="13,62 23,57.4 23,66.6"/><line class="ln" x1="26" y1="55" x2="26" y2="69"/><text x="26" y="87" text-anchor="middle" class="mut">-8</text><line class="ln" x1="46.5" y1="55" x2="46.5" y2="69"/><text x="46.5" y="87" text-anchor="middle" class="mut">-7</text><line class="ln" x1="67" y1="55" x2="67" y2="69"/><text x="67" y="87" text-anchor="middle" class="mut">-6</text><line class="ln" x1="87.5" y1="55" x2="87.5" y2="69"/><text x="87.5" y="87" text-anchor="middle" class="mut">-5</text><line class="ln" x1="108" y1="55" x2="108" y2="69"/><text x="108" y="87" text-anchor="middle" class="mut">-4</text><line class="ln" x1="128.5" y1="55" x2="128.5" y2="69"/><text x="128.5" y="87" text-anchor="middle" class="mut">-3</text><line class="ln" x1="149" y1="55" x2="149" y2="69"/><text x="149" y="87" text-anchor="middle" class="mut">-2</text><line class="ln" x1="169.5" y1="55" x2="169.5" y2="69"/><text x="169.5" y="87" text-anchor="middle" class="mut">-1</text><line class="ln" x1="190" y1="55" x2="190" y2="69"/><text x="190" y="87" text-anchor="middle" class="mut">0</text><line class="ln" x1="210.5" y1="55" x2="210.5" y2="69"/><text x="210.5" y="87" text-anchor="middle" class="mut">1</text><line class="ln" x1="231" y1="55" x2="231" y2="69"/><text x="231" y="87" text-anchor="middle" class="mut">2</text><line class="ln" x1="251.5" y1="55" x2="251.5" y2="69"/><text x="251.5" y="87" text-anchor="middle" class="mut">3</text><line class="ln" x1="272" y1="55" x2="272" y2="69"/><text x="272" y="87" text-anchor="middle" class="mut">4</text><line class="ln" x1="292.5" y1="55" x2="292.5" y2="69"/><text x="292.5" y="87" text-anchor="middle" class="mut">5</text><line class="ln" x1="313" y1="55" x2="313" y2="69"/><text x="313" y="87" text-anchor="middle" class="mut">6</text><line class="ln" x1="333.5" y1="55" x2="333.5" y2="69"/><text x="333.5" y="87" text-anchor="middle" class="mut">7</text><line class="ln" x1="354" y1="55" x2="354" y2="69"/><text x="354" y="87" text-anchor="middle" class="mut">8</text><path class="frc" d="M149 58 A 51.3 24 0 0 1 251.5 58"/><text x="200.3" y="30" text-anchor="middle">+5</text><circle class="fpt" cx="251.5" cy="62" r="5.4"/><text x="251.5" y="48" text-anchor="middle">ผลลัพธ์</text></svg></div>
+<div class="figcell"><h4>figNumberLine · ช่วงกว้าง</h4><svg viewBox="0 0 380 96" style="width:100%;max-width:589px" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" role="img"><line class="ln" x1="16" y1="62" x2="364" y2="62"/><line class="ln2" x1="354" y1="62" x2="357" y2="62"/><polygon class="arh2" points="367,62 357,66.6 357,57.4"/><line class="ln2" x1="26" y1="62" x2="23" y2="62"/><polygon class="arh2" points="13,62 23,57.4 23,66.6"/><line class="ln" x1="26" y1="55" x2="26" y2="69"/><text x="26" y="87" text-anchor="middle" class="mut">-20</text><line class="ln2" x1="34.2" y1="58" x2="34.2" y2="66"/><line class="ln2" x1="42.4" y1="58" x2="42.4" y2="66"/><line class="ln2" x1="50.6" y1="58" x2="50.6" y2="66"/><line class="ln2" x1="58.8" y1="58" x2="58.8" y2="66"/><line class="ln" x1="67" y1="55" x2="67" y2="69"/><text x="67" y="87" text-anchor="middle" class="mut">-15</text><line class="ln2" x1="75.2" y1="58" x2="75.2" y2="66"/><line class="ln2" x1="83.4" y1="58" x2="83.4" y2="66"/><line class="ln2" x1="91.6" y1="58" x2="91.6" y2="66"/><line class="ln2" x1="99.8" y1="58" x2="99.8" y2="66"/><line class="ln" x1="108" y1="55" x2="108" y2="69"/><text x="108" y="87" text-anchor="middle" class="mut">-10</text><line class="ln2" x1="116.2" y1="58" x2="116.2" y2="66"/><line class="ln2" x1="124.4" y1="58" x2="124.4" y2="66"/><line class="ln2" x1="132.6" y1="58" x2="132.6" y2="66"/><line class="ln2" x1="140.8" y1="58" x2="140.8" y2="66"/><line class="ln" x1="149" y1="55" x2="149" y2="69"/><text x="149" y="87" text-anchor="middle" class="mut">-5</text><line class="ln2" x1="157.2" y1="58" x2="157.2" y2="66"/><line class="ln2" x1="165.4" y1="58" x2="165.4" y2="66"/><line class="ln2" x1="173.6" y1="58" x2="173.6" y2="66"/><line class="ln2" x1="181.8" y1="58" x2="181.8" y2="66"/><line class="ln" x1="190" y1="55" x2="190" y2="69"/><text x="190" y="87" text-anchor="middle" class="mut">0</text><line class="ln2" x1="198.2" y1="58" x2="198.2" y2="66"/><line class="ln2" x1="206.4" y1="58" x2="206.4" y2="66"/><line class="ln2" x1="214.6" y1="58" x2="214.6" y2="66"/><line class="ln2" x1="222.8" y1="58" x2="222.8" y2="66"/><line class="ln" x1="231" y1="55" x2="231" y2="69"/><text x="231" y="87" text-anchor="middle" class="mut">5</text><line class="ln2" x1="239.2" y1="58" x2="239.2" y2="66"/><line class="ln2" x1="247.4" y1="58" x2="247.4" y2="66"/><line class="ln2" x1="255.6" y1="58" x2="255.6" y2="66"/><line class="ln2" x1="263.8" y1="58" x2="263.8" y2="66"/><line class="ln" x1="272" y1="55" x2="272" y2="69"/><text x="272" y="87" text-anchor="middle" class="mut">10</text><line class="ln2" x1="280.2" y1="58" x2="280.2" y2="66"/><line class="ln2" x1="288.4" y1="58" x2="288.4" y2="66"/><line class="ln2" x1="296.6" y1="58" x2="296.6" y2="66"/><line class="ln2" x1="304.8" y1="58" x2="304.8" y2="66"/><line class="ln" x1="313" y1="55" x2="313" y2="69"/><text x="313" y="87" text-anchor="middle" class="mut">15</text><line class="ln2" x1="321.2" y1="58" x2="321.2" y2="66"/><line class="ln2" x1="329.4" y1="58" x2="329.4" y2="66"/><line class="ln2" x1="337.6" y1="58" x2="337.6" y2="66"/><line class="ln2" x1="345.8" y1="58" x2="345.8" y2="66"/><line class="ln" x1="354" y1="55" x2="354" y2="69"/><text x="354" y="87" text-anchor="middle" class="mut">20</text><circle class="fpt" cx="91.6" cy="62" r="5.4"/><circle class="fpt" cx="255.6" cy="62" r="5.4"/></svg></div>
+<div class="figcell"><h4>figFracBar · เทียบสองแถบ</h4><svg viewBox="0 0 360 110" style="width:100%;max-width:558px" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" role="img"><rect class="ffil" x="14" y="12" width="61" height="32"/><rect class="fbox" x="14" y="12" width="61" height="32"/><rect class="ffil" x="75" y="12" width="61" height="32"/><rect class="fbox" x="75" y="12" width="61" height="32"/><rect class="ffil" x="136" y="12" width="61" height="32"/><rect class="fbox" x="136" y="12" width="61" height="32"/><rect class="fbox" x="197" y="12" width="61" height="32"/><text x="270" y="33" text-anchor="start">3/4</text><rect class="ffil" x="14" y="60" width="30.5" height="32"/><rect class="fbox" x="14" y="60" width="30.5" height="32"/><rect class="ffil" x="44.5" y="60" width="30.5" height="32"/><rect class="fbox" x="44.5" y="60" width="30.5" height="32"/><rect class="ffil" x="75" y="60" width="30.5" height="32"/><rect class="fbox" x="75" y="60" width="30.5" height="32"/><rect class="ffil" x="105.5" y="60" width="30.5" height="32"/><rect class="fbox" x="105.5" y="60" width="30.5" height="32"/><rect class="ffil" x="136" y="60" width="30.5" height="32"/><rect class="fbox" x="136" y="60" width="30.5" height="32"/><rect class="fbox" x="166.5" y="60" width="30.5" height="32"/><rect class="fbox" x="197" y="60" width="30.5" height="32"/><rect class="fbox" x="227.5" y="60" width="30.5" height="32"/><text x="270" y="81" text-anchor="start">5/8</text></svg></div>
+<div class="figcell"><h4>figFracBar · แถบเดียว</h4><svg viewBox="0 0 386 62" style="width:100%;max-width:598px" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" role="img"><rect class="ffil" x="14" y="12" width="20.3" height="32"/><rect class="fbox" x="14" y="12" width="20.3" height="32"/><rect class="ffil" x="34.3" y="12" width="20.3" height="32"/><rect class="fbox" x="34.3" y="12" width="20.3" height="32"/><rect class="ffil" x="54.7" y="12" width="20.3" height="32"/><rect class="fbox" x="54.7" y="12" width="20.3" height="32"/><rect class="ffil" x="75" y="12" width="20.3" height="32"/><rect class="fbox" x="75" y="12" width="20.3" height="32"/><rect class="ffil" x="95.3" y="12" width="20.3" height="32"/><rect class="fbox" x="95.3" y="12" width="20.3" height="32"/><rect class="ffil" x="115.7" y="12" width="20.3" height="32"/><rect class="fbox" x="115.7" y="12" width="20.3" height="32"/><rect class="ffil" x="136" y="12" width="20.3" height="32"/><rect class="fbox" x="136" y="12" width="20.3" height="32"/><rect class="fbox" x="156.3" y="12" width="20.3" height="32"/><rect class="fbox" x="176.7" y="12" width="20.3" height="32"/><rect class="fbox" x="197" y="12" width="20.3" height="32"/><rect class="fbox" x="217.3" y="12" width="20.3" height="32"/><rect class="fbox" x="237.7" y="12" width="20.3" height="32"/><text x="270" y="33" text-anchor="start">7/12 ของทั้งหมด</text></svg></div>
+<div class="figcell"><h4>figAngle · 35°</h4><svg viewBox="0 0 320 190" style="width:100%;max-width:496px" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" role="img"><line class="ln" x1="62" y1="152" x2="194" y2="152"/><line class="ln" x1="62" y1="152" x2="170.1" y2="76.3"/><path class="frc" d="M136 152 A 74 74 0 0 0 122.6 109.6"/><text x="105.8" y="143.2" text-anchor="middle">35°</text><circle class="fpt" cx="62" cy="152" r="3.4"/></svg></div>
+<div class="figcell"><h4>figAngle · 90°</h4><svg viewBox="0 0 320 190" style="width:100%;max-width:496px" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" role="img"><line class="ln" x1="62" y1="152" x2="194" y2="152"/><line class="ln" x1="62" y1="152" x2="62" y2="20"/><polyline class="frc" points="88,152 88,126 62,126"/><text x="104" y="114" text-anchor="start">90°</text><circle class="fpt" cx="62" cy="152" r="3.4"/></svg></div>
+<div class="figcell"><h4>figAngle · 145°</h4><svg viewBox="0 0 320 190" style="width:100%;max-width:496px" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" role="img"><line class="ln" x1="158" y1="152" x2="290" y2="152"/><line class="ln" x1="158" y1="152" x2="49.9" y2="76.3"/><path class="frc" d="M198 152 A 40 40 0 0 0 125.2 129.1"/><text x="165.5" y="133.3" text-anchor="middle">145°</text><circle class="fpt" cx="158" cy="152" r="3.4"/></svg></div>
+<div class="figcell"><h4>figRect · 12 × 5</h4><svg viewBox="0 0 340 200" style="width:100%;max-width:527px" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" role="img"><rect class="bdy" x="92" y="30" width="184" height="76.7"/><text x="184" y="132.7" text-anchor="middle">12 ซม.</text><text x="82" y="73.3" text-anchor="end">5 ซม.</text></svg></div>
+<div class="figcell"><h4>figRect · 4 × 9 (สูงกว่ากว้าง)</h4><svg viewBox="0 0 340 200" style="width:100%;max-width:527px" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" role="img"><rect class="bdy" x="92" y="30" width="70" height="116"/><text x="127" y="172" text-anchor="middle">4 ม.</text><text x="82" y="93" text-anchor="end">9 ม.</text></svg></div>
+<div class="figcell"><h4>figTri · ฐาน 14 สูง 6</h4><svg viewBox="0 0 340 200" style="width:100%;max-width:527px" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" role="img"><polygon class="bdy" points="62,156 242,156 130.4,78.9"/><line class="dash" x1="130.4" y1="78.9" x2="130.4" y2="156"/><polyline class="ln2" points="130.4,145 141.4,145 141.4,156"/><text x="152" y="182" text-anchor="middle">ฐาน 14 ซม.</text><text x="140.4" y="134.4" text-anchor="start">สูง 6 ซม.</text></svg></div>
+<div class="figcell"><h4>figTri · ฐาน 5 สูง 11</h4><svg viewBox="0 0 340 200" style="width:100%;max-width:527px" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" role="img"><polygon class="bdy" points="62,156 148,156 94.7,44"/><line class="dash" x1="94.7" y1="44" x2="94.7" y2="156"/><polyline class="ln2" points="94.7,145 105.7,145 105.7,156"/><text x="105" y="182" text-anchor="middle">ฐาน 5 ซม.</text><text x="104.7" y="124.6" text-anchor="start">สูง 11 ซม.</text></svg></div>
+<div class="figcell"><h4>figTrap · 6 / 14 สูง 5</h4><svg viewBox="0 0 340 200" style="width:100%;max-width:527px" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" role="img"><polygon class="bdy" points="128.3,88.1 209.7,88.1 264,156 74,156"/><line class="dash" x1="169" y1="88.1" x2="169" y2="156"/><polyline class="ln2" points="169,146 179,146 179,156"/><text x="169" y="78.1" text-anchor="middle">6 ซม.</text><text x="169" y="182" text-anchor="middle">14 ซม.</text><text x="185" y="127.1" text-anchor="start">สูง 5 ซม.</text></svg></div>
+<div class="figcell"><h4>figPara · ฐาน 10 สูง 6</h4><svg viewBox="0 0 340 200" style="width:100%;max-width:527px" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" role="img"><polygon class="bdy" points="90,51.6 264,51.6 230,156 56,156"/><line class="dash" x1="90" y1="51.6" x2="90" y2="156"/><polyline class="ln2" points="90,146 100,146 100,156"/><text x="149" y="182" text-anchor="middle">ฐาน 10 ซม.</text><text x="106" y="108.8" text-anchor="start">สูง 6 ซม.</text></svg></div>
+<div class="figcell"><h4>figCircleFig · รัศมี 7</h4><svg viewBox="0 0 300 220" style="width:100%;max-width:465px" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" role="img"><circle class="bdy" cx="150" cy="110" r="78"/><line class="frc" x1="150" y1="110" x2="228" y2="110"/><text x="189" y="98" text-anchor="middle">r = 7 ซม.</text><circle class="fpt" cx="150" cy="110" r="3.4"/></svg></div>
+<div class="figcell"><h4>figCircleFig · เส้นผ่านศูนย์กลาง</h4><svg viewBox="0 0 300 220" style="width:100%;max-width:465px" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" role="img"><circle class="bdy" cx="150" cy="110" r="78"/><line class="frc" x1="72" y1="110" x2="228" y2="110"/><text x="150" y="98" text-anchor="middle">d = 14 ซม.</text><circle class="fpt" cx="150" cy="110" r="3.4"/></svg></div>
+<div class="figcell"><h4>figBox3D · 8×4×5</h4><svg viewBox="0 0 380 220" style="width:100%;max-width:589px" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" role="img"><polygon class="bdy" points="96,106.5 137.8,74 253.8,74 212,106.5"/><polygon class="bdy" points="212,106.5 253.8,74 253.8,146.5 212,179"/><rect class="bdy" x="96" y="106.5" width="116" height="72.5"/><text x="154" y="203" text-anchor="middle">กว้าง 8 ซม.</text><text x="87" y="147.7" text-anchor="end">สูง 5 ซม.</text><text x="248.9" y="166.7" text-anchor="start">ลึก 4 ซม.</text></svg></div>
+<div class="figcell"><h4>figBox3D · ลูกบาศก์ 6</h4><svg viewBox="0 0 380 220" style="width:100%;max-width:589px" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" role="img"><polygon class="bdy" points="96,106.5 137.8,74 221.8,74 180,106.5"/><polygon class="bdy" points="180,106.5 221.8,74 221.8,132 180,164.5"/><rect class="bdy" x="96" y="106.5" width="84" height="58"/><text x="138" y="188.5" text-anchor="middle">กว้าง 6 ซม.</text><text x="87" y="140.5" text-anchor="end">สูง 6 ซม.</text><text x="216.9" y="152.2" text-anchor="start">ลึก 6 ซม.</text></svg></div>
+<div class="figcell"><h4>figCoord · จุดสี่จตุภาค</h4><svg viewBox="0 0 320 300" style="width:100%;max-width:496px" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" role="img"><line class="fgrd" x1="30" y1="30" x2="30" y2="270"/><line class="fgrd" x1="56" y1="30" x2="56" y2="270"/><line class="fgrd" x1="82" y1="30" x2="82" y2="270"/><line class="fgrd" x1="108" y1="30" x2="108" y2="270"/><line class="fgrd" x1="134" y1="30" x2="134" y2="270"/><line class="fgrd" x1="160" y1="30" x2="160" y2="270"/><line class="fgrd" x1="186" y1="30" x2="186" y2="270"/><line class="fgrd" x1="212" y1="30" x2="212" y2="270"/><line class="fgrd" x1="238" y1="30" x2="238" y2="270"/><line class="fgrd" x1="264" y1="30" x2="264" y2="270"/><line class="fgrd" x1="290" y1="30" x2="290" y2="270"/><line class="fgrd" x1="30" y1="270" x2="290" y2="270"/><line class="fgrd" x1="30" y1="246" x2="290" y2="246"/><line class="fgrd" x1="30" y1="222" x2="290" y2="222"/><line class="fgrd" x1="30" y1="198" x2="290" y2="198"/><line class="fgrd" x1="30" y1="174" x2="290" y2="174"/><line class="fgrd" x1="30" y1="150" x2="290" y2="150"/><line class="fgrd" x1="30" y1="126" x2="290" y2="126"/><line class="fgrd" x1="30" y1="102" x2="290" y2="102"/><line class="fgrd" x1="30" y1="78" x2="290" y2="78"/><line class="fgrd" x1="30" y1="54" x2="290" y2="54"/><line class="fgrd" x1="30" y1="30" x2="290" y2="30"/><line class="ln" x1="30" y1="150" x2="290" y2="150"/><line class="ln" x1="160" y1="30" x2="160" y2="270"/><text x="30" y="167" text-anchor="middle" class="mut">-5</text><text x="56" y="167" text-anchor="middle" class="mut">-4</text><text x="82" y="167" text-anchor="middle" class="mut">-3</text><text x="108" y="167" text-anchor="middle" class="mut">-2</text><text x="134" y="167" text-anchor="middle" class="mut">-1</text><text x="186" y="167" text-anchor="middle" class="mut">1</text><text x="212" y="167" text-anchor="middle" class="mut">2</text><text x="238" y="167" text-anchor="middle" class="mut">3</text><text x="264" y="167" text-anchor="middle" class="mut">4</text><text x="290" y="167" text-anchor="middle" class="mut">5</text><text x="153" y="275" text-anchor="end" class="mut">-5</text><text x="153" y="251" text-anchor="end" class="mut">-4</text><text x="153" y="227" text-anchor="end" class="mut">-3</text><text x="153" y="203" text-anchor="end" class="mut">-2</text><text x="153" y="179" text-anchor="end" class="mut">-1</text><text x="153" y="131" text-anchor="end" class="mut">1</text><text x="153" y="107" text-anchor="end" class="mut">2</text><text x="153" y="83" text-anchor="end" class="mut">3</text><text x="153" y="59" text-anchor="end" class="mut">4</text><text x="153" y="35" text-anchor="end" class="mut">5</text><text x="299" y="155" text-anchor="middle" class="mut">x</text><text x="151" y="22" text-anchor="middle" class="mut">y</text><circle class="fpt" cx="238" cy="102" r="5"/><text x="229" y="93" text-anchor="end">A</text><circle class="fpt" cx="56" cy="126" r="5"/><text x="65" y="117" text-anchor="start">B</text><circle class="fpt" cx="108" cy="222" r="5"/><text x="117" y="213" text-anchor="start">C</text><circle class="fpt" cx="264" cy="246" r="5"/><text x="255" y="237" text-anchor="end">D</text></svg></div>
+<div class="figcell"><h4>figCoord · กราฟ y = 2x - 1</h4><svg viewBox="0 0 320 300" style="width:100%;max-width:496px" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" role="img"><line class="fgrd" x1="30" y1="30" x2="30" y2="270"/><line class="fgrd" x1="56" y1="30" x2="56" y2="270"/><line class="fgrd" x1="82" y1="30" x2="82" y2="270"/><line class="fgrd" x1="108" y1="30" x2="108" y2="270"/><line class="fgrd" x1="134" y1="30" x2="134" y2="270"/><line class="fgrd" x1="160" y1="30" x2="160" y2="270"/><line class="fgrd" x1="186" y1="30" x2="186" y2="270"/><line class="fgrd" x1="212" y1="30" x2="212" y2="270"/><line class="fgrd" x1="238" y1="30" x2="238" y2="270"/><line class="fgrd" x1="264" y1="30" x2="264" y2="270"/><line class="fgrd" x1="290" y1="30" x2="290" y2="270"/><line class="fgrd" x1="30" y1="270" x2="290" y2="270"/><line class="fgrd" x1="30" y1="246" x2="290" y2="246"/><line class="fgrd" x1="30" y1="222" x2="290" y2="222"/><line class="fgrd" x1="30" y1="198" x2="290" y2="198"/><line class="fgrd" x1="30" y1="174" x2="290" y2="174"/><line class="fgrd" x1="30" y1="150" x2="290" y2="150"/><line class="fgrd" x1="30" y1="126" x2="290" y2="126"/><line class="fgrd" x1="30" y1="102" x2="290" y2="102"/><line class="fgrd" x1="30" y1="78" x2="290" y2="78"/><line class="fgrd" x1="30" y1="54" x2="290" y2="54"/><line class="fgrd" x1="30" y1="30" x2="290" y2="30"/><line class="ln" x1="30" y1="150" x2="290" y2="150"/><line class="ln" x1="160" y1="30" x2="160" y2="270"/><text x="30" y="167" text-anchor="middle" class="mut">-5</text><text x="56" y="167" text-anchor="middle" class="mut">-4</text><text x="82" y="167" text-anchor="middle" class="mut">-3</text><text x="108" y="167" text-anchor="middle" class="mut">-2</text><text x="134" y="167" text-anchor="middle" class="mut">-1</text><text x="186" y="167" text-anchor="middle" class="mut">1</text><text x="212" y="167" text-anchor="middle" class="mut">2</text><text x="238" y="167" text-anchor="middle" class="mut">3</text><text x="264" y="167" text-anchor="middle" class="mut">4</text><text x="290" y="167" text-anchor="middle" class="mut">5</text><text x="153" y="275" text-anchor="end" class="mut">-5</text><text x="153" y="251" text-anchor="end" class="mut">-4</text><text x="153" y="227" text-anchor="end" class="mut">-3</text><text x="153" y="203" text-anchor="end" class="mut">-2</text><text x="153" y="179" text-anchor="end" class="mut">-1</text><text x="153" y="131" text-anchor="end" class="mut">1</text><text x="153" y="107" text-anchor="end" class="mut">2</text><text x="153" y="83" text-anchor="end" class="mut">3</text><text x="153" y="59" text-anchor="end" class="mut">4</text><text x="153" y="35" text-anchor="end" class="mut">5</text><text x="299" y="155" text-anchor="middle" class="mut">x</text><text x="151" y="22" text-anchor="middle" class="mut">y</text><polyline class="frc" points="108,270 110.2,266 112.3,262 114.5,258 116.7,254 118.8,250 121,246 123.2,242 125.3,238 127.5,234 129.7,230 131.8,226 134,222 136.2,218 138.3,214 140.5,210 142.7,206 144.8,202 147,198 149.2,194 151.3,190 153.5,186 155.7,182 157.8,178 160,174 162.2,170 164.3,166 166.5,162 168.7,158 170.8,154 173,150 175.2,146 177.3,142 179.5,138 181.7,134 183.8,130 186,126 188.2,122 190.3,118 192.5,114 194.7,110 196.8,106 199,102 201.2,98 203.3,94 205.5,90 207.7,86 209.8,82 212,78 214.2,74 216.3,70 218.5,66 220.7,62 222.8,58 225,54 227.2,50 229.3,46 231.5,42 233.7,38 235.8,34 238,30"/><circle class="fpt" cx="160" cy="174" r="5"/><text x="169" y="165" text-anchor="start">(0,-1)</text></svg></div>
+<div class="figcell"><h4>figCoord · กราฟ y = -x + 3</h4><svg viewBox="0 0 320 300" style="width:100%;max-width:496px" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" role="img"><line class="fgrd" x1="30" y1="30" x2="30" y2="270"/><line class="fgrd" x1="51.7" y1="30" x2="51.7" y2="270"/><line class="fgrd" x1="73.3" y1="30" x2="73.3" y2="270"/><line class="fgrd" x1="95" y1="30" x2="95" y2="270"/><line class="fgrd" x1="116.7" y1="30" x2="116.7" y2="270"/><line class="fgrd" x1="138.3" y1="30" x2="138.3" y2="270"/><line class="fgrd" x1="160" y1="30" x2="160" y2="270"/><line class="fgrd" x1="181.7" y1="30" x2="181.7" y2="270"/><line class="fgrd" x1="203.3" y1="30" x2="203.3" y2="270"/><line class="fgrd" x1="225" y1="30" x2="225" y2="270"/><line class="fgrd" x1="246.7" y1="30" x2="246.7" y2="270"/><line class="fgrd" x1="268.3" y1="30" x2="268.3" y2="270"/><line class="fgrd" x1="290" y1="30" x2="290" y2="270"/><line class="fgrd" x1="30" y1="270" x2="290" y2="270"/><line class="fgrd" x1="30" y1="250" x2="290" y2="250"/><line class="fgrd" x1="30" y1="230" x2="290" y2="230"/><line class="fgrd" x1="30" y1="210" x2="290" y2="210"/><line class="fgrd" x1="30" y1="190" x2="290" y2="190"/><line class="fgrd" x1="30" y1="170" x2="290" y2="170"/><line class="fgrd" x1="30" y1="150" x2="290" y2="150"/><line class="fgrd" x1="30" y1="130" x2="290" y2="130"/><line class="fgrd" x1="30" y1="110" x2="290" y2="110"/><line class="fgrd" x1="30" y1="90" x2="290" y2="90"/><line class="fgrd" x1="30" y1="70" x2="290" y2="70"/><line class="fgrd" x1="30" y1="50" x2="290" y2="50"/><line class="fgrd" x1="30" y1="30" x2="290" y2="30"/><line class="ln" x1="30" y1="150" x2="290" y2="150"/><line class="ln" x1="160" y1="30" x2="160" y2="270"/><text x="30" y="167" text-anchor="middle" class="mut">-6</text><text x="51.7" y="167" text-anchor="middle" class="mut">-5</text><text x="73.3" y="167" text-anchor="middle" class="mut">-4</text><text x="95" y="167" text-anchor="middle" class="mut">-3</text><text x="116.7" y="167" text-anchor="middle" class="mut">-2</text><text x="138.3" y="167" text-anchor="middle" class="mut">-1</text><text x="181.7" y="167" text-anchor="middle" class="mut">1</text><text x="203.3" y="167" text-anchor="middle" class="mut">2</text><text x="225" y="167" text-anchor="middle" class="mut">3</text><text x="246.7" y="167" text-anchor="middle" class="mut">4</text><text x="268.3" y="167" text-anchor="middle" class="mut">5</text><text x="290" y="167" text-anchor="middle" class="mut">6</text><text x="153" y="275" text-anchor="end" class="mut">-6</text><text x="153" y="255" text-anchor="end" class="mut">-5</text><text x="153" y="235" text-anchor="end" class="mut">-4</text><text x="153" y="215" text-anchor="end" class="mut">-3</text><text x="153" y="195" text-anchor="end" class="mut">-2</text><text x="153" y="175" text-anchor="end" class="mut">-1</text><text x="153" y="135" text-anchor="end" class="mut">1</text><text x="153" y="115" text-anchor="end" class="mut">2</text><text x="153" y="95" text-anchor="end" class="mut">3</text><text x="153" y="75" text-anchor="end" class="mut">4</text><text x="153" y="55" text-anchor="end" class="mut">5</text><text x="153" y="35" text-anchor="end" class="mut">6</text><text x="299" y="155" text-anchor="middle" class="mut">x</text><text x="151" y="22" text-anchor="middle" class="mut">y</text><polyline class="frc" points="95,30 97.2,32 99.3,34 101.5,36 103.7,38 105.8,40 108,42 110.2,44 112.3,46 114.5,48 116.7,50 118.8,52 121,54 123.2,56 125.3,58 127.5,60 129.7,62 131.8,64 134,66 136.2,68 138.3,70 140.5,72 142.7,74 144.8,76 147,78 149.2,80 151.3,82 153.5,84 155.7,86 157.8,88 160,90 162.2,92 164.3,94 166.5,96 168.7,98 170.8,100 173,102 175.2,104 177.3,106 179.5,108 181.7,110 183.8,112 186,114 188.2,116 190.3,118 192.5,120 194.7,122 196.8,124 199,126 201.2,128 203.3,130 205.5,132 207.7,134 209.8,136 212,138 214.2,140 216.3,142 218.5,144 220.7,146 222.8,148 225,150 227.2,152 229.3,154 231.5,156 233.7,158 235.8,160 238,162 240.2,164 242.3,166 244.5,168 246.7,170 248.8,172 251,174 253.2,176 255.3,178 257.5,180 259.7,182 261.8,184 264,186 266.2,188 268.3,190 270.5,192 272.7,194 274.8,196 277,198 279.2,200 281.3,202 283.5,204 285.7,206 287.8,208 290,210"/></svg></div>
+<div class="figcell"><h4>figBar · คะแนน 5 กลุ่ม</h4><svg viewBox="0 0 360 224" style="width:100%;max-width:558px" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" role="img"><line class="fgrd" x1="42" y1="186" x2="348" y2="186"/><text x="36" y="191" text-anchor="end" class="mut">0</text><line class="fgrd" x1="42" y1="154.8" x2="348" y2="154.8"/><text x="36" y="159.8" text-anchor="end" class="mut">4</text><line class="fgrd" x1="42" y1="123.6" x2="348" y2="123.6"/><text x="36" y="128.6" text-anchor="end" class="mut">8</text><line class="fgrd" x1="42" y1="92.4" x2="348" y2="92.4"/><text x="36" y="97.4" text-anchor="end" class="mut">12</text><line class="fgrd" x1="42" y1="61.2" x2="348" y2="61.2"/><text x="36" y="66.2" text-anchor="end" class="mut">16</text><line class="fgrd" x1="42" y1="30" x2="348" y2="30"/><text x="36" y="35" text-anchor="end" class="mut">20</text><rect class="fbar" x="54.2" y="92.4" width="36.7" height="93.6"/><text x="72.6" y="204" text-anchor="middle" class="mut">ก</text><rect class="fbar" x="115.4" y="45.6" width="36.7" height="140.4"/><text x="133.8" y="204" text-anchor="middle" class="mut">ข</text><rect class="fbar" x="176.6" y="131.4" width="36.7" height="54.6"/><text x="195" y="204" text-anchor="middle" class="mut">ค</text><rect class="fbar" x="237.8" y="69" width="36.7" height="117"/><text x="256.2" y="204" text-anchor="middle" class="mut">ง</text><rect class="fbar" x="299" y="115.8" width="36.7" height="70.2"/><text x="317.4" y="204" text-anchor="middle" class="mut">จ</text><line class="ln" x1="42" y1="186" x2="348" y2="186"/><line class="ln" x1="42" y1="30" x2="42" y2="186"/><text x="36" y="16" text-anchor="end" class="mut">คน</text></svg></div>
+<div class="figcell"><h4>figBar · ค่าใหญ่</h4><svg viewBox="0 0 360 224" style="width:100%;max-width:558px" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" role="img"><line class="fgrd" x1="42" y1="186" x2="348" y2="186"/><text x="36" y="191" text-anchor="end" class="mut">0</text><line class="fgrd" x1="42" y1="154.8" x2="348" y2="154.8"/><text x="36" y="159.8" text-anchor="end" class="mut">40</text><line class="fgrd" x1="42" y1="123.6" x2="348" y2="123.6"/><text x="36" y="128.6" text-anchor="end" class="mut">80</text><line class="fgrd" x1="42" y1="92.4" x2="348" y2="92.4"/><text x="36" y="97.4" text-anchor="end" class="mut">120</text><line class="fgrd" x1="42" y1="61.2" x2="348" y2="61.2"/><text x="36" y="66.2" text-anchor="end" class="mut">160</text><line class="fgrd" x1="42" y1="30" x2="348" y2="30"/><text x="36" y="35" text-anchor="end" class="mut">200</text><rect class="fbar" x="54.2" y="92.4" width="36.7" height="93.6"/><text x="72.6" y="204" text-anchor="middle" class="mut">จ.</text><rect class="fbar" x="115.4" y="119.7" width="36.7" height="66.3"/><text x="133.8" y="204" text-anchor="middle" class="mut">อ.</text><rect class="fbar" x="176.6" y="30" width="36.7" height="156"/><text x="195" y="204" text-anchor="middle" class="mut">พ.</text><rect class="fbar" x="237.8" y="61.2" width="36.7" height="124.8"/><text x="256.2" y="204" text-anchor="middle" class="mut">พฤ.</text><rect class="fbar" x="299" y="150.9" width="36.7" height="35.1"/><text x="317.4" y="204" text-anchor="middle" class="mut">ศ.</text><line class="ln" x1="42" y1="186" x2="348" y2="186"/><line class="ln" x1="42" y1="30" x2="42" y2="186"/><text x="36" y="16" text-anchor="end" class="mut">บาท</text></svg></div></div>
+</body>
+</html>

@@ -1,0 +1,43 @@
+# โฟลเดอร์นี้เก็บข้อมูลจริงของโรงเรียน (รายชื่อนักเรียน ตารางสอน คะแนน ไฟล์สำรอง)
+# จึงใช้วิธี "ปิดทุกอย่างก่อน แล้วเปิดเฉพาะไฟล์ที่ตั้งใจให้ขึ้น GitHub"
+# ถ้าจะเพิ่มไฟล์ใหม่เข้า repo ต้องมาเติมบรรทัด ! ที่นี่เท่านั้น
+*
+
+# ---- ไฟล์ระดับบนสุด ----
+!.gitignore
+!README.md
+!index.html
+
+# ---- คลังโจทย์คณิตศาสตร์ ----
+!MathAutoSheet/
+MathAutoSheet/*
+!MathAutoSheet/math.html
+!MathAutoSheet/index.html
+!MathAutoSheet/README-math.md
+!MathAutoSheet/outputs/
+MathAutoSheet/outputs/*
+!MathAutoSheet/outputs/figures-math.html
+!MathAutoSheet/outputs/preview.html
+
+# ---- คลังโจทย์ฟิสิกส์ ----
+# index.html ของฟิสิกส์คือไฟล์ที่ฝังที่อยู่ Google Apps Script ไว้สำหรับขึ้นเว็บ
+# จึงไม่เอาขึ้น GitHub — สร้างใหม่จากปุ่มในแอพทุกครั้งที่จะดีพลอย
+!PhysicsAutoSheet/
+PhysicsAutoSheet/*
+!PhysicsAutoSheet/physics.html
+!PhysicsAutoSheet/README-physics.md
+!PhysicsAutoSheet/outputs/
+PhysicsAutoSheet/outputs/*
+!PhysicsAutoSheet/outputs/figures.html
+
+# ---- กันพลาดซ้ำอีกชั้น: ห้ามขึ้นเด็ดขาดไม่ว่าจะอยู่ที่ไหน ----
+# ไฟล์สำรองมีชื่อและเลขประจำตัวนักเรียนจริงอยู่ข้างใน
+สำรอง*.json
+*.local.txt
+*.xlsx
+*.xls
+*.csv
+node_modules/
+__pycache__/
+.DS_Store
+Thumbs.db
