@@ -50,6 +50,10 @@ button.primary{width:100%;margin-top:20px;background:var(--brand);color:var(--br
   border:none;font:inherit;font-weight:700;font-size:16px;padding:14px;border-radius:10px;
   cursor:pointer;min-height:52px}
 button.primary:disabled{opacity:.6;cursor:default}
+button.wide{width:100%;font-size:15.5px;font-weight:700;padding:13px;border-radius:10px;min-height:50px}
+/* เส้นคั่น "หรือ" ระหว่างการลงชื่อเข้าใช้กับทางเข้าคณิตที่ไม่ต้องลงชื่อ */
+.or{display:flex;align-items:center;gap:12px;margin:20px 0 14px;color:var(--muted);font-size:13px}
+.or::before,.or::after{content:'';flex:1;height:1px;background:var(--line)}
 .msg{margin-top:14px;padding:11px 14px;border-radius:10px;font-size:14px;display:none}
 .msg.bad{display:block;background:var(--bad-bg);color:var(--bad)}
 .msg.ok{display:block;background:var(--ok-bg);color:var(--ok)}
@@ -96,7 +100,7 @@ footer a{color:var(--muted)}
   </div>
 
   <div id="fStu">
-    <p class="lead">ใช้<b>เลขประจำตัวนักเรียน</b>กับรหัสผ่านเดียวกับที่ใช้ในแอพฟิสิกส์
+    <p class="lead">ใช้<b>เลขประจำตัวนักเรียน</b>กับรหัสผ่านที่ครูแจ้ง
       ลงชื่อครั้งเดียวใช้ได้ทุกวิชา</p>
     <label class="f" for="sid">เลขประจำตัวนักเรียน <span class="hint">(ตัวเลขไม่เกิน 5 หลัก)</span></label>
     <input type="text" id="sid" inputmode="numeric" pattern="[0-9]*" maxlength="5"
@@ -116,10 +120,13 @@ footer a{color:var(--muted)}
   <button class="primary" id="go">เข้าใช้งาน</button>
   <div class="msg" id="msg"></div>
 
+  <div class="or"><span>หรือ</span></div>
+
+  <button class="ghost wide" id="skip">📐 เข้าคณิตศาสตร์เลย · ไม่ต้องลงชื่อ</button>
   <div class="note">
-    เข้าไม่ได้หรือยังไม่มีรหัส? ถามครูผู้สอนได้เลย ·
-    <a href="#" id="skip">ข้ามไปฝึกคณิตศาสตร์ก่อน</a>
-    (ฝึกได้ทุกข้อ แต่จะไม่ได้รับใบงานที่ครูมอบหมาย)
+    ทำโจทย์คณิตได้ครบทุกข้อโดยไม่ต้องลงชื่อ · ถ้าลงชื่อก่อนจะดีกว่าตรงที่
+    <b>ชื่อ ชั้น และเลขที่</b> จะถูกเติมให้เอง ไม่ต้องพิมพ์ตอนพิมพ์ใบงาน<br>
+    เข้าไม่ได้หรือลืมรหัส? ถามครูผู้สอนได้เลย
   </div>
 </div>
 
@@ -274,6 +281,11 @@ function showPicker(s) {
   // ครูได้ไฟล์ฉบับเต็ม ส่วนนักเรียนได้ฉบับที่ไม่มีเฉลยและสถิติชั้นเรียน
   $('#goMath').href = teacher ? 'MathAutoSheet/math.html' : 'MathAutoSheet/index.html';
   $('#goPhys').href = teacher ? 'PhysicsAutoSheet/physics.html' : 'PhysicsAutoSheet/index.html';
+  // เอาวิชาที่ตรงกับชั้นของนักเรียนขึ้นก่อน จะได้ไม่ต้องมองหา
+  // ม.1-ม.3 เห็นคณิตก่อน · ม.4 ขึ้นไปเห็นฟิสิกส์ก่อน · ครูเห็นตามลำดับเดิม
+  const lv = String(p.cls || '').match(/ม\.?\s*(\d)/);
+  if (!teacher && lv && Number(lv[1]) >= 4) $('.cards').prepend($('#goPhys'));
+  else $('.cards').prepend($('#goMath'));
   $('#loginBox').classList.add('hide');
   $('#pickBox').classList.remove('hide');
 }
