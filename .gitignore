@@ -7,6 +7,9 @@
 !.gitignore
 !README.md
 !index.html
+!tools/
+tools/*
+!tools/build-dist.mjs
 
 # ---- คลังโจทย์คณิตศาสตร์ ----
 !MathAutoSheet/
@@ -20,11 +23,10 @@ MathAutoSheet/outputs/*
 !MathAutoSheet/outputs/preview.html
 
 # ---- คลังโจทย์ฟิสิกส์ ----
-# index.html ของฟิสิกส์คือไฟล์ที่ฝังที่อยู่ Google Apps Script ไว้สำหรับขึ้นเว็บ
-# จึงไม่เอาขึ้น GitHub — สร้างใหม่จากปุ่มในแอพทุกครั้งที่จะดีพลอย
 !PhysicsAutoSheet/
 PhysicsAutoSheet/*
 !PhysicsAutoSheet/physics.html
+!PhysicsAutoSheet/index.html
 !PhysicsAutoSheet/README-physics.md
 !PhysicsAutoSheet/outputs/
 PhysicsAutoSheet/outputs/*

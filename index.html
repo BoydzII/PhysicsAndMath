@@ -3,47 +3,80 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#2563eb">
-<meta name="description" content="คลังโจทย์ฟิสิกส์และคณิตศาสตร์ โรงเรียนปากช่อง — สุ่มโจทย์ ทำในเครื่อง ตรวจคำตอบ ดูวิธีทำ 7 ขั้น">
+<meta name="description" content="คลังโจทย์ฟิสิกส์และคณิตศาสตร์ โรงเรียนปากช่อง — ลงชื่อเข้าใช้ครั้งเดียว เลือกวิชาที่ต้องการ">
 <title>คลังโจทย์ฟิสิกส์และคณิตศาสตร์ · โรงเรียนปากช่อง</title>
 <style>
 :root{
   --bg:#f4f6fa; --panel:#ffffff; --ink:#16202e; --muted:#67748a;
-  --line:#dde3ec; --brand:#1f6feb; --brand-ink:#fff;
+  --line:#dde3ec; --line2:#eef2f7; --brand:#1f6feb; --brand-ink:#fff;
+  --ok:#0f8a53; --ok-bg:#e6f6ee; --bad:#c62828; --bad-bg:#fdecec;
   --shadow:0 1px 2px rgba(16,30,54,.06),0 8px 24px rgba(16,30,54,.08); --r:14px;
 }
 @media (prefers-color-scheme:dark){
   :root{
     --bg:#0f151d; --panel:#161d27; --ink:#e6edf6; --muted:#94a3b8;
-    --line:#2b3441; --brand:#4d8dfb; --brand-ink:#0b1220;
+    --line:#2b3441; --line2:#232b36; --brand:#4d8dfb; --brand-ink:#0b1220;
+    --ok:#39d98a; --ok-bg:#10301f; --bad:#ff6b6b; --bad-bg:#3a1c1c;
     --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.35);
   }
 }
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);line-height:1.7;
   font-family:"Noto Sans Thai","Sarabun",system-ui,-apple-system,"Segoe UI",sans-serif;
-  padding:32px 18px calc(40px + env(safe-area-inset-bottom))}
+  padding:30px 18px calc(40px + env(safe-area-inset-bottom))}
 .wrap{max-width:760px;margin:0 auto}
-header{text-align:center;margin-bottom:30px}
-h1{font-size:26px;margin:0 0 6px;letter-spacing:-.2px}
-.sub{color:var(--muted);font-size:15px;margin:0}
-.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
-  padding:22px;box-shadow:var(--shadow);display:flex;flex-direction:column}
-.card h2{margin:0 0 2px;font-size:19px}
-.tag{display:inline-block;font-size:12px;font-weight:700;letter-spacing:.3px;
-  color:var(--brand);background:rgba(31,111,235,.12);border-radius:999px;padding:2px 11px;margin-bottom:10px}
-.card p{margin:0 0 16px;color:var(--muted);font-size:14.5px;flex:1}
-.card ul{margin:0 0 16px;padding-left:20px;color:var(--muted);font-size:14px;flex:1}
-.card li{margin:3px 0}
-a.go{display:block;text-align:center;background:var(--brand);color:var(--brand-ink);
-  text-decoration:none;font-weight:700;padding:13px 16px;border-radius:10px;min-height:48px}
-a.go:hover{filter:brightness(1.07)}
-a.go.off{background:transparent;color:var(--muted);border:1px solid var(--line);font-weight:600}
-.note{margin-top:26px;background:var(--panel);border:1px solid var(--line);
-  border-radius:var(--r);padding:18px 20px;font-size:14px;color:var(--muted)}
-.note b{color:var(--ink)}
-footer{margin-top:28px;text-align:center;color:var(--muted);font-size:13px;line-height:1.9}
+header{text-align:center;margin-bottom:24px}
+h1{font-size:24px;margin:0 0 4px;letter-spacing:-.2px}
+.sub{color:var(--muted);font-size:14.5px;margin:0}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
+  padding:22px;box-shadow:var(--shadow)}
+.hide{display:none!important}
+
+/* ---------- แท็บเลือกว่าเป็นนักเรียนหรือครู ---------- */
+.seg{display:flex;gap:6px;background:var(--line2);border-radius:11px;padding:5px;margin-bottom:20px}
+.seg button{flex:1;border:none;background:transparent;color:var(--muted);font:inherit;font-weight:600;
+  padding:10px;border-radius:8px;cursor:pointer;min-height:46px}
+.seg button.on{background:var(--panel);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+
+label.f{display:block;font-size:13.5px;font-weight:600;margin:14px 0 5px}
+label.f .hint{font-weight:400;color:var(--muted)}
+input{width:100%;font:inherit;font-size:16px;padding:12px 13px;border:1px solid var(--line);
+  border-radius:10px;background:var(--panel);color:var(--ink);min-height:48px}
+input:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px rgba(31,111,235,.15)}
+button.primary{width:100%;margin-top:20px;background:var(--brand);color:var(--brand-ink);
+  border:none;font:inherit;font-weight:700;font-size:16px;padding:14px;border-radius:10px;
+  cursor:pointer;min-height:52px}
+button.primary:disabled{opacity:.6;cursor:default}
+.msg{margin-top:14px;padding:11px 14px;border-radius:10px;font-size:14px;display:none}
+.msg.bad{display:block;background:var(--bad-bg);color:var(--bad)}
+.msg.ok{display:block;background:var(--ok-bg);color:var(--ok)}
+.lead{color:var(--muted);font-size:14px;margin:0 0 4px}
+
+/* ---------- หน้าเลือกวิชา ---------- */
+.who{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:20px}
+.who .av{width:44px;height:44px;border-radius:12px;background:var(--brand);color:var(--brand-ink);
+  display:flex;align-items:center;justify-content:center;font-size:20px;flex:none}
+.who .nm{font-weight:700;line-height:1.4}
+.who .dt{color:var(--muted);font-size:13px;line-height:1.4}
+.who .sp{flex:1}
+button.ghost{background:transparent;border:1px solid var(--line);color:var(--muted);font:inherit;
+  font-size:13.5px;padding:8px 14px;border-radius:9px;cursor:pointer;min-height:42px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
+a.card{display:block;text-decoration:none;color:inherit;background:var(--panel);
+  border:1px solid var(--line);border-radius:var(--r);padding:20px;box-shadow:var(--shadow)}
+a.card:hover{border-color:var(--brand)}
+a.card .ic{font-size:30px;line-height:1}
+a.card h2{margin:8px 0 2px;font-size:19px}
+a.card .tag{display:inline-block;font-size:12px;font-weight:700;color:var(--brand);
+  background:rgba(31,111,235,.12);border-radius:999px;padding:1px 10px;margin-left:6px}
+a.card p{margin:6px 0 0;color:var(--muted);font-size:14px}
+
+.note{margin-top:20px;font-size:13.5px;color:var(--muted)}
+.note a{color:var(--brand)}
+footer{margin-top:26px;text-align:center;color:var(--muted);font-size:12.5px;line-height:1.9}
 footer a{color:var(--muted)}
 </style>
 </head>
@@ -55,43 +88,73 @@ footer a{color:var(--muted)}
   <p class="sub">โรงเรียนปากช่อง จังหวัดนครราชสีมา</p>
 </header>
 
-<div class="cards">
-
-  <div class="card">
-    <span class="tag">ม.1</span>
-    <h2>📐 คณิตศาสตร์ ม.ต้น</h2>
-    <ul>
-      <li>5 บท · 75 แม่แบบ · สุ่มตัวเลขใหม่ได้ไม่จำกัด</li>
-      <li>ตรวจคำตอบทันที ตอบเป็นเศษส่วนได้</li>
-      <li>วิธีทำละเอียด 7 ขั้นทุกข้อ</li>
-      <li>ใช้ได้แม้ไม่มีอินเทอร์เน็ต</li>
-    </ul>
-    <a class="go" href="MathAutoSheet/index.html">เปิดใช้งาน</a>
+<!-- ---------- หน้าลงชื่อเข้าใช้ ---------- -->
+<div class="panel" id="loginBox">
+  <div class="seg">
+    <button id="tabStu" class="on">นักเรียน</button>
+    <button id="tabTea">ครู</button>
   </div>
 
-  <div class="card">
-    <span class="tag">ม.4</span>
-    <h2>⚛️ ฟิสิกส์ ม.4</h2>
-    <ul>
-      <li>7 บท + แนวข้อสอบเข้ามหาวิทยาลัย</li>
-      <li>236 แม่แบบ พร้อมรูปประกอบ</li>
-      <li>วิธีทำละเอียด 7 ขั้นทุกข้อ</li>
-      <li>รับใบงานจากครูด้วยรหัส และส่งผลกลับได้</li>
-    </ul>
-    <a class="go off" href="PhysicsAutoSheet/README-physics.md">อ่านคู่มือ · ใช้งานที่ลิงก์ที่ครูแจก</a>
+  <div id="fStu">
+    <p class="lead">ใช้<b>เลขประจำตัวนักเรียน</b>กับรหัสผ่านเดียวกับที่ใช้ในแอพฟิสิกส์
+      ลงชื่อครั้งเดียวใช้ได้ทุกวิชา</p>
+    <label class="f" for="sid">เลขประจำตัวนักเรียน <span class="hint">(ตัวเลขไม่เกิน 5 หลัก)</span></label>
+    <input type="text" id="sid" inputmode="numeric" pattern="[0-9]*" maxlength="5"
+           autocomplete="username" placeholder="เช่น 30201">
+    <label class="f" for="spass">รหัสผ่าน</label>
+    <input type="password" id="spass" autocomplete="current-password">
   </div>
 
+  <div id="fTea" class="hide">
+    <p class="lead">สำหรับครูผู้สอน ใช้จัดการรายชื่อ มอบหมายใบงาน และดูผลทั้งหมด</p>
+    <label class="f" for="mail">อีเมล</label>
+    <input type="email" id="mail" autocomplete="username" placeholder="you@example.com">
+    <label class="f" for="tpass">รหัสผ่านผู้ดูแล</label>
+    <input type="password" id="tpass" autocomplete="current-password">
+  </div>
+
+  <button class="primary" id="go">เข้าใช้งาน</button>
+  <div class="msg" id="msg"></div>
+
+  <div class="note">
+    เข้าไม่ได้หรือยังไม่มีรหัส? ถามครูผู้สอนได้เลย ·
+    <a href="#" id="skip">ข้ามไปฝึกคณิตศาสตร์ก่อน</a>
+    (ฝึกได้ทุกข้อ แต่จะไม่ได้รับใบงานที่ครูมอบหมาย)
+  </div>
 </div>
 
-<div class="note">
-  <b>นักเรียนใช้อย่างไร</b><br>
-  เปิดลิงก์แล้วกด <b>แชร์ → เพิ่มไปยังหน้าจอโฮม</b> จะได้ใช้เหมือนแอปจริง
-  เปิดครั้งต่อไปไม่ต้องต่อเน็ตก็ได้ · ผลการทำเก็บอยู่ในเครื่องของแต่ละคน
-  <br><br>
-  <b>ทำไมฟิสิกส์ไม่ได้อยู่ที่นี่</b><br>
-  ไฟล์ฟิสิกส์ฉบับใช้งานจริงฝังที่อยู่ Google Sheet ของห้องเรียนไว้ข้างใน
-  จึงไม่เอาขึ้นที่สาธารณะ — ใช้ลิงก์ที่ครูแจกในไลน์กลุ่มแทน
-  ส่วนโค้ดต้นฉบับอยู่ในรีโพนี้ครบ
+<!-- ---------- หน้าเลือกวิชา ---------- -->
+<div id="pickBox" class="hide">
+  <div class="panel" style="margin-bottom:16px">
+    <div class="who">
+      <div class="av" id="avatar">🙂</div>
+      <div>
+        <div class="nm" id="whoName">—</div>
+        <div class="dt" id="whoDetail">—</div>
+      </div>
+      <div class="sp"></div>
+      <button class="ghost" id="out">ออกจากระบบ</button>
+    </div>
+    <div class="lead" style="margin:0">เลือกวิชาที่ต้องการ — ไม่ต้องลงชื่อเข้าใช้ซ้ำอีก</div>
+  </div>
+
+  <div class="cards">
+    <a class="card" id="goMath">
+      <div class="ic">📐</div>
+      <h2>คณิตศาสตร์<span class="tag">ม.1</span></h2>
+      <p>5 บท · 75 แม่แบบ · สุ่มตัวเลขใหม่ได้ไม่จำกัด<br>ตรวจคำตอบทันที พร้อมวิธีทำ 7 ขั้น</p>
+    </a>
+    <a class="card" id="goPhys">
+      <div class="ic">⚛️</div>
+      <h2>ฟิสิกส์<span class="tag">ม.4</span></h2>
+      <p>7 บท + แนวข้อสอบเข้ามหาวิทยาลัย · 236 แม่แบบ<br>รับใบงานจากครูด้วยรหัส และส่งผลกลับได้</p>
+    </a>
+  </div>
+
+  <div class="note">
+    เปิดครั้งแรกแล้วกด <b>แชร์ → เพิ่มไปยังหน้าจอโฮม</b> จะได้ใช้เหมือนแอปจริง
+    ครั้งต่อไปไม่ต้องต่อเน็ตก็ทำโจทย์ได้
+  </div>
 </div>
 
 <footer>
@@ -101,5 +164,181 @@ footer a{color:var(--muted)}
 </footer>
 
 </div>
+
+<script>
+/* ============================================================================
+   หน้าพอร์ทัล — ลงชื่อเข้าใช้ครั้งเดียว แล้วเลือกวิชา
+   ----------------------------------------------------------------------------
+   ที่นี่เป็นเว็บนิ่ง (GitHub Pages) ไม่มีเซิร์ฟเวอร์เป็นของตัวเอง
+   การตรวจรหัสผ่านจึงยิงไปให้ Google Apps Script ของชีตเป็นคนตัดสิน
+   ซึ่งเป็นการตรวจ "ของจริง" ปลอมฝั่งเบราว์เซอร์ไม่ได้
+
+   สิ่งที่หน้านี้ทำได้จริง
+     - ตรวจรหัสกับชีต แล้วเก็บโทเคนไว้ให้แอพทั้งสองวิชาใช้ต่อ ไม่ต้องล็อกอินซ้ำ
+     - รวมทุกวิชาไว้หลังลิงก์เดียว บอกนักเรียนหน้าห้องครั้งเดียวจบ
+   สิ่งที่หน้านี้ทำไม่ได้
+     - กันคนพิมพ์ที่อยู่ของแอพตรง ๆ เพราะไฟล์ทุกไฟล์อยู่บนเว็บสาธารณะ
+       การป้องกันจริงอยู่ที่ชีต — ไม่มีโทเคนก็ดึงใบงานหรือส่งผลไม่ได้
+   ========================================================================== */
+
+/* ---- ค่าที่ต้องตั้ง ------------------------------------------------------ */
+
+/* ที่อยู่เว็บแอปของ Google Apps Script (ตัวเดียวกับที่แอพฟิสิกส์ใช้)
+   ถ้าดีพลอยใหม่แล้วที่อยู่เปลี่ยน ต้องมาแก้ตรงนี้ด้วย */
+const APPS_URL = 'https://script.google.com/macros/s/AKfycbw4lh6BTvVZ4_YUBYGQD8ia2lLkyKPfdftUwLuO7msDwo45qDTqnCmpFy0lNsiBrIyq/exec';
+
+/* อีเมลของครู เก็บเป็นค่าแฮช SHA-256 ไม่ใช่อีเมลตรง ๆ
+   จะได้ไม่ถูกบอตกวาดอีเมลไปจากหน้าเว็บสาธารณะ
+   เปลี่ยนอีเมลใหม่: เปิดหน้านี้ กด F12 แล้วพิมพ์  hashEmail('อีเมลใหม่')
+   จะได้ค่าแฮชมาวางแทนบรรทัดล่างนี้ */
+const TEACHER_EMAIL_HASH = '2b6f1a703802e15e11e1186fccf029b32d9a8f884aab99c0a4eb76c769d76a17';
+
+/* กุญแจที่ใช้ส่งต่อการลงชื่อเข้าใช้ให้แอพแต่ละวิชา
+   พอร์ทัลกับแอพอยู่โดเมนเดียวกัน จึงอ่าน localStorage ก้อนเดียวกันได้ */
+const SESSION_KEY = 'pcportal.v1';
+const SESSION_HOURS = 11.5;          // ให้สั้นกว่าอายุโทเคนฝั่งชีตเล็กน้อย
+
+/* ---- ตัวช่วย ------------------------------------------------------------- */
+const $ = s => document.querySelector(s);
+
+async function hashEmail(s) {
+  const buf = new TextEncoder().encode(String(s).trim().toLowerCase());
+  const d = await crypto.subtle.digest('SHA-256', buf);
+  return Array.from(new Uint8Array(d)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+window.hashEmail = hashEmail;         // เผื่อครูอยากหาค่าแฮชของอีเมลใหม่จากคอนโซล
+
+/** ยิงคำสั่งไปที่ Apps Script — ต้องส่งเป็น text/plain ไม่งั้นเบราว์เซอร์จะยิง
+    preflight ก่อน ซึ่ง Apps Script ตอบไม่ได้ แล้วจะติด CORS ทันที */
+async function api(action, params) {
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), 30000);
+  let res;
+  try {
+    res = await fetch(APPS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(Object.assign({ action: action }, params || {})),
+      redirect: 'follow', signal: ctl.signal
+    });
+  } catch (e) {
+    throw new Error(e.name === 'AbortError'
+      ? 'เชื่อมต่อนานเกินไป — ตรวจสัญญาณอินเทอร์เน็ตแล้วลองใหม่'
+      : 'ต่ออินเทอร์เน็ตไม่ได้ ลองเช็กสัญญาณแล้วลองใหม่อีกครั้ง');
+  } finally { clearTimeout(timer); }
+  const text = await res.text();
+  let j;
+  try { j = JSON.parse(text); }
+  catch (e) { throw new Error('ระบบตอบกลับมาไม่ถูกรูปแบบ — แจ้งครูผู้สอนได้เลย'); }
+  if (!j.ok) throw new Error(j.error || 'เข้าใช้งานไม่สำเร็จ');
+  return j.data;
+}
+
+function readSession() {
+  let s = null;
+  try { s = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null'); } catch (e) { return null; }
+  if (!s || s.v !== 1 || !s.exp || s.exp < Date.now()) return null;
+  return s;
+}
+function writeSession(role, token, profile) {
+  const s = { v: 1, url: APPS_URL, role: role, token: token, profile: profile || null,
+              exp: Date.now() + SESSION_HOURS * 3600 * 1000 };
+  try { localStorage.setItem(SESSION_KEY, JSON.stringify(s)); } catch (e) {}
+  return s;
+}
+function clearSession() { try { localStorage.removeItem(SESSION_KEY); } catch (e) {} }
+
+function say(text, kind) {
+  const el = $('#msg');
+  el.textContent = text || '';
+  el.className = 'msg' + (text ? ' ' + (kind || 'bad') : '');
+}
+
+/* ---- สลับหน้า ------------------------------------------------------------ */
+let mode = 'student';
+
+function showLogin() {
+  $('#loginBox').classList.remove('hide');
+  $('#pickBox').classList.add('hide');
+}
+
+function showPicker(s) {
+  const teacher = s.role === 'admin';
+  const p = s.profile || {};
+  $('#avatar').textContent = teacher ? '👩‍🏫' : '🙂';
+  $('#whoName').textContent = teacher ? 'ครูผู้สอน' : (p.name || 'นักเรียน');
+  $('#whoDetail').textContent = teacher
+    ? 'เข้าใช้ในฐานะผู้ดูแล — เห็นเฉลย สถิติชั้นเรียน และการมอบหมายใบงาน'
+    : [p.cls ? 'ชั้น ' + p.cls : '', p.no ? 'เลขที่ ' + p.no : '',
+       p.sid ? 'เลขประจำตัว ' + p.sid : ''].filter(Boolean).join(' · ') || 'ยินดีต้อนรับ';
+  // ครูได้ไฟล์ฉบับเต็ม ส่วนนักเรียนได้ฉบับที่ไม่มีเฉลยและสถิติชั้นเรียน
+  $('#goMath').href = teacher ? 'MathAutoSheet/math.html' : 'MathAutoSheet/index.html';
+  $('#goPhys').href = teacher ? 'PhysicsAutoSheet/physics.html' : 'PhysicsAutoSheet/index.html';
+  $('#loginBox').classList.add('hide');
+  $('#pickBox').classList.remove('hide');
+}
+
+/* ---- เหตุการณ์ ----------------------------------------------------------- */
+$('#tabStu').addEventListener('click', () => {
+  mode = 'student'; say('');
+  $('#tabStu').classList.add('on'); $('#tabTea').classList.remove('on');
+  $('#fStu').classList.remove('hide'); $('#fTea').classList.add('hide');
+});
+$('#tabTea').addEventListener('click', () => {
+  mode = 'admin'; say('');
+  $('#tabTea').classList.add('on'); $('#tabStu').classList.remove('on');
+  $('#fTea').classList.remove('hide'); $('#fStu').classList.add('hide');
+});
+
+let busy = false;
+async function submit() {
+  if (busy) return;
+  busy = true;
+  const btn = $('#go');
+  btn.disabled = true; btn.textContent = 'กำลังตรวจสอบ…';
+  say('');
+  try {
+    if (mode === 'student') {
+      const sid = String($('#sid').value || '').replace(/\D/g, '').slice(0, 5);
+      if (!sid) throw new Error('กรอกเลขประจำตัวเป็นตัวเลข ไม่เกิน 5 หลัก');
+      const r = await api('login', { sid: sid, pass: $('#spass').value || '' });
+      showPicker(writeSession('student', r.token, r.profile));
+    } else {
+      // อีเมลเทียบในหน้าเว็บเพื่อความสะดวก ส่วนรหัสผ่านให้ชีตเป็นคนตรวจ
+      const mail = String($('#mail').value || '');
+      if (!mail.trim()) throw new Error('กรอกอีเมลก่อน');
+      if (await hashEmail(mail) !== TEACHER_EMAIL_HASH)
+        throw new Error('อีเมลนี้ไม่ใช่ของครูผู้สอน');
+      const r = await api('adminLogin', { pass: $('#tpass').value || '' });
+      showPicker(writeSession('admin', r.token, { name: 'ครูผู้สอน' }));
+    }
+  } catch (e) {
+    say(e.message || String(e), 'bad');
+  } finally {
+    busy = false;
+    btn.disabled = false; btn.textContent = 'เข้าใช้งาน';
+  }
+}
+$('#go').addEventListener('click', submit);
+['sid', 'spass', 'mail', 'tpass'].forEach(id => {
+  $('#' + id).addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
+});
+
+$('#out').addEventListener('click', () => {
+  clearSession();
+  ['sid', 'spass', 'mail', 'tpass'].forEach(id => { $('#' + id).value = ''; });
+  showLogin();
+});
+
+// ทางออกเวลาเน็ตล่มหรือชีตมีปัญหา — คณิตศาสตร์ไม่ต้องพึ่งชีตอยู่แล้ว
+$('#skip').addEventListener('click', e => {
+  e.preventDefault();
+  location.href = 'MathAutoSheet/index.html';
+});
+
+/* ---- เริ่มทำงาน ---------------------------------------------------------- */
+const saved = readSession();
+if (saved) showPicker(saved); else showLogin();
+</script>
 </body>
 </html>

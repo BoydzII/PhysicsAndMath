@@ -1084,6 +1084,24 @@ async function api(action, params, opt) {
   return j.data;
 }
 
+/** รับข้อมูลผู้เรียนจากหน้าพอร์ทัล (index.html หน้าแรกของเว็บ)
+    แอพคณิตยังไม่ได้เชื่อม Google Sheet จึงเอามาแค่ชื่อ ชั้น เลขที่ และเลขประจำตัว
+    นักเรียนจะได้ไม่ต้องพิมพ์ชื่อเองซ้ำ และเอกสารที่พิมพ์ออกมาแสดงชื่อถูกต้อง
+    ไม่ยุ่งกับ DB.cloud เพราะชีตนั้นเป็นของวิชาฟิสิกส์ ไม่ใช่ของคณิต */
+function adoptPortalProfile() {
+  let s = null;
+  try { s = JSON.parse(localStorage.getItem('pcportal.v1') || 'null'); } catch (e) { return; }
+  if (!s || s.v !== 1 || !s.exp || s.exp < Date.now()) return;
+  const p = s.profile || {};
+  if (s.role !== 'student' || !p.sid) return;
+  // ถ้าเป็นคนเดิมที่บันทึกไว้แล้ว ไม่ต้องเขียนทับ เผื่อครูหรือนักเรียนแก้ข้อมูลเองไว้
+  if (String(DB.profile.sid || '') === String(p.sid)) return;
+  DB.mode = 'solo';
+  DB.profile = { name: p.name || '', room: String(p.cls || ''),
+                 no: String(p.no || ''), sid: String(p.sid || '') };
+  save(true);
+}
+
 /** เอาค่าที่ฝังมากับไฟล์มาใช้ตอนเปิดแอพ — เติมเฉพาะช่องที่ยังว่าง ไม่ทับของที่ผู้ใช้ตั้งเอง */
 function applyBuiltin() {
   let touched = false;
@@ -8588,6 +8606,7 @@ function runSelfTest(seeds) {
    ========================================================================== */
 loadDB();
 applyBuiltin();
+adoptPortalProfile();
 $$('#tabs button').forEach(b => b.addEventListener('click', () => {
   if (TAB === 'do') stampTime();
   setTab(b.dataset.tab);
