@@ -617,6 +617,9 @@ document.addEventListener('keydown', e => {
    1) STORE — สถานะและการบันทึกลง localStorage
    ========================================================================== */
 const LS_KEY = 'physicsquiz.v1';
+/* ชื่อวิชาที่แนบไปกับทุกคำสั่งที่ยิงขึ้นชีต
+   ชีตเดียวเก็บได้หลายวิชา ฝั่งชีตใช้ค่านี้แยกใบงานและผลของแต่ละวิชาออกจากกัน */
+const SUBJECT = 'physics';
 /* ────────────────────────────────────────────────────────────────────────────
    สารบัญเรื่อง — จุดเดียวที่ต้องแก้เมื่อจะ "เพิ่มบทใหม่"
    ────────────────────────────────────────────────────────────────────────────
@@ -1002,7 +1005,7 @@ class ApiError extends Error {
 async function api(action, params, opt) {
   const o = opt || {};
   if (!cloudOn()) throw new ApiError('ยังไม่ได้เชื่อมต่อ Google Sheet');
-  const body = Object.assign({ action: action }, params || {});
+  const body = Object.assign({ action: action, subject: SUBJECT }, params || {});
   if (!o.noToken && DB.auth.token) body.token = DB.auth.token;
 
   const ctl = new AbortController();

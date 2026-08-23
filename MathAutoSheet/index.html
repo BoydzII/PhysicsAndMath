@@ -641,6 +641,9 @@ document.addEventListener('keydown', e => {
    1) STORE — สถานะและการบันทึกลง localStorage
    ========================================================================== */
 const LS_KEY = 'mathquiz.v1';
+/* ชื่อวิชาที่แนบไปกับทุกคำสั่งที่ยิงขึ้นชีต
+   ชีตเดียวเก็บได้หลายวิชา ฝั่งชีตใช้ค่านี้แยกใบงานและผลของแต่ละวิชาออกจากกัน */
+const SUBJECT = 'math';
 /* ────────────────────────────────────────────────────────────────────────────
    สารบัญเรื่อง — จุดเดียวที่ต้องแก้เมื่อจะ "เพิ่มบทใหม่"
    ────────────────────────────────────────────────────────────────────────────
@@ -1045,7 +1048,7 @@ class ApiError extends Error {
 async function api(action, params, opt) {
   const o = opt || {};
   if (!cloudOn()) throw new ApiError('ยังไม่ได้เชื่อมต่อ Google Sheet');
-  const body = Object.assign({ action: action }, params || {});
+  const body = Object.assign({ action: action, subject: SUBJECT }, params || {});
   if (!o.noToken && DB.auth.token) body.token = DB.auth.token;
 
   const ctl = new AbortController();
@@ -1084,22 +1087,41 @@ async function api(action, params, opt) {
   return j.data;
 }
 
-/** รับข้อมูลผู้เรียนจากหน้าพอร์ทัล (index.html หน้าแรกของเว็บ)
-    แอพคณิตยังไม่ได้เชื่อม Google Sheet จึงเอามาแค่ชื่อ ชั้น เลขที่ และเลขประจำตัว
-    นักเรียนจะได้ไม่ต้องพิมพ์ชื่อเองซ้ำ และเอกสารที่พิมพ์ออกมาแสดงชื่อถูกต้อง
-    ไม่ยุ่งกับ DB.cloud เพราะชีตนั้นเป็นของวิชาฟิสิกส์ ไม่ใช่ของคณิต */
-function adoptPortalProfile() {
+/** รับช่วงการลงชื่อเข้าใช้จากหน้าพอร์ทัล (index.html หน้าแรกของเว็บ)
+    พอร์ทัลกับแอพวางอยู่โดเมนเดียวกัน จึงอ่าน localStorage ก้อนเดียวกันได้
+    นักเรียนลงชื่อที่พอร์ทัลครั้งเดียว เข้ามาที่นี่แล้วไม่ต้องลงชื่อซ้ำ
+    และได้ทั้งชื่อ ชั้น เลขที่ มาเติมให้เอง ไม่ต้องพิมพ์ตอนพิมพ์เอกสาร
+
+    จุดสำคัญ: ถ้า "ไม่มี" การลงชื่อเข้าใช้ที่ยังไม่หมดอายุ จะตัดการเชื่อมต่อชีตทิ้ง
+    เพื่อให้แอพกลับไปเป็นออฟไลน์ล้วน หน้าเข้าใช้จะได้ไม่โผล่มาขวางนักเรียน
+    ที่แค่กดปุ่ม "เข้าคณิตศาสตร์เลย" จากหน้าแรกโดยไม่ลงชื่อ */
+function adoptPortalSession() {
   let s = null;
-  try { s = JSON.parse(localStorage.getItem('pcportal.v1') || 'null'); } catch (e) { return; }
-  if (!s || s.v !== 1 || !s.exp || s.exp < Date.now()) return;
-  const p = s.profile || {};
-  if (s.role !== 'student' || !p.sid) return;
-  // ถ้าเป็นคนเดิมที่บันทึกไว้แล้ว ไม่ต้องเขียนทับ เผื่อครูหรือนักเรียนแก้ข้อมูลเองไว้
-  if (String(DB.profile.sid || '') === String(p.sid)) return;
-  DB.mode = 'solo';
-  DB.profile = { name: p.name || '', room: String(p.cls || ''),
-                 no: String(p.no || ''), sid: String(p.sid || '') };
-  save(true);
+  try { s = JSON.parse(localStorage.getItem('pcportal.v1') || 'null'); } catch (e) { s = null; }
+  const live = s && s.v === 1 && s.token && s.exp && s.exp > Date.now();
+
+  if (!live) {
+    // ไม่ได้มาจากพอร์ทัล หรือหมดอายุแล้ว — คืนแอพกลับเป็นออฟไลน์
+    // (ยกเว้นคนที่ลงชื่อเข้าใช้ในแอพนี้เองไว้ และยังไม่หมดอายุ)
+    if (DB.cloud.url && !authValid()) { DB.cloud.url = ''; clearAuth(); save(true); }
+    return;
+  }
+  // ไฟล์ที่แจกนักเรียนไม่รับสิทธิ์ผู้ดูแลจากพอร์ทัล กันการเข้าถึงส่วนของครูโดยไม่ตั้งใจ
+  if (studentOnlyBuild() && s.role === 'admin') return;
+
+  let touched = false;
+  if (s.url && DB.cloud.url !== s.url) { DB.cloud.url = s.url; touched = true; }
+  if (!authValid()) {
+    DB.auth = { role: s.role, token: s.token, profile: s.profile || null, exp: s.exp };
+    touched = true;
+    const p = s.profile || {};
+    if (s.role === 'student' && p.sid) {
+      DB.mode = 'solo';
+      DB.profile = { name: p.name || '', room: String(p.cls || ''),
+                     no: String(p.no || ''), sid: String(p.sid || '') };
+    }
+  }
+  if (touched) save(true);
 }
 
 /** เอาค่าที่ฝังมากับไฟล์มาใช้ตอนเปิดแอพ — เติมเฉพาะช่องที่ยังว่าง ไม่ทับของที่ผู้ใช้ตั้งเอง */
@@ -8606,7 +8628,7 @@ function runSelfTest(seeds) {
    ========================================================================== */
 loadDB();
 applyBuiltin();
-adoptPortalProfile();
+adoptPortalSession();
 $$('#tabs button').forEach(b => b.addEventListener('click', () => {
   if (TAB === 'do') stampTime();
   setTab(b.dataset.tab);
