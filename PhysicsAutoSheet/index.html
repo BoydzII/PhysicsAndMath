@@ -11767,6 +11767,8 @@ function presetTopics(scope) {
 function runPreset(key) {
   const ps = PRESETS.find(p => p.key === key);
   if (!ps) return;
+  // ตรวจชื่อผู้เรียนก่อนสร้างชุด ไม่งั้นจะได้ชุดโจทย์ค้างไว้โดยที่ยังเริ่มทำไม่ได้
+  if (needLearnerName()) return;
   const c = mkCfg();
   c.topics = presetTopics(ps.scope);
   c.subs = [];
@@ -12049,6 +12051,8 @@ function makeTestDialog(quizId) {
 function doGenerate() {
   const c = mkCfg();
   if (!c.topics.length) { toast('เลือกอย่างน้อยหนึ่งเรื่องก่อน', 'bad'); return; }
+  // ตรวจชื่อผู้เรียนก่อนสร้างชุด เหตุผลเดียวกับใน runPreset
+  if (needLearnerName()) return;
   const counts = {};
   if (c.mode === 'mix') LEVELS.forEach(l => counts[l] = c.counts[l] || 0);
   else counts[c.mode] = c.n;
@@ -12084,12 +12088,30 @@ function currentLearner() {
   return s ? { studentId: s.id, name: s.name, no: String(s.no || ''), sid: String(s.sid || ''),
                room: (classById(s.classId) || {}).name || '' } : null;
 }
+/** ยังไม่ได้ใส่ชื่อผู้เรียน — บอกให้ชัดแล้วพาไปที่ช่องกรอกเลย
+    เดิมแค่ขึ้นข้อความเตือนแวบเดียวแล้วเงียบ ผู้ใช้จึงเห็นเป็น "กดแล้วไม่มีอะไรเกิดขึ้น"
+    เจอบ่อยเป็นพิเศษตอนเปิดวิชาใหม่ เพราะแต่ละวิชาเก็บชื่อแยกคนละที่ในเบราว์เซอร์
+    ชื่อที่เคยกรอกไว้ในวิชาอื่นจึงไม่ตามมาให้ */
+function needLearnerName() {
+  if (DB.mode !== 'solo' || DB.profile.name.trim()) return false;
+  toast('ใส่ชื่อผู้เรียนที่ช่องด้านบนก่อน แล้วจึงเริ่มทำได้', 'bad');
+  const el = $('#soloName');
+  if (el) {
+    el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    el.focus();
+    el.style.borderColor = 'var(--bad)';
+    el.style.background = 'var(--bad-bg)';
+    setTimeout(() => { el.style.borderColor = ''; el.style.background = ''; }, 2600);
+  }
+  return true;
+}
+
 function startQuiz(quizId, assignCode) {
   const q = DB.quizzes.find(x => x.id === quizId);
   if (!q) return;
   const who = currentLearner();
   if (!who) { toast('เลือกผู้เรียนที่แถบบนก่อน (หรือเพิ่มรายชื่อในแท็บตั้งค่า)', 'bad'); return; }
-  if (DB.mode === 'solo' && !DB.profile.name.trim()) { toast('ใส่ชื่อผู้เรียนที่แถบบนก่อน', 'bad'); return; }
+  if (needLearnerName()) return;
   const a = {
     id: uid(), quizId: q.id, studentId: who.studentId, soloName: who.name,
     // ติดเลขที่/เลขประจำตัว/ชั้นไปกับผลด้วย เพื่อให้ครูจับคู่ได้แม่นตอนรวมไฟล์จากเครื่องนักเรียน
