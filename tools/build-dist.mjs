@@ -1,7 +1,10 @@
-// สร้างไฟล์ฉบับขึ้นเว็บของทั้งสองวิชาจากไฟล์ต้นฉบับของครู
+// สร้างไฟล์ฉบับขึ้นเว็บของทุกวิชาจากไฟล์ต้นฉบับของครู
 //
 //   PhysicsAutoSheet/physics.html  ->  PhysicsAutoSheet/index.html
 //   MathAutoSheet/math.html        ->  MathAutoSheet/index.html
+//   ScienceAutoSheet/science.html  ->  ScienceAutoSheet/index.html
+//
+// เพิ่มวิชาใหม่: เติมหนึ่งบล็อกในอาเรย์ TARGETS ข้างล่าง
 //
 // ต่างกันแค่บล็อก BUILTIN บรรทัดเดียว เนื้อโปรแกรมเหมือนกันทุกตัวอักษร
 // จึงไม่มีทางที่สองไฟล์จะหลุดจากกัน ถ้าสร้างด้วยสคริปต์นี้ทุกครั้ง
@@ -33,6 +36,12 @@ const TARGETS = [
     src: 'MathAutoSheet/math.html',
     out: 'MathAutoSheet/index.html',
     // คณิตยังไม่ได้เชื่อมชีต จึงเป็นฉบับนักเรียนล้วน ไม่มีเฉลยและสถิติชั้นเรียน
+    builtin: { url: '', studentOnly: true, lockCloud: false, logo: '', header: null, about: null }
+  },
+  {
+    src: 'ScienceAutoSheet/science.html',
+    out: 'ScienceAutoSheet/index.html',
+    // วิทยาศาสตร์ยังไม่ได้เชื่อมชีตเช่นกัน จึงเป็นฉบับนักเรียนล้วน
     builtin: { url: '', studentOnly: true, lockCloud: false, logo: '', header: null, about: null }
   }
 ];
