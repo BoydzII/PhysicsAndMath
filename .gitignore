@@ -32,6 +32,13 @@ ChemistryAutoSheet/*
 ChemistryAutoSheet/outputs/*
 !ChemistryAutoSheet/outputs/figures-chem.html
 
+# ---- คลังโจทย์วิทยาศาสตร์ ----
+!ScienceAutoSheet/
+ScienceAutoSheet/*
+!ScienceAutoSheet/science.html
+!ScienceAutoSheet/index.html
+!ScienceAutoSheet/README-science.md
+
 # ---- คลังโจทย์ฟิสิกส์ ----
 !PhysicsAutoSheet/
 PhysicsAutoSheet/*

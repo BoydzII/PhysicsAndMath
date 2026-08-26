@@ -374,7 +374,14 @@ input.numin.bad{border-color:var(--bad);background:var(--bad-bg)}
 }
 
 /* สไตล์เอกสาร ใช้ทั้งตอนพิมพ์และตอนดูตัวอย่าง */
-#printarea{font-size:12.5pt;line-height:1.65}
+/* ตัวแปรความหนาแน่นของเอกสาร — เปลี่ยนพร้อมกันทีเดียวจากคลาส dn-* ที่ใส่ให้ #printarea
+   ทำให้ "จำนวนข้อต่อหน้า" กับ "ขนาดรูปและช่องเขียน" ขยับไปทางเดียวกันเสมอ */
+#printarea{font-size:12.5pt;line-height:1.65;
+  --figw:46mm; --wlh:23px; --pgap:11px; --wcap:8.5pt}
+#printarea.dn-airy  {--figw:74mm; --wlh:28px; --pgap:16px; --wcap:9.5pt}
+#printarea.dn-normal{--figw:46mm; --wlh:23px; --pgap:11px; --wcap:8.5pt}
+#printarea.dn-tight {--figw:32mm; --wlh:19px; --pgap:9px;  --wcap:8pt;
+                     font-size:11.5pt;line-height:1.5}
 #printarea .phead{text-align:center;margin-bottom:10px}
 #printarea .phead .plogo{display:block;margin:0 auto 5px;height:64px;width:auto;max-width:110px;object-fit:contain}
 #printarea .phead .t1{font-size:15pt;font-weight:700}
@@ -382,13 +389,14 @@ input.numin.bad{border-color:var(--bad);background:var(--bad-bg)}
 #printarea .phead .t3{font-size:10.5pt}
 #printarea .prule{border:none;border-top:1.5px solid #000;margin:8px 0 12px}
 #printarea .pfields{display:flex;gap:18px;flex-wrap:wrap;font-size:11.5pt;margin-bottom:12px}
-#printarea .pitem{margin-bottom:14px}
+#printarea .pitem{margin-bottom:var(--pgap)}
 #printarea .pitem .pq{display:flex;gap:8px;align-items:baseline}
 #printarea .pitem .pn{font-weight:700;flex:0 0 auto}
 #printarea .work{border:1px solid #999;border-radius:4px;margin-top:6px}
-#printarea .work .wl{border-bottom:1px dotted #aaa;height:26px}
+#printarea .work .wl{border-bottom:1px dotted #aaa;height:var(--wlh)}
 #printarea .work .wl:last-child{border-bottom:none}
-#printarea .work .wcap{font-size:9.5pt;color:#555;padding:2px 6px;border-bottom:1px solid #ccc;background:#f4f4f4}
+#printarea .work .wcap{font-size:var(--wcap);color:#555;padding:1px 6px;line-height:1.25;
+  border-bottom:1px solid #ccc;background:#f4f4f4}
 #printarea table{font-size:11pt;border-collapse:collapse;width:100%}
 #printarea table th,#printarea table td{border:1px solid #888;padding:3px 6px;white-space:normal}
 #printarea table th{background:#eee;position:static}
@@ -401,8 +409,12 @@ input.numin.bad{border-color:var(--bad);background:var(--bad-bg)}
 #printarea .sign div{min-width:190px}
 #printarea .sign .sl{border-bottom:1px dotted #000;height:30px;margin-bottom:3px}
 #printarea .tag{border:1px solid #666;color:#000}
-#printarea .fig{margin:8px 0;text-align:center}
-#printarea .fig svg{width:100%;max-width:74mm;height:auto}
+#printarea .fig{margin:6px 0;text-align:center}
+/* svgWrap() ใส่ max-width เป็นพิกเซลไว้ในแอตทริบิวต์ style ของ SVG เอง ซึ่งชนะกฎในสไตล์ชีต
+   ตอนพิมพ์จึงต้องใช้ !important ทับ ไม่งั้นรูปจะกว้างเกือบเต็มหน้ากระดาษทุกใบ */
+#printarea .fig svg{width:100% !important;max-width:var(--figw) !important;height:auto}
+/* ใบเฉลยมีวิธีทำยาว บางข้อกินเกินหนึ่งหน้า ถ้าห้ามแบ่งกลางข้อจะเกิดหน้าว่างคั่นแทน */
+#printarea.keydoc .pitem{page-break-inside:auto}
 </style>
 </head>
 <body>
@@ -8723,18 +8735,37 @@ const WORK_BLOCKS = [
   { id: 'conclude', t: 'สรุปคำตอบและตรวจสอบ',           n: 1, d: 'ขั้นที่ 7' }
 ];
 const WORK_MAX = 12;
-/** จำนวนบรรทัดของแต่ละช่องตามที่ครูตั้งไว้ (ยังไม่เคยตั้ง = ใช้ค่าเริ่มต้น) */
-function workLines() {
+/* ความหนาแน่นของเอกสารที่พิมพ์ — คุมสามอย่างให้ไปทางเดียวกัน
+     plain = จำนวนข้อ "ปรนัย" ที่ตั้งใจให้ลงได้ในหนึ่งหน้า
+     work  = จำนวนข้อ "แสดงวิธีทำ" (มีกรอบเขียน) ที่ตั้งใจให้ลงได้ในหนึ่งหน้า
+     ws    = ตัวคูณจำนวนบรรทัดในกรอบเขียนวิธีทำ — ยิ่งอัดหลายข้อต่อหน้า บรรทัดยิ่งต้องน้อยลง
+   ส่วนขนาดรูปประกอบและความสูงบรรทัดคุมด้วยคลาส dn-* ในส่วน CSS */
+const DENSITY = [
+  { k: 'airy',   n: 'โปร่ง',   ws: 1.5, caps: true,
+    d: 'รูปใหญ่ ช่องเขียนกว้าง · ปรนัยราว 2-4 ข้อ/หน้า · ข้อแสดงวิธีทำ 1 ข้อ/หน้า' },
+  { k: 'normal', n: 'ปานกลาง', ws: 0.55, caps: true,
+    d: 'ปรนัยราว 3-4 ข้อ/หน้า · ข้อแสดงวิธีทำ 2 ข้อ/หน้า' },
+  { k: 'tight',  n: 'แน่น',    ws: 0.75, caps: false,
+    d: 'รูปเล็ก ช่องเขียนเป็นบรรทัดเปล่า · ปรนัยราว 3-5 ข้อ/หน้า · ข้อแสดงวิธีทำ 3 ข้อ/หน้า' }
+];
+function densityOf(k) { return DENSITY.find(d => d.k === k) || DENSITY[1]; }
+
+/** จำนวนบรรทัดของแต่ละช่องตามที่ครูตั้งไว้ (ยังไม่เคยตั้ง = ใช้ค่าเริ่มต้น)
+    ส่ง scale มาเพื่อย่อ-ขยายตามความหนาแน่นที่เลือก — ช่องที่ครูตั้งไว้ว่า "ไม่ต้องมี" (0)
+    ยังคงเป็น 0 เสมอ ไม่ว่าจะย่อขยายเท่าไร */
+function workLines(scale) {
   const s = DB.settings.workLines || (DB.settings.workLines = {});
+  const k = scale == null ? 1 : scale;
   const out = {};
   WORK_BLOCKS.forEach(b => {
-    out[b.id] = s[b.id] == null ? b.n : clamp(Math.round(Number(s[b.id]) || 0), 0, WORK_MAX);
+    const base = s[b.id] == null ? b.n : clamp(Math.round(Number(s[b.id]) || 0), 0, WORK_MAX);
+    out[b.id] = base ? clamp(Math.round(base * k), 1, WORK_MAX) : 0;
   });
   return out;
 }
-function workTotal() { const L = workLines(); return WORK_BLOCKS.reduce((s, b) => s + L[b.id], 0); }
-function workBox(steps) {
-  const L = workLines();
+function workTotal(scale) { const L = workLines(scale); return WORK_BLOCKS.reduce((s, b) => s + L[b.id], 0); }
+function workBox(steps, scale) {
+  const L = workLines(scale);
   const on = WORK_BLOCKS.filter(b => L[b.id] > 0);          // ตั้ง 0 = ไม่ต้องมีช่องนั้น
   const total = Math.max(1, on.reduce((s, b) => s + L[b.id], 0));
   if (!steps || !on.length) {
@@ -8747,6 +8778,53 @@ function workBox(steps) {
   ).join('') + '</div>';
 }
 
+/* กระดาษ A4 แนวตั้ง ขอบ 15mm บน-ล่าง และ 14mm ซ้าย-ขวา (ตรงกับ @page ในส่วน CSS)
+   จึงเหลือพื้นที่พิมพ์จริง 182 × 267 มิลลิเมตร */
+const PAGE_W_MM = 182, PAGE_H_MM = 267;
+const PX_PER_MM = 96 / 25.4;
+
+/** จัดหน้าใบงานจาก<b>ความสูงจริง</b>ของแต่ละข้อ แทนการเดาจากจำนวนตัวอักษร
+    ต้องเรียกหลังจากใส่ HTML ลง #printarea แล้ว เพราะต้องให้เบราว์เซอร์จัดวางก่อนจึงวัดได้
+
+    วิธีทำงาน
+      1) ตั้งความกว้างของกล่องให้เท่ากระดาษจริงชั่วคราว ข้อความจึงตัดบรรทัดเหมือนตอนพิมพ์
+      2) วัดความสูงของทุกชิ้นในหน้า
+      3) ไล่ใส่ทีละข้อ พอจะเกินความสูงหน้ากระดาษก็ขึ้นหน้าใหม่
+    ผลคือแต่ละหน้าเต็มพอดี ไม่เหลือที่ว่างครึ่งหน้าเหมือนตอนปล่อยให้เบราว์เซอร์ตัดเอง */
+function paginatePrint(area, onePer) {
+  const pg = $('.pg', area);
+  if (!pg) return;
+  const prevW = area.style.width;
+  area.style.width = PAGE_W_MM + 'mm';
+  const rows = Array.from(pg.children).map(el => ({
+    el: el, h: el.getBoundingClientRect().height, item: el.classList.contains('pitem')
+  }));
+  area.style.width = prevW;
+  if (!rows.some(r => r.item)) return;
+
+  const limit = PAGE_H_MM * PX_PER_MM;
+  const pages = [[]];
+  let acc = 0, hasItem = false;
+  rows.forEach(r => {
+    // ขึ้นหน้าใหม่เมื่อข้อนี้ทำให้ล้น — แต่หน้าที่<b>ยังไม่มีข้อใดเลย</b>ต้องรับข้อนั้นไว้เสมอ
+    // เงื่อนไขนี้กันสองอย่างพร้อมกัน: หน้าแรกที่มีแต่หัวกระดาษจะไม่กลายเป็นหน้าเปล่า
+    // และข้อที่สูงเกินหนึ่งหน้าจะไม่วนสร้างหน้าเปล่าไม่รู้จบ
+    if (r.item && hasItem && (onePer || acc + r.h > limit)) { pages.push([]); acc = 0; hasItem = false; }
+    pages[pages.length - 1].push(r.el);
+    acc += r.h;
+    if (r.item) hasItem = true;
+  });
+
+  const frag = document.createDocumentFragment();
+  pages.forEach(list => {
+    const d = document.createElement('div');
+    d.className = 'pg';
+    list.forEach(el => d.appendChild(el));
+    frag.appendChild(d);
+  });
+  pg.replaceWith(frag);
+}
+
 function buildDoc(kind, opt) {
   const o = opt || {};
   // กันไว้อีกชั้น เผื่อมีทางเข้าถึงเอกสารที่ไม่ได้ผ่านหน้าจอเลือก
@@ -8756,6 +8834,9 @@ function buildDoc(kind, opt) {
     if (!q) return '<div class="hint">ยังไม่ได้เลือกชุดโจทย์</div>';
     const probs = problemsOf(q);
     const key = kind === 'answerkey';
+    const dens = densityOf(o.density);
+    // การตัดหน้าทำทีหลังใน paginatePrint() ซึ่งวัดความสูงจริงของแต่ละข้อ
+    // ตรงนี้จึงวางทุกข้อไว้ในกล่องเดียวก่อน
     let h = '<div class="pg">' + docHead(q.title, key ? '<b>เฉลยอย่างละเอียด</b>' : '',
       'จำนวน ' + probs.length + ' ข้อ');
     if (!key) h += nameFields();
@@ -8790,10 +8871,10 @@ function buildDoc(kind, opt) {
             (p.finds[0].unit ? ' ' + p.finds[0].unit : '')
           ).join(' &nbsp;&nbsp; ') + '</div>';
         }
-        if (!p.theory) h += workBox(o.withSteps);
+        // ระดับ "แน่น" ตัดหัวข้อของแต่ละขั้นออก เหลือเป็นบรรทัดเปล่า จะได้ลงได้ 3 ข้อต่อหน้า
+        if (!p.theory) h += workBox(o.withSteps && dens.caps, dens.ws);
       }
       h += '</div>';
-      if (!key && o.onePer && i < probs.length - 1) h += '</div><div class="pg">';
     });
     return h + docCredit() + '</div>';
   }
@@ -8811,7 +8892,7 @@ function buildDoc(kind, opt) {
     if (wi.cls) idBits.push('ชั้น ' + esc(wi.cls));
     if (wi.no) idBits.push('เลขที่ ' + esc(wi.no));
     if (wi.sid) idBits.push('เลขประจำตัว ' + esc(wi.sid));
-    let h = '<div class="pg">' + docHead('หลักฐานการเรียนรู้ รายวิชาเคมี',
+    let h = '<div class="pg">' + docHead('หลักฐานการเรียนรู้ รายวิชาคณิตศาสตร์',
       '<b>' + esc(who) + '</b>' + (idBits.length ? ' &nbsp; ' + idBits.join(' &nbsp;·&nbsp; ') : ''),
       'วันที่ทำ ' + thDateTime(a.finishedAt));
     h += '<table style="margin-bottom:10px"><tbody>' +
@@ -8953,6 +9034,8 @@ function renderPrint() {
   if (!DB.cur.printAtId || !doneAt.some(a => a.id === DB.cur.printAtId))
     DB.cur.printAtId = DB.cur.showAttemptId || (doneAt.length ? doneAt[0].id : null);
   if (DB.cur.wsSteps == null) DB.cur.wsSteps = true;
+  if (!DENSITY.some(d => d.k === DB.cur.printDens)) DB.cur.printDens = 'normal';
+  const dens = densityOf(DB.cur.printDens);
 
   const docs = docsAllowed();
   let h = '<div class="card noprint"><h3>1. เลือกเอกสารที่ต้องการพิมพ์</h3><div class="gridcards">' +
@@ -8973,19 +9056,31 @@ function renderPrint() {
         (q.id === DB.cur.printQuizId ? ' selected' : '') + '>' + esc(q.title) + ' (' + q.items.length + ' ข้อ)</option>').join('') +
       '</select></div>';
   }
+  if (kind === 'worksheet' || kind === 'answerkey') {
+    h += '<div class="row" style="margin-top:11px"><label>ความหนาแน่น</label>' +
+      '<div class="segbtn" style="max-width:300px">' + DENSITY.map(d =>
+        '<button data-dens="' + d.k + '"' + (d.k === dens.k ? ' class="on"' : '') + '>' + d.n + '</button>').join('') +
+      '</div><span class="hint">' + dens.d + '</span></div>' +
+      '<div class="hint" style="margin-top:7px">ยิ่งแน่น รูปประกอบยิ่งย่อลงและช่องเขียนวิธีทำยิ่งสั้นลง<br>' +
+      'ระบบวัดความสูงจริงของแต่ละข้อแล้วจัดหน้าให้เต็มพอดี จำนวนข้อต่อหน้าจึงต่างกันได้ ' +
+      'ตามความยาวของโจทย์และขนาดรูปในหน้านั้น</div>';
+  }
   if (kind === 'worksheet') {
     h += '<div class="row" style="margin-top:11px">' +
       '<label class="chk" style="min-height:auto"><input type="checkbox" id="wsSteps"' + (DB.cur.wsSteps ? ' checked' : '') + '>' +
       '<span><span class="t">มีกรอบขั้นตอนในใบงาน</span><span class="d">' +
       (function () {
-        const L = workLines(), on = WORK_BLOCKS.filter(b => L[b.id] > 0);
-        return on.length ? on.map(b => b.t + ' ' + L[b.id]).join(' · ') + ' บรรทัด'
-                         : 'ยังไม่ได้ตั้งบรรทัดช่องใดเลย';
+        const L = workLines(dens.ws), on = WORK_BLOCKS.filter(b => L[b.id] > 0);
+        if (!on.length) return 'ยังไม่ได้ตั้งบรรทัดช่องใดเลย';
+        return dens.caps ? on.map(b => b.t + ' ' + L[b.id]).join(' · ') + ' บรรทัด'
+                         : 'ระดับแน่นตัดหัวข้อออก เหลือบรรทัดเปล่า ' +
+                           on.reduce((s, b) => s + L[b.id], 0) + ' บรรทัด';
       })() + '</span></span></label>' +
       '<label class="chk" style="min-height:auto"><input type="checkbox" id="wsOne"' + (DB.cur.wsOne ? ' checked' : '') + '>' +
       '<span><span class="t">ขึ้นหน้าใหม่ทุกข้อ</span><span class="d">เว้นที่ทำได้เต็มหน้า</span></span></label></div>' +
       '<div class="hint" style="margin-top:9px">ปรับจำนวนบรรทัดของแต่ละช่องได้ที่แท็บ <b>ตั้งค่า</b> ' +
-      '(ตอนนี้รวม ' + workTotal() + ' บรรทัดต่อข้อ) <button class="sm ghost" id="goSetWork">ไปตั้งค่า</button></div>';
+      '(ตอนนี้รวม ' + workTotal(dens.ws) + ' บรรทัดต่อข้อ หลังย่อตามความหนาแน่นแล้ว) ' +
+      '<button class="sm ghost" id="goSetWork">ไปตั้งค่า</button></div>';
   }
   if (kind === 'evidence') {
     if (!doneAt.length) h += '<div class="notice warn">ยังไม่มีผลการทำที่เสร็จแล้ว — ทำแบบฝึกหัดให้จบอย่างน้อยหนึ่งชุดก่อน</div>';
@@ -9014,9 +9109,13 @@ function renderPrint() {
   $('#pane-print').innerHTML = h;
   $('#printarea').innerHTML = buildDoc(kind, {
     quizId: DB.cur.printQuizId, attemptId: DB.cur.printAtId,
-    withSteps: DB.cur.wsSteps, onePer: DB.cur.wsOne
+    withSteps: DB.cur.wsSteps, onePer: DB.cur.wsOne, density: DB.cur.printDens
   });
+  // คลาสความหนาแน่นคุมขนาดรูปและความสูงบรรทัด · keydoc ปล่อยให้ใบเฉลยแบ่งกลางข้อได้
+  $('#printarea').className = 'dn-' + dens.k + (kind === 'answerkey' ? ' keydoc' : '');
   document.body.classList.add('docpreview');
+  // ใบงานตัดหน้าเองจากความสูงจริง · ใบเฉลยและรายงานปล่อยให้ไหลไปตามเนื้อหา
+  if (kind === 'worksheet') paginatePrint($('#printarea'), DB.cur.wsOne);
 
   $$('input[name=dk]').forEach(r => r.addEventListener('change', e => {
     DB.cur.printKind = e.target.value; save(); renderPrint();
@@ -9026,6 +9125,9 @@ function renderPrint() {
   const ws = $('#wsSteps'); if (ws) ws.addEventListener('change', e => { DB.cur.wsSteps = e.target.checked; save(); renderPrint(); });
   const gw = $('#goSetWork'); if (gw) gw.addEventListener('click', () => setTab('setting'));
   const wo = $('#wsOne'); if (wo) wo.addEventListener('change', e => { DB.cur.wsOne = e.target.checked; save(); renderPrint(); });
+  $$('[data-dens]').forEach(b => b.addEventListener('click', () => {
+    DB.cur.printDens = b.getAttribute('data-dens'); save(); renderPrint();
+  }));
   $('#btnDoPrint').addEventListener('click', () => window.print());
 }
 
