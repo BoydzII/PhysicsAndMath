@@ -1791,7 +1791,8 @@ function figCoord(o) {
   for (let v = Math.ceil(xa); v <= xb; v++) if (v) s += svgTxt(X(v), Y(0) + 17, String(v), 'middle', true);
   for (let v = Math.ceil(ya); v <= yb; v++) if (v) s += svgTxt(X(0) - 7, Y(v) + 5, String(v), 'end', true);
   s += svgTxt(W - pad + 9, Y(0) + 5, 'x', 'middle', true);
-  s += svgTxt(X(0) - 9, pad - 8, 'y', 'middle', true);
+  // ชื่อแกน y วางไว้ทาง<b>ขวา</b>ของแกน เพราะฝั่งซ้ายเป็นที่ของตัวเลขบนสเกล
+  s += svgTxt(X(0) + 10, pad - 8, 'y', 'middle', true);
   if (o.line) {
     // เก็บเฉพาะช่วงที่กราฟยังอยู่ในกรอบ แล้ววาดเป็นเส้นต่อเนื่อง
     const pts = [];
@@ -1807,7 +1808,13 @@ function figCoord(o) {
     if (p.label) {
       // จุดที่อยู่ค่อนไปทางขวา ให้ป้ายชื่อพลิกไปอยู่ทางซ้าย จะได้ไม่ล้นออกนอกกรอบ
       const near = X(p.x) > W * 0.62;
-      s += svgTxt(X(p.x) + (near ? -9 : 9), Y(p.y) - 9, p.label, near ? 'end' : 'start');
+      // จุดที่เกาะอยู่บนแกนต้องเลี่ยงแถวตัวเลขของแกนนั้น
+      //   อยู่บนแกน x → ยกป้ายขึ้น · อยู่บนแกน y → ถีบป้ายออกด้านข้างให้ไกลขึ้น
+      const onX = Math.abs(p.y) < 1.5, onY = Math.abs(p.x) < 1.5;
+      const dx = (near ? -1 : 1) * (onY ? 16 : 9);
+      // จุดที่อยู่ใกล้จุดกำเนิดมีตัวเลขของทั้งสองแกนล้อมอยู่ ต้องยกป้ายให้พ้นแถวตัวเลขแกน x ไปเลย
+      const lift = (onX || onY) ? 28 : 9;
+      s += svgTxt(X(p.x) + dx, Y(p.y) - lift, p.label, near ? 'end' : 'start');
     }
   });
   return svgWrap(W, H, s);
@@ -1987,16 +1994,20 @@ function figTransform(o) {
   for (let v = Math.ceil(ya); v <= yb; v++) if (v) s += svgTxt(X(0) - 7, Y(v) + 5, String(v), 'end', true);
   const poly = (pts, cls) => '<polygon class="' + cls + '" points="' +
     pts.map(p => n1(X(p[0])) + ',' + n1(Y(p[1]))).join(' ') + '"/>';
+  // ป้ายชื่อรูปวางที่ "จุดกึ่งกลางของรูป" ไม่ใช่ที่จุดยอด
+  // เพราะจุดยอดมักอยู่ติดแกน ซึ่งเป็นแถวตัวเลขของสเกล ป้ายจะไปทับตัวเลขเสมอ
+  const midOf = pts => [pts.reduce((a, p) => a + p[0], 0) / pts.length,
+                        pts.reduce((a, p) => a + p[1], 0) / pts.length];
   if (o.before) {
     s += poly(o.before, 'bdy');
-    const c = o.before[0];
-    s += svgTxt(X(c[0]) - 8, Y(c[1]) - 8, o.labelA || 'รูปเดิม', 'end');
+    const c = midOf(o.before);
+    s += svgTxt(X(c[0]), Y(c[1]) + 5, o.labelA || 'รูปเดิม', 'middle');
   }
   if (o.after) {
     s += '<polygon class="ffil" points="' + o.after.map(p => n1(X(p[0])) + ',' + n1(Y(p[1]))).join(' ') + '"/>';
     s += '<polygon class="dash" fill="none" points="' + o.after.map(p => n1(X(p[0])) + ',' + n1(Y(p[1]))).join(' ') + '"/>';
-    const c = o.after[0];
-    s += svgTxt(X(c[0]) + 8, Y(c[1]) - 8, o.labelB || 'รูปใหม่', 'start');
+    const c = midOf(o.after);
+    s += svgTxt(X(c[0]), Y(c[1]) + 5, o.labelB || 'รูปใหม่', 'middle');
   }
   return svgWrap(W, H, s);
 }
@@ -2051,7 +2062,8 @@ function figParabola(o) {
   for (let v = Math.ceil(xa); v <= xb; v++) if (v) s += svgTxt(X(v), Y(0) + 16, String(v), 'middle', true);
   for (let v = Math.ceil(ya); v <= yb; v++) if (v && v % 2 === 0) s += svgTxt(X(0) - 7, Y(v) + 5, String(v), 'end', true);
   s += svgTxt(W - pad + 9, Y(0) + 5, 'x', 'middle', true);
-  s += svgTxt(X(0) - 9, pad - 8, 'y', 'middle', true);
+  // ชื่อแกน y วางไว้ทาง<b>ขวา</b>ของแกน เพราะฝั่งซ้ายเป็นที่ของตัวเลขบนสเกล
+  s += svgTxt(X(0) + 10, pad - 8, 'y', 'middle', true);
   // เก็บเฉพาะช่วงที่เส้นโค้งยังอยู่ในกรอบ ถ้าโผล่ออกไปแล้วกลับเข้ามาให้ขาดเป็นท่อน
   const segs = []; let cur = [];
   const N = 240;
@@ -2065,7 +2077,9 @@ function figParabola(o) {
   (o.roots || []).forEach(r => {
     s += '<circle class="fpt" cx="' + n1(X(r)) + '" cy="' + n1(Y(0)) + '" r="5"/>';
     // พาราโบลาคว่ำ ป้ายรากต้องลงไปใต้ตัวเลขบนแกน x ไม่งั้นทับกัน
-    s += svgTxt(X(r), Y(0) + (a > 0 ? -12 : 34), '(' + fmt(r) + ' , 0)', 'middle');
+    // พาราโบลาคว่ำ ป้ายรากลงไปอยู่ใต้แกน จึงต้องเลี่ยงแถวตัวเลขของแกน y ด้วยการถีบออกด้านข้าง
+    s += svgTxt(X(r) + (a > 0 ? 0 : (r < 0 ? -8 : 8)), Y(0) + (a > 0 ? -13 : 40),
+      '(' + fmt(r) + ' , 0)', a > 0 ? 'middle' : (r < 0 ? 'end' : 'start'));
   });
   if (o.vertex) {
     const vx = -b / (2 * a), vy = a * vx * vx + b * vx + c;
@@ -2155,7 +2169,8 @@ function figCircleAngle(o) {
   const pt = (p, lbl, dx, dy) => '<circle class="fpt" cx="' + n1(p[0]) + '" cy="' + n1(p[1]) + '" r="4.6"/>' +
     (lbl ? svgTxt(p[0] + (dx || 0), p[1] + (dy || 0), lbl, 'middle') : '');
   let s = '<circle class="bdy" cx="' + cx + '" cy="' + cy + '" r="' + R + '"/>';
-  s += '<circle class="fpt" cx="' + cx + '" cy="' + cy + '" r="3.4"/>' + svgTxt(cx - 12, cy + 16, 'O', 'middle');
+  // ชื่อจุดศูนย์กลางวางเยื้องขึ้นบน เพราะด้านล่างเป็นที่ของป้ายมุมที่จุดศูนย์กลาง
+  s += '<circle class="fpt" cx="' + cx + '" cy="' + cy + '" r="3.4"/>' + svgTxt(cx - 14, cy - 10, 'O', 'middle');
   const L = (p, q, cls) => '<line class="' + (cls || 'frc') + '" x1="' + n1(p[0]) + '" y1="' + n1(p[1]) +
     '" x2="' + n1(q[0]) + '" y2="' + n1(q[1]) + '"/>';
   if (o.mode === 'tangent') {
@@ -14782,7 +14797,8 @@ function renderPrint() {
    ========================================================================== */
 function runSelfTest(seeds) {
   const N = seeds || 200, fails = [];
-  const bad = s => typeof s === 'string' && /undefined|NaN|Infinity|\{[a-zA-Z_]\w*\}/.test(s);
+  // ใช้ขอบเขตคำ ไม่งั้นสูตรเคมีอย่าง NaNO3 หรือ NaCl จะถูกฟ้องว่าเป็น NaN
+  const bad = s => typeof s === 'string' && /\bundefined\b|\bNaN\b|\bInfinity\b|\{[a-zA-Z_]\w*\}/.test(s);
   TPL.forEach(tpl => {
     for (let s = 1; s <= N; s++) {
       const p = buildProblem(tpl.id, s * 104729, { piMode: DB.settings.piMode });

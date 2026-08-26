@@ -22,6 +22,16 @@ MathAutoSheet/outputs/*
 !MathAutoSheet/outputs/figures-math.html
 !MathAutoSheet/outputs/preview.html
 
+# ---- คลังโจทย์เคมี ----
+!ChemistryAutoSheet/
+ChemistryAutoSheet/*
+!ChemistryAutoSheet/chem.html
+!ChemistryAutoSheet/index.html
+!ChemistryAutoSheet/README-chem.md
+!ChemistryAutoSheet/outputs/
+ChemistryAutoSheet/outputs/*
+!ChemistryAutoSheet/outputs/figures-chem.html
+
 # ---- คลังโจทย์ฟิสิกส์ ----
 !PhysicsAutoSheet/
 PhysicsAutoSheet/*

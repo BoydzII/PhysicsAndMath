@@ -6,8 +6,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#2563eb">
-<meta name="description" content="คลังโจทย์ฟิสิกส์และคณิตศาสตร์ โรงเรียนปากช่อง — ลงชื่อเข้าใช้ครั้งเดียว เลือกวิชาที่ต้องการ">
-<title>คลังโจทย์ฟิสิกส์และคณิตศาสตร์ · โรงเรียนปากช่อง</title>
+<meta name="description" content="คลังโจทย์ฟิสิกส์ คณิตศาสตร์ และเคมี โรงเรียนปากช่อง — ลงชื่อเข้าใช้ครั้งเดียว เลือกวิชาที่ต้องการ">
+<title>คลังโจทย์ฟิสิกส์ คณิตศาสตร์ และเคมี · โรงเรียนปากช่อง</title>
 <style>
 :root{
   --bg:#f4f6fa; --panel:#ffffff; --ink:#16202e; --muted:#67748a;
@@ -87,7 +87,7 @@ footer{margin-top:26px;text-align:center;color:var(--muted);font-size:12.5px;lin
 <div class="wrap">
 
 <header>
-  <h1>คลังโจทย์ฟิสิกส์และคณิตศาสตร์</h1>
+  <h1>คลังโจทย์ฟิสิกส์ คณิตศาสตร์ และเคมี</h1>
   <p class="sub">โรงเรียนปากช่อง จังหวัดนครราชสีมา</p>
 </header>
 
@@ -147,13 +147,18 @@ footer{margin-top:26px;text-align:center;color:var(--muted);font-size:12.5px;lin
   <div class="cards">
     <a class="card" id="goMath">
       <div class="ic">📐</div>
-      <h2>คณิตศาสตร์<span class="tag">ม.1</span></h2>
-      <p>5 บท · 75 แม่แบบ · สุ่มตัวเลขใหม่ได้ไม่จำกัด<br>ตรวจคำตอบทันที พร้อมวิธีทำ 7 ขั้น</p>
+      <h2>คณิตศาสตร์<span class="tag">ม.1–ม.3</span></h2>
+      <p>15 บท · 225 แม่แบบ · สุ่มตัวเลขใหม่ได้ไม่จำกัด<br>ตรวจคำตอบทันที พร้อมวิธีทำ 7 ขั้น</p>
     </a>
     <a class="card" id="goPhys">
       <div class="ic">⚛️</div>
       <h2>ฟิสิกส์<span class="tag">ม.4</span></h2>
       <p>7 บท + แนวข้อสอบเข้ามหาวิทยาลัย · 236 แม่แบบ<br>รับใบงานจากครูด้วยรหัส และส่งผลกลับได้</p>
+    </a>
+    <a class="card" id="goChem">
+      <div class="ic">🧪</div>
+      <h2>เคมี<span class="tag">ม.4 เทอม 1</span></h2>
+      <p>5 บท · 75 แม่แบบ · ทักษะปฏิบัติการถึงพันธะเคมี<br>ตรวจคำตอบทันที พร้อมวิธีทำ 7 ขั้น</p>
     </a>
   </div>
 
@@ -279,11 +284,14 @@ function showPicker(s) {
   // ครูได้ไฟล์ฉบับเต็ม ส่วนนักเรียนได้ฉบับที่ไม่มีเฉลยและสถิติชั้นเรียน
   $('#goMath').href = teacher ? 'MathAutoSheet/math.html' : 'MathAutoSheet/index.html';
   $('#goPhys').href = teacher ? 'PhysicsAutoSheet/physics.html' : 'PhysicsAutoSheet/index.html';
+  $('#goChem').href = teacher ? 'ChemistryAutoSheet/chem.html' : 'ChemistryAutoSheet/index.html';
   // เอาวิชาที่ตรงกับชั้นของนักเรียนขึ้นก่อน จะได้ไม่ต้องมองหา
-  // ม.1-ม.3 เห็นคณิตก่อน · ม.4 ขึ้นไปเห็นฟิสิกส์ก่อน · ครูเห็นตามลำดับเดิม
+  // ม.1-ม.3 เห็นคณิตก่อน · ม.4 ขึ้นไปเห็นวิชาของสายวิทย์ก่อน · ครูเห็นตามลำดับเดิม
   const lv = String(p.cls || '').match(/ม\.?\s*(\d)/);
-  if (!teacher && lv && Number(lv[1]) >= 4) $('.cards').prepend($('#goPhys'));
-  else $('.cards').prepend($('#goMath'));
+  if (!teacher && lv && Number(lv[1]) >= 4) {
+    $('.cards').prepend($('#goChem'));
+    $('.cards').prepend($('#goPhys'));
+  } else $('.cards').prepend($('#goMath'));
   $('#loginBox').classList.add('hide');
   $('#pickBox').classList.remove('hide');
 }
