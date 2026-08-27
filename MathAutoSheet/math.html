@@ -377,10 +377,10 @@ input.numin.bad{border-color:var(--bad);background:var(--bad-bg)}
 /* ตัวแปรความหนาแน่นของเอกสาร — เปลี่ยนพร้อมกันทีเดียวจากคลาส dn-* ที่ใส่ให้ #printarea
    ทำให้ "จำนวนข้อต่อหน้า" กับ "ขนาดรูปและช่องเขียน" ขยับไปทางเดียวกันเสมอ */
 #printarea{font-size:12.5pt;line-height:1.65;
-  --figw:46mm; --wlh:23px; --pgap:11px; --wcap:8.5pt}
-#printarea.dn-airy  {--figw:74mm; --wlh:28px; --pgap:16px; --wcap:9.5pt}
-#printarea.dn-normal{--figw:46mm; --wlh:23px; --pgap:11px; --wcap:8.5pt}
-#printarea.dn-tight {--figw:32mm; --wlh:19px; --pgap:9px;  --wcap:8pt;
+  --figw:60mm; --wlh:23px; --pgap:11px; --wcap:8.5pt}
+#printarea.dn-airy  {--figw:96mm; --wlh:28px; --pgap:16px; --wcap:9.5pt}
+#printarea.dn-normal{--figw:60mm; --wlh:23px; --pgap:11px; --wcap:8.5pt}
+#printarea.dn-tight {--figw:42mm; --wlh:19px; --pgap:9px;  --wcap:8pt;
                      font-size:11.5pt;line-height:1.5}
 #printarea .phead{text-align:center;margin-bottom:10px}
 #printarea .phead .plogo{display:block;margin:0 auto 5px;height:64px;width:auto;max-width:110px;object-fit:contain}
@@ -1611,7 +1611,9 @@ function n1(x) { return (Math.round(x * 10) / 10).toString(); }
 /** ครอบ SVG ให้ยืดตามความกว้างที่มี แต่ไม่โตเกินจนดูเทอะทะ
     เดิมตรึงไว้ที่ความกว้างพิกเซลของ viewBox ทำให้รูปเล็กเกินไปบนจอกว้าง */
 function svgWrap(w, h, inner) {
-  const maxw = Math.min(Math.round(w * 1.55), 640);
+  // ขยายรูปบนหน้าจอขึ้นอีก 30% จากเดิม (1.55 → 2.0 และเพดาน 640 → 830 พิกเซล)
+  // ครูแจ้งว่ารูปเดิมเล็กเกินไปจนดูรายละเอียดยาก
+  const maxw = Math.min(Math.round(w * 2.0), 830);
   return '<svg viewBox="0 0 ' + w + ' ' + h + '" style="width:100%;max-width:' + maxw + 'px" ' +
     'preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" role="img">' + inner + '</svg>';
 }
