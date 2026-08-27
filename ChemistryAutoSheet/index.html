@@ -455,6 +455,47 @@ input.numin.bad{border-color:var(--bad);background:var(--bad-bg)}
 <div id="toast"></div>
 
 <script>
+/* กันหน้าขาว — ถ้าสคริปต์หลักตายกลางคัน หน้าจอจะไม่มีอะไรขึ้นเลยและไม่มีทางรู้สาเหตุ
+   สคริปต์ก้อนนี้จึงต้องอยู่ "ก่อน" สคริปต์หลัก เพื่อดักข้อผิดพลาดได้ตั้งแต่บรรทัดแรก
+   หน้าที่เดียวของมันคือเปลี่ยนหน้าขาวให้กลายเป็นข้อความที่อ่านออก พร้อมทางออกให้กดเอง */
+(function () {
+  var shown = false;
+  function panel(msg) {
+    if (shown || !document.body) return;
+    shown = true;
+    var d = document.createElement('div');
+    d.setAttribute('style', 'position:fixed;inset:0;z-index:99999;overflow:auto;padding:22px;' +
+      'background:#fff;color:#111;font:15px/1.65 system-ui,-apple-system,"Segoe UI",sans-serif');
+    d.innerHTML =
+      '<h2 style="margin:0 0 10px;font-size:20px">เปิดแอปไม่สำเร็จ</h2>' +
+      '<p style="margin:0 0 6px">ตัวโปรแกรมหยุดทำงานกลางคัน หน้าจอจึงว่างเปล่า</p>' +
+      '<p style="margin:0 0 14px">ส่วนใหญ่เกิดจากข้อมูลเก่าที่ค้างอยู่ในเครื่อง ' +
+      'กดปุ่มด้านล่างเพื่อล้างข้อมูล<b>เฉพาะวิชานี้</b>แล้วเปิดใหม่ได้เลย ' +
+      'ชุดโจทย์และผลที่บันทึกไว้ของวิชานี้จะหายไป ส่วนวิชาอื่นไม่กระทบ</p>' +
+      '<pre id="__errbox" style="white-space:pre-wrap;word-break:break-word;background:#f5f5f5;' +
+      'border:1px solid #ddd;border-radius:8px;padding:10px;font-size:13px;margin:0"></pre>' +
+      '<button id="__wipe" style="margin-top:14px;padding:11px 18px;font-size:15px;border-radius:9px;' +
+      'border:1px solid #999;background:#fff;cursor:pointer">ล้างข้อมูลของวิชานี้แล้วเปิดใหม่</button>' +
+      '<p style="margin:14px 0 0;font-size:13px;color:#666">ถ้ายังไม่หาย ' +
+      'ช่วยถ่ายภาพข้อความในกรอบเทาส่งให้ผู้ดูแลด้วย จะได้ตามแก้ได้ตรงจุด</p>';
+    document.body.appendChild(d);
+    d.querySelector('#__errbox').textContent = String(msg);
+    d.querySelector('#__wipe').onclick = function () {
+      try { if (window.__LSKEY) localStorage.removeItem(window.__LSKEY); } catch (e) {}
+      location.reload();
+    };
+  }
+  window.addEventListener('error', function (e) {
+    panel((e.message || 'เกิดข้อผิดพลาด') + '\n' + (e.filename || '') +
+          ' บรรทัดที่ ' + (e.lineno || '?') + ' คอลัมน์ ' + (e.colno || '?'));
+  });
+  window.addEventListener('unhandledrejection', function (e) {
+    var r = e.reason;
+    panel('คำสั่งที่รอผลล้มเหลว: ' + (r && r.message ? r.message : String(r)));
+  });
+})();
+</script>
+<script>
 "use strict";
 
 /* ============================================================================
@@ -654,6 +695,7 @@ document.addEventListener('keydown', e => {
    1) STORE — สถานะและการบันทึกลง localStorage
    ========================================================================== */
 const LS_KEY = 'chemquiz.v1';
+window.__LSKEY = LS_KEY;   // ให้ตัวดักหน้าขาวรู้ว่าต้องล้างข้อมูลของวิชาไหน
 /* ชื่อวิชาที่แนบไปกับทุกคำสั่งที่ยิงขึ้นชีต
    ชีตเดียวเก็บได้หลายวิชา ฝั่งชีตใช้ค่านี้แยกใบงานและผลของแต่ละวิชาออกจากกัน */
 const SUBJECT = 'chem';
