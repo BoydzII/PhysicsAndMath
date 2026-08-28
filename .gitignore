@@ -49,6 +49,14 @@ PhysicsAutoSheet/*
 PhysicsAutoSheet/outputs/*
 !PhysicsAutoSheet/outputs/figures.html
 
+# ---- ห้องเรียนสมดุลกล (ฟิสิกส์ ม.4) ----
+!EquilibriumLab/
+EquilibriumLab/*
+!EquilibriumLab/equilibrium.html
+!EquilibriumLab/index.html
+!EquilibriumLab/appsscript-Code.gs
+!EquilibriumLab/README-equilibrium.md
+
 # ---- กันพลาดซ้ำอีกชั้น: ห้ามขึ้นเด็ดขาดไม่ว่าจะอยู่ที่ไหน ----
 # ไฟล์สำรองมีชื่อและเลขประจำตัวนักเรียนจริงอยู่ข้างใน
 สำรอง*.json
