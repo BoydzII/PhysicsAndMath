@@ -149,7 +149,9 @@ a{color:var(--brand);text-underline-offset:3px}
 .nav button.on i{filter:none;opacity:1;transform:translateY(-1px)}
 .nav button span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 @media(min-width:860px){
-  .nav{position:sticky;top:0;bottom:auto;border-top:none;border-bottom:1px solid var(--line);
+  /* --topH คือความสูงจริงของแถบบน วัดด้วยสคริปต์ตอนเปิดและตอนหมุนจอ
+     ถ้าไม่หนีลงมาเท่านี้ แถบแท็บจะเลื่อนไปทับชื่อแอปและแถบ XP ตอนเลื่อนหน้าจอ */
+  .nav{position:sticky;top:var(--topH,0px);bottom:auto;border-top:none;border-bottom:1px solid var(--line);
     max-width:1120px;margin:0 auto;padding:7px 6px;gap:3px;border-radius:0 0 var(--r) var(--r)}
   .nav button{flex-direction:row;gap:7px;font-size:14px;padding:9px 12px;justify-content:center}
   .nav button i{font-size:17px}
@@ -354,22 +356,75 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
   box-shadow:var(--shadow-sm)}
 .sim .simhead{display:flex;align-items:center;gap:10px;padding:12px 15px;border-bottom:1px solid var(--line2);
   background:linear-gradient(180deg,var(--panel3),var(--panel2))}
-.sim .simhead .ic{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;font-size:16px;
-  background:var(--brand-soft)}
-.sim .simhead b{font-size:15px;display:block;line-height:1.3}
-.sim .simhead span{font-size:11.8px;color:var(--muted);display:block;line-height:1.35}
+.sim .simhead .ic{width:30px;height:30px;flex:0 0 30px;border-radius:9px;display:grid;place-items:center;
+  font-size:16px;background:var(--brand-soft)}
+.sim .simhead .tt{min-width:0;flex:1}
+.sim .simhead .tt b{font-size:15px;display:block;line-height:1.3}
+.sim .simhead .tt span{font-size:11.8px;color:var(--muted);display:block;line-height:1.35}
+.foldbtn{flex:0 0 auto;border:1px solid var(--line);background:var(--panel);color:var(--ink2);
+  border-radius:9px;padding:6px 11px;font-size:12.5px;font-weight:700;cursor:pointer;min-height:34px;
+  display:flex;align-items:center;gap:5px;white-space:nowrap}
+.foldbtn:hover{background:var(--panel3)}
+.foldbtn i{font-style:normal;font-size:10px;transition:transform .2s}
+.sim.fold .foldbtn i{transform:rotate(-90deg)}
+@media(max-width:560px){ .foldbtn .ft{display:none} .foldbtn{padding:6px 10px} }
+
+/* บนจอกว้าง กล่องปรับค่าไปอยู่ด้านข้าง เหลือพื้นที่ให้ภาพเท่าที่จำเป็นจริง ๆ */
+.simbody{display:grid;grid-template-columns:minmax(0,1fr)}
+.simmain{min-width:0}
+.simctl{padding:13px 15px;border-top:1px solid var(--line2);background:var(--panel);min-width:0}
+.sim.fold .simctl{display:none}
+@media(min-width:880px){
+  .simbody{grid-template-columns:minmax(0,1fr) 322px}
+  .simctl{border-top:none;border-left:1px solid var(--line2);max-height:none;overflow-y:auto}
+  .sim.fold .simbody{grid-template-columns:minmax(0,1fr)}
+}
+/* ในบทเรียน คอลัมน์สำหรับอ่านกว้างแค่ 760 ถ้าตัดแบ่งให้แผงปรับค่าอีก 322
+   ภาพจะเหลือที่นิดเดียวจนดูไม่รู้เรื่อง จึงให้ซิมล้นออกนอกคอลัมน์อ่านได้เมื่อจอกว้างพอ
+   และถ้ายังกว้างไม่พอ ให้กลับไปวางซ้อนแทนการบีบภาพ */
+@media(min-width:880px) and (max-width:1119px){
+  .lesson .simbody, .lesson .sim.fold .simbody{grid-template-columns:minmax(0,1fr)}
+  .lesson .simctl{border-top:1px solid var(--line2);border-left:none}
+}
+@media(min-width:1120px){
+  .lesson .sim{width:calc(100% + 300px);margin-left:-150px}
+}
+/* จอแคบ (มือถือ/ไอแพดแนวตั้ง) แผงปรับค่าอยู่ใต้ภาพ
+   จึงตรึงภาพกับค่าที่อ่านได้ไว้ด้านบน จะได้เห็นผลทันทีขณะเลื่อนแถบข้างล่าง
+   ต้องใช้ overflow:clip ไม่ใช่ hidden เพราะ hidden ทำให้ position:sticky ข้างในตาย */
+@media(max-width:879px){
+  .sim{overflow:clip}
+  .simmain{position:sticky;top:var(--topH,0px);z-index:3;background:var(--panel);
+    box-shadow:0 10px 16px -14px rgba(0,0,0,.55)}
+}
+
 .stage{background:
     linear-gradient(color-mix(in srgb,var(--grid) 42%,transparent) 1px,transparent 1px) 0 0/22px 22px,
     linear-gradient(90deg,color-mix(in srgb,var(--grid) 42%,transparent) 1px,transparent 1px) 0 0/22px 22px,
     var(--panel2);
-  touch-action:none;user-select:none;display:block;width:100%}
-.stage svg{display:block;width:100%;height:auto;touch-action:none}
-.simctl{padding:13px 15px;border-top:1px solid var(--line2);background:var(--panel)}
-.slider{display:grid;grid-template-columns:1fr auto;gap:4px 12px;align-items:center;margin:9px 0}
-.slider .lb{font-size:13.2px;font-weight:600;color:var(--ink2);grid-column:1}
-.slider .vl{font-size:13.2px;font-weight:800;color:var(--brand);font-variant-numeric:tabular-nums;
-  grid-column:2;text-align:right;min-width:76px}
-.slider input[type=range]{grid-column:1/-1;width:100%;margin:0;accent-color:var(--brand);height:30px}
+  touch-action:none;user-select:none;-webkit-user-select:none;display:grid;place-items:center;width:100%;
+  padding:4px}
+/* จำกัดความสูงของภาพ ไม่ให้กินจอทั้งหน้าบนคอมและไอแพด */
+.stage svg{display:block;width:100%;height:auto;touch-action:none;max-height:52svh}
+@media(min-width:880px){ .stage svg{max-height:400px} }
+@media(max-width:520px){ .stage svg{max-height:44svh} }
+[data-drag]{cursor:grab}
+.simout{padding:11px 15px 13px;border-top:1px solid var(--line2)}
+.simout .readout{margin-top:0}
+.simout .verdict{margin-top:9px}
+
+/* แถบเลื่อน — พิมพ์ตัวเลขลงไปตรง ๆ ก็ได้ ไม่ต้องเลื่อนให้ตรงเป๊ะ */
+.slider{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;align-items:center;margin:11px 0}
+.slider .lb{font-size:13.2px;font-weight:600;color:var(--ink2);grid-column:1;line-height:1.45}
+.slider .lb em{font-style:normal;font-weight:400;color:var(--muted);font-size:12.2px}
+.slider .vw{grid-column:2;display:flex;align-items:center;gap:5px;justify-self:end}
+.slider .numin{width:74px;min-height:36px;padding:5px 8px;font-size:15px;font-weight:800;text-align:right;
+  color:var(--brand);background:var(--panel);border:1px solid var(--line);border-radius:9px;
+  font-variant-numeric:tabular-nums}
+.slider .numin:focus{border-color:var(--brand);box-shadow:0 0 0 3px color-mix(in srgb,var(--brand) 20%,transparent)}
+.slider .numin.bad{border-color:var(--bad);color:var(--bad)}
+.slider .un{font-size:12.5px;color:var(--muted);font-weight:700;min-width:14px}
+.slider input[type=range]{grid-column:1/-1;width:100%;margin:2px 0 0;accent-color:var(--brand);height:28px}
 .readout{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:8px;margin-top:11px}
 .readout .r{background:var(--panel2);border:1px solid var(--line2);border-radius:11px;padding:8px 10px;text-align:center}
 .readout .r .k{font-size:11px;color:var(--muted);line-height:1.35}
@@ -1055,11 +1110,29 @@ function paintXP() {
   const P = DB.progress;
   const wrap = $('#xpWrap');
   if (!wrap) return;
-  if (isTeacher() || !P) { wrap.classList.add('hide'); return; }
-  wrap.classList.remove('hide');
-  $('#xpLv').textContent = 'Lv.' + levelOf(P.xp);
-  $('#xpFill').style.width = lvPct(P.xp) + '%';
-  $('#xpNum').textContent = P.xp + ' XP';
+  if (isTeacher() || !P) { wrap.classList.add('hide'); }
+  else {
+    wrap.classList.remove('hide');
+    $('#xpLv').textContent = 'Lv.' + levelOf(P.xp);
+    $('#xpFill').style.width = lvPct(P.xp) + '%';
+    $('#xpNum').textContent = P.xp + ' XP';
+  }
+  syncTopVar();
+}
+
+/** วัดความสูงจริงของแถบบน แล้วเก็บไว้ในตัวแปร --topH
+    ใช้สองที่ คือให้แถบแท็บบนจอคอมหนีลงมาไม่ทับแถบบน
+    และให้ภาพการทดลองบนจอแคบตรึงอยู่ใต้แถบบนพอดีตอนเลื่อนหาแถบปรับค่า */
+function syncTopVar() {
+  const measure = () => {
+    const t = $('.topbar');
+    if (!t || !t.offsetHeight) return;
+    document.documentElement.style.setProperty('--topH', Math.round(t.offsetHeight) + 'px');
+  };
+  measure();
+  /* วัดซ้ำอีกครั้งหลังจัดหน้าเสร็จ เผื่อฟอนต์หรือแถบ XP เพิ่งโผล่
+     ใช้ setTimeout ไม่ใช่ requestAnimationFrame เพราะแท็บที่ยังไม่ถูกแสดงจะไม่วิ่ง rAF */
+  setTimeout(measure, 60);
 }
 
 /* ============================================================================
@@ -1761,19 +1834,61 @@ function svgHatch(x1, y1, x2, y2, n, len, flip) {
 const C_FORCE = 'var(--force)', C_F2 = 'var(--force2)', C_REACT = 'var(--react)',
       C_W = 'var(--weight)', C_OK = 'var(--ok)', C_BRAND = 'var(--brand)';
 
-/* ---------------------------------------------------- ตัวช่วยสร้างแถบเลื่อน */
+/* ---------------------------------------------------- ตัวช่วยสร้างแถบเลื่อน
+   ค่าทุกค่าปรับได้สองทาง — เลื่อนแถบ หรือ "พิมพ์ตัวเลขลงไปตรง ๆ"
+   เพราะเวลาทำการทดลองจริงเรามักอยากได้ค่าเป๊ะ ๆ เช่น 0.30 m ไม่ใช่ค่าที่เลื่อนให้ใกล้เคียง
+   ระหว่างที่ยังพิมพ์ไม่เสร็จจะไม่เขียนทับสิ่งที่พิมพ์อยู่ และค่าที่เกินขอบเขตจะถูกดึงกลับตอนพิมพ์จบ */
 function mkSlider(parent, o) {
+  const step = (o.step == null ? 1 : o.step);
+  const ss = String(step);
+  const dec = ss.indexOf('.') >= 0 ? ss.length - ss.indexOf('.') - 1 : 0;
+  const txt = v => fmt(v, dec);          /* fmt ตัดศูนย์ท้ายให้อยู่แล้ว 0.30 → 0.3 */
+
   const wrap = document.createElement('div');
   wrap.className = 'slider';
-  wrap.innerHTML = '<span class="lb">' + o.label + '</span><span class="vl"></span>' +
-    '<input type="range" min="' + o.min + '" max="' + o.max + '" step="' + (o.step || 1) + '" value="' + o.val + '">';
-  const inp = $('input', wrap), vl = $('.vl', wrap);
-  const show = () => { vl.textContent = (o.fmt ? o.fmt(Number(inp.value)) : fmt(Number(inp.value))) +
-    (o.unit ? ' ' + o.unit : ''); };
-  inp.addEventListener('input', () => { show(); o.on(Number(inp.value)); });
-  show();
+  wrap.innerHTML = '<span class="lb">' + o.label + '</span>' +
+    '<span class="vw"><input class="numin" type="number" inputmode="decimal" ' +
+      'min="' + o.min + '" max="' + o.max + '" step="' + step + '" value="' + txt(o.val) + '">' +
+      (o.unit ? '<span class="un">' + o.unit + '</span>' : '') + '</span>' +
+    '<input class="rng" type="range" min="' + o.min + '" max="' + o.max + '" step="' + step +
+      '" value="' + o.val + '">';
+
+  const rng = $('.rng', wrap), num = $('.numin', wrap);
+  let cur = Number(o.val);
+
+  const paint = () => {
+    rng.value = cur;
+    if (document.activeElement !== num) num.value = txt(cur);
+    num.classList.remove('bad');
+  };
+  const emit = v => { cur = v; o.on(cur); };
+
+  rng.addEventListener('input', () => { cur = Number(rng.value); num.value = txt(cur); o.on(cur); });
+
+  /* พิมพ์แล้วเห็นผลทันทีถ้าค่าใช้ได้ · ถ้ายังพิมพ์ไม่จบหรือเกินขอบเขต แค่ทำเครื่องหมายไว้ก่อน */
+  num.addEventListener('input', () => {
+    const v = parseNum(num.value);
+    if (!isFinite(v) || v < o.min || v > o.max) { num.classList.add('bad'); return; }
+    num.classList.remove('bad');
+    rng.value = v;
+    emit(v);
+  });
+  /* ออกจากช่องเมื่อไร ดึงค่ากลับเข้าขอบเขตและจัดรูปให้เรียบร้อย */
+  const settle = () => {
+    let v = parseNum(num.value);
+    if (!isFinite(v)) v = cur;
+    v = clamp(v, o.min, o.max);
+    num.value = txt(v);
+    num.classList.remove('bad');
+    rng.value = v;
+    if (v !== cur) emit(v);
+  };
+  num.addEventListener('change', settle);
+  num.addEventListener('blur', settle);
+  num.addEventListener('keydown', e => { if (e.key === 'Enter') { settle(); num.blur(); } });
+
   parent.appendChild(wrap);
-  return { get: () => Number(inp.value), set: v => { inp.value = v; show(); }, el: inp };
+  return { get: () => cur, set: v => { cur = Number(v); paint(); }, el: rng };
 }
 function mkToggle(parent, o) {
   const b = document.createElement('button');
@@ -1812,23 +1927,62 @@ function questHTML(simKey, qid, text) {
     '<span class="qt"><b>ภารกิจ</b> — ' + text + '</span></div>';
 }
 
-/** ลากวัตถุใน SVG — คืนค่าตำแหน่ง x เป็นสัดส่วนของ viewBox */
-function dragX(svg, el, vbW, cb) {
-  const move = e => {
+/** ลากวัตถุใน SVG
+    ---------------------------------------------------------------------------
+    ต้องผูกตัวจับไว้ที่ <div class="stage"> ซึ่งอยู่คงที่ ไม่ใช่ที่ตัววัตถุ
+    เพราะทุกครั้งที่ภาพเปลี่ยน เราวาด innerHTML ของเวทีใหม่ทั้งก้อน
+    วัตถุที่นิ้วกดค้างอยู่จึงถูกลบทิ้งทันที บนจอสัมผัสเบราว์เซอร์จะจับ pointer capture
+    ให้วัตถุนั้นโดยอัตโนมัติ พอวัตถุหายไป capture ก็หลุด แล้วยิง pointercancel
+    การลากเลยตายกลางคัน และตัวจับที่ค้างไว้ก็ไม่เคยถูกถอด สะสมจนหน่วง
+    ผูกที่เวทีแล้วหาว่าโดนวัตถุไหนด้วย closest() ตอนกดลง จึงรอดจากการวาดใหม่ทุกกรณี */
+function installDrag(stage, vbW, onMove) {
+  if (stage.__dragOn) return;
+  stage.__dragOn = true;
+  let key = null;
+
+  /* แปลงพิกัดนิ้ว/เมาส์เป็นพิกัดใน viewBox ด้วยเมทริกซ์ของ SVG เอง
+     ห้ามคำนวณจากความกว้างของกรอบตรง ๆ เพราะเมื่อจำกัดความสูงของภาพไว้
+     ภาพจะถูกย่อและจัดกึ่งกลาง เหลือขอบว่างสองข้าง สูตรง่าย ๆ จะเพี้ยนทันที */
+  const toVB = e => {
+    const svg = stage.querySelector('svg');
+    if (!svg) return null;
+    const m = svg.getScreenCTM && svg.getScreenCTM();
+    if (m) {
+      try {
+        let p;
+        if (typeof DOMPoint === 'function') p = new DOMPoint(e.clientX, e.clientY);
+        else { p = svg.createSVGPoint(); p.x = e.clientX; p.y = e.clientY; }
+        return p.matrixTransform(m.inverse()).x;
+      } catch (err) { /* ตกไปใช้วิธีสำรองด้านล่าง */ }
+    }
     const r = svg.getBoundingClientRect();
-    const cx = (e.touches ? e.touches[0].clientX : e.clientX);
-    cb((cx - r.left) / r.width * vbW);
-    e.preventDefault();
+    return r.width ? (e.clientX - r.left) / r.width * vbW : null;
   };
-  const up = () => {
+  const move = e => {
+    if (!key) return;
+    const x = toVB(e);
+    if (x != null) onMove(key, x);
+    if (e.cancelable) e.preventDefault();
+  };
+  const end = () => {
+    key = null;
+    stage.classList.remove('dragging');
     window.removeEventListener('pointermove', move);
-    window.removeEventListener('pointerup', up);
+    window.removeEventListener('pointerup', end);
+    window.removeEventListener('pointercancel', end);
   };
-  el.style.cursor = 'grab';
-  el.addEventListener('pointerdown', e => {
-    e.preventDefault();
+
+  stage.addEventListener('pointerdown', e => {
+    const g = e.target && e.target.closest ? e.target.closest('[data-drag]') : null;
+    if (!g) return;
+    key = g.getAttribute('data-drag');
+    stage.classList.add('dragging');
+    const x = toVB(e);
+    if (x != null) onMove(key, x);
     window.addEventListener('pointermove', move);
-    window.addEventListener('pointerup', up);
+    window.addEventListener('pointerup', end);
+    window.addEventListener('pointercancel', end);
+    if (e.cancelable) e.preventDefault();
   });
 }
 
@@ -2104,16 +2258,6 @@ const SIMS = [
       }
       stage.innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '">' + s + '</svg>';
 
-      const svg = $('svg', stage);
-      ['m1','m2'].forEach(id => {
-        const g = svg.querySelector('[data-drag="' + id + '"]');
-        if (g) dragX(svg, g, W, vx => {
-          const m = clamp((vx - LEFT) / SPAN * 4, 0, 4);
-          if (id === 'm1') S.x1 = Math.round(m * 20) / 20; else S.x2 = Math.round(m * 20) / 20;
-          cancelAnimationFrame(raf); draw();
-        });
-      });
-
       $('#ssT1', host).textContent = fmt(Math.abs(T.t1), 1);
       $('#ssT2', host).textContent = fmt(Math.abs(T.t2), 1);
       $('#ssNet', host).textContent = fmt(T.net, 1);
@@ -2148,6 +2292,14 @@ const SIMS = [
       fmt:v=>fmt(v,2), on:v=>{S.piv=v;cancelAnimationFrame(raf);draw();} });
     mkSlider(sl, { label:'มวลของคานเอง <em>(0 = คานเบา)</em>', min:0, max:40, val:S.beamM, unit:'kg',
       fmt:v=>fmt(v,0), on:v=>{S.beamM=v;cancelAnimationFrame(raf);draw();} });
+
+    /* ผูกตัวลากครั้งเดียวที่เวที — อยู่รอดแม้ภาพจะถูกวาดใหม่ทุกเฟรม */
+    installDrag(stage, W, (key, vx) => {
+      const m = clamp(Math.round((vx - LEFT) / SPAN * 4 * 20) / 20, 0, 4);
+      if (key === 'm1') S.x1 = m; else if (key === 'm2') S.x2 = m; else return;
+      cancelAnimationFrame(raf);
+      draw();
+    });
     draw();
   }
 },
@@ -2207,12 +2359,6 @@ const SIMS = [
       s += arr(S.xA, R.RA, 'R_A') + arr(S.xB, R.RB, 'R_B');
       stage.innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '">' + s + '</svg>';
 
-      const svg = $('svg', stage), g = svg.querySelector('[data-drag="load"]');
-      if (g) dragX(svg, g, W, vx => {
-        S.xL = clamp(Math.round((vx - LEFT) / SPAN * 6 * 10) / 10, 0, 6);
-        draw();
-      });
-
       $('#bmA', host).textContent = isFinite(R.RA) ? fmt(R.RA, 0) : '—';
       $('#bmB', host).textContent = isFinite(R.RB) ? fmt(R.RB, 0) : '—';
       $('#bmSum', host).textContent = fmt(S.WL + R.Wb, 0);
@@ -2248,6 +2394,12 @@ const SIMS = [
       fmt:v=>fmt(v,0), on:v=>{S.WL=v;draw();} });
     mkSlider(sl, { label:'มวลของคาน <em>(0 = คานเบา)</em>', min:0, max:60, step:2, val:S.mB, unit:'kg',
       fmt:v=>fmt(v,0), on:v=>{S.mB=v;draw();} });
+
+    installDrag(stage, W, (key, vx) => {
+      if (key !== 'load') return;
+      S.xL = clamp(Math.round((vx - LEFT) / SPAN * 6 * 10) / 10, 0, 6);
+      draw();
+    });
     draw();
   }
 },
@@ -2577,7 +2729,13 @@ const SIMS = [
 const SIM_BY_KEY = {};
 SIMS.forEach(s => SIM_BY_KEY[s.k] = s);
 
-/** วางซิมมูเลชันลงในที่ว่างที่กำหนด — ใช้ได้ทั้งในบทเรียนและหน้าห้องทดลอง */
+/** วางซิมมูเลชันลงในที่ว่างที่กำหนด — ใช้ได้ทั้งในบทเรียนและหน้าห้องทดลอง
+    ผังของหนึ่งซิม
+      simhead   หัวเรื่อง + ปุ่มย่อแผงปรับค่า
+      simbody ├ simmain ├ stage   ภาพการทดลอง
+              │         └ simout  ค่าที่อ่านได้และคำตัดสิน (อยู่ติดภาพเสมอ)
+              └ simctl            แถบเลื่อน ปุ่ม คำแนะนำ ภารกิจ
+    จอกว้าง (คอม/ไอแพดแนวนอน) simctl ไปอยู่ด้านขวา · จอแคบวางซ้อนลงมาตามปกติ */
 function mountSim(key, parent) {
   const sim = SIM_BY_KEY[key];
   if (!sim) return;
@@ -2585,18 +2743,38 @@ function mountSim(key, parent) {
   host.className = 'sim';
   host.innerHTML =
     '<div class="simhead"><span class="ic">' + sim.ic + '</span>' +
-    '<span><b>' + esc(sim.t) + '</b><span>' + esc(sim.d) + '</span></span></div>' +
-    '<div class="stage"></div><div class="simctl"></div>';
+    '<span class="tt"><b>' + esc(sim.t) + '</b><span>' + esc(sim.d) + '</span></span>' +
+    '<button class="foldbtn" type="button" aria-expanded="true">' +
+      '<i>▼</i><span class="ft">ย่อแผงปรับค่า</span></button></div>' +
+    '<div class="simbody"><div class="simmain">' +
+      '<div class="stage"></div><div class="simout"></div></div>' +
+    '<div class="simctl"></div></div>';
   parent.appendChild(host);
   const st = questState(key);
   st.opened = true;
   save();
   checkBadges();
-  try { sim.build($('.stage', host), $('.simctl', host), host); }
+
+  const stage = $('.stage', host), ctl = $('.simctl', host), out = $('.simout', host);
+  try { sim.build(stage, ctl, host); }
   catch (e) {
-    $('.stage', host).innerHTML = '<div class="notice bad" style="margin:14px">' +
+    stage.innerHTML = '<div class="notice bad" style="margin:14px">' +
       'ซิมมูเลชันนี้ทำงานผิดพลาด: ' + esc(e.message) + '</div>';
   }
+
+  /* ย้ายค่าที่อ่านได้ไปไว้ใต้ภาพ เพราะเป็น "ผลของการทดลอง" ไม่ใช่ตัวปรับค่า
+     ต้องเห็นพร้อมภาพเสมอแม้จะย่อแผงปรับค่าไปแล้ว */
+  Array.from(ctl.children).forEach(el => {
+    if (el.classList.contains('readout') || el.classList.contains('verdict')) out.appendChild(el);
+  });
+  if (!out.children.length) out.remove();
+
+  const fb = $('.foldbtn', host);
+  fb.onclick = () => {
+    const folded = host.classList.toggle('fold');
+    $('.ft', fb).textContent = folded ? 'แสดงแผงปรับค่า' : 'ย่อแผงปรับค่า';
+    fb.setAttribute('aria-expanded', String(!folded));
+  };
   return host;
 }
 
@@ -5231,6 +5409,10 @@ function boot() {
   $('#btnTheme').onclick = cycleTheme;
   $('#btnWho').onclick = whoMenu;
   $$('#nav button').forEach(b => b.onclick = () => go(b.dataset.v));
+
+  syncTopVar();
+  window.addEventListener('resize', syncTopVar);
+  window.addEventListener('orientationchange', syncTopVar);
 
   window.addEventListener('beforeunload', e => {
     if (RUN && !RUN.over && RUN.mode === 'exam') { e.preventDefault(); e.returnValue = ''; }
