@@ -1806,9 +1806,36 @@ function svgArrow(x1, y1, x2, y2, col, w, lab) {
   }
   return s;
 }
-function svgTx(x, y, t, anchor, cls) {
+function svgTx(x, y, t, anchor, cls, adj) {
   return '<text x="' + n1(x) + '" y="' + n1(y) + '" text-anchor="' + (anchor || 'middle') +
-    '"' + (cls ? ' class="' + cls + '"' : '') + '>' + esc(t) + '</text>';
+    '"' + (cls ? ' class="' + cls + '"' : '') + (adj ? ' data-adj="1"' : '') + '>' + esc(t) + '</text>';
+}
+
+/** จัดป้ายตัวเลขไม่ให้ทับกัน
+    ภาพที่มีแรงหลายแรงอย่างบันไดพิงกำแพง พอผู้เรียนเลื่อนค่าไปมา ป้ายจะย้ายตำแหน่งตามจุดที่แรงกระทำ
+    การกำหนดตำแหน่งตายตัวจึงหลบได้แค่บางกรณี ที่นี่วัดกรอบจริงของตัวหนังสือหลังวาดเสร็จ
+    แล้วดันตัวที่ชนกันหลบทีละบรรทัดจนไม่ทับ ทำให้ใช้ได้กับทุกค่าที่ตั้งได้ */
+function deOverlap(svg, H) {
+  const ts = Array.from(svg.querySelectorAll('text[data-adj]'));
+  if (ts.length < 2) return;
+  for (let pass = 0; pass < 6; pass++) {
+    let moved = false;
+    for (let i = 0; i < ts.length; i++) {
+      for (let j = i + 1; j < ts.length; j++) {
+        let A, B;
+        try { A = ts[i].getBBox(); B = ts[j].getBBox(); } catch (e) { return; }
+        if (A.x < B.x + B.width && B.x < A.x + A.width && A.y < B.y + B.height && B.y < A.y + A.height) {
+          const lower = A.y >= B.y ? ts[i] : ts[j];
+          const upper = lower === ts[i] ? ts[j] : ts[i];
+          const ly = +lower.getAttribute('y');
+          if (ly + 17 < H - 6) lower.setAttribute('y', String(ly + 17));
+          else upper.setAttribute('y', String(+upper.getAttribute('y') - 17));
+          moved = true;
+        }
+      }
+    }
+    if (!moved) break;
+  }
 }
 /** เส้นบอกระยะพร้อมหัวลูกศรสองข้าง ใช้บอกความยาวในภาพ */
 function svgDim(x1, y, x2, t) {
@@ -2410,7 +2437,7 @@ const SIMS = [
   unit:'u6',
   build(stage, ctl, host) {
     const S = { w1:1.6, h1:0.4, w2:0.4, h2:1.4, hang:false, ang:0 };
-    const W = 620, H = 360, SCL = 150, OX = 150, OY = 300;      /* 1 m = 150 px */
+    const W = 620, H = 372;
     let raf = null;
 
     function cg() {
@@ -2427,25 +2454,42 @@ const SIMS = [
     function draw() {
       const c = cg();
       /* จุดแขวนคือมุมขวาบนของแขนแนวนอน */
-      const hx = S.w1, hy = S.h1;
+      const hx = S.w1, hy = S.h1, totH = S.h1 + S.h2;
+
+      /* มุมที่ต้องหมุนเพื่อให้ CG ห้อยอยู่ "ใต้" จุดแขวนพอดี
+         เวกเตอร์จากจุดแขวนไป CG ทำมุม φ กับแกน x เราต้องหมุนให้มันไปชี้ลง (−90°)
+         มุมที่ต้องหมุนจึงเป็น −90° − φ  (เดิมใช้ atan2 สลับอาร์กิวเมนต์ ได้มุมตรงข้าม
+         วัตถุเลยหมุนจน CG ไปอยู่เหนือจุดแขวนแทนที่จะห้อยอยู่ใต้) */
       let target = 0;
       if (S.hang) {
-        /* หมุนรอบจุดแขวนจน CG ห้อยอยู่ใต้จุดแขวนพอดี */
-        target = Math.atan2(c.x - hx, -(c.y - hy)) ;
+        target = -Math.PI / 2 - Math.atan2(c.y - hy, c.x - hx);
+        while (target >  Math.PI) target -= 2 * Math.PI;
+        while (target < -Math.PI) target += 2 * Math.PI;
       }
       S.ang += (target - S.ang) * 0.16;
       if (Math.abs(target - S.ang) > 0.002) { cancelAnimationFrame(raf); raf = requestAnimationFrame(draw); }
 
       const a = S.ang, ca = Math.cos(a), sa = Math.sin(a);
+      /* ย่อ-ขยายตามรูปร่างที่ผู้เรียนตั้งไว้ จะได้ไม่ล้นกรอบเมื่อยืดแขนจนสุด */
+      const diag = Math.hypot(S.w1, totH);
+      const SCL = S.hang
+        ? Math.min(228 / Math.max(diag, .3), 150)
+        : Math.min(330 / Math.max(S.w1, .3), 226 / Math.max(totH, .3), 150);
+      const OX = 150, OY = H - 62;
+      /* จุดยึดบนจอ — ตอนแขวนย้ายจุดแขวนขึ้นไปไว้ด้านบน วัตถุจะได้ห้อยลงมาอยู่ในกรอบพอดี */
+      const anchor = S.hang ? { X: W * 0.44, Y: 92 }
+                            : { X: OX + hx * SCL, Y: OY - hy * SCL };
       /* แปลงพิกัดเมตร → พิกัดจอ โดยหมุนรอบจุดแขวน */
       const T = (x, y) => {
         const dx = x - hx, dy = y - hy;
         const rx = dx * ca - dy * sa, ry = dx * sa + dy * ca;
-        return { X: OX + (hx + rx) * SCL, Y: OY - (hy + ry) * SCL };
+        return { X: anchor.X + rx * SCL, Y: anchor.Y - ry * SCL };
       };
       const poly = pts => pts.map(p => { const q = T(p[0], p[1]); return n1(q.X) + ',' + n1(q.Y); }).join(' ');
 
       let s = '';
+      /* เพดานสำหรับแขวน */
+      if (S.hang) s += svgHatch(anchor.X - 76, anchor.Y - 58, anchor.X + 76, anchor.Y - 58, 11, 9, true);
       s += '<polygon points="' + poly([[0,0],[S.w1,0],[S.w1,S.h1],[S.w2,S.h1],[S.w2,S.h1+S.h2],[0,S.h1+S.h2]]) +
            '" style="fill:var(--body);stroke:var(--body-line);stroke-width:2;opacity:.92"/>';
       /* เส้นแบ่งสองส่วน */
@@ -2463,12 +2507,14 @@ const SIMS = [
       /* จุดแขวนและเส้นดิ่ง */
       const hp = T(hx, hy);
       if (S.hang) {
-        s += '<line x1="' + n1(hp.X) + '" y1="' + n1(hp.Y - 60) + '" x2="' + n1(hp.X) + '" y2="' + n1(hp.Y) +
-             '" style="stroke:var(--ink2);stroke-width:2"/>';
-        s += '<line x1="' + n1(hp.X) + '" y1="' + n1(hp.Y) + '" x2="' + n1(hp.X) + '" y2="' + (OY + 30) +
-             '" class="sv-dash" style="stroke:var(--gold)"/>';
-        s += '<circle cx="' + n1(hp.X) + '" cy="' + n1(hp.Y) + '" r="5" class="sv-piv"/>';
-        s += svgTx(hp.X, hp.Y - 68, 'จุดแขวน', 'middle', 'sm');
+        /* เส้นเชือกจากเพดานลงมาที่จุดแขวน แล้วต่อเส้นดิ่งลงไปให้เห็นว่า CG อยู่บนเส้นนี้พอดี */
+        s += '<line x1="' + n1(hp.X) + '" y1="' + n1(hp.Y - 58) + '" x2="' + n1(hp.X) + '" y2="' + n1(hp.Y) +
+             '" style="stroke:var(--ink2);stroke-width:2.4"/>';
+        s += '<line x1="' + n1(hp.X) + '" y1="' + n1(hp.Y) + '" x2="' + n1(hp.X) + '" y2="' + (H - 16) +
+             '" class="sv-dash" style="stroke:var(--gold);stroke-width:1.8"/>';
+        s += '<circle cx="' + n1(hp.X) + '" cy="' + n1(hp.Y) + '" r="5.5" class="sv-piv"/>';
+        s += svgTx(hp.X + 12, hp.Y - 10, 'จุดแขวน', 'start', 'sm');
+        s += svgTx(hp.X + 12, H - 20, 'แนวดิ่งผ่าน CG พอดี', 'start', 'sm');
       } else {
         /* แกนบอกพิกัดเมื่อไม่ได้แขวน */
         s += '<line x1="' + OX + '" y1="' + OY + '" x2="' + n1(OX + S.w1 * SCL + 24) + '" y2="' + OY + '" class="sv-axis"/>';
@@ -2521,7 +2567,8 @@ const SIMS = [
   unit:'u7',
   build(stage, ctl, host) {
     const S = { b:0.6, h:1.2, mu:0.6, th:10, anim:0, slide:0 };
-    const W = 640, H = 340, SCL = 118, PX0 = 120, PY0 = 275;
+    const W = 640, H = 348;
+    const U0 = 1.15, UMIN = -0.55, UMAX = 3.1;      /* ตำแหน่งกล่องและช่วงของพื้นเอียง */
     let raf = null;
 
     function calc() {
@@ -2545,42 +2592,60 @@ const SIMS = [
         cancelAnimationFrame(raf); raf = requestAnimationFrame(draw);
       }
       const ca = Math.cos(a), sa = Math.sin(a);
-      /* พิกัดบนพื้นเอียง: u = ระยะตามพื้น, v = ระยะตั้งฉากขึ้นจากพื้น */
-      const slideU = S.slide * 0.9;
-      const P = (u, v) => ({ X: PX0 + (u + slideU) * SCL * ca + v * SCL * sa,
-                             Y: PY0 - (u + slideU) * SCL * sa + v * SCL * ca });
-      /* มุมล้มเพิ่มเติมรอบขอบล่างขวาของกล่อง */
-      const tipA = S.anim * rad(38);
-      const corner = P(1.0 + S.b, 0);                        /* ขอบล่างด้านขวา (ด้านต่ำ) */
+
+      /* พิกัดบนพื้นเอียง — u = ระยะตามพื้น (บวก = ขึ้นเนินไปทางขวา)
+                            v = ระยะตั้งฉาก "ขึ้นจากผิวพื้น"
+         ทิศตั้งฉากขึ้นบนจอคือ (−sin a, −cos a) เพราะแกน y ของจอชี้ลง
+         เดิมใส่เครื่องหมายกลับ กล่องเลยถูกวาดสะท้อนไปอยู่ "ใต้พื้น" */
+      const slideU = -S.slide * 0.85;                       /* ไถลลงเนิน = u ลดลง */
+      const uv = (u, v) => ({ x: (u + slideU) * ca - v * sa, y: -(u + slideU) * sa - v * ca });
+
+      /* หาขนาดที่พอดีกรอบก่อน แล้วค่อยวาง จะได้ไม่ล้นไม่ว่าตั้งค่าอะไร */
+      const key = [uv(UMIN, 0), uv(UMAX, 0), uv(U0, 0), uv(U0 + S.b, 0),
+                   uv(U0 + S.b, S.h), uv(U0, S.h)];
+      const xs = key.map(p => p.x), ys = key.map(p => p.y);
+      const spanX = Math.max.apply(null, xs) - Math.min.apply(null, xs);
+      const spanY = Math.max.apply(null, ys) - Math.min.apply(null, ys);
+      const SCL = Math.min(118, (W - 120) / Math.max(spanX, .5), (H - 108) / Math.max(spanY, .5));
+      const PX0 = 52 - Math.min.apply(null, xs) * SCL;
+      const PY0 = 40 - Math.min.apply(null, ys) * SCL;
+      const P = (u, v) => { const q = uv(u, v); return { X: PX0 + q.x * SCL, Y: PY0 + q.y * SCL }; };
+
+      /* ล้มโดยหมุนรอบขอบล่าง "ฝั่งลงเนิน" (u น้อย) ซึ่งเป็นขอบที่แนวน้ำหนักจะพ้นออกไปก่อน */
+      const tipA = S.anim * rad(40);
+      const corner = P(U0, 0);
       const rot = (p) => {
         const dx = p.X - corner.X, dy = p.Y - corner.Y;
         const ct = Math.cos(-tipA), st = Math.sin(-tipA);
         return { X: corner.X + dx * ct - dy * st, Y: corner.Y + dx * st + dy * ct };
       };
-      const box = [P(1.0, 0), P(1.0 + S.b, 0), P(1.0 + S.b, S.h), P(1.0, S.h)].map(rot);
-      const cgp = rot(P(1.0 + S.b / 2, S.h / 2));
+      const box = [P(U0, 0), P(U0 + S.b, 0), P(U0 + S.b, S.h), P(U0, S.h)].map(rot);
+      const cgp = rot(P(U0 + S.b / 2, S.h / 2));
 
       let s = '';
-      /* พื้นเอียง */
-      const g1 = { X: PX0 - 60 * ca, Y: PY0 + 60 * sa }, g2 = P(3.4, 0);
+      /* พื้นเอียงพร้อมขีดเฉียงใต้พื้น */
+      const g1 = P(UMIN, 0), g2 = P(UMAX, 0);
       s += svgHatch(g1.X, g1.Y, g2.X, g2.Y, 26, 10, false);
-      /* มุมเอียง */
-      s += '<line x1="' + n1(PX0) + '" y1="' + n1(PY0) + '" x2="' + (PX0 + 120) + '" y2="' + n1(PY0) + '" class="sv-axis"/>';
-      s += '<path d="M ' + (PX0 + 62) + ' ' + n1(PY0) + ' A 62 62 0 0 0 ' +
-           n1(PX0 + 62 * ca) + ' ' + n1(PY0 - 62 * sa) + '" class="sv-axis" style="stroke:var(--brand);stroke-width:1.8"/>';
-      s += svgTx(PX0 + 78, PY0 - 12, fmt(S.th,0) + '°', 'start', 'sm');
+      /* มุมเอียงวัดจากแนวระดับที่ปลายล่างของพื้น */
+      const o = P(0, 0);
+      s += '<line x1="' + n1(o.X) + '" y1="' + n1(o.Y) + '" x2="' + n1(o.X + 104) + '" y2="' + n1(o.Y) +
+           '" class="sv-axis"/>';
+      s += '<path d="M ' + n1(o.X + 58) + ' ' + n1(o.Y) + ' A 58 58 0 0 0 ' +
+           n1(o.X + 58 * ca) + ' ' + n1(o.Y - 58 * sa) + '" class="sv-axis" style="stroke:var(--brand);stroke-width:1.8"/>';
+      s += svgTx(o.X + 68, o.Y - 10, fmt(S.th,0) + '°', 'start', 'sm');
       /* กล่อง */
       s += '<polygon points="' + box.map(p => n1(p.X) + ',' + n1(p.Y)).join(' ') +
            '" style="fill:var(--body);stroke:var(--body-line);stroke-width:2;opacity:.93"/>';
-      /* CG และเส้นดิ่งของน้ำหนัก */
-      s += '<circle cx="' + n1(cgp.X) + '" cy="' + n1(cgp.Y) + '" r="5.5" style="fill:var(--gold)"/>';
-      s += '<line x1="' + n1(cgp.X) + '" y1="' + n1(cgp.Y) + '" x2="' + n1(cgp.X) + '" y2="' + (PY0 + 62) +
-           '" class="sv-dash" style="stroke:var(--gold);stroke-width:1.8"/>';
-      s += svgArrow(cgp.X, cgp.Y, cgp.X, cgp.Y + 52, C_W, 3, 'W');
       /* ช่วงของฐาน — ใช้ดูว่าแนวน้ำหนักตกในฐานไหม */
       s += '<line x1="' + n1(box[0].X) + '" y1="' + n1(box[0].Y) + '" x2="' + n1(box[1].X) + '" y2="' + n1(box[1].Y) +
-           '" style="stroke:var(--ok);stroke-width:4;stroke-linecap:round"/>';
-      s += svgTx((box[0].X + box[1].X)/2, (box[0].Y + box[1].Y)/2 + 22, 'ฐาน b', 'middle', 'sm');
+           '" style="stroke:var(--ok);stroke-width:4.5;stroke-linecap:round"/>';
+      /* CG และแนวดิ่งของน้ำหนัก — ลากยาวลงไปให้เห็นว่าตกในฐานหรือพ้นฐาน */
+      const groundY = o.Y - (cgp.X - o.X) * Math.tan(a);          /* ระดับพื้นตรงแนวดิ่งของ CG */
+      s += '<line x1="' + n1(cgp.X) + '" y1="' + n1(cgp.Y) + '" x2="' + n1(cgp.X) +
+           '" y2="' + n1(Math.max(groundY, cgp.Y) + 26) + '" class="sv-dash" style="stroke:var(--gold);stroke-width:1.8"/>';
+      s += '<circle cx="' + n1(cgp.X) + '" cy="' + n1(cgp.Y) + '" r="5.5" style="fill:var(--gold)"/>';
+      s += svgArrow(cgp.X, cgp.Y, cgp.X, cgp.Y + 46, C_W, 3, 'W');
+      s += svgTx((box[0].X + box[1].X) / 2 - 6, (box[0].Y + box[1].Y) / 2 + 26, 'ฐาน b', 'middle', 'sm');
       stage.innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '">' + s + '</svg>';
 
       $('#stTip', host).textContent = fmt(c.tip, 1);
@@ -2630,7 +2695,9 @@ const SIMS = [
   unit:'u8',
   build(stage, ctl, host) {
     const S = { th:60, mu:0.4, d:0.5, mP:60, mL:12 };
-    const W = 620, H = 360, BX = 130, BY = 300, LEN = 235;      /* ความยาวบันไดบนจอ */
+    /* บันไดยาวเท่าเดิมเสมอ เปลี่ยนมุมแล้ว "ฐานเลื่อน" เข้าออกจากกำแพงเหมือนของจริง
+       (เดิมตรึงฐานไว้แล้วยืดบันไดตามมุม ซึ่งผิดธรรมชาติและทำให้ภาพเบียดกัน) */
+    const W = 700, H = 400, WX = 496, FY = 306, LEN = 252;
 
     function calc() {
       const t = Math.tan(rad(S.th));
@@ -2641,47 +2708,73 @@ const SIMS = [
       return { Nf: Nf, Nw: Nw, fmax: fmax, safe: Nw <= fmax + 1e-9, thMin: thMin };
     }
 
+    /* คนเป็นสติกแมนเส้นหนา อ่านออกง่ายกว่าวงกลมกับขีดเดียว
+       ยืนบนขั้นบันได ลำตัวตั้งตรง มือข้างหนึ่งยกขึ้นจับบันได */
+    function stickMan(x, y, h, col) {
+      const hip = y - h * 0.44, sh = y - h * 0.70, head = y - h * 0.855;
+      const lw = Math.max(3.2, h * 0.085);
+      return '<g style="stroke:' + col + ';stroke-width:' + n1(lw) +
+        ';stroke-linecap:round;fill:none">' +
+        '<line x1="' + n1(x) + '" y1="' + n1(sh) + '" x2="' + n1(x) + '" y2="' + n1(hip) + '"/>' +
+        '<line x1="' + n1(x) + '" y1="' + n1(hip) + '" x2="' + n1(x - h * 0.17) + '" y2="' + n1(y) + '"/>' +
+        '<line x1="' + n1(x) + '" y1="' + n1(hip) + '" x2="' + n1(x + h * 0.16) + '" y2="' + n1(y) + '"/>' +
+        '<line x1="' + n1(x) + '" y1="' + n1(sh + h * 0.04) + '" x2="' + n1(x - h * 0.21) +
+          '" y2="' + n1(y - h * 0.50) + '"/>' +
+        '<line x1="' + n1(x) + '" y1="' + n1(sh + h * 0.04) + '" x2="' + n1(x + h * 0.20) +
+          '" y2="' + n1(y - h * 0.90) + '"/>' +
+        '</g><circle cx="' + n1(x) + '" cy="' + n1(head) + '" r="' + n1(h * 0.145) +
+        '" style="fill:' + col + '"/>';
+    }
+
     function draw() {
       const c = calc(), a = rad(S.th);
-      const tx = BX + LEN * Math.cos(a), ty = BY - LEN * Math.sin(a);   /* ปลายบนที่แตะกำแพง */
-      const P = f => ({ X: BX + LEN * f * Math.cos(a), Y: BY - LEN * f * Math.sin(a) });
+      const ca = Math.cos(a), sa = Math.sin(a);
+      const BX = WX - LEN * ca;                       /* ฐานบันไดเลื่อนตามมุม */
+      const tx = WX, ty = FY - LEN * sa;              /* ปลายบนที่แตะกำแพง */
+      const P = f => ({ X: BX + LEN * f * ca, Y: FY - LEN * f * sa });
+      /* ความยาวลูกศรแบบมีเพดาน ไม่ให้ยาวจนพุ่งออกนอกกรอบเวลาแรงมาก */
+      const barN = clamp(c.Nw * 0.22, 26, 96);
+      const barF = clamp(c.Nf * 0.085, 30, 86);
 
       let s = '';
       /* กำแพงและพื้น */
-      s += svgHatch(tx, 40, tx, BY, 16, 10, true);
-      s += svgHatch(40, BY, W - 60, BY, 26, 10, false);
-      s += svgTx(tx + 26, 56, 'กำแพงลื่น', 'start', 'sm');
+      s += svgHatch(tx, 44, tx, FY, 15, 10, true);
+      s += svgHatch(52, FY, W - 40, FY, 26, 10, false);
+      s += svgTx(tx + 24, 60, 'กำแพงลื่น', 'start', 'sm');
       /* บันได */
-      s += '<line x1="' + n1(BX) + '" y1="' + BY + '" x2="' + n1(tx) + '" y2="' + n1(ty) +
+      s += '<line x1="' + n1(BX) + '" y1="' + FY + '" x2="' + n1(tx) + '" y2="' + n1(ty) +
            '" style="stroke:var(--body-line);stroke-width:9;stroke-linecap:round"/>';
-      for (let i = 1; i < 8; i++) {
-        const p = P(i / 8), px2 = 9 * Math.sin(a), py2 = 9 * Math.cos(a);
+      for (let i = 1; i < 9; i++) {
+        const p = P(i / 9), px2 = 9 * sa, py2 = 9 * ca;
         s += '<line x1="' + n1(p.X - px2) + '" y1="' + n1(p.Y - py2) + '" x2="' + n1(p.X + px2) +
-             '" y2="' + n1(p.Y + py2) + '" style="stroke:var(--panel2);stroke-width:2.5"/>';
+             '" y2="' + n1(p.Y + py2) + '" style="stroke:var(--panel2);stroke-width:2.6"/>';
       }
-      /* คน */
+      /* คนยืนบนบันได */
       if (S.mP > 0) {
         const p = P(S.d);
-        s += '<circle cx="' + n1(p.X - 9) + '" cy="' + n1(p.Y - 20) + '" r="9" style="fill:var(--brand)"/>';
-        s += '<line x1="' + n1(p.X - 9) + '" y1="' + n1(p.Y - 11) + '" x2="' + n1(p.X - 9) + '" y2="' + n1(p.Y + 4) +
-             '" style="stroke:var(--brand);stroke-width:4;stroke-linecap:round"/>';
-        s += svgArrow(p.X, p.Y, p.X, p.Y + 46, C_W, 2.8, fmt(S.mP * G, 0) + ' N');
+        s += stickMan(p.X - 5, p.Y, 52, 'var(--brand)');
+        s += svgArrow(p.X + 18, p.Y, p.X + 18, p.Y + 38, C_W, 2.8, '');
+        s += svgTx(p.X + 26, p.Y + 44, 'คน ' + fmt(S.mP * G, 0) + ' N', 'start', 'bg', true);
       }
-      /* น้ำหนักบันได */
+      /* น้ำหนักบันไดที่จุดกึ่งกลาง — ป้ายไว้เหนือลูกศร กันชนกับส่วนโค้งบอกมุมที่อยู่ล่าง */
       const mid = P(0.5);
-      s += svgArrow(mid.X + 14, mid.Y, mid.X + 14, mid.Y + 38, C_W, 2.2, fmt(S.mL * G, 0) + ' N');
-      /* แรงที่กำแพง */
-      s += svgArrow(tx, ty, tx - 22 - Math.min(70, c.Nw * 0.22), ty, C_REACT, 3.2, 'N ' + fmt(c.Nw, 0) + ' N');
-      /* แรงที่พื้น */
-      s += svgArrow(BX, BY, BX, BY - 30 - Math.min(70, c.Nf * 0.06), C_REACT, 3.2, '');
-      s += svgTx(BX - 42, BY - 44, 'N พื้น', 'middle', 'sm');
-      s += svgArrow(BX, BY, BX + 24 + Math.min(70, c.Nw * 0.22), BY, C_OK, 3.2, 'f ' + fmt(c.Nw, 0) + ' N');
-      s += svgTx(BX + 6, BY + 24, 'แรงเสียดทานที่ต้องใช้', 'start', 'sm');
-      /* มุม */
-      s += '<path d="M ' + (BX + 52) + ' ' + BY + ' A 52 52 0 0 0 ' + n1(BX + 52 * Math.cos(a)) + ' ' +
-           n1(BY - 52 * Math.sin(a)) + '" class="sv-axis" style="stroke:var(--brand);stroke-width:1.8"/>';
-      s += svgTx(BX + 66, BY - 16, fmt(S.th,0) + '°', 'start', 'sm');
+      s += svgArrow(mid.X - 18, mid.Y, mid.X - 18, mid.Y + 32, C_W, 2.4, '');
+      s += svgTx(mid.X - 26, mid.Y - 8, 'บันได ' + fmt(S.mL * G, 0) + ' N', 'end', 'bg', true);
+      /* แรงที่กำแพงดัน — ป้ายวางเหนือลูกศร ไม่ให้ทับตัวบันได */
+      s += svgArrow(tx, ty, tx - barN, ty, C_REACT, 3.2, '');
+      s += svgTx(tx - barN - 6, ty - 10, 'N กำแพง ' + fmt(c.Nw, 0) + ' N', 'end', 'bg', true);
+      /* แรงตั้งฉากจากพื้น — ป้ายไว้ซ้ายมือของลูกศร */
+      s += svgArrow(BX, FY, BX, FY - barF, C_REACT, 3.2, '');
+      s += svgTx(BX - 12, FY - barF - 6, 'N พื้น ' + fmt(c.Nf, 0) + ' N', 'end', 'bg', true);
+      /* แรงเสียดทานที่ต้องใช้ — ป้ายไว้ใต้พื้น จะได้ไม่ชนอะไรเลย */
+      s += svgArrow(BX, FY, BX + barN, FY, C_OK, 3.2, '');
+      s += svgTx(BX + barN / 2, FY + 32, 'f ที่ต้องใช้ ' + fmt(c.Nw, 0) + ' N', 'middle', 'bg', true);
+      /* มุมที่บันไดทำกับพื้น */
+      s += '<path d="M ' + n1(BX + 48) + ' ' + FY + ' A 48 48 0 0 0 ' + n1(BX + 48 * ca) + ' ' +
+           n1(FY - 48 * sa) + '" class="sv-axis" style="stroke:var(--brand);stroke-width:1.8"/>';
+      s += svgTx(BX + 56, FY - 12, fmt(S.th,0) + '°', 'start', 'sm', true);
       stage.innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '">' + s + '</svg>';
+      deOverlap($('svg', stage), H);
 
       $('#ldNw', host).textContent = fmt(c.Nw, 0);
       $('#ldFm', host).textContent = fmt(c.fmax, 0);
