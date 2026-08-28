@@ -28,7 +28,7 @@ const APPS_URL = 'https://script.google.com/macros/s/AKfycbzNfunJ0VIQlC-_CvUWA4V
 // ที่อยู่เว็บแอปของ "ห้องเรียนสมดุลกล" ซึ่งใช้ชีตคนละใบกับสี่วิชาข้างบน
 // เอามาจาก Apps Script ของชีตสมดุลกล → ทำให้ใช้งานได้ → เว็บแอป (ลงท้าย /exec)
 // ถ้าปล่อยว่าง สคริปต์จะไม่ยอมสร้างไฟล์ให้ เพราะไฟล์ที่แจกนักเรียนจะส่งคะแนนขึ้นชีตไม่ได้
-const EQ_APPS_URL = '';
+const EQ_APPS_URL = 'https://script.google.com/macros/s/AKfycbwiwNszVH4qwYNNr5o35r4JVWPbY66mM5XoQF-orwe-PmwvCM5wR9Gpw65nmQfPwT_W/exec';
 
 const TARGETS = [
   {

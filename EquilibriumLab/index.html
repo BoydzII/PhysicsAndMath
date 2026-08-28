@@ -659,10 +659,12 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
      9) เริ่มต้นแอป
    ========================================================================== */
 
-/* @@BUILTIN@@ ----------------------------------------------------------------
-   บล็อกนี้ถูกเขียนทับตอนสร้าง "ไฟล์สำหรับแจกนักเรียน" ห้ามแก้รูปแบบบรรทัด */
-const BUILTIN = {"url": "", "studentOnly": true, "lockCloud": true, "school": "โรงเรียนปากช่อง", "teacher": "นายรังสรรค์ กรีกูล", "term": ""};
-/* @@BUILTIN_END@@ ---------------------------------------------------------- */
+/* ค่าที่ฝังมากับไฟล์ — ฉบับของครูกับฉบับที่แจกนักเรียนต่างกันแค่บล็อกนี้บล็อกเดียว
+   สร้างฉบับนักเรียนด้วย  node tools/build-dist.mjs  (หรือปุ่มในแท็บตั้งค่า)
+   *** ห้ามลบบรรทัดเครื่องหมาย @@BUILTIN@@ ทั้งสองอัน ตัวสร้างไฟล์ใช้หาตำแหน่ง *** */
+/* @@BUILTIN@@ */
+const BUILTIN = {"url":"https://script.google.com/macros/s/AKfycbwiwNszVH4qwYNNr5o35r4JVWPbY66mM5XoQF-orwe-PmwvCM5wR9Gpw65nmQfPwT_W/exec","studentOnly":true,"lockCloud":true,"school":"โรงเรียนปากช่อง","teacher":"นายรังสรรค์ กรีกูล","term":""};
+/* @@BUILTIN-END@@ */
 
 const APPVER   = '1.0.0';
 const SUBJECT  = 'equilibrium';
