@@ -10,6 +10,8 @@
 !tools/
 tools/*
 !tools/build-dist.mjs
+!tools/check.mjs
+!tools/publish.sh
 
 # ---- คลังโจทย์คณิตศาสตร์ ----
 !MathAutoSheet/

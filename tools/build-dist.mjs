@@ -25,6 +25,11 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 // ที่อยู่เว็บแอปของ Google Apps Script — ต้องตรงกับที่ตั้งไว้ใน index.html หน้าพอร์ทัล
 const APPS_URL = 'https://script.google.com/macros/s/AKfycbzNfunJ0VIQlC-_CvUWA4VuFlQ1IGUyrzEjTQLTGV0Mqi-k_KnDWnspzcA9yOXQ2vwE/exec';
 
+// ที่อยู่เว็บแอปของ "ห้องเรียนสมดุลกล" ซึ่งใช้ชีตคนละใบกับสี่วิชาข้างบน
+// เอามาจาก Apps Script ของชีตสมดุลกล → ทำให้ใช้งานได้ → เว็บแอป (ลงท้าย /exec)
+// ถ้าปล่อยว่าง สคริปต์จะไม่ยอมสร้างไฟล์ให้ เพราะไฟล์ที่แจกนักเรียนจะส่งคะแนนขึ้นชีตไม่ได้
+const EQ_APPS_URL = '';
+
 const TARGETS = [
   {
     src: 'PhysicsAutoSheet/physics.html',
@@ -50,6 +55,15 @@ const TARGETS = [
     out: 'ScienceAutoSheet/index.html',
     // วิทยาศาสตร์ยังไม่ได้เชื่อมชีตเช่นกัน จึงเป็นฉบับนักเรียนล้วน
     builtin: { url: '', studentOnly: true, lockCloud: false, logo: '', header: null, about: null }
+  },
+  {
+    src: 'EquilibriumLab/equilibrium.html',
+    out: 'EquilibriumLab/index.html',
+    // ห้องเรียนสมดุลกลใช้ชีตของตัวเองคนละใบกับสี่วิชาข้างบน (คนละ Apps Script)
+    // ฉบับนักเรียนล็อกไม่ให้เข้าหน้าครู และห้ามตัดการเชื่อมต่อชีต ผลจะได้ส่งขึ้นชีตเสมอ
+    needUrl: true,
+    builtin: { url: EQ_APPS_URL, studentOnly: true, lockCloud: true,
+               school: 'โรงเรียนปากช่อง', teacher: 'นายรังสรรค์ กรีกูล', term: '' }
   }
 ];
 
@@ -57,6 +71,13 @@ const RE = /\/\* @@BUILTIN@@ \*\/[\s\S]*?\/\* @@BUILTIN-END@@ \*\//;
 
 let fail = 0;
 for (const t of TARGETS) {
+  // วิชาที่ต้องต่อชีต ถ้ายังไม่ได้ใส่ที่อยู่เว็บแอป อย่าสร้างไฟล์ให้เด็ดขาด
+  // ไม่งั้นจะได้ไฟล์ที่เปิดใช้ได้ตามปกติแต่คะแนนไม่ขึ้นชีต ซึ่งกว่าจะรู้ตัวก็สอบไปแล้ว
+  if (t.needUrl && !t.builtin.url) {
+    console.error('✗ ' + t.out + ' : ยังไม่ได้ใส่ EQ_APPS_URL ที่หัวไฟล์ tools/build-dist.mjs\n' +
+      '   เอาที่อยู่เว็บแอปของชีตสมดุลกลมาวาง (ลงท้ายด้วย /exec) แล้วสั่งใหม่');
+    fail++; continue;
+  }
   const srcPath = path.join(ROOT, t.src), outPath = path.join(ROOT, t.out);
   const src = fs.readFileSync(srcPath, 'utf8');
   if (!RE.test(src)) {
