@@ -780,7 +780,12 @@ function defaultDB() {
       showCredit: true,       // แสดงชื่อผู้พัฒนาท้ายเอกสารที่พิมพ์
       workLines: {},          // จำนวนบรรทัดของแต่ละช่องในกรอบเขียนวิธีทำ
       passPct: 60,
-      autoDraft: true         // ส่งความคืบหน้าขึ้นชีตอัตโนมัติระหว่างทำ
+      autoDraft: true,        // ส่งความคืบหน้าขึ้นชีตอัตโนมัติระหว่างทำ
+      /* คุมสอบ — มีผลเฉพาะชุดที่เป็น "แบบทดสอบ" เท่านั้น · 0 ทุกตัว = ปิดทั้งระบบ
+         ค่าพวกนี้เป็นแค่ค่าตั้งต้นของกล่องสร้างแบบทดสอบ กติกาจริงติดไปกับตัวชุดโจทย์ */
+      examMin: 0,             // เวลาทำแบบทดสอบ (นาที) 0 = ไม่จำกัดเวลา
+      examMaxOut: 0,          // ออกจากแอปได้กี่ครั้งก่อนถูกส่งอัตโนมัติ
+      examMaxOutSec: 0        // ออกจากแอปได้รวมกี่วินาทีก่อนถูกส่งอัตโนมัติ
     },
     quizzes: [],
     attempts: [],
@@ -816,6 +821,11 @@ function loadDB() {
       DB.cur = Object.assign(defaultDB().cur, o.cur || {});
     }
   } catch (e) { console.warn('อ่านข้อมูลเดิมไม่ได้', e); }
+  /* ข้อมูลที่บันทึกไว้ก่อนมีระบบคุมสอบจะไม่มีคีย์พวกนี้ ต้องเติมให้ก่อนใช้งาน
+     ไม่งั้นค่าจะเป็น undefined แล้วช่องกรอกในกล่องสร้างแบบทดสอบจะว่างเปล่า */
+  if (DB.settings.examMin == null) DB.settings.examMin = 0;
+  if (DB.settings.examMaxOut == null) DB.settings.examMaxOut = 0;
+  if (DB.settings.examMaxOutSec == null) DB.settings.examMaxOutSec = 0;
   try {
     localStorage.setItem(LS_KEY + '.probe', '1');
     localStorage.removeItem(LS_KEY + '.probe');
@@ -3843,6 +3853,11 @@ function createQuiz(o) {
     topics: o.topics.slice(), subs: (o.subs || []).slice(), counts: Object.assign({}, o.counts),
     kind: o.kind === 'test' ? 'test' : 'practice',
     seedShift: o.kind === 'test' ? (Math.floor(Math.random() * 2000000000) + 1) : 0,
+    /* กติกาคุมสอบติดไปกับตัวชุดโจทย์เสมอ ไม่ใช่ให้ไปอ่านค่าตั้งตอนเริ่มทำ
+       เพราะรหัสใบงานที่แจกนักเรียนพาไปได้แค่สิ่งที่อยู่ในตัวชุดเท่านั้น */
+    limitSec: o.kind === 'test' ? Math.round((DB.settings.examMin || 0) * 60) : 0,
+    maxOut: o.kind === 'test' ? Math.round(DB.settings.examMaxOut || 0) : 0,
+    maxOutSec: o.kind === 'test' ? Math.round(DB.settings.examMaxOutSec || 0) : 0,
     g: DB.settings.g, easyG10: !!DB.settings.easyG10,
     items: items.map(it => ({ tplId: it.tplId, seed: it.seed }))
   };
@@ -4402,11 +4417,26 @@ function makeTestDialog(quizId) {
       'ขณะทำจะไม่มีเฉลยและไม่บอกถูกผิด จนกว่าจะกดส่ง</div>' +
       '<label class="hint" for="mtTitle">ชื่อชุด</label>' +
       '<input type="text" id="mtTitle" style="width:100%" value="' +
-      esc('แบบทดสอบ — ' + (q.title || '')) + '">',
+      esc('แบบทดสอบ — ' + (q.title || '')) + '">' +
+      '<div class="row" style="gap:18px;margin-top:11px;align-items:flex-end;flex-wrap:wrap">' +
+      '<div><label class="hint" for="mtMin">จำกัดเวลา (นาที)</label><br>' +
+      '<input type="number" id="mtMin" min="0" max="300" step="5" style="width:110px" inputmode="numeric" value="' +
+      (DB.settings.examMin || 0) + '"></div>' +
+      '<div><label class="hint" for="mtOut">ออกจากแอปได้ไม่เกิน (ครั้ง)</label><br>' +
+      '<input type="number" id="mtOut" min="0" max="20" style="width:110px" inputmode="numeric" value="' +
+      (DB.settings.examMaxOut || 0) + '"></div></div>' +
+      '<div class="hint" style="margin-top:8px">ใส่ <b>0</b> ถ้าไม่ต้องการจำกัด · ' +
+      'ระบบบันทึกการออกจากแอปให้เสมอแม้ไม่ได้ตั้งโควตา<br>' +
+      'จับได้เฉพาะการสลับแอปหรือล็อกจอ<b>บนเครื่องเดียวกัน</b> ' +
+      'เปิดอีกเครื่องหรือแคปหน้าจอ ระบบไม่รู้ — ใช้เป็นหลักฐานประกอบ ไม่ใช่คำตัดสิน</div>',
     buttons: [
       { label: 'ยกเลิก' },
       { label: 'สร้างแบบทดสอบ', cls: 'primary', act: (close, root) => {
           const t = makeTestFrom(q, ($('#mtTitle', root).value || '').trim());
+          // กติกาคุมสอบติดไปกับตัวชุดโจทย์ เครื่องนักเรียนจึงรู้กติกาจากรหัสใบงานได้เลย
+          t.limitSec = clamp(Math.round(Number($('#mtMin', root).value) || 0), 0, 300) * 60;
+          t.maxOut = clamp(Math.round(Number($('#mtOut', root).value) || 0), 0, 20);
+          t.maxOutSec = Math.max(0, Math.round(DB.settings.examMaxOutSec || 0));
           DB.quizzes.push(t);
           DB.cur.quizId = t.id;
           save(true); close(); renderMake();
@@ -4474,12 +4504,24 @@ function needLearnerName() {
   return true;
 }
 
-function startQuiz(quizId, assignCode) {
+async function startQuiz(quizId, assignCode) {
   const q = DB.quizzes.find(x => x.id === quizId);
   if (!q) return;
   const who = currentLearner();
   if (!who) { toast('เลือกผู้เรียนที่แถบบนก่อน (หรือเพิ่มรายชื่อในแท็บตั้งค่า)', 'bad'); return; }
   if (needLearnerName()) return;
+  /* แจ้งนักเรียนก่อนเสมอว่าชุดนี้มีการคุมสอบ — ทั้งเรื่องความเป็นธรรม
+     และเพราะการรู้ล่วงหน้านี่แหละคือสิ่งที่ทำให้ระบบได้ผลจริง */
+  if (isTest(q) && (q.limitSec || q.maxOut || q.maxOutSec)) {
+    const bits = [];
+    if (q.limitSec) bits.push('• <b>จำกัดเวลา ' + Math.round(q.limitSec / 60) + ' นาที</b> ' +
+      'นาฬิกาเดินต่อแม้จะออกจากแอปไปแล้ว');
+    bits.push('• <b>ระบบบันทึกทุกครั้งที่ออกจากแอป</b> ทั้งจำนวนครั้งและเวลา และครูเห็นข้อมูลนี้');
+    if (q.maxOut) bits.push('• ออกจากแอปได้ไม่เกิน <b>' + q.maxOut + ' ครั้ง</b> เกินกว่านั้นระบบจะส่งข้อสอบให้เอง');
+    if (!await confirmBox('เริ่มทำแบบทดสอบ',
+      'ชุดนี้เป็นแบบทดสอบที่มีการคุมสอบ<br>' + bits.join('<br>') +
+      '<br><br>เริ่มแล้วนาฬิกาเดินทันที ต้องการเริ่มเลยหรือไม่?', 'เริ่มทำ')) return;
+  }
   const a = {
     id: uid(), quizId: q.id, studentId: who.studentId, soloName: who.name,
     // ติดเลขที่/เลขประจำตัว/ชั้นไปกับผลด้วย เพื่อให้ครูจับคู่ได้แม่นตอนรวมไฟล์จากเครื่องนักเรียน
@@ -4488,6 +4530,7 @@ function startQuiz(quizId, assignCode) {
     startedAt: Date.now(), finishedAt: null,
     answers: q.items.map(() => ({ raw: [], pick: null, checked: false, score: 0, tries: 0, revealed: false, sec: 0 }))
   };
+  procInit(a, q);          // ตั้งกติกาคุมสอบและ snapshot ไว้กับครั้งนี้
   DB.attempts.push(a);
   DB.cur.quizId = q.id; DB.cur.attemptId = a.id; DB.cur.i = 0;
   QT.i = -1;
@@ -4501,6 +4544,109 @@ function stampTime() {
   const a = curAttempt();
   if (a && QT.i >= 0 && a.answers[QT.i]) a.answers[QT.i].sec += (Date.now() - QT.t0) / 1000;
   QT.i = -1;
+}
+
+/* --- 5.4ก คุมสอบ: จับการออกจากแอป และนาฬิกาสอบ ---------------------------
+   ใช้กับชุด kind='test' เท่านั้น · เก็บทุกอย่างไว้กับ attempt จึงรีเฟรชแล้วไม่หาย
+   และผสานไฟล์สำรองจากเครื่องนักเรียนแล้วยังครบ
+
+   ใช้ visibilitychange กับ pagehide เท่านั้น ไม่ใช้ window.blur
+   เพราะบนไอแพดแค่แป้นพิมพ์เด้งขึ้นหรือเปิดกล่องโมดัลก็ยิง blur แล้ว
+   ถ้าใช้ตัวนั้นจะนับเกินจนตัวเลขใช้อ้างอิงอะไรไม่ได้เลย
+
+   สิ่งที่ระบบนี้ทำไม่ได้ (ต้องบอกครูให้ชัด) — จับได้เฉพาะบนเครื่องเดียวกัน
+   เปิดมือถืออีกเครื่อง แคปหน้าจอ หรือเพื่อนบอก จับไม่ได้ทั้งสิ้น
+   -------------------------------------------------------------------------- */
+const PROC_MIN_SEC = 1.5;     // ออกไปสั้นกว่านี้ไม่นับ (แถบแจ้งเตือน · สลับพลาด)
+const PROC_MAX_EVENTS = 200;  // กันข้อมูลบวมเมื่อมีคนสลับแอปรัว ๆ
+
+/** ตั้งกติกาคุมสอบให้ครั้งที่เพิ่งเริ่ม — snapshot ไว้กับ attempt เลย
+    ครูเปลี่ยนค่าตั้งกลางคันแล้วต้องไม่กระทบคนที่กำลังสอบอยู่ */
+function procInit(a, q) {
+  if (!isTest(q)) return;
+  const s = DB.settings;
+  a.limitSec  = Math.round((q.limitSec  != null ? q.limitSec  : (s.examMin || 0) * 60) || 0);
+  a.maxOut    = Math.round((q.maxOut    != null ? q.maxOut    : s.examMaxOut || 0) || 0);
+  a.maxOutSec = Math.round((q.maxOutSec != null ? q.maxOutSec : s.examMaxOutSec || 0) || 0);
+  a.proc = { nOut: 0, secOut: 0, openAt: 0, events: [], autoBy: '' };
+}
+/** ครั้งที่กำลังทำอยู่และอยู่ในโหมดคุมสอบเท่านั้น นอกนั้นคืน null */
+function procCur() {
+  const a = curAttempt();
+  if (!a || a.finishedAt || !a.proc) return null;
+  return a;
+}
+/** ออกจากแอป — บันทึกทันที เพราะเครื่องอาจดับตอนนี้พอดี */
+function procLeave() {
+  const a = procCur(); if (!a) return;
+  if (a.proc.openAt) return;              // ออกซ้อนกัน ไม่เปิดเหตุการณ์ใหม่
+  a.proc.openAt = Date.now();
+  save(true);
+}
+/** กลับเข้าแอป — คืนจำนวนวินาทีที่หายไป หรือ null ถ้าสั้นเกินกว่าจะนับ */
+function procReturn() {
+  const a = procCur(); if (!a) return null;
+  const t0 = a.proc.openAt;
+  if (!t0) return null;
+  a.proc.openAt = 0;
+  const sec = (Date.now() - t0) / 1000;
+  if (sec < PROC_MIN_SEC) { save(true); return null; }
+  a.proc.nOut++;
+  a.proc.secOut += sec;
+  a.proc.events.push({ at: t0, sec: Math.round(sec) });
+  if (a.proc.events.length > PROC_MAX_EVENTS) a.proc.events.shift();
+  save(true);
+  return sec;
+}
+/** เกินโควตาแล้วหรือยัง — คืนข้อความเหตุผล หรือ '' ถ้ายังไม่เกิน */
+function procOverQuota(a) {
+  if (!a || !a.proc) return '';
+  if (a.maxOut && a.proc.nOut > a.maxOut)
+    return 'ออกจากแอป ' + a.proc.nOut + ' ครั้ง เกินที่กำหนดไว้ ' + a.maxOut + ' ครั้ง';
+  if (a.maxOutSec && a.proc.secOut > a.maxOutSec)
+    return 'อยู่นอกแอปรวม ' + mmss(a.proc.secOut) + ' นาที เกินที่กำหนดไว้ ' + mmss(a.maxOutSec);
+  return '';
+}
+/** วินาทีที่เหลือของนาฬิกาสอบ — null = ชุดนี้ไม่จำกัดเวลา
+    คิดจากเวลาเริ่มเสมอ ห้ามนับถอยหลังด้วยตัวแปรในหน่วยความจำ
+    ไม่งั้นรีเฟรชหน้าทีเดียวได้เวลาคืนฟรี */
+function procSecLeft(a) {
+  if (!a || !a.limitSec) return null;
+  return Math.max(0, a.limitSec - (Date.now() - a.startedAt) / 1000);
+}
+/** กลับเข้าแอปแล้วเตือนให้เห็นเต็ม ๆ — เตือนทุกครั้ง ไม่ใช่แค่ครั้งแรก */
+function procBack() {
+  const sec = procReturn();
+  if (sec == null) return;
+  const a = procCur(); if (!a) return;
+  const why = procOverQuota(a);
+  if (why) { doFinish('ออกจากแอปเกินกำหนด'); return; }
+  const quota = [];
+  if (a.maxOut) quota.push('ออกได้อีก <b>' + Math.max(0, a.maxOut - a.proc.nOut) + ' ครั้ง</b>');
+  if (a.maxOutSec) quota.push('เหลือเวลานอกแอปอีก <b>' + mmss(Math.max(0, a.maxOutSec - a.proc.secOut)) + '</b>');
+  openModal({
+    title: 'ระบบบันทึกว่าคุณออกจากแอป',
+    bodyHTML: '<div class="notice warn">ครั้งนี้ออกไป <b>' + mmss(sec) + '</b> นาที<br>' +
+      'รวมทั้งหมด <b>' + a.proc.nOut + ' ครั้ง</b> เป็นเวลา <b>' + mmss(a.proc.secOut) + '</b> นาที</div>' +
+      (quota.length ? '<div class="hint" style="margin-top:9px">' + quota.join(' · ') +
+        ' — เกินกว่านี้ระบบจะส่งข้อสอบให้อัตโนมัติ</div>' : '') +
+      '<div class="hint" style="margin-top:9px">ข้อมูลนี้จะแสดงในผลสอบที่ครูเห็น</div>',
+    buttons: [{ label: 'รับทราบ กลับไปทำต่อ', cls: 'primary' }]
+  });
+  renderDo();
+}
+/** เดินทุกวินาที — มีตัวเดียวในแอป เริ่มตอนบูตแล้วตรวจเงื่อนไขเอง
+    (ห้ามเปิด-ปิดตามการวาดหน้าจอ เดี๋ยวหลุดค้างซ้อนกันหลายตัว) */
+function procTick() {
+  const a = procCur(); if (!a) return;
+  const left = procSecLeft(a);
+  if (left == null) return;
+  const el = $('#examClock');
+  if (el) {
+    el.textContent = mmss(left);
+    el.className = 'tag ' + (left <= 60 ? 'l3' : left <= 300 ? 'l2' : 't');
+  }
+  if (left <= 0) doFinish('หมดเวลา');
 }
 function gotoQ(i) {
   const a = curAttempt(); if (!a) return;
@@ -4544,7 +4690,10 @@ function renderDo() {
     '<div class="hint">ผู้ทำ: ' + esc(attemptWho(a)) +
     ' · ข้อ ' + (i + 1) + ' จาก ' + probs.length +
     (T ? ' · ตอบแล้ว ' + done + ' ข้อ'
-       : ' · ตรวจแล้ว ' + done + ' ข้อ · ได้ ' + fmt(gotScore) + ' คะแนน') + '</div></div>' +
+       : ' · ตรวจแล้ว ' + done + ' ข้อ · ได้ ' + fmt(gotScore) + ' คะแนน') +
+    (T && a.limitSec ? ' · เหลือเวลา <span class="tag t" id="examClock">' + mmss(procSecLeft(a)) + '</span>' : '') +
+    (T && a.proc && a.proc.nOut ? ' · <span class="tag l3">ออกจากแอป ' + a.proc.nOut + ' ครั้ง</span>' : '') +
+    '</div></div>' +
     '<button class="sm" id="btnFinish">ส่งคำตอบ / จบชุดนี้</button></div>' +
     '<div class="bar" style="margin-top:9px"><i style="width:' + Math.round(done / probs.length * 100) + '%"></i></div>' +
     '<div class="qnav" style="margin-top:11px">' +
@@ -4556,7 +4705,13 @@ function renderDo() {
       return '<button class="' + cls + '" data-go="' + k + '">' + (k + 1) + '</button>';
     }).join('') + '</div>' +
     (T ? '<div class="hint" style="margin-top:9px">โหมดแบบทดสอบ — ไม่แสดงเฉลยและไม่บอกถูกผิดระหว่างทำ ' +
-         'กลับไปแก้คำตอบข้อไหนก็ได้ก่อนกดส่ง</div>' : '') + '</div>';
+         'กลับไปแก้คำตอบข้อไหนก็ได้ก่อนกดส่ง</div>' : '') +
+    (T && (a.limitSec || a.maxOut || a.maxOutSec)
+      ? '<div class="notice warn" style="margin-top:9px">ชุดนี้มีการคุมสอบ — ' +
+        '<b>ระบบบันทึกทุกครั้งที่ออกจากแอป</b>' +
+        (a.limitSec ? ' · นาฬิกาเดินต่อแม้ออกจากแอปไปแล้ว' : '') +
+        (a.maxOut ? ' · ออกได้ไม่เกิน ' + a.maxOut + ' ครั้ง เกินกว่านั้นระบบจะส่งให้เอง' : '') +
+        '</div>' : '') + '</div>';
 
   // ใบงานที่มาจากไฟล์รุ่นใหม่กว่าอาจอ้างแม่แบบที่เครื่องนี้ยังไม่มี (เช่น บทที่เพิ่มภายหลัง)
   // กรณีนี้สร้างโจทย์ไม่ได้ ต้องบอกให้ชัดว่าให้ไปโหลดไฟล์รุ่นใหม่ ไม่ใช่ปล่อยให้จอว่าง
@@ -4714,10 +4869,22 @@ async function finishAttempt() {
     if (!await confirmBox('ส่งแบบทดสอบ',
       'ตอบครบทุกข้อแล้ว — <b>ส่งแล้วจะแก้คำตอบไม่ได้อีก</b><br>ต้องการส่งเลยหรือไม่?', 'ส่งเลย')) return;
   }
+  doFinish('');
+}
+
+/** ปิดชุดจริง ๆ — why ว่าง = นักเรียนกดส่งเอง · มีข้อความ = ระบบส่งให้อัตโนมัติ
+    ทั้งสองทางต้องผ่านฟังก์ชันนี้ตัวเดียว ไม่งั้นผลของการส่งอัตโนมัติจะไม่ขึ้นชีต
+    แล้วกว่าครูจะรู้ก็สอบไปแล้ว */
+async function doFinish(why) {
+  const a = curAttempt();
+  if (!a || a.finishedAt) return;   // กันส่งซ้ำเมื่อนาฬิกากับโควตายิงพร้อมกัน
+  if (why && a.proc) a.proc.autoBy = why;
+  if (a.proc && a.proc.openAt) procReturn();
   stampTime();
   a.finishedAt = Date.now();
-  save(true);
+  save(true);                       // บันทึกก่อนทำอย่างอื่นเสมอ คำตอบห้ามหาย
   setTab('result');
+  if (why) toast('ระบบส่งข้อสอบให้อัตโนมัติ — ' + why, 'warn');
 
   if (isStudent() && a.assignCode) {
     toast('กำลังส่งผลให้ครู…');
@@ -4754,7 +4921,9 @@ function analyze(a) {
   const res = {
     quiz: q, n: probs.length, got: 0, max: probs.length, pct: 0,
     byTopic: {}, byLevel: {}, bySkill: {}, bySub: {},
-    sec: 0, revealed: 0, items: []
+    sec: 0, revealed: 0, items: [],
+    nOut: (a.proc && a.proc.nOut) || 0, secOut: (a.proc && a.proc.secOut) || 0,
+    autoBy: (a.proc && a.proc.autoBy) || ''
   };
   const add = (bag, key, sc) => {
     if (!bag[key]) bag[key] = { got: 0, max: 0 };
@@ -4891,7 +5060,11 @@ function renderResult() {
     '<div class="stat"><div class="v">' + mmss(res.sec) + '</div><div class="k">เวลาที่ใช้ทั้งหมด</div></div>' +
     '<div class="stat"><div class="v">' + mmss(res.n ? res.sec / res.n : 0) + '</div><div class="k">เฉลี่ยต่อข้อ</div></div>' +
     '<div class="stat"><div class="v">' + res.revealed + '</div><div class="k">ข้อที่เปิดดูวิธีทำ</div></div>' +
-    '</div></div>';
+    (res.nOut ? '<div class="stat"><div class="v" style="color:var(--bad)">' + res.nOut +
+      '</div><div class="k">ออกจากแอป (รวม ' + mmss(res.secOut) + ')</div></div>' : '') +
+    '</div>' +
+    (res.autoBy ? '<div class="notice warn" style="margin-top:11px">ระบบส่งข้อสอบชุดนี้ให้อัตโนมัติ — ' +
+      esc(res.autoBy) + '</div>' : '') + '</div>';
 
   h += '<div class="card"><h3>ผลแยกตามเรื่อง</h3>' +
     barRows(res.byTopic, k => esc(topicName(Number(k)))) + '</div>';
@@ -5058,7 +5231,10 @@ function renderStats() {
   h += '<div class="card"><h3>ผลรายคน<span class="sub">เรียงตามคะแนน</span></h3><div class="tablewrap"><table><thead><tr>' +
     '<th class="num">อันดับ</th>' + (showId ? '<th class="num">เลขที่</th><th class="num">เลขประจำตัว</th>' : '') +
     '<th>ชื่อ</th><th class="num">คะแนน</th><th class="num">ร้อยละ</th>' +
-    '<th>ผล</th><th class="num">เวลา</th><th>จุดที่ต้องพัฒนา</th></tr></thead><tbody>';
+    '<th>ผล</th><th class="num">เวลา</th>' +
+    // คอลัมน์นี้ขึ้นเฉพาะเมื่อมีคนในชุดนี้ถูกคุมสอบจริง ไม่งั้นตารางจะรกขึ้นมาเปล่า ๆ
+    (rows.some(x => x.r.nOut || x.r.autoBy) ? '<th class="num">ออกจากแอป</th>' : '') +
+    '<th>จุดที่ต้องพัฒนา</th></tr></thead><tbody>';
   rows.forEach((x, k) => {
     const weak = Object.keys(x.r.bySub).filter(s => x.r.bySub[s].pct < 50);
     const wi = whoInfo(x.a);
@@ -5070,6 +5246,9 @@ function renderStats() {
       '<td>' + (x.r.pct >= DB.settings.passPct ? '<span style="color:var(--ok)">ผ่าน</span>'
         : '<span style="color:var(--bad)">ไม่ผ่าน</span>') + '</td>' +
       '<td class="num">' + mmss(x.r.sec) + '</td>' +
+      (rows.some(y => y.r.nOut || y.r.autoBy)
+        ? '<td class="num">' + (x.r.nOut ? '<b>' + x.r.nOut + '</b> (' + mmss(x.r.secOut) + ')' : '—') +
+          (x.r.autoBy ? ' ⚠' : '') + '</td>' : '') +
       '<td style="white-space:normal">' + (weak.length ? esc(weak.join(', ')) : '—') + '</td></tr>';
   });
   h += '</tbody></table></div></div>';
@@ -5175,10 +5354,22 @@ function histogram(pcts) {
 function constCardHTML() {
   const st = DB.settings;
   return '<div class="card"><h3>ค่าคงที่และเกณฑ์</h3><div class="row" style="gap:18px;align-items:flex-end;flex-wrap:wrap">' +
+    '<div><label class="hint" for="setexmin">เวลาสอบเริ่มต้น (นาที)</label><br>' +
+    '<input type="number" id="setexmin" min="0" max="300" step="5" value="' + (st.examMin || 0) +
+    '" style="width:100px" inputmode="numeric"></div>' +
+    '<div><label class="hint" for="setexout">ออกจากแอปได้ (ครั้ง)</label><br>' +
+    '<input type="number" id="setexout" min="0" max="20" value="' + (st.examMaxOut || 0) +
+    '" style="width:100px" inputmode="numeric"></div>' +
     '<div><label class="hint" for="settol">ยอมคลาดเคลื่อน (%)</label><br>' +
     '<input type="number" id="settol" min="0" max="10" step="0.5" value="' + st.tolPct + '" style="width:90px" inputmode="decimal"></div>' +
     '<div><label class="hint" for="setpass">เกณฑ์ผ่าน (%)</label><br>' +
     '<input type="number" id="setpass" min="0" max="100" value="' + st.passPct + '" style="width:90px" inputmode="numeric"></div>' +
+    '</div>' +
+    '<div class="hint" style="margin-top:7px">' +
+    '<b>ค่าคุมสอบใช้กับชุดที่เป็นแบบทดสอบเท่านั้น</b> ใส่ 0 = ไม่จำกัด · ' +
+    'กติกาจะติดไปกับชุดที่สร้าง<b>หลังจากนี้</b> ชุดเดิมยังใช้กติกาที่ตั้งไว้ตอนสร้าง<br>' +
+    'ระบบจับได้เฉพาะการสลับแอปหรือล็อกจอ<b>บนเครื่องเดียวกัน</b> ' +
+    'ถ้านักเรียนเปิดอีกเครื่องหรือแคปหน้าจอ ระบบไม่รู้ — ใช้เป็นหลักฐานประกอบ ไม่ใช่คำตัดสิน' +
     '</div></div>';
 }
 
@@ -5437,6 +5628,10 @@ function bindSettingHandlers() {
   if (eE) eE.addEventListener('change', e => { DB.settings.easyG10 = e.target.checked; save(true); });
   const eT = $('#settol');
   if (eT) eT.addEventListener('change', e => { DB.settings.tolPct = clamp(Number(e.target.value) || 0, 0, 10); save(true); });
+  const eXm = $('#setexmin');
+  if (eXm) eXm.addEventListener('change', e => { DB.settings.examMin = clamp(Math.round(Number(e.target.value) || 0), 0, 300); save(true); });
+  const eXo = $('#setexout');
+  if (eXo) eXo.addEventListener('change', e => { DB.settings.examMaxOut = clamp(Math.round(Number(e.target.value) || 0), 0, 20); save(true); });
   const eP = $('#setpass');
   if (eP) eP.addEventListener('change', e => { DB.settings.passPct = clamp(Math.round(Number(e.target.value) || 0), 0, 100); save(true); });
   $$('[data-wl]').forEach(inp => inp.addEventListener('change', e => {
@@ -5900,6 +6095,9 @@ function attemptPayload(a, status) {
     score: r.got, max: r.max, pct: Math.round(r.pct * 10) / 10, sec: Math.round(r.sec),
     revealed: a.answers.filter(x => x.revealed).length,
     answers: a.answers.map(x => ({ s: x.score, t: x.tries, r: x.revealed ? 1 : 0, c: Math.round(x.sec) })),
+    out: (a.proc && a.proc.nOut) || 0,
+    outSec: Math.round((a.proc && a.proc.secOut) || 0),
+    autoBy: (a.proc && a.proc.autoBy) || '',
     device: deviceId()
   };
 }
@@ -6753,6 +6951,7 @@ function encodeQuiz(q) {
     i: q.id, t: q.title, s: q.seed, tp: q.topics, sb: q.subs || [],
     c: q.counts, g: q.g, e: q.easyG10 ? 1 : 0,
     k: quizKind(q), sh: (q.seedShift || 0),
+    lm: q.limitSec || 0, mo: q.maxOut || 0, ms: q.maxOutSec || 0,
     it: q.items.map(x => x.tplId + '~' + x.seed)
   };
   return QCODE_PREFIX + b64enc(JSON.stringify(c));
@@ -6779,6 +6978,8 @@ function decodeQuiz(code) {
     topics: Array.isArray(c.tp) ? c.tp : [], subs: Array.isArray(c.sb) ? c.sb : [],
     counts: c.c || {}, g: Number(c.g) || 9.8, easyG10: !!c.e,
     kind: c.k === 'test' ? 'test' : 'practice', seedShift: Number(c.sh) || 0,
+    // รหัสที่สร้างก่อนมีระบบคุมสอบไม่มีคีย์พวกนี้ ได้ 0 = ไม่จำกัด ซึ่งถูกต้องแล้ว
+    limitSec: Number(c.lm) || 0, maxOut: Number(c.mo) || 0, maxOutSec: Number(c.ms) || 0,
     items: items
   };
 }
@@ -7131,6 +7332,10 @@ function buildDoc(kind, opt) {
       '<tr><th>ผลการประเมิน</th><td><b>' + (r.pct >= DB.settings.passPct ? 'ผ่านเกณฑ์' : 'ไม่ผ่านเกณฑ์') +
         '</b> (เกณฑ์ร้อยละ ' + DB.settings.passPct + ')</td></tr>' +
       '<tr><th>เวลาที่ใช้</th><td>' + mmss(r.sec) + ' นาที (เฉลี่ยข้อละ ' + mmss(r.n ? r.sec / r.n : 0) + ')</td></tr>' +
+      // แถวนี้ขึ้นเฉพาะชุดที่คุมสอบ ใบงานปกติจะไม่มีแถวนี้มารก
+      (r.nOut || r.autoBy ? '<tr><th>การคุมสอบ</th><td>' +
+        (r.nOut ? 'ออกจากแอป <b>' + r.nOut + ' ครั้ง</b> รวม ' + mmss(r.secOut) + ' นาที' : 'ไม่พบการออกจากแอป') +
+        (r.autoBy ? ' · <b>ระบบส่งให้อัตโนมัติ</b> (' + esc(r.autoBy) + ')' : '') + '</td></tr>' : '') +
       '</tbody></table>';
 
     h += '<b>ผลแยกตามเรื่องและระดับความยาก</b>' +
@@ -7207,8 +7412,11 @@ function buildDoc(kind, opt) {
       const a1 = Number(whoInfo(x.a).no) || 999, b1 = Number(whoInfo(y.a).no) || 999;
       return a1 - b1 || String(whoInfo(x.a).name).localeCompare(String(whoInfo(y.a).name), 'th');
     });
+    // คอลัมน์คุมสอบขึ้นเฉพาะเมื่อมีคนในชุดนี้ถูกคุมสอบจริง ไม่งั้นรายงานปกติจะรกขึ้นมาเปล่า ๆ
+    const showOut = rows.some(x => x.r.nOut || x.r.autoBy);
     h += '<b>ผลรายคน</b><table style="margin:5px 0 10px"><thead><tr><th>เลขที่</th><th>เลขประจำตัว</th>' +
       '<th>ชื่อ-นามสกุล</th><th>คะแนน</th><th>ร้อยละ</th><th>ผล</th>' +
+      (showOut ? '<th>ออกจากแอป</th>' : '') +
       '<th>หัวข้อที่ต่ำกว่าเกณฑ์</th></tr></thead><tbody>' +
       byNo.map(x => {
         const weak = Object.keys(x.r.bySub).filter(s => x.r.bySub[s].pct < 50);
@@ -7217,6 +7425,8 @@ function buildDoc(kind, opt) {
           '<td>' + esc(wi.name) + '</td>' +
           '<td>' + fmt(x.r.got) + '/' + x.r.max + '</td><td>' + Math.round(x.r.pct) + '</td>' +
           '<td>' + (x.r.pct >= DB.settings.passPct ? 'ผ่าน' : 'ไม่ผ่าน') + '</td>' +
+          (showOut ? '<td>' + (x.r.nOut ? x.r.nOut + ' ครั้ง (' + mmss(x.r.secOut) + ')' : '—') +
+            (x.r.autoBy ? ' · ระบบส่งให้ (' + esc(x.r.autoBy) + ')' : '') + '</td>' : '') +
           '<td>' + (weak.length ? esc(weak.join(', ')) : '—') + '</td></tr>';
       }).join('') + '</tbody></table>';
 
@@ -7453,7 +7663,26 @@ $('#btnLogout').addEventListener('click', doLogout);
 window.addEventListener('online', () => flushOutbox(false));
 // บันทึกเวลาของข้อที่กำลังทำอยู่ก่อนปิดหน้า
 window.addEventListener('beforeunload', () => { if (TAB === 'do') { stampTime(); save(true); } });
-document.addEventListener('visibilitychange', () => { if (document.hidden && TAB === 'do') { stampTime(); save(true); } });
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    if (TAB === 'do') { stampTime(); save(true); }
+    procLeave();
+  } else procBack();
+});
+window.addEventListener('pagehide', () => {
+  if (TAB === 'do') { stampTime(); save(true); }
+  procLeave();
+});
+setInterval(procTick, 1000);
+/* เปิดแอปกลับมาแล้วพบว่าเลยเส้นตายไปแล้ว — ส่งให้ตั้งแต่ตอนโหลด
+   เกิดเมื่อนักเรียนปิดแอปทิ้งไว้แล้วเปิดใหม่ทีหลัง หรือเครื่องดับกลางคัน */
+(function () {
+  const a = procCur();
+  if (!a) return;
+  if (a.proc.openAt) procReturn();          // ปิดเหตุการณ์ที่ค้างจากตอนเครื่องดับ
+  const left = procSecLeft(a);
+  if (left != null && left <= 0) doFinish('หมดเวลา');
+})();
 
 if (/[?&]selftest=1/.test(location.search)) {
   setTab('make');
