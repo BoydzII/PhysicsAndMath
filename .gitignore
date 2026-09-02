@@ -41,6 +41,13 @@ BiologyAutoSheet/*
 !BiologyAutoSheet/index.html
 !BiologyAutoSheet/README-bio.md
 
+# ---- คลังโจทย์วิทยาศาสตร์กายภาพ (ฟิสิกส์) ม.5 ----
+!PhysicalScienceAutoSheet/
+PhysicalScienceAutoSheet/*
+!PhysicalScienceAutoSheet/physci.html
+!PhysicalScienceAutoSheet/index.html
+!PhysicalScienceAutoSheet/README-physci.md
+
 # ---- คลังโจทย์วิทยาศาสตร์ ----
 !ScienceAutoSheet/
 ScienceAutoSheet/*

@@ -1,6 +1,7 @@
 # PhysicsAndMath
 
-คลังโจทย์ **คณิตศาสตร์ ม.ต้น** · **วิทยาศาสตร์ ม.ต้น** · **ฟิสิกส์ ม.4** และ **เคมี ม.4**
+คลังโจทย์ **คณิตศาสตร์ ม.ต้น** · **วิทยาศาสตร์ ม.ต้น** · **ฟิสิกส์ ม.4** · **เคมี ม.4**
+**ชีววิทยา ม.4** และ **วิทยาศาสตร์กายภาพ ม.5**
 พร้อม **ห้องเรียนสมดุลกล** — แอปการเรียนรู้แบบมีซิมมูเลชันและเก็บคะแนนขึ้น Google Sheet
 ของโรงเรียนปากช่อง จังหวัดนครราชสีมา
 พัฒนาโดย **นายรังสรรค์ กรีกูล**
@@ -26,21 +27,21 @@
 
 ---
 
-## สี่แอพคลังโจทย์ในรีโพนี้
+## หกแอพคลังโจทย์ในรีโพนี้
 
-| | คณิตศาสตร์ ม.ต้น | วิทยาศาสตร์ ม.ต้น | ฟิสิกส์ ม.4 | เคมี ม.4 | ชีววิทยา ม.4 |
-|---|---|---|---|---|---|
-| โฟลเดอร์ | [`MathAutoSheet/`](MathAutoSheet/) | [`ScienceAutoSheet/`](ScienceAutoSheet/) | [`PhysicsAutoSheet/`](PhysicsAutoSheet/) | [`ChemistryAutoSheet/`](ChemistryAutoSheet/) | [`BiologyAutoSheet/`](BiologyAutoSheet/) |
-| ไฟล์ต้นฉบับของครู | `math.html` | `science.html` | `physics.html` | `chem.html` | `bio.html` |
-| ไฟล์ฉบับขึ้นเว็บ | `index.html` | `index.html` | `index.html` | `index.html` | `index.html` |
-| เนื้อหา | ม.1–ม.3 ครบชั้นละ 5 บท · 225 แม่แบบ | ม.1–ม.3 ครบชั้นละ 5 บท · 225 แม่แบบ | 7 บท + แนวข้อสอบเข้ามหาวิทยาลัย · 236 แม่แบบ | เทอม 1 ครบ 5 บท · 75 แม่แบบ | เทอม 1 ครบ 3 บท · 46 แม่แบบ |
-| เชื่อม Google Sheet | ❌ ออฟไลน์ล้วน | ❌ ออฟไลน์ล้วน | ✅ มอบหมายใบงานด้วยรหัส · ส่งผลกลับอัตโนมัติ | ❌ ออฟไลน์ล้วน | ❌ ออฟไลน์ล้วน |
-| คู่มือ | [README-math.md](MathAutoSheet/README-math.md) | [README-science.md](ScienceAutoSheet/README-science.md) | [README-physics.md](PhysicsAutoSheet/README-physics.md) | [README-chem.md](ChemistryAutoSheet/README-chem.md) | [README-bio.md](BiologyAutoSheet/README-bio.md) |
+| | คณิตศาสตร์ ม.ต้น | วิทยาศาสตร์ ม.ต้น | ฟิสิกส์ ม.4 | เคมี ม.4 | ชีววิทยา ม.4 | วิทย์กายภาพ ม.5 |
+|---|---|---|---|---|---|---|
+| โฟลเดอร์ | [`MathAutoSheet/`](MathAutoSheet/) | [`ScienceAutoSheet/`](ScienceAutoSheet/) | [`PhysicsAutoSheet/`](PhysicsAutoSheet/) | [`ChemistryAutoSheet/`](ChemistryAutoSheet/) | [`BiologyAutoSheet/`](BiologyAutoSheet/) | [`PhysicalScienceAutoSheet/`](PhysicalScienceAutoSheet/) |
+| ไฟล์ต้นฉบับของครู | `math.html` | `science.html` | `physics.html` | `chem.html` | `bio.html` | `physci.html` |
+| ไฟล์ฉบับขึ้นเว็บ | `index.html` | `index.html` | `index.html` | `index.html` | `index.html` | `index.html` |
+| เนื้อหา | ม.1–ม.3 ครบชั้นละ 5 บท · 225 แม่แบบ | ม.1–ม.3 ครบชั้นละ 5 บท · 225 แม่แบบ | 7 บท + แนวข้อสอบเข้ามหาวิทยาลัย · 236 แม่แบบ | เทอม 1 ครบ 5 บท · 75 แม่แบบ | เทอม 1 ครบ 3 บท · 46 แม่แบบ | คลื่น เสียง แสงสี · 45 แม่แบบ |
+| เชื่อม Google Sheet | ❌ ออฟไลน์ล้วน | ❌ ออฟไลน์ล้วน | ✅ มอบหมายใบงานด้วยรหัส · ส่งผลกลับอัตโนมัติ | ❌ ออฟไลน์ล้วน | ❌ ออฟไลน์ล้วน | ❌ ออฟไลน์ล้วน |
+| คู่มือ | [README-math.md](MathAutoSheet/README-math.md) | [README-science.md](ScienceAutoSheet/README-science.md) | [README-physics.md](PhysicsAutoSheet/README-physics.md) | [README-chem.md](ChemistryAutoSheet/README-chem.md) | [README-bio.md](BiologyAutoSheet/README-bio.md) | [README-physci.md](PhysicalScienceAutoSheet/README-physci.md) |
 
-ทั้งห้าแอพใช้เอนจินชุดเดียวกัน แต่เป็นคนละไฟล์ คนละคลังโจทย์
+ทั้งหกแอพใช้เอนจินชุดเดียวกัน แต่เป็นคนละไฟล์ คนละคลังโจทย์
 และ **เก็บข้อมูลแยกกันคนละที่ในเบราว์เซอร์** จึงเปิดใช้พร้อมกันได้โดยไม่กวนกัน
 
-## แอพที่หก — คนละแบบกับห้าแอพข้างบน
+## แอพที่เจ็ด — คนละแบบกับหกแอพข้างบน
 
 | | ห้องเรียนสมดุลกล · ฟิสิกส์ ม.4 |
 |---|---|
@@ -51,7 +52,7 @@
 | เชื่อม Google Sheet | ✅ นำเข้ารายชื่อ · สร้างรหัสเข้าเรียน · ส่งคะแนนขึ้นชีตอัตโนมัติ |
 | คู่มือ | [README-equilibrium.md](EquilibriumLab/README-equilibrium.md) · โค้ดฝั่งชีต [`appsscript-Code.gs`](EquilibriumLab/appsscript-Code.gs) |
 
-ห้าแอพข้างบนเป็น **คลังโจทย์** — เข้ามาเพื่อสุ่มโจทย์ ทำ แล้วพิมพ์ใบงาน
+หกแอพข้างบนเป็น **คลังโจทย์** — เข้ามาเพื่อสุ่มโจทย์ ทำ แล้วพิมพ์ใบงาน
 ส่วนแอพนี้เป็น **แอปการเรียนรู้เต็มรูปแบบของเรื่องเดียว** — เรียน → ทดลอง → ฝึก → วัดผล
 มีบทเรียนให้อ่าน มีซิมมูเลชันให้ลากเล่นจริง มีระบบ XP เหรียญตรา และสถิติต่อเนื่องรายวัน
 เจาะเรื่อง **สมดุลกล** ซึ่งเป็นบทที่นักเรียนพลาดกันมากที่สุดบทหนึ่ง
@@ -113,7 +114,7 @@ GitHub Pages เป็น**เว็บนิ่ง ไม่มีเซิร�
 ## เวลาแก้โปรแกรมแล้วอัปขึ้นเว็บ
 
 แก้ที่ **ไฟล์ต้นฉบับ** เสมอ
-(`math.html` / `science.html` / `physics.html` / `chem.html` / `equilibrium.html`)
+(`math.html` / `science.html` / `physics.html` / `chem.html` / `bio.html` / `physci.html` / `equilibrium.html`)
 แล้วสั่งคำสั่งเดียวจบ
 
 ```bash

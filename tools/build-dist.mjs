@@ -4,6 +4,7 @@
 //   MathAutoSheet/math.html        ->  MathAutoSheet/index.html
 //   ChemistryAutoSheet/chem.html   ->  ChemistryAutoSheet/index.html
 //   ScienceAutoSheet/science.html  ->  ScienceAutoSheet/index.html
+//   PhysicalScienceAutoSheet/physci.html -> PhysicalScienceAutoSheet/index.html
 //
 // เพิ่มวิชาใหม่: เติมหนึ่งบล็อกในอาเรย์ TARGETS ข้างล่าง
 //
@@ -60,6 +61,12 @@ const TARGETS = [
     src: 'BiologyAutoSheet/bio.html',
     out: 'BiologyAutoSheet/index.html',
     // ชีววิทยายังไม่ได้เชื่อมชีต จึงเป็นฉบับนักเรียนล้วนเช่นเดียวกับคณิต วิทย์ และเคมี
+    builtin: { url: '', studentOnly: true, lockCloud: false, logo: '', header: null, about: null }
+  },
+  {
+    src: 'PhysicalScienceAutoSheet/physci.html',
+    out: 'PhysicalScienceAutoSheet/index.html',
+    // วิทยาศาสตร์กายภาพยังไม่ได้เชื่อมชีต จึงเป็นฉบับนักเรียนล้วนเช่นเดียวกับคณิต วิทย์ เคมี และชีวะ
     builtin: { url: '', studentOnly: true, lockCloud: false, logo: '', header: null, about: null }
   },
   {

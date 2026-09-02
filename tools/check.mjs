@@ -23,6 +23,7 @@ const FILES = [
   'ChemistryAutoSheet/chem.html',    'ChemistryAutoSheet/index.html',
   'ScienceAutoSheet/science.html',   'ScienceAutoSheet/index.html',
   'BiologyAutoSheet/bio.html',       'BiologyAutoSheet/index.html',
+  'PhysicalScienceAutoSheet/physci.html', 'PhysicalScienceAutoSheet/index.html',
   'EquilibriumLab/equilibrium.html', 'EquilibriumLab/index.html'
 ];
 
@@ -33,6 +34,7 @@ const PAIRS = [
   ['ChemistryAutoSheet/chem.html',    'ChemistryAutoSheet/index.html'],
   ['ScienceAutoSheet/science.html',   'ScienceAutoSheet/index.html'],
   ['BiologyAutoSheet/bio.html',       'BiologyAutoSheet/index.html'],
+  ['PhysicalScienceAutoSheet/physci.html', 'PhysicalScienceAutoSheet/index.html'],
   ['EquilibriumLab/equilibrium.html', 'EquilibriumLab/index.html']
 ];
 
