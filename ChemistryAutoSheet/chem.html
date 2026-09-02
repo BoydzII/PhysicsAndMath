@@ -377,10 +377,14 @@ input.numin.bad{border-color:var(--bad);background:var(--bad-bg)}
 /* ตัวแปรความหนาแน่นของเอกสาร — เปลี่ยนพร้อมกันทีเดียวจากคลาส dn-* ที่ใส่ให้ #printarea
    ทำให้ "จำนวนข้อต่อหน้า" กับ "ขนาดรูปและช่องเขียน" ขยับไปทางเดียวกันเสมอ */
 #printarea{font-size:12.5pt;line-height:1.65;
-  --figw:60mm; --wlh:23px; --pgap:11px; --wcap:8.5pt}
-#printarea.dn-airy  {--figw:96mm; --wlh:28px; --pgap:16px; --wcap:9.5pt}
-#printarea.dn-normal{--figw:60mm; --wlh:23px; --pgap:11px; --wcap:8.5pt}
-#printarea.dn-tight {--figw:42mm; --wlh:19px; --pgap:9px;  --wcap:8pt;
+  --figw:81mm; --wlh:23px; --pgap:11px; --wcap:8.5pt}
+/* ขยายรูปในใบงานที่พิมพ์ขึ้นอีก 35% จากเดิม (96/60/42 → 130/81/57 มม.)
+   ครูแจ้งว่ารูปที่พิมพ์ออกมายังเล็กเกินไปจนนักเรียนดูรายละเอียดไม่ออก
+   กว้างสุด 130 มม. ยังพอดีในพื้นที่พิมพ์จริงของ A4 ซึ่งกว้าง 182 มม.
+   จำนวนข้อต่อหน้าไม่ต้องแก้ตาม เพราะ paginatePrint() วัดความสูงจริงหลังจัดวางเสมอ */
+#printarea.dn-airy  {--figw:130mm; --wlh:28px; --pgap:16px; --wcap:9.5pt}
+#printarea.dn-normal{--figw:81mm; --wlh:23px; --pgap:11px; --wcap:8.5pt}
+#printarea.dn-tight {--figw:57mm; --wlh:19px; --pgap:9px;  --wcap:8pt;
                      font-size:11.5pt;line-height:1.5}
 #printarea .phead{text-align:center;margin-bottom:10px}
 #printarea .phead .plogo{display:block;margin:0 auto 5px;height:64px;width:auto;max-width:110px;object-fit:contain}
