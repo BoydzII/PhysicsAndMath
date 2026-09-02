@@ -12,14 +12,16 @@
 
 set -euo pipefail
 
+cd "$(git rev-parse --show-toplevel)"
+
+# ต้องมีข้อความก็ต่อเมื่อยังมีไฟล์ที่ไม่ได้ commit
+# ถ้า commit ไว้แล้วและแค่อยากส่งขึ้นเว็บ สั่งเปล่า ๆ ได้เลย
 MSG="${1:-}"
-if [ -z "$MSG" ]; then
-  echo "ต้องใส่ข้อความอธิบายด้วย เช่น"
+if [ -n "$(git status --porcelain)" ] && [ -z "$MSG" ]; then
+  echo "ยังมีไฟล์ที่ไม่ได้ commit ต้องใส่ข้อความอธิบายด้วย เช่น"
   echo '  bash tools/publish.sh "แก้ภาพบันไดในห้องทดลอง"'
   exit 1
 fi
-
-cd "$(git rev-parse --show-toplevel)"
 
 echo "── 1/3 สร้างไฟล์ฉบับนักเรียน ──────────────────────────────"
 node tools/build-dist.mjs
@@ -30,13 +32,25 @@ node tools/check.mjs
 
 echo
 echo "── 3/3 ส่งขึ้นเว็บ ────────────────────────────────────────"
-if [ -z "$(git status --porcelain)" ]; then
-  echo "ไม่มีอะไรเปลี่ยน ไม่ต้อง push"
-  exit 0
+
+# มีไฟล์ที่ยังไม่ได้ commit ก็ commit ให้ก่อน
+if [ -n "$(git status --porcelain)" ]; then
+  git add -A
+  git commit -m "$MSG"
+else
+  echo "ไม่มีไฟล์ใหม่ที่ต้อง commit (คงเพราะ commit ไปแล้ว)"
 fi
 
-git add -A
-git commit -m "$MSG"
+# ต้องเทียบกับ main บนเว็บเสมอ ไม่ใช่ดูแค่ว่ามีไฟล์ค้างไหม
+# เพราะกรณีที่ commit ไปแล้วแต่ยังไม่ push ต้นไม้จะสะอาด แต่ยังมีของค้างส่งอยู่
+git fetch -q origin main
+AHEAD=$(git rev-list --count origin/main..HEAD)
+if [ "$AHEAD" = "0" ]; then
+  echo "เว็บตรงกับเครื่องอยู่แล้ว ไม่ต้อง push"
+  exit 0
+fi
+echo "มี $AHEAD คอมมิตรอขึ้นเว็บ"
+git log --oneline origin/main..HEAD | sed 's/^/   /'
 git push origin HEAD:main
 
 echo
