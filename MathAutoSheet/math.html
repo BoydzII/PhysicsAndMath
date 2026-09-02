@@ -13694,7 +13694,12 @@ async function pullResults(code) {
         raw: [], pick: null, checked: true,
         score: Number(a && a.s != null ? a.s : a) || 0,
         tries: Number(a && a.t) || 1, revealed: !!(a && a.r), sec: Number(a && a.c) || 0
-      }))
+      })),
+      /* ข้อมูลคุมสอบที่ชีตเก็บไว้ ต้องพากลับมาด้วย ไม่งั้นรายงานชั้นเรียนของผลที่ดึงมา
+         จะไม่ขึ้นคอลัมน์ออกจากแอปเลย ทั้งที่ในชีตมีข้อมูลอยู่ครบ
+         ผลที่ดึงมาปิดจบไปแล้ว (มี finishedAt) จึงไม่ไปยุ่งกับการคุมสอบที่กำลังทำอยู่ */
+      proc: { nOut: Number(r.out) || 0, secOut: Number(r.outSec) || 0,
+              openAt: 0, events: [], autoBy: String(r.autoBy || '') }
     });
     st.added++;
   });
