@@ -61,6 +61,7 @@ PhysicsAutoSheet/*
 !PhysicsAutoSheet/physics.html
 !PhysicsAutoSheet/index.html
 !PhysicsAutoSheet/README-physics.md
+!PhysicsAutoSheet/appsscript-Code.gs
 !PhysicsAutoSheet/outputs/
 PhysicsAutoSheet/outputs/*
 !PhysicsAutoSheet/outputs/figures.html
