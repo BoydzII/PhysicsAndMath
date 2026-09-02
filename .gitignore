@@ -34,6 +34,13 @@ ChemistryAutoSheet/*
 ChemistryAutoSheet/outputs/*
 !ChemistryAutoSheet/outputs/figures-chem.html
 
+# ---- คลังโจทย์ชีววิทยา ----
+!BiologyAutoSheet/
+BiologyAutoSheet/*
+!BiologyAutoSheet/bio.html
+!BiologyAutoSheet/index.html
+!BiologyAutoSheet/README-bio.md
+
 # ---- คลังโจทย์วิทยาศาสตร์ ----
 !ScienceAutoSheet/
 ScienceAutoSheet/*

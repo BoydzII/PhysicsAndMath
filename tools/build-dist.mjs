@@ -57,6 +57,12 @@ const TARGETS = [
     builtin: { url: '', studentOnly: true, lockCloud: false, logo: '', header: null, about: null }
   },
   {
+    src: 'BiologyAutoSheet/bio.html',
+    out: 'BiologyAutoSheet/index.html',
+    // ชีววิทยายังไม่ได้เชื่อมชีต จึงเป็นฉบับนักเรียนล้วนเช่นเดียวกับคณิต วิทย์ และเคมี
+    builtin: { url: '', studentOnly: true, lockCloud: false, logo: '', header: null, about: null }
+  },
+  {
     src: 'EquilibriumLab/equilibrium.html',
     out: 'EquilibriumLab/index.html',
     // ห้องเรียนสมดุลกลใช้ชีตของตัวเองคนละใบกับสี่วิชาข้างบน (คนละ Apps Script)
