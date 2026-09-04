@@ -13085,7 +13085,7 @@ function paperDialog(quiz) {
   const cur = quiz && quiz.paper ? quiz.paper : { ch: 4, topic: null };
   const keyNow = quiz ? quiz.items.map(x => PAPER_KEYS[Number(x.ans)] || '?').join('') : '';
   openModal({
-    title: quiz ? ('แก้เฉลย "' + esc(quiz.title) + '"') : 'ใบตอบจากข้อสอบกระดาษ',
+    title: quiz ? ('แก้เฉลย "' + esc(quiz.title) + '"') : 'สร้างกระดาษคำตอบออนไลน์',
     bodyHTML:
       '<div class="hint" style="margin-bottom:11px">ใช้กับข้อสอบที่ครูมีอยู่แล้วเป็นกระดาษหรือ PDF ' +
       '<b>แอปไม่เก็บตัวโจทย์</b> เก็บแค่จำนวนข้อกับเฉลย นักเรียนอ่านโจทย์จากกระดาษที่ครูแจก ' +
@@ -13112,7 +13112,7 @@ function paperDialog(quiz) {
       '<div id="ppMsg" style="margin-top:10px"></div>',
     buttons: [
       { label: 'ยกเลิก' },
-      { label: quiz ? 'บันทึกเฉลย' : 'สร้างใบตอบ', cls: 'primary', act: (close, root) => {
+      { label: quiz ? 'บันทึกเฉลย' : 'สร้างกระดาษคำตอบ', cls: 'primary', act: (close, root) => {
           const msg = $('#ppMsg', root);
           const title = ($('#ppTitle', root).value || '').trim();
           const ch = Number($('#ppCh', root).value) || 4;
@@ -13141,7 +13141,7 @@ function paperDialog(quiz) {
           DB.quizzes.push(q);
           DB.cur.quizId = q.id;
           save(true); close(); renderMake();
-          toast('สร้างใบตอบ ' + items.length + ' ข้อแล้ว — กดเริ่มทำหรือมอบหมายได้เลย', 'ok');
+          toast('สร้างกระดาษคำตอบ ' + items.length + ' ข้อแล้ว — กด "เปิดให้นักเรียนสอบ" ได้เลย', 'ok');
         } }
     ],
     onMount: root => {
@@ -13301,34 +13301,83 @@ function renderMake() {
     }).join('') + '</div>' +
     '<div class="row"><input type="text" id="qtitle" class="grow" style="min-width:220px" placeholder="เช่น ใบงานที่ 1 การเคลื่อนที่แนวตรง" value="' +
     esc(c.lastTitle || '') + '">' +
-    '<button class="primary" id="btnGen">สุ่ม' + QUIZ_KINDS[c.kind || 'practice'].name + '</button>' +
-    '<button id="btnPaper">ใบตอบจากข้อสอบกระดาษ</button></div>' +
+    '<button class="primary" id="btnGen">สุ่ม' + QUIZ_KINDS[c.kind || 'practice'].name + '</button></div>' +
     '<div class="hint" style="margin-top:8px">โจทย์แต่ละชุดผูกกับเลขสุ่ม (seed) จึงสร้างชุดเดิมกลับมาได้เสมอ — ' +
     'พิมพ์ใบงานวันนี้ แล้วพิมพ์ใบเฉลยที่ตรงกันในภายหลังได้</div></div>';
 
-  // รายการชุดที่เคยสร้าง
-  h += '<div class="card"><h3>ชุดโจทย์ที่สร้างไว้<span class="sub">' + DB.quizzes.length + ' ชุด</span></h3>' +
+  /* กระดาษคำตอบออนไลน์อยู่การ์ดของตัวเอง ไม่ปนกับชุดที่สุ่มจากแม่แบบ
+     เพราะใช้คนละแบบกันหมด — ไม่มีตัวโจทย์ในแอป พิมพ์ใบงานไม่ได้ และมักมีไม่กี่ชุด
+     ถ้าปนอยู่ในตารางยาว ๆ ครูจะหาไม่เจอ ซึ่งเกิดขึ้นจริงมาแล้ว
+     นักเรียนไม่ต้องเห็นการ์ดนี้ กระดาษคำตอบมาถึงนักเรียนทางใบงานที่ครูมอบหมายเท่านั้น */
+  const papers = DB.quizzes.filter(isPaper);
+  if (!isStudent()) {
+    h += '<div class="card"><h3>กระดาษคำตอบออนไลน์' +
+      '<span class="sub">สำหรับข้อสอบที่ครูมีอยู่แล้วเป็นกระดาษหรือ PDF</span></h3>' +
+      '<div class="hint">แอปเก็บแค่เฉลย ไม่ได้เก็บตัวโจทย์ — แจกข้อสอบเป็นกระดาษ ' +
+      'หรือฉายขึ้นจอ แล้วให้นักเรียนแตะตอบในแอป</div>' +
+      '<div class="row" style="margin-top:11px">' +
+      '<button class="primary" id="btnPaper">+ สร้างกระดาษคำตอบใหม่</button></div>';
+    if (!papers.length) {
+      h += '<div class="hint" style="margin-top:11px">ยังไม่มีกระดาษคำตอบ — ' +
+        'กดปุ่มด้านบน แล้วพิมพ์เฉลยจากข้อสอบที่มีอยู่</div>';
+    } else {
+      h += '<div class="notice info" style="margin-top:11px"><b>วิธีเปิดให้นักเรียนสอบ</b><br>' +
+        'กด <b>เปิดให้นักเรียนสอบ</b> ที่แถวของชุดนั้น → เลือกชั้น → ได้รหัสมา<br>' +
+        'นักเรียนที่ลงชื่อเข้าใช้แล้วจะเห็นในรายการ <b>ใบงานของฉัน</b> ทันที ' +
+        'หรือกรอกรหัสเองก็ได้ · <b>ตั้งเวลาสอบที่แท็บตั้งค่าก่อนสร้าง</b> ' +
+        'เพราะกติกาคุมสอบถูกประทับตอนสร้าง ไม่ใช่ตอนเริ่มทำ</div>' +
+        '<div class="tablewrap" style="margin-top:11px"><table><thead><tr><th>ชื่อชุด</th>' +
+        '<th class="num">ข้อ</th><th>เฉลย</th><th>สร้างเมื่อ</th><th class="num">ทำแล้ว</th>' +
+        '<th></th></tr></thead><tbody>';
+      papers.slice().reverse().forEach(q => {
+        const nAt = DB.attempts.filter(a => a.quizId === q.id).length;
+        const key = q.items.map(x => PAPER_KEYS[Number(x.ans)]).join('');
+        h += '<tr><td>' + esc(q.title || '(ไม่มีชื่อ)') +
+          (q.id === DB.cur.quizId ? ' <b>← ชุดปัจจุบัน</b>' : '') + '</td>' +
+          '<td class="num">' + q.items.length + '</td>' +
+          '<td><code style="font-size:12px">' + esc(key.length > 30 ? key.slice(0, 30) + '…' : key) +
+          '</code></td><td>' + thDateTime(q.ts) + '</td><td class="num">' + nAt + '</td>' +
+          '<td>' + (isAdmin() ? '<button class="sm primary" data-publish="' + q.id +
+            '">เปิดให้นักเรียนสอบ</button> ' : '') +
+          '<button class="sm" data-editkey="' + q.id + '">แก้เฉลย</button> ' +
+          '<button class="sm" data-share="' + q.id + '">แชร์รหัส</button> ' +
+          '<button class="sm" data-start="' + q.id + '">ลองทำเอง</button> ' +
+          '<button class="sm danger" data-delq="' + q.id + '">ลบ</button></td></tr>';
+      });
+      h += '</tbody></table></div>';
+      if (!isAdmin()) {
+        h += '<div class="hint" style="margin-top:9px">ยังไม่ได้ลงชื่อเข้าใช้ในฐานะผู้ดูแล ' +
+          'จึงยังมอบหมายผ่านชีตไม่ได้ — ใช้ปุ่ม <b>แชร์รหัส</b> ส่งรหัสให้นักเรียนแทนได้</div>';
+      }
+    }
+    h += '</div>';
+  }
+
+  /* รายการชุดที่เคยสร้าง — ครูไม่ต้องเห็นกระดาษคำตอบซ้ำ เพราะมีการ์ดของตัวเองอยู่แล้ว
+     แต่นักเรียนต้องเห็น เพราะการ์ดนั้นเป็นของครู นักเรียนที่รับกระดาษคำตอบมาด้วยรหัส
+     จะกดเริ่มทำจากตารางนี้ที่เดียว ถ้ากรองออกด้วยจะไม่เหลือทางเข้าเลย */
+  const gen = DB.quizzes.filter(q => isStudent() || !isPaper(q));
+  h += '<div class="card"><h3>ชุดโจทย์ที่สร้างไว้<span class="sub">' + gen.length + ' ชุด</span></h3>' +
     '<div class="row" style="margin-bottom:11px"><button class="sm" id="btnPasteQuiz">รับใบงานจากรหัสที่ครูให้มา</button>' +
     '<span class="hint">ครูกด <b>แชร์</b> ที่ชุดโจทย์เพื่อคัดลอกรหัส แล้วส่งให้นักเรียนมาวางที่ปุ่มนี้</span></div>';
-  if (!DB.quizzes.length) {
+  if (!gen.length) {
     h += '<div class="hint">ยังไม่มีชุดโจทย์ — ตั้งค่าด้านบนแล้วกด <b>สุ่มชุดโจทย์</b></div>';
   } else {
     h += '<div class="tablewrap"><table><thead><tr><th>ชื่อชุด</th><th class="num">ข้อ</th>' +
       '<th>ระดับ</th><th>สร้างเมื่อ</th><th>ครั้งที่ทำ</th><th></th></tr></thead><tbody>';
-    DB.quizzes.slice().reverse().forEach(q => {
+    gen.slice().reverse().forEach(q => {
       const nAt = DB.attempts.filter(a => a.quizId === q.id).length;
       const lv = LEVELS.filter(l => q.counts[l]).map(l =>
         '<span class="tag ' + LEVEL_CLS[l] + '">' + l + ' ' + q.counts[l] + '</span>').join(' ');
       h += '<tr><td>' + esc(q.title || '(ไม่มีชื่อ)') +
         ' <span class="tag ' + QUIZ_KINDS[quizKind(q)].cls + '">' + QUIZ_KINDS[quizKind(q)].short + '</span>' +
         (q.id === DB.cur.quizId ? ' <b>← ชุดปัจจุบัน</b>' : '') +
-        (isPaper(q) ? ' <span class="tag t">ใบตอบกระดาษ</span>' : '') +
+        (isPaper(q) ? ' <span class="tag t">กระดาษคำตอบ</span>' : '') +
         '</td><td class="num">' + q.items.length + '</td><td>' + lv + '</td>' +
         '<td>' + thDateTime(q.ts) + '</td><td class="num">' + nAt + '</td>' +
         '<td><button class="sm primary" data-start="' + q.id + '">เริ่มทำ</button> ' +
         '<button class="sm" data-print="' + q.id + '">พิมพ์</button> ' +
         '<button class="sm" data-share="' + q.id + '">แชร์</button> ' +
-        (isPaper(q) ? '<button class="sm" data-editkey="' + q.id + '">แก้เฉลย</button> ' : '') +
         (isTest(q) ? '' : '<button class="sm" data-mktest="' + q.id + '">สร้างแบบทดสอบ</button> ') +
         (isAdmin() ? '<button class="sm" data-publish="' + q.id + '">มอบหมาย</button> ' : '') +
         '<button class="sm danger" data-delq="' + q.id + '">ลบ</button></td></tr>';
@@ -13814,7 +13863,7 @@ function renderDo() {
   /* ใบตอบแสดงทุกข้อในหน้าเดียว ไม่ใช่ทีละข้อ
      เพราะนักเรียนอ่านโจทย์จากกระดาษ การบังคับกดเปลี่ยนหน้าทีละข้อมีแต่ทำให้ช้า */
   if (isPaper(q)) {
-    h += '<div class="card"><h3>ใบตอบ<span class="sub">ข้อสอบอยู่บนกระดาษ ' +
+    h += '<div class="card"><h3>กระดาษคำตอบ<span class="sub">ข้อสอบอยู่บนกระดาษ ' +
       'อ่านโจทย์จากข้อสอบที่ครูแจก แล้วแตะตัวเลือกที่นี่</span></h3>' +
       '<div class="hint" style="margin-bottom:11px">แตะซ้ำที่ตัวเลือกเดิม = ยกเลิกคำตอบข้อนั้น · ' +
       'ตอบแล้ว <b>' + done + '</b> จาก ' + probs.length + ' ข้อ</div>' +
@@ -16556,7 +16605,7 @@ function buildDoc(kind, opt) {
     /* ใบตอบข้อสอบกระดาษไม่มีตัวโจทย์เก็บอยู่ในแอป พิมพ์เป็นใบงานหรือใบเฉลยจึงไม่ได้
        บอกให้ชัดดีกว่าพิมพ์ออกมาเป็นข้อว่าง ๆ สิบหน้า */
     if (isPaper(q)) {
-      return '<div class="notice info">ชุดนี้เป็น<b>ใบตอบสำหรับข้อสอบกระดาษ</b> ' +
+      return '<div class="notice info">ชุดนี้เป็น<b>กระดาษคำตอบออนไลน์</b> ' +
         'แอปเก็บแค่เฉลย ไม่ได้เก็บตัวโจทย์ จึงพิมพ์ใบงานและใบเฉลยจากที่นี่ไม่ได้<br>' +
         'ใช้ไฟล์ข้อสอบเดิมของครูได้เลย ส่วน<b>หลักฐานการเรียนรู้</b>และ' +
         '<b>รายงานสถิติชั้นเรียน</b>ยังพิมพ์ได้ตามปกติ<br>' +
