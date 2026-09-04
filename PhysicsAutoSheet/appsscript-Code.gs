@@ -20,6 +20,16 @@
  *   4) กลับมาที่แอพ → แท็บตั้งค่า → ปุ่ม "ซ่อมโครงสร้างชีต" หนึ่งครั้ง
  *      เพื่อเติมหัวตารางของคอลัมน์ใหม่ (ข้อมูลเดิมไม่หาย)
  *
+ * ── รุ่น 7 เพิ่มอะไร (ครูผู้ช่วย) ─────────────────────────────────────────
+ *   เพิ่มแผ่น teachers สำหรับครูท่านอื่นที่ช่วยคุมสอบวิชาเดียวกันแต่คนละชั้น
+ *   ผู้ดูแลหลักกำหนดว่าครูแต่ละคนดูแลชั้นไหนได้บ้าง
+ *   ครูผู้ช่วยเข้าระบบด้วย "ชื่อผู้ใช้ + รหัสผ่าน" แล้วจะเห็นและแก้ได้เฉพาะชั้นของตัวเอง
+ *
+ *   การกรองทำที่ฝั่งชีตทุกคำสั่ง ไม่ใช่ที่ฝั่งแอป เพราะฝั่งแอปแก้ได้จากเบราว์เซอร์
+ *   สิ่งที่ครูผู้ช่วยทำได้ — มอบหมายใบงาน/ข้อสอบ · ดึงผล · แก้รายชื่อนักเรียน
+ *   เฉพาะชั้นที่ได้รับมอบหมายเท่านั้น
+ *   สิ่งที่ทำไม่ได้ — ซ่อมโครงสร้างชีต · ลบรายชื่อซ้ำทั้งแผ่น · จัดการครูผู้ช่วยด้วยกันเอง
+ *
  * ── รุ่น 6 เพิ่มอะไร (ระบบคุมสอบ) ────────────────────────────────────────
  *   แผ่น submissions เพิ่มสามคอลัมน์ท้ายตาราง รับค่าที่แอพส่งขึ้นมาใหม่
  *     out     ออกจากแอประหว่างทำข้อสอบกี่ครั้ง
@@ -49,6 +59,9 @@
 var DEFAULT_ADMIN_PASS = 'ใส่รหัสผู้ดูแลของครูตรงนี้';
 // รหัสผ่านตั้งต้นของนักเรียน — เข้าใช้ครั้งแรกแล้วระบบจะบังคับให้ตั้งใหม่
 var DEFAULT_STUDENT_PASS = '1111';
+// รหัสตั้งต้นของครูผู้ช่วย ใช้เมื่อผู้ดูแลหลักเพิ่มบัญชีโดยไม่ได้ตั้งรหัสให้
+// เข้าครั้งแรกแล้วระบบจะบังคับให้เปลี่ยนทันที
+var DEFAULT_TEACHER_PASS = 'teacher1234';
 var TOKEN_HOURS = 12;          // อายุการเข้าใช้ต่อครั้ง
 var MAX_LOGIN_FAIL = 8;        // ผิดเกินนี้ พักการเข้าใช้ชั่วคราว
 var LOCK_MINUTES = 10;
@@ -77,7 +90,9 @@ var SHEETS = {
   assignments: ['code', 'title', 'cls', 'spec', 'baseSeed', 'perStudent', 'g', 'easyG10',
                 'openAt', 'closeAt', 'active', 'createdAt', 'subject', 'piMode'],
   submissions: ['ts', 'code', 'sid', 'status', 'score', 'max', 'pct', 'sec', 'revealed',
-                'answers', 'device', 'subject', 'out', 'outSec', 'autoBy']
+                'answers', 'device', 'subject', 'out', 'outSec', 'autoBy'],
+  teachers:    ['user', 'name', 'passHash', 'salt', 'classes', 'mustChange', 'active',
+                'lastLogin', 'createdAt']
 };
 /* หัวตารางภาษาไทยที่คนอ่านเข้าใจ — เขียนไว้ที่แถว 1 ของแต่ละแผ่น */
 var HEADERS = {
@@ -88,7 +103,9 @@ var HEADERS = {
                 'วิชา', 'ค่า π'],
   submissions: ['เวลาที่ส่ง', 'รหัสใบงาน', 'เลขประจำตัว', 'สถานะ', 'คะแนน', 'คะแนนเต็ม',
                 'ร้อยละ', 'เวลาที่ใช้ (วินาที)', 'เปิดเฉลย', 'คำตอบรายข้อ', 'อุปกรณ์', 'วิชา',
-                'ออกจากแอป (ครั้ง)', 'เวลานอกแอป (วินาที)', 'ระบบส่งให้เพราะ']
+                'ออกจากแอป (ครั้ง)', 'เวลานอกแอป (วินาที)', 'ระบบส่งให้เพราะ'],
+  teachers:    ['ชื่อผู้ใช้', 'ชื่อ-นามสกุล', 'รหัสผ่าน (เข้ารหัสแล้ว)', 'salt', 'ชั้นที่ดูแล',
+                'ต้องเปลี่ยนรหัส', 'เปิดใช้งาน', 'เข้าใช้ล่าสุด', 'สร้างเมื่อ']
 };
 /* ตำแหน่งคอลัมน์ที่ใช้บ่อย (นับจาก 1) */
 var C_NO = 1, C_SID = 2, C_NAME = 3, C_CLS = 4, C_HASH = 5, C_SALT = 6,
@@ -275,6 +292,34 @@ function readToken_(tok) {
   return p;
 }
 
+/* ── ครูผู้ช่วยและขอบเขตชั้นเรียน ────────────────────────────────────────
+   ขอบเขตเก็บอยู่ใน "โทเคน" ที่เซ็นด้วย SECRET จึงแก้จากฝั่งเบราว์เซอร์ไม่ได้
+   คำสั่งไหนที่คืนหรือแก้ข้อมูลนักเรียน ต้องกรองด้วย inScope_ ทุกครั้ง       */
+
+function normUser_(v) { return String(v == null ? '' : v).trim().toLowerCase(); }
+/** ชื่อชั้นใช้เทียบแบบตรงตัวหลังตัดช่องว่างหัวท้าย (ในชีตเขียนเหมือนกันหมดทุกแถวอยู่แล้ว) */
+function clsKey_(v) { return String(v == null ? '' : v).trim(); }
+/** แปลงข้อความ "ม.4/1, ม.4/2" เป็นอาเรย์ */
+function parseClasses_(v) {
+  return String(v == null ? '' : v).split(',').map(clsKey_).filter(function (x) { return !!x; });
+}
+function findTeacher_(user) {
+  var u = normUser_(user), list = readAll_('teachers');
+  for (var i = 0; i < list.length; i++) {
+    if (normUser_(list[i].user) === u) return list[i];
+  }
+  return null;
+}
+/** ขอบเขตของโทเคนนี้ — null = ผู้ดูแลหลัก เห็นทุกชั้น · อาเรย์ = ครูผู้ช่วย เห็นเฉพาะชั้นในนั้น */
+function scopeOf_(t) { return (t && t.sub) ? (t.cls || []) : null; }
+function inScope_(sc, cls) { return !sc || sc.indexOf(clsKey_(cls)) >= 0; }
+/** คำสั่งที่กระทบทั้งแผ่น ต้องเป็นผู้ดูแลหลักเท่านั้น */
+function needMain_(req) {
+  var t = needAdmin_(req);
+  if (t.sub) throw new Error('AUTH: คำสั่งนี้ใช้ได้เฉพาะผู้ดูแลหลัก');
+  return t;
+}
+
 function needAdmin_(req) {
   var t = readToken_(req.token);
   if (!t || t.role !== 'admin') throw new Error('AUTH: ต้องเข้าใช้ในฐานะผู้ดูแลก่อน');
@@ -421,8 +466,9 @@ function repairSheets() {
   SpreadsheetApp.getUi().alert('ซ่อมโครงสร้างชีตเรียบร้อย\n\n' + msg);
 }
 
-function apiSheetInspect_(req) { needAdmin_(req); return inspectSheets_(); }
-function apiSheetRepair_(req)  { needAdmin_(req); return repairSheets_(); }
+/* ตรวจและซ่อมโครงสร้างชีตกระทบทุกแผ่นทุกชั้น จึงสงวนไว้ให้ผู้ดูแลหลักเท่านั้น */
+function apiSheetInspect_(req) { needMain_(req); return inspectSheets_(); }
+function apiSheetRepair_(req)  { needMain_(req); return repairSheets_(); }
 
 /* ====== ติดตั้งครั้งแรก ================================================= */
 
@@ -469,7 +515,7 @@ function json_(o) {
 }
 
 function doGet() {
-  return json_({ ok: true, service: 'quiz-bank', version: 6, subjects: SUBJECTS,
+  return json_({ ok: true, service: 'quiz-bank', version: 7, subjects: SUBJECTS,
                  note: 'ใช้งานผ่าน POST จากแอพเท่านั้น' });
 }
 
@@ -498,6 +544,10 @@ function route_(action, req) {
     case 'rosterDedupe':  return apiRosterDedupe_(req);
     case 'sheetInspect':  return apiSheetInspect_(req);
     case 'sheetRepair':   return apiSheetRepair_(req);
+    case 'teacherList':   return apiTeacherList_(req);
+    case 'teacherSave':   return apiTeacherSave_(req);
+    case 'teacherRemove': return apiTeacherRemove_(req);
+    case 'teacherReset':  return apiTeacherReset_(req);
     case 'rosterReset':   return apiRosterReset_(req);
     case 'rosterRemove':  return apiRosterRemove_(req);
     case 'assignSave':    return apiAssignSave_(req);
@@ -516,6 +566,10 @@ function route_(action, req) {
 
 function apiPing_(req) {
   var t0 = Date.now();
+  // บอกบทบาทกลับไปให้แอปปรับหน้าจอ (โทเคนอาจไม่มีก็ได้ ตอนยังไม่ได้เข้าระบบ)
+  var who = readToken_(req.token);
+  var role = (who && who.role === 'admin') ? (who.sub ? 'sub' : 'main') : '';
+  var myCls = (who && who.sub) ? (who.cls || []) : null;
   // ตรวจก่อนว่าโครงสร้างชีตถูกต้องไหม ถ้าหัวตารางหายจะอ่านข้อมูลเพี้ยนทั้งหมด
   var shS = sheet_('students'), lastS = shS.getLastRow(), needRepair = false, layout = 'new';
   if (lastS >= 1) {
@@ -548,7 +602,9 @@ function apiPing_(req) {
   submissionKeys_().forEach(function (s) { bySub[s.subject].submissions++; });
 
   return {
-    version: 6, needRepair: needRepair, layout: layout, subjects: SUBJECTS,
+    version: 7, role: role, myClasses: myCls,
+    teachers: Math.max(0, sheet_('teachers').getLastRow() - 1),
+    needRepair: needRepair, layout: layout, subjects: SUBJECTS,
     students: sids.length, badSid: bad, blankSid: blank, dupSid: dup,
     assignments: Math.max(0, sheet_('assignments').getLastRow() - 1),
     submissions: Math.max(0, sheet_('submissions').getLastRow() - 1),
@@ -630,7 +686,47 @@ function apiChangePass_(req) {
   throw new Error('ไม่พบบัญชีนี้');
 }
 
+/** ครูผู้ช่วยเข้าระบบด้วยชื่อผู้ใช้ + รหัสผ่าน */
+function teacherLogin_(user, pass) {
+  var cache = CacheService.getScriptCache(), key = 'fail_t_' + user;
+  var fails = Number(cache.get(key) || 0);
+  if (fails >= MAX_LOGIN_FAIL) {
+    throw new Error('กรอกรหัสผิดหลายครั้งเกินไป กรุณารออีก ' + LOCK_MINUTES + ' นาทีแล้วลองใหม่');
+  }
+  var t = findTeacher_(user);
+  if (!t) {
+    cache.put(key, String(fails + 1), LOCK_MINUTES * 60);
+    throw new Error('ไม่พบชื่อผู้ใช้ ' + user + ' — ให้ผู้ดูแลหลักเพิ่มบัญชีให้ก่อน');
+  }
+  if (String(t.active) === 'false' || String(t.active) === '0') {
+    throw new Error('บัญชีนี้ถูกระงับการใช้งาน');
+  }
+  var salt = String(t.salt || ''), hash = String(t.passHash || ''), needFix = false;
+  if (!hash) { salt = newSalt_(); hash = hashPass_(DEFAULT_TEACHER_PASS, salt); needFix = true; }
+  if (hashPass_(pass, salt) !== hash) {
+    cache.put(key, String(fails + 1), LOCK_MINUTES * 60);
+    throw new Error('รหัสผ่านไม่ถูกต้อง (ผิดได้อีก ' + (MAX_LOGIN_FAIL - fails - 1) + ' ครั้ง)');
+  }
+  cache.remove(key);
+  var cls = parseClasses_(t.classes);
+  if (!cls.length) throw new Error('บัญชีนี้ยังไม่ได้กำหนดชั้นที่ดูแล — แจ้งผู้ดูแลหลักให้กำหนดก่อน');
+  var sh = sheet_('teachers'), keys = SHEETS.teachers;
+  if (needFix) {
+    sh.getRange(t._row, keys.indexOf('passHash') + 1, 1, 2).setValues([[hash, salt]]);
+  }
+  sh.getRange(t._row, keys.indexOf('lastLogin') + 1).setValue(new Date());
+  dropCache_('teachers');
+  return {
+    token: makeToken_({ role: 'admin', sub: normUser_(t.user), cls: cls }),
+    role: 'sub', user: normUser_(t.user), name: String(t.name || ''), classes: cls,
+    mustChange: String(t.mustChange) !== 'false' && String(t.mustChange) !== '0'
+  };
+}
+
 function apiAdminLogin_(req) {
+  // ส่งชื่อผู้ใช้มาด้วย = เข้าในฐานะครูผู้ช่วย · ไม่ส่ง = ผู้ดูแลหลักแบบเดิม
+  var user = normUser_(req.user);
+  if (user) return teacherLogin_(user, String(req.pass || ''));
   var cache = CacheService.getScriptCache();
   var fails = Number(cache.get('fail_admin') || 0);
   if (fails >= MAX_LOGIN_FAIL) throw new Error('กรอกรหัสผิดหลายครั้งเกินไป กรุณารอสักครู่');
@@ -648,13 +744,24 @@ function apiAdminLogin_(req) {
                     'แล้วเรียกฟังก์ชัน resetAdminPassword หนึ่งครั้ง');
   }
   cache.remove('fail_admin');
-  return { token: makeToken_({ role: 'admin' }),
+  return { token: makeToken_({ role: 'admin' }), role: 'main', classes: null,
            isDefault: hashPass_(DEFAULT_ADMIN_PASS, salt) === hash };
 }
 
 function apiAdminPass_(req) {
-  needAdmin_(req);
+  var t = needAdmin_(req);
   var np = String(req.newPass || '');
+  // ครูผู้ช่วยเปลี่ยนรหัสของตัวเอง ไม่ใช่ของผู้ดูแลหลัก
+  if (t.sub) {
+    if (np.length < 6) throw new Error('รหัสผ่านต้องยาวอย่างน้อย 6 ตัว');
+    if (np === DEFAULT_TEACHER_PASS) throw new Error('ห้ามใช้รหัสตั้งต้น กรุณาตั้งรหัสใหม่');
+    var me = findTeacher_(t.sub);
+    if (!me) throw new Error('ไม่พบบัญชีนี้');
+    var st = newSalt_();
+    me.salt = st; me.passHash = hashPass_(np, st); me.mustChange = false;
+    writeRow_('teachers', me._row, me);
+    return { ok: true };
+  }
   if (np.length < 8) throw new Error('รหัสผู้ดูแลต้องยาวอย่างน้อย 8 ตัว');
   var salt = newSalt_();
   props_().setProperty('ADMIN_SALT', salt);
@@ -662,13 +769,87 @@ function apiAdminPass_(req) {
   return { ok: true };
 }
 
+/* ====== จัดการครูผู้ช่วย (ผู้ดูแลหลักเท่านั้น) ==========================
+   ครูผู้ช่วยหนึ่งคนผูกกับรายชื่อชั้นที่ดูแล เก็บเป็นข้อความคั่นด้วยจุลภาค
+   ชื่อชั้นต้องตรงกับที่เขียนในคอลัมน์ "ชั้น" ของแผ่น students เป๊ะ ๆ
+   ======================================================================== */
+
+function apiTeacherList_(req) {
+  needMain_(req);
+  return readAll_('teachers').map(function (t) {
+    return { user: normUser_(t.user), name: String(t.name || ''),
+             classes: parseClasses_(t.classes),
+             active: String(t.active) !== 'false' && String(t.active) !== '0',
+             mustChange: String(t.mustChange) !== 'false' && String(t.mustChange) !== '0',
+             lastLogin: t.lastLogin ? String(t.lastLogin) : '' };
+  });
+}
+
+/** เพิ่มหรือแก้ครูผู้ช่วยหนึ่งคน — ส่ง pass มาด้วยก็ตั้งรหัสให้ ไม่ส่งก็คงรหัสเดิม */
+function apiTeacherSave_(req) {
+  needMain_(req);
+  var o = req.teacher || {};
+  var user = normUser_(o.user);
+  if (!/^[a-z0-9._-]{3,20}$/.test(user)) {
+    throw new Error('ชื่อผู้ใช้ต้องเป็นอังกฤษตัวเล็ก ตัวเลข จุด ขีด ยาว 3-20 ตัว');
+  }
+  var name = String(o.name || '').trim();
+  if (!name) throw new Error('ใส่ชื่อ-นามสกุลของครูด้วย');
+  var cls = (o.classes || []).map(clsKey_).filter(function (x) { return !!x; });
+  if (!cls.length) throw new Error('เลือกชั้นที่ครูคนนี้ดูแลอย่างน้อยหนึ่งชั้น');
+  var lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    var row = findTeacher_(user);
+    var rec = {
+      user: user, name: name, classes: cls.join(', '),
+      passHash: row ? row.passHash : '', salt: row ? row.salt : '',
+      mustChange: row ? row.mustChange : true,
+      active: o.active === false ? false : true,
+      lastLogin: row ? row.lastLogin : '',
+      createdAt: row ? row.createdAt : new Date()
+    };
+    var pass = String(o.pass || '');
+    if (pass) {
+      if (pass.length < 6) throw new Error('รหัสผ่านต้องยาวอย่างน้อย 6 ตัว');
+      var st = newSalt_();
+      rec.salt = st; rec.passHash = hashPass_(pass, st); rec.mustChange = true;
+    }
+    if (row) writeRow_('teachers', row._row, rec); else appendRow_('teachers', rec);
+    return { user: user, updated: !!row, classes: cls };
+  } finally { lock.releaseLock(); }
+}
+
+function apiTeacherRemove_(req) {
+  needMain_(req);
+  var user = normUser_(req.user);
+  var row = findTeacher_(user);
+  if (!row) return { removed: 0 };
+  sheet_('teachers').deleteRow(row._row);
+  dropCache_('teachers');
+  return { removed: 1 };
+}
+
+/** ตั้งรหัสครูผู้ช่วยกลับเป็นค่าตั้งต้น ใช้เมื่อครูลืมรหัส */
+function apiTeacherReset_(req) {
+  needMain_(req);
+  var row = findTeacher_(normUser_(req.user));
+  if (!row) throw new Error('ไม่พบบัญชีนี้');
+  var st = newSalt_();
+  row.salt = st; row.passHash = hashPass_(DEFAULT_TEACHER_PASS, st); row.mustChange = true;
+  writeRow_('teachers', row._row, row);
+  return { ok: true, pass: DEFAULT_TEACHER_PASS };
+}
+
 /* ====== รายชื่อนักเรียน (ผู้ดูแลเท่านั้น) ===============================
    รายชื่อใช้ร่วมกันทุกวิชา — นักเรียนคนหนึ่งมีบัญชีเดียว ลงชื่อครั้งเดียว
    แล้วเข้าได้ทุกวิชาที่ครูเปิดให้                                        */
 
 function apiRosterList_(req) {
-  needAdmin_(req);
-  return readAll_('students').map(function (s) {
+  var sc = scopeOf_(needAdmin_(req));
+  return readAll_('students').filter(function (s) {
+    return inScope_(sc, s.cls);
+  }).map(function (s) {
     return { sid: String(s.sid), name: s.name, no: s.no, cls: s.cls,
              active: String(s.active) !== 'false' && String(s.active) !== '0',
              mustChange: String(s.mustChange) !== 'false' && String(s.mustChange) !== '0',
@@ -703,7 +884,7 @@ function apiRosterCheck_(req) {
     อ่านแค่คอลัมน์ A แล้วต่อท้ายครั้งเดียว จึงเร็วที่สุดเท่าที่ทำได้
     ถ้าต้องการอัปเดตชื่อ/เลขที่/ชั้นของคนเดิมด้วย ให้ส่ง updateExisting = true มา */
 function apiRosterSave_(req) {
-  needAdmin_(req);
+  var sc = scopeOf_(needAdmin_(req));
   var rows = req.rows || [];
   if (!rows.length) return { added: 0, updated: 0, existed: [], skipped: [] };
   var lock = LockService.getScriptLock();
@@ -727,6 +908,12 @@ function apiRosterSave_(req) {
       var sid = normSid_(r.sid);
       var name = String(r.name == null ? '' : r.name).trim();
       if (!name) { skipped.push({ sid: sid, why: 'ไม่มีชื่อ' }); return; }
+      // ครูผู้ช่วยเพิ่มได้เฉพาะนักเรียนในชั้นที่ตัวเองดูแล
+      if (!inScope_(sc, r.cls)) {
+        skipped.push({ sid: sid, name: name,
+                       why: 'อยู่นอกชั้นที่คุณดูแล (' + (clsKey_(r.cls) || 'ไม่ระบุชั้น') + ')' });
+        return;
+      }
       if (!validSid_(sid)) {
         skipped.push({ sid: sid || '(ว่าง)', name: name,
                        why: 'ต้องเป็นตัวเลขล้วน ไม่เกิน ' + SID_MAX_LEN + ' หลัก' });
@@ -767,7 +954,7 @@ function apiRosterSave_(req) {
 
 /** ลบแถวที่เลขประจำตัวซ้ำกัน เก็บแถวแรกไว้ — ใช้ซ่อมชีตที่เคยอัพซ้ำไปแล้ว */
 function apiRosterDedupe_(req) {
-  needAdmin_(req);
+  needMain_(req);   // ลบซ้ำทั้งแผ่น กระทบทุกชั้น จึงสงวนไว้ให้ผู้ดูแลหลัก
   var lock = LockService.getScriptLock();
   lock.waitLock(30000);
   try {
@@ -788,11 +975,12 @@ function apiRosterDedupe_(req) {
 }
 
 function apiRosterReset_(req) {
-  needAdmin_(req);
+  var sc = scopeOf_(needAdmin_(req));
   var ids = {}; (req.sids || []).forEach(function (s) { ids[sidKey_(s)] = 1; });
   var list = readAll_('students'), n = 0;
   list.forEach(function (s) {
     if (!ids[sidKey_(s.sid)]) return;
+    if (!inScope_(sc, s.cls)) return;
     var salt = newSalt_();
     s.salt = salt; s.passHash = hashPass_(DEFAULT_STUDENT_PASS, salt); s.mustChange = true;
     writeRow_('students', s._row, s);
@@ -802,10 +990,10 @@ function apiRosterReset_(req) {
 }
 
 function apiRosterRemove_(req) {
-  needAdmin_(req);
+  var sc = scopeOf_(needAdmin_(req));
   var ids = {}; (req.sids || []).forEach(function (s) { ids[sidKey_(s)] = 1; });
   var sh = sheet_('students'), list = readAll_('students');
-  var rows = list.filter(function (s) { return ids[sidKey_(s.sid)]; })
+  var rows = list.filter(function (s) { return ids[sidKey_(s.sid)] && inScope_(sc, s.cls); })
                  .map(function (s) { return s._row; }).sort(function (a, b) { return b - a; });
   rows.forEach(function (r) { sh.deleteRow(r); });
   return { removed: rows.length };
@@ -816,10 +1004,17 @@ function apiRosterRemove_(req) {
    แถวเก่าที่ยังไม่มีค่าในคอลัมน์วิชา ถือเป็นฟิสิกส์ทั้งหมด               */
 
 function apiAssignSave_(req) {
-  needAdmin_(req);
+  var sc = scopeOf_(needAdmin_(req));
   var a = req.assignment || {};
   var code = String(a.code || '').trim().toUpperCase();
   if (!code) throw new Error('ไม่มีรหัสใบงาน');
+  // ครูผู้ช่วยต้องระบุชั้น และต้องเป็นชั้นที่ตัวเองดูแล
+  // ใบงานที่ไม่ระบุชั้นจะเปิดให้นักเรียนทุกชั้น จึงเป็นสิทธิ์ของผู้ดูแลหลักเท่านั้น
+  if (sc) {
+    var ac = clsKey_(a.cls);
+    if (!ac) throw new Error('ครูผู้ช่วยต้องระบุชั้นของใบงาน (มอบหมายให้ทุกชั้นไม่ได้)');
+    if (!inScope_(sc, ac)) throw new Error('ชั้น ' + ac + ' ไม่ได้อยู่ในความดูแลของคุณ');
+  }
   var subject = normSubject_(a.subject || req.subject);
   var lock = LockService.getScriptLock();
   lock.waitLock(20000);
@@ -857,8 +1052,9 @@ function apiAssignList_(req) {
     count[r.code] = count[r.code] || {};
     count[r.code][sidKey_(r.sid)] = 1;
   });
+  var sc = scopeOf_(needAdmin_(req));
   return readAll_('assignments').filter(function (a) {
-    return normSubject_(a.subject) === subject;
+    return normSubject_(a.subject) === subject && inScope_(sc, a.cls);
   }).map(function (a) {
     var k = String(a.code).toUpperCase();
     return { code: k, title: a.title, cls: a.cls, spec: a.spec, baseSeed: a.baseSeed,
@@ -872,7 +1068,7 @@ function apiAssignList_(req) {
 }
 
 function apiAssignRemove_(req) {
-  needAdmin_(req);
+  var sc = scopeOf_(needAdmin_(req));
   var code = String(req.code || '').trim().toUpperCase();
   var subject = reqSubject_(req);
   var sh = sheet_('assignments'), list = readAll_('assignments');
@@ -881,6 +1077,9 @@ function apiAssignRemove_(req) {
     // ห้ามลบข้ามวิชา กันครูเผลอลบใบงานของอีกวิชาจากหน้าจอที่กำลังเปิดอยู่
     if (normSubject_(list[i].subject) !== subject) {
       throw new Error('ใบงาน ' + code + ' เป็นของอีกวิชาหนึ่ง ลบจากหน้านี้ไม่ได้');
+    }
+    if (!inScope_(sc, list[i].cls)) {
+      throw new Error('ใบงาน ' + code + ' เป็นของชั้นที่คุณไม่ได้ดูแล');
     }
     sh.deleteRow(list[i]._row);
     return { removed: 1 };
@@ -1004,7 +1203,7 @@ function apiMyResults_(req) {
 
 /** ผู้ดูแลดึงผลของใบงานหนึ่ง (ไม่ระบุ code = ทุกใบงานของวิชานี้) */
 function apiResultsList_(req) {
-  needAdmin_(req);
+  var sc = scopeOf_(needAdmin_(req));
   var subject = reqSubject_(req);
   var code = req.code ? String(req.code).trim().toUpperCase() : '';
   var rows = readAll_('submissions').filter(function (s) {
@@ -1021,7 +1220,11 @@ function apiResultsList_(req) {
   readAll_('students').forEach(function (st) {
     names[sidKey_(st.sid)] = { name: st.name, no: st.no, cls: st.cls };
   });
-  return Object.keys(best).map(function (k) {
+  return Object.keys(best).filter(function (k) {
+    // กรองด้วยชั้นของนักเรียนเจ้าของผล ไม่ใช่ชั้นของใบงาน
+    // เพราะใบงานที่ไม่ระบุชั้นอาจมีนักเรียนหลายชั้นทำ
+    return inScope_(sc, (names[sidKey_(best[k].sid)] || {}).cls);
+  }).map(function (k) {
     var s = best[k], who = names[sidKey_(s.sid)] || {};
     var ans = [];
     try { ans = JSON.parse(s.answers || '[]'); } catch (e) {}

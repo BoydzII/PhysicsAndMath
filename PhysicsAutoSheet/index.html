@@ -1083,6 +1083,16 @@ function deviceId() {
 function cloudOn() { return !!(DB.cloud && DB.cloud.url); }
 function authValid() { return !!(DB.auth && DB.auth.token && DB.auth.exp > Date.now()); }
 function isAdmin()   { return authValid() && DB.auth.role === 'admin'; }
+/* ── ครูผู้ช่วย (แอดมินรอง) ───────────────────────────────────────────────
+   ขอบเขตชั้นเรียนที่เห็นตรงนี้ใช้สำหรับ "ปรับหน้าจอ" เท่านั้น
+   ตัวบังคับจริงอยู่ฝั่งชีต ซึ่งอ่านขอบเขตจากโทเคนที่เซ็นไว้ แก้จากเบราว์เซอร์ไม่ได้ */
+function isSubAdmin() { return isAdmin() && !!(DB.auth.profile && DB.auth.profile.sub); }
+function isMainAdmin() { return isAdmin() && !isSubAdmin(); }
+/** ชั้นที่ครูคนนี้ดูแล — null = ผู้ดูแลหลัก ดูแลทุกชั้น */
+function myClasses() {
+  const p = DB.auth && DB.auth.profile;
+  return (p && p.classes && p.classes.length) ? p.classes : null;
+}
 function isStudent() { return authValid() && DB.auth.role === 'student'; }
 /** ออฟไลน์ล้วน = ยังไม่ได้เชื่อมชีต ให้ใช้งานได้ทุกอย่างเหมือนเดิม */
 function offlineMode() { return !cloudOn(); }
@@ -1279,7 +1289,9 @@ function renderGate() {
           '" autocomplete="username" placeholder="เช่น 30201">' +
         '<label class="f" for="gPass">รหัสผ่าน</label>' +
         '<input type="password" id="gPass" autocomplete="current-password">'
-      : '<label class="f" for="gPass">รหัสผ่านผู้ดูแล</label>' +
+      : '<label class="f" for="gUser">ชื่อผู้ใช้ <span class="hint">(เว้นว่างถ้าเป็นผู้ดูแลหลัก)</span></label>' +
+        '<input type="text" id="gUser" autocomplete="username" placeholder="เช่น kruaom">' +
+        '<label class="f" for="gPass">รหัสผ่าน</label>' +
         '<input type="password" id="gPass" autocomplete="current-password">' +
         '<div class="hint" style="margin-top:7px">เข้าไม่ได้? เปิดชีต → ส่วนขยาย → Apps Script → ' +
         'เลือกฟังก์ชัน <code>resetAdminPassword</code> → กดเรียกใช้ ' +
@@ -1326,10 +1338,18 @@ function renderGate() {
         if (r.mustChange) forceChangePass();
         else toast('ยินดีต้อนรับ ' + (r.profile.name || ''), 'ok');
       } else {
-        const r = await api('adminLogin', { pass: $('#gPass').value || '' }, { noToken: true });
-        setAuth('admin', r.token, { name: 'ผู้ดูแล' });
+        const uEl = $('#gUser');
+        const r = await api('adminLogin', { user: (uEl ? uEl.value : '') || '',
+                                            pass: $('#gPass').value || '' }, { noToken: true });
+        const isSub = r.role === 'sub';
+        setAuth('admin', r.token, {
+          name: isSub ? (r.name || 'ครูผู้ช่วย') : 'ผู้ดูแล',
+          sub: isSub ? (r.user || '') : '', classes: isSub ? (r.classes || []) : null
+        });
         renderGate(); render();
-        toast('เข้าใช้ในฐานะผู้ดูแลแล้ว', 'ok');
+        if (isSub && r.mustChange) forceChangePass();
+        else toast(isSub ? ('เข้าใช้ในฐานะครูผู้ช่วย · ดูแล ' + (r.classes || []).join(', '))
+                         : 'เข้าใช้ในฐานะผู้ดูแลแล้ว', 'ok');
       }
     } catch (e) {
       gateMsg(esc(e.message || String(e)));
@@ -1366,7 +1386,7 @@ function forceChangePass(optional) {
       (optional ? '' :
         '<div class="notice warn" style="margin-bottom:11px">รหัสตั้งต้นเหมือนกันทุกคน ' +
         'ถ้าไม่เปลี่ยน เพื่อนจะเข้าใช้ในชื่อของคุณได้ กรุณาตั้งรหัสใหม่ก่อน</div>') +
-      '<label class="hint" for="cpA">รหัสผ่านใหม่ (อย่างน้อย 4 ตัว)</label>' +
+      '<label class="hint" for="cpA">รหัสผ่านใหม่ (อย่างน้อย ' + (isSubAdmin() ? 6 : 4) + ' ตัว)</label>' +
       '<input type="password" id="cpA" style="width:100%;font-size:16px">' +
       '<label class="hint" for="cpB" style="display:block;margin-top:9px">พิมพ์ซ้ำอีกครั้ง</label>' +
       '<input type="password" id="cpB" style="width:100%;font-size:16px">' +
@@ -1375,10 +1395,12 @@ function forceChangePass(optional) {
       { label: 'บันทึกรหัสใหม่', cls: 'primary', act: async (close, root) => {
           const a = $('#cpA', root).value || '', b = $('#cpB', root).value || '';
           const msg = $('#cpMsg', root);
-          if (a.length < 4) { msg.innerHTML = '<div class="notice bad">รหัสสั้นเกินไป</div>'; return; }
+          const least = isSubAdmin() ? 6 : 4;
+          if (a.length < least) { msg.innerHTML = '<div class="notice bad">รหัสสั้นเกินไป</div>'; return; }
           if (a !== b) { msg.innerHTML = '<div class="notice bad">รหัสสองช่องไม่ตรงกัน</div>'; return; }
           try {
-            await api('changePass', { newPass: a });
+            // ครูผู้ช่วยเปลี่ยนรหัสของตัวเองผ่านคำสั่งของฝั่งผู้ดูแล ไม่ใช่ของนักเรียน
+            await api(isSubAdmin() ? 'adminPass' : 'changePass', { newPass: a });
             close(); toast('เปลี่ยนรหัสผ่านเรียบร้อย', 'ok');
           } catch (e) {
             msg.innerHTML = '<div class="notice bad">' + esc(e.message) + '</div>';
@@ -14362,7 +14384,7 @@ function renderSettingFull() {
 
   h += constCardHTML();
   h += usageCardHTML();
-  h += cloudCardHTML();
+  h += cloudCardHTML() + teacherCardHTML();
   h += workLinesCardHTML();
 
   h += '<div class="card"><h3>หัวกระดาษสำหรับเอกสารที่พิมพ์</h3>' +
@@ -14492,6 +14514,7 @@ function bindSettingHandlers() {
     save(true); renderWho();
   }));
   bindCloudCard();
+  bindTeacherCard();
   bindUsageCard();
   const bl = $('#btnLogo'); if (bl) bl.addEventListener('click', pickLogo);
   const bd = $('#btnLogoDel');
@@ -14843,7 +14866,11 @@ function parseRoster(text, startNo) {
 async function publishQuiz(quizId) {
   const q = DB.quizzes.find(x => x.id === quizId);
   if (!q) return;
-  const classes = DB.classes.slice();
+  /* ครูผู้ช่วยเลือกได้เฉพาะชั้นที่ดูแล และเลือก "ทุกห้อง" ไม่ได้
+     ฝั่งชีตปฏิเสธอยู่แล้ว แต่ตัดตัวเลือกออกตั้งแต่ต้นดีกว่าให้กดแล้วเจอข้อความปฏิเสธ */
+  const my = myClasses();
+  const classes = my ? my.map(function (n) { return { name: n }; })
+                     : DB.classes.slice();
   openModal({
     title: 'มอบหมายใบงาน "' + (q.title || '') + '"',
     bodyHTML:
@@ -14851,7 +14878,8 @@ async function publishQuiz(quizId) {
       'นักเรียนที่ลงชื่อเข้าใช้จะเห็นในรายการ <b>ใบงานของฉัน</b> ทันที ' +
       'หรือกรอกรหัสเองก็ได้</div>' +
       '<label class="hint" for="pbCls">มอบหมายให้</label><br>' +
-      '<select id="pbCls" style="max-width:100%"><option value="">ทุกห้อง</option>' +
+      '<select id="pbCls" style="max-width:100%">' +
+      (my ? '' : '<option value="">ทุกห้อง</option>') +
       classes.map(c => '<option value="' + esc(c.name) + '">' + esc(c.name) + '</option>').join('') +
       '</select>' +
       '<label class="hint" for="pbClose" style="display:block;margin-top:11px">ปิดรับเมื่อ (เว้นว่าง = ไม่กำหนด)</label>' +
@@ -15131,10 +15159,109 @@ async function showClassUsage() {
 }
 
 /* --- 6.x การเชื่อมต่อ Google Sheet --------------------------------------- */
+/** การ์ดจัดการครูผู้ช่วย — ขึ้นเฉพาะผู้ดูแลหลักที่เชื่อมชีตแล้ว */
+function teacherCardHTML() {
+  if (!cloudOn() || !isMainAdmin()) return '';
+  return '<div class="card"><h3>ครูผู้ช่วยคุมสอบ' +
+    '<span class="sub">แบ่งให้ครูท่านอื่นดูแลเป็นรายชั้น</span></h3>' +
+    '<div class="hint">ครูผู้ช่วยเข้าระบบด้วย<b>ชื่อผู้ใช้และรหัสผ่านของตัวเอง</b> ' +
+    'แล้วจะเห็นและแก้ได้<b>เฉพาะชั้นที่คุณกำหนดให้</b> — มอบหมายใบงาน ดึงผล ' +
+    'และแก้รายชื่อนักเรียนในชั้นนั้น<br>' +
+    'สิ่งที่ครูผู้ช่วยทำไม่ได้ — ซ่อมโครงสร้างชีต ลบรายชื่อซ้ำทั้งแผ่น ' +
+    'และจัดการบัญชีครูด้วยกันเอง</div>' +
+    '<div class="row" style="margin-top:11px">' +
+    '<button class="primary" id="tcAdd">เพิ่มครูผู้ช่วย</button>' +
+    '<button id="tcLoad">ดูรายชื่อครูผู้ช่วย</button></div>' +
+    '<div id="tcList" style="margin-top:11px"></div></div>';
+}
+
+/** กล่องเพิ่ม/แก้ครูผู้ช่วยหนึ่งคน — ส่ง cur มาถ้าเป็นการแก้ของเดิม */
+function teacherDialog(cur) {
+  const list = DB.classes.slice();
+  const has = n => !!(cur && (cur.classes || []).indexOf(n) >= 0);
+  openModal({
+    title: cur ? ('แก้ครูผู้ช่วย ' + esc(cur.user)) : 'เพิ่มครูผู้ช่วย',
+    bodyHTML:
+      '<label class="hint" for="tcUser">ชื่อผู้ใช้ (อังกฤษตัวเล็ก ตัวเลข จุด ขีด 3-20 ตัว)</label>' +
+      '<input type="text" id="tcUser" style="width:100%" value="' + esc(cur ? cur.user : '') + '"' +
+      (cur ? ' disabled' : '') + '>' +
+      '<label class="hint" for="tcName" style="display:block;margin-top:9px">ชื่อ-นามสกุลของครู</label>' +
+      '<input type="text" id="tcName" style="width:100%" value="' + esc(cur ? cur.name : '') + '">' +
+      '<label class="hint" for="tcPass" style="display:block;margin-top:9px">' +
+      (cur ? 'รหัสผ่านใหม่ (เว้นว่าง = ไม่เปลี่ยน)' : 'รหัสผ่านตั้งต้น (อย่างน้อย 6 ตัว)') + '</label>' +
+      '<input type="password" id="tcPass" style="width:100%">' +
+      '<div class="hint" style="margin-top:11px"><b>ชั้นที่ให้ดูแล</b> — ' +
+      (list.length ? 'เลือกอย่างน้อยหนึ่งชั้น' :
+        '<span style="color:var(--bad)">ยังไม่มีรายชื่อชั้นในเครื่องนี้ ' +
+        'ให้ไปที่แท็บตั้งค่า → นำเข้ารายชื่อ หรือดึงรายชื่อจากชีตก่อน</span>') + '</div>' +
+      '<div style="max-height:190px;overflow:auto;margin-top:6px">' +
+      list.map(c => '<label class="chk"><input type="checkbox" data-tccls="' + esc(c.name) + '"' +
+        (has(c.name) ? ' checked' : '') + '><span><span class="t">' + esc(c.name) + '</span></span></label>').join('') +
+      '</div><div id="tcMsg" style="margin-top:10px"></div>',
+    buttons: [
+      { label: 'ยกเลิก' },
+      { label: cur ? 'บันทึก' : 'เพิ่ม', cls: 'primary', act: async (close, root) => {
+          const msg = $('#tcMsg', root);
+          const cls = $$('[data-tccls]', root).filter(x => x.checked).map(x => x.dataset.tccls);
+          const body = { user: cur ? cur.user : ($('#tcUser', root).value || '').trim().toLowerCase(),
+                         name: ($('#tcName', root).value || '').trim(), classes: cls };
+          const pw = $('#tcPass', root).value || '';
+          if (pw) body.pass = pw;
+          if (!cur && !pw) { msg.innerHTML = '<div class="notice bad">ตั้งรหัสผ่านตั้งต้นให้ด้วย</div>'; return; }
+          msg.innerHTML = '<div class="hint">กำลังบันทึก…</div>';
+          try {
+            await api('teacherSave', { teacher: body });
+            close(); toast('บันทึกครูผู้ช่วยแล้ว', 'ok'); loadTeachers();
+          } catch (e) { msg.innerHTML = '<div class="notice bad">' + esc(e.message) + '</div>'; }
+        } }
+    ]
+  });
+}
+
+async function loadTeachers() {
+  const box = $('#tcList');
+  if (!box) return;
+  box.innerHTML = '<div class="hint">กำลังดึงรายชื่อ…</div>';
+  try {
+    const rows = await api('teacherList', {});
+    if (!rows.length) { box.innerHTML = '<div class="hint">ยังไม่มีครูผู้ช่วย</div>'; return; }
+    box.innerHTML = '<div class="tablewrap"><table><thead><tr><th>ชื่อผู้ใช้</th><th>ชื่อ</th>' +
+      '<th>ชั้นที่ดูแล</th><th>สถานะ</th><th></th></tr></thead><tbody>' +
+      rows.map(t => '<tr><td>' + esc(t.user) + '</td><td>' + esc(t.name) + '</td>' +
+        '<td>' + esc((t.classes || []).join(', ')) + '</td>' +
+        '<td>' + (t.active ? (t.mustChange ? 'ยังไม่เปลี่ยนรหัส' : 'ใช้งานได้') : 'ปิดใช้งาน') + '</td>' +
+        '<td class="num"><button class="sm" data-tced="' + esc(t.user) + '">แก้</button> ' +
+        '<button class="sm" data-tcrs="' + esc(t.user) + '">รีเซ็ตรหัส</button> ' +
+        '<button class="sm" data-tcrm="' + esc(t.user) + '">ลบ</button></td></tr>').join('') +
+      '</tbody></table></div>';
+    const byUser = u => rows.find(x => x.user === u);
+    $$('[data-tced]', box).forEach(b => b.addEventListener('click', () => teacherDialog(byUser(b.dataset.tced))));
+    $$('[data-tcrs]', box).forEach(b => b.addEventListener('click', async () => {
+      if (!await confirmBox('รีเซ็ตรหัสผ่าน', 'ตั้งรหัสของ <b>' + esc(b.dataset.tcrs) +
+          '</b> กลับเป็นรหัสตั้งต้นใช่ไหม', 'รีเซ็ต')) return;
+      try { const r = await api('teacherReset', { user: b.dataset.tcrs });
+        toast('รหัสใหม่คือ ' + r.pass, 'ok'); loadTeachers();
+      } catch (e) { toast(e.message, 'bad'); }
+    }));
+    $$('[data-tcrm]', box).forEach(b => b.addEventListener('click', async () => {
+      if (!await confirmBox('ลบครูผู้ช่วย', 'ลบบัญชี <b>' + esc(b.dataset.tcrm) +
+          '</b> ออกจากระบบใช่ไหม<br><span class="hint">ผลการทำของนักเรียนไม่ถูกลบ</span>', 'ลบ')) return;
+      try { await api('teacherRemove', { user: b.dataset.tcrm }); toast('ลบแล้ว', 'ok'); loadTeachers(); }
+      catch (e) { toast(e.message, 'bad'); }
+    }));
+  } catch (e) { box.innerHTML = '<div class="notice bad">' + esc(e.message) + '</div>'; }
+}
+
+function bindTeacherCard() {
+  const a = $('#tcAdd'); if (a) a.addEventListener('click', () => teacherDialog(null));
+  const l = $('#tcLoad'); if (l) l.addEventListener('click', loadTeachers);
+}
+
 function cloudCardHTML() {
   let h = '<div class="card"><h3>เชื่อมต่อ Google Sheet' +
     '<span class="sub">' + (cloudOn() ? (authValid()
-      ? (isAdmin() ? 'เข้าใช้เป็นผู้ดูแล' : 'เข้าใช้เป็นนักเรียน')
+      ? (isSubAdmin() ? ('ครูผู้ช่วย · ดูแล ' + (myClasses() || []).join(', '))
+         : (isAdmin() ? 'เข้าใช้เป็นผู้ดูแลหลัก' : 'เข้าใช้เป็นนักเรียน'))
       : 'เชื่อมแล้ว แต่ยังไม่ได้เข้าใช้') : 'ยังไม่ได้เชื่อม — ใช้งานในเครื่องอย่างเดียว') + '</span></h3>';
 
   if (isStudent()) {
