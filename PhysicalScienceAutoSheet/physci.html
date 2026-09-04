@@ -3924,7 +3924,6 @@ function createQuiz(o) {
 
    ตั้งใจให้เป็น "แบบทดสอบ" เสมอ เพราะใบตอบที่เฉลยทันทีระหว่างทำไม่มีประโยชน์
    และจะกลายเป็นให้นักเรียนไล่กดจนถูก                                      */
-const PAPER_KEYS = 'กขคงจ';
 function isPaper(q) { return !!(q && q.paper); }
 /** โจทย์เทียม — มีแค่ตัวเลือกกับเฉลย ตัวตรวจคำตอบเดิมใช้ได้ทันที
     ตั้ง paper: true ไว้ให้ที่อื่นแยกออกว่าข้อนี้ไม่มีเนื้อโจทย์ให้แสดง */
@@ -3933,7 +3932,8 @@ function paperProblems(quiz) {
   return quiz.items.map(function (it, i) {
     const key = Number(it.ans);
     const cs = [];
-    for (let k = 0; k < ch; k++) cs.push({ text: PAPER_KEYS[k], correct: k === key });
+    const st = paperStyle(quiz);
+    for (let k = 0; k < ch; k++) cs.push({ text: paperLabel(st, k), correct: k === key });
     return {
       paper: true, theory: true, no: i + 1,
       topic: quiz.paper.topic == null ? null : Number(quiz.paper.topic),
@@ -3942,15 +3942,47 @@ function paperProblems(quiz) {
     };
   });
 }
-/** แปลงข้อความเฉลยเป็นรายการเลขตัวเลือก — รับได้ทั้ง "1.ก 2.ข" และ "กขคงข"
-    ตัวเลข จุด ช่องว่าง ขึ้นบรรทัดใหม่ ถูกมองข้ามหมด ครูจะได้พิมพ์แบบไหนก็ได้ */
+/* รูปแบบตัวเลือกที่แสดงบนกระดาษคำตอบ ต้องตรงกับข้อสอบที่ครูแจก
+   ไม่งั้นนักเรียนอ่านข้อสอบเห็น "3" แต่ในแอปมีให้กด ก ข ค ง แล้วต้องมาแปลงเอง */
+const PAPER_STYLES = { th: 'กขคงจ', en: 'ABCDE', num: '12345' };
+function paperStyle(q) {
+  const st = q && q.paper ? q.paper.st : '';
+  return PAPER_STYLES[st] ? st : 'th';
+}
+function paperLabel(style, k) { return (PAPER_STYLES[style] || PAPER_STYLES.th)[k] || '?'; }
+
+/** แปลงข้อความเฉลยเป็นรายการเลขตัวเลือก พร้อมเดารูปแบบที่ครูใช้
+    รับได้ทั้ง "1.ก 2.ข" · "กขคงข" · "334122342" · "1) 3" ทีละบรรทัด · a b c d
+    คืน { keys, style } — style คือรูปแบบที่จะเอาไปแสดงบนกระดาษคำตอบ */
 function parsePaperKeys(text) {
-  const out = [];
-  String(text || '').split('').forEach(function (c) {
-    const k = PAPER_KEYS.indexOf(c);
-    if (k >= 0) out.push(k);
+  const s = String(text || '');
+  const TH = 'กขคงจ', EN = 'abcde';
+  /* ตัวอักษรไม่มีทางกำกวม ถ้ามีอยู่แม้แต่ตัวเดียวก็ถือว่าตัวอักษรคือคำตอบ
+     ตัวเลขที่ปนมาจึงเป็นเลขลำดับข้อ ไม่ใช่คำตอบ */
+  const letters = [];
+  let thai = false;
+  s.split('').forEach(function (c) {
+    let k = TH.indexOf(c);
+    if (k >= 0) thai = true;
+    else k = EN.indexOf(c.toLowerCase());
+    if (k >= 0) letters.push(k);
   });
-  return out;
+  if (letters.length) return { keys: letters, style: thai ? 'th' : 'en' };
+
+  /* ไม่มีตัวอักษรเลย = ครูใช้ตัวเลขเป็นตัวเลือก
+     รูปแบบ "1. 3" หรือ "1) 3" คือเลขลำดับข้อตามด้วยคำตอบ ต้องเอาเฉพาะตัวหลัง
+     ต้องเจอตั้งแต่สองคู่ขึ้นไปถึงจะเชื่อ กันไม่ให้ "3.4" ที่เป็นเลขทศนิยมหลอกเอาได้ */
+  const pairs = s.match(/\d+\s*[.)\-:]\s*[1-5](?![0-9])/g) || [];
+  if (pairs.length >= 2) {
+    return { keys: pairs.map(function (x) { return Number(x[x.length - 1]) - 1; }), style: 'num' };
+  }
+
+  const nums = [];
+  s.split('').forEach(function (c) {
+    const k = '12345'.indexOf(c);
+    if (k >= 0) nums.push(k);
+  });
+  return { keys: nums, style: 'num' };
 }
 
 /* แคชโจทย์ที่สร้างแล้ว เพื่อไม่ต้องคำนวณซ้ำทุกครั้งที่วาดหน้าจอ */
@@ -4229,7 +4261,7 @@ function printFormulas() {
 /** กล่องสร้างหรือแก้ใบตอบ — ส่ง quiz มาถ้าเป็นการแก้เฉลยของชุดเดิม */
 function paperDialog(quiz) {
   const cur = quiz && quiz.paper ? quiz.paper : { ch: 4, topic: null };
-  const keyNow = quiz ? quiz.items.map(x => PAPER_KEYS[Number(x.ans)] || '?').join('') : '';
+  const keyNow = quiz ? quiz.items.map(x => paperLabel(paperStyle(quiz), Number(x.ans))).join('') : '';
   openModal({
     title: quiz ? ('แก้เฉลย "' + esc(quiz.title) + '"') : 'สร้างกระดาษคำตอบออนไลน์',
     bodyHTML:
@@ -4243,8 +4275,12 @@ function paperDialog(quiz) {
       '<div class="row" style="margin-top:11px">' +
       '<div><label class="hint" for="ppCh">ตัวเลือกต่อข้อ</label><br>' +
       '<select id="ppCh">' + [4, 5].map(n => '<option value="' + n + '"' +
-        (Number(cur.ch) === n ? ' selected' : '') + '>' + n + ' ตัวเลือก (' +
-        PAPER_KEYS.slice(0, n).split('').join(' ') + ')</option>').join('') + '</select></div>' +
+        (Number(cur.ch) === n ? ' selected' : '') + '>' + n + ' ตัวเลือก</option>').join('') + '</select></div>' +
+      '<div><label class="hint" for="ppStyle">แสดงตัวเลือกเป็น</label><br>' +
+      '<select id="ppStyle">' +
+      [['th', 'ก ข ค ง'], ['en', 'A B C D'], ['num', '1 2 3 4']].map(o => '<option value="' + o[0] + '"' +
+        (paperStyle(quiz) === o[0] ? ' selected' : '') + '>' + o[1] + '</option>').join('') +
+      '</select></div>' +
       '<div class="grow"><label class="hint" for="ppTopic">นับเข้าบท (ไม่ระบุก็ได้)</label><br>' +
       '<select id="ppTopic" style="max-width:100%"><option value="">ไม่ระบุ — ไม่แจกแจงตามบท</option>' +
       TOPICS.map(t => '<option value="' + t.id + '"' +
@@ -4252,9 +4288,10 @@ function paperDialog(quiz) {
         esc(t.icon + ' ' + t.name) + '</option>').join('') + '</select></div></div>' +
       '<label class="hint" for="ppKeys" style="display:block;margin-top:11px">เฉลย</label>' +
       '<textarea id="ppKeys" style="width:100%;min-height:96px;font-size:16px" ' +
-      'placeholder="พิมพ์แบบไหนก็ได้ เช่น  1.ก 2.ข 3.ค  หรือ  กขคงข">' + esc(keyNow) + '</textarea>' +
-      '<div class="hint" id="ppCount" style="margin-top:6px">ตัวเลข จุด ช่องว่าง และการขึ้นบรรทัดใหม่ ' +
-      'ถูกมองข้ามทั้งหมด จำนวนข้อนับจากตัวอักษรเฉลยที่กรอก</div>' +
+      'placeholder="พิมพ์แบบไหนก็ได้ เช่น  กขคงข  ·  ABCDB  ·  33412234  ·  1.ก 2.ข  ·  1) 3">' +
+      esc(keyNow) + '</textarea>' +
+      '<div class="hint" id="ppCount" style="margin-top:6px">กรอกเป็น ก ข ค ง · A B C D · ' +
+      'หรือ 1 2 3 4 ก็ได้ ระบบดูให้เองว่าเลขไหนคือลำดับข้อ เลขไหนคือคำตอบ</div>' +
       '<div id="ppMsg" style="margin-top:10px"></div>',
     buttons: [
       { label: 'ยกเลิก' },
@@ -4263,19 +4300,26 @@ function paperDialog(quiz) {
           const title = ($('#ppTitle', root).value || '').trim();
           const ch = Number($('#ppCh', root).value) || 4;
           const tpv = $('#ppTopic', root).value;
-          const keys = parsePaperKeys($('#ppKeys', root).value);
+          const raw = $('#ppKeys', root).value;
+          const keys = parsePaperKeys(raw).keys;
+          const st = PAPER_STYLES[$('#ppStyle', root).value] ? $('#ppStyle', root).value : 'th';
           if (!title) { msg.innerHTML = '<div class="notice bad">ตั้งชื่อชุดก่อน</div>'; return; }
-          if (!keys.length) { msg.innerHTML = '<div class="notice bad">ยังไม่ได้กรอกเฉลย</div>'; return; }
+          if (!keys.length) {
+            msg.innerHTML = '<div class="notice bad">' +
+              (raw.trim() ? 'อ่านเฉลยจากที่กรอกไม่ออก — ใช้ได้เฉพาะ ก ข ค ง จ · A B C D E · หรือเลข 1 ถึง 5'
+                          : 'ยังไม่ได้กรอกเฉลย') + '</div>';
+            return;
+          }
           if (keys.length > 200) { msg.innerHTML = '<div class="notice bad">เกิน 200 ข้อ</div>'; return; }
           const over = keys.filter(k => k >= ch);
           if (over.length) {
             msg.innerHTML = '<div class="notice bad">มีเฉลยเป็น <b>' +
-              esc(over.map(k => PAPER_KEYS[k]).join(' ')) + '</b> แต่ตั้งไว้ ' + ch +
+              esc(over.map(k => paperLabel(st, k)).join(' ')) + '</b> แต่ตั้งไว้ ' + ch +
               ' ตัวเลือก — เปลี่ยนจำนวนตัวเลือกหรือแก้เฉลยให้ตรงกัน</div>';
             return;
           }
           const items = keys.map(k => ({ paper: 1, ans: k }));
-          const pp = { ch: ch, topic: tpv === '' ? null : Number(tpv) };
+          const pp = { ch: ch, topic: tpv === '' ? null : Number(tpv), st: st };
           if (quiz) {
             quiz.title = title; quiz.paper = pp; quiz.items = items;
             delete PCACHE['paper:' + quiz.id];
@@ -4292,10 +4336,19 @@ function paperDialog(quiz) {
     ],
     onMount: root => {
       const box = $('#ppKeys', root), out = $('#ppCount', root);
+      const styleSel = $('#ppStyle', root);
       const show = () => {
-        const n = parsePaperKeys(box.value).length;
-        out.innerHTML = n ? 'อ่านเฉลยได้ <b>' + n + ' ข้อ</b>' :
-          'ตัวเลข จุด ช่องว่าง และการขึ้นบรรทัดใหม่ ถูกมองข้ามทั้งหมด';
+        const r = parsePaperKeys(box.value);
+        if (!r.keys.length) {
+          out.innerHTML = 'กรอกเป็น ก ข ค ง · A B C D · หรือ 1 2 3 4 ก็ได้';
+          return;
+        }
+        // ปรับรูปแบบที่จะแสดงให้ตรงกับที่ครูกรอกมา เปลี่ยนเองทีหลังได้
+        if (styleSel) styleSel.value = r.style;
+        out.innerHTML = 'อ่านเฉลยได้ <b>' + r.keys.length + ' ข้อ</b> · ' +
+          'ข้อแรก ๆ คือ <b>' +
+          esc(r.keys.slice(0, 8).map(k => paperLabel(r.style, k)).join(' ')) +
+          (r.keys.length > 8 ? ' …' : '') + '</b>';
       };
       box.addEventListener('input', show);
       show(); box.focus();
@@ -4473,7 +4526,7 @@ function renderMake() {
         '<th></th></tr></thead><tbody>';
       papers.slice().reverse().forEach(q => {
         const nAt = DB.attempts.filter(a => a.quizId === q.id).length;
-        const key = q.items.map(x => PAPER_KEYS[Number(x.ans)]).join('');
+        const key = q.items.map(x => paperLabel(paperStyle(q), Number(x.ans))).join('');
         h += '<tr><td>' + esc(q.title || '(ไม่มีชื่อ)') +
           (q.id === DB.cur.quizId ? ' <b>← ชุดปัจจุบัน</b>' : '') + '</td>' +
           '<td class="num">' + q.items.length + '</td>' +
@@ -5014,7 +5067,7 @@ function renderDo() {
         return '<div class="paperrow"><span class="pno">' + (k + 1) + '</span>' +
           pp.choices.map(function (c, ci) {
             return '<button class="pbub' + (x.pick === ci ? ' sel' : '') +
-              '" data-pk="' + k + '" data-pc="' + ci + '">' + PAPER_KEYS[ci] + '</button>';
+              '" data-pk="' + k + '" data-pc="' + ci + '">' + esc(c.text) + '</button>';
           }).join('') + '</div>';
       }).join('') + '</div></div>';
     h += '</div>';
@@ -5422,11 +5475,12 @@ function renderResult() {
     }
     if (x.p.paper) {
       // ใบตอบไม่มีหัวข้อย่อยและระดับ แต่บอกได้ว่าตอบอะไรไป และเฉลยคืออะไร
-      const picked = x.it.pick == null ? '—' : PAPER_KEYS[x.it.pick];
-      const key = (x.p.choices.findIndex(c => c.correct) + 1) || 0;
+      const picked = x.it.pick == null ? '—' : x.p.choices[x.it.pick].text;
+      const keyIdx = x.p.choices.findIndex(c => c.correct);
       const tpp = TOPICS.find(t => t.id === x.p.topic);
       h += '<tr><td class="num">' + (x.i + 1) + '</td><td>' + esc(tpp ? tpp.short : '—') + '</td>' +
-        '<td>ตอบ ' + esc(picked) + (showSol && key ? ' · เฉลย ' + PAPER_KEYS[key - 1] : '') + '</td>' +
+        '<td>ตอบ ' + esc(picked) +
+        (showSol && keyIdx >= 0 ? ' · เฉลย ' + esc(x.p.choices[keyIdx].text) : '') + '</td>' +
         '<td>—</td><td>' + mark + '</td><td class="num">' + mmss(x.it.sec) + '</td>' +
         (showSol ? '<td>—</td><td></td>' : '') + '</tr>';
       return;
@@ -7419,7 +7473,8 @@ function encodeQuiz(q) {
     k: quizKind(q), sh: (q.seedShift || 0),
     lm: q.limitSec || 0, mo: q.maxOut || 0, ms: q.maxOutSec || 0,
     // ใบตอบข้อสอบกระดาษเก็บเฉลยแทนแม่แบบ ขึ้นต้นด้วย P เพื่อให้ฝั่งถอดรหัสแยกออก
-    pp: isPaper(q) ? { ch: q.paper.ch || 4, tp: q.paper.topic == null ? '' : q.paper.topic } : 0,
+    pp: isPaper(q) ? { ch: q.paper.ch || 4, tp: q.paper.topic == null ? '' : q.paper.topic,
+                       st: paperStyle(q) } : 0,
     it: isPaper(q) ? q.items.map(x => 'P~' + x.ans) : q.items.map(x => x.tplId + '~' + x.seed)
   };
   return QCODE_PREFIX + b64enc(JSON.stringify(c));
@@ -7453,7 +7508,8 @@ function decodeQuiz(code) {
     topics: Array.isArray(c.tp) ? c.tp : [], subs: Array.isArray(c.sb) ? c.sb : [],
     counts: c.c || {}, g: Number(c.g) || 9.8, easyG10: !!c.e,
     kind: paper ? 'test' : (c.k === 'test' ? 'test' : 'practice'), seedShift: Number(c.sh) || 0,
-    paper: paper ? { ch: Number(paper.ch) || 4, topic: paper.tp === '' ? null : Number(paper.tp) } : null,
+    paper: paper ? { ch: Number(paper.ch) || 4, topic: paper.tp === '' ? null : Number(paper.tp),
+                     st: PAPER_STYLES[paper.st] ? paper.st : 'th' } : null,
     // รหัสที่สร้างก่อนมีระบบคุมสอบไม่มีคีย์พวกนี้ ได้ 0 = ไม่จำกัด ซึ่งถูกต้องแล้ว
     limitSec: Number(c.lm) || 0, maxOut: Number(c.mo) || 0, maxOutSec: Number(c.ms) || 0,
     items: items
@@ -7744,7 +7800,9 @@ function buildDoc(kind, opt) {
         'ใช้ไฟล์ข้อสอบเดิมของครูได้เลย ส่วน<b>หลักฐานการเรียนรู้</b>และ' +
         '<b>รายงานสถิติชั้นเรียน</b>ยังพิมพ์ได้ตามปกติ<br>' +
         'เฉลยของชุดนี้คือ <b>' +
-        esc(q.items.map(function (x) { return PAPER_KEYS[Number(x.ans)]; }).join(' ')) + '</b></div>';
+        esc(q.items.map(function (x) {
+          return paperLabel(paperStyle(q), Number(x.ans));
+        }).join(' ')) + '</b></div>';
     }
     const probs = problemsOf(q);
     const key = kind === 'answerkey';
