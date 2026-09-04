@@ -13140,6 +13140,20 @@ function paperDialog(quiz) {
       TOPICS.map(t => '<option value="' + t.id + '"' +
         (cur.topic != null && Number(cur.topic) === t.id ? ' selected' : '') + '>' +
         esc(t.icon + ' ' + t.name) + '</option>').join('') + '</select></div></div>' +
+      '<div class="row" style="margin-top:11px">' +
+      '<div><label class="hint" for="ppMin">เวลาสอบ (นาที)</label><br>' +
+      '<input type="number" id="ppMin" min="0" max="300" step="5" style="width:96px" ' +
+      'inputmode="numeric" value="' + (quiz ? Math.round((quiz.limitSec || 0) / 60)
+        : Math.round(DB.settings.examMin || 0)) + '"></div>' +
+      '<div><label class="hint" for="ppOut">ออกจากแอปได้ (ครั้ง)</label><br>' +
+      '<input type="number" id="ppOut" min="0" max="99" style="width:96px" inputmode="numeric" value="' +
+      (quiz ? (quiz.maxOut || 0) : Math.round(DB.settings.examMaxOut || 0)) + '"></div>' +
+      '<div><label class="hint" for="ppOutSec">รวมเวลานอกแอป (วินาที)</label><br>' +
+      '<input type="number" id="ppOutSec" min="0" max="3600" step="10" style="width:110px" ' +
+      'inputmode="numeric" value="' +
+      (quiz ? (quiz.maxOutSec || 0) : Math.round(DB.settings.examMaxOutSec || 0)) + '"></div></div>' +
+      '<div class="hint" style="margin-top:5px">ใส่ 0 = ไม่จำกัด · ' +
+      'ค่านี้ติดไปกับชุดนี้ชุดเดียว แก้ทีหลังได้ แต่ไม่กระทบคนที่เริ่มสอบไปแล้ว</div>' +
       '<label class="hint" for="ppKeys" style="display:block;margin-top:11px">เฉลย</label>' +
       '<textarea id="ppKeys" style="width:100%;min-height:96px;font-size:16px" ' +
       'placeholder="พิมพ์แบบไหนก็ได้ เช่น  กขคงข  ·  ABCDB  ·  33412234  ·  1.ก 2.ข  ·  1) 3">' +
@@ -13172,16 +13186,20 @@ function paperDialog(quiz) {
               ' ตัวเลือก — เปลี่ยนจำนวนตัวเลือกหรือแก้เฉลยให้ตรงกัน</div>';
             return;
           }
+          const num = (sel, max) => clamp(Math.round(Number($(sel, root).value) || 0), 0, max);
+          const lim = { limitSec: num('#ppMin', 300) * 60, maxOut: num('#ppOut', 99),
+                        maxOutSec: num('#ppOutSec', 3600) };
           const items = keys.map(k => ({ paper: 1, ans: k }));
           const pp = { ch: ch, topic: tpv === '' ? null : Number(tpv), st: st };
           if (quiz) {
             quiz.title = title; quiz.paper = pp; quiz.items = items;
+            quiz.limitSec = lim.limitSec; quiz.maxOut = lim.maxOut; quiz.maxOutSec = lim.maxOutSec;
             delete PCACHE['paper:' + quiz.id];
             save(true); close(); renderMake();
             toast('บันทึกเฉลย ' + items.length + ' ข้อแล้ว', 'ok');
             return;
           }
-          const q = createPaperQuiz(title, pp, items);
+          const q = createPaperQuiz(title, pp, items, lim);
           DB.quizzes.push(q);
           DB.cur.quizId = q.id;
           save(true); close(); renderMake();
@@ -13211,14 +13229,12 @@ function paperDialog(quiz) {
 }
 
 /** ใบตอบเป็นแบบทดสอบเสมอ และประทับกติกาคุมสอบเหมือนชุดที่สุ่มจากแม่แบบ */
-function createPaperQuiz(title, pp, items) {
+function createPaperQuiz(title, pp, items, lim) {
   return {
     id: uid(), ts: Date.now(), title: title, seed: 0,
     topics: pp.topic == null ? [] : [pp.topic], subs: [], counts: {},
     kind: 'test', seedShift: 0, paper: pp,
-    limitSec: Math.round((DB.settings.examMin || 0) * 60),
-    maxOut: Math.round(DB.settings.examMaxOut || 0),
-    maxOutSec: Math.round(DB.settings.examMaxOutSec || 0),
+    limitSec: lim.limitSec, maxOut: lim.maxOut, maxOutSec: lim.maxOutSec,
     g: DB.settings.g, easyG10: !!DB.settings.easyG10,
     items: items
   };
@@ -13377,10 +13393,12 @@ function renderMake() {
       h += '<div class="notice info" style="margin-top:11px"><b>วิธีเปิดให้นักเรียนสอบ</b><br>' +
         'กด <b>เปิดให้นักเรียนสอบ</b> ที่แถวของชุดนั้น → เลือกชั้น → ได้รหัสมา<br>' +
         'นักเรียนที่ลงชื่อเข้าใช้แล้วจะเห็นในรายการ <b>ใบงานของฉัน</b> ทันที ' +
-        'หรือกรอกรหัสเองก็ได้ · <b>ตั้งเวลาสอบที่แท็บตั้งค่าก่อนสร้าง</b> ' +
-        'เพราะกติกาคุมสอบถูกประทับตอนสร้าง ไม่ใช่ตอนเริ่มทำ</div>' +
+        'หรือกรอกรหัสเองก็ได้<br>' +
+        'นักเรียนจะถูกถามให้เลือก <b>สอบเต็มหน้าจอ</b> ตอนกดเริ่ม ' +
+        'ซึ่งกันจอดับและเตือนเมื่อหลุดออกจากหน้าจอสอบ</div>' +
         '<div class="tablewrap" style="margin-top:11px"><table><thead><tr><th>ชื่อชุด</th>' +
-        '<th class="num">ข้อ</th><th>เฉลย</th><th>สร้างเมื่อ</th><th class="num">ทำแล้ว</th>' +
+        '<th class="num">ข้อ</th><th>เฉลย</th><th>เวลาสอบ</th><th>สร้างเมื่อ</th>' +
+        '<th class="num">ทำแล้ว</th>' +
         '<th></th></tr></thead><tbody>';
       papers.slice().reverse().forEach(q => {
         const nAt = DB.attempts.filter(a => a.quizId === q.id).length;
@@ -13389,7 +13407,9 @@ function renderMake() {
           (q.id === DB.cur.quizId ? ' <b>← ชุดปัจจุบัน</b>' : '') + '</td>' +
           '<td class="num">' + q.items.length + '</td>' +
           '<td><code style="font-size:12px">' + esc(key.length > 30 ? key.slice(0, 30) + '…' : key) +
-          '</code></td><td>' + thDateTime(q.ts) + '</td><td class="num">' + nAt + '</td>' +
+          '</code></td><td>' + (q.limitSec ? Math.round(q.limitSec / 60) + ' นาที' : 'ไม่จำกัด') +
+          (q.maxOut ? ' · ออกได้ ' + q.maxOut + ' ครั้ง' : '') + '</td>' +
+          '<td>' + thDateTime(q.ts) + '</td><td class="num">' + nAt + '</td>' +
           '<td>' + (isAdmin() ? '<button class="sm primary" data-publish="' + q.id +
             '">เปิดให้นักเรียนสอบ</button> ' : '') +
           '<button class="sm" data-editkey="' + q.id + '">แก้เฉลย</button> ' +
@@ -13670,7 +13690,13 @@ async function startQuiz(quizId, assignCode) {
   if (needLearnerName()) return;
   /* แจ้งนักเรียนก่อนเสมอว่าชุดนี้มีการคุมสอบ — ทั้งเรื่องความเป็นธรรม
      และเพราะการรู้ล่วงหน้านี่แหละคือสิ่งที่ทำให้ระบบได้ผลจริง */
-  if (isTest(q) && (q.limitSec || q.maxOut || q.maxOutSec)) {
+  /* กระดาษคำตอบใช้กล่องของตัวเอง เพราะมีตัวเลือกเต็มหน้าจอเพิ่มมา
+     และต้องเรียกเต็มหน้าจอจากในปุ่มโดยตรง จะแยกไปถามทีหลังไม่ได้ */
+  let examPick = '';
+  if (isPaper(q)) {
+    examPick = await askExamStart(q);
+    if (!examPick) return;
+  } else if (isTest(q) && (q.limitSec || q.maxOut || q.maxOutSec)) {
     const bits = [];
     if (q.limitSec) bits.push('• <b>จำกัดเวลา ' + Math.round(q.limitSec / 60) + ' นาที</b> ' +
       'นาฬิกาเดินต่อแม้จะออกจากแอปไปแล้ว');
@@ -13689,6 +13715,11 @@ async function startQuiz(quizId, assignCode) {
     answers: q.items.map(() => ({ raw: [], pick: null, checked: false, score: 0, tries: 0, revealed: false, sec: 0 }))
   };
   procInit(a, q);          // ตั้งกติกาคุมสอบและ snapshot ไว้กับครั้งนี้
+  if (examPick) {
+    EXAM.wantFull = examPick === 'full';
+    EXAM.warning = false;
+    examWakeOn();          // กันจอดับทั้งสองแบบ ไม่ใช่เฉพาะเต็มหน้าจอ
+  }
   DB.attempts.push(a);
   DB.cur.quizId = q.id; DB.cur.attemptId = a.id; DB.cur.i = 0;
   QT.i = -1;
@@ -13720,6 +13751,90 @@ const PROC_MAX_EVENTS = 200;  // กันข้อมูลบวมเมื�
 
 /** ตั้งกติกาคุมสอบให้ครั้งที่เพิ่งเริ่ม — snapshot ไว้กับ attempt เลย
     ครูเปลี่ยนค่าตั้งกลางคันแล้วต้องไม่กระทบคนที่กำลังสอบอยู่ */
+/* ── โหมดสอบ: เต็มหน้าจอ · กันจอดับ · เตือนตอนออก ──────────────────────
+   ทั้งสามอย่างเป็นของเสริม ไม่ใช่ด่านกัน นักเรียนที่ตั้งใจจะออกยังออกได้อยู่ดี
+   หน้าที่จริงคือ ลดการออกโดยไม่ตั้งใจ และทำให้คนที่ออกรู้ตัวว่ากำลังทำอะไรอยู่
+   เบราว์เซอร์ที่ไม่รองรับต้องสอบต่อได้ตามปกติ ห้ามขวางทางเด็ดขาด        */
+const EXAM = { wake: null, wantFull: false, warning: false };
+
+function examFsOn() {
+  const el = document.documentElement;
+  const fn = el.requestFullscreen || el.webkitRequestFullscreen;
+  if (!fn) return false;
+  // ต้องเรียกจากในตัวจับการกดปุ่มโดยตรง ถ้ารอ Promise ก่อนเบราว์เซอร์จะปฏิเสธ
+  try {
+    const r = fn.call(el);
+    if (r && r.catch) r.catch(function () {});
+    return true;
+  } catch (e) { return false; }
+}
+function examFsIsOn() { return !!(document.fullscreenElement || document.webkitFullscreenElement); }
+function examFsOff() {
+  const fn = document.exitFullscreen || document.webkitExitFullscreen;
+  if (fn && examFsIsOn()) { try { fn.call(document); } catch (e) {} }
+}
+/** กันจอดับระหว่างสอบ — ระบบปล่อยล็อกนี้เองทุกครั้งที่แอปถูกซ่อน จึงต้องขอใหม่ตอนกลับมา */
+function examWakeOn() {
+  if (EXAM.wake || !navigator.wakeLock || !navigator.wakeLock.request) return;
+  navigator.wakeLock.request('screen').then(function (w) {
+    EXAM.wake = w;
+    w.addEventListener('release', function () { EXAM.wake = null; });
+  }).catch(function () { EXAM.wake = null; });
+}
+function examWakeOff() {
+  if (!EXAM.wake) return;
+  try { EXAM.wake.release(); } catch (e) {}
+  EXAM.wake = null;
+}
+/** เลิกโหมดสอบทั้งชุด — เรียกตอนส่งข้อสอบเสร็จ ไม่ว่าจะส่งเองหรือระบบส่งให้ */
+function examModeOff() { EXAM.wantFull = false; examWakeOff(); examFsOff(); }
+
+/** เตือนตอนหลุดจากเต็มหน้าจอระหว่างสอบ
+    ไม่บังคับกลับ เพราะบางเครื่องกดกลับไม่ได้ แต่ต้องบอกให้รู้ว่ากำลังออกจากหน้าจอสอบ */
+function examWarnLeave() {
+  if (EXAM.warning) return;               // เตือนซ้อนกันไม่ได้ เดี๋ยวเด้งรัว
+  EXAM.warning = true;
+  openModal({
+    title: 'คุณกำลังออกจากหน้าจอสอบ',
+    bodyHTML: '<div class="notice warn"><b>ตอนนี้ไม่ได้อยู่ในโหมดเต็มหน้าจอแล้ว</b><br>' +
+      'ถ้าสลับไปแอปอื่นหรือแท็บอื่น ระบบจะบันทึกว่าออกจากแอป และครูเห็นข้อมูลนี้</div>' +
+      '<div class="hint" style="margin-top:11px">คำตอบที่ทำไว้ยังอยู่ครบ นาฬิกาสอบยังเดินอยู่</div>',
+    buttons: [
+      { label: 'ทำต่อแบบไม่เต็มจอ', act: c => { EXAM.wantFull = false; EXAM.warning = false; c(); } },
+      { label: 'กลับเข้าเต็มหน้าจอ', cls: 'primary',
+        act: c => { examFsOn(); EXAM.warning = false; c(); } }
+    ]
+  });
+}
+
+/** กล่องเริ่มสอบของกระดาษคำตอบ — คืน 'full' · 'plain' · null(ยกเลิก)
+    เรียกเต็มหน้าจอจากในปุ่มโดยตรง เพราะถ้ารอ Promise คืนค่าก่อน
+    เบราว์เซอร์จะถือว่าไม่ได้มาจากการกดของผู้ใช้แล้วปฏิเสธ */
+function askExamStart(q) {
+  const bits = [];
+  if (q.limitSec) bits.push('• <b>จำกัดเวลา ' + Math.round(q.limitSec / 60) +
+    ' นาที</b> นาฬิกาเดินต่อแม้จะออกจากแอปไปแล้ว');
+  bits.push('• <b>ระบบบันทึกทุกครั้งที่ออกจากแอป</b> ทั้งจำนวนครั้งและเวลา และครูเห็นข้อมูลนี้');
+  if (q.maxOut) bits.push('• ออกจากแอปได้ไม่เกิน <b>' + q.maxOut +
+    ' ครั้ง</b> เกินกว่านั้นระบบจะส่งข้อสอบให้เอง');
+  return new Promise(res => {
+    openModal({
+      title: 'เริ่มทำ ' + (q.title || ''),
+      bodyHTML: '<div class="notice warn">' + bits.join('<br>') + '</div>' +
+        '<div class="hint" style="margin-top:11px"><b>โหมดเต็มหน้าจอ</b> ' +
+        'ซ่อนแถบที่อยู่และแท็บอื่นไว้ และกันไม่ให้จอดับระหว่างที่ก้มอ่านโจทย์จากกระดาษ ' +
+        '(จอดับเองก็ถูกนับว่าออกจากแอปเหมือนกัน)<br>' +
+        'ถ้าหลุดออกจากเต็มหน้าจอระหว่างสอบ ระบบจะเตือนให้รู้ตัว</div>',
+      buttons: [
+        { label: 'ยกเลิก', act: c => { c(); res(null); } },
+        { label: 'เริ่มแบบปกติ', act: c => { c(); res('plain'); } },
+        { label: 'เริ่มสอบเต็มหน้าจอ', cls: 'primary',
+          act: c => { examFsOn(); c(); res('full'); } }
+      ]
+    });
+  });
+}
+
 function procInit(a, q) {
   if (!isTest(q)) return;
   const s = DB.settings;
@@ -14102,6 +14217,7 @@ async function finishAttempt() {
     ทั้งสองทางต้องผ่านฟังก์ชันนี้ตัวเดียว ไม่งั้นผลของการส่งอัตโนมัติจะไม่ขึ้นชีต
     แล้วกว่าครูจะรู้ก็สอบไปแล้ว */
 async function doFinish(why) {
+  examModeOff();           // ปลดเต็มหน้าจอและคืนการพักจอ ทั้งกรณีส่งเองและระบบส่งให้
   const a = curAttempt();
   if (!a || a.finishedAt) return;   // กันส่งซ้ำเมื่อนาฬิกากับโควตายิงพร้อมกัน
   if (why && a.proc) a.proc.autoBy = why;
@@ -17074,12 +17190,32 @@ $('#btnLogout').addEventListener('click', doLogout);
 // ต่อเน็ตได้เมื่อไร ส่งผลที่ค้างอยู่ให้เองทันที
 window.addEventListener('online', () => flushOutbox(false));
 // บันทึกเวลาของข้อที่กำลังทำอยู่ก่อนปิดหน้า
-window.addEventListener('beforeunload', () => { if (TAB === 'do') { stampTime(); save(true); } });
+window.addEventListener('beforeunload', e => {
+  if (TAB === 'do') { stampTime(); save(true); }
+  /* กำลังสอบอยู่แล้วจะปิดหน้าหรือกดย้อนกลับ ให้เบราว์เซอร์ถามยืนยันก่อน
+     คำตอบไม่หายอยู่แล้วเพราะบันทึกทุกครั้งที่ตอบ แต่การปิดทิ้งกลางคัน
+     ทำให้นาฬิกาเดินต่อโดยไม่มีใครดู แล้วกลายเป็นหมดเวลาไปเฉย ๆ */
+  /* ถามเฉพาะตอนอยู่บนหน้าทำข้อสอบจริง ไม่ใช่ทุกครั้งที่มีข้อสอบค้างอยู่
+     ไม่งั้นคนที่ทิ้งข้อสอบไว้โดยไม่ส่ง จะโดนถามยืนยันทุกครั้งที่ปิดหน้าไปตลอด */
+  if (TAB === 'do' && procCur()) { e.preventDefault(); e.returnValue = ''; return ''; }
+});
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) {
     if (TAB === 'do') { stampTime(); save(true); }
     procLeave();
-  } else procBack();
+  } else {
+    procBack();
+    // ระบบปล่อยตัวกันจอดับเองทุกครั้งที่แอปถูกซ่อน กลับมาแล้วต้องขอใหม่
+    if (procCur()) examWakeOn();
+  }
+});
+['fullscreenchange', 'webkitfullscreenchange'].forEach(function (ev) {
+  document.addEventListener(ev, function () {
+    if (!EXAM.wantFull) return;
+    const a = procCur();
+    if (!a) { EXAM.wantFull = false; return; }   // สอบจบแล้ว ออกได้ตามปกติ
+    if (!examFsIsOn()) examWarnLeave();
+  });
 });
 window.addEventListener('pagehide', () => {
   if (TAB === 'do') { stampTime(); save(true); }
