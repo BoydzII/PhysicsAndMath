@@ -794,7 +794,8 @@ function defaultDB() {
          ค่าพวกนี้เป็นแค่ค่าตั้งต้นของกล่องสร้างแบบทดสอบ กติกาจริงติดไปกับตัวชุดโจทย์ */
       examMin: 0,             // เวลาทำแบบทดสอบ (นาที) 0 = ไม่จำกัดเวลา
       examMaxOut: 0,          // ออกจากแอปได้กี่ครั้งก่อนถูกส่งอัตโนมัติ
-      examMaxOutSec: 0        // ออกจากแอปได้รวมกี่วินาทีก่อนถูกส่งอัตโนมัติ
+      examMaxOutSec: 0,       // ออกจากแอปได้รวมกี่วินาทีก่อนถูกส่งอัตโนมัติ
+      devLockHr: 2            // เครื่องที่เข้าใช้แล้ว ห้ามเข้าในชื่อคนอื่นกี่ชั่วโมง (0 = ปิด)
     },
     quizzes: [],
     attempts: [],
@@ -835,6 +836,7 @@ function loadDB() {
   if (DB.settings.examMin == null) DB.settings.examMin = 0;
   if (DB.settings.examMaxOut == null) DB.settings.examMaxOut = 0;
   if (DB.settings.examMaxOutSec == null) DB.settings.examMaxOutSec = 0;
+  if (DB.settings.devLockHr == null) DB.settings.devLockHr = 2;
   try {
     localStorage.setItem(LS_KEY + '.probe', '1');
     localStorage.removeItem(LS_KEY + '.probe');
@@ -1080,6 +1082,76 @@ function makeCode(n) {
   for (let i = 0; i < a.length; i++) s += CODE_ALPHABET[a[i] % CODE_ALPHABET.length];
   return s;
 }
+/* ── ล็อกเครื่องหลังเข้าใช้ กันการทำข้อสอบให้กัน ────────────────────────
+   เก็บแยกคีย์จากข้อมูลแอป เพื่อไม่ให้การกู้คืนไฟล์สำรองหรือล้างข้อมูลแอป
+   กลายเป็นปุ่มปลดล็อกที่หาเจอง่าย
+   กันได้แค่การหยิบเครื่องมาทำต่อแบบตรงไปตรงมา — ล้างข้อมูลเว็บไซต์ในเครื่อง
+   แล้วล็อกหลุด ต้องบอกครูตามนี้ ห้ามให้ครูเข้าใจว่าเป็นด่านที่กันได้จริง  */
+const DEVLOCK_KEY = LS_KEY + '.devlock';
+function devLockRead() {
+  try { return JSON.parse(localStorage.getItem(DEVLOCK_KEY) || 'null'); } catch (e) { return null; }
+}
+function devLockWrite(v) {
+  try {
+    if (v) localStorage.setItem(DEVLOCK_KEY, JSON.stringify(v));
+    else localStorage.removeItem(DEVLOCK_KEY);
+  } catch (e) {}
+}
+function devLockMs() { return Math.max(0, Math.round(Number(DB.settings.devLockHr) || 0)) * 3600000; }
+/** เหลืออีกกี่วินาทีที่เครื่องนี้ยังผูกกับคนเดิม — 0 = เข้าได้ · ส่ง sid ว่างมา = ถามเฉย ๆ */
+function devLockLeft(sid) {
+  const ms = devLockMs(); if (!ms) return 0;
+  const L = devLockRead(); if (!L || !L.sid) return 0;
+  if (sid && String(L.sid) === String(sid)) return 0;    // คนเดิมเข้าได้เสมอ
+  return Math.max(0, Math.round((L.at + ms - Date.now()) / 1000));
+}
+/** เวลาที่เหลือแบบคนอ่านรู้เรื่อง — mmss() ให้ "120:00" ซึ่งอ่านผิดเป็น 120 นาทีได้ง่าย */
+function devLockText(sec) {
+  const m = Math.ceil(Math.max(0, sec) / 60);
+  if (m < 60) return m + ' นาที';
+  const h = Math.floor(m / 60), r = m % 60;
+  return h + ' ชั่วโมง' + (r ? ' ' + r + ' นาที' : '');
+}
+/** ผูกเครื่องกับคนที่เพิ่งเข้าใช้ — เรียกทุกครั้งที่เข้าสำเร็จ ให้เวลานับใหม่ */
+function devLockSet(sid, name) {
+  if (!devLockMs()) return;
+  devLockWrite({ sid: String(sid || ''), name: String(name || ''), at: Date.now() });
+}
+
+/** กล่องให้ครูปลดล็อกเครื่อง — ตรวจรหัสผู้ดูแลกับชีตจริง
+    ต้องมีทางนี้เสมอ ไอแพดที่ใช้ร่วมกันหลายคาบจะติดล็อกแน่นอน */
+function devLockUnlockBox() {
+  openModal({
+    title: 'ครูปลดล็อกเครื่องนี้',
+    bodyHTML:
+      '<div class="hint" style="margin-bottom:11px">เครื่องนี้เพิ่งใช้เข้าสอบในชื่อ <b>' +
+      esc((devLockRead() || {}).name || '—') + '</b> จึงยังเข้าใช้ในชื่อคนอื่นไม่ได้<br>' +
+      'ถ้าเป็นเครื่องที่ใช้ร่วมกัน ให้ครูใส่รหัสผู้ดูแลเพื่อปลดล็อก</div>' +
+      '<label class="hint" for="dlPass">รหัสผู้ดูแล</label>' +
+      '<input type="password" id="dlPass" style="width:100%;font-size:16px" autocomplete="current-password">' +
+      '<div id="dlMsg" style="margin-top:10px"></div>',
+    buttons: [
+      { label: 'ยกเลิก' },
+      { label: 'ปลดล็อก', cls: 'primary', act: async (close, root) => {
+          const msg = $('#dlMsg', root);
+          msg.innerHTML = '<div class="hint">กำลังตรวจรหัส…</div>';
+          try {
+            // ตรวจกับชีตจริง ไม่ใช่รหัสที่ฝังไว้ในหน้าเว็บซึ่งใครก็เปิดดูได้
+            await api('adminLogin', { user: '', pass: $('#dlPass', root).value || '' }, { noToken: true });
+            devLockWrite(null);
+            // renderGate() ไม่วาดซ้ำถ้าโหมดเดิม กล่องเตือนเก่าจะค้างอยู่ ต้องล้างธงก่อน
+            GATE.shown = '';
+            close(); renderGate();
+            toast('ปลดล็อกเครื่องนี้แล้ว', 'ok');
+          } catch (e) {
+            msg.innerHTML = '<div class="notice bad">' + esc(e.message) + '</div>';
+          }
+        } }
+    ],
+    onMount: root => { const p = $('#dlPass', root); if (p) p.focus(); }
+  });
+}
+
 function deviceId() {
   if (!DB.deviceId) { DB.deviceId = uid(); save(); }
   return DB.deviceId;
@@ -1318,6 +1390,11 @@ function renderGate() {
         'แล้วรหัสจะกลับเป็นค่าที่ตั้งไว้ในสคริปต์</div>') +
     '<div class="actions"><button class="primary grow" id="gGo">เข้าใช้งาน</button></div>' +
     '<div class="msg" id="gateMsg"></div>' +
+    /* บอกตั้งแต่ก่อนกรอกว่าเครื่องนี้ยังผูกกับใครอยู่ ดีกว่าให้กรอกจนเสร็จแล้วค่อยถูกปฏิเสธ */
+    (stu && devLockLeft('') ? '<div class="notice warn" style="margin-top:9px">' +
+      'เครื่องนี้เพิ่งใช้เข้าสอบในชื่อ <b>' + esc((devLockRead() || {}).name || '—') + '</b><br>' +
+      'จะเข้าใช้ในชื่อคนอื่นได้อีกครั้งในอีก <b>' + devLockText(devLockLeft('')) + '</b> ' +
+      '<a href="#" id="gUnlock">ครูปลดล็อกให้</a></div>' : '') +
     // ลิงก์ท้ายหน้าเข้าใช้ คุมแยกกันสองอัน
     //   gSwap    สลับไปหน้าผู้ดูแล — ซ่อนเฉพาะไฟล์ studentOnly (ต้องใส่รหัสอยู่ดี จึงไม่อันตราย)
     //   gOffline ตัดการเชื่อมต่อชีต — ซ่อนทั้งไฟล์ studentOnly และไฟล์ที่วางบนเว็บ
@@ -1337,6 +1414,9 @@ function renderGate() {
       esc(ab.dept || ''), esc(ab.school || '')].filter(Boolean).join('<br>') + '</div>' +
     '</div>';
 
+  const un = $('#gUnlock');
+  if (un) un.addEventListener('click', e => { e.preventDefault(); devLockUnlockBox(); });
+
   const go = async () => {
     if (GATE.busy) return;
     GATE.busy = true;
@@ -1347,6 +1427,14 @@ function renderGate() {
         const sid = normSid($('#gSid').value);
         const pass = $('#gPass').value || '';
         if (!sid) throw new ApiError('กรอกเลขประจำตัวเป็นตัวเลข ไม่เกิน ' + SID_MAX + ' หลัก');
+        /* กันการทำข้อสอบให้กัน — เครื่องที่เพิ่งใช้สอบ ยังเข้าในชื่อคนอื่นไม่ได้
+           ตรวจก่อนยิงไปที่ชีต จะได้ไม่เปลืองรอบและไม่ไปนับรหัสผิดให้เขา */
+        const lockLeft = devLockLeft(sid);
+        if (lockLeft) {
+          throw new ApiError('เครื่องนี้เพิ่งใช้เข้าสอบในชื่อ ' +
+            ((devLockRead() || {}).name || '—') + ' จึงยังเข้าใช้ในชื่ออื่นไม่ได้ ' +
+            'เหลืออีก ' + devLockText(lockLeft) + ' — ถ้าเป็นเครื่องที่ใช้ร่วมกัน ให้ครูปลดล็อกให้');
+        }
         const r = await api('login', { sid: sid, pass: pass }, { noToken: true });
         setAuth('student', r.token, r.profile);
         // ผูกโปรไฟล์ในเครื่องให้ตรงกับบัญชี เพื่อให้เอกสารและผลลัพธ์แสดงชื่อถูก
@@ -1354,6 +1442,7 @@ function renderGate() {
         DB.profile = { name: r.profile.name || '', room: String(r.profile.cls || ''),
                        no: String(r.profile.no || ''), sid: String(r.profile.sid || '') };
         save(true);
+        devLockSet(r.profile.sid || sid, r.profile.name || '');
         renderGate(); render();
         if (r.mustChange) forceChangePass();
         else toast('ยินดีต้อนรับ ' + (r.profile.name || ''), 'ok');
@@ -5866,6 +5955,9 @@ function constCardHTML() {
     '<div><label class="hint" for="setexout">ออกจากแอปได้ (ครั้ง)</label><br>' +
     '<input type="number" id="setexout" min="0" max="20" value="' + (st.examMaxOut || 0) +
     '" style="width:100px" inputmode="numeric"></div>' +
+    '<div><label class="hint" for="setdevlock">ล็อกเครื่องหลังเข้าใช้ (ชั่วโมง)</label><br>' +
+    '<input type="number" id="setdevlock" min="0" max="24" step="1" value="' + (st.devLockHr || 0) +
+    '" style="width:100px" inputmode="numeric"></div>' +
     '<div><label class="hint" for="setexsec">รวมเวลานอกแอปไม่เกิน (วินาที)</label><br>' +
     '<input type="number" id="setexsec" min="0" max="3600" step="10" value="' + (st.examMaxOutSec || 0) +
     '" style="width:100px" inputmode="numeric"></div>' +
@@ -6142,6 +6234,10 @@ function bindSettingHandlers() {
   if (eXm) eXm.addEventListener('change', e => { DB.settings.examMin = clamp(Math.round(Number(e.target.value) || 0), 0, 300); save(true); });
   const eXo = $('#setexout');
   if (eXo) eXo.addEventListener('change', e => { DB.settings.examMaxOut = clamp(Math.round(Number(e.target.value) || 0), 0, 20); save(true); });
+  const eDl = $('#setdevlock');
+  if (eDl) eDl.addEventListener('change', e => {
+    DB.settings.devLockHr = clamp(Math.round(Number(e.target.value) || 0), 0, 24); save(true);
+  });
   const eXs = $('#setexsec');
   if (eXs) eXs.addEventListener('change', e => { DB.settings.examMaxOutSec = clamp(Math.round(Number(e.target.value) || 0), 0, 3600); save(true); });
   const eP = $('#setpass');
