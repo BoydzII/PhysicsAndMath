@@ -206,6 +206,24 @@ svg .arh2{fill:var(--ink);stroke:none}
 .eqblk{margin:5px 0 5px 8px}
 .eqblk .eq{font-size:18.5px}
 
+.frac{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;
+      margin:0 2px;font-style:normal;font-size:.9em;line-height:1.1}
+.frac .fn{padding:0 4px 1px}
+.frac .fd{padding:1px 4px 0;border-top:1.4px solid currentColor}
+/* รากที่สองและรากที่สาม */
+.sqrt{display:inline-block;font-style:normal;white-space:nowrap}
+.sqrt .sg{margin-right:0}
+.sqrt .sr{border-top:1.3px solid currentColor;padding:0 3px 0 1px;margin-left:-1px}
+.sqrt .si{font-size:.62em;vertical-align:.55em;margin-right:-3px}
+
+/* ช่องกรอกคำตอบติดรูท — สามช่องเรียงกันเป็น a √b ⁄ c */
+.surdin{display:inline-flex;align-items:center;gap:3px}
+.surdin input{width:58px;text-align:center;font-size:16px}
+.surdin .sq{font-size:19px;line-height:1}
+.surdin .sl{font-size:19px;opacity:.6;margin:0 2px}
+.surdin.ok input{border-color:var(--ok);background:var(--ok-bg)}
+.surdin.bad input{border-color:var(--bad);background:var(--bad-bg)}
+
 /* กล่องวิธีทำ 7 ขั้น */
 .sol{border:1px solid var(--line);border-radius:var(--r);overflow:hidden;margin-top:12px}
 .solstep{border-bottom:1px solid var(--line2)}
@@ -1621,18 +1639,59 @@ const BOXES  = ['กล่อง', 'ลังไม้', 'กระสอบข�
      _1 หรือ _{max} → ตัวห้อย       ^2 หรือ ^{-2} → ตัวยก
    -------------------------------------------------------------------------- */
 function M(s) {
-  let h = esc(String(s));
+  return '<span class="eq">' + mInner(String(s)) + '</span>';
+}
+/** แปลงข้อความสมการหนึ่งชิ้น (ยังไม่ห่อ .eq) — เรียกซ้อนตัวเองได้ จึงใส่เศษส่วนในรากได้
+    เขียนได้ว่า  frac(3,4)  ·  sqrt(2)  ·  sqrt3(27) รากที่สาม  ·  pi
+    วิธีทำงาน: แปลงเศษส่วน/รากบนข้อความ "ดิบ" ก่อน แล้วพักผลลัพธ์ HTML ไว้ในกล่อง
+    โดยทิ้งโทเคนตัวอักษรพิเศษไว้แทน จากนั้นค่อย esc() และจัดรูปตัวห้อย-ตัวยกตามเดิม
+    แล้วเอา HTML ในกล่องแทนกลับตอนท้าย — HTML ที่สร้างไว้จึงไม่ถูก esc() ทำลาย */
+function mInner(raw, box) {
+  const top = !box;
+  box = box || [];
+  const stash = html => '\u0001' + String.fromCharCode(0xE000 + (box.push(html) - 1)) + '\u0002';
+  // อนุญาตแท็กเน้นข้อความไม่กี่ตัว โดยซ่อนไว้ก่อน esc() แล้วคืนกลับตอนท้าย
+  // ทำให้เขียน M('เส้นขนาน ⇒ <b>มุมแย้งเท่ากัน</b>') ได้ โดยแท็กไม่หลุดออกมาเป็นตัวหนังสือ
+  let t = String(raw).replace(/<\/?(?:b|i|em|strong|br)\s*\/?>/gi, m => stash(m))
+                     .replace(/\bpi\b/g, 'π');
+  // แปลงรากและเศษส่วนสลับกันไปเรื่อย ๆ จนไม่มีอะไรเปลี่ยน
+  // ทั้งสองแบบรับเฉพาะเนื้อในที่ไม่มีวงเล็บซ้อน การวนแบบนี้จึงแปลงชั้นในสุดก่อนเสมอ
+  // ทำให้เขียนซ้อนกันได้ เช่น frac(-b ± sqrt(b^2 - 4ac),2a)
+  for (let k = 0; k < 12; k++) {
+    const before = t;
+    // รากที่ n เช่น sqrt3(27) และรากที่สอง sqrt(2)
+    t = t.replace(/sqrt(\d*)\(([^()]*)\)/g, (m, n, a) =>
+      stash('<span class="sqrt">' + (n ? '<span class="si">' + n + '</span>' : '') +
+            '<span class="sg">√</span><span class="sr">' + mInner(a, box) + '</span></span>'));
+    // เศษส่วน frac(เศษ,ส่วน)
+    t = t.replace(/frac\(([^(),]*),([^(),]*)\)/g, (m, a, b) =>
+      stash('<span class="frac"><span class="fn">' + mInner(a, box) + '</span>' +
+            '<span class="fd">' + mInner(b, box) + '</span></span>'));
+    if (t === before) break;
+  }
+  let h = esc(t);
   h = h.replace(/\^\{([^}]*)\}/g, (m, a) => '<sup>' + a + '</sup>')
        .replace(/\^(-?[\w°]+)/g, (m, a) => '<sup>' + a + '</sup>');
   h = h.replace(/_\{([^}]*)\}/g, (m, a) => '<sub>' + a + '</sub>')
        .replace(/_(-?\w)/g, (m, a) => '<sub>' + a + '</sub>');
   h = h.replace(/`([^`]*)`/g, (m, a) => '<span class="u">' + a + '</span>');
-  h = h.replace(/([฀-๿]+)/g, '<span class="u">$1</span>');
+  // ข้อความไทยเป็นตัวตรง — รวมคำย่อที่มีจุดคั่นอย่าง ห.ร.ม. และ ค.ร.น. ไว้เป็นก้อนเดียว
+  h = h.replace(/([฀-๿]+(?:\.[฀-๿]+)*\.?)/g, '<span class="u">$1</span>');
   // ชื่อฟังก์ชันตรีโกณมิติเขียนด้วยตัวตรงตามหลักสากล ไม่ใช่ตัวเอียงแบบตัวแปร
   h = h.replace(/\b(sin|cos|tan|log|ln)\b/g, '<span class="u">$1</span>');
   // ให้องศาติดไปกับตัวเลข ไม่งั้นจะมีช่องว่างแปลก ๆ คั่น
   h = h.replace(/(\d[\d,]*\.?\d*°?)/g, '<span class="u">$1</span>');
-  return '<span class="eq">' + h + '</span>';
+  // เครื่องหมายดำเนินการเขียนตัวตรง — ฟอนต์คณิตตัวเอียงทำให้ + และ = เอียงจนดูเหมือนถูกขีดทับ
+  // แยกส่วนที่เป็นแท็กออกก่อน ไม่งั้นจะไปโดน = ใน class="u" ที่ใส่ไว้ข้างบน
+  h = h.split(/(<[^>]*>)/).map(function (seg, i) {
+    return i % 2 ? seg : seg.replace(/(^|\s)([+\-−×÷=≠≤≥±≈⇒])(?=\s|$)/g,
+      '$1<span class="u">$2</span>');
+  }).join('');
+  // ชั้นในคืน HTML ที่ยังมีโทเคนอยู่ ให้ชั้นนอกสุดเป็นคนแทนกลับทีเดียว
+  if (!top) return h;
+  for (let k = 0; k < 20 && h.indexOf('\u0001') >= 0; k++)
+    h = h.replace(/\u0001([\uE000-\uF8FF])\u0002/g, (m, c) => box[c.charCodeAt(0) - 0xE000]);
+  return h;
 }
 /** บรรทัดสมการแบบบล็อก */
 function EQ() {
@@ -1986,12 +2045,57 @@ function niceProblem(p) {
   if (!p || !p.finds || !p.finds.length) return false;
   for (const f of p.finds) {
     if (typeof f.value !== 'number' || !isFinite(f.value)) return false;
+    // คำตอบติดรูทไม่มีทางเป็นทศนิยมสองตำแหน่ง ต้องข้ามด่านนี้ ไม่งั้นถูกตีตกทุกเมล็ด
+    if (f.sur) continue;
     if (Math.abs(f.value) > 1e6) return false;
     if (f.value !== 0 && Math.abs(f.value) < 0.01) return false;
     if (dpOf(f.value, 4) > 2) return false;
   }
   return true;
 }
+
+/* ── คำตอบติดรูท ───────────────────────────────────────────────────────
+   แม่แบบเขียนไว้ว่า  finds: [{ ..., value: 28.2842, sur: [20, 2, 1] }]
+   หมายถึงคำตอบคือ 20√2 ⁄ 1 · ช่อง value ยังต้องมีไว้ให้ที่อื่นใช้คำนวณต่อ
+   นักเรียนกรอกสามช่อง แล้วตรวจจากรูปอย่างง่าย ไม่ใช่จากค่าทศนิยม        */
+function surdGcd(a, b) { a = Math.abs(a); b = Math.abs(b); while (b) { const t = a % b; a = b; b = t; } return a || 1; }
+/** ย่อ a√b ⁄ c ให้เป็นรูปอย่างง่าย แล้วคืนเป็นข้อความไว้เทียบกันตรง ๆ
+    ตั้งใจให้ 10√8 กับ 20√2 ผ่านทั้งคู่ เพราะเป็นจำนวนเดียวกัน แค่ยังไม่ลดรูป
+    สิ่งที่ตั้งใจกันคือการตอบเป็นทศนิยม ซึ่งไม่ใช่การตอบติดรูท
+    ถ้าครูอยากบังคับให้ลดรูปด้วย ให้เทียบ a กับ b ตรง ๆ แทนการเทียบรูปย่อ */
+function surdCanon(a, b, c) {
+  a = Math.round(Number(a)); b = Math.round(Number(b)); c = Math.round(Number(c) || 1);
+  if (!isFinite(a) || !isFinite(b) || !isFinite(c) || b < 1 || !c) return null;
+  if (c < 0) { a = -a; c = -c; }
+  for (let d = 2; d * d <= b; d++) { while (b % (d * d) === 0) { b = b / (d * d); a = a * d; } }
+  const g = surdGcd(a, c);
+  return (a / g) + '√' + b + '/' + (c / g);
+}
+/** อ่านค่าที่นักเรียนกรอกจากสามช่อง เก็บรวมไว้เป็นข้อความ "a|b|c" ในช่องเดิม */
+function parseSurd(raw) {
+  const p = String(raw == null ? '' : raw).split('|');
+  const a = p[0] === '' || p[0] == null ? NaN : Number(p[0]);
+  const b = p[1] === '' || p[1] == null ? NaN : Number(p[1]);
+  const c = p[2] === '' || p[2] == null ? 1 : Number(p[2]);
+  if (![a, b, c].every(x => isFinite(x) && Math.abs(x - Math.round(x)) < 1e-9)) return null;
+  if (b < 1 || !c) return null;
+  return { a: a, b: b, c: c };
+}
+function surdOK(raw, sur) {
+  const u = parseSurd(raw);
+  if (!u) return false;
+  const x = surdCanon(u.a, u.b, u.c), y = surdCanon(sur[0], sur[1], sur[2] == null ? 1 : sur[2]);
+  return !!x && x === y;
+}
+/** เขียนคำตอบติดรูทเป็นสูตรให้ M() เรนเดอร์ */
+function surdExpr(sur) {
+  const a = Math.round(sur[0]), b = Math.round(sur[1]), c = Math.round(sur[2] == null ? 1 : sur[2]);
+  const top = (b === 1) ? String(a) : (a === 1 ? 'sqrt(' + b + ')' :
+              (a === -1 ? '-sqrt(' + b + ')' : a + ' sqrt(' + b + ')'));
+  return c === 1 ? top : 'frac(' + top + ',' + c + ')';
+}
+/** ข้อความคำตอบของช่องหนึ่ง — ติดรูทก็แสดงเป็นรูท ไม่ใช่ทศนิยมยาว ๆ */
+function ansExpr(f) { return f.sur ? surdExpr(f.sur) : fmtq(f.value); }
 
 /** สร้างโจทย์หนึ่งข้อจาก tplId + seed — ผลลัพธ์เหมือนเดิมทุกครั้งที่เรียกด้วยค่าเดิม */
 function buildProblem(tplId, seed, cfg) {
@@ -2860,7 +2964,7 @@ T({
                 why: 'กฎการหักเหของคลื่น — อัตราส่วนไซน์ของมุมเท่ากับอัตราส่วนอัตราเร็ว' },
                { eq: 'λ_2 = frac(v_2,f)', why: 'ความถี่คงเดิมเสมอเมื่อข้ามตัวกลาง' }],
         solve: EQ('v_2 = frac(v_1 sin θ_2,sin θ_1)', 'λ_2 = frac(v_2,f)'),
-        subst: SEQ('v_2 = frac(({v})({s2}),{s1}) = {v2} `m/s`',
+        subst: SEQ('v_2 = frac({v} × {s2},{s1}) = {v2} `m/s`',
                    { v: v1, s2: sinD(th2), s1: sinD(th1), v2: v2 }) +
                SEQ('λ_2 = frac({v2},{f})', { v2: v2, f: f }),
         calc: EQ('λ_2 = ' + fmtq(lam2) + ' `m`'),
@@ -3223,7 +3327,7 @@ T({
                { eq: 's = frac(v Δt,2)', why: 'เสียงเดินทางไปถึงหน้าผาแล้วสะท้อนกลับ ระยะทางรวมจึงเป็นสองเท่าของระยะที่ต้องการ' }],
         solve: EQ('v = 331 + 0.6 t', 's = frac(v Δt,2)'),
         subst: SEQ('v = 331 + 0.6({t}) = {v} `m/s`', { t: t, v: v }) +
-               SEQ('s = frac(({v})({d}),2)', { v: v, d: dt }),
+               SEQ('s = frac({v} × {d},2)', { v: v, d: dt }),
         calc: EQ('s = ' + fmtq(s) + ' `m`'),
         conclude: 'ดังนั้น <b>หน้าผาอยู่ห่างออกไป ' + U(s, 'm') + '</b><br>' +
           '<span class="hint">หลักการเดียวกันนี้คือหัวใจของโซนาร์และการตรวจอัลตราซาวด์ — ' +
@@ -3756,7 +3860,7 @@ T({
           'และอย่าลืมว่ามุมทุกมุมวัดจาก<b>แนวฉาก</b> ไม่ใช่จากผิวรอยต่อ',
         eqs: [{ eq: 'n_1 sin θ_1 = n_2 sin θ_2', why: 'กฎของสเนลล์ ใช้ได้กับการหักเหของแสงทุกกรณี' }],
         solve: EQ('n_2 = frac(n_1 sin θ_1,sin θ_2)'),
-        subst: SEQ('n_2 = frac((1)({s1}),{s2})', { s1: sinD(o.a), s2: sinD(o.b) }),
+        subst: SEQ('n_2 = frac(1 × {s1},{s2})', { s1: sinD(o.a), s2: sinD(o.b) }),
         calc: EQ('n_2 = ' + fmt(o.n)),
         conclude: 'ดังนั้น <b>ของเหลวนี้มีดรรชนีหักเหเท่ากับ ' + fmt(o.n) + '</b><br>' +
           '<span class="hint">ตรวจทิศทาง — มุมหักเห<b>เล็กกว่า</b>มุมตกกระทบ แปลว่าแสงเบนเข้าหาแนวฉาก ' +
@@ -5594,6 +5698,26 @@ function renderDo() {
     h += '<div style="margin-bottom:9px"><b>กรอกคำตอบเป็นตัวเลข</b> ' +
       '<span class="hint">(ไม่ต้องพิมพ์หน่วย · ยอมคลาดเคลื่อนได้ ±' + fmt(DB.settings.tolPct) + '%)</span></div>';
     p.finds.forEach((f, k) => {
+      if (f.sur) {
+        // ตอบติดรูท: กรอกสามช่อง a √b ⁄ c แล้วเก็บรวมเป็น "a|b|c" ในช่องเดิม
+        const u = parseSurd(it.raw[k]) || { a: '', b: '', c: '' };
+        const okc = (it.checked && !T) ? (surdOK(it.raw[k], f.sur) ? ' ok' : ' bad') : '';
+        const dis = (it.checked && !T) ? ' disabled' : '';
+        h += '<div class="ansrow"><label class="lab">' + M(f.s) + ' <span class="hint">' + esc(f.d) +
+          '</span></label><span class="surdin' + okc + '">' +
+          '<input type="text" inputmode="numeric" data-sur="' + k + '" data-surp="a" value="' +
+          esc(u.a === '' ? '' : String(u.a)) + '"' + dis + '>' +
+          '<span class="sq">√</span>' +
+          '<input type="text" inputmode="numeric" data-sur="' + k + '" data-surp="b" value="' +
+          esc(u.b === '' ? '' : String(u.b)) + '"' + dis + '>' +
+          '<span class="sl">⁄</span>' +
+          '<input type="text" inputmode="numeric" data-sur="' + k + '" data-surp="c" value="' +
+          esc(u.c === '' ? '' : String(u.c)) + '"' + dis + '></span>' +
+          '<span class="unit">' + esc(f.unit || '') + '</span></div>' +
+          '<div class="hint" style="margin:-4px 0 8px 2px">ตอบเป็นจำนวนเต็มติดรูท ' +
+          '<b>อย่างง่าย</b> เช่น 20√2 ⁄ 1 · ไม่มีตัวส่วนให้ใส่ 1 · ไม่มีรากให้ใส่ 1 ในช่องราก</div>';
+        return;
+      }
       const okc = (it.checked && !T) ? (checkNum(parseNum(it.raw[k]), f.value) ? ' ok' : ' bad') : '';
       h += '<div class="ansrow"><label class="lab" for="in' + k + '">' + M(f.s) + ' <span class="hint">' + esc(f.d) + '</span></label>' +
         '<input type="text" inputmode="decimal" class="numin' + okc + '" id="in' + k + '" data-in="' + k + '" value="' +
@@ -5611,7 +5735,7 @@ function renderDo() {
     h += '<div class="verdict ' + (full ? 'ok' : 'bad') + '">' +
       (full ? '✓ ถูกต้อง' : part ? '◑ ถูกบางส่วน — ได้ ' + fmt(it.score) + ' คะแนน' : '✗ ยังไม่ถูก') +
       '</div><div class="hint">คำตอบที่ถูกคือ ' +
-      p.finds.map(f => M(f.s + ' = ' + fmtq(f.value) + (f.unit ? ' `' + f.unit + '`' : ''))).join(' , ') + '</div>';
+      p.finds.map(f => M(f.s + ' = ' + ansExpr(f) + (f.unit ? ' `' + f.unit + '`' : ''))).join(' , ') + '</div>';
     h += '<div class="row" style="margin-top:10px"><button class="sm" id="btnRetry">ลองทำใหม่ (ไม่นับคะแนน)</button></div>';
   } else {
     h += '<div class="row" style="margin-top:11px"><button class="primary" id="btnCheck">ตรวจคำตอบ</button>' +
@@ -5641,6 +5765,16 @@ function renderDo() {
   $$('[data-pick]').forEach(b => b.addEventListener('click', () => {
     it.pick = Number(b.dataset.pick); save(); renderDo();
   }));
+  $$('[data-sur]').forEach(inp => {
+    inp.addEventListener('input', e => {
+      const k = Number(e.target.dataset.sur);
+      const row = e.target.closest('.surdin');
+      const g = p2 => (row.querySelector('[data-surp="' + p2 + '"]') || {}).value || '';
+      it.raw[k] = g('a') + '|' + g('b') + '|' + g('c');
+      save();
+    });
+    inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); checkCurrent(); } });
+  });
   $$('[data-in]').forEach(inp => {
     inp.addEventListener('input', e => { it.raw[Number(e.target.dataset.in)] = e.target.value; save(); });
     inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); checkCurrent(); } });
@@ -5689,12 +5823,28 @@ function checkCurrent() {
     if (it.pick == null) { toast('เลือกคำตอบก่อน', 'bad'); return; }
     score = p.choices[it.pick].correct ? 1 : 0;
   } else {
-    let blank = 0, hit = 0;
+    let blank = 0, hit = 0, badForm = 0;
     p.finds.forEach((f, k) => {
+      if (f.sur) {
+        /* ตรวจจากรูปอย่างง่าย ไม่ใช่จากค่าทศนิยม ตอบ 28.28 แทน 20√2 จึงไม่ผ่าน
+           แต่ต้องแยกให้ออกระหว่าง "ยังไม่ได้กรอก" กับ "กรอกแล้วแต่ไม่ใช่จำนวนเต็ม"
+           ไม่งั้นคนที่ตอบทศนิยมจะโดนบอกว่ายังไม่ได้กรอก ทั้งที่กรอกไปแล้ว */
+        if (!parseSurd(it.raw[k])) {
+          if (String(it.raw[k] || '').replace(/[|]/g, '').trim()) badForm++;
+          else blank++;
+          return;
+        }
+        if (surdOK(it.raw[k], f.sur)) hit++;
+        return;
+      }
       const v = parseNum(it.raw[k]);
       if (v == null) blank++;
       else if (checkNum(v, f.value)) hit++;
     });
+    if (badForm && blank + badForm === p.finds.length) {
+      toast('ข้อนี้ต้องตอบติดรูท กรอกเป็นจำนวนเต็มทั้งสามช่อง เช่น 20 √2 ⁄ 1', 'bad');
+      return;
+    }
     if (blank === p.finds.length) { toast('กรอกคำตอบก่อน', 'bad'); return; }
     score = hit / p.finds.length;
   }
@@ -8411,7 +8561,7 @@ function buildDoc(kind, opt) {
           h += '<div style="margin:5px 0 3px"><b>คำตอบ:</b> ข้อ ' + 'กขคง'[ci] + '. ' + p.choices[ci].text + '</div>';
         } else {
           h += '<div style="margin:5px 0 3px"><b>คำตอบ:</b> ' +
-            p.finds.map(f => M(f.s + ' = ' + fmtq(f.value) + (f.unit ? ' `' + f.unit + '`' : ''))).join(' , ') + '</div>';
+            p.finds.map(f => M(f.s + ' = ' + ansExpr(f) + (f.unit ? ' `' + f.unit + '`' : ''))).join(' , ') + '</div>';
         }
         h += solutionHTML(p, true);
       } else {
