@@ -20,6 +20,13 @@
  *   4) กลับมาที่แอพ → แท็บตั้งค่า → ปุ่ม "ซ่อมโครงสร้างชีต" หนึ่งครั้ง
  *      เพื่อเติมหัวตารางของคอลัมน์ใหม่ (ข้อมูลเดิมไม่หาย)
  *
+ * ── รุ่น 8 เพิ่มอะไร (จำกัดครูผู้สอนตามวิชาด้วย) ──────────────────────────
+ *   เดิมสิทธิ์ผูกกับชั้นอย่างเดียว ครูที่ได้ ม.5/1 จึงเห็น ม.5/1 ของทุกวิชาในชีตใบนี้
+ *   รุ่นนี้แผ่น teachers เพิ่มคอลัมน์ท้ายตาราง "วิชาที่สอน"
+ *     เว้นว่าง  = ทุกวิชา (เหมือนเดิม บัญชีเก่าจึงไม่เสียสิทธิ์)
+ *     ใส่ชื่อไว้ = เห็นเฉพาะวิชานั้น ทั้งใบงานและผลการทำ
+ *   ขอบเขตวิชาฝังอยู่ในโทเคนเหมือนขอบเขตชั้น แก้จากเบราว์เซอร์ไม่ได้
+ *
  * ── รุ่น 7 เพิ่มอะไร (ครูผู้สอน) ─────────────────────────────────────────
  *   เพิ่มแผ่น teachers สำหรับครูท่านอื่นที่ช่วยคุมสอบวิชาเดียวกันแต่คนละชั้น
  *   ผู้ดูแลหลักกำหนดว่าครูแต่ละคนดูแลชั้นไหนได้บ้าง
@@ -94,7 +101,7 @@ var SHEETS = {
   submissions: ['ts', 'code', 'sid', 'status', 'score', 'max', 'pct', 'sec', 'revealed',
                 'answers', 'device', 'subject', 'out', 'outSec', 'autoBy'],
   teachers:    ['user', 'name', 'passHash', 'salt', 'classes', 'mustChange', 'active',
-                'lastLogin', 'createdAt']
+                'lastLogin', 'createdAt', 'subjects']
 };
 /* หัวตารางภาษาไทยที่คนอ่านเข้าใจ — เขียนไว้ที่แถว 1 ของแต่ละแผ่น */
 var HEADERS = {
@@ -107,7 +114,7 @@ var HEADERS = {
                 'ร้อยละ', 'เวลาที่ใช้ (วินาที)', 'เปิดเฉลย', 'คำตอบรายข้อ', 'อุปกรณ์', 'วิชา',
                 'ออกจากแอป (ครั้ง)', 'เวลานอกแอป (วินาที)', 'ระบบส่งให้เพราะ'],
   teachers:    ['ชื่อผู้ใช้', 'ชื่อ-นามสกุล', 'รหัสผ่าน (เข้ารหัสแล้ว)', 'salt', 'ชั้นที่ดูแล',
-                'ต้องเปลี่ยนรหัส', 'เปิดใช้งาน', 'เข้าใช้ล่าสุด', 'สร้างเมื่อ']
+                'ต้องเปลี่ยนรหัส', 'เปิดใช้งาน', 'เข้าใช้ล่าสุด', 'สร้างเมื่อ', 'วิชาที่สอน']
 };
 /* ตำแหน่งคอลัมน์ที่ใช้บ่อย (นับจาก 1) */
 var C_NO = 1, C_SID = 2, C_NAME = 3, C_CLS = 4, C_HASH = 5, C_SALT = 6,
@@ -315,6 +322,29 @@ function findTeacher_(user) {
 /** ขอบเขตของโทเคนนี้ — null = ผู้ดูแลหลัก เห็นทุกชั้น · อาเรย์ = ครูผู้สอน เห็นเฉพาะชั้นในนั้น */
 function scopeOf_(t) { return (t && t.sub) ? (t.cls || []) : null; }
 function inScope_(sc, cls) { return !sc || sc.indexOf(clsKey_(cls)) >= 0; }
+
+/** แปลงข้อความ "physics, physci" เป็นอาเรย์ของวิชาที่รู้จัก
+    ชื่อวิชาที่ไม่รู้จักถูกทิ้ง ไม่ใช่ตกกลับเป็นวิชาเริ่มต้นแบบ normSubject_
+    เพราะตรงนี้เป็นเรื่องสิทธิ์ การเดาผิดหมายถึงเปิดวิชาที่ไม่ควรเปิด */
+function parseSubjects_(v) {
+  return String(v == null ? '' : v).split(',')
+    .map(function (x) { return String(x).trim().toLowerCase(); })
+    .filter(function (x) { return SUBJECTS.indexOf(x) >= 0; });
+}
+/** วิชาที่ครูคนนี้สอน — null = ทุกวิชา (ผู้ดูแลหลัก หรือครูที่ยังไม่ได้จำกัดวิชา)
+    เว้นว่าง = ทุกวิชา จงใจให้เป็นแบบนี้ บัญชีที่สร้างก่อนมีคอลัมน์นี้จะได้ไม่เสียสิทธิ์ */
+function subjScopeOf_(t) {
+  var s = (t && t.sub) ? (t.sbj || []) : [];
+  return s.length ? s : null;
+}
+/** เรียกในทุกคำสั่งที่ผูกกับวิชา — ปฏิเสธถ้าครูคนนี้ไม่ได้สอนวิชานั้น */
+function needSubject_(t, subject) {
+  var ss = subjScopeOf_(t);
+  if (ss && ss.indexOf(subject) < 0) {
+    throw new Error('AUTH: วิชานี้ไม่ได้อยู่ในความดูแลของคุณ');
+  }
+  return subject;
+}
 /** คำสั่งที่กระทบทั้งแผ่น ต้องเป็นผู้ดูแลหลักเท่านั้น */
 function needMain_(req) {
   var t = needAdmin_(req);
@@ -517,7 +547,7 @@ function json_(o) {
 }
 
 function doGet() {
-  return json_({ ok: true, service: 'quiz-bank', version: 7, subjects: SUBJECTS,
+  return json_({ ok: true, service: 'quiz-bank', version: 8, subjects: SUBJECTS,
                  note: 'ใช้งานผ่าน POST จากแอพเท่านั้น' });
 }
 
@@ -585,7 +615,8 @@ function apiPing_(req) {
   }
   // หัวตารางของคอลัมน์ที่เพิ่งเพิ่ม (วิชา · คุมสอบ) ยังไม่ถูกเติม ก็ถือว่าควรกดซ่อมหนึ่งครั้ง
   if (!headerComplete_(sheet_('assignments'), 'assignments') ||
-      !headerComplete_(sheet_('submissions'), 'submissions')) needRepair = true;
+      !headerComplete_(sheet_('submissions'), 'submissions') ||
+      !headerComplete_(sheet_('teachers'), 'teachers')) needRepair = true;
 
   // อ่านแค่คอลัมน์เลขประจำตัว และนับจำนวนแถวของแผ่นอื่นโดยไม่ดึงข้อมูลมา
   var sids = sidColumn_();
@@ -604,7 +635,7 @@ function apiPing_(req) {
   submissionKeys_().forEach(function (s) { bySub[s.subject].submissions++; });
 
   return {
-    version: 7, role: role, myClasses: myCls,
+    version: 8, role: role, myClasses: myCls,
     teachers: Math.max(0, sheet_('teachers').getLastRow() - 1),
     needRepair: needRepair, layout: layout, subjects: SUBJECTS,
     students: sids.length, badSid: bad, blankSid: blank, dupSid: dup,
@@ -712,6 +743,7 @@ function teacherLogin_(user, pass) {
   cache.remove(key);
   var cls = parseClasses_(t.classes);
   if (!cls.length) throw new Error('บัญชีนี้ยังไม่ได้กำหนดชั้นที่ดูแล — แจ้งผู้ดูแลหลักให้กำหนดก่อน');
+  var sbj = parseSubjects_(t.subjects);
   var sh = sheet_('teachers'), keys = SHEETS.teachers;
   if (needFix) {
     sh.getRange(t._row, keys.indexOf('passHash') + 1, 1, 2).setValues([[hash, salt]]);
@@ -719,8 +751,9 @@ function teacherLogin_(user, pass) {
   sh.getRange(t._row, keys.indexOf('lastLogin') + 1).setValue(new Date());
   dropCache_('teachers');
   return {
-    token: makeToken_({ role: 'admin', sub: normUser_(t.user), cls: cls }),
+    token: makeToken_({ role: 'admin', sub: normUser_(t.user), cls: cls, sbj: sbj }),
     role: 'sub', user: normUser_(t.user), name: String(t.name || ''), classes: cls,
+    subjects: sbj,
     mustChange: String(t.mustChange) !== 'false' && String(t.mustChange) !== '0'
   };
 }
@@ -772,8 +805,10 @@ function apiAdminPass_(req) {
 }
 
 /* ====== จัดการครูผู้สอน (ผู้ดูแลหลักเท่านั้น) ==========================
-   ครูผู้สอนหนึ่งคนผูกกับรายชื่อชั้นที่ดูแล เก็บเป็นข้อความคั่นด้วยจุลภาค
+   ครูผู้สอนหนึ่งคนผูกกับรายชื่อชั้นที่ดูแล และรายชื่อวิชาที่สอน
+   ทั้งสองอย่างเก็บเป็นข้อความคั่นด้วยจุลภาค
    ชื่อชั้นต้องตรงกับที่เขียนในคอลัมน์ "ชั้น" ของแผ่น students เป๊ะ ๆ
+   ช่องวิชาเว้นว่าง = สอนทุกวิชาในชีตใบนี้ (พฤติกรรมเดิมก่อนมีคอลัมน์นี้)
    ======================================================================== */
 
 function apiTeacherList_(req) {
@@ -781,6 +816,7 @@ function apiTeacherList_(req) {
   return readAll_('teachers').map(function (t) {
     return { user: normUser_(t.user), name: String(t.name || ''),
              classes: parseClasses_(t.classes),
+             subjects: parseSubjects_(t.subjects),
              active: String(t.active) !== 'false' && String(t.active) !== '0',
              mustChange: String(t.mustChange) !== 'false' && String(t.mustChange) !== '0',
              lastLogin: t.lastLogin ? String(t.lastLogin) : '' };
@@ -799,12 +835,19 @@ function apiTeacherSave_(req) {
   if (!name) throw new Error('ใส่ชื่อ-นามสกุลของครูด้วย');
   var cls = (o.classes || []).map(clsKey_).filter(function (x) { return !!x; });
   if (!cls.length) throw new Error('เลือกชั้นที่ครูคนนี้ดูแลอย่างน้อยหนึ่งชั้น');
+  /* วิชา — ส่งมาเป็นอาเรย์ ถ้าไม่ส่งหรือส่งว่าง = ทุกวิชา
+     ชื่อวิชาที่ไม่รู้จักต้องแจ้งกลับ ไม่ใช่เงียบ ๆ ทิ้งไป ไม่งั้นครูจะนึกว่าตั้งสำเร็จ */
+  var sbj = (o.subjects || []).map(function (x) { return String(x).trim().toLowerCase(); })
+                              .filter(function (x) { return !!x; });
+  for (var si = 0; si < sbj.length; si++) {
+    if (SUBJECTS.indexOf(sbj[si]) < 0) throw new Error('ไม่รู้จักวิชา ' + sbj[si]);
+  }
   var lock = LockService.getScriptLock();
   lock.waitLock(20000);
   try {
     var row = findTeacher_(user);
     var rec = {
-      user: user, name: name, classes: cls.join(', '),
+      user: user, name: name, classes: cls.join(', '), subjects: sbj.join(', '),
       passHash: row ? row.passHash : '', salt: row ? row.salt : '',
       mustChange: row ? row.mustChange : true,
       active: o.active === false ? false : true,
@@ -818,7 +861,7 @@ function apiTeacherSave_(req) {
       rec.salt = st; rec.passHash = hashPass_(pass, st); rec.mustChange = true;
     }
     if (row) writeRow_('teachers', row._row, rec); else appendRow_('teachers', rec);
-    return { user: user, updated: !!row, classes: cls };
+    return { user: user, updated: !!row, classes: cls, subjects: sbj };
   } finally { lock.releaseLock(); }
 }
 
@@ -1006,7 +1049,7 @@ function apiRosterRemove_(req) {
    แถวเก่าที่ยังไม่มีค่าในคอลัมน์วิชา ถือเป็นฟิสิกส์ทั้งหมด               */
 
 function apiAssignSave_(req) {
-  var sc = scopeOf_(needAdmin_(req));
+  var me = needAdmin_(req), sc = scopeOf_(me);
   var a = req.assignment || {};
   var code = String(a.code || '').trim().toUpperCase();
   if (!code) throw new Error('ไม่มีรหัสใบงาน');
@@ -1017,7 +1060,7 @@ function apiAssignSave_(req) {
     if (!ac) throw new Error('ครูผู้สอนต้องระบุชั้นของใบงาน (มอบหมายให้ทุกชั้นไม่ได้)');
     if (!inScope_(sc, ac)) throw new Error('ชั้น ' + ac + ' ไม่ได้อยู่ในความดูแลของคุณ');
   }
-  var subject = normSubject_(a.subject || req.subject);
+  var subject = needSubject_(me, normSubject_(a.subject || req.subject));
   var lock = LockService.getScriptLock();
   lock.waitLock(20000);
   try {
@@ -1045,8 +1088,8 @@ function apiAssignSave_(req) {
 }
 
 function apiAssignList_(req) {
-  needAdmin_(req);
-  var subject = reqSubject_(req);
+  var me = needAdmin_(req);
+  var subject = needSubject_(me, reqSubject_(req));
   // นับผู้ส่งต่อใบงาน โดยนับเฉพาะการส่งของวิชานี้
   var count = {};
   submissionKeys_().forEach(function (r) {
@@ -1054,7 +1097,7 @@ function apiAssignList_(req) {
     count[r.code] = count[r.code] || {};
     count[r.code][sidKey_(r.sid)] = 1;
   });
-  var sc = scopeOf_(needAdmin_(req));
+  var sc = scopeOf_(me);
   return readAll_('assignments').filter(function (a) {
     return normSubject_(a.subject) === subject && inScope_(sc, a.cls);
   }).map(function (a) {
@@ -1070,9 +1113,9 @@ function apiAssignList_(req) {
 }
 
 function apiAssignRemove_(req) {
-  var sc = scopeOf_(needAdmin_(req));
+  var me = needAdmin_(req), sc = scopeOf_(me);
   var code = String(req.code || '').trim().toUpperCase();
-  var subject = reqSubject_(req);
+  var subject = needSubject_(me, reqSubject_(req));
   var sh = sheet_('assignments'), list = readAll_('assignments');
   for (var i = 0; i < list.length; i++) {
     if (String(list[i].code).trim().toUpperCase() !== code) continue;
@@ -1205,8 +1248,8 @@ function apiMyResults_(req) {
 
 /** ผู้ดูแลดึงผลของใบงานหนึ่ง (ไม่ระบุ code = ทุกใบงานของวิชานี้) */
 function apiResultsList_(req) {
-  var sc = scopeOf_(needAdmin_(req));
-  var subject = reqSubject_(req);
+  var me = needAdmin_(req), sc = scopeOf_(me);
+  var subject = needSubject_(me, reqSubject_(req));
   var code = req.code ? String(req.code).trim().toUpperCase() : '';
   var rows = readAll_('submissions').filter(function (s) {
     return String(s.status) === 'final' && normSubject_(s.subject) === subject &&

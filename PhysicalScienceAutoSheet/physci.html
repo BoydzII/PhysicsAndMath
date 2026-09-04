@@ -1078,6 +1078,23 @@ function deviceId() {
 function cloudOn() { return !!(DB.cloud && DB.cloud.url); }
 function authValid() { return !!(DB.auth && DB.auth.token && DB.auth.exp > Date.now()); }
 function isAdmin()   { return authValid() && DB.auth.role === 'admin'; }
+/* วิชาที่ชีตใบนี้เก็บอยู่ ใช้แสดงเป็นตัวเลือกตอนตั้งสิทธิ์ครูผู้สอนเท่านั้น
+   ตัวบังคับจริงคือ SUBJECTS ในไฟล์ appsscript-Code.gs
+   เพิ่มวิชาใหม่ต้องเติมทั้งสองที่ ถ้าเติมแต่ฝั่งชีต วิชานั้นจะไม่ขึ้นให้ติ๊ก */
+const SHEET_SUBJECTS = [
+  { id: 'physics', name: 'ฟิสิกส์' },
+  { id: 'physci', name: 'วิทยาศาสตร์กายภาพ' },
+  { id: 'math', name: 'คณิตศาสตร์' }
+];
+function subjectName(id) {
+  const s = SHEET_SUBJECTS.find(x => x.id === id);
+  return s ? s.name : id;
+}
+/** ชื่อวิชาที่ครูคนนี้สอน — ว่าง = ทุกวิชา */
+function mySubjects() {
+  const p = DB.auth && DB.auth.profile;
+  return (p && p.subjects && p.subjects.length) ? p.subjects : null;
+}
 /* ── ครูผู้สอน (แอดมินรอง) ───────────────────────────────────────────────
    ขอบเขตชั้นเรียนที่เห็นตรงนี้ใช้สำหรับ "ปรับหน้าจอ" เท่านั้น
    ตัวบังคับจริงอยู่ฝั่งชีต ซึ่งอ่านขอบเขตจากโทเคนที่เซ็นไว้ แก้จากเบราว์เซอร์ไม่ได้ */
@@ -1336,9 +1353,17 @@ function renderGate() {
         const r = await api('adminLogin', { user: (uEl ? uEl.value : '') || '',
                                             pass: $('#gPass').value || '' }, { noToken: true });
         const isSub = r.role === 'sub';
+        /* ครูที่ถูกจำกัดวิชาไว้ ต้องรู้ตั้งแต่ตอนนี้ว่าเข้าผิดวิชา
+           ไม่งั้นจะเข้าได้แต่กดอะไรก็ถูกปฏิเสธทีละคำสั่งจนงง */
+        const mySub = isSub ? (r.subjects || []) : [];
+        if (mySub.length && mySub.indexOf(SUBJECT) < 0) {
+          throw new Error('บัญชีนี้สอน' + mySub.map(subjectName).join(' และ ') +
+            ' จึงเข้าใช้วิชานี้ไม่ได้ — เปิดแอปของวิชาที่สอนแทน');
+        }
         setAuth('admin', r.token, {
           name: isSub ? (r.name || 'ครูผู้สอน') : 'ผู้ดูแล',
-          sub: isSub ? (r.user || '') : '', classes: isSub ? (r.classes || []) : null
+          sub: isSub ? (r.user || '') : '', classes: isSub ? (r.classes || []) : null,
+          subjects: mySub
         });
         renderGate(); render();
         if (isSub && r.mustChange) forceChangePass();
@@ -6300,7 +6325,7 @@ function teacherCardHTML() {
   return '<div class="card"><h3>ครูผู้สอนคุมสอบ' +
     '<span class="sub">แบ่งให้ครูท่านอื่นดูแลเป็นรายชั้น</span></h3>' +
     '<div class="hint">ครูผู้สอนเข้าระบบด้วย<b>ชื่อผู้ใช้และรหัสผ่านของตัวเอง</b> ' +
-    'แล้วจะเห็นและแก้ได้<b>เฉพาะชั้นที่คุณกำหนดให้</b> — มอบหมายใบงาน ดึงผล ' +
+    'แล้วจะเห็นและแก้ได้<b>เฉพาะวิชาและชั้นที่คุณกำหนดให้</b> — มอบหมายใบงาน ดึงผล ' +
     'และแก้รายชื่อนักเรียนในชั้นนั้น<br>' +
     'สิ่งที่ครูผู้สอนทำไม่ได้ — ซ่อมโครงสร้างชีต ลบรายชื่อซ้ำทั้งแผ่น ' +
     'และจัดการบัญชีครูด้วยกันเอง</div>' +
@@ -6325,6 +6350,13 @@ function teacherDialog(cur) {
       '<label class="hint" for="tcPass" style="display:block;margin-top:9px">' +
       (cur ? 'รหัสผ่านใหม่ (เว้นว่าง = ไม่เปลี่ยน)' : 'รหัสผ่านตั้งต้น (อย่างน้อย 6 ตัว)') + '</label>' +
       '<input type="password" id="tcPass" style="width:100%">' +
+      '<div class="hint" style="margin-top:11px"><b>วิชาที่ให้สอน</b> — ' +
+      'ไม่ติ๊กเลย = สอนได้ทุกวิชาในชีตใบนี้</div>' +
+      '<div style="margin-top:6px">' +
+      SHEET_SUBJECTS.map(s => '<label class="chk"><input type="checkbox" data-tcsub="' + esc(s.id) + '"' +
+        (cur && (cur.subjects || []).indexOf(s.id) >= 0 ? ' checked' : '') +
+        '><span><span class="t">' + esc(s.name) + '</span></span></label>').join('') +
+      '</div>' +
       '<div class="hint" style="margin-top:11px"><b>ชั้นที่ให้ดูแล</b> — ' +
       (list.length ? 'เลือกอย่างน้อยหนึ่งชั้น' :
         '<span style="color:var(--bad)">ยังไม่มีรายชื่อชั้นในเครื่องนี้ ' +
@@ -6338,8 +6370,9 @@ function teacherDialog(cur) {
       { label: cur ? 'บันทึก' : 'เพิ่ม', cls: 'primary', act: async (close, root) => {
           const msg = $('#tcMsg', root);
           const cls = $$('[data-tccls]', root).filter(x => x.checked).map(x => x.dataset.tccls);
+          const subs = $$('[data-tcsub]', root).filter(x => x.checked).map(x => x.dataset.tcsub);
           const body = { user: cur ? cur.user : ($('#tcUser', root).value || '').trim().toLowerCase(),
-                         name: ($('#tcName', root).value || '').trim(), classes: cls };
+                         name: ($('#tcName', root).value || '').trim(), classes: cls, subjects: subs };
           const pw = $('#tcPass', root).value || '';
           if (pw) body.pass = pw;
           if (!cur && !pw) { msg.innerHTML = '<div class="notice bad">ตั้งรหัสผ่านตั้งต้นให้ด้วย</div>'; return; }
@@ -6361,8 +6394,10 @@ async function loadTeachers() {
     const rows = await api('teacherList', {});
     if (!rows.length) { box.innerHTML = '<div class="hint">ยังไม่มีครูผู้สอน</div>'; return; }
     box.innerHTML = '<div class="tablewrap"><table><thead><tr><th>ชื่อผู้ใช้</th><th>ชื่อ</th>' +
-      '<th>ชั้นที่ดูแล</th><th>สถานะ</th><th></th></tr></thead><tbody>' +
+      '<th>วิชา</th><th>ชั้นที่ดูแล</th><th>สถานะ</th><th></th></tr></thead><tbody>' +
       rows.map(t => '<tr><td>' + esc(t.user) + '</td><td>' + esc(t.name) + '</td>' +
+        '<td>' + esc((t.subjects || []).length
+          ? t.subjects.map(subjectName).join(', ') : 'ทุกวิชา') + '</td>' +
         '<td>' + esc((t.classes || []).join(', ')) + '</td>' +
         '<td>' + (t.active ? (t.mustChange ? 'ยังไม่เปลี่ยนรหัส' : 'ใช้งานได้') : 'ปิดใช้งาน') + '</td>' +
         '<td class="num"><button class="sm" data-tced="' + esc(t.user) + '">แก้</button> ' +
@@ -6394,7 +6429,8 @@ function bindTeacherCard() {
 function cloudCardHTML() {
   let h = '<div class="card"><h3>เชื่อมต่อ Google Sheet' +
     '<span class="sub">' + (cloudOn() ? (authValid()
-      ? (isSubAdmin() ? ('ครูผู้สอน · ดูแล ' + (myClasses() || []).join(', '))
+      ? (isSubAdmin() ? ('ครูผู้สอน · ' + (mySubjects() ? mySubjects().map(subjectName).join(' ') + ' · ' : '') +
+           'ดูแล ' + (myClasses() || []).join(', '))
          : (isAdmin() ? 'เข้าใช้เป็นผู้ดูแลหลัก' : 'เข้าใช้เป็นนักเรียน'))
       : 'เชื่อมแล้ว แต่ยังไม่ได้เข้าใช้') : 'ยังไม่ได้เชื่อม — ใช้งานในเครื่องอย่างเดียว') + '</span></h3>';
 
