@@ -35,7 +35,7 @@
 | ไฟล์ต้นฉบับของครู | `math.html` | `science.html` | `physics.html` | `chem.html` | `bio.html` | `physci.html` |
 | ไฟล์ฉบับขึ้นเว็บ | `index.html` | `index.html` | `index.html` | `index.html` | `index.html` | `index.html` |
 | เนื้อหา | ม.1–ม.3 ครบชั้นละ 5 บท · 225 แม่แบบ | ม.1–ม.3 ครบชั้นละ 5 บท · 225 แม่แบบ | 7 บท + แนวข้อสอบเข้ามหาวิทยาลัย · 236 แม่แบบ | เทอม 1 ครบ 5 บท · 75 แม่แบบ | เทอม 1 ครบ 3 บท · 46 แม่แบบ | คลื่น เสียง แสงสี · 45 แม่แบบ |
-| เชื่อม Google Sheet | ❌ ออฟไลน์ล้วน | ❌ ออฟไลน์ล้วน | ✅ มอบหมายใบงานด้วยรหัส · ส่งผลกลับอัตโนมัติ | ❌ ออฟไลน์ล้วน | ❌ ออฟไลน์ล้วน | ❌ ออฟไลน์ล้วน |
+| เชื่อม Google Sheet | ❌ ออฟไลน์ล้วน | ❌ ออฟไลน์ล้วน | ✅ มอบหมายใบงานด้วยรหัส · ส่งผลกลับอัตโนมัติ | ❌ ออฟไลน์ล้วน | ❌ ออฟไลน์ล้วน | ✅ ใช้ชีตใบเดียวกับฟิสิกส์ |
 | คู่มือ | [README-math.md](MathAutoSheet/README-math.md) | [README-science.md](ScienceAutoSheet/README-science.md) | [README-physics.md](PhysicsAutoSheet/README-physics.md)<br>โค้ดฝั่งชีต [`appsscript-Code.gs`](PhysicsAutoSheet/appsscript-Code.gs) | [README-chem.md](ChemistryAutoSheet/README-chem.md) | [README-bio.md](BiologyAutoSheet/README-bio.md) | [README-physci.md](PhysicalScienceAutoSheet/README-physci.md) |
 
 ทั้งหกแอพใช้เอนจินชุดเดียวกัน แต่เป็นคนละไฟล์ คนละคลังโจทย์

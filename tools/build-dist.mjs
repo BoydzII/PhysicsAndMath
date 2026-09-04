@@ -66,8 +66,10 @@ const TARGETS = [
   {
     src: 'PhysicalScienceAutoSheet/physci.html',
     out: 'PhysicalScienceAutoSheet/index.html',
-    // วิทยาศาสตร์กายภาพยังไม่ได้เชื่อมชีต จึงเป็นฉบับนักเรียนล้วนเช่นเดียวกับคณิต วิทย์ เคมี และชีวะ
-    builtin: { url: '', studentOnly: true, lockCloud: false, logo: '', header: null, about: null }
+    // ต่อชีตใบเดียวกับฟิสิกส์ (ชีตใบนี้เก็บได้หลายวิชา แยกด้วยคอลัมน์ subject)
+    // ตั้งเหมือนฟิสิกส์ทุกอย่าง — ครูยังลงชื่อเป็นผู้ดูแลจากเว็บได้ แต่ห้ามตัดการเชื่อมต่อ
+    // เพราะถ้านักเรียนเผลอกด ผลที่ทำรอบนั้นจะไม่ถูกส่งขึ้นชีต
+    builtin: { url: APPS_URL, studentOnly: false, lockCloud: true, logo: '', header: null, about: null }
   },
   {
     src: 'EquilibriumLab/equilibrium.html',
