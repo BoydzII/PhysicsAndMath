@@ -1083,7 +1083,7 @@ function deviceId() {
 function cloudOn() { return !!(DB.cloud && DB.cloud.url); }
 function authValid() { return !!(DB.auth && DB.auth.token && DB.auth.exp > Date.now()); }
 function isAdmin()   { return authValid() && DB.auth.role === 'admin'; }
-/* ── ครูผู้ช่วย (แอดมินรอง) ───────────────────────────────────────────────
+/* ── ครูผู้สอน (แอดมินรอง) ───────────────────────────────────────────────
    ขอบเขตชั้นเรียนที่เห็นตรงนี้ใช้สำหรับ "ปรับหน้าจอ" เท่านั้น
    ตัวบังคับจริงอยู่ฝั่งชีต ซึ่งอ่านขอบเขตจากโทเคนที่เซ็นไว้ แก้จากเบราว์เซอร์ไม่ได้ */
 function isSubAdmin() { return isAdmin() && !!(DB.auth.profile && DB.auth.profile.sub); }
@@ -1343,12 +1343,12 @@ function renderGate() {
                                             pass: $('#gPass').value || '' }, { noToken: true });
         const isSub = r.role === 'sub';
         setAuth('admin', r.token, {
-          name: isSub ? (r.name || 'ครูผู้ช่วย') : 'ผู้ดูแล',
+          name: isSub ? (r.name || 'ครูผู้สอน') : 'ผู้ดูแล',
           sub: isSub ? (r.user || '') : '', classes: isSub ? (r.classes || []) : null
         });
         renderGate(); render();
         if (isSub && r.mustChange) forceChangePass();
-        else toast(isSub ? ('เข้าใช้ในฐานะครูผู้ช่วย · ดูแล ' + (r.classes || []).join(', '))
+        else toast(isSub ? ('เข้าใช้ในฐานะครูผู้สอน · ดูแล ' + (r.classes || []).join(', '))
                          : 'เข้าใช้ในฐานะผู้ดูแลแล้ว', 'ok');
       }
     } catch (e) {
@@ -1399,7 +1399,7 @@ function forceChangePass(optional) {
           if (a.length < least) { msg.innerHTML = '<div class="notice bad">รหัสสั้นเกินไป</div>'; return; }
           if (a !== b) { msg.innerHTML = '<div class="notice bad">รหัสสองช่องไม่ตรงกัน</div>'; return; }
           try {
-            // ครูผู้ช่วยเปลี่ยนรหัสของตัวเองผ่านคำสั่งของฝั่งผู้ดูแล ไม่ใช่ของนักเรียน
+            // ครูผู้สอนเปลี่ยนรหัสของตัวเองผ่านคำสั่งของฝั่งผู้ดูแล ไม่ใช่ของนักเรียน
             await api(isSubAdmin() ? 'adminPass' : 'changePass', { newPass: a });
             close(); toast('เปลี่ยนรหัสผ่านเรียบร้อย', 'ok');
           } catch (e) {
@@ -14866,7 +14866,7 @@ function parseRoster(text, startNo) {
 async function publishQuiz(quizId) {
   const q = DB.quizzes.find(x => x.id === quizId);
   if (!q) return;
-  /* ครูผู้ช่วยเลือกได้เฉพาะชั้นที่ดูแล และเลือก "ทุกห้อง" ไม่ได้
+  /* ครูผู้สอนเลือกได้เฉพาะชั้นที่ดูแล และเลือก "ทุกห้อง" ไม่ได้
      ฝั่งชีตปฏิเสธอยู่แล้ว แต่ตัดตัวเลือกออกตั้งแต่ต้นดีกว่าให้กดแล้วเจอข้อความปฏิเสธ */
   const my = myClasses();
   const classes = my ? my.map(function (n) { return { name: n }; })
@@ -15159,28 +15159,28 @@ async function showClassUsage() {
 }
 
 /* --- 6.x การเชื่อมต่อ Google Sheet --------------------------------------- */
-/** การ์ดจัดการครูผู้ช่วย — ขึ้นเฉพาะผู้ดูแลหลักที่เชื่อมชีตแล้ว */
+/** การ์ดจัดการครูผู้สอน — ขึ้นเฉพาะผู้ดูแลหลักที่เชื่อมชีตแล้ว */
 function teacherCardHTML() {
   if (!cloudOn() || !isMainAdmin()) return '';
-  return '<div class="card"><h3>ครูผู้ช่วยคุมสอบ' +
+  return '<div class="card"><h3>ครูผู้สอนคุมสอบ' +
     '<span class="sub">แบ่งให้ครูท่านอื่นดูแลเป็นรายชั้น</span></h3>' +
-    '<div class="hint">ครูผู้ช่วยเข้าระบบด้วย<b>ชื่อผู้ใช้และรหัสผ่านของตัวเอง</b> ' +
+    '<div class="hint">ครูผู้สอนเข้าระบบด้วย<b>ชื่อผู้ใช้และรหัสผ่านของตัวเอง</b> ' +
     'แล้วจะเห็นและแก้ได้<b>เฉพาะชั้นที่คุณกำหนดให้</b> — มอบหมายใบงาน ดึงผล ' +
     'และแก้รายชื่อนักเรียนในชั้นนั้น<br>' +
-    'สิ่งที่ครูผู้ช่วยทำไม่ได้ — ซ่อมโครงสร้างชีต ลบรายชื่อซ้ำทั้งแผ่น ' +
+    'สิ่งที่ครูผู้สอนทำไม่ได้ — ซ่อมโครงสร้างชีต ลบรายชื่อซ้ำทั้งแผ่น ' +
     'และจัดการบัญชีครูด้วยกันเอง</div>' +
     '<div class="row" style="margin-top:11px">' +
-    '<button class="primary" id="tcAdd">เพิ่มครูผู้ช่วย</button>' +
-    '<button id="tcLoad">ดูรายชื่อครูผู้ช่วย</button></div>' +
+    '<button class="primary" id="tcAdd">เพิ่มครูผู้สอน</button>' +
+    '<button id="tcLoad">ดูรายชื่อครูผู้สอน</button></div>' +
     '<div id="tcList" style="margin-top:11px"></div></div>';
 }
 
-/** กล่องเพิ่ม/แก้ครูผู้ช่วยหนึ่งคน — ส่ง cur มาถ้าเป็นการแก้ของเดิม */
+/** กล่องเพิ่ม/แก้ครูผู้สอนหนึ่งคน — ส่ง cur มาถ้าเป็นการแก้ของเดิม */
 function teacherDialog(cur) {
   const list = DB.classes.slice();
   const has = n => !!(cur && (cur.classes || []).indexOf(n) >= 0);
   openModal({
-    title: cur ? ('แก้ครูผู้ช่วย ' + esc(cur.user)) : 'เพิ่มครูผู้ช่วย',
+    title: cur ? ('แก้ครูผู้สอน ' + esc(cur.user)) : 'เพิ่มครูผู้สอน',
     bodyHTML:
       '<label class="hint" for="tcUser">ชื่อผู้ใช้ (อังกฤษตัวเล็ก ตัวเลข จุด ขีด 3-20 ตัว)</label>' +
       '<input type="text" id="tcUser" style="width:100%" value="' + esc(cur ? cur.user : '') + '"' +
@@ -15211,7 +15211,7 @@ function teacherDialog(cur) {
           msg.innerHTML = '<div class="hint">กำลังบันทึก…</div>';
           try {
             await api('teacherSave', { teacher: body });
-            close(); toast('บันทึกครูผู้ช่วยแล้ว', 'ok'); loadTeachers();
+            close(); toast('บันทึกครูผู้สอนแล้ว', 'ok'); loadTeachers();
           } catch (e) { msg.innerHTML = '<div class="notice bad">' + esc(e.message) + '</div>'; }
         } }
     ]
@@ -15224,7 +15224,7 @@ async function loadTeachers() {
   box.innerHTML = '<div class="hint">กำลังดึงรายชื่อ…</div>';
   try {
     const rows = await api('teacherList', {});
-    if (!rows.length) { box.innerHTML = '<div class="hint">ยังไม่มีครูผู้ช่วย</div>'; return; }
+    if (!rows.length) { box.innerHTML = '<div class="hint">ยังไม่มีครูผู้สอน</div>'; return; }
     box.innerHTML = '<div class="tablewrap"><table><thead><tr><th>ชื่อผู้ใช้</th><th>ชื่อ</th>' +
       '<th>ชั้นที่ดูแล</th><th>สถานะ</th><th></th></tr></thead><tbody>' +
       rows.map(t => '<tr><td>' + esc(t.user) + '</td><td>' + esc(t.name) + '</td>' +
@@ -15244,7 +15244,7 @@ async function loadTeachers() {
       } catch (e) { toast(e.message, 'bad'); }
     }));
     $$('[data-tcrm]', box).forEach(b => b.addEventListener('click', async () => {
-      if (!await confirmBox('ลบครูผู้ช่วย', 'ลบบัญชี <b>' + esc(b.dataset.tcrm) +
+      if (!await confirmBox('ลบครูผู้สอน', 'ลบบัญชี <b>' + esc(b.dataset.tcrm) +
           '</b> ออกจากระบบใช่ไหม<br><span class="hint">ผลการทำของนักเรียนไม่ถูกลบ</span>', 'ลบ')) return;
       try { await api('teacherRemove', { user: b.dataset.tcrm }); toast('ลบแล้ว', 'ok'); loadTeachers(); }
       catch (e) { toast(e.message, 'bad'); }
@@ -15260,7 +15260,7 @@ function bindTeacherCard() {
 function cloudCardHTML() {
   let h = '<div class="card"><h3>เชื่อมต่อ Google Sheet' +
     '<span class="sub">' + (cloudOn() ? (authValid()
-      ? (isSubAdmin() ? ('ครูผู้ช่วย · ดูแล ' + (myClasses() || []).join(', '))
+      ? (isSubAdmin() ? ('ครูผู้สอน · ดูแล ' + (myClasses() || []).join(', '))
          : (isAdmin() ? 'เข้าใช้เป็นผู้ดูแลหลัก' : 'เข้าใช้เป็นนักเรียน'))
       : 'เชื่อมแล้ว แต่ยังไม่ได้เข้าใช้') : 'ยังไม่ได้เชื่อม — ใช้งานในเครื่องอย่างเดียว') + '</span></h3>';
 
