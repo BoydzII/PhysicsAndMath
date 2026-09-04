@@ -4013,12 +4013,43 @@ function createQuiz(o) {
 
    ตั้งใจให้เป็น "แบบทดสอบ" เสมอ เพราะใบตอบที่เฉลยทันทีระหว่างทำไม่มีประโยชน์
    และจะกลายเป็นให้นักเรียนไล่กดจนถูก                                      */
-function isPaper(q) { return !!(q && q.paper); }
+/* ── ข้อสอบอัตนัย ──────────────────────────────────────────────────────
+   ครูพิมพ์โจทย์และเฉลยเองทีละข้อ ไม่เกี่ยวกับคลังแม่แบบ
+   ให้คะแนนด้วยเกณฑ์ 5 ขั้น ขั้นละ 20% ของคะแนนเต็มข้อนั้น
+   เกณฑ์นี้คือวิธีทำที่แอปแสดงให้นักเรียนดูอยู่แล้ว จึงไม่ใช่ของใหม่ที่ต้องมาสอนเพิ่ม */
+const ESSAY_STEPS = [
+  'วิเคราะห์โจทย์ — บอกได้ว่าโจทย์กำหนดอะไรมา และให้หาอะไร',
+  'เลือกสมการที่ใช้ได้ถูกต้อง',
+  'แทนค่าลงในสมการได้ถูกต้อง',
+  'คำนวณได้คำตอบถูกต้อง',
+  'สรุปคำตอบพร้อมหน่วย'
+];
+const ESSAY_SHORT = ['วิเคราะห์', 'สมการ', 'แทนค่า', 'คำนวณ', 'สรุป'];
+function isEssayItem(it) { return !!(it && it.essay); }
+function hasEssay(q) { return !!(q && q.items && q.items.some(isEssayItem)); }
+/** คะแนนเต็มของข้อหนึ่ง — ปรนัยข้อละ 1 · อัตนัยตามที่ครูตั้ง */
+function itemMax(it) { return isEssayItem(it) ? Math.max(0, Number(it.max) || 0) : 1; }
+/** คะแนนที่ได้จากเกณฑ์ 5 ขั้น — ติ๊กกี่ขั้นก็ได้สัดส่วนนั้นของคะแนนเต็มข้อ */
+function essayScore(max, rub) {
+  const n = (rub || []).filter(Boolean).length;
+  return Math.max(0, Number(max) || 0) * n / ESSAY_STEPS.length;
+}
+function isPaper(q) { return !!(q && (q.paper || hasEssay(q))); }
 /** โจทย์เทียม — มีแค่ตัวเลือกกับเฉลย ตัวตรวจคำตอบเดิมใช้ได้ทันที
     ตั้ง paper: true ไว้ให้ที่อื่นแยกออกว่าข้อนี้ไม่มีเนื้อโจทย์ให้แสดง */
 function paperProblems(quiz) {
-  const ch = clamp(Number(quiz.paper.ch) || 4, 2, 5);
+  const ch = clamp(Number((quiz.paper || {}).ch) || 4, 2, 5);
   return quiz.items.map(function (it, i) {
+    if (isEssayItem(it)) {
+      // ข้ออัตนัยไม่มีตัวเลือกและไม่มีคำตอบที่เครื่องตรวจได้ ครูให้คะแนนเอง
+      return {
+        paper: true, essay: true, no: i + 1, max: itemMax(it),
+        topic: (quiz.paper && quiz.paper.topic != null) ? Number(quiz.paper.topic) : null,
+        sub: 'อัตนัย', level: 'ทฤษฎี', skills: [],
+        stem: String(it.stem || ''), keyText: String(it.key || ''), typed: !!it.typed,
+        given: [], finds: [], choices: null
+      };
+    }
     const key = Number(it.ans);
     const cs = [];
     const st = paperStyle(quiz);
@@ -4094,7 +4125,10 @@ function problemsOf(quiz) {
   PCACHE[key] = arr;
   return arr;
 }
-function quizMaxScore(quiz) { return quiz.items.length; }
+/** คะแนนเต็มของชุด — ไม่ใช่จำนวนข้อ เพราะข้ออัตนัยข้อเดียวอาจ 10 คะแนน */
+function quizMaxScore(quiz) {
+  return ((quiz && quiz.items) || []).reduce(function (s, it) { return s + itemMax(it); }, 0);
+}
 
 /** สร้างแบบทดสอบจากแบบฝึกหัดชุดหนึ่ง — แม่แบบ/หัวข้อ/ระดับเหมือนเดิมทุกข้อ แต่ตัวเลขคนละชุด */
 function makeTestFrom(quiz, title) {
@@ -4463,6 +4497,214 @@ function paperDialog(quiz) {
   });
 }
 
+/* --- 5.2ง ข้อสอบอัตนัย ---------------------------------------------------
+   ครูพิมพ์โจทย์และเฉลยเองทีละข้อ แล้วให้คะแนนด้วยเกณฑ์ 5 ขั้น          */
+
+/** กรอบเขียนคำตอบของข้ออัตนัยในใบที่พิมพ์ — หัวข้อตามเกณฑ์ 5 ขั้นที่ใช้ตรวจ
+    นักเรียนจึงเห็นตั้งแต่บนกระดาษว่าต้องเขียนอะไรถึงจะได้คะแนนแต่ละส่วน
+    จำนวนบรรทัดผันตามคะแนนเต็ม ข้อ 10 คะแนนต้องมีที่มากกว่าข้อ 5 คะแนน */
+function essayWorkBox(max) {
+  const per = clamp(Math.round((Number(max) || 5) / 5), 1, 6);
+  return '<div class="work">' + ESSAY_SHORT.map(function (s, i) {
+    return '<div class="wcap">' + (i + 1) + '. ' + s + '</div>' +
+      new Array(per + 1).join('<div class="wl"></div>');
+  }).join('') + '</div>';
+}
+
+/** วาดรายการข้อในกล่องพิมพ์ข้อสอบใหม่ทุกครั้งที่เพิ่มหรือลบข้อ */
+function essayRows(list, root) {
+  const box = $('#esList', root);
+  if (!box) return;
+  box.innerHTML = list.map(function (it, i) {
+    return '<div class="card" style="margin:0 0 10px">' +
+      '<div class="row" style="margin-bottom:7px"><b class="grow">ข้อ ' + (i + 1) + '</b>' +
+      '<label class="hint">คะแนนเต็ม <input type="number" data-esmax="' + i + '" min="1" max="100" ' +
+      'style="width:70px" inputmode="numeric" value="' + (Number(it.max) || 10) + '"></label>' +
+      '<label class="chk" style="margin:0"><input type="checkbox" data-estyped="' + i + '"' +
+      (it.typed ? ' checked' : '') + '><span><span class="t">พิมพ์ตอบในแอป</span></span></label>' +
+      '<button class="sm danger" data-esdel="' + i + '">ลบข้อนี้</button></div>' +
+      '<textarea data-esstem="' + i + '" rows="3" style="width:100%" ' +
+      'placeholder="โจทย์ข้อนี้">' + esc(it.stem || '') + '</textarea>' +
+      '<textarea data-eskey="' + i + '" rows="3" style="width:100%;margin-top:7px" ' +
+      'placeholder="เฉลย / แนวคำตอบที่ครูใช้ตรวจ (นักเรียนไม่เห็น)">' + esc(it.key || '') + '</textarea>' +
+      '</div>';
+  }).join('') || '<div class="hint">ยังไม่มีข้อ — กด "เพิ่มข้อ" ด้านล่าง</div>';
+
+  // เก็บค่าลงอาเรย์ทันทีที่พิมพ์ เพื่อไม่ให้หายตอนกดเพิ่มหรือลบข้อ
+  $$('[data-esstem]', box).forEach(function (t) {
+    t.addEventListener('input', function (e) { list[Number(e.target.dataset.esstem)].stem = e.target.value; });
+  });
+  $$('[data-eskey]', box).forEach(function (t) {
+    t.addEventListener('input', function (e) { list[Number(e.target.dataset.eskey)].key = e.target.value; });
+  });
+  $$('[data-esmax]', box).forEach(function (t) {
+    t.addEventListener('input', function (e) {
+      list[Number(e.target.dataset.esmax)].max = clamp(Math.round(Number(e.target.value) || 0), 1, 100);
+    });
+  });
+  $$('[data-estyped]', box).forEach(function (t) {
+    t.addEventListener('change', function (e) { list[Number(e.target.dataset.estyped)].typed = e.target.checked; });
+  });
+  $$('[data-esdel]', box).forEach(function (b) {
+    b.addEventListener('click', function (e) {
+      list.splice(Number(e.target.dataset.esdel), 1);
+      essayRows(list, root);
+    });
+  });
+}
+
+/** กล่องสร้างหรือแก้ข้อสอบอัตนัย — ส่ง quiz มาถ้าเป็นการแก้ของเดิม */
+function essayDialog(quiz) {
+  const list = quiz ? quiz.items.filter(isEssayItem).map(function (it) {
+    return { stem: it.stem || '', key: it.key || '', max: itemMax(it), typed: !!it.typed };
+  }) : [{ stem: '', key: '', max: 10, typed: false }];
+  openModal({
+    wide: true,
+    title: quiz ? ('แก้ข้อสอบอัตนัย ' + (quiz.title || '')) : 'สร้างข้อสอบอัตนัย',
+    bodyHTML:
+      '<div class="hint" style="margin-bottom:11px">ครูพิมพ์โจทย์เองทีละข้อ ' +
+      '<b>ไม่เกี่ยวกับคลังโจทย์ที่สุ่มได้</b> · เฉลยที่กรอกไว้ใช้ตอนครูตรวจและตอนพิมพ์ใบเฉลย ' +
+      'นักเรียนไม่เห็น<br>' +
+      'ให้คะแนนด้วย<b>เกณฑ์ 5 ขั้น ขั้นละ 20%</b> ของคะแนนเต็มข้อนั้น — ' +
+      esc(ESSAY_SHORT.join(' · ')) + '</div>' +
+      '<label class="hint" for="esTitle">ชื่อชุด</label>' +
+      '<input type="text" id="esTitle" style="width:100%" value="' + esc(quiz ? quiz.title : '') +
+      '" placeholder="เช่น ข้อสอบอัตนัย บทที่ 2 การเคลื่อนที่">' +
+      '<div class="row" style="margin-top:11px">' +
+      '<div><label class="hint" for="esMin">เวลาสอบ (นาที)</label><br>' +
+      '<input type="number" id="esMin" min="0" max="300" step="5" style="width:96px" inputmode="numeric" value="' +
+      (quiz ? Math.round((quiz.limitSec || 0) / 60) : Math.round(DB.settings.examMin || 0)) + '"></div>' +
+      '<div class="grow"><label class="hint" for="esTopic">นับเข้าบท (ไม่ระบุก็ได้)</label><br>' +
+      '<select id="esTopic" style="max-width:100%"><option value="">ไม่ระบุ</option>' +
+      TOPICS.map(t => '<option value="' + t.id + '"' +
+        (quiz && quiz.paper && quiz.paper.topic != null && Number(quiz.paper.topic) === t.id ? ' selected' : '') +
+        '>' + esc(t.icon + ' ' + t.name) + '</option>').join('') + '</select></div></div>' +
+      '<div id="esList" style="margin-top:13px"></div>' +
+      '<div class="row"><button class="sm" id="esAdd">+ เพิ่มข้อ</button>' +
+      '<span class="hint grow" id="esSum"></span></div>' +
+      '<div id="esMsg" style="margin-top:10px"></div>',
+    buttons: [
+      { label: 'ยกเลิก' },
+      { label: quiz ? 'บันทึก' : 'สร้างข้อสอบ', cls: 'primary', act: (close, root) => {
+          const msg = $('#esMsg', root);
+          const title = ($('#esTitle', root).value || '').trim();
+          const good = list.filter(function (x) { return String(x.stem || '').trim(); });
+          if (!title) { msg.innerHTML = '<div class="notice bad">ตั้งชื่อชุดก่อน</div>'; return; }
+          if (!good.length) { msg.innerHTML = '<div class="notice bad">ยังไม่มีข้อที่พิมพ์โจทย์ไว้</div>'; return; }
+          const items = good.map(function (x) {
+            return { essay: 1, stem: String(x.stem).trim(), key: String(x.key || '').trim(),
+                     max: clamp(Math.round(Number(x.max) || 10), 1, 100), typed: x.typed ? 1 : 0 };
+          });
+          const tpv = $('#esTopic', root).value;
+          const lim = clamp(Math.round(Number($('#esMin', root).value) || 0), 0, 300) * 60;
+          if (quiz) {
+            quiz.title = title; quiz.items = items; quiz.limitSec = lim;
+            quiz.paper = { ch: 4, topic: tpv === '' ? null : Number(tpv), st: 'th' };
+            delete PCACHE['paper:' + quiz.id];
+            save(true); close(); renderMake();
+            toast('บันทึกข้อสอบ ' + items.length + ' ข้อแล้ว', 'ok');
+            return;
+          }
+          const q = createPaperQuiz(title, { ch: 4, topic: tpv === '' ? null : Number(tpv), st: 'th' },
+            items, { limitSec: lim, maxOut: Math.round(DB.settings.examMaxOut || 0),
+                     maxOutSec: Math.round(DB.settings.examMaxOutSec || 0) });
+          DB.quizzes.push(q); DB.cur.quizId = q.id;
+          save(true); close(); renderMake();
+          toast('สร้างข้อสอบอัตนัย ' + items.length + ' ข้อ รวม ' + quizMaxScore(q) + ' คะแนน', 'ok');
+        } }
+    ],
+    onMount: root => {
+      const sum = () => {
+        const el = $('#esSum', root);
+        const tot = list.reduce(function (s, x) { return s + (Number(x.max) || 0); }, 0);
+        if (el) el.innerHTML = list.length + ' ข้อ · รวม <b>' + tot + ' คะแนน</b>';
+      };
+      const draw = () => { essayRows(list, root); sum(); };
+      $('#esAdd', root).addEventListener('click', () => {
+        list.push({ stem: '', key: '', max: 10, typed: false }); draw();
+      });
+      // ยอดคะแนนต้องขยับตามตอนพิมพ์ด้วย ไม่ใช่เฉพาะตอนเพิ่มหรือลบข้อ
+      $('#esList', root).addEventListener('input', sum);
+      draw();
+      $('#esTitle', root).focus();
+    }
+  });
+}
+
+/** หน้าให้คะแนนอัตนัย — ครูติ๊กเกณฑ์ 5 ขั้นต่อข้อ ทีละคน */
+function essayGradeBox(quizId) {
+  const q = DB.quizzes.find(x => x.id === quizId);
+  if (!q) return;
+  const list = DB.attempts.filter(a => a.quizId === quizId && a.finishedAt)
+    .sort((a, b) => String(attemptWho(a)).localeCompare(String(attemptWho(b)), 'th'));
+  if (!list.length) {
+    openModal({ title: 'ให้คะแนนอัตนัย',
+      bodyHTML: '<div class="notice info">ยังไม่มีใครส่งชุดนี้<br>' +
+        'ถ้านักเรียนทำบนเครื่องตัวเองแล้ว ให้กด <b>ดึงผลจากชีต</b> ที่แท็บสถิติชั้นเรียนก่อน</div>',
+      buttons: [{ label: 'ปิด' }] });
+    return;
+  }
+  const probs = problemsOf(q);
+  const es = probs.map((p, i) => ({ p: p, i: i })).filter(x => x.p.essay);
+  let at = 0;
+
+  const draw = root => {
+    const a = list[at];
+    const box = $('#egBody', root);
+    box.innerHTML =
+      '<div class="row" style="margin-bottom:11px"><b class="grow">' + esc(attemptWho(a)) + '</b>' +
+      '<span class="hint">คนที่ ' + (at + 1) + ' จาก ' + list.length + '</span></div>' +
+      es.map(function (x) {
+        const it = a.answers[x.i] || {};
+        const rub = it.rub || [];
+        return '<div class="card" style="margin:0 0 11px"><h3>ข้อ ' + (x.i + 1) +
+          '<span class="sub">' + fmt(x.p.max) + ' คะแนน · ขั้นละ ' +
+          fmt(x.p.max / ESSAY_STEPS.length) + '</span></h3>' +
+          '<div class="hint" style="margin-bottom:8px">' + M(x.p.stem) + '</div>' +
+          (x.p.keyText ? '<div class="notice info" style="margin-bottom:8px"><b>เฉลย</b> ' +
+            M(x.p.keyText) + '</div>' : '') +
+          (x.p.typed ? '<div class="notice" style="margin-bottom:8px;white-space:pre-wrap">' +
+            (String(it.text || '').trim() ? esc(it.text) :
+              '<span class="hint">นักเรียนไม่ได้พิมพ์คำตอบ</span>') + '</div>' : '') +
+          '<div>' + ESSAY_STEPS.map(function (s, si) {
+            return '<label class="chk"><input type="checkbox" data-eg="' + x.i + '" data-egs="' + si + '"' +
+              (rub[si] ? ' checked' : '') + '><span><span class="t">' + (si + 1) + '. ' + esc(s) +
+              '</span></span></label>';
+          }).join('') + '</div>' +
+          '<div class="hint" style="margin-top:7px">ได้ <b data-egsum="' + x.i + '">' +
+          fmt(essayScore(x.p.max, rub)) + '</b> จาก ' + fmt(x.p.max) + ' คะแนน</div></div>';
+      }).join('');
+
+    $$('[data-eg]', box).forEach(function (c) {
+      c.addEventListener('change', function (e) {
+        const k = Number(e.target.dataset.eg), si = Number(e.target.dataset.egs);
+        const it = a.answers[k];
+        if (!it.rub) it.rub = [false, false, false, false, false];
+        it.rub[si] = e.target.checked;
+        const pp = probs[k];
+        it.score = essayScore(pp.max, it.rub);
+        const sumEl = $('[data-egsum="' + k + '"]', box);
+        if (sumEl) sumEl.textContent = fmt(it.score);
+        save(true);
+      });
+    });
+  };
+
+  openModal({
+    wide: true,
+    title: 'ให้คะแนนอัตนัย · ' + (q.title || ''),
+    bodyHTML: '<div class="hint" style="margin-bottom:11px">ติ๊กขั้นที่นักเรียนทำได้ ' +
+      'คะแนนคิดให้อัตโนมัติขั้นละ 20% ของคะแนนเต็มข้อนั้น · บันทึกทันทีทุกครั้งที่ติ๊ก</div>' +
+      '<div id="egBody"></div>',
+    buttons: [
+      { label: 'คนก่อนหน้า', act: (c, root) => { at = (at + list.length - 1) % list.length; draw(root); } },
+      { label: 'คนถัดไป', act: (c, root) => { at = (at + 1) % list.length; draw(root); } },
+      { label: 'เสร็จแล้ว', cls: 'primary', act: c => { c(); renderMake(); toast('บันทึกคะแนนแล้ว', 'ok'); } }
+    ],
+    onMount: root => draw(root)
+  });
+}
+
 /** ใบตอบเป็นแบบทดสอบเสมอ และประทับกติกาคุมสอบเหมือนชุดที่สุ่มจากแม่แบบ */
 function createPaperQuiz(title, pp, items, lim) {
   return {
@@ -4616,7 +4858,8 @@ function renderMake() {
       '<div class="hint">แอปเก็บแค่เฉลย ไม่ได้เก็บตัวโจทย์ — แจกข้อสอบเป็นกระดาษ ' +
       'หรือฉายขึ้นจอ แล้วให้นักเรียนแตะตอบในแอป</div>' +
       '<div class="row" style="margin-top:11px">' +
-      '<button class="primary" id="btnPaper">+ สร้างกระดาษคำตอบใหม่</button></div>';
+      '<button class="primary" id="btnPaper">+ สร้างกระดาษคำตอบใหม่</button>' +
+      '<button id="btnEssay">+ สร้างข้อสอบอัตนัย</button></div>';
     if (!papers.length) {
       h += '<div class="hint" style="margin-top:11px">ยังไม่มีกระดาษคำตอบ — ' +
         'กดปุ่มด้านบน แล้วพิมพ์เฉลยจากข้อสอบที่มีอยู่</div>';
@@ -4634,7 +4877,8 @@ function renderMake() {
         '<th></th></tr></thead><tbody>';
       papers.slice().reverse().forEach(q => {
         const nAt = DB.attempts.filter(a => a.quizId === q.id).length;
-        const key = q.items.map(x => paperLabel(paperStyle(q), Number(x.ans))).join('');
+        const key = hasEssay(q) ? 'อัตนัย ' + q.items.length + ' ข้อ'
+          : q.items.map(x => paperLabel(paperStyle(q), Number(x.ans))).join('');
         h += '<tr><td>' + esc(q.title || '(ไม่มีชื่อ)') +
           (q.id === DB.cur.quizId ? ' <b>← ชุดปัจจุบัน</b>' : '') + '</td>' +
           '<td class="num">' + q.items.length + '</td>' +
@@ -4644,7 +4888,9 @@ function renderMake() {
           '<td>' + thDateTime(q.ts) + '</td><td class="num">' + nAt + '</td>' +
           '<td>' + (isAdmin() ? '<button class="sm primary" data-publish="' + q.id +
             '">เปิดให้นักเรียนสอบ</button> ' : '') +
-          '<button class="sm" data-editkey="' + q.id + '">แก้เฉลย</button> ' +
+          (hasEssay(q) ? '<button class="sm primary" data-esgrade="' + q.id + '">ให้คะแนนอัตนัย</button> ' +
+            '<button class="sm" data-esedit="' + q.id + '">แก้ข้อสอบ</button> '
+            : '<button class="sm" data-editkey="' + q.id + '">แก้เฉลย</button> ') +
           '<button class="sm" data-share="' + q.id + '">แชร์รหัส</button> ' +
           '<button class="sm" data-start="' + q.id + '">ลองทำเอง</button> ' +
           '<button class="sm danger" data-delq="' + q.id + '">ลบ</button></td></tr>';
@@ -4728,6 +4974,8 @@ function renderMake() {
   $('#btnGen').addEventListener('click', doGenerate);
   const bp = $('#btnPaper');
   if (bp) bp.addEventListener('click', () => paperDialog(null));
+  const be = $('#btnEssay');
+  if (be) be.addEventListener('click', () => essayDialog(null));
   $$('[data-mktest]').forEach(b => b.addEventListener('click', () => makeTestDialog(b.dataset.mktest)));
   if (isStudent()) bindMyAssignments();
   $$('[data-start]').forEach(b => b.addEventListener('click', () => startQuiz(b.dataset.start)));
@@ -4747,6 +4995,9 @@ function renderMake() {
   $$('[data-share]').forEach(b => b.addEventListener('click', () => shareQuiz(b.dataset.share)));
   $$('[data-editkey]').forEach(b => b.addEventListener('click', () =>
     paperDialog(DB.quizzes.find(x => x.id === b.dataset.editkey))));
+  $$('[data-esedit]').forEach(b => b.addEventListener('click', () =>
+    essayDialog(DB.quizzes.find(x => x.id === b.dataset.esedit))));
+  $$('[data-esgrade]').forEach(b => b.addEventListener('click', () => essayGradeBox(b.dataset.esgrade)));
   $$('[data-publish]').forEach(b => b.addEventListener('click', () => publishQuiz(b.dataset.publish)));
   $('#btnPasteQuiz').addEventListener('click', pasteQuiz);
 }
@@ -4943,7 +5194,10 @@ async function startQuiz(quizId, assignCode) {
     no: who.no || '', sid: who.sid || '', room: who.room || '',
     assignCode: assignCode || null,   // ผูกกับใบงานบนชีต ถ้ามาจากการมอบหมาย
     startedAt: Date.now(), finishedAt: null,
-    answers: q.items.map(() => ({ raw: [], pick: null, checked: false, score: 0, tries: 0, revealed: false, sec: 0 }))
+    /* ข้ออัตนัยที่ให้เขียนลงกระดาษ ไม่มีอะไรให้กดในแอป จึงนับว่า "ทำแล้ว" ตั้งแต่ต้น
+       ไม่งั้นตอนกดส่งจะขึ้นเตือนว่ายังเหลืออีกกี่ข้อทั้งที่นักเรียนเขียนครบแล้ว */
+    answers: q.items.map(it => ({ raw: [], pick: null, checked: !!(it.essay && !it.typed),
+      score: 0, tries: 0, revealed: false, sec: 0, text: '', rub: null }))
   };
   procInit(a, q);          // ตั้งกติกาคุมสอบและ snapshot ไว้กับครั้งนี้
   if (examPick) {
@@ -5268,6 +5522,7 @@ function renderDo() {
       'ตอบแล้ว <b>' + done + '</b> จาก ' + probs.length + ' ข้อ</div>' +
       '<div class="papersheet">' +
       probs.map(function (pp, k) {
+        if (pp.essay) return '';
         const x = a.answers[k];
         return '<div class="paperrow"><span class="pno">' + (k + 1) + '</span>' +
           pp.choices.map(function (c, ci) {
@@ -5275,12 +5530,44 @@ function renderDo() {
               '" data-pk="' + k + '" data-pc="' + ci + '">' + esc(c.text) + '</button>';
           }).join('') + '</div>';
       }).join('') + '</div></div>';
+
+    /* ข้ออัตนัยแสดงเป็นการ์ดเต็มความกว้าง เพราะมีโจทย์ให้อ่านจริง
+       ข้อที่ครูให้เขียนลงกระดาษ จะไม่มีช่องพิมพ์ แต่ต้องบอกเกณฑ์ให้ครบ
+       นักเรียนจะได้รู้ว่าต้องเขียนอะไรถึงจะได้คะแนนแต่ละส่วน */
+    probs.forEach(function (pp, k) {
+      if (!pp.essay) return;
+      const x = a.answers[k];
+      h += '<div class="card"><h3>ข้อ ' + (k + 1) +
+        '<span class="sub">อัตนัย · ' + fmt(pp.max) + ' คะแนน</span></h3>' +
+        '<div style="margin-bottom:10px;font-size:16px">' + M(pp.stem) + '</div>' +
+        '<div class="hint"><b>เกณฑ์ให้คะแนน</b> ขั้นละ ' + fmt(pp.max / ESSAY_STEPS.length) +
+        ' คะแนน<br>' + ESSAY_STEPS.map(function (s, si) {
+          return (si + 1) + ') ' + esc(s);
+        }).join('<br>') + '</div>';
+      if (pp.typed) {
+        h += '<textarea class="esin" data-es="' + k + '" rows="6" ' +
+          'style="width:100%;margin-top:10px;font-size:16px" ' +
+          'placeholder="พิมพ์วิธีทำตามลำดับห้าขั้น">' + esc(x.text || '') + '</textarea>';
+      } else {
+        h += '<div class="notice info" style="margin-top:10px">' +
+          '<b>เขียนคำตอบข้อนี้ลงในกระดาษคำตอบ</b> — ครูจะตรวจและกรอกคะแนนให้ภายหลัง</div>';
+      }
+      h += '</div>';
+    });
     h += '</div>';
     $('#pane-do').innerHTML = h;
     $$('[data-go]').forEach(b => b.addEventListener('click', () => gotoQ(Number(b.dataset.go))));
     $('#btnFinish').addEventListener('click', finishAttempt);
     $$('[data-pk]').forEach(b => b.addEventListener('click', () =>
       setPaperAnswer(Number(b.dataset.pk), Number(b.dataset.pc))));
+    $$('[data-es]').forEach(function (t) {
+      t.addEventListener('input', function (e) {
+        const k = Number(e.target.dataset.es), it = a.answers[k];
+        it.text = e.target.value;
+        it.checked = !!it.text.trim();
+        save();
+      });
+    });
     return;
   }
 
@@ -5492,7 +5779,8 @@ function analyze(a) {
   const q = quizOf(a);
   const probs = problemsOf(q);
   const res = {
-    quiz: q, n: probs.length, got: 0, max: probs.length, pct: 0,
+    quiz: q, n: probs.length, got: 0,
+    max: probs.reduce(function (s, p) { return s + (p && p.max ? p.max : 1); }, 0), pct: 0,
     byTopic: {}, byLevel: {}, bySkill: {}, bySub: {},
     sec: 0, revealed: 0, items: [],
     nOut: (a.proc && a.proc.nOut) || 0, secOut: (a.proc && a.proc.secOut) || 0,
@@ -5504,7 +5792,9 @@ function analyze(a) {
   };
   probs.forEach((p, i) => {
     const it = a.answers[i] || { score: 0, sec: 0, revealed: false };
-    const sc = it.score || 0;
+    /* ข้ออัตนัยคิดคะแนนจากเกณฑ์ที่ครูติ๊กเสมอ ไม่ใช้ค่าที่เก็บไว้
+       เผื่อครูแก้คะแนนเต็มของข้อนั้นทีหลัง คะแนนจะได้ขยับตามเองทุกที่ */
+    const sc = (p && p.essay) ? essayScore(p.max, it.rub) : (it.score || 0);
     res.got += sc; res.sec += it.sec || 0;
     if (it.revealed) res.revealed++;
     // ข้อที่สร้างไม่ได้ (ใบงานอ้างแม่แบบที่ไฟล์รุ่นนี้ยังไม่มี) — นับคะแนนแต่ไม่แจกแจงตามเรื่อง
@@ -5677,6 +5967,17 @@ function renderResult() {
       h += '<tr><td class="num">' + (x.i + 1) + '</td><td colspan="5" class="hint">' +
         'ข้อนี้ใช้โจทย์จากบทที่โปรแกรมรุ่นนี้ยังไม่มี — อัปเดตไฟล์แล้วดูใหม่' +
         '</td>' + (showSol ? '<td></td><td></td>' : '') + '</tr>';
+      return;
+    }
+    if (x.p.essay) {
+      const n = (x.it.rub || []).filter(Boolean).length;
+      h += '<tr><td class="num">' + (x.i + 1) + '</td><td>อัตนัย</td>' +
+        '<td>' + (x.it.rub ? ESSAY_SHORT.filter(function (s, si) { return x.it.rub[si]; }).join(' · ') || '—'
+                           : '<span class="hint">ครูยังไม่ได้ตรวจ</span>') + '</td>' +
+        '<td>' + fmt(x.score) + '/' + fmt(x.p.max) + '</td>' +
+        '<td>' + (x.it.rub ? n + ' ใน 5 ขั้น' : '—') + '</td>' +
+        '<td class="num">' + mmss(x.it.sec) + '</td>' +
+        (showSol ? '<td>—</td><td></td>' : '') + '</tr>';
       return;
     }
     if (x.p.paper) {
@@ -7723,7 +8024,11 @@ function encodeQuiz(q) {
     // ใบตอบข้อสอบกระดาษเก็บเฉลยแทนแม่แบบ ขึ้นต้นด้วย P เพื่อให้ฝั่งถอดรหัสแยกออก
     pp: isPaper(q) ? { ch: q.paper.ch || 4, tp: q.paper.topic == null ? '' : q.paper.topic,
                        st: paperStyle(q) } : 0,
-    it: isPaper(q) ? q.items.map(x => 'P~' + x.ans) : q.items.map(x => x.tplId + '~' + x.seed)
+    it: isPaper(q)
+      ? q.items.map(x => isEssayItem(x)
+          ? { e: 1, s: x.stem, k: x.key, m: itemMax(x), t: x.typed ? 1 : 0 }
+          : 'P~' + x.ans)
+      : q.items.map(x => x.tplId + '~' + x.seed)
   };
   return QCODE_PREFIX + b64enc(JSON.stringify(c));
 }
@@ -7738,6 +8043,12 @@ function decodeQuiz(code) {
   const items = [];
   const paper = c.pp && typeof c.pp === 'object' ? c.pp : null;
   for (const raw of c.it) {
+    // ข้ออัตนัยส่งไปเป็นวัตถุ เพราะมีทั้งโจทย์ เฉลย และคะแนนเต็ม
+    if (raw && typeof raw === 'object' && raw.e) {
+      items.push({ essay: 1, stem: String(raw.s || ''), key: String(raw.k || ''),
+                   max: Math.max(1, Number(raw.m) || 1), typed: raw.t ? 1 : 0 });
+      continue;
+    }
     const p = String(raw).split('~');
     if (p.length !== 2) return null;
     if (paper) {
@@ -7832,21 +8143,21 @@ function scoreRows(quizId) {
     roster.slice().sort((a, b) => (a.no || 0) - (b.no || 0)).forEach(s => {
       const a = best[s.id];
       const r = a ? analyze(a) : null;
-      rows.push({ no: s.no, sid: s.sid || '', name: s.name, got: r ? r.got : '', max: q.items.length,
+      rows.push({ no: s.no, sid: s.sid || '', name: s.name, got: r ? r.got : '', max: quizMaxScore(q),
                   pct: r ? Math.round(r.pct) : '', sec: r ? r.sec : '', done: !!a });
     });
     // ผลที่จับคู่กับรายชื่อไม่ได้ (เช่น นักเรียนพิมพ์ชื่อไม่ตรง หรือย้ายเข้าใหม่)
     // ต่อท้ายไว้เสมอ ไม่ปล่อยให้หายไปเงียบ ๆ ครูจะได้เห็นแล้วแก้รายชื่อได้
     Object.keys(best).filter(k => k.indexOf('solo:') === 0).forEach(k => {
       const a = best[k], r = analyze(a);
-      rows.push({ no: '', sid: '', name: a.soloName || '', got: r.got, max: q.items.length,
+      rows.push({ no: '', sid: '', name: a.soloName || '', got: r.got, max: quizMaxScore(q),
                   pct: Math.round(r.pct), sec: r.sec, done: true, orphan: true });
     });
   } else {
     Object.values(best).sort((x, y) => String(x.soloName || '').localeCompare(String(y.soloName || ''), 'th'))
       .forEach((a, i) => {
         const r = analyze(a);
-        rows.push({ no: i + 1, sid: '', name: a.soloName || '', got: r.got, max: q.items.length,
+        rows.push({ no: i + 1, sid: '', name: a.soloName || '', got: r.got, max: quizMaxScore(q),
                     pct: Math.round(r.pct), sec: r.sec, done: true });
       });
   }
@@ -8042,6 +8353,29 @@ function buildDoc(kind, opt) {
     if (!q) return '<div class="hint">ยังไม่ได้เลือกชุดโจทย์</div>';
     /* ใบตอบข้อสอบกระดาษไม่มีตัวโจทย์เก็บอยู่ในแอป พิมพ์เป็นใบงานหรือใบเฉลยจึงไม่ได้
        บอกให้ชัดดีกว่าพิมพ์ออกมาเป็นข้อว่าง ๆ สิบหน้า */
+    /* ข้อสอบอัตนัยพิมพ์ได้จริง เพราะครูพิมพ์โจทย์ไว้ในแอปเอง
+       ต่างจากกระดาษคำตอบปรนัยที่แอปเก็บแค่เฉลย ไม่มีตัวโจทย์ */
+    if (hasEssay(q)) {
+      const pr = problemsOf(q);
+      const isKey = kind === 'answerkey';
+      let hh = '<div class="pg">' + docHead(q.title, isKey ? '<b>เฉลยและเกณฑ์ให้คะแนน</b>' : '',
+        'อัตนัย ' + pr.length + ' ข้อ  ·  รวม ' + fmt(quizMaxScore(q)) + ' คะแนน');
+      if (!isKey) hh += nameFields();
+      pr.forEach(function (p, i) {
+        hh += '<div class="pitem"><div class="pq"><span class="pn">' + (i + 1) + '.</span><span>' +
+          M(p.stem) + ' &nbsp;<span class="tag">' + fmt(p.max) + ' คะแนน</span></span></div>';
+        if (isKey) {
+          hh += '<div style="margin:5px 0 3px"><b>แนวคำตอบ:</b> ' +
+            (p.keyText ? M(p.keyText) : '<i>ยังไม่ได้กรอกเฉลย</i>') + '</div>' +
+            '<div class="t3">เกณฑ์ ขั้นละ ' + fmt(p.max / ESSAY_STEPS.length) +
+            ' คะแนน — ' + esc(ESSAY_SHORT.join(' · ')) + '</div>';
+        } else {
+          hh += essayWorkBox(p.max);
+        }
+        hh += '</div>';
+      });
+      return hh + '</div>';
+    }
     if (isPaper(q)) {
       return '<div class="notice info">ชุดนี้เป็น<b>กระดาษคำตอบออนไลน์</b> ' +
         'แอปเก็บแค่เฉลย ไม่ได้เก็บตัวโจทย์ จึงพิมพ์ใบงานและใบเฉลยจากที่นี่ไม่ได้<br>' +
@@ -8192,7 +8526,7 @@ function buildDoc(kind, opt) {
       (cls ? 'ชั้น ' + esc(cls) + ' · ' : '') + 'ผู้ทำ ' + rows.length + ' คน · ออกรายงาน ' + thDate(Date.now()));
     h += '<b>สถิติภาพรวม</b><table style="margin:5px 0 10px"><tbody><tr>' +
       '<th>จำนวนผู้ทำ</th><td>' + rows.length + ' คน</td>' +
-      '<th>คะแนนเต็ม</th><td>' + q.items.length + ' คะแนน</td></tr><tr>' +
+      '<th>คะแนนเต็ม</th><td>' + fmt(quizMaxScore(q)) + ' คะแนน</td></tr><tr>' +
       '<th>ค่าเฉลี่ย</th><td>' + fmt(mean(pcts), 1) + ' %</td>' +
       '<th>มัธยฐาน</th><td>' + fmt(median(pcts), 1) + ' %</td></tr><tr>' +
       '<th>ส่วนเบี่ยงเบนมาตรฐาน</th><td>' + fmt(stdev(pcts), 2) + '</td>' +
