@@ -11401,6 +11401,7 @@ function procLeave() {
   const a = procCur(); if (!a) return;
   if (a.proc.openAt) return;              // ออกซ้อนกัน ไม่เปิดเหตุการณ์ใหม่
   a.proc.openAt = Date.now();
+  a.proc.openQi = DB.cur.i;               // จำไว้ว่าออกตอนกำลังทำข้อไหน
   save(true);
 }
 /** กลับเข้าแอป — คืนจำนวนวินาทีที่หายไป หรือ null ถ้าสั้นเกินกว่าจะนับ */
@@ -11413,7 +11414,7 @@ function procReturn() {
   if (sec < PROC_MIN_SEC) { save(true); return null; }
   a.proc.nOut++;
   a.proc.secOut += sec;
-  a.proc.events.push({ at: t0, sec: Math.round(sec) });
+  a.proc.events.push({ at: t0, sec: Math.round(sec), qi: a.proc.openQi });
   if (a.proc.events.length > PROC_MAX_EVENTS) a.proc.events.shift();
   save(true);
   return sec;
@@ -11426,6 +11427,17 @@ function procOverQuota(a) {
   if (a.maxOutSec && a.proc.secOut > a.maxOutSec)
     return 'อยู่นอกแอปรวม ' + mmss(a.proc.secOut) + ' นาที เกินที่กำหนดไว้ ' + mmss(a.maxOutSec);
   return '';
+}
+/** ไทม์ไลน์การออกจากแอป — ออกตอนนาทีที่เท่าไรของการสอบ ขณะทำข้อไหน และนานเท่าไร
+    ยอดรวมบอกแค่ว่าออกกี่ครั้ง แต่ไทม์ไลน์บอกรูปแบบ ซึ่งครูใช้ตัดสินได้จริงกว่ามาก
+    เช่น ออกรัวตอนใกล้หมดเวลา กับ ออกครั้งเดียวตอนต้นชั่วโมง ความหมายคนละเรื่อง */
+function procTimeline(a) {
+  if (!a || !a.proc || !a.proc.events || !a.proc.events.length) return '';
+  return a.proc.events.map(function (e, k) {
+    const at = Math.max(0, (e.at - a.startedAt) / 1000);
+    return (k + 1) + ') นาทีที่ ' + mmss(at) +
+      (e.qi != null ? ' ขณะทำข้อ ' + (e.qi + 1) : '') + ' นาน ' + mmss(e.sec);
+  }).join('  ·  ');
 }
 /** วินาทีที่เหลือของนาฬิกาสอบ — null = ชุดนี้ไม่จำกัดเวลา
     คิดจากเวลาเริ่มเสมอ ห้ามนับถอยหลังด้วยตัวแปรในหน่วยความจำ
@@ -11465,6 +11477,18 @@ function procTick() {
   if (el) {
     el.textContent = mmss(left);
     el.className = 'tag ' + (left <= 60 ? 'l3' : left <= 300 ? 'l2' : 't');
+  }
+  /* เตือนล่วงหน้าเมื่อเหลือ 5 นาที และ 1 นาที
+     ป้ายนาฬิกาเปลี่ยนสีอย่างเดียวไม่พอ เพราะนักเรียนที่กำลังก้มเขียนไม่ได้มองจอ
+     ติดธงไว้กับ attempt เพื่อไม่ให้เตือนซ้ำทุกวินาที และรีเฟรชหน้าแล้วไม่เตือนใหม่
+     เตือนเฉพาะชุดที่เวลายาวพอ ไม่งั้นชุดสั้น ๆ จะเด้งเตือนตั้งแต่วินาทีแรก */
+  if (a.limitSec > 330 && left <= 300 && left > 60 && !a.proc.warn5) {
+    a.proc.warn5 = 1; save(true);
+    toast('เหลือเวลาอีก 5 นาที', 'warn');
+  }
+  if (a.limitSec > 90 && left <= 60 && left > 0 && !a.proc.warn1) {
+    a.proc.warn1 = 1; save(true);
+    toast('เหลือเวลาอีก 1 นาที — ตรวจคำตอบแล้วกดส่งได้เลย', 'warn');
   }
   if (left <= 0) doFinish('หมดเวลา');
 }
@@ -11888,7 +11912,10 @@ function renderResult() {
       '</div><div class="k">ออกจากแอป (รวม ' + mmss(res.secOut) + ')</div></div>' : '') +
     '</div>' +
     (res.autoBy ? '<div class="notice warn" style="margin-top:11px">ระบบส่งข้อสอบชุดนี้ให้อัตโนมัติ — ' +
-      esc(res.autoBy) + '</div>' : '') + '</div>';
+      esc(res.autoBy) + '</div>' : '') +
+    (procTimeline(a) ? '<div style="margin-top:11px"><b>ช่วงที่ออกจากแอป</b>' +
+      '<div class="hint" style="margin-top:4px;line-height:1.9">' + procTimeline(a) + '</div></div>' : '') +
+    '</div>';
 
   h += '<div class="card"><h3>ผลแยกตามเรื่อง</h3>' +
     barRows(res.byTopic, k => esc(topicName(Number(k)))) + '</div>';
@@ -12184,6 +12211,9 @@ function constCardHTML() {
     '<div><label class="hint" for="setexout">ออกจากแอปได้ (ครั้ง)</label><br>' +
     '<input type="number" id="setexout" min="0" max="20" value="' + (st.examMaxOut || 0) +
     '" style="width:100px" inputmode="numeric"></div>' +
+    '<div><label class="hint" for="setexsec">รวมเวลานอกแอปไม่เกิน (วินาที)</label><br>' +
+    '<input type="number" id="setexsec" min="0" max="3600" step="10" value="' + (st.examMaxOutSec || 0) +
+    '" style="width:100px" inputmode="numeric"></div>' +
     '<div><label class="hint" for="settol">ยอมคลาดเคลื่อน (%)</label><br>' +
     '<input type="number" id="settol" min="0" max="10" step="0.5" value="' + st.tolPct + '" style="width:90px" inputmode="decimal"></div>' +
     '<div><label class="hint" for="setpass">เกณฑ์ผ่าน (%)</label><br>' +
@@ -12457,6 +12487,8 @@ function bindSettingHandlers() {
   if (eXm) eXm.addEventListener('change', e => { DB.settings.examMin = clamp(Math.round(Number(e.target.value) || 0), 0, 300); save(true); });
   const eXo = $('#setexout');
   if (eXo) eXo.addEventListener('change', e => { DB.settings.examMaxOut = clamp(Math.round(Number(e.target.value) || 0), 0, 20); save(true); });
+  const eXs = $('#setexsec');
+  if (eXs) eXs.addEventListener('change', e => { DB.settings.examMaxOutSec = clamp(Math.round(Number(e.target.value) || 0), 0, 3600); save(true); });
   const eP = $('#setpass');
   if (eP) eP.addEventListener('change', e => { DB.settings.passPct = clamp(Math.round(Number(e.target.value) || 0), 0, 100); save(true); });
   $$('[data-wl]').forEach(inp => inp.addEventListener('change', e => {
@@ -14166,7 +14198,9 @@ function buildDoc(kind, opt) {
       // แถวนี้ขึ้นเฉพาะชุดที่คุมสอบ ใบงานปกติจะไม่มีแถวนี้มารก
       (r.nOut || r.autoBy ? '<tr><th>การคุมสอบ</th><td>' +
         (r.nOut ? 'ออกจากแอป <b>' + r.nOut + ' ครั้ง</b> รวม ' + mmss(r.secOut) + ' นาที' : 'ไม่พบการออกจากแอป') +
-        (r.autoBy ? ' · <b>ระบบส่งให้อัตโนมัติ</b> (' + esc(r.autoBy) + ')' : '') + '</td></tr>' : '') +
+        (r.autoBy ? ' · <b>ระบบส่งให้อัตโนมัติ</b> (' + esc(r.autoBy) + ')' : '') +
+        (procTimeline(a) ? '<br><span style="font-size:9.5pt">' + procTimeline(a) + '</span>' : '') +
+        '</td></tr>' : '') +
       '</tbody></table>';
 
     h += '<b>ผลแยกตามเรื่องและระดับความยาก</b>' +
