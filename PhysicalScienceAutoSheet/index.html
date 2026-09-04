@@ -4537,7 +4537,8 @@ function renderMake() {
         'นักเรียนที่ลงชื่อเข้าใช้แล้วจะเห็นในรายการ <b>ใบงานของฉัน</b> ทันที ' +
         'หรือกรอกรหัสเองก็ได้<br>' +
         'นักเรียนจะถูกถามให้เลือก <b>สอบเต็มหน้าจอ</b> ตอนกดเริ่ม ' +
-        'ซึ่งกันจอดับและเตือนเมื่อหลุดออกจากหน้าจอสอบ</div>' +
+        'ซึ่งกันจอดับและเตือนเมื่อหลุดออกจากหน้าจอสอบ<br>' +
+        '<b>เวลาสอบตั้งได้ตอนกดเปิดให้สอบ</b> ชุดเดียวกันจึงแจกคนละชั้นคนละเวลาได้</div>' +
         '<div class="tablewrap" style="margin-top:11px"><table><thead><tr><th>ชื่อชุด</th>' +
         '<th class="num">ข้อ</th><th>เฉลย</th><th>เวลาสอบ</th><th>สร้างเมื่อ</th>' +
         '<th class="num">ทำแล้ว</th>' +
@@ -6476,6 +6477,24 @@ async function publishQuiz(quizId) {
       '</select>' +
       '<label class="hint" for="pbClose" style="display:block;margin-top:11px">ปิดรับเมื่อ (เว้นว่าง = ไม่กำหนด)</label>' +
       '<input type="datetime-local" id="pbClose" style="max-width:100%">' +
+      /* กติกาคุมสอบตั้งตรงนี้ได้ เพราะเป็นเรื่องของรอบที่แจก ไม่ใช่ของตัวชุด
+         ชุดเดียวกันแจกคนละคาบคนละเวลาได้ โดยไม่กระทบรอบที่แจกไปแล้ว
+         แบบฝึกหัดไม่มีส่วนนี้ เพราะไม่ได้คุมสอบตั้งแต่ต้น */
+      (isTest(q) ?
+        '<div class="hint" style="margin-top:14px"><b>กติกาคุมสอบของการแจกรอบนี้</b> — ' +
+        'ใส่ 0 = ไม่จำกัด · ค่าตั้งต้นมาจากตัวชุด แก้ตรงนี้ได้โดยไม่กระทบชุดเดิม ' +
+        'และไม่กระทบรอบที่แจกไปก่อนหน้า</div>' +
+        '<div class="row" style="margin-top:7px">' +
+        '<div><label class="hint" for="pbMin">เวลาสอบ (นาที)</label><br>' +
+        '<input type="number" id="pbMin" min="0" max="300" step="5" style="width:96px" ' +
+        'inputmode="numeric" value="' + Math.round((q.limitSec || 0) / 60) + '"></div>' +
+        '<div><label class="hint" for="pbOut">ออกจากแอปได้ (ครั้ง)</label><br>' +
+        '<input type="number" id="pbOut" min="0" max="99" style="width:96px" ' +
+        'inputmode="numeric" value="' + (q.maxOut || 0) + '"></div>' +
+        '<div><label class="hint" for="pbOutSec">รวมเวลานอกแอป (วินาที)</label><br>' +
+        '<input type="number" id="pbOutSec" min="0" max="3600" step="10" style="width:110px" ' +
+        'inputmode="numeric" value="' + (q.maxOutSec || 0) + '"></div></div>'
+        : '') +
       '<div id="pbMsg" style="margin-top:11px"></div>',
     buttons: [
       { label: 'ยกเลิก' },
@@ -6483,11 +6502,22 @@ async function publishQuiz(quizId) {
           const msg = $('#pbMsg', root);
           msg.innerHTML = '<div class="hint">กำลังส่งขึ้นชีต…</div>';
           const closeAt = $('#pbClose', root).value;
+          /* ฝังกติกาของรอบนี้ลงในสเปกที่ส่งขึ้นชีต ไม่แตะตัวชุดในเครื่อง
+             นักเรียนอ่านกติกาจากสเปกของใบงานที่ตัวเองได้รับเสมอ */
+          const numOf = (sel, max) => {
+            const el = $(sel, root);
+            return el ? clamp(Math.round(Number(el.value) || 0), 0, max) : 0;
+          };
+          const sent = isTest(q) ? Object.assign({}, q, {
+            limitSec: numOf('#pbMin', 300) * 60,
+            maxOut: numOf('#pbOut', 99),
+            maxOutSec: numOf('#pbOutSec', 3600)
+          }) : q;
           try {
             const code = makeCode(6);
             await api('assignSave', { assignment: {
               code: code, title: q.title, cls: $('#pbCls', root).value || '',
-              spec: encodeQuiz(q), baseSeed: q.seed || 0, perStudent: false,
+              spec: encodeQuiz(sent), baseSeed: q.seed || 0, perStudent: false,
               g: q.g, easyG10: !!q.easyG10, openAt: '',
               closeAt: closeAt ? new Date(closeAt).toISOString() : '', active: true
             } });
@@ -6497,7 +6527,13 @@ async function publishQuiz(quizId) {
                 '<div class="hint">รหัสใบงาน</div>' +
                 '<div style="font-size:34px;font-weight:800;letter-spacing:5px;margin:6px 0">' + code + '</div>' +
                 '<div class="hint">นักเรียนที่ลงชื่อเข้าใช้แล้วจะเห็นใบงานนี้ในรายการเลย<br>' +
-                'หรือบอกรหัสนี้ให้กรอกเองก็ได้</div></div>',
+                'หรือบอกรหัสนี้ให้กรอกเองก็ได้</div>' +
+                (isTest(q) ? '<div class="notice info" style="margin-top:11px;text-align:left">' +
+                  '<b>กติกาของรอบนี้</b> · ' +
+                  (sent.limitSec ? 'เวลาสอบ ' + Math.round(sent.limitSec / 60) + ' นาที' : 'ไม่จำกัดเวลา') +
+                  (sent.maxOut ? ' · ออกจากแอปได้ ' + sent.maxOut + ' ครั้ง' : '') +
+                  (sent.maxOutSec ? ' · รวมนอกแอปไม่เกิน ' + sent.maxOutSec + ' วินาที' : '') +
+                  '</div>' : '') + '</div>',
               buttons: [{ label: 'ปิด' }, { label: 'คัดลอกรหัส', cls: 'primary', act: async c => {
                 await copyText(code); toast('คัดลอกรหัสแล้ว', 'ok'); c();
               } }] });
