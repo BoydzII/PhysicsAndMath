@@ -263,6 +263,12 @@ input.numin.bad{border-color:var(--bad);background:var(--bad-bg)}
 /* ---------- แถบความคืบหน้าข้อ ---------- */
 .qnav{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
 .qnav button{width:40px;height:40px;min-height:40px;padding:0;border-radius:9px;font-weight:600;font-size:14px}
+/* ใบตอบข้อสอบกระดาษ — แถวละข้อ ปุ่มกลมเหมือนฝนคำตอบ */
+.papersheet{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:7px}
+.paperrow{display:flex;align-items:center;gap:6px;padding:5px 7px;border:1px solid var(--line);border-radius:10px}
+.paperrow .pno{min-width:26px;text-align:right;font-weight:600;color:var(--dim)}
+.pbub{width:38px;height:38px;min-height:38px;padding:0;border-radius:50%;font-weight:600}
+.pbub.sel{background:var(--acc);color:#fff;border-color:var(--acc)}
 .qnav button.cur{border-color:var(--brand);box-shadow:0 0 0 3px rgba(31,111,235,.15)}
 .qnav button.ok{background:var(--ok-bg);border-color:var(--ok);color:var(--ok)}
 .qnav button.bad{background:var(--bad-bg);border-color:var(--bad);color:var(--bad)}
@@ -3912,6 +3918,41 @@ function createQuiz(o) {
   };
 }
 
+/* ── ใบตอบสำหรับข้อสอบกระดาษ ────────────────────────────────────────────
+   ครูมีข้อสอบเป็นกระดาษหรือ PDF อยู่แล้ว แอปเก็บแค่จำนวนข้อกับเฉลย
+   ไม่เก็บตัวโจทย์ ไม่แกะไฟล์ นักเรียนอ่านโจทย์จากกระดาษแล้วมาแตะตอบในแอป
+
+   ตั้งใจให้เป็น "แบบทดสอบ" เสมอ เพราะใบตอบที่เฉลยทันทีระหว่างทำไม่มีประโยชน์
+   และจะกลายเป็นให้นักเรียนไล่กดจนถูก                                      */
+const PAPER_KEYS = 'กขคงจ';
+function isPaper(q) { return !!(q && q.paper); }
+/** โจทย์เทียม — มีแค่ตัวเลือกกับเฉลย ตัวตรวจคำตอบเดิมใช้ได้ทันที
+    ตั้ง paper: true ไว้ให้ที่อื่นแยกออกว่าข้อนี้ไม่มีเนื้อโจทย์ให้แสดง */
+function paperProblems(quiz) {
+  const ch = clamp(Number(quiz.paper.ch) || 4, 2, 5);
+  return quiz.items.map(function (it, i) {
+    const key = Number(it.ans);
+    const cs = [];
+    for (let k = 0; k < ch; k++) cs.push({ text: PAPER_KEYS[k], correct: k === key });
+    return {
+      paper: true, theory: true, no: i + 1,
+      topic: quiz.paper.topic == null ? null : Number(quiz.paper.topic),
+      sub: 'ข้อสอบกระดาษ', level: 'ทฤษฎี', skills: [],
+      stem: 'ข้อ ' + (i + 1) + ' ของข้อสอบที่ครูแจก', given: [], finds: [], choices: cs
+    };
+  });
+}
+/** แปลงข้อความเฉลยเป็นรายการเลขตัวเลือก — รับได้ทั้ง "1.ก 2.ข" และ "กขคงข"
+    ตัวเลข จุด ช่องว่าง ขึ้นบรรทัดใหม่ ถูกมองข้ามหมด ครูจะได้พิมพ์แบบไหนก็ได้ */
+function parsePaperKeys(text) {
+  const out = [];
+  String(text || '').split('').forEach(function (c) {
+    const k = PAPER_KEYS.indexOf(c);
+    if (k >= 0) out.push(k);
+  });
+  return out;
+}
+
 /* แคชโจทย์ที่สร้างแล้ว เพื่อไม่ต้องคำนวณซ้ำทุกครั้งที่วาดหน้าจอ */
 const PCACHE = {};
 /** seedShift ทำให้แบบทดสอบใช้แม่แบบและระดับความยากชุดเดิมเป๊ะ แต่ตัวเลขในโจทย์ต่างออกไป
@@ -3919,6 +3960,11 @@ const PCACHE = {};
     ไม่มีทางที่หน้าทำข้อสอบกับตัวตรวจคำตอบจะใช้คนละเลข */
 function problemsOf(quiz) {
   if (!quiz) return [];
+  if (isPaper(quiz)) {
+    const pk = 'paper:' + quiz.id;
+    if (!PCACHE[pk]) PCACHE[pk] = paperProblems(quiz);
+    return PCACHE[pk];
+  }
   const sh = (quiz.seedShift || 0) >>> 0;
   const key = quiz.id + ':' + sh;
   if (PCACHE[key]) return PCACHE[key];
@@ -4176,6 +4222,101 @@ function printFormulas() {
   setTimeout(() => window.print(), 60);
 }
 
+/* --- 5.2ข ใบตอบจากข้อสอบกระดาษ ------------------------------------------
+   ครูกรอกแค่จำนวนข้อกับเฉลย แล้วได้ใบตอบที่ตรวจอัตโนมัติ
+   ระบบคุมสอบ จับเวลา ส่งขึ้นชีต และรายงานชั้นเรียน ใช้ของเดิมทั้งหมด      */
+
+/** กล่องสร้างหรือแก้ใบตอบ — ส่ง quiz มาถ้าเป็นการแก้เฉลยของชุดเดิม */
+function paperDialog(quiz) {
+  const cur = quiz && quiz.paper ? quiz.paper : { ch: 4, topic: null };
+  const keyNow = quiz ? quiz.items.map(x => PAPER_KEYS[Number(x.ans)] || '?').join('') : '';
+  openModal({
+    title: quiz ? ('แก้เฉลย "' + esc(quiz.title) + '"') : 'ใบตอบจากข้อสอบกระดาษ',
+    bodyHTML:
+      '<div class="hint" style="margin-bottom:11px">ใช้กับข้อสอบที่ครูมีอยู่แล้วเป็นกระดาษหรือ PDF ' +
+      '<b>แอปไม่เก็บตัวโจทย์</b> เก็บแค่จำนวนข้อกับเฉลย นักเรียนอ่านโจทย์จากกระดาษที่ครูแจก ' +
+      'หรือจากจอที่ครูฉาย แล้วมาแตะตอบในแอป<br>' +
+      '<b>อย่าให้นักเรียนเปิดไฟล์ PDF เอง</b> เพราะระบบคุมสอบจะนับว่าออกจากแอปทุกครั้งที่พลิกดูโจทย์</div>' +
+      '<label class="hint" for="ppTitle">ชื่อชุด</label>' +
+      '<input type="text" id="ppTitle" style="width:100%" value="' +
+      esc(quiz ? quiz.title : '') + '" placeholder="เช่น ข้อสอบกลางภาค ภาคเรียนที่ 1">' +
+      '<div class="row" style="margin-top:11px">' +
+      '<div><label class="hint" for="ppCh">ตัวเลือกต่อข้อ</label><br>' +
+      '<select id="ppCh">' + [4, 5].map(n => '<option value="' + n + '"' +
+        (Number(cur.ch) === n ? ' selected' : '') + '>' + n + ' ตัวเลือก (' +
+        PAPER_KEYS.slice(0, n).split('').join(' ') + ')</option>').join('') + '</select></div>' +
+      '<div class="grow"><label class="hint" for="ppTopic">นับเข้าบท (ไม่ระบุก็ได้)</label><br>' +
+      '<select id="ppTopic" style="max-width:100%"><option value="">ไม่ระบุ — ไม่แจกแจงตามบท</option>' +
+      TOPICS.map(t => '<option value="' + t.id + '"' +
+        (cur.topic != null && Number(cur.topic) === t.id ? ' selected' : '') + '>' +
+        esc(t.icon + ' ' + t.name) + '</option>').join('') + '</select></div></div>' +
+      '<label class="hint" for="ppKeys" style="display:block;margin-top:11px">เฉลย</label>' +
+      '<textarea id="ppKeys" style="width:100%;min-height:96px;font-size:16px" ' +
+      'placeholder="พิมพ์แบบไหนก็ได้ เช่น  1.ก 2.ข 3.ค  หรือ  กขคงข">' + esc(keyNow) + '</textarea>' +
+      '<div class="hint" id="ppCount" style="margin-top:6px">ตัวเลข จุด ช่องว่าง และการขึ้นบรรทัดใหม่ ' +
+      'ถูกมองข้ามทั้งหมด จำนวนข้อนับจากตัวอักษรเฉลยที่กรอก</div>' +
+      '<div id="ppMsg" style="margin-top:10px"></div>',
+    buttons: [
+      { label: 'ยกเลิก' },
+      { label: quiz ? 'บันทึกเฉลย' : 'สร้างใบตอบ', cls: 'primary', act: (close, root) => {
+          const msg = $('#ppMsg', root);
+          const title = ($('#ppTitle', root).value || '').trim();
+          const ch = Number($('#ppCh', root).value) || 4;
+          const tpv = $('#ppTopic', root).value;
+          const keys = parsePaperKeys($('#ppKeys', root).value);
+          if (!title) { msg.innerHTML = '<div class="notice bad">ตั้งชื่อชุดก่อน</div>'; return; }
+          if (!keys.length) { msg.innerHTML = '<div class="notice bad">ยังไม่ได้กรอกเฉลย</div>'; return; }
+          if (keys.length > 200) { msg.innerHTML = '<div class="notice bad">เกิน 200 ข้อ</div>'; return; }
+          const over = keys.filter(k => k >= ch);
+          if (over.length) {
+            msg.innerHTML = '<div class="notice bad">มีเฉลยเป็น <b>' +
+              esc(over.map(k => PAPER_KEYS[k]).join(' ')) + '</b> แต่ตั้งไว้ ' + ch +
+              ' ตัวเลือก — เปลี่ยนจำนวนตัวเลือกหรือแก้เฉลยให้ตรงกัน</div>';
+            return;
+          }
+          const items = keys.map(k => ({ paper: 1, ans: k }));
+          const pp = { ch: ch, topic: tpv === '' ? null : Number(tpv) };
+          if (quiz) {
+            quiz.title = title; quiz.paper = pp; quiz.items = items;
+            delete PCACHE['paper:' + quiz.id];
+            save(true); close(); renderMake();
+            toast('บันทึกเฉลย ' + items.length + ' ข้อแล้ว', 'ok');
+            return;
+          }
+          const q = createPaperQuiz(title, pp, items);
+          DB.quizzes.push(q);
+          DB.cur.quizId = q.id;
+          save(true); close(); renderMake();
+          toast('สร้างใบตอบ ' + items.length + ' ข้อแล้ว — กดเริ่มทำหรือมอบหมายได้เลย', 'ok');
+        } }
+    ],
+    onMount: root => {
+      const box = $('#ppKeys', root), out = $('#ppCount', root);
+      const show = () => {
+        const n = parsePaperKeys(box.value).length;
+        out.innerHTML = n ? 'อ่านเฉลยได้ <b>' + n + ' ข้อ</b>' :
+          'ตัวเลข จุด ช่องว่าง และการขึ้นบรรทัดใหม่ ถูกมองข้ามทั้งหมด';
+      };
+      box.addEventListener('input', show);
+      show(); box.focus();
+    }
+  });
+}
+
+/** ใบตอบเป็นแบบทดสอบเสมอ และประทับกติกาคุมสอบเหมือนชุดที่สุ่มจากแม่แบบ */
+function createPaperQuiz(title, pp, items) {
+  return {
+    id: uid(), ts: Date.now(), title: title, seed: 0,
+    topics: pp.topic == null ? [] : [pp.topic], subs: [], counts: {},
+    kind: 'test', seedShift: 0, paper: pp,
+    limitSec: Math.round((DB.settings.examMin || 0) * 60),
+    maxOut: Math.round(DB.settings.examMaxOut || 0),
+    maxOutSec: Math.round(DB.settings.examMaxOutSec || 0),
+    g: DB.settings.g, easyG10: !!DB.settings.easyG10,
+    items: items
+  };
+}
+
 /* --- 5.2ค ชุดลัด — กดปุ่มเดียวได้ชุดโจทย์พร้อมใช้ ------------------------ */
 const PRESETS = [
   { key: 'concept', icon: '💡', name: 'เช็กความเข้าใจ 15 ข้อ', scope: 'core', kind: 'practice',
@@ -4302,7 +4443,8 @@ function renderMake() {
     }).join('') + '</div>' +
     '<div class="row"><input type="text" id="qtitle" class="grow" style="min-width:220px" placeholder="เช่น ใบงานที่ 1 การเคลื่อนที่แนวตรง" value="' +
     esc(c.lastTitle || '') + '">' +
-    '<button class="primary" id="btnGen">สุ่ม' + QUIZ_KINDS[c.kind || 'practice'].name + '</button></div>' +
+    '<button class="primary" id="btnGen">สุ่ม' + QUIZ_KINDS[c.kind || 'practice'].name + '</button>' +
+    '<button id="btnPaper">ใบตอบจากข้อสอบกระดาษ</button></div>' +
     '<div class="hint" style="margin-top:8px">โจทย์แต่ละชุดผูกกับเลขสุ่ม (seed) จึงสร้างชุดเดิมกลับมาได้เสมอ — ' +
     'พิมพ์ใบงานวันนี้ แล้วพิมพ์ใบเฉลยที่ตรงกันในภายหลังได้</div></div>';
 
@@ -4322,11 +4464,13 @@ function renderMake() {
       h += '<tr><td>' + esc(q.title || '(ไม่มีชื่อ)') +
         ' <span class="tag ' + QUIZ_KINDS[quizKind(q)].cls + '">' + QUIZ_KINDS[quizKind(q)].short + '</span>' +
         (q.id === DB.cur.quizId ? ' <b>← ชุดปัจจุบัน</b>' : '') +
+        (isPaper(q) ? ' <span class="tag t">ใบตอบกระดาษ</span>' : '') +
         '</td><td class="num">' + q.items.length + '</td><td>' + lv + '</td>' +
         '<td>' + thDateTime(q.ts) + '</td><td class="num">' + nAt + '</td>' +
         '<td><button class="sm primary" data-start="' + q.id + '">เริ่มทำ</button> ' +
         '<button class="sm" data-print="' + q.id + '">พิมพ์</button> ' +
         '<button class="sm" data-share="' + q.id + '">แชร์</button> ' +
+        (isPaper(q) ? '<button class="sm" data-editkey="' + q.id + '">แก้เฉลย</button> ' : '') +
         (isTest(q) ? '' : '<button class="sm" data-mktest="' + q.id + '">สร้างแบบทดสอบ</button> ') +
         (isAdmin() ? '<button class="sm" data-publish="' + q.id + '">มอบหมาย</button> ' : '') +
         '<button class="sm danger" data-delq="' + q.id + '">ลบ</button></td></tr>';
@@ -4370,6 +4514,8 @@ function renderMake() {
     c.kind = e.target.value; save(); renderMake();
   }));
   $('#btnGen').addEventListener('click', doGenerate);
+  const bp = $('#btnPaper');
+  if (bp) bp.addEventListener('click', () => paperDialog(null));
   $$('[data-mktest]').forEach(b => b.addEventListener('click', () => makeTestDialog(b.dataset.mktest)));
   if (isStudent()) bindMyAssignments();
   $$('[data-start]').forEach(b => b.addEventListener('click', () => startQuiz(b.dataset.start)));
@@ -4387,6 +4533,8 @@ function renderMake() {
     save(true); renderMake(); toast('ลบแล้ว');
   }));
   $$('[data-share]').forEach(b => b.addEventListener('click', () => shareQuiz(b.dataset.share)));
+  $$('[data-editkey]').forEach(b => b.addEventListener('click', () =>
+    paperDialog(DB.quizzes.find(x => x.id === b.dataset.editkey))));
   $$('[data-publish]').forEach(b => b.addEventListener('click', () => publishQuiz(b.dataset.publish)));
   $('#btnPasteQuiz').addEventListener('click', pasteQuiz);
 }
@@ -4804,6 +4952,31 @@ function renderDo() {
     return;
   }
 
+  /* ใบตอบแสดงทุกข้อในหน้าเดียว ไม่ใช่ทีละข้อ
+     เพราะนักเรียนอ่านโจทย์จากกระดาษ การบังคับกดเปลี่ยนหน้าทีละข้อมีแต่ทำให้ช้า */
+  if (isPaper(q)) {
+    h += '<div class="card"><h3>ใบตอบ<span class="sub">ข้อสอบอยู่บนกระดาษ ' +
+      'อ่านโจทย์จากข้อสอบที่ครูแจก แล้วแตะตัวเลือกที่นี่</span></h3>' +
+      '<div class="hint" style="margin-bottom:11px">แตะซ้ำที่ตัวเลือกเดิม = ยกเลิกคำตอบข้อนั้น · ' +
+      'ตอบแล้ว <b>' + done + '</b> จาก ' + probs.length + ' ข้อ</div>' +
+      '<div class="papersheet">' +
+      probs.map(function (pp, k) {
+        const x = a.answers[k];
+        return '<div class="paperrow"><span class="pno">' + (k + 1) + '</span>' +
+          pp.choices.map(function (c, ci) {
+            return '<button class="pbub' + (x.pick === ci ? ' sel' : '') +
+              '" data-pk="' + k + '" data-pc="' + ci + '">' + PAPER_KEYS[ci] + '</button>';
+          }).join('') + '</div>';
+      }).join('') + '</div></div>';
+    h += '</div>';
+    $('#pane-do').innerHTML = h;
+    $$('[data-go]').forEach(b => b.addEventListener('click', () => gotoQ(Number(b.dataset.go))));
+    $('#btnFinish').addEventListener('click', finishAttempt);
+    $$('[data-pk]').forEach(b => b.addEventListener('click', () =>
+      setPaperAnswer(Number(b.dataset.pk), Number(b.dataset.pc))));
+    return;
+  }
+
   h += '<div class="card">' + problemHead(p, i + 1) + problemBody(p);
 
   // --- ช่องตอบ ---
@@ -4889,6 +5062,25 @@ function renderDo() {
   bindSolutionToggle($('#pane-do'));
   const first = $('.numin:not([disabled])');
   if (first && (T || !it.checked)) first.focus();
+}
+
+/** บันทึกคำตอบหนึ่งข้อบนใบตอบ — แตะซ้ำที่เดิมคือยกเลิกคำตอบ
+    ให้คะแนนทันทีเหมือน checkCurrent เพื่อให้ทุกอย่างหลังจากนี้ทำงานเหมือนชุดปกติ
+    ใบตอบเป็นแบบทดสอบเสมอ จึงไม่มีการล็อกคะแนนที่การตรวจครั้งแรก */
+function setPaperAnswer(k, ci) {
+  const a = curAttempt(), q = curQuiz(); if (!a || !q) return;
+  const p = problemsOf(q)[k], it = a.answers[k]; if (!p || !it) return;
+  // นับเวลาให้ข้อที่เพิ่งแตะ และบอกระบบคุมสอบว่ากำลังทำข้อไหนอยู่
+  stampTime(); DB.cur.i = k; QT.i = k; QT.t0 = Date.now();
+  if (it.pick === ci) { it.pick = null; it.checked = false; it.score = 0; }
+  else { it.pick = ci; it.checked = true; it.tries++; it.score = p.choices[ci].correct ? 1 : 0; }
+  save(true);
+  renderDo();
+  // ส่งความคืบหน้าขึ้นชีตเป็นระยะ — ไอแพดแบตหมดกลางคันก็ไม่เสียของ
+  if (isStudent() && a.assignCode && DB.settings.autoDraft) {
+    const n = a.answers.filter(x => x.checked).length;
+    if (n % 5 === 0) sendAttempt(a, 'draft');
+  }
 }
 
 /** ตรวจข้อปัจจุบัน — คะแนนจะถูกล็อกไว้ที่การตรวจครั้งแรกเพื่อให้สถิติสะท้อนความจริง */
@@ -5009,6 +5201,13 @@ function analyze(a) {
     if (it.revealed) res.revealed++;
     // ข้อที่สร้างไม่ได้ (ใบงานอ้างแม่แบบที่ไฟล์รุ่นนี้ยังไม่มี) — นับคะแนนแต่ไม่แจกแจงตามเรื่อง
     if (!p) { res.items.push({ i: i, p: null, it: it, score: sc }); return; }
+    /* ข้อสอบกระดาษไม่มีหัวข้อย่อย ระดับ หรือทักษะให้แจกแจง
+       ถ้าครูระบุบทไว้ตอนสร้าง ก็แจกแจงตามบทได้อย่างเดียว */
+    if (p.paper) {
+      if (p.topic != null) add(res.byTopic, p.topic, sc);
+      res.items.push({ i: i, p: p, it: it, score: sc });
+      return;
+    }
     add(res.byTopic, p.topic, sc);
     add(res.byLevel, p.level, sc);
     add(res.bySub, p.sub, sc);
@@ -5170,6 +5369,17 @@ function renderResult() {
       h += '<tr><td class="num">' + (x.i + 1) + '</td><td colspan="5" class="hint">' +
         'ข้อนี้ใช้โจทย์จากบทที่โปรแกรมรุ่นนี้ยังไม่มี — อัปเดตไฟล์แล้วดูใหม่' +
         '</td>' + (showSol ? '<td></td><td></td>' : '') + '</tr>';
+      return;
+    }
+    if (x.p.paper) {
+      // ใบตอบไม่มีหัวข้อย่อยและระดับ แต่บอกได้ว่าตอบอะไรไป และเฉลยคืออะไร
+      const picked = x.it.pick == null ? '—' : PAPER_KEYS[x.it.pick];
+      const key = (x.p.choices.findIndex(c => c.correct) + 1) || 0;
+      const tpp = TOPICS.find(t => t.id === x.p.topic);
+      h += '<tr><td class="num">' + (x.i + 1) + '</td><td>' + esc(tpp ? tpp.short : '—') + '</td>' +
+        '<td>ตอบ ' + esc(picked) + (showSol && key ? ' · เฉลย ' + PAPER_KEYS[key - 1] : '') + '</td>' +
+        '<td>—</td><td>' + mark + '</td><td class="num">' + mmss(x.it.sec) + '</td>' +
+        (showSol ? '<td>—</td><td></td>' : '') + '</tr>';
       return;
     }
     const tp = TOPICS.find(t => t.id === x.p.topic);
@@ -7159,7 +7369,9 @@ function encodeQuiz(q) {
     c: q.counts, g: q.g, e: q.easyG10 ? 1 : 0,
     k: quizKind(q), sh: (q.seedShift || 0),
     lm: q.limitSec || 0, mo: q.maxOut || 0, ms: q.maxOutSec || 0,
-    it: q.items.map(x => x.tplId + '~' + x.seed)
+    // ใบตอบข้อสอบกระดาษเก็บเฉลยแทนแม่แบบ ขึ้นต้นด้วย P เพื่อให้ฝั่งถอดรหัสแยกออก
+    pp: isPaper(q) ? { ch: q.paper.ch || 4, tp: q.paper.topic == null ? '' : q.paper.topic } : 0,
+    it: isPaper(q) ? q.items.map(x => 'P~' + x.ans) : q.items.map(x => x.tplId + '~' + x.seed)
   };
   return QCODE_PREFIX + b64enc(JSON.stringify(c));
 }
@@ -7172,9 +7384,16 @@ function decodeQuiz(code) {
   try { c = JSON.parse(b64dec(body)); } catch (e) { return null; }
   if (!c || !Array.isArray(c.it) || !c.it.length) return null;
   const items = [];
+  const paper = c.pp && typeof c.pp === 'object' ? c.pp : null;
   for (const raw of c.it) {
     const p = String(raw).split('~');
     if (p.length !== 2) return null;
+    if (paper) {
+      const an = Number(p[1]);
+      if (p[0] !== 'P' || !isFinite(an)) return null;
+      items.push({ paper: 1, ans: an });
+      continue;
+    }
     if (!TPL.some(t => t.id === p[0])) return null;      // แม่แบบนี้ไม่มีในแอพรุ่นนี้
     const sd = Number(p[1]);
     if (!isFinite(sd)) return null;
@@ -7184,7 +7403,8 @@ function decodeQuiz(code) {
     id: c.i || uid(), ts: Date.now(), title: c.t || 'ใบงาน', seed: Number(c.s) || 0,
     topics: Array.isArray(c.tp) ? c.tp : [], subs: Array.isArray(c.sb) ? c.sb : [],
     counts: c.c || {}, g: Number(c.g) || 9.8, easyG10: !!c.e,
-    kind: c.k === 'test' ? 'test' : 'practice', seedShift: Number(c.sh) || 0,
+    kind: paper ? 'test' : (c.k === 'test' ? 'test' : 'practice'), seedShift: Number(c.sh) || 0,
+    paper: paper ? { ch: Number(paper.ch) || 4, topic: paper.tp === '' ? null : Number(paper.tp) } : null,
     // รหัสที่สร้างก่อนมีระบบคุมสอบไม่มีคีย์พวกนี้ ได้ 0 = ไม่จำกัด ซึ่งถูกต้องแล้ว
     limitSec: Number(c.lm) || 0, maxOut: Number(c.mo) || 0, maxOutSec: Number(c.ms) || 0,
     items: items
@@ -7467,6 +7687,16 @@ function buildDoc(kind, opt) {
   if (kind === 'worksheet' || kind === 'answerkey') {
     const q = DB.quizzes.find(x => x.id === o.quizId);
     if (!q) return '<div class="hint">ยังไม่ได้เลือกชุดโจทย์</div>';
+    /* ใบตอบข้อสอบกระดาษไม่มีตัวโจทย์เก็บอยู่ในแอป พิมพ์เป็นใบงานหรือใบเฉลยจึงไม่ได้
+       บอกให้ชัดดีกว่าพิมพ์ออกมาเป็นข้อว่าง ๆ สิบหน้า */
+    if (isPaper(q)) {
+      return '<div class="notice info">ชุดนี้เป็น<b>ใบตอบสำหรับข้อสอบกระดาษ</b> ' +
+        'แอปเก็บแค่เฉลย ไม่ได้เก็บตัวโจทย์ จึงพิมพ์ใบงานและใบเฉลยจากที่นี่ไม่ได้<br>' +
+        'ใช้ไฟล์ข้อสอบเดิมของครูได้เลย ส่วน<b>หลักฐานการเรียนรู้</b>และ' +
+        '<b>รายงานสถิติชั้นเรียน</b>ยังพิมพ์ได้ตามปกติ<br>' +
+        'เฉลยของชุดนี้คือ <b>' +
+        esc(q.items.map(function (x) { return PAPER_KEYS[Number(x.ans)]; }).join(' ')) + '</b></div>';
+    }
     const probs = problemsOf(q);
     const key = kind === 'answerkey';
     const dens = densityOf(o.density);
