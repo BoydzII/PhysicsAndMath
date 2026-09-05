@@ -13706,6 +13706,176 @@ function esHasWork(title, list) {
   });
 }
 
+/* ── คลังรูปจากห้องวาดรูปโจทย์ (FigureLab) ────────────────────────────────
+   ทั้งสองแอปอยู่โดเมนเดียวกันบน GitHub Pages จึงอ่าน localStorage ก้อนเดียวกันได้ตรง ๆ
+   ไม่ต้องมีเซิร์ฟเวอร์ ไม่ต้องคัดลอกไฟล์ ครูวาดเสร็จกดบันทึกลงคลัง แล้วมาเลือกที่นี่ได้ทันที
+
+   ที่นี่ไม่มีเอนจินวาดรูป — อ่านช่อง svg ที่ห้องวาดรูปโจทย์เรนเดอร์เก็บไว้ให้แล้วเท่านั้น
+   ตั้งใจให้เป็นแบบนี้ เพราะถ้าก๊อปโค้ดวาดรูปมาไว้อีกที่ สองที่จะหลุดจากกันวันใดวันหนึ่ง
+
+   เปิดจากไฟล์ในเครื่อง (file://) เบราว์เซอร์ถือว่าเป็นคนละที่เก็บ คลังจะว่าง
+   จึงมีปุ่มนำเข้าไฟล์คลังที่ส่งออกไว้ให้ใช้แทน */
+const FIGLAB_KEY = 'figlab.lib.v1';
+const FIG_SUBJECTS = { physics: 'ฟิสิกส์', math: 'คณิตศาสตร์', chem: 'เคมี', other: 'อื่น ๆ' };
+let figLibExtra = null;              /* คลังที่นำเข้าจากไฟล์ในรอบการใช้งานนี้ */
+
+function figLibAll() {
+  if (figLibExtra) return figLibExtra;
+  try {
+    const b = JSON.parse(localStorage.getItem(FIGLAB_KEY) || 'null');
+    return (b && b.items) ? b.items : [];
+  } catch (e) { return []; }
+}
+/** base64 ของข้อความ UTF-8 — ตัดเป็นท่อน ๆ เพราะ apply() รับอาร์กิวเมนต์ยาวมากไม่ไหว */
+function figB64(str) {
+  const bytes = new TextEncoder().encode(str);
+  let bin = '';
+  for (let i = 0; i < bytes.length; i += 4096) {
+    bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 4096));
+  }
+  return btoa(bin);
+}
+function figUrl(svg) { return 'data:image/svg+xml;base64,' + figB64(svg); }
+
+/** กล่องเลือกรูปจากคลัง — onPick(dataUrl, ชื่อรูป) · onUpload() คือทางเลือกอัปโหลดเอง */
+function figPicker(onPick, onUpload) {
+  let sub = 'all', topic = '', q = '';
+
+  const chip = function (act, val, label, on) {
+    return '<button class="sm' + (on ? ' primary' : '') + '" data-' + act + '="' +
+      esc(val) + '" style="border-radius:20px">' + esc(label) + '</button>';
+  };
+
+  const draw = function (root) {
+    const all = figLibAll();
+    const bySub = all.filter(function (e) { return sub === 'all' || e.subject === sub; });
+    /* รายการเรื่องสร้างจากรูปที่มีอยู่จริงในวิชาที่เลือก จะได้ไม่มีตัวเลือกที่กดแล้วว่างเปล่า */
+    const topics = [];
+    bySub.forEach(function (e) {
+      const t = String(e.topic || '').trim();
+      if (t && topics.indexOf(t) < 0) topics.push(t);
+    });
+    if (topic && topics.indexOf(topic) < 0) topic = '';
+    const kw = q.trim().toLowerCase();
+    const list = bySub.filter(function (e) {
+      if (topic && String(e.topic || '').trim() !== topic) return false;
+      if (!kw) return true;
+      return (e.name + ' ' + (e.topic || '') + ' ' + (e.tags || []).join(' '))
+        .toLowerCase().indexOf(kw) >= 0;
+    }).sort(function (a, b) { return (b.updated || 0) - (a.updated || 0); });
+
+    $('#figHead', root).innerHTML =
+      (all.length ? '' :
+        '<div class="notice info">ยังไม่มีรูปในคลังของเบราว์เซอร์นี้<br>' +
+        'วาดรูปที่ <b>ห้องวาดรูปโจทย์</b> แล้วกด <b>บันทึกลงคลัง</b> รูปจะมาโผล่ที่นี่เอง · ' +
+        'ถ้าวาดไว้ที่เครื่องอื่น ให้ส่งออกทั้งคลังเป็นไฟล์แล้วกดปุ่ม <b>นำเข้าไฟล์คลัง</b> ข้างล่าง</div>') +
+      '<div class="row" style="flex-wrap:wrap;align-items:center;margin-bottom:8px">' +
+      '<span class="hint">วิชา</span>' +
+      chip('figsub', 'all', 'ทุกวิชา', sub === 'all') +
+      Object.keys(FIG_SUBJECTS).map(function (k) {
+        return chip('figsub', k, FIG_SUBJECTS[k], sub === k);
+      }).join('') + '</div>' +
+      (topics.length ? '<div class="row" style="flex-wrap:wrap;align-items:center;margin-bottom:8px">' +
+        '<span class="hint">เรื่อง</span>' + chip('figtop', '', 'ทุกเรื่อง', !topic) +
+        topics.map(function (t) { return chip('figtop', t, t, topic === t); }).join('') +
+        '</div>' : '') +
+      '<input type="text" id="figQ" style="width:100%" placeholder="ค้นหาชื่อรูป เรื่อง หรือป้ายกำกับ" value="' +
+      esc(q) + '">' +
+      '<div class="hint" style="margin:8px 0 4px">พบ ' + list.length + ' รูป' +
+      (all.length ? ' จากทั้งหมด ' + all.length : '') + '</div>';
+
+    $('#figGrid', root).innerHTML = list.map(function (e) {
+      const ok = !!e.svg;
+      return '<div class="card" style="padding:8px;margin:0' + (ok ? '' : ';opacity:.55') + '">' +
+        '<div ' + (ok ? 'data-figpick="' + esc(e.id) + '" style="cursor:pointer;' : 'style="') +
+        'height:104px;display:grid;place-items:center;background:#fff;border-radius:8px;overflow:hidden">' +
+        (ok ? '<img src="' + esc(figUrl(e.svg)) + '" style="max-width:100%;max-height:100%">'
+            : '<span class="hint">ไม่มีรูปที่เรนเดอร์ไว้</span>') + '</div>' +
+        '<div style="margin-top:6px;font-weight:600;font-size:13.5px;line-height:1.35">' +
+        esc(e.name || 'ไม่มีชื่อ') + '</div>' +
+        '<div class="hint" style="font-size:11.5px">' +
+        esc(FIG_SUBJECTS[e.subject] || e.subject || '') +
+        (e.topic ? ' · ' + esc(e.topic) : '') + '</div>' +
+        (ok ? '' : '<div class="hint" style="font-size:11.5px;color:var(--warn)">' +
+          'เปิดในห้องวาดรูปโจทย์แล้วกดบันทึกอีกครั้ง</div>') +
+        '</div>';
+    }).join('') ||
+      (all.length ? '<div class="hint" style="padding:18px 4px">ไม่พบรูปที่ตรงกับที่ค้นหา</div>' : '');
+
+    $$('[data-figsub]', root).forEach(function (b) {
+      b.addEventListener('click', function () { sub = b.dataset.figsub; topic = ''; draw(root); });
+    });
+    $$('[data-figtop]', root).forEach(function (b) {
+      b.addEventListener('click', function () { topic = b.dataset.figtop; draw(root); });
+    });
+    const qEl = $('#figQ', root);
+    if (qEl) {
+      qEl.addEventListener('input', function () {
+        q = qEl.value;
+        clearTimeout(draw._t);
+        draw._t = setTimeout(function () {
+          draw(root);
+          const el = $('#figQ', root);
+          if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length); }
+        }, 260);
+      });
+    }
+    $$('[data-figpick]', root).forEach(function (b) {
+      b.addEventListener('click', function () {
+        const e = figLibAll().filter(function (x) { return x.id === b.dataset.figpick; })[0];
+        if (!e || !e.svg) return;
+        const url = figUrl(e.svg);
+        /* เพดานเดียวกับรูปที่อัปโหลด — รหัสใบงานที่ส่งขึ้นชีตมีที่จำกัด
+           รูปที่มีเส้นเป็นพันเส้นจะทะลุเพดานนี้ ต้องบอกครูตั้งแต่ตอนเลือก
+           ไม่ใช่ปล่อยให้ไปพังตอนกดสร้างรหัสใบงาน */
+        if (url.length > 32000) {
+          toast('รูปนี้ใหญ่เกินไป (' + Math.round(url.length / 1024) +
+            ' KB) — ลดจำนวนเส้นหรือย่อผืนวาดก่อน', 'bad');
+          return;
+        }
+        onPick(url, e.name || '');
+      });
+    });
+  };
+
+  openModal({
+    wide: true,
+    title: 'เลือกรูปจากคลัง · ห้องวาดรูปโจทย์',
+    bodyHTML: '<div id="figHead"></div>' +
+      '<div id="figGrid" style="display:grid;gap:10px;' +
+      'grid-template-columns:repeat(auto-fill,minmax(158px,1fr))"></div>' +
+      '<input type="file" id="figFile" accept=".json,application/json" style="display:none">',
+    buttons: [
+      { label: 'นำเข้าไฟล์คลัง', act: function (c, root) { $('#figFile', root).click(); } },
+      { label: 'อัปโหลดรูปจากเครื่องแทน', act: function (c) { c(); onUpload(); } },
+      { label: 'ปิด' }
+    ],
+    onMount: function (root, close) {
+      figPicker._close = close;
+      draw(root);
+      $('#figFile', root).addEventListener('change', function (ev) {
+        const f = ev.target.files && ev.target.files[0];
+        if (!f) return;
+        const r = new FileReader();
+        r.onload = function () {
+          let data = null;
+          try { data = JSON.parse(String(r.result || '')); }
+          catch (e2) { toast('อ่านไฟล์ไม่ได้ ไฟล์อาจเสียหาย', 'bad'); return; }
+          const items = Array.isArray(data) ? data : (data.items || null);
+          if (!items || !items.length) { toast('ไม่พบรูปในไฟล์นี้', 'bad'); return; }
+          /* ไม่เขียนทับคลังของเครื่องนี้ ใช้เฉพาะรอบนี้พอ
+             ครูอาจแค่ยืมไฟล์จากเครื่องอื่นมาหยิบรูปเดียว ไม่ได้ตั้งใจย้ายคลังมาทั้งก้อน */
+          figLibExtra = items;
+          toast('นำเข้า ' + items.length + ' รูปสำหรับรอบนี้แล้ว', 'ok');
+          draw(root);
+        };
+        r.readAsText(f);
+        ev.target.value = '';
+      });
+    }
+  });
+}
+
 /** ย่อรูปก่อนเก็บ — รหัสใบงานที่ส่งขึ้นชีตมีเพดานประมาณห้าหมื่นตัวอักษร
     รูปถ่ายจากมือถือขนาดเต็มทำให้เกินเพดานทันที จึงย่อให้อัตโนมัติเสมอ */
 function essayShrinkImage(file, cb) {
@@ -13957,7 +14127,15 @@ function essayRows(list, root) {
   $$('[data-esimg]', box).forEach(function (b) {
     b.addEventListener('click', function () {
       const i = Number(b.dataset.esimg);
-      $('[data-esimgin="' + i + '"]', box).click();
+      figPicker(function (url, name) {
+        list[i].img = url;
+        if (figPicker._close) figPicker._close();
+        essayRows(list, root);
+        toast('แทรกรูป' + (name ? ' “' + name + '” ' : '') + 'แล้ว (' +
+          Math.round(url.length / 1024) + ' KB)', 'ok');
+      }, function () {
+        $('[data-esimgin="' + i + '"]', box).click();
+      });
     });
   });
   $$('[data-esimgin]', box).forEach(function (inp) {

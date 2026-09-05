@@ -2585,6 +2585,10 @@ function doSave(asNew) {
   }
   e.name = curMeta.name; e.subject = curMeta.subject; e.topic = curMeta.topic;
   e.tags = curMeta.tags; e.doc = clone(doc); e.updated = now;
+  /* เก็บ SVG ที่เรนเดอร์เสร็จแล้วไว้คู่กับข้อมูลรูปด้วย
+     แอปคลังโจทย์จะได้หยิบไปแทรกในข้อสอบได้เลย โดยไม่ต้องมีเอนจินวาดรูปของตัวเอง
+     (ถ้าให้แอปนั้นวาดเอง เท่ากับต้องก๊อปโค้ดวาดไปไว้อีกที่ แล้วสองที่จะหลุดจากกันวันใดวันหนึ่ง) */
+  e.svg = svgOfDoc(doc, true);
   if (!libWrite(items)) return;
   curId = e.id;
   closeModals();
@@ -2656,12 +2660,19 @@ function svgForApp() {
   return '<svg viewBox="0 0 ' + doc.w + ' ' + doc.h + '" width="' + doc.w + '" height="' + doc.h +
     '">' + sceneInner(doc, false, false) + '</svg>';
 }
+/** SVG ที่ยืนได้ด้วยตัวเองของผืนใดก็ได้ — แทนตัวแปรธีมด้วยรหัสสีจริง
+    bg = ใส่พื้นขาวให้ด้วย ใช้ตอนรูปจะไปอยู่ใน <img> ของแอปอื่น
+    เพราะใน <img> รูปจะถูกตัดขาดจาก CSS ของหน้า ถ้าพื้นใสแล้วไปวางบนโหมดมืด
+    เส้นหมึกเข้มจะจมหายไปกับพื้นหลังทันที */
+function svgOfDoc(d, bg) {
+  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + d.w + ' ' + d.h +
+    '" width="' + d.w + '" height="' + d.h + '">' +
+    '<style>text{font-family:"Sarabun","Noto Sans Thai","Segoe UI",sans-serif}</style>' +
+    (bg ? '<rect width="' + d.w + '" height="' + d.h + '" fill="#ffffff"/>' : '') +
+    sceneInner(d, true, false) + '</svg>';
+}
 function svgStandalone() {
-  return '<?xml version="1.0" encoding="UTF-8"?>\n' +
-    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + doc.w + ' ' + doc.h +
-    '" width="' + doc.w + '" height="' + doc.h + '">\n' +
-    '<style>text{font-family:"Sarabun","Noto Sans Thai","Segoe UI",sans-serif}</style>\n' +
-    sceneInner(doc, true, false) + '\n</svg>\n';
+  return '<?xml version="1.0" encoding="UTF-8"?>\n' + svgOfDoc(doc, false) + '\n';
 }
 function jsLiteral(s) {
   return "'" + s.replace(/\\/g, '\\\\').replace(/'/g, "\\'") + "'";
@@ -2890,6 +2901,14 @@ function addVertexAt(x, y) {
 function boot() {
   ui = Object.assign(ui, lsGet(LS_UI, {}));
   applyTheme();
+  /* รูปที่บันทึกไว้ก่อนมีช่อง svg ต้องเติมให้ครั้งเดียว
+     ไม่งั้นแอปคลังโจทย์จะมองไม่เห็นรูปเก่าที่ครูสะสมไว้เลย */
+  (function () {
+    const items = libAll();
+    let n = 0;
+    items.forEach(function (e) { if (e && e.doc && !e.svg) { e.svg = svgOfDoc(e.doc, true); n++; } });
+    if (n) libWrite(items);
+  })();
   const saved = lsGet(LS_DOC, null);
   if (saved && saved.doc && saved.doc.items) {
     doc = saved.doc;
