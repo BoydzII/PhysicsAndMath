@@ -282,6 +282,14 @@ input.numin.bad{border-color:var(--bad);background:var(--bad-bg)}
 /* ---------- แถบความคืบหน้าข้อ ---------- */
 .qnav{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
 .qnav button{width:40px;height:40px;min-height:40px;padding:0;border-radius:9px;font-weight:600;font-size:14px}
+/* แถบสัญลักษณ์ของครู และบรรทัดบอกสมการที่ใช้แทนค่า */
+.essym{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin-top:11px;
+       padding:8px;border:1px solid var(--line);border-radius:10px;background:var(--panel2)}
+.essym b{margin-right:4px}
+.essym button{min-width:40px;font-size:16px;padding:6px 9px}
+.esuse{margin:4px 0 8px;padding:7px 11px;border-left:3px solid var(--brand);
+       background:var(--panel2);border-radius:0 8px 8px 0;font-size:16px}
+
 /* แถวเลือกบทบาทของกล่องและสมการ ในกล่องที่ครูใช้ออกข้อสอบ */
 .esrole{display:inline-flex;align-items:center;gap:5px;padding:4px 7px;border:1px solid var(--line);
         border-radius:9px;margin:0 5px 5px 0}
@@ -5758,6 +5766,15 @@ function esRoleIdx(chips, role) {
 }
 /** ตัวแปรที่ต้องแทนค่าในขั้นที่ 3 — ครูกำหนดไว้เอง ถ้าไม่ได้กำหนดก็ไม่มีขั้นนี้ให้ทำ */
 function esVars(it) { return (it && it.vars) || []; }
+/** สมการที่ใช้แทนค่าจริง — ตัวที่แปลงแล้วถ้ามี ไม่งั้นคือสมการหลัก
+    กติกานี้สำคัญ เพราะข้อที่ต้องแปลงสมการก่อน ตัวแปรที่ต้องแทนค่าจะคนละชุดกับสมการหลัก
+    เช่น หลักคือ F = ma แต่โจทย์หา a ต้องแปลงเป็น a = F/m แล้วแทนค่า F กับ m */
+function esSubstEq(it) {
+  const eqs = (it && it.eqs) || [];
+  const der = eqs.filter(function (e) { return e.r === 'd'; })[0];
+  if (der) return der;
+  return eqs.filter(function (e) { return e.r === 'm'; })[0] || eqs[0] || null;
+}
 /** ตรวจทีละขั้น คืนอาเรย์ห้าช่อง (หรือสี่ช่องถ้าข้ามขั้นสรุป) */
 function essayAutoRub(it, gs) {
   const nS = essayNSteps(it);
@@ -6315,6 +6332,31 @@ function essayWorkBox(max) {
 
 /* ── กล่องที่ครูใช้ออกข้อสอบทีละขั้น ─────────────────────────────────── */
 
+/* สัญลักษณ์ที่ครูกดแทรกได้ — ยกกำลังและตัวห้อยใส่อักขระจริง ไม่ต้องพิมพ์ ^ หรือ _
+   back คือจำนวนตัวอักษรที่ต้องถอยเคอร์เซอร์กลับ เพื่อให้ไปอยู่ในวงเล็บพอดี */
+const ES_SYMS = [
+  { lab: 'x²', ins: '²', t: 'ยกกำลังสอง' },
+  { lab: 'x³', ins: '³', t: 'ยกกำลังสาม' },
+  { lab: 'x⁻¹', ins: '⁻¹', t: 'ยกกำลังลบหนึ่ง' },
+  { lab: 'x⁻²', ins: '⁻²', t: 'ยกกำลังลบสอง' },
+  { lab: 'xⁿ', ins: '^{}', back: 1, t: 'ยกกำลังอื่น ๆ' },
+  { lab: 'x₀', ins: '₀', t: 'ตัวห้อยศูนย์' },
+  { lab: 'x₁', ins: '₁', t: 'ตัวห้อยหนึ่ง' },
+  { lab: 'x₂', ins: '₂', t: 'ตัวห้อยสอง' },
+  { lab: 'xₙ', ins: '_{}', back: 1, t: 'ตัวห้อยอื่น ๆ' },
+  { lab: '<span class="frac"><span class="fn">a</span><span class="fd">b</span></span>',
+    ins: 'frac(,)', back: 2, t: 'เศษส่วน' },
+  { lab: '√', ins: 'sqrt()', back: 1, t: 'ราก' },
+  { lab: 'π', ins: 'pi', t: 'พาย' },
+  { lab: 'Δ', ins: 'Δ', t: 'เดลตา' },
+  { lab: 'θ', ins: 'θ', t: 'ทีตา' },
+  { lab: '°', ins: '°', t: 'องศา' },
+  { lab: '×', ins: ' × ', t: 'คูณ' },
+  { lab: '÷', ins: ' ÷ ', t: 'หาร' },
+  { lab: '±', ins: ' ± ', t: 'บวกลบ' },
+  { lab: '→', ins: ' → ', t: 'ลูกศร' }
+];
+
 /* ── ร่างข้อสอบที่ยังพิมพ์ไม่เสร็จ ───────────────────────────────────────
    เก็บคนละคีย์กับข้อมูลแอป เพื่อไม่ให้การกู้คืนไฟล์สำรองหรือล้างข้อมูลลบร่างทิ้ง
    เก็บแยกตามกล่อง — 'new' คือกล่องสร้างใหม่ · ที่เหลือคือ id ของชุดที่กำลังแก้ */
@@ -6615,8 +6657,8 @@ function essayRows(list, root) {
       /* ขั้น 3 — ตัวแปรและค่า */
       '<div class="row" style="margin-top:11px;align-items:center">' +
       '<span class="hint grow"><b>ขั้น 3 · ตัวแปรที่ต้องแทนค่า</b> ' +
-      'กดดึงจากสมการหลักได้ แล้วเติมค่าที่ถูกต้อง</span>' +
-      '<button class="sm" data-esvpull="' + i + '">ดึงตัวแปรจากสมการหลัก</button></div>' +
+      'ดึงจาก<b>สมการที่แปลงแล้ว</b>ถ้ามี ไม่มีก็ดึงจากสมการหลัก แล้วเติมค่าที่ถูกต้อง</span>' +
+      '<button class="sm" data-esvpull="' + i + '">ดึงตัวแปรจากสมการที่ใช้แทนค่า</button></div>' +
       '<div data-esvars="' + i + '" class="esvars" style="margin-top:6px"></div>' +
 
       /* ขั้น 4 — คำตอบ */
@@ -6664,7 +6706,7 @@ function essayRows(list, root) {
       ? [['g', 'โจทย์กำหนด'], ['f', 'ถามหา'], ['x', 'ตัวลวง']]
       : [['m', 'สมการหลัก'], ['d', 'แปลงแล้ว'], ['x', 'ตัวลวง']];
     wrap.innerHTML = arr.map(function (c, ci) {
-      return '<span class="esrole"><b>' + esc(c.t.slice(0, 22)) + '</b>' +
+      return '<span class="esrole"><b>' + M(c.t) + '</b>' +
         opts.map(function (o) {
           return '<button class="sm' + (c.r === o[0] ? ' primary' : '') +
             '" data-rr="' + i + '" data-rk="' + kind + '" data-rc="' + ci +
@@ -6732,14 +6774,15 @@ function essayRows(list, root) {
   $$('[data-esvpull]', box).forEach(function (b) {
     b.addEventListener('click', function () {
       const i = Number(b.dataset.esvpull), it = list[i];
-      const main = (it.eqs || []).filter(function (e2) { return e2.r === 'm'; })[0] ||
-                   (it.eqs || [])[0];
-      if (!main) { toast('พิมพ์สมการก่อน', 'bad'); return; }
+      // ดึงจากสมการที่จะแทนค่าจริง ไม่ใช่สมการหลักเสมอ
+      const use = esSubstEq(it);
+      if (!use) { toast('พิมพ์สมการก่อน', 'bad'); return; }
       const have = {};
       (it.vars || []).forEach(function (v) { have[v.s] = v; });
-      it.vars = essayVarsFrom(main.t).map(function (s) { return have[s] || { s: s, v: '', u: '' }; });
+      it.vars = essayVarsFrom(use.t).map(function (s) { return have[s] || { s: s, v: '', u: '' }; });
       varRows(i);
-      toast('ดึงตัวแปรได้ ' + it.vars.length + ' ตัว — เติมค่าให้ครบ', 'ok');
+      const which = use.r === 'd' ? 'สมการที่แปลงแล้ว' : 'สมการหลัก';
+      toast('ดึงจาก' + which + ' ได้ ' + it.vars.length + ' ตัว — เติมค่าให้ครบ', 'ok');
     });
   });
   $$('[data-esans]', box).forEach(function (e2) {
@@ -6839,6 +6882,18 @@ function essayDialog(quiz) {
         '<button class="sm primary" id="esDraftUse" style="margin-top:6px">กู้ร่างนี้กลับมา</button> ' +
         '<button class="sm" id="esDraftDrop">ทิ้งร่างนี้</button></div>' : '') +
       '<div id="esList" style="margin-top:13px"></div>' +
+      /* แถบสัญลักษณ์ — กดแล้วแทรกลงช่องที่พิมพ์ค้างไว้ล่าสุด
+         ปุ่มยกกำลังกับตัวห้อยใส่อักขระจริงลงไปเลย ครูจะได้ไม่ต้องพิมพ์ ^ หรือ _
+         ส่วนเศษส่วนกับรากยังต้องใช้รูป frac(บน,ล่าง) และ sqrt(...) เพราะเป็นโครงสองชั้น */
+      '<div class="essym"><b class="hint">แทรกสัญลักษณ์</b>' +
+      ES_SYMS.map(function (s) {
+        return '<button class="sm" data-essym="' + esc(s.ins) + '"' +
+          (s.back ? ' data-esback="' + s.back + '"' : '') + ' title="' + esc(s.t) + '">' +
+          s.lab + '</button>';
+      }).join('') + '</div>' +
+      '<div class="hint" style="margin-top:5px">แตะช่องที่จะแทรกก่อน แล้วกดปุ่ม · ' +
+      'เศษส่วนกับรากพิมพ์เป็น <code>frac(บน,ล่าง)</code> และ <code>sqrt(ข้างใน)</code> ' +
+      'แล้วจะแสดงเป็นรูปจริงให้นักเรียนเห็น</div>' +
       '<div class="row"><button class="sm" id="esAdd">+ เพิ่มข้อ</button>' +
       '<span class="hint grow" id="esSum"></span></div>' +
       '<div id="esMsg" style="margin-top:10px"></div>',
@@ -6921,7 +6976,7 @@ function essayDialog(quiz) {
         const tot = list.reduce(function (s, x) { return s + (Number(x.max) || 0); }, 0);
         if (el) el.innerHTML = list.length + ' ข้อ · รวม <b>' + tot + ' คะแนน</b>';
       };
-      const draw = () => { essayRows(list, root); sum(); };
+      const draw = () => { essayRows(list, root); sum(); if (typeof watchFields === 'function') watchFields(); };
       $('#esAdd', root).addEventListener('click', () => {
         list.push({ stem: '', key: '', max: 10, typed: false, img: '', skip5: false,
                     chips: [], eqs: [], vars: [], ans: '', au: '', tol: 2 });
@@ -6931,6 +6986,33 @@ function essayDialog(quiz) {
       $('#esList', root).addEventListener('input', sum);
       draw();
       $('#esTitle', root).focus();
+
+      /* แถบสัญลักษณ์ — จำช่องที่พิมพ์ค้างไว้ล่าสุด แล้วแทรกตรงตำแหน่งเคอร์เซอร์
+         ต้องกัน mousedown ไม่ให้ช่องเสียโฟกัส ไม่งั้นตำแหน่งเคอร์เซอร์หาย */
+      let lastFld = null;
+      function watchFields() {
+        $$('#esList textarea, #esList input[type="text"], #esTitle', root).forEach(function (el) {
+          if (el.__esw) return;
+          el.__esw = 1;
+          ['focus', 'click', 'keyup'].forEach(function (ev) {
+            el.addEventListener(ev, function () { lastFld = el; });
+          });
+        });
+      }
+      $$('[data-essym]', root).forEach(function (b) {
+        b.addEventListener('mousedown', function (e) { e.preventDefault(); });
+        b.addEventListener('click', function () {
+          if (!lastFld || !lastFld.isConnected) { toast('แตะช่องที่จะแทรกก่อน', 'bad'); return; }
+          const ins = b.dataset.essym, back = Number(b.dataset.esback) || 0;
+          const at = lastFld.selectionStart == null ? lastFld.value.length : lastFld.selectionStart;
+          const to = lastFld.selectionEnd == null ? at : lastFld.selectionEnd;
+          lastFld.value = lastFld.value.slice(0, at) + ins + lastFld.value.slice(to);
+          const pos = at + ins.length - back;
+          lastFld.focus();
+          try { lastFld.setSelectionRange(pos, pos); } catch (e2) {}
+          lastFld.dispatchEvent(new Event('input', { bubbles: true }));
+        });
+      });
 
       /* เก็บร่างทุกสองวินาที — กันกรณีที่การถามยืนยันช่วยไม่ได้
          เช่น ไอแพดดับ แท็บถูกปิด หรือแอปถูกรีเฟรชกลางคัน */
@@ -8038,7 +8120,10 @@ function essayGuideHTML(pp, x, k) {
   h += '</div>';
 
   // ขั้น 3 — แทนค่าลงในตัวแปร
+  const useEq = esSubstEq(it);
   h += stepHead(3, 'แทนค่าลงในสมการ') +
+    (useEq ? '<div class="esuse">แทนค่าลงใน ' + M(useEq.t) +
+      (useEq.r === 'd' ? ' <span class="hint">(สมการที่แปลงแล้ว)</span>' : '') + '</div>' : '') +
     (vs.length
       ? '<div class="hint">เติมตัวเลขของแต่ละตัวแปร ตามที่โจทย์กำหนด (ไม่ต้องพิมพ์หน่วย)</div>' +
         '<div class="esvars">' + vs.map(function (v) {
