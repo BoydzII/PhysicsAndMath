@@ -210,6 +210,12 @@ svg .arh2{fill:var(--ink);stroke:none}
       margin:0 2px;font-style:normal;font-size:.9em;line-height:1.1}
 .frac .fn{padding:0 4px 1px}
 .frac .fd{padding:1px 4px 0;border-top:1.4px solid currentColor}
+/* สัญลักษณ์นิวเคลียร์ — เลขมวลบน เลขอะตอมล่าง อยู่หน้าสัญลักษณ์ธาตุ */
+.nuc{display:inline-flex;align-items:center;font-style:normal;white-space:nowrap;margin:0 1px}
+.nuc .nnum{display:inline-flex;flex-direction:column;align-items:flex-end;
+           font-size:.62em;line-height:1.06;margin-right:1px}
+.nuc .nel{font-weight:600}
+
 /* รากที่สองและรากที่สาม */
 .sqrt{display:inline-block;font-style:normal;white-space:nowrap}
 .sqrt .sg{margin-right:0}
@@ -1728,6 +1734,13 @@ function mInner(raw, box) {
     t = t.replace(/frac\(([^(),]*),([^(),]*)\)/g, (m, a, b) =>
       stash('<span class="frac"><span class="fn">' + mInner(a, box) + '</span>' +
             '<span class="fd">' + mInner(b, box) + '</span></span>'));
+    /* สัญลักษณ์นิวเคลียร์ nuc(เลขมวล,เลขอะตอม,ธาตุ) เช่น nuc(235,92,U)
+       เลขมวลอยู่บน เลขอะตอมอยู่ล่าง ทั้งคู่ชิดขวาและอยู่หน้าสัญลักษณ์ธาตุ ตามหลักสากล
+       ตัวยกกับตัวห้อยปกติอยู่หลังตัวอักษร จึงเขียนแบบนี้ไม่ได้ ต้องเป็นโครงซ้อนเหมือนเศษส่วน */
+    t = t.replace(/nuc\(([^(),]*),([^(),]*),([^(),]*)\)/g, (m, a, z, el) =>
+      stash('<span class="nuc"><span class="nnum"><span class="na">' + esc(a.trim()) +
+            '</span><span class="nz">' + esc(z.trim()) + '</span></span>' +
+            '<span class="nel">' + mInner(el, box) + '</span></span>'));
     if (t === before) break;
   }
   let h = esc(t);
@@ -4780,6 +4793,9 @@ const ES_SYMS = [
   { lab: '<span class="frac"><span class="fn">a</span><span class="fd">b</span></span>',
     ins: 'frac(,)', back: 2, t: 'เศษส่วน' },
   { lab: '√', ins: 'sqrt()', back: 1, t: 'ราก' },
+  { lab: '<span class="nuc"><span class="nnum"><span class="na">A</span>' +
+         '<span class="nz">Z</span></span><span class="nel">X</span></span>',
+    ins: 'nuc(,,)', back: 3, t: 'สัญลักษณ์นิวเคลียร์ — เลขมวล, เลขอะตอม, ธาตุ' },
   { lab: 'π', ins: 'pi', t: 'พาย' },
   { lab: 'Δ', ins: 'Δ', t: 'เดลตา' },
   { lab: 'θ', ins: 'θ', t: 'ทีตา' },
@@ -5029,12 +5045,24 @@ function essayShrinkImage(file, cb) {
 const ES_SUP = '⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻ⁿ';
 const ES_SUB = '₀₁₂₃₄₅₆₇₈₉₊₋ₙ';
 const ES_BASE = 'A-Za-zΔα-ωΑ-Ω';
+/* ชื่อตัวแปรที่ยาวกว่าหนึ่งตัวอักษร — วิชานี้ยังไม่มี จึงอ่านทีละตัวอักษรตามเดิม
+   ถ้าจะเพิ่ม ให้เติมในอาเรย์นี้ (ดูตัวอย่างในไฟล์เคมี) */
+const ES_WORDS = [];
 /** รูปแบบของชื่อตัวแปรหนึ่งตัว — ตัวอักษรหนึ่งตัว ตามด้วยตัวห้อย (ถ้ามี) */
 function esVarRe(flags) {
   return new RegExp('[' + ES_BASE + '](?:_\\{[^}]*\\}|_[A-Za-z0-9]|[' + ES_SUB + ']+)?', flags);
 }
+/** จับชื่อตัวแปรที่ยาวกว่าหนึ่งตัวอักษรจากรายชื่อที่รู้จักก่อน
+    ทำเป็นกฎทั่วไปไม่ได้ เพราะ F = ma จะกลายเป็นตัวแปรชื่อ ma แทนที่จะเป็น m กับ a
+    จึงยึดรายชื่อของวิชานั้นเป็นหลัก เรียงจากยาวไปสั้นเพื่อให้จับตัวยาวได้ก่อน */
+function esWordRe() {
+  if (!ES_WORDS.length) return null;
+  const w = ES_WORDS.slice().sort(function (a, b) { return b.length - a.length; })
+    .map(function (s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); });
+  return new RegExp('(?:' + w.join('|') + ')(?:_\\{[^}]*\\}|_[A-Za-z0-9]|[' + ES_SUB + ']+)?', 'g');
+}
 function essayVarsFrom(eqText) {
-  let t = String(eqText || '').replace(/\b(sin|cos|tan|log|ln|sqrt\d*|frac|pi)\b/g, ' ');
+  let t = String(eqText || '').replace(/\b(sin|cos|tan|log|ln|sqrt\d*|frac|nuc|pi)\b/g, ' ');
   /* ตัดเลขชี้กำลังทิ้งก่อนทุกแบบ ครูสั่งให้ยึดตัวแปรหลักก่อนยกกำลัง
      ถ้าไม่ตัด s² จะถูกอ่านเป็นคนละตัวกับ s และ ^2 จะกลายเป็นตัวแปรชื่อแปลก ๆ */
   t = t.replace(new RegExp('[' + ES_SUP + ']+', 'g'), '')
@@ -5046,12 +5074,19 @@ function essayVarsFrom(eqText) {
   let skip = '';
   if (eqAt > 0) {
     const lhs = t.slice(0, eqAt).trim();
-    if (new RegExp('^' + esVarRe().source + '$').test(lhs)) { skip = lhs; t = t.slice(eqAt + 1); }
+    // ต้องยอมรับชื่อยาวด้วย ไม่งั้น pH หรือ Ksp ที่อยู่หน้าเท่ากับจะไม่ถูกตัดออก
+    const wre = esWordRe();
+    const oneVar = new RegExp('^' + esVarRe().source + '$').test(lhs) ||
+                   (wre && new RegExp('^(?:' + wre.source + ')$').test(lhs));
+    if (oneVar) { skip = lhs; t = t.slice(eqAt + 1); }
   }
   const seen = {}, out = [];
-  (t.match(esVarRe('g')) || []).forEach(function (s) {
-    if (s !== skip && !seen[s]) { seen[s] = 1; out.push(s); }
-  });
+  const take = function (s) { if (s !== skip && !seen[s]) { seen[s] = 1; out.push(s); } };
+  /* จับชื่อยาวก่อน แล้วเอาออกจากข้อความ ที่เหลือค่อยจับเป็นตัวอักษรเดียว
+     ไม่งั้น pH จะถูกอ่านเป็น p กับ H */
+  const wre = esWordRe();
+  if (wre) t = t.replace(wre, function (s) { take(s); return ' '; });
+  (t.match(esVarRe('g')) || []).forEach(take);
   return out;
 }
 
