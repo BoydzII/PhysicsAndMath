@@ -688,15 +688,34 @@ function openModal(opts) {
     '</div>';
   const foot = $('footer', bg);
   const close = () => { bg.remove(); modalStack = modalStack.filter(x => x !== bg); };
+  /* กล่องที่มีงานค้างส่ง opts.guard มา — คืน true เมื่อยังมีของที่ยังไม่ได้บันทึก
+     แล้วการปิดทุกทางจะถามยืนยันก่อน กันเผลอแตะนอกกรอบทีเดียวแล้วงานหายหมด
+     กล่องธรรมดาที่ไม่ส่ง guard มา ยังปิดทันทีเหมือนเดิม ไม่ต้องมาถามให้รำคาญ */
+  bg.__tryClose = async () => {
+    if (opts.guard) {
+      let dirty = false;
+      try { dirty = !!opts.guard(bg); } catch (e) { dirty = false; }
+      if (dirty) {
+        const ok = await confirmBox('ปิดหน้าต่างนี้?',
+          'ยังมีข้อมูลที่<b>ยังไม่ได้บันทึก</b> ถ้าปิดตอนนี้ข้อมูลที่กรอกไว้จะหายไป' +
+          (opts.draftNote ? '<br><span class="hint">' + opts.draftNote + '</span>' : ''),
+          'ปิดโดยไม่บันทึก');
+        if (!ok) return;
+      }
+    }
+    if (opts.onClose) { try { opts.onClose(); } catch (e) {} }
+    close();
+  };
   (opts.buttons || [{ label: 'ปิด' }]).forEach(b => {
     const btn = document.createElement('button');
     btn.textContent = b.label;
     if (b.cls) btn.className = b.cls;
-    btn.addEventListener('click', () => { if (b.act) b.act(close, bg); else close(); });
+    // ปุ่มที่ไม่มีงานของตัวเอง (เช่น ยกเลิก) ถือเป็นการปิด จึงต้องผ่านด่านถามยืนยันด้วย
+    btn.addEventListener('click', () => { if (b.act) b.act(close, bg); else bg.__tryClose(); });
     foot.appendChild(btn);
   });
   bg.addEventListener('click', e => {
-    if (e.target === bg || e.target.hasAttribute('data-close')) close();
+    if (e.target === bg || e.target.hasAttribute('data-close')) bg.__tryClose();
   });
   $('#modal-root').appendChild(bg);
   modalStack.push(bg);
@@ -716,7 +735,11 @@ function confirmBox(title, msg, okLabel) {
   });
 }
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape' && modalStack.length) { modalStack[modalStack.length - 1].remove(); modalStack.pop(); }
+  if (e.key !== 'Escape' || !modalStack.length) return;
+  const top = modalStack[modalStack.length - 1];
+  // ผ่านด่านเดียวกับการแตะนอกกรอบ ไม่งั้นกด Escape ทีเดียวงานก็หายอยู่ดี
+  if (top.__tryClose) { top.__tryClose(); return; }
+  top.remove(); modalStack.pop();
 });
 
 /* ============================================================================

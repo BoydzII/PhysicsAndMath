@@ -721,15 +721,34 @@ function openModal(opts) {
     '</div>';
   const foot = $('footer', bg);
   const close = () => { bg.remove(); modalStack = modalStack.filter(x => x !== bg); };
+  /* กล่องที่มีงานค้างส่ง opts.guard มา — คืน true เมื่อยังมีของที่ยังไม่ได้บันทึก
+     แล้วการปิดทุกทางจะถามยืนยันก่อน กันเผลอแตะนอกกรอบทีเดียวแล้วงานหายหมด
+     กล่องธรรมดาที่ไม่ส่ง guard มา ยังปิดทันทีเหมือนเดิม ไม่ต้องมาถามให้รำคาญ */
+  bg.__tryClose = async () => {
+    if (opts.guard) {
+      let dirty = false;
+      try { dirty = !!opts.guard(bg); } catch (e) { dirty = false; }
+      if (dirty) {
+        const ok = await confirmBox('ปิดหน้าต่างนี้?',
+          'ยังมีข้อมูลที่<b>ยังไม่ได้บันทึก</b> ถ้าปิดตอนนี้ข้อมูลที่กรอกไว้จะหายไป' +
+          (opts.draftNote ? '<br><span class="hint">' + opts.draftNote + '</span>' : ''),
+          'ปิดโดยไม่บันทึก');
+        if (!ok) return;
+      }
+    }
+    if (opts.onClose) { try { opts.onClose(); } catch (e) {} }
+    close();
+  };
   (opts.buttons || [{ label: 'ปิด' }]).forEach(b => {
     const btn = document.createElement('button');
     btn.textContent = b.label;
     if (b.cls) btn.className = b.cls;
-    btn.addEventListener('click', () => { if (b.act) b.act(close, bg); else close(); });
+    // ปุ่มที่ไม่มีงานของตัวเอง (เช่น ยกเลิก) ถือเป็นการปิด จึงต้องผ่านด่านถามยืนยันด้วย
+    btn.addEventListener('click', () => { if (b.act) b.act(close, bg); else bg.__tryClose(); });
     foot.appendChild(btn);
   });
   bg.addEventListener('click', e => {
-    if (e.target === bg || e.target.hasAttribute('data-close')) close();
+    if (e.target === bg || e.target.hasAttribute('data-close')) bg.__tryClose();
   });
   $('#modal-root').appendChild(bg);
   modalStack.push(bg);
@@ -749,7 +768,11 @@ function confirmBox(title, msg, okLabel) {
   });
 }
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape' && modalStack.length) { modalStack[modalStack.length - 1].remove(); modalStack.pop(); }
+  if (e.key !== 'Escape' || !modalStack.length) return;
+  const top = modalStack[modalStack.length - 1];
+  // ผ่านด่านเดียวกับการแตะนอกกรอบ ไม่งั้นกด Escape ทีเดียวงานก็หายอยู่ดี
+  if (top.__tryClose) { top.__tryClose(); return; }
+  top.remove(); modalStack.pop();
 });
 
 /* ============================================================================
@@ -4595,6 +4618,10 @@ function paperDialog(quiz) {
   const keyNow = quiz ? quiz.items.map(x => paperLabel(paperStyle(quiz), Number(x.ans))).join('') : '';
   openModal({
     title: quiz ? ('แก้เฉลย "' + esc(quiz.title) + '"') : 'สร้างกระดาษคำตอบออนไลน์',
+    guard: function (root) {
+      const t2 = $('#ppTitle', root), k2 = $('#ppKeys', root);
+      return !!((t2 && t2.value.trim()) || (k2 && k2.value.trim()));
+    },
     bodyHTML:
       '<div class="hint" style="margin-bottom:11px">ใช้กับข้อสอบที่ครูมีอยู่แล้วเป็นกระดาษหรือ PDF ' +
       '<b>แอปไม่เก็บตัวโจทย์</b> เก็บแค่จำนวนข้อกับเฉลย นักเรียนอ่านโจทย์จากกระดาษที่ครูแจก ' +
@@ -4720,6 +4747,29 @@ function essayWorkBox(max) {
 }
 
 /* ── กล่องที่ครูใช้ออกข้อสอบทีละขั้น ─────────────────────────────────── */
+
+/* ── ร่างข้อสอบที่ยังพิมพ์ไม่เสร็จ ───────────────────────────────────────
+   เก็บคนละคีย์กับข้อมูลแอป เพื่อไม่ให้การกู้คืนไฟล์สำรองหรือล้างข้อมูลลบร่างทิ้ง
+   เก็บแยกตามกล่อง — 'new' คือกล่องสร้างใหม่ · ที่เหลือคือ id ของชุดที่กำลังแก้ */
+const ESDRAFT_KEY = LS_KEY + '.esdraft';
+function esDraftAll() {
+  try { return JSON.parse(localStorage.getItem(ESDRAFT_KEY) || '{}') || {}; } catch (e) { return {}; }
+}
+function esDraftGet(id) { const d = esDraftAll()[id]; return d && d.list && d.list.length ? d : null; }
+function esDraftPut(id, d) {
+  const all = esDraftAll();
+  if (d) all[id] = d; else delete all[id];
+  try { localStorage.setItem(ESDRAFT_KEY, JSON.stringify(all)); }
+  catch (e) { /* เต็มก็ช่างมัน ร่างเป็นของแถม ห้ามทำให้การใช้งานปกติพัง */ }
+}
+/** ร่างนี้มีอะไรให้กู้จริงไหม — ชื่อชุด หรือข้อที่พิมพ์โจทย์ไว้แล้ว */
+function esHasWork(title, list) {
+  if (String(title || '').trim()) return true;
+  return (list || []).some(function (x) {
+    return String(x.stem || '').trim() || String(x.key || '').trim() ||
+           (x.chips || []).length || (x.eqs || []).length || x.img;
+  });
+}
 
 /** ย่อรูปก่อนเก็บ — รหัสใบงานที่ส่งขึ้นชีตมีเพดานประมาณห้าหมื่นตัวอักษร
     รูปถ่ายจากมือถือขนาดเต็มทำให้เกินเพดานทันที จึงย่อให้อัตโนมัติเสมอ */
@@ -5007,9 +5057,19 @@ function essayDialog(quiz) {
              ans: it.ans == null ? '' : it.ans, au: it.au || '', tol: it.tol == null ? 2 : it.tol };
   }) : [{ stem: '', key: '', max: 10, typed: false, img: '', skip5: false,
           chips: [], eqs: [], vars: [], ans: '', au: '', tol: 2 }];
+  const draftId = quiz ? quiz.id : 'new';
+  const draft = esDraftGet(draftId);
+  let saveTimer = 0;
   openModal({
     wide: true,
     title: quiz ? ('แก้ข้อสอบอัตนัย ' + (quiz.title || '')) : 'สร้างข้อสอบอัตนัย',
+    /* มีของค้างแล้วจะปิด ต้องถามก่อน — ครูเคยเผลอแตะนอกกรอบแล้วพิมพ์ใหม่ทั้งหมดมาแล้ว */
+    guard: function (root) {
+      const tEl = $('#esTitle', root);
+      return esHasWork(tEl ? tEl.value : '', list);
+    },
+    draftNote: 'ร่างถูกเก็บไว้ในเครื่องอยู่แล้ว เปิดกล่องนี้ใหม่จะมีให้กู้คืน',
+    onClose: function () { if (saveTimer) clearInterval(saveTimer); },
     bodyHTML:
       '<div class="hint" style="margin-bottom:11px">ครูพิมพ์โจทย์เองทีละข้อ ' +
       '<b>ไม่เกี่ยวกับคลังโจทย์ที่สุ่มได้</b> · เฉลยที่กรอกไว้ใช้ตอนครูตรวจและตอนพิมพ์ใบเฉลย ' +
@@ -5028,6 +5088,11 @@ function essayDialog(quiz) {
       TOPICS.map(t => '<option value="' + t.id + '"' +
         (quiz && quiz.paper && quiz.paper.topic != null && Number(quiz.paper.topic) === t.id ? ' selected' : '') +
         '>' + esc(t.icon + ' ' + t.name) + '</option>').join('') + '</select></div></div>' +
+      (draft ? '<div class="notice warn" id="esDraftBar" style="margin-top:11px">' +
+        '<b>มีร่างที่ค้างไว้</b> จาก ' + esc(thDateTime(draft.at)) + ' · ' +
+        draft.list.length + ' ข้อ<br>' +
+        '<button class="sm primary" id="esDraftUse" style="margin-top:6px">กู้ร่างนี้กลับมา</button> ' +
+        '<button class="sm" id="esDraftDrop">ทิ้งร่างนี้</button></div>' : '') +
       '<div id="esList" style="margin-top:13px"></div>' +
       '<div class="row"><button class="sm" id="esAdd">+ เพิ่มข้อ</button>' +
       '<span class="hint grow" id="esSum"></span></div>' +
@@ -5089,6 +5154,8 @@ function essayDialog(quiz) {
             quiz.title = title; quiz.items = items; quiz.limitSec = lim;
             quiz.paper = { ch: 4, topic: tpv === '' ? null : Number(tpv), st: 'th' };
             delete PCACHE['paper:' + quiz.id];
+            if (saveTimer) clearInterval(saveTimer);
+            esDraftPut(draftId, null);              // บันทึกลงชุดจริงแล้ว ไม่ต้องเก็บร่างอีก
             save(true); close(); renderMake();
             toast('บันทึกข้อสอบ ' + items.length + ' ข้อแล้ว', 'ok');
             return;
@@ -5097,6 +5164,8 @@ function essayDialog(quiz) {
             items, { limitSec: lim, maxOut: Math.round(DB.settings.examMaxOut || 0),
                      maxOutSec: Math.round(DB.settings.examMaxOutSec || 0) });
           DB.quizzes.push(q); DB.cur.quizId = q.id;
+          if (saveTimer) clearInterval(saveTimer);
+          esDraftPut(draftId, null);
           save(true); close(); renderMake();
           toast('สร้างข้อสอบอัตนัย ' + items.length + ' ข้อ รวม ' + quizMaxScore(q) + ' คะแนน', 'ok');
         } }
@@ -5117,6 +5186,37 @@ function essayDialog(quiz) {
       $('#esList', root).addEventListener('input', sum);
       draw();
       $('#esTitle', root).focus();
+
+      /* เก็บร่างทุกสองวินาที — กันกรณีที่การถามยืนยันช่วยไม่ได้
+         เช่น ไอแพดดับ แท็บถูกปิด หรือแอปถูกรีเฟรชกลางคัน */
+      const snap = function () {
+        const tEl = $('#esTitle', root);
+        const title2 = tEl ? tEl.value : '';
+        if (!esHasWork(title2, list)) return;
+        esDraftPut(draftId, { at: Date.now(), title: title2, list: list,
+          min: ($('#esMin', root) || {}).value || '',
+          topic: ($('#esTopic', root) || {}).value || '' });
+      };
+      saveTimer = setInterval(snap, 2000);
+
+      const bar = $('#esDraftBar', root);
+      if (bar) {
+        $('#esDraftUse', root).addEventListener('click', function () {
+          list.length = 0;
+          (draft.list || []).forEach(function (x) { list.push(x); });
+          $('#esTitle', root).value = draft.title || '';
+          if (draft.min && $('#esMin', root)) $('#esMin', root).value = draft.min;
+          if (draft.topic && $('#esTopic', root)) $('#esTopic', root).value = draft.topic;
+          bar.remove();
+          draw();
+          toast('กู้ร่างกลับมาแล้ว ' + list.length + ' ข้อ', 'ok');
+        });
+        $('#esDraftDrop', root).addEventListener('click', function () {
+          esDraftPut(draftId, null);
+          bar.remove();
+          toast('ทิ้งร่างแล้ว', 'ok');
+        });
+      }
     }
   });
 }
