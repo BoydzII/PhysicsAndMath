@@ -287,6 +287,12 @@ input.numin.bad{border-color:var(--bad);background:var(--bad-bg)}
 /* ---------- แถบความคืบหน้าข้อ ---------- */
 .qnav{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
 .qnav button{width:40px;height:40px;min-height:40px;padding:0;border-radius:9px;font-weight:600;font-size:14px}
+/* แถวข้อสอบในคลัง */
+.esbrow{display:flex;gap:9px;align-items:flex-start;padding:9px 11px;border:1px solid var(--line);
+        border-radius:10px;margin-bottom:6px;cursor:pointer}
+.esbrow:hover{background:var(--panel2)}
+.esbrow input[type=checkbox]{margin-top:3px;flex:0 0 auto}
+
 /* แถบสัญลักษณ์ของครู และบรรทัดบอกสมการที่ใช้แทนค่า */
 .essym{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin-top:11px;
        padding:8px;border:1px solid var(--line);border-radius:10px;background:var(--panel2)}
@@ -13711,6 +13717,219 @@ function essayWorkBox(max) {
   }).join('') + '</div>';
 }
 
+/* ── คลังข้อสอบอัตนัย: หน้าจอ ──────────────────────────────────────────
+   สองทางเข้า — หยิบจากคลังตอนออกข้อสอบ และการ์ดจัดการในแท็บสร้างชุดโจทย์ */
+
+/** แถวหนึ่งข้อในรายการของคลัง ใช้ร่วมกันทั้งกล่องหยิบและการ์ดจัดการ */
+function esBankRow(r, opts) {
+  const o = opts || {};
+  const tp = TOPICS.find(function (t) { return t.id === r.topic; });
+  const nSteps = essayNSteps(r.it);
+  return '<label class="esbrow"' + (o.pick ? '' : ' style="cursor:default"') + '>' +
+    (o.pick ? '<input type="checkbox" data-bpick="' + r.id + '">' : '') +
+    '<span class="grow"><b>' + M(esBankLabel(r)) + '</b><br>' +
+    '<span class="hint">' + (tp ? esc(tp.short) + ' · ' : '') +
+    fmt(itemMax(r.it)) + ' คะแนน · ' + nSteps + ' ขั้น' +
+    (r.it.img ? ' · มีรูป' : '') +
+    (isGuided(r.it) ? ' · ทีละขั้น' : ' · ครูตรวจเอง') +
+    ' · ใช้ไปแล้ว ' + (r.use || 0) + ' ครั้ง' +
+    ((r.tags || []).length ? ' · ' + esc(r.tags.join(' ')) : '') + '</span></span>' +
+    (o.manage ? '<button class="sm danger" data-bdel="' + r.id + '">ลบ</button>' : '') +
+    '</label>';
+}
+
+/** ถามบทและคำค้นก่อนเก็บเข้าคลัง — สองอย่างนี้คือสิ่งที่ทำให้หาเจอทีหลัง
+    ถ้าไม่ถามตอนนี้ ครูจะไม่ย้อนกลับมาใส่ แล้วคลังจะกลายเป็นกองที่ค้นไม่ได้ */
+function esBankSaveBox(x) {
+  openModal({
+    title: 'เก็บเข้าคลังข้อสอบ',
+    bodyHTML:
+      '<div class="hint" style="margin-bottom:11px">' + M(esBankLabel({ it: x })) + '</div>' +
+      '<label class="hint" for="bsTopic">บทที่</label><br>' +
+      '<select id="bsTopic" style="max-width:100%"><option value="">ไม่ระบุ</option>' +
+      TOPICS.map(function (t) { return '<option value="' + t.id + '">' + esc(t.icon + ' ' + t.name) + '</option>'; }).join('') +
+      '</select>' +
+      '<label class="hint" for="bsTags" style="display:block;margin-top:11px">คำค้น (เว้นวรรคคั่น)</label>' +
+      '<input type="text" id="bsTags" style="width:100%" placeholder="เช่น แรง สมดุล กลางภาค">' +
+      '<div class="hint" style="margin-top:6px">ใส่ไว้จะหาเจอง่ายตอนหยิบกลับมาใช้</div>',
+    buttons: [
+      { label: 'ยกเลิก' },
+      { label: 'เก็บเข้าคลัง', cls: 'primary', act: function (close, root) {
+          const tv = $('#bsTopic', root).value;
+          const tags = ($('#bsTags', root).value || '').split(/\s+/).filter(Boolean);
+          const rec = esBankPut(x, { topic: tv === '' ? null : Number(tv), tags: tags });
+          if (!rec) return;
+          close();
+          renderMake();
+          toast('เก็บเข้าคลังแล้ว — คลังมี ' + esBankAll().length + ' ข้อ', 'ok');
+        } }
+    ],
+    onMount: function (root) { $('#bsTags', root).focus(); }
+  });
+}
+
+/** กล่องหยิบข้อจากคลังมาใส่ในชุดที่กำลังทำ — เลือกได้หลายข้อพร้อมกัน */
+function esBankPick(onPick) {
+  const all = esBankAll();
+  if (!all.length) {
+    openModal({ title: 'คลังข้อสอบอัตนัย',
+      bodyHTML: '<div class="notice info">ยังไม่มีข้อสอบในคลัง<br>' +
+        'พิมพ์ข้อสอบแล้วกด <b>เก็บเข้าคลัง</b> ที่ข้อนั้น จะหยิบกลับมาใช้ได้ทุกเมื่อ</div>',
+      buttons: [{ label: 'ปิด' }] });
+    return;
+  }
+  let sortBy = 'new';
+  const draw = function (root) {
+    const q = ($('#bkQ', root) || {}).value || '';
+    const tv = ($('#bkTopic', root) || {}).value || '';
+    let list = all.filter(function (r) { return esBankMatch(r, q); });
+    if (tv !== '') list = list.filter(function (r) { return String(r.topic) === tv; });
+    list = list.slice().sort(function (a, b) {
+      if (sortBy === 'use') return (b.use || 0) - (a.use || 0) || (b.at || 0) - (a.at || 0);
+      return (b.at || 0) - (a.at || 0);
+    });
+    const box = $('#bkList', root);
+    box.innerHTML = list.length
+      ? list.map(function (r) { return esBankRow(r, { pick: true }); }).join('')
+      : '<div class="hint">ไม่พบข้อที่ตรงกับที่ค้น</div>';
+    const cnt = $('#bkCount', root);
+    if (cnt) cnt.textContent = 'แสดง ' + list.length + ' จาก ' + all.length + ' ข้อ';
+  };
+  openModal({
+    wide: true,
+    title: 'หยิบข้อสอบจากคลัง',
+    bodyHTML:
+      '<div class="row" style="margin-bottom:9px">' +
+      '<input type="text" id="bkQ" class="grow" style="min-width:180px" placeholder="ค้นจากโจทย์ คำค้น หรือชื่อบท">' +
+      '<select id="bkTopic"><option value="">ทุกบท</option>' +
+      TOPICS.map(function (t) { return '<option value="' + t.id + '">' + esc(t.short) + '</option>'; }).join('') +
+      '</select>' +
+      '<button class="sm" id="bkSort">เรียงตามที่ใช้บ่อย</button></div>' +
+      '<div class="hint" id="bkCount"></div>' +
+      '<div id="bkList" style="max-height:52vh;overflow:auto;margin-top:8px"></div>',
+    buttons: [
+      { label: 'ยกเลิก' },
+      { label: 'ใส่ข้อที่เลือก', cls: 'primary', act: function (close, root) {
+          const ids = $$('[data-bpick]', root).filter(function (c) { return c.checked; })
+            .map(function (c) { return c.dataset.bpick; });
+          if (!ids.length) { toast('ยังไม่ได้เลือกข้อไหนเลย', 'bad'); return; }
+          const picked = ids.map(function (id) {
+            return JSON.parse(JSON.stringify(all.find(function (r) { return r.id === id; }).it));
+          });
+          esBankUsed(ids);
+          close();
+          onPick(picked);
+        } }
+    ],
+    onMount: function (root) {
+      draw(root);
+      $('#bkQ', root).addEventListener('input', function () { draw(root); });
+      $('#bkTopic', root).addEventListener('change', function () { draw(root); });
+      $('#bkSort', root).addEventListener('click', function () {
+        sortBy = sortBy === 'use' ? 'new' : 'use';
+        $('#bkSort', root).textContent = sortBy === 'use' ? 'เรียงตามที่เพิ่งเพิ่ม' : 'เรียงตามที่ใช้บ่อย';
+        draw(root);
+      });
+      $('#bkQ', root).focus();
+    }
+  });
+}
+
+/** การ์ดจัดการคลัง — ดูทั้งหมด ลบ ส่งออกเป็นไฟล์ และนำเข้ากลับ */
+function esBankCardHTML() {
+  const all = esBankAll();
+  const kb = Math.round(esBankSize() / 1024);
+  const nImg = all.filter(function (r) { return r.it && r.it.img; }).length;
+  return '<div class="card"><h3>คลังข้อสอบอัตนัย' +
+    '<span class="sub">' + all.length + ' ข้อ · ' + esBankSizeText() +
+    (nImg ? ' · มีรูป ' + nImg + ' ข้อ' : '') + '</span></h3>' +
+    '<div class="hint">เก็บไว้ในเครื่องนี้ แยกตามวิชา และไม่หายเมื่อกู้คืนไฟล์สำรองหรือล้างข้อมูล<br>' +
+    (kb > 3500
+      ? '<b style="color:var(--bad)">คลังใหญ่เกิน 3.5 MB แล้ว</b> ที่เก็บในเบราว์เซอร์มีราว 5 MB ' +
+        'ให้ส่งออกเป็นไฟล์แล้วลบข้อที่มีรูปออกบ้าง'
+      : 'ย้ายเครื่องหรือสำรองไว้ด้วยปุ่ม <b>ส่งออกเป็นไฟล์</b>') + '</div>' +
+    '<div class="row" style="margin-top:11px">' +
+    '<button class="sm" id="bkManage">ดูและจัดการทั้งหมด</button>' +
+    '<button class="sm" id="bkExport">ส่งออกเป็นไฟล์</button>' +
+    '<button class="sm" id="bkImport">นำเข้าจากไฟล์</button></div></div>';
+}
+
+/** หน้าต่างจัดการคลัง */
+function esBankManage() {
+  const draw = function (root) {
+    const all = esBankAll();
+    const q = ($('#bmQ', root) || {}).value || '';
+    const list = all.filter(function (r) { return esBankMatch(r, q); })
+      .sort(function (a, b) { return (b.at || 0) - (a.at || 0); });
+    $('#bmList', root).innerHTML = list.length
+      ? list.map(function (r) { return esBankRow(r, { manage: true }); }).join('')
+      : '<div class="hint">' + (all.length ? 'ไม่พบข้อที่ตรงกับที่ค้น' : 'คลังยังว่าง') + '</div>';
+    $('#bmCount', root).textContent = 'ทั้งหมด ' + all.length + ' ข้อ · ' + esBankSizeText();
+    $$('[data-bdel]', root).forEach(function (b) {
+      b.addEventListener('click', async function () {
+        const r = all.find(function (x) { return x.id === b.dataset.bdel; });
+        if (!await confirmBox('ลบข้อนี้ออกจากคลัง',
+          M(esBankLabel(r)) + '<br><span class="hint">ชุดข้อสอบที่เคยใช้ข้อนี้ไปแล้วไม่ถูกแตะ</span>',
+          'ลบ')) return;
+        esBankDel(b.dataset.bdel);
+        draw(root);
+        renderMake();
+      });
+    });
+  };
+  openModal({
+    wide: true,
+    title: 'จัดการคลังข้อสอบอัตนัย',
+    bodyHTML: '<div class="row" style="margin-bottom:9px">' +
+      '<input type="text" id="bmQ" class="grow" placeholder="ค้นจากโจทย์ คำค้น หรือชื่อบท">' +
+      '<span class="hint" id="bmCount"></span></div>' +
+      '<div id="bmList" style="max-height:56vh;overflow:auto"></div>',
+    buttons: [{ label: 'ปิด' }],
+    onMount: function (root) {
+      draw(root);
+      $('#bmQ', root).addEventListener('input', function () { draw(root); });
+    }
+  });
+}
+
+/** ส่งออกคลังเป็นไฟล์ — ใช้ย้ายเครื่องและสำรองไว้ */
+function esBankExport() {
+  const all = esBankAll();
+  if (!all.length) { toast('คลังยังว่าง ไม่มีอะไรให้ส่งออก', 'bad'); return; }
+  const d = new Date();
+  const name = 'คลังข้อสอบอัตนัย_' + SUBJECT + '_' + d.getFullYear() +
+    String(d.getMonth() + 1).padStart(2, '0') + String(d.getDate()).padStart(2, '0') + '.json';
+  download(new Blob([JSON.stringify({ kind: 'esbank', subject: SUBJECT, at: Date.now(), items: all }, null, 1)],
+    { type: 'application/json' }), name);
+  toast('ส่งออก ' + all.length + ' ข้อแล้ว', 'ok');
+}
+
+/** นำเข้าคลังจากไฟล์ — เพิ่มต่อท้าย ไม่ทับของเดิม เพราะทับแล้วกู้ไม่ได้ */
+async function esBankImport() {
+  const f = await pickFile('.json,application/json');
+  if (!f) return;
+  let o;
+  try { o = JSON.parse(await f.text()); } catch (e) { toast('ไฟล์นี้อ่านไม่ได้', 'bad'); return; }
+  if (!o || o.kind !== 'esbank' || !Array.isArray(o.items)) {
+    toast('ไฟล์นี้ไม่ใช่ไฟล์คลังข้อสอบ', 'bad'); return;
+  }
+  if (o.subject && o.subject !== SUBJECT) {
+    if (!await confirmBox('คนละวิชา',
+      'ไฟล์นี้เป็นคลังของวิชา <b>' + esc(o.subject) + '</b> แต่ตอนนี้อยู่ในวิชา <b>' +
+      esc(SUBJECT) + '</b><br>ยังต้องการนำเข้าหรือไม่', 'นำเข้า')) return;
+  }
+  const list = esBankAll();
+  const have = {};
+  list.forEach(function (r) { have[r.id] = 1; });
+  let add = 0;
+  o.items.forEach(function (r) {
+    if (!r || !r.it || have[r.id]) return;          // ข้อที่มีอยู่แล้วข้ามไป ไม่ทับของเดิม
+    list.push(r); add++;
+  });
+  if (!add) { toast('ไม่มีข้อใหม่ให้เพิ่ม (มีอยู่แล้วทั้งหมด)', 'ok'); return; }
+  if (esBankWrite(list)) { toast('นำเข้า ' + add + ' ข้อแล้ว', 'ok'); renderMake(); }
+}
+
 /* ── กล่องที่ครูใช้ออกข้อสอบทีละขั้น ─────────────────────────────────── */
 
 /* สัญลักษณ์ที่ครูกดแทรกได้ — ยกกำลังและตัวห้อยใส่อักขระจริง ไม่ต้องพิมพ์ ^ หรือ _
@@ -13740,6 +13959,90 @@ const ES_SYMS = [
   { lab: '±', ins: ' ± ', t: 'บวกลบ' },
   { lab: '→', ins: ' → ', t: 'ลูกศร' }
 ];
+
+/* ── คลังข้อสอบอัตนัย ───────────────────────────────────────────────────
+   เก็บ "รายข้อ" ไม่ใช่รายชุด เพราะครูหยิบทีละข้อมาประกอบชุดใหม่
+   คีย์ผูกกับ LS_KEY ของวิชา คลังจึงแยกกันเองโดยไม่ต้องเขียนตัวกรอง
+   และอยู่คนละคีย์กับข้อมูลแอป การกู้คืนไฟล์สำรองหรือล้างข้อมูลจึงไม่ลบคลังทิ้ง
+
+   หนึ่งระเบียน
+     id    รหัสประจำข้อ
+     at    สร้างเมื่อ · up แก้ล่าสุด
+     use   ถูกหยิบไปใช้กี่ครั้ง · used ใช้ล่าสุด
+     topic บทที่ (null = ไม่ระบุ) · tags คำค้นที่ครูใส่เอง
+     it    ตัวข้อสอบทั้งก้อน (โจทย์ รูป กล่อง สมการ ตัวแปร คำตอบ)          */
+const ESBANK_KEY = LS_KEY + '.esbank';
+function esBankAll() {
+  try {
+    const a = JSON.parse(localStorage.getItem(ESBANK_KEY) || '[]');
+    return Array.isArray(a) ? a : [];
+  } catch (e) { return []; }
+}
+function esBankWrite(list) {
+  try { localStorage.setItem(ESBANK_KEY, JSON.stringify(list)); return true; }
+  catch (e) {
+    toast('ที่เก็บในเครื่องเต็ม — ลบข้อเก่าที่มีรูป หรือส่งออกเป็นไฟล์แล้วลบออกก่อน', 'bad');
+    return false;
+  }
+}
+/** ขนาดคลังโดยประมาณ ใช้เตือนก่อนที่เก็บจะเต็ม */
+function esBankSize() {
+  try { return (localStorage.getItem(ESBANK_KEY) || '').length; } catch (e) { return 0; }
+}
+/** ขนาดแบบที่คนอ่านรู้เรื่อง — ปัดเป็น KB เฉย ๆ จะได้ 0 KB ตอนคลังยังเล็ก */
+function esBankSizeText() {
+  const n = esBankSize();
+  if (n < 1024) return n + ' ตัวอักษร';
+  if (n < 1024 * 1024) return (n / 1024).toFixed(n < 10240 ? 1 : 0) + ' KB';
+  return (n / 1048576).toFixed(1) + ' MB';
+}
+/** เก็บข้อหนึ่งเข้าคลัง — ส่ง id มาด้วยคือการแก้ของเดิม ไม่ส่งคือเพิ่มใหม่ */
+function esBankPut(it, meta) {
+  const list = esBankAll();
+  const m = meta || {};
+  const now = Date.now();
+  const clean = JSON.parse(JSON.stringify(it));
+  if (m.id) {
+    const at = list.findIndex(function (r) { return r.id === m.id; });
+    if (at >= 0) {
+      list[at].it = clean;
+      list[at].up = now;
+      if (m.topic !== undefined) list[at].topic = m.topic;
+      if (m.tags !== undefined) list[at].tags = m.tags;
+      return esBankWrite(list) ? list[at] : null;
+    }
+  }
+  const rec = { id: uid(), at: now, up: now, use: 0, used: 0,
+                topic: m.topic == null ? null : Number(m.topic),
+                tags: m.tags || [], it: clean };
+  list.push(rec);
+  return esBankWrite(list) ? rec : null;
+}
+function esBankDel(id) {
+  return esBankWrite(esBankAll().filter(function (r) { return r.id !== id; }));
+}
+/** นับว่าถูกหยิบไปใช้ — ทำให้เรียงตาม "ใช้บ่อย" ได้ และเห็นว่าข้อไหนไม่เคยถูกใช้ */
+function esBankUsed(ids) {
+  const list = esBankAll(), now = Date.now();
+  let hit = 0;
+  list.forEach(function (r) {
+    if (ids.indexOf(r.id) >= 0) { r.use = (r.use || 0) + 1; r.used = now; hit++; }
+  });
+  if (hit) esBankWrite(list);
+}
+/** ข้อความสั้น ๆ ที่ใช้แทนชื่อข้อในรายการ — ตัดจากโจทย์ให้พออ่านออก */
+function esBankLabel(r) {
+  const s = String((r.it && r.it.stem) || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+  return s.length > 70 ? s.slice(0, 70) + '…' : (s || '(ไม่มีโจทย์)');
+}
+/** ค้นหาแบบง่าย — ดูทั้งโจทย์ คำค้น และชื่อบท */
+function esBankMatch(r, q) {
+  if (!q) return true;
+  const tp = TOPICS.find(function (t) { return t.id === r.topic; });
+  const hay = (esBankLabel(r) + ' ' + (r.tags || []).join(' ') + ' ' +
+               ((r.it && r.it.key) || '') + ' ' + (tp ? tp.name : '')).toLowerCase();
+  return q.toLowerCase().split(/\s+/).filter(Boolean).every(function (w) { return hay.indexOf(w) >= 0; });
+}
 
 /* ── ร่างข้อสอบที่ยังพิมพ์ไม่เสร็จ ───────────────────────────────────────
    เก็บคนละคีย์กับข้อมูลแอป เพื่อไม่ให้การกู้คืนไฟล์สำรองหรือล้างข้อมูลลบร่างทิ้ง
@@ -14036,6 +14339,7 @@ function essayRows(list, root) {
       'style="width:70px" inputmode="numeric" value="' + (Number(it.max) || 10) + '"></label>' +
       '<label class="chk" style="margin:0"><input type="checkbox" data-estyped="' + i + '"' +
       (it.typed ? ' checked' : '') + '><span><span class="t">พิมพ์ตอบในแอป</span></span></label>' +
+      '<button class="sm" data-esbank="' + i + '">เก็บเข้าคลัง</button>' +
       '<button class="sm danger" data-esdel="' + i + '">ลบข้อนี้</button></div>' +
       '<textarea data-esstem="' + i + '" rows="3" style="width:100%" ' +
       'placeholder="โจทย์ข้อนี้">' + esc(it.stem || '') + '</textarea>' +
@@ -14242,6 +14546,13 @@ function essayRows(list, root) {
       });
     });
   });
+  $$('[data-esbank]', box).forEach(function (b) {
+    b.addEventListener('click', function () {
+      const i = Number(b.dataset.esbank), x = list[i];
+      if (!String(x.stem || '').trim()) { toast('พิมพ์โจทย์ข้อนี้ก่อน', 'bad'); return; }
+      esBankSaveBox(x);
+    });
+  });
   $$('[data-esimgdel]', box).forEach(function (b) {
     b.addEventListener('click', function () {
       list[Number(b.dataset.esimgdel)].img = '';
@@ -14312,6 +14623,7 @@ function essayDialog(quiz) {
       'เศษส่วนกับรากพิมพ์เป็น <code>frac(บน,ล่าง)</code> และ <code>sqrt(ข้างใน)</code> ' +
       'แล้วจะแสดงเป็นรูปจริงให้นักเรียนเห็น</div>' +
       '<div class="row"><button class="sm" id="esAdd">+ เพิ่มข้อ</button>' +
+      '<button class="sm" id="esFromBank">หยิบจากคลัง</button>' +
       '<span class="hint grow" id="esSum"></span></div>' +
       '<div id="esMsg" style="margin-top:10px"></div>',
     buttons: [
@@ -14402,6 +14714,20 @@ function essayDialog(quiz) {
         list.push({ stem: '', key: '', max: 10, typed: false, img: '', skip5: false,
                     chips: [], eqs: [], vars: [], ans: '', au: '', tol: 2 });
         draw();
+      });
+      $('#esFromBank', root).addEventListener('click', function () {
+        esBankPick(function (picked) {
+          picked.forEach(function (it) {
+            list.push({ stem: it.stem || '', key: it.key || '', max: itemMax(it),
+                        typed: !!it.typed, img: it.img || '', skip5: !!it.skip5,
+                        chips: (it.chips || []).slice(), eqs: (it.eqs || []).slice(),
+                        vars: (it.vars || []).slice(),
+                        ans: it.ans == null ? '' : it.ans, au: it.au || '',
+                        tol: it.tol == null ? 2 : it.tol });
+          });
+          draw();
+          toast('ใส่มา ' + picked.length + ' ข้อแล้ว', 'ok');
+        });
       });
       // ยอดคะแนนต้องขยับตามตอนพิมพ์ด้วย ไม่ใช่เฉพาะตอนเพิ่มหรือลบข้อ
       $('#esList', root).addEventListener('input', sum);
@@ -14777,6 +15103,8 @@ function renderMake() {
       }
     }
     h += '</div>';
+    // คลังข้อสอบอัตนัยเป็นการ์ดของตัวเอง ต่อจากการ์ดกระดาษคำตอบที่ปิดไปแล้ว
+    h += esBankCardHTML();
   }
 
   /* รายการชุดที่เคยสร้าง — ครูไม่ต้องเห็นกระดาษคำตอบซ้ำ เพราะมีการ์ดของตัวเองอยู่แล้ว
@@ -14852,6 +15180,9 @@ function renderMake() {
   if (bp) bp.addEventListener('click', () => paperDialog(null));
   const be = $('#btnEssay');
   if (be) be.addEventListener('click', () => essayDialog(null));
+  const bm = $('#bkManage'); if (bm) bm.addEventListener('click', esBankManage);
+  const bx = $('#bkExport'); if (bx) bx.addEventListener('click', esBankExport);
+  const bi = $('#bkImport'); if (bi) bi.addEventListener('click', esBankImport);
   $$('[data-mktest]').forEach(b => b.addEventListener('click', () => makeTestDialog(b.dataset.mktest)));
   if (isStudent()) bindMyAssignments();
   $$('[data-start]').forEach(b => b.addEventListener('click', () => startQuiz(b.dataset.start)));
