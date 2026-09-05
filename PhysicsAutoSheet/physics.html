@@ -13959,18 +13959,32 @@ function essayShrinkImage(file, cb) {
 
 /** ดึงชื่อตัวแปรจากสมการ เช่น "v = u + at" ได้ v u a t
     ตัดคำที่เป็นฟังก์ชันหรือหน่วยออก แล้วให้ครูแก้รายการได้เองอยู่ดี */
+/* ตัวห้อยเป็นส่วนหนึ่งของชื่อตัวแปร (s₁ คนละตัวกับ s₂) ส่วนตัวยกเป็นเลขชี้กำลัง ไม่ใช่ชื่อ
+   รับทั้งแบบยูนิโคดที่แถบสัญลักษณ์ใส่ให้ และแบบ _1 ^2 ที่พิมพ์เอง */
+const ES_SUP = '⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻ⁿ';
+const ES_SUB = '₀₁₂₃₄₅₆₇₈₉₊₋ₙ';
+const ES_BASE = 'A-Za-zΔα-ωΑ-Ω';
+/** รูปแบบของชื่อตัวแปรหนึ่งตัว — ตัวอักษรหนึ่งตัว ตามด้วยตัวห้อย (ถ้ามี) */
+function esVarRe(flags) {
+  return new RegExp('[' + ES_BASE + '](?:_\\{[^}]*\\}|_[A-Za-z0-9]|[' + ES_SUB + ']+)?', flags);
+}
 function essayVarsFrom(eqText) {
-  let t = String(eqText || '').replace(/\b(sin|cos|tan|log|ln|sqrt|frac|pi)\b/g, ' ');
+  let t = String(eqText || '').replace(/\b(sin|cos|tan|log|ln|sqrt\d*|frac|pi)\b/g, ' ');
+  /* ตัดเลขชี้กำลังทิ้งก่อนทุกแบบ ครูสั่งให้ยึดตัวแปรหลักก่อนยกกำลัง
+     ถ้าไม่ตัด s² จะถูกอ่านเป็นคนละตัวกับ s และ ^2 จะกลายเป็นตัวแปรชื่อแปลก ๆ */
+  t = t.replace(new RegExp('[' + ES_SUP + ']+', 'g'), '')
+       .replace(/\^\{[^}]*\}/g, '')
+       .replace(/\^-?[A-Za-z0-9]+/g, '');
   /* ตัวที่อยู่หน้าเครื่องหมายเท่ากับคือตัวที่โจทย์ถามหา ยังไม่รู้ค่า
      จึงไม่ควรมีช่องให้แทนค่า ตัดออกให้เลย ครูจะได้ไม่ต้องมานั่งลบเอง */
   const eqAt = t.indexOf('=');
   let skip = '';
   if (eqAt > 0) {
     const lhs = t.slice(0, eqAt).trim();
-    if (/^[A-Za-zΔα-ωΑ-Ω](?:_\{?[A-Za-z0-9]+\}?)?$/.test(lhs)) { skip = lhs; t = t.slice(eqAt + 1); }
+    if (new RegExp('^' + esVarRe().source + '$').test(lhs)) { skip = lhs; t = t.slice(eqAt + 1); }
   }
   const seen = {}, out = [];
-  (t.match(/[A-Za-zΔα-ωΑ-Ω](?:_\{?[A-Za-z0-9]+\}?)?/g) || []).forEach(function (s) {
+  (t.match(esVarRe('g')) || []).forEach(function (s) {
     if (s !== skip && !seen[s]) { seen[s] = 1; out.push(s); }
   });
   return out;
