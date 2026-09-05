@@ -1977,6 +1977,29 @@ function HATCH(x0, y0, x1, y1, step, len, st) {
   }
   return out;
 }
+/** ขอบเลนส์ด้านขวา — ส่วนโค้งวงกลมจริงที่ผ่านขอบบน กลางเลนส์ และขอบล่าง
+    edgeX ระยะจากแกนกลางที่ขอบบน-ล่าง · midX ระยะที่กลางเลนส์
+    midX มากกว่า edgeX ได้เลนส์นูน · น้อยกว่าได้เลนส์เว้า
+    คิดจากวงกลมทั้งวง ขอบสองข้างจึงสมมาตรกันเป๊ะเสมอ ไม่ใช่ลากเส้นโค้งกะเอา */
+function lensSide(cx, cy, h, edgeX, midX, n) {
+  const N = n || 20, b = midX - edgeX, out = [];
+  if (Math.abs(b) < 0.01) {
+    for (let i = 0; i <= N; i++) out.push([n1(cx + edgeX), n1(cy - h + 2 * h * i / N)]);
+    return out;
+  }
+  const R = (b * b + h * h) / (2 * b);
+  const ox = cx + midX - R, sg = b > 0 ? 1 : -1;
+  for (let i = 0; i <= N; i++) {
+    const y = -h + 2 * h * i / N;
+    out.push([n1(ox + sg * Math.sqrt(Math.max(0, R * R - y * y))), n1(cy + y)]);
+  }
+  return out;
+}
+/** รูปเลนส์ทั้งใบ — ขอบขวาไล่จากบนลงล่าง แล้วสะท้อนเป็นขอบซ้ายไล่กลับขึ้น */
+function lensPts(cx, cy, h, edgeX, midX) {
+  const right = lensSide(cx, cy, h, edgeX, midX);
+  return right.concat(right.slice().reverse().map(function (q) { return [n1(2 * cx - q[0]), q[1]]; }));
+}
 function sinePts(x0, y0, w, amp, cycles) {
   const out = [];
   const n = Math.max(24, Math.round(cycles * 18));
@@ -2008,8 +2031,10 @@ const PARTS = [
     return out;
   } },
   { k: 'wall', sub: 'physics', n: 'กำแพง', mk: function () {
+    /* ขีดต้องอยู่หลังกำแพงคือด้านซ้าย เพราะของที่ดันกำแพงอยู่ทางขวา
+       เป็นภาพสะท้อนของพื้นที่ขีดอยู่ใต้เส้น — สลับปลายสองจุดคือสลับด้านที่ขีดออก */
     const out = [LN(0, 0, 0, 110, { w: 2.4 })];
-    HATCH(0, 110, 0, 0, 14, 9).forEach(function (o) { out.push(o); });
+    HATCH(0, 0, 0, 110, 14, 9).forEach(function (o) { out.push(o); });
     return out;
   } },
   { k: 'block', sub: 'physics', n: 'กล่องมวล m', mk: function () {
@@ -2027,15 +2052,25 @@ const PARTS = [
       AR(c, c, c - 40, c, { c: 'mut', w: 2 }), TX(c - 36, c - 9, 'f', 14, { c: 'mut' })];
   } },
   { k: 'spring', sub: 'physics', n: 'สปริง', mk: function () {
-    const pts = [[0, 20], [10, 20]];
-    for (let i = 0; i < 7; i++) { pts.push([14 + i * 12, i % 2 ? 32 : 8]); }
-    pts.push([100, 20], [112, 20]);
-    return [PL(pts, false, { w: 2 })];
+    /* ภาพด้านข้างของเกลียวจริง — ฉายเกลียวลงระนาบแบบเอียงเล็กน้อย
+         x = ระยะที่คืบไปข้างหน้า + lean·sin θ      y = r·cos θ
+       ให้ระยะคืบต่อรอบ (adv) น้อยกว่าความกว้างของวง (2·lean) วงจึงเหลื่อมกัน
+       ได้วงขดเหมือนสปริงจริง ไม่ใช่เส้นหักฟันเลื่อยแบบสัญลักษณ์ตัวต้านทาน */
+    const cy = 22, r = 15, lean = 9, adv = 13, turns = 6, step = 16;
+    const N = turns * step, pts = [];
+    for (let i = 0; i <= N; i++) {
+      const th = (i + step * 0.75) / step * 2 * Math.PI;   /* เริ่มที่กลางวงด้านซ้าย */
+      pts.push([n1(27 + adv * i / step + lean * Math.sin(th)), n1(cy - r * Math.cos(th))]);
+    }
+    const a = pts[0], b = pts[pts.length - 1];
+    return [LN(0, cy, a[0], a[1], { w: 2 }), PL(pts, false, { w: 2 }),
+      LN(b[0], b[1], b[0] + 18, cy, { w: 2 })];
   } },
   { k: 'pulley', sub: 'physics', n: 'รอกกับเชือก', mk: function () {
     const cx = 46, cy = 34, r = 22;
+    /* เพดาน — เนื้อวัสดุอยู่ข้างบน ขีดจึงต้องอยู่เหนือเส้น ไม่ใช่ห้อยลงมาปนกับเชือก */
     const out = [LN(cx - 26, 0, cx + 26, 0, { w: 2.2 })];
-    HATCH(cx - 26, 0, cx + 26, 0, 12, 8).forEach(function (o) { out.push(o); });
+    HATCH(cx + 26, 0, cx - 26, 0, 12, 8).forEach(function (o) { out.push(o); });
     out.push(LN(cx, 0, cx, cy - r, { c: 'mut', w: 1.6 }));
     out.push(EL(cx, cy, r, r, { f: 'body', w: 2 }));
     out.push(EL(cx, cy, 3, 3, { f: 'solid', fc: 'ink', w: 1 }));
@@ -2048,12 +2083,15 @@ const PARTS = [
     const px = 60, L = 92, a = 68;
     const bx = px + L * Math.cos(rad(-a)), by = L * Math.sin(rad(a));
     const out = [LN(px - 30, 0, px + 30, 0, { w: 2.2 })];
-    HATCH(px - 30, 0, px + 30, 0, 12, 8).forEach(function (o) { out.push(o); });
+    HATCH(px + 30, 0, px - 30, 0, 12, 8).forEach(function (o) { out.push(o); });
     out.push(LN(px, 0, px, L, { c: 'mut', w: 1.2, d: 1 }));
     out.push(LN(px, 0, bx, by, { w: 1.8 }));
     out.push(EL(bx, by, 12, 12, { f: 'tint', fc: 'brand', w: 2 }));
     out.push(AC(px, 0, 46, -90, -a, { c: 'brand', w: 1.5 }));
-    out.push(TX(px + 26, 56, 'θ', 15, { c: 'brand' }));
+    /* วางบนเส้นแบ่งครึ่งมุม ถัดออกมาจากส่วนโค้งนิดเดียว จะได้อยู่ในมุมพอดี
+       ไม่หลุดไปอยู่นอกเส้นเชือกเหมือนตอนวางด้วยพิกัดตายตัว */
+    const bis = rad((-90 - a) / 2);
+    out.push(TX(px + 62 * Math.cos(bis), -62 * Math.sin(bis) + 5, 'θ', 15, { c: 'brand' }));
     return out;
   } },
   { k: 'beam', sub: 'physics', n: 'คานกับจุดหมุน', mk: function () {
@@ -2061,8 +2099,9 @@ const PARTS = [
     return [RC(0, 30, W, 13, { f: 'body', w: 2 }),
       PL([[W / 2, 43], [W / 2 - 16, 70], [W / 2 + 16, 70]], true, { f: 'body', w: 2 }),
       LN(W / 2 - 26, 70, W / 2 + 26, 70, { w: 2 }),
-      AR(28, 30, 28, 0, { c: 'brand', w: 2.2 }),
-      AR(W - 28, 30, W - 28, 0, { c: 'brand', w: 2.2 })];
+      /* น้ำหนักที่แขวนปลายคานกดลง หัวลูกศรจึงต้องจ่อที่ผิวคาน ไม่ใช่ชี้ออกไปทางฟ้า */
+      AR(28, 0, 28, 30, { c: 'brand', w: 2.2 }),
+      AR(W - 28, 0, W - 28, 30, { c: 'brand', w: 2.2 })];
   } },
   { k: 'axes', sub: 'physics', n: 'แกน x–y', mk: function () {
     return [AR(0, 100, 130, 100, { w: 1.8 }), AR(0, 100, 0, 0, { w: 1.8 }),
@@ -2088,8 +2127,15 @@ const PARTS = [
   { k: 'lens', sub: 'physics', n: 'เลนส์นูนกับแกนมุขสำคัญ', mk: function () {
     const cx = 80, cy = 46;
     return [LN(0, cy, 160, cy, { c: 'mut', w: 1.2, d: 1 }),
-      PA([[cx, cy - 42], [cx + 13, cy], [cx, cy + 42], [cx - 13, cy], [cx, cy - 42]], true,
-        { f: 'tint', fc: 'brand', w: 2 }),
+      PL(lensPts(cx, cy, 42, 0, 13), true, { f: 'tint', fc: 'brand', w: 2 }),
+      EL(cx - 46, cy, 2.6, 2.6, { f: 'solid', fc: 'ink', w: 1 }),
+      EL(cx + 46, cy, 2.6, 2.6, { f: 'solid', fc: 'ink', w: 1 }),
+      TX(cx - 46, cy + 18, 'F', 13, { c: 'mut' }), TX(cx + 46, cy + 18, 'F', 13, { c: 'mut' })];
+  } },
+  { k: 'lensCc', sub: 'physics', n: 'เลนส์เว้ากับแกนมุขสำคัญ', mk: function () {
+    const cx = 80, cy = 46;
+    return [LN(0, cy, 160, cy, { c: 'mut', w: 1.2, d: 1 }),
+      PL(lensPts(cx, cy, 42, 14, 4), true, { f: 'tint', fc: 'brand', w: 2 }),
       EL(cx - 46, cy, 2.6, 2.6, { f: 'solid', fc: 'ink', w: 1 }),
       EL(cx + 46, cy, 2.6, 2.6, { f: 'solid', fc: 'ink', w: 1 }),
       TX(cx - 46, cy + 18, 'F', 13, { c: 'mut' }), TX(cx + 46, cy + 18, 'F', 13, { c: 'mut' })];
@@ -2235,8 +2281,10 @@ const PARTS = [
     return out;
   } },
   { k: 'funnel', sub: 'chem', n: 'กรวยกรอง', mk: function () {
+    /* ปากกรวยกว้าง 0–82 คอกรวย 34–48 แกนกลางจึงอยู่ที่ 41
+       ปลายกระดาษกรองต้องลงมาตรงแกนนี้ ไม่ใช่ 44 ที่เยื้องไปทางขวา */
     return [PL([[0, 0], [82, 0], [48, 52], [48, 96], [34, 96], [34, 52]], true, { w: 2.2 }),
-      PL([[8, 6], [74, 6], [44, 46]], true, { f: 'tint', fc: 'amber', w: 1.4, c: 'amber' })];
+      PL([[9, 6], [73, 6], [41, 45]], true, { f: 'tint', fc: 'amber', w: 1.4, c: 'amber' })];
   } },
   { k: 'burette', sub: 'chem', n: 'บิวเรตต์', mk: function () {
     const W = 26, H = 128;
