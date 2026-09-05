@@ -6971,6 +6971,10 @@ function essayDialog(quiz) {
         } }
     ],
     onMount: root => {
+      /* ประกาศไว้บนสุด เพราะ draw() ข้างล่างเรียก watchFields() ที่ผูกตัวจับ focus
+         แล้ว $('#esTitle').focus() ยิงตัวจับนั้นทันที ซึ่งเขียนค่าลงตัวแปรนี้
+         ถ้าประกาศไว้ข้างล่าง จะกลายเป็นเข้าถึงตัวแปรก่อนบรรทัดประกาศ แล้วกล่องพังทั้งกล่อง */
+      let lastFld = null;
       const sum = () => {
         const el = $('#esSum', root);
         const tot = list.reduce(function (s, x) { return s + (Number(x.max) || 0); }, 0);
@@ -6988,8 +6992,8 @@ function essayDialog(quiz) {
       $('#esTitle', root).focus();
 
       /* แถบสัญลักษณ์ — จำช่องที่พิมพ์ค้างไว้ล่าสุด แล้วแทรกตรงตำแหน่งเคอร์เซอร์
-         ต้องกัน mousedown ไม่ให้ช่องเสียโฟกัส ไม่งั้นตำแหน่งเคอร์เซอร์หาย */
-      let lastFld = null;
+         ต้องกัน mousedown ไม่ให้ช่องเสียโฟกัส ไม่งั้นตำแหน่งเคอร์เซอร์หาย
+         (ตัวแปร lastFld ประกาศไว้บนสุดของ onMount แล้ว) */
       function watchFields() {
         $$('#esList textarea, #esList input[type="text"], #esTitle', root).forEach(function (el) {
           if (el.__esw) return;
