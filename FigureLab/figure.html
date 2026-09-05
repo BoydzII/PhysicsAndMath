@@ -68,8 +68,11 @@ button{cursor:pointer}
 
 /* ---- แถบเครื่องมือซ้าย --------------------------------------------------- */
 #tools{grid-area:tools;background:var(--panel);border-right:1px solid var(--line);
-  overflow-y:auto;padding:8px 8px 24px;-webkit-overflow-scrolling:touch}
-#tools .grp{font-size:10.5px;color:var(--muted);letter-spacing:.4px;margin:10px 2px 5px}
+  overflow-y:auto;padding:8px 6px 24px;-webkit-overflow-scrolling:touch}
+#tools .tgrp{background:var(--panel2);border:1px solid var(--line);border-radius:12px;
+  padding:2px 1px 5px;margin-bottom:9px}
+#tools .grp{font-size:10px;color:var(--muted);letter-spacing:.5px;text-align:center;
+  padding:5px 0 4px;border-bottom:1px solid var(--line);margin-bottom:4px}
 .tool{width:100%;display:flex;flex-direction:column;align-items:center;gap:2px;
   border:1px solid transparent;background:none;border-radius:10px;padding:7px 2px 6px;
   font-size:10.5px;line-height:1.25;color:var(--muted);min-height:52px}
@@ -169,6 +172,11 @@ textarea{resize:vertical;min-height:66px;line-height:1.5}
   padding:5px 4px;font-size:12px;min-height:32px;color:var(--muted)}
 .card .act button:hover{border-color:var(--brand);color:var(--brand)}
 .card .act button.del:hover{border-color:var(--red);color:var(--red)}
+.pgh{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--muted);
+  font-weight:600;margin:20px 0 10px}
+.pgh:first-child{margin-top:0}
+.pgh b{font-weight:400;font-size:11.5px;background:var(--line2);border-radius:999px;padding:2px 9px}
+.pgh::after{content:"";flex:1;height:1px;background:var(--line)}
 .tagline{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px}
 .tg{font-size:11px;background:var(--line2);border-radius:999px;padding:1px 8px;color:var(--muted)}
 
@@ -206,7 +214,7 @@ code.snip{display:block;background:var(--panel2);border:1px solid var(--line);bo
   #inspToggle{display:inline-flex}
 }
 @media (max-width:760px){
-  #app{grid-template-columns:78px 1fr}
+  #app{grid-template-columns:84px 1fr}
   #top .brand span{display:none}
   .hideNarrow{display:none !important}
 }
@@ -319,7 +327,7 @@ code.snip{display:block;background:var(--panel2);border:1px solid var(--line);bo
     <header><h2>ชิ้นส่วนสำเร็จรูป</h2><span class="sp"></span>
       <div class="chips" id="partSub"></div>
       <button class="x" data-close>✕</button></header>
-    <div class="body"><div class="lib" id="partGrid"></div></div>
+    <div class="body"><div id="partGrid"></div></div>
     <footer><span style="color:var(--muted);font-size:12.5px">
       เลือกชิ้นส่วนแล้วแตะบนผืนวาดเพื่อวาง · วางแล้วกด “แยกกลุ่ม” เพื่อแก้ทีละเส้นได้
     </span></footer>
@@ -541,15 +549,21 @@ function gate() {
    ========================================================================== */
 /** จุดบนวงกลม — มุมนับทวนเข็มแบบคณิตศาสตร์ (0 องศาชี้ไปทางขวา) */
 function pol(cx, cy, r, a) { return [cx + r * Math.cos(rad(a)), cy - r * Math.sin(rad(a))]; }
+/** จุดบนวงรี — a คือพารามิเตอร์ ไม่ใช่มุมจริง แต่ที่ 0/90/180/270 ตรงกับปลายแกนพอดี */
+function polE(cx, cy, rx, ry, a) {
+  return [cx + rx * Math.cos(rad(a)), cy - ry * Math.sin(rad(a))];
+}
+/** รัศมีแนวตั้งของส่วนโค้ง — ของเก่าที่บันทึกไว้ไม่มีช่องนี้ ให้ถือว่าเป็นวงกลม */
+function aryOf(it) { return it.ry == null ? it.r : it.ry; }
 
 /** เส้นทางของส่วนโค้งจากมุม a0 ไป a1 (ทวนเข็ม) */
-function arcPath(cx, cy, r, a0, a1, sector) {
+function arcPath(cx, cy, rx, ry, a0, a1, sector) {
   let sweep = a1 - a0;
   while (sweep <= 0) sweep += 360;
   while (sweep > 360) sweep -= 360;
-  const p0 = pol(cx, cy, r, a0), p1 = pol(cx, cy, r, a0 + sweep);
+  const p0 = polE(cx, cy, rx, ry, a0), p1 = polE(cx, cy, rx, ry, a0 + sweep);
   const large = sweep > 180 ? 1 : 0;
-  let d = 'M' + n1(p0[0]) + ' ' + n1(p0[1]) + 'A' + n1(r) + ' ' + n1(r) +
+  let d = 'M' + n1(p0[0]) + ' ' + n1(p0[1]) + 'A' + n1(rx) + ' ' + n1(ry) +
           ' 0 ' + large + ' 0 ' + n1(p1[0]) + ' ' + n1(p1[1]);
   if (sector) d += 'L' + n1(cx) + ' ' + n1(cy) + 'Z';
   return d;
@@ -584,7 +598,10 @@ function bbox(it) {
   } else if (it.t === 'poly' || it.t === 'path') {
     xs = it.pts.map(function (p) { return p[0]; }); ys = it.pts.map(function (p) { return p[1]; });
   } else if (it.t === 'arc') {
-    xs = [it.cx - it.r, it.cx + it.r]; ys = [it.cy - it.r, it.cy + it.r];
+    /* หมุนอยู่ = คิดกรอบแบบเผื่อเต็มที่ จะได้ไม่มีส่วนไหนของรูปโผล่พ้นกรอบเลือก */
+    const rr = it.rot ? Math.max(it.r, aryOf(it)) : it.r;
+    const rv = it.rot ? Math.max(it.r, aryOf(it)) : aryOf(it);
+    xs = [it.cx - rr, it.cx + rr]; ys = [it.cy - rv, it.cy + rv];
   } else if (it.t === 'text') {
     const w = (it.s || '').split('\n').reduce(function (m, l) {
       return Math.max(m, l.length); }, 1) * it.size * 0.52;
@@ -636,8 +653,9 @@ function scaleItem(it, ax, ay, sx, sy) {
     const c = F(it.cx, it.cy);
     it.cx = c[0]; it.cy = c[1]; it.rx = Math.abs(it.rx * sx); it.ry = Math.abs(it.ry * sy);
   } else if (it.t === 'arc') {
-    const c = F(it.cx, it.cy);
-    it.cx = c[0]; it.cy = c[1]; it.r = Math.abs(it.r * m);
+    const c = F(it.cx, it.cy), ry0 = aryOf(it);
+    it.cx = c[0]; it.cy = c[1];
+    it.r = Math.abs(it.r * sx); it.ry = Math.abs(ry0 * sy);
     if (sx * sy < 0) { const t0 = 180 - it.a1, t1 = 180 - it.a0; it.a0 = t0; it.a1 = t1; }
   } else if (it.t === 'poly' || it.t === 'path') {
     it.pts = it.pts.map(function (p) { return F(p[0], p[1]); });
@@ -661,7 +679,11 @@ function rotItem(it, cx, cy, a) {
     const c = R(it.cx, it.cy); it.cx = c[0]; it.cy = c[1]; it.rot = ((it.rot || 0) + a) % 360;
   } else if (it.t === 'arc') {
     const c = R(it.cx, it.cy); it.cx = c[0]; it.cy = c[1];
-    it.a0 = (it.a0 + a) % 360; it.a1 = (it.a1 + a) % 360;
+    /* วงกลมหมุนได้ด้วยการบวกมุมตรง ๆ แต่วงรีทำแบบนั้นไม่ได้
+       เพราะจะกลายเป็นเลื่อนส่วนโค้งไปตามขอบวงรีเดิม ไม่ใช่หมุนทั้งวงรี */
+    if (Math.abs(it.r - aryOf(it)) < 0.01) {
+      it.a0 = (it.a0 + a) % 360; it.a1 = (it.a1 + a) % 360;
+    } else it.rot = ((it.rot || 0) + a) % 360;
   } else if (it.t === 'text') {
     const c = R(it.x, it.y); it.x = c[0]; it.y = c[1]; it.rot = ((it.rot || 0) - a) % 360;
   }
@@ -675,6 +697,13 @@ function rotItem(it, cx, cy, a) {
    ========================================================================== */
 
 function stOf(it) { return it.st || defStyle; }
+
+/** รูปแบบปลายเส้น — ไฟล์เก่าเก็บเป็นธง a1/a2 ว่ามีหัวลูกศรไหม อ่านต่อได้ทั้งสองแบบ */
+function endStyle(it, which) {
+  const v = which === 1 ? it.e1 : it.e2;
+  if (v) return v;
+  return (which === 1 ? it.a1 : it.a2) ? 'arrow' : 'none';
+}
 
 function fillVal(it, closed, hex) {
   const st = stOf(it);
@@ -734,20 +763,32 @@ function drawItem(it, hex) {
 
   if (it.t === 'line') {
     let x1 = it.x1, y1 = it.y1, x2 = it.x2, y2 = it.y2;
-    const asz = clamp(7.5 + st.w * 2.4, 8, 26);
+    const L = dist(it.x1, it.y1, it.x2, it.y2) || 1;
+    const ux = (it.x2 - it.x1) / L, uy = (it.y2 - it.y1) / L;
+    const asz = clamp(7.5 + st.w * 2.4, 8, 26);      /* หัวลูกศร */
+    const dsz = clamp(2.6 + st.w * 1.2, 3.2, 10);    /* จุดกลม */
+    const bsz = clamp(4.5 + st.w * 1.8, 5.5, 15);    /* ขีดตั้งฉาก ครึ่งความยาว */
     let heads = '';
-    if (it.a2 && dist(x1, y1, x2, y2) > 2) {
-      const h = arrowHead(it.x1, it.y1, it.x2, it.y2, asz);
-      heads += '<polygon points="' + h.pts.map(function (p) { return n1(p[0]) + ',' + n1(p[1]); }).join(' ') +
-        '" style="fill:' + stroke + ';stroke:none"/>';
-      x2 = h.back[0]; y2 = h.back[1];
-    }
-    if (it.a1 && dist(x1, y1, x2, y2) > 2) {
-      const h = arrowHead(it.x2, it.y2, it.x1, it.y1, asz);
-      heads += '<polygon points="' + h.pts.map(function (p) { return n1(p[0]) + ',' + n1(p[1]); }).join(' ') +
-        '" style="fill:' + stroke + ';stroke:none"/>';
-      x1 = h.back[0]; y1 = h.back[1];
-    }
+    /* วาดปลายเส้นทีละข้าง — ลูกศรต้องหดเส้นเข้ามาให้หัวไม่ทับปลาย
+       ส่วนจุดกลมกับขีดตั้งฉากวางคร่อมปลายเส้นได้เลย */
+    const cap = function (kind, tipX, tipY, fromX, fromY, isEnd) {
+      if (kind === 'arrow' && L > 2) {
+        const h = arrowHead(fromX, fromY, tipX, tipY, asz);
+        heads += '<polygon points="' +
+          h.pts.map(function (q) { return n1(q[0]) + ',' + n1(q[1]); }).join(' ') +
+          '" style="fill:' + stroke + ';stroke:none"/>';
+        if (isEnd) { x2 = h.back[0]; y2 = h.back[1]; } else { x1 = h.back[0]; y1 = h.back[1]; }
+      } else if (kind === 'dot') {
+        heads += '<circle cx="' + n1(tipX) + '" cy="' + n1(tipY) + '" r="' + n1(dsz) +
+          '" style="fill:' + stroke + ';stroke:none"/>';
+      } else if (kind === 'bar') {
+        heads += '<line x1="' + n1(tipX - uy * bsz) + '" y1="' + n1(tipY + ux * bsz) +
+          '" x2="' + n1(tipX + uy * bsz) + '" y2="' + n1(tipY - ux * bsz) +
+          '" style="stroke:' + stroke + ';stroke-width:' + n2(st.w) + ';stroke-linecap:round"/>';
+      }
+    };
+    cap(endStyle(it, 2), it.x2, it.y2, it.x1, it.y1, true);
+    cap(endStyle(it, 1), it.x1, it.y1, it.x2, it.y2, false);
     s += '<line x1="' + n1(x1) + '" y1="' + n1(y1) + '" x2="' + n1(x2) + '" y2="' + n1(y2) +
       '" style="' + styOf(it, false, hex) + '"/>' + heads;
     /* ขีดกำกับด้านเท่า — ธรรมเนียมเรขาคณิตที่ครูใช้บอกว่าด้านไหนยาวเท่ากัน */
@@ -791,9 +832,11 @@ function drawItem(it, hex) {
     hit = '<path d="' + d + '" class="hit"/>';
 
   } else if (it.t === 'arc') {
-    const d = arcPath(it.cx, it.cy, Math.max(0.5, it.r), it.a0, it.a1, !!it.sector);
-    s = '<path d="' + d + '" style="' + styOf(it, !!it.sector, hex) + '"/>';
-    hit = '<path d="' + d + '" class="hit"/>';
+    const d = arcPath(it.cx, it.cy, Math.max(0.5, it.r), Math.max(0.5, aryOf(it)),
+      it.a0, it.a1, !!it.sector);
+    const tr = it.rot ? ' transform="rotate(' + n1(-it.rot) + ' ' + n1(it.cx) + ' ' + n1(it.cy) + ')"' : '';
+    s = '<path d="' + d + '"' + tr + ' style="' + styOf(it, !!it.sector, hex) + '"/>';
+    hit = '<path d="' + d + '"' + tr + ' class="hit"/>';
 
   } else if (it.t === 'text') {
     const lines = String(it.s == null ? '' : it.s).split('\n');
@@ -904,12 +947,14 @@ function ownHandles(it) {
     return hnd(it.x, it.y, 'c0') + hnd(it.x + it.w, it.y, 'c1') +
       hnd(it.x + it.w, it.y + it.h, 'c2') + hnd(it.x, it.y + it.h, 'c3');
   }
+  if (it.t === 'ell' && it.dot) return hnd(it.cx, it.cy, 'ec', 'v') + hnd(it.cx + it.rx, it.cy, 'edr');
   if (it.t === 'ell' && !it.rot) {
     return hnd(it.cx + it.rx, it.cy, 'erx') + hnd(it.cx, it.cy + it.ry, 'ery') +
       hnd(it.cx, it.cy, 'ec', 'v');
   }
-  if (it.t === 'arc') {
-    const p0 = pol(it.cx, it.cy, it.r, it.a0), p1 = pol(it.cx, it.cy, it.r, it.a1);
+  if (it.t === 'arc' && !it.rot) {
+    const ry = aryOf(it);
+    const p0 = polE(it.cx, it.cy, it.r, ry, it.a0), p1 = polE(it.cx, it.cy, it.r, ry, it.a1);
     return hnd(it.cx, it.cy, 'ac', 'v') + hnd(p0[0], p0[1], 'aa0') + hnd(p1[0], p1[1], 'aa1');
   }
   if ((it.t === 'poly' || it.t === 'path') && it.pts.length <= 24) {
@@ -1045,6 +1090,12 @@ function startCreate(x, y, e) {
     const it = newItem('rect', { x: x, y: y, w: 1, h: 1, r: 0, rot: 0 });
     doc.items.push(it); sel = [it.id];
     drag = { mode: 'new', t: 'rect', it: it, x0: x, y0: y, even: tool === 'sq' };
+  } else if (tool === 'dot') {
+    /* จุดคือวงกลมทึบที่ล็อกรัศมีสองแกนให้เท่ากัน ใช้แทนอนุภาค จุดตรึง หรือวัตถุเล็ก */
+    const it = newItem('ell', { cx: x, cy: y, rx: 5, ry: 5, rot: 0, dot: true });
+    it.st.f = 'solid'; it.st.fc = it.st.c;
+    doc.items.push(it); sel = [it.id];
+    drag = { mode: 'new', t: 'dot', it: it, x0: x, y0: y };
   } else if (tool === 'ell' || tool === 'circ') {
     const it = newItem('ell', { cx: x, cy: y, rx: 1, ry: 1, rot: 0 });
     doc.items.push(it); sel = [it.id];
@@ -1054,7 +1105,7 @@ function startCreate(x, y, e) {
     doc.items.push(it); sel = [it.id];
     drag = { mode: 'new', t: 'tri', it: it, x0: x, y0: y };
   } else if (tool === 'arc') {
-    const it = newItem('arc', { cx: x, cy: y, r: 1, a0: 0, a1: 90, sector: false });
+    const it = newItem('arc', { cx: x, cy: y, r: 1, ry: 1, a0: 0, a1: 90, sector: false, rot: 0 });
     doc.items.push(it); sel = [it.id];
     drag = { mode: 'new', t: 'arc', it: it, x0: x, y0: y };
   } else if (tool === 'pen') {
@@ -1174,6 +1225,9 @@ function onMove(e) {
         w = Math.sign(w || 1) * m; h = Math.sign(h || 1) * m; }
       it.x = sn(Math.min(drag.x0, drag.x0 + w)); it.y = sn(Math.min(drag.y0, drag.y0 + h));
       it.w = Math.max(1, sn(Math.abs(w))); it.h = Math.max(1, sn(Math.abs(h)));
+    } else if (drag.t === 'dot') {
+      const d = dist(drag.x0, drag.y0, x, y);
+      it.rx = it.ry = d < 2 ? 5 : Math.max(2, n1(d));
     } else if (drag.t === 'ell') {
       let rx = Math.abs(x - drag.x0), ry = Math.abs(y - drag.y0);
       if (drag.even || e.shiftKey) { rx = ry = Math.max(rx, ry); }
@@ -1183,7 +1237,7 @@ function onMove(e) {
       const y0 = Math.min(drag.y0, y), y1 = Math.max(drag.y0, y);
       it.pts = [[sn((x0 + x1) / 2), sn(y0)], [sn(x1), sn(y1)], [sn(x0), sn(y1)]];
     } else if (drag.t === 'arc') {
-      it.r = Math.max(2, sn(dist(drag.x0, drag.y0, x, y)));
+      it.r = it.ry = Math.max(2, sn(dist(drag.x0, drag.y0, x, y)));
       const a = Math.round(deg(Math.atan2(drag.y0 - y, x - drag.x0)) / 5) * 5;
       it.a0 = a; it.a1 = a + 90;
     } else if (drag.t === 'pen') {
@@ -1250,14 +1304,19 @@ function moveHandle(h, x, y, e) {
     const ay = (i === 0 || i === 1) ? o.y + o.h : o.y;
     it.x = Math.min(ax, x); it.y = Math.min(ay, y);
     it.w = Math.max(1, Math.abs(x - ax)); it.h = Math.max(1, Math.abs(y - ay));
+  } else if (h === 'edr') { it.rx = it.ry = Math.max(1, Math.abs(x - it.cx));
   } else if (h === 'erx') { it.rx = Math.max(1, Math.abs(x - it.cx));
   } else if (h === 'ery') { it.ry = Math.max(1, Math.abs(y - it.cy));
   } else if (h === 'ec' || h === 'ac') { it.cx = x; it.cy = y;
   } else if (h === 'aa0' || h === 'aa1') {
-    const a = Math.round(deg(Math.atan2(it.cy - y, x - it.cx)) / (e && e.shiftKey ? 15 : 1)) *
-      (e && e.shiftKey ? 15 : 1);
+    const ry0 = aryOf(it), step = (e && e.shiftKey) ? 15 : 1;
+    /* คิดจากพารามิเตอร์ของวงรี ไม่ใช่มุมจริง จุดจับจึงเกาะขอบรูปเสมอแม้เป็นวงรี */
+    const a = Math.round(deg(Math.atan2((it.cy - y) / (ry0 || 1), (x - it.cx) / (it.r || 1))) / step) * step;
     if (h === 'aa0') it.a0 = a; else it.a1 = a;
-    if (h === 'aa1') it.r = Math.max(2, dist(it.cx, it.cy, x, y));
+    if (h === 'aa1') {
+      const k = Math.hypot((x - it.cx) / (it.r || 1), (y - it.cy) / (ry0 || 1));
+      if (k > 0.05) { it.r = Math.max(2, it.r * k); it.ry = Math.max(2, ry0 * k); }
+    }
   } else if (h[0] === 'v') {
     const i = +h.slice(1);
     if (it.pts && it.pts[i]) it.pts[i] = [x, y];
@@ -1295,10 +1354,11 @@ function onUp(e) {
   changed();
 }
 function defaultSize(it, x, y) {
-  if (it.t === 'line') { it.x2 = x + 80; it.y2 = y; }
+  if (it.t === 'ell' && it.dot) { it.rx = it.ry = 5; }
+  else if (it.t === 'line') { it.x2 = x + 80; it.y2 = y; }
   else if (it.t === 'rect') { it.x = x; it.y = y; it.w = 80; it.h = 56; }
   else if (it.t === 'ell') { it.rx = 42; it.ry = 32; }
-  else if (it.t === 'arc') { it.r = 40; }
+  else if (it.t === 'arc') { it.r = it.ry = 40; }
   else if (it.t === 'poly' && it.pts.length === 3) {
     it.pts = [[x + 40, y], [x + 80, y + 70], [x, y + 70]];
   }
@@ -1337,33 +1397,36 @@ function moveGesture() {
    แถบเครื่องมือ
    ========================================================================== */
 const TOOLS = [
-  { g: 'เลือก' },
-  { k: 'sel', ic: '⌖', n: 'เลือก' },
-  { k: 'pan', ic: '✋', n: 'เลื่อนจอ' },
-  { g: 'เส้น' },
-  { k: 'line', ic: '╱', n: 'เส้นตรง' },
-  { k: 'arrow', ic: '⟶', n: 'ลูกศร' },
-  { k: 'darrow', ic: '⟷', n: 'สองหัว' },
-  { k: 'pen', ic: '✎', n: 'ลากมือ' },
-  { g: 'รูปทรง' },
-  { k: 'rect', ic: '▭', n: 'สี่เหลี่ยม' },
-  { k: 'sq', ic: '◻', n: 'จัตุรัส' },
-  { k: 'ell', ic: '⬭', n: 'วงรี' },
-  { k: 'circ', ic: '◯', n: 'วงกลม' },
-  { k: 'tri', ic: '△', n: 'สามเหลี่ยม' },
-  { k: 'poly', ic: '⬠', n: 'หลายเหลี่ยม' },
-  { k: 'arc', ic: '◟', n: 'ส่วนโค้ง' },
-  { g: 'เติม' },
-  { k: 'text', ic: 'T', n: 'ข้อความ' },
-  { b: 'parts', ic: '🧩', n: 'ชิ้นส่วน' },
-  { b: 'tri3', ic: '📐', n: 'สามเหลี่ยม\nตามตัวเลข' }
+  { g: 'เลือก', t: [
+    { k: 'sel', ic: '⌖', n: 'เลือก' },
+    { k: 'pan', ic: '✋', n: 'เลื่อนจอ' }] },
+  { g: 'เส้น', t: [
+    { k: 'line', ic: '╱', n: 'เส้นตรง' },
+    { k: 'arrow', ic: '⟶', n: 'ลูกศร' },
+    { k: 'darrow', ic: '⟷', n: 'สองหัว' },
+    { k: 'pen', ic: '✎', n: 'ลากมือ' }] },
+  { g: 'รูปทรง', t: [
+    { k: 'rect', ic: '▭', n: 'สี่เหลี่ยม' },
+    { k: 'sq', ic: '◻', n: 'จัตุรัส' },
+    { k: 'ell', ic: '⬭', n: 'วงรี' },
+    { k: 'circ', ic: '◯', n: 'วงกลม' },
+    { k: 'tri', ic: '△', n: 'สามเหลี่ยม' },
+    { k: 'poly', ic: '⬠', n: 'หลายเหลี่ยม' },
+    { k: 'arc', ic: '◟', n: 'ส่วนโค้ง' }] },
+  { g: 'เติม', t: [
+    { k: 'dot', ic: '⬤', n: 'จุด' },
+    { k: 'text', ic: 'T', n: 'ข้อความ' }] },
+  { g: 'สำเร็จรูป', t: [
+    { b: 'parts', ic: '🧩', n: 'ชิ้นส่วน' },
+    { b: 'tri3', ic: '📐', n: 'สามเหลี่ยม\nตามตัวเลข' }] }
 ];
 function buildTools() {
-  $('#tools').innerHTML = TOOLS.map(function (t) {
-    if (t.g) return '<div class="grp">' + t.g + '</div>';
-    const id = t.k ? ' data-tool="' + t.k + '"' : ' data-btn="' + t.b + '"';
-    return '<button class="tool"' + id + '><span class="ic">' + t.ic + '</span>' +
-      esc(t.n).replace(/\n/g, '<br>') + '</button>';
+  $('#tools').innerHTML = TOOLS.map(function (G) {
+    return '<div class="tgrp"><div class="grp">' + G.g + '</div>' + G.t.map(function (t) {
+      const id = t.k ? ' data-tool="' + t.k + '"' : ' data-btn="' + t.b + '"';
+      return '<button class="tool"' + id + ' title="' + esc(t.n.replace(/\n/g, ' ')) +
+        '"><span class="ic">' + t.ic + '</span>' + esc(t.n).replace(/\n/g, '<br>') + '</button>';
+    }).join('') + '</div>';
   }).join('');
   $('#tools').addEventListener('click', function (e) {
     const b = e.target.closest('[data-tool],[data-btn]');
@@ -1466,10 +1529,15 @@ function typeSec(it) {
       '</div>';
   }
   if (it.t === 'line') {
+    const ENDS = [{ v: 'none', n: 'ไม่มี' }, { v: 'arrow', n: 'ลูกศร' },
+      { v: 'dot', n: 'วงกลม' }, { v: 'bar', n: 'ขีดตั้งฉาก' }];
     s += '<div class="sec"><h3>เส้น</h3>' +
-      '<div class="row"><span class="lb">หัวลูกศร</span>' +
-      '<button class="btn sm" data-act="a1"' + (it.a1 ? ' style="border-color:var(--brand);color:var(--brand)"' : '') + '>ต้นเส้น</button>' +
-      '<button class="btn sm" data-act="a2"' + (it.a2 ? ' style="border-color:var(--brand);color:var(--brand)"' : '') + '>ปลายเส้น</button></div>' +
+      '<div class="row"><span class="lb">ต้นเส้น</span></div>' +
+      segHtml('e1', ENDS, endStyle(it, 1)) +
+      '<div style="height:8px"></div>' +
+      '<div class="row"><span class="lb">ปลายเส้น</span></div>' +
+      segHtml('e2', ENDS, endStyle(it, 2)) +
+      '<div style="height:9px"></div>' +
       '<div class="row"><span class="lb">ขีดกำกับ</span></div>' +
       segHtml('tk', [{ v: 0, n: 'ไม่มี' }, { v: 1, n: '|' }, { v: 2, n: '||' }, { v: 3, n: '|||' }], it.tk || 0) +
       '<div class="row" style="margin-top:9px"><span class="lb">ยาว</span>' +
@@ -1480,6 +1548,15 @@ function typeSec(it) {
       n1(deg(Math.atan2(it.y1 - it.y2, it.x2 - it.x1))) + '" step="1"></div>' +
       '<div class="hint">ขีดกำกับใช้บอกว่าด้านไหนยาวเท่ากัน ตามธรรมเนียมเรขาคณิต</div></div>';
   }
+  if (it.t === 'ell') {
+    s += it.dot
+      ? '<div class="sec"><h3>จุด</h3><div class="row"><span class="lb">รัศมี</span>' +
+        '<input type="number" class="num" data-p="dotr" value="' + n1(it.rx) + '" step="0.5" min="0.5"></div>' +
+        '<div class="hint">ใช้แทนอนุภาค จุดตรึง หรือวัตถุขนาดเล็ก · เปลี่ยนสีและพื้นได้ที่แผงด้านบน</div></div>'
+      : '<div class="sec"><h3>วงรี</h3><div class="row"><span class="lb">รัศมี</span>' +
+        '<input type="number" class="num" data-p="rx" value="' + n1(it.rx) + '" step="1" min="1">' +
+        '<input type="number" class="num" data-p="ry" value="' + n1(it.ry) + '" step="1" min="1"></div></div>';
+  }
   if (it.t === 'rect') {
     s += '<div class="sec"><h3>สี่เหลี่ยม</h3><div class="row">' +
       '<span class="lb">มุมโค้ง</span><input type="number" class="num" data-p="r" value="' +
@@ -1488,14 +1565,17 @@ function typeSec(it) {
   if (it.t === 'arc') {
     s += '<div class="sec"><h3>ส่วนโค้ง</h3>' +
       '<div class="row"><span class="lb">รัศมี</span>' +
-      '<input type="number" class="num" data-p="r" value="' + n1(it.r) + '" step="1" min="1"></div>' +
+      '<input type="number" class="num" data-p="r" value="' + n1(it.r) + '" step="1" min="1">' +
+      '<span class="lb">แนวตั้ง</span>' +
+      '<input type="number" class="num" data-p="ry" value="' + n1(aryOf(it)) + '" step="1" min="1"></div>' +
       '<div class="row"><span class="lb">มุมเริ่ม</span>' +
       '<input type="number" class="num" data-p="a0" value="' + n1(it.a0) + '" step="5">' +
       '<span class="lb">ถึง</span>' +
       '<input type="number" class="num" data-p="a1" value="' + n1(it.a1) + '" step="5"></div>' +
       '<div class="row"><button class="btn sm" data-act="sector"' +
       (it.sector ? ' style="border-color:var(--brand);color:var(--brand)"' : '') + '>ปิดเป็นรูปพัด</button></div>' +
-      '<div class="hint">มุมนับทวนเข็ม 0 องศาชี้ไปทางขวา — ใช้ทำเครื่องหมายมุมในรูปเรขาคณิตได้</div></div>';
+      '<div class="hint">มุมนับทวนเข็ม 0 องศาชี้ไปทางขวา — ใช้ทำเครื่องหมายมุมในรูปเรขาคณิตได้<br>' +
+      'ตั้งรัศมีสองแกนให้ต่างกันจะได้ส่วนโค้งของวงรี ใช้เขียนปากและฐานของทรงสามมิติ</div></div>';
   }
   if (it.t === 'poly' && it.pts.length === 3) s += triSec(it);
   else if (it.t === 'poly') {
@@ -1765,8 +1845,13 @@ function doAct(a, v) {
   }
   if (a.slice(0, 2) === 'al') { alignSel(a.slice(2)); return; }
   if (!it) return;
-  if (a === 'a1') { push(); it.a1 = !it.a1; changed(); return; }
-  if (a === 'a2') { push(); it.a2 = !it.a2; changed(); return; }
+  if (a === 'e1' || a === 'e2') {
+    push();
+    it[a] = v;
+    /* เก็บธงเดิมไว้ให้ตรงกันด้วย ไฟล์ที่บันทึกไว้แล้วจะได้เปิดที่ไหนก็เหมือนกัน */
+    it[a === 'e1' ? 'a1' : 'a2'] = (v === 'arrow');
+    changed(); return;
+  }
   if (a === 'italic') { push(); it.italic = !it.italic; changed(); return; }
   if (a === 'bold') { push(); it.bold = !it.bold; changed(); return; }
   if (a === 'sector') { push(); it.sector = !it.sector; changed(); return; }
@@ -1892,6 +1977,8 @@ function onInspChange(e) {
     it.y2 = n1(it.y1 - L * Math.sin(rad(A)));
   } else if (k === 'sides') {
     regularPoly(it, clamp(Math.round(v), 3, 24));
+  } else if (k === 'dotr') {
+    it.rx = it.ry = Math.max(0.5, v);
   } else if (k === 'size') {
     it.size = clamp(v, 6, 90);
   } else if (isFinite(v)) { it[k] = v; }
@@ -1928,7 +2015,7 @@ function onKey(e) {
     return;
   }
   const K = { v: 'sel', h: 'pan', l: 'line', a: 'arrow', r: 'rect', o: 'ell', c: 'circ',
-    t: 'text', p: 'pen', g: 'poly', y: 'tri', k: 'arc' };
+    t: 'text', p: 'pen', g: 'poly', y: 'tri', k: 'arc', d: 'dot' };
   if (K[e.key]) setTool(K[e.key]);
 }
 
@@ -1951,9 +2038,9 @@ function RC(x, y, w, h, st) {
 function EL(cx, cy, rx, ry, st) {
   return { id: uid(), t: 'ell', cx: cx, cy: cy, rx: rx, ry: ry, rot: 0, st: S(st) };
 }
-function AC(cx, cy, r, a0, a1, st, sector) {
-  return { id: uid(), t: 'arc', cx: cx, cy: cy, r: r, a0: a0, a1: a1,
-    sector: !!sector, st: S(st) };
+function AC(cx, cy, r, a0, a1, st, sector, ry) {
+  return { id: uid(), t: 'arc', cx: cx, cy: cy, r: r, ry: ry == null ? r : ry,
+    a0: a0, a1: a1, sector: !!sector, rot: 0, st: S(st) };
 }
 function PL(pts, closed, st) {
   return { id: uid(), t: 'poly', pts: pts, closed: closed !== false, st: S(st) };
@@ -2022,7 +2109,8 @@ const PARTS = [
     b.rot = a;
     out.push(b);
     out.push(AC(0, H, 40, 0, a, { c: 'brand', w: 1.5 }));
-    out.push(TX(50, H - 8, 'θ', 15, { c: 'brand' }));
+    /* วางไว้ในส่วนโค้ง ใกล้จุดยอดมุม ไม่ใช่ลอยอยู่นอกส่วนโค้ง */
+    out.push(TX(30, H - 3.5, 'θ', 14, { c: 'brand' }));
     return out;
   } },
   { k: 'ground', sub: 'physics', n: 'พื้นยึดแน่น', mk: function () {
@@ -2210,15 +2298,18 @@ const PARTS = [
     const cx = 52, rx = 46, ry = 15, H = 96;
     return [EL(cx, ry, rx, ry, { f: 'body', w: 2 }),
       LN(cx - rx, ry, cx - rx, ry + H, { w: 2 }), LN(cx + rx, ry, cx + rx, ry + H, { w: 2 }),
-      AC(cx, ry + H, rx, 180, 360, { w: 2 }),
-      AC(cx, ry + H, rx, 0, 180, { c: 'mut', w: 1.2, d: 1 }),
-      LN(cx, ry, cx + rx, ry, { c: 'brand', w: 1.5, d: 1 }),
+      /* ฐานต้องเป็นส่วนโค้งของ "วงรีใบเดียวกับปากบน" ไม่ใช่ครึ่งวงกลม
+         ไม่งั้นทรงกระบอกจะบานออกที่ก้นเหมือนถุงน้ำ */
+      AC(cx, ry + H, rx, 180, 360, { w: 2 }, false, ry),
+      AC(cx, ry + H, rx, 0, 180, { c: 'mut', w: 1.2, d: 1 }, false, ry),
+      LN(cx, ry, cx + rx, ry, { c: 'brand', w: 1.5 }),
       TX(cx + 24, ry - 6, 'r', 13, { c: 'brand', italic: true })];
   } },
   { k: 'cone', sub: 'math', n: 'ทรงกรวย', mk: function () {
     const cx = 52, rx = 46, ry = 14, H = 96;
     return [LN(cx, 0, cx - rx, H, { w: 2 }), LN(cx, 0, cx + rx, H, { w: 2 }),
-      AC(cx, H, rx, 180, 360, { w: 2 }), AC(cx, H, rx, 0, 180, { c: 'mut', w: 1.2, d: 1 }),
+      AC(cx, H, rx, 180, 360, { w: 2 }, false, ry),
+      AC(cx, H, rx, 0, 180, { c: 'mut', w: 1.2, d: 1 }, false, ry),
       LN(cx, 0, cx, H, { c: 'mut', w: 1.2, d: 1 }),
       LN(cx, H, cx + rx, H, { c: 'brand', w: 1.5 })];
   } },
@@ -2230,9 +2321,10 @@ const PARTS = [
   } },
   { k: 'prism', sub: 'math', n: 'ปริซึมสามเหลี่ยม', mk: function () {
     const d = 34;
+    /* หน้าข้างของปริซึมเป็นสี่เหลี่ยม ไม่ใช่สามเหลี่ยม
+       ถ้าปิดเป็นสามเหลี่ยมจะเกิดเส้นลากจากยอดหลังพุ่งลงมาหามุมหน้า เป็นเส้นที่ไม่มีอยู่จริง */
     return [PL([[0, 76], [70, 76], [35, 8]], true, { w: 2 }),
-      PL([[70, 76], [70 + d, 76 - d], [35 + d, 8 - d]], true, { f: 'body', w: 2 }),
-      LN(35, 8, 35 + d, 8 - d, { w: 2 }),
+      PL([[70, 76], [70 + d, 76 - d], [35 + d, 8 - d], [35, 8]], true, { f: 'body', w: 2 }),
       LN(0, 76, d, 76 - d, { c: 'mut', w: 1.2, d: 1 }),
       LN(d, 76 - d, 70 + d, 76 - d, { c: 'mut', w: 1.2, d: 1 }),
       LN(d, 76 - d, 35 + d, 8 - d, { c: 'mut', w: 1.2, d: 1 })];
@@ -2365,12 +2457,24 @@ function partPreview(p) {
     sceneInner(d, false, false) + '</svg>';
 }
 let partFilter = 'all';
+function partCard(p) {
+  return '<div class="card"><div class="th" data-part="' + p.k + '">' + partPreview(p) + '</div>' +
+    '<div class="mt"><b>' + esc(p.n) + '</b><span>' + SUBJECTS[p.sub] + '</span></div></div>';
+}
 function openParts() {
-  const list = PARTS.filter(function (p) { return partFilter === 'all' || p.sub === partFilter; });
-  $('#partGrid').innerHTML = list.map(function (p) {
-    return '<div class="card"><div class="th" data-part="' + p.k + '">' + partPreview(p) + '</div>' +
-      '<div class="mt"><b>' + esc(p.n) + '</b><span>' + SUBJECTS[p.sub] + '</span></div></div>';
-  }).join('');
+  /* ดูทั้งหมดพร้อมกันให้แยกหัวข้อตามวิชา จะได้กวาดตาหาของที่ต้องการเจอเร็ว
+     เลือกวิชาเดียวแล้วไม่ต้องมีหัวข้อ เพราะรู้อยู่แล้วว่ากำลังดูวิชาอะไร */
+  if (partFilter === 'all') {
+    $('#partGrid').innerHTML = ['physics', 'math', 'chem'].map(function (k) {
+      const g = PARTS.filter(function (p) { return p.sub === k; });
+      if (!g.length) return '';
+      return '<div class="pgh">' + SUBJECTS[k] + ' <b>' + g.length + ' ชิ้น</b></div>' +
+        '<div class="lib">' + g.map(partCard).join('') + '</div>';
+    }).join('');
+  } else {
+    $('#partGrid').innerHTML = '<div class="lib">' +
+      PARTS.filter(function (p) { return p.sub === partFilter; }).map(partCard).join('') + '</div>';
+  }
   $$('#partSub button').forEach(function (b) {
     b.classList.toggle('on', b.dataset.v === partFilter);
   });
