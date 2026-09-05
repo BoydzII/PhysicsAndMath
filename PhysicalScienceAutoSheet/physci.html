@@ -281,6 +281,36 @@ input.numin.bad{border-color:var(--bad);background:var(--bad-bg)}
 /* ---------- แถบความคืบหน้าข้อ ---------- */
 .qnav{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
 .qnav button{width:40px;height:40px;min-height:40px;padding:0;border-radius:9px;font-weight:600;font-size:14px}
+/* แถวเลือกบทบาทของกล่องและสมการ ในกล่องที่ครูใช้ออกข้อสอบ */
+.esrole{display:inline-flex;align-items:center;gap:5px;padding:4px 7px;border:1px solid var(--line);
+        border-radius:9px;margin:0 5px 5px 0}
+.esrole b{font-weight:600;font-size:13px;max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ข้อสอบอัตนัยแบบทำทีละขั้น */
+.esfig{margin:10px 0;text-align:center}
+.esfig img{max-width:100%;border:1px solid var(--line);border-radius:10px}
+.esguide{margin-top:12px}
+.esstep{border:1px solid var(--line);border-radius:12px;padding:11px 13px;margin-bottom:10px}
+.esstep.done{border-color:var(--ok);background:var(--ok-bg)}
+.esh{display:flex;gap:9px;align-items:center;margin-bottom:7px}
+.esn{background:var(--brand);color:var(--brand-ink);width:24px;height:24px;border-radius:50%;
+     display:flex;align-items:center;justify-content:center;font-size:13px;flex:0 0 auto;font-weight:700}
+.esstep.done .esn{background:var(--ok)}
+.eschips,.eseqs{display:flex;flex-wrap:wrap;gap:6px;margin-top:5px}
+.eschip,.eseq{padding:8px 12px;border:1px solid var(--line);border-radius:999px;background:var(--panel);
+              font-size:15px;cursor:pointer}
+.eseq{border-radius:10px}
+.eschip.sel,.eseq.sel{background:var(--acc);color:#fff;border-color:var(--acc)}
+.eschip.find.sel{background:var(--warn);border-color:var(--warn)}
+.esvars{display:flex;flex-wrap:wrap;gap:9px;margin-top:6px}
+.esvar{display:flex;align-items:center;gap:6px}
+.esvar label{min-width:34px;font-weight:600}
+.esvar input{width:110px;font-size:16px;text-align:right}
+.eskeys{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;max-width:330px;margin-top:12px}
+.eskey{padding:11px 0;font-size:17px;border-radius:10px}
+.eskey.op{background:var(--panel2)}
+.eskey.warn{background:var(--warn-bg);border-color:var(--warn)}
+
 /* ใบตอบข้อสอบกระดาษ — แถวละข้อ ปุ่มกลมเหมือนฝนคำตอบ */
 .papersheet{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:7px}
 .paperrow{display:flex;align-items:center;gap:6px;padding:5px 7px;border:1px solid var(--line);border-radius:10px}
@@ -4133,10 +4163,83 @@ function isEssayItem(it) { return !!(it && it.essay); }
 function hasEssay(q) { return !!(q && q.items && q.items.some(isEssayItem)); }
 /** คะแนนเต็มของข้อหนึ่ง — ปรนัยข้อละ 1 · อัตนัยตามที่ครูตั้ง */
 function itemMax(it) { return isEssayItem(it) ? Math.max(0, Number(it.max) || 0) : 1; }
-/** คะแนนที่ได้จากเกณฑ์ 5 ขั้น — ติ๊กกี่ขั้นก็ได้สัดส่วนนั้นของคะแนนเต็มข้อ */
-function essayScore(max, rub) {
+/** จำนวนขั้นที่ใช้จริงของข้อนี้ — ข้ามขั้นสรุปแล้วเหลือ 4 ขั้น ขั้นละ 25% */
+function essayNSteps(it) { return (it && it.skip5) ? 4 : ESSAY_STEPS.length; }
+/** ข้อแบบทำทีละขั้น — ดูจากว่ามีกล่องให้เลือกในขั้นที่ 1 หรือไม่
+    ข้อเดิมที่ครูติ๊กให้คะแนนเองไม่มีคีย์นี้ จึงยังทำงานแบบเดิมต่อไปได้ */
+function isGuided(it) { return !!(it && it.chips && it.chips.length); }
+/** คะแนนที่ได้จากเกณฑ์ — ติ๊กกี่ขั้นก็ได้สัดส่วนนั้นของคะแนนเต็มข้อ */
+function essayScore(max, rub, nSteps) {
   const n = (rub || []).filter(Boolean).length;
-  return Math.max(0, Number(max) || 0) * n / ESSAY_STEPS.length;
+  const d = Math.max(1, Number(nSteps) || ESSAY_STEPS.length);
+  return Math.max(0, Number(max) || 0) * Math.min(n, d) / d;
+}
+
+/* ── การตรวจแต่ละขั้นของข้อแบบทำทีละขั้น ───────────────────────────────
+   ทุกขั้นตรวจได้ด้วยเครื่อง ยกเว้นขั้นสรุปที่ตรวจแบบผ่อนปรน
+   คือดูว่าพิมพ์ตัวเลขคำตอบและหน่วยมาครบไหม ครูแก้คะแนนทับได้เสมอ  */
+function esGS(x) {
+  // กล่องเก็บคำตอบของทั้งห้าขั้น เผื่อข้อมูลเก่าที่ยังไม่มีคีย์นี้
+  if (!x.gs) x.gs = { g: [], f: null, e: [null, null], v: {}, a: '', c: '' };
+  if (!x.gs.v) x.gs.v = {};
+  if (!x.gs.e) x.gs.e = [null, null];
+  if (!x.gs.g) x.gs.g = [];
+  return x.gs;
+}
+/** ดัชนีของกล่องตามบทบาท — g = โจทย์กำหนด · f = ถามหา · x = ตัวลวง */
+function esRoleIdx(chips, role) {
+  const out = [];
+  (chips || []).forEach(function (c, i) { if (c.r === role) out.push(i); });
+  return out;
+}
+/** ตัวแปรที่ต้องแทนค่าในขั้นที่ 3 — ครูกำหนดไว้เอง ถ้าไม่ได้กำหนดก็ไม่มีขั้นนี้ให้ทำ */
+function esVars(it) { return (it && it.vars) || []; }
+/** ตรวจทีละขั้น คืนอาเรย์ห้าช่อง (หรือสี่ช่องถ้าข้ามขั้นสรุป) */
+function essayAutoRub(it, gs) {
+  const nS = essayNSteps(it);
+  const chips = it.chips || [], eqs = it.eqs || [];
+  const out = [];
+
+  // ขั้น 1 — เลือกสิ่งที่โจทย์กำหนดให้ครบและไม่เกิน และเลือกสิ่งที่ถามหาถูกตัว
+  const wantG = esRoleIdx(chips, 'g').slice().sort().join(',');
+  const gotG = (gs.g || []).slice().sort().join(',');
+  const wantF = esRoleIdx(chips, 'f')[0];
+  out.push(chips.length ? (gotG === wantG && wantF != null && gs.f === wantF) : false);
+
+  // ขั้น 2 — สมการหลักและสมการที่แปลงแล้ว ข้อที่ใช้ขั้นเดียวต้องเลือกตัวเดิมซ้ำ
+  const mainI = esRoleIdx(eqs, 'm')[0];
+  const derI = esRoleIdx(eqs, 'd').length ? esRoleIdx(eqs, 'd')[0] : mainI;
+  out.push(eqs.length ? (gs.e[0] === mainI && gs.e[1] === derI) : false);
+
+  // ขั้น 3 — แทนค่าให้ตรงทุกตัวแปร ยอมคลาดเคลื่อนเล็กน้อยเผื่อการปัดเศษ
+  const vs = esVars(it);
+  out.push(vs.length ? vs.every(function (v) {
+    const u = parseNum((gs.v || {})[v.s]);
+    return u != null && Math.abs(u - Number(v.v)) <= Math.max(Math.abs(Number(v.v)) * 0.005, 1e-9);
+  }) : false);
+
+  // ขั้น 4 — คำตอบที่คำนวณได้
+  const av = parseNum(gs.a);
+  const tol = Math.max(Math.abs(Number(it.ans)) * (Number(it.tol) || 2) / 100, 0.005);
+  out.push(it.ans != null && it.ans !== '' && av != null && Math.abs(av - Number(it.ans)) <= tol);
+
+  // ขั้น 5 — สรุปพร้อมหน่วย ต้องมีทั้งตัวเลขคำตอบและหน่วยอยู่ในข้อความ
+  if (nS === 5) {
+    const t = String(gs.c || '');
+    const numOK = av != null ? t.replace(/,/g, '').indexOf(String(fmt(Number(it.ans)))) >= 0 : false;
+    const unitOK = it.au ? t.indexOf(String(it.au)) >= 0 : true;
+    out.push(!!(t.trim() && numOK && unitOK));
+  }
+  return out;
+}
+/** คำนวณคะแนนของข้อแบบทำทีละขั้นใหม่ทั้งข้อ แล้วเก็บลงคำตอบ */
+function essayRegrade(it, x) {
+  if (!isGuided(it)) return;
+  const gs = esGS(x);
+  if (!x.rubLock) x.rub = essayAutoRub(it, gs);      // ครูแก้ทับแล้วห้ามคำนวณใหม่ทับอีก
+  x.score = essayScore(itemMax(it), x.rub, essayNSteps(it));
+  x.checked = !!(gs.g.length || gs.f != null || gs.e[0] != null ||
+                 String(gs.a || '').trim() || String(gs.c || '').trim());
 }
 function isPaper(q) { return !!(q && (q.paper || hasEssay(q))); }
 /** โจทย์เทียม — มีแค่ตัวเลือกกับเฉลย ตัวตรวจคำตอบเดิมใช้ได้ทันที
@@ -4151,6 +4254,7 @@ function paperProblems(quiz) {
         topic: (quiz.paper && quiz.paper.topic != null) ? Number(quiz.paper.topic) : null,
         sub: 'อัตนัย', level: 'ทฤษฎี', skills: [],
         stem: String(it.stem || ''), keyText: String(it.key || ''), typed: !!it.typed,
+        img: it.img || '', guided: isGuided(it), nsteps: essayNSteps(it), it: it,
         given: [], finds: [], choices: null
       };
     }
@@ -4615,6 +4719,66 @@ function essayWorkBox(max) {
   }).join('') + '</div>';
 }
 
+/* ── กล่องที่ครูใช้ออกข้อสอบทีละขั้น ─────────────────────────────────── */
+
+/** ย่อรูปก่อนเก็บ — รหัสใบงานที่ส่งขึ้นชีตมีเพดานประมาณห้าหมื่นตัวอักษร
+    รูปถ่ายจากมือถือขนาดเต็มทำให้เกินเพดานทันที จึงย่อให้อัตโนมัติเสมอ */
+function essayShrinkImage(file, cb) {
+  const fr = new FileReader();
+  fr.onload = function () {
+    const im = new Image();
+    im.onload = function () {
+      const maxW = 800;
+      const sc = Math.min(1, maxW / (im.width || maxW));
+      const cv = document.createElement('canvas');
+      cv.width = Math.max(1, Math.round(im.width * sc));
+      cv.height = Math.max(1, Math.round(im.height * sc));
+      cv.getContext('2d').drawImage(im, 0, 0, cv.width, cv.height);
+      /* เป้าหมายคือไม่เกิน 32,000 ตัวอักษรต่อรูป
+         เพราะรหัสใบงานที่ส่งขึ้นชีตมีเพดานราว 45,000 และยังต้องเผื่อเนื้อข้อสอบด้วย
+         ไล่ลดคุณภาพก่อน ถ้ายังไม่พอค่อยย่อขนาดลงอีกชั้น */
+      let out = cv.toDataURL('image/jpeg', 0.7);
+      [0.55, 0.45, 0.35, 0.28].forEach(function (qy) {
+        if (out.length > 32000) out = cv.toDataURL('image/jpeg', qy);
+      });
+      if (out.length > 32000 && cv.width > 520) {
+        const cv2 = document.createElement('canvas');
+        cv2.width = 520;
+        cv2.height = Math.max(1, Math.round(cv.height * 520 / cv.width));
+        cv2.getContext('2d').drawImage(cv, 0, 0, cv2.width, cv2.height);
+        out = cv2.toDataURL('image/jpeg', 0.6);
+        if (out.length > 32000) out = cv2.toDataURL('image/jpeg', 0.4);
+        cb(out, cv2.width, cv2.height);
+        return;
+      }
+      cb(out, cv.width, cv.height);
+    };
+    im.onerror = function () { cb('', 0, 0); };
+    im.src = fr.result;
+  };
+  fr.onerror = function () { cb('', 0, 0); };
+  fr.readAsDataURL(file);
+}
+
+/** ดึงชื่อตัวแปรจากสมการ เช่น "v = u + at" ได้ v u a t
+    ตัดคำที่เป็นฟังก์ชันหรือหน่วยออก แล้วให้ครูแก้รายการได้เองอยู่ดี */
+function essayVarsFrom(eqText) {
+  let t = String(eqText || '').replace(/\b(sin|cos|tan|log|ln|sqrt|frac|pi)\b/g, ' ');
+  /* ตัวที่อยู่หน้าเครื่องหมายเท่ากับคือตัวที่โจทย์ถามหา ยังไม่รู้ค่า
+     จึงไม่ควรมีช่องให้แทนค่า ตัดออกให้เลย ครูจะได้ไม่ต้องมานั่งลบเอง */
+  const eqAt = t.indexOf('=');
+  let skip = '';
+  if (eqAt > 0) {
+    const lhs = t.slice(0, eqAt).trim();
+    if (/^[A-Za-zΔα-ωΑ-Ω](?:_\{?[A-Za-z0-9]+\}?)?$/.test(lhs)) { skip = lhs; t = t.slice(eqAt + 1); }
+  }
+  const seen = {}, out = [];
+  (t.match(/[A-Za-zΔα-ωΑ-Ω](?:_\{?[A-Za-z0-9]+\}?)?/g) || []).forEach(function (s) {
+    if (s !== skip && !seen[s]) { seen[s] = 1; out.push(s); }
+  });
+  return out;
+}
+
 /** วาดรายการข้อในกล่องพิมพ์ข้อสอบใหม่ทุกครั้งที่เพิ่มหรือลบข้อ */
 function essayRows(list, root) {
   const box = $('#esList', root);
@@ -4629,8 +4793,54 @@ function essayRows(list, root) {
       '<button class="sm danger" data-esdel="' + i + '">ลบข้อนี้</button></div>' +
       '<textarea data-esstem="' + i + '" rows="3" style="width:100%" ' +
       'placeholder="โจทย์ข้อนี้">' + esc(it.stem || '') + '</textarea>' +
-      '<textarea data-eskey="' + i + '" rows="3" style="width:100%;margin-top:7px" ' +
+      '<textarea data-eskey="' + i + '" rows="2" style="width:100%;margin-top:7px" ' +
       'placeholder="เฉลย / แนวคำตอบที่ครูใช้ตรวจ (นักเรียนไม่เห็น)">' + esc(it.key || '') + '</textarea>' +
+
+      /* รูปประกอบ */
+      '<div class="row" style="margin-top:9px;align-items:center">' +
+      '<button class="sm" data-esimg="' + i + '">' + (it.img ? 'เปลี่ยนรูป' : '+ แทรกรูป') + '</button>' +
+      (it.img ? '<button class="sm danger" data-esimgdel="' + i + '">ลบรูป</button>' +
+        '<span class="hint">รูปขนาด ' + Math.round(it.img.length / 1024) + ' KB</span>' : '') +
+      '<input type="file" accept="image/*" data-esimgin="' + i + '" style="display:none">' +
+      '<span class="grow"></span>' +
+      '<label class="chk" style="margin:0"><input type="checkbox" data-esskip="' + i + '"' +
+      (it.skip5 ? ' checked' : '') + '><span><span class="t">ข้ามขั้นสรุป (เหลือ 4 ขั้น ขั้นละ 25%)</span></span></label>' +
+      '</div>' +
+      (it.img ? '<div class="esfig"><img src="' + esc(it.img) + '"></div>' : '') +
+
+      /* ขั้น 1 — กล่องให้เลือก */
+      '<div class="hint" style="margin-top:11px"><b>ขั้น 1 · กล่องให้นักเรียนเลือก</b> ' +
+      'พิมพ์ทีละบรรทัด อย่างน้อย 3 กล่อง ไม่เกิน 10 · เลือกบทบาทของแต่ละบรรทัดด้านล่าง</div>' +
+      '<textarea data-eschips="' + i + '" rows="4" style="width:100%;margin-top:5px" ' +
+      'placeholder="มวล 2 kg&#10;ความเร่ง 3 m/s²&#10;แรงลัพธ์ F&#10;เวลา 5 s (ตัวลวง)">' +
+      esc((it.chips || []).map(function (c) { return c.t; }).join('\n')) + '</textarea>' +
+      '<div data-eschiproles="' + i + '" class="eschips" style="margin-top:6px"></div>' +
+
+      /* ขั้น 2 — สมการ */
+      '<div class="hint" style="margin-top:11px"><b>ขั้น 2 · สมการให้เลือก</b> ' +
+      'พิมพ์ทีละบรรทัด แล้วเลือกว่าบรรทัดไหนคือสมการหลัก บรรทัดไหนคือสมการที่แปลงแล้ว<br>' +
+      'ข้อที่ใช้สมการเดียว ไม่ต้องเลือกตัวแปลง ระบบจะให้นักเรียนเลือกตัวเดิมซ้ำเอง</div>' +
+      '<textarea data-eseqs="' + i + '" rows="3" style="width:100%;margin-top:5px" ' +
+      'placeholder="F = ma&#10;a = F/m&#10;v = u + at">' +
+      esc((it.eqs || []).map(function (e) { return e.t; }).join('\n')) + '</textarea>' +
+      '<div data-eseqroles="' + i + '" class="eschips" style="margin-top:6px"></div>' +
+
+      /* ขั้น 3 — ตัวแปรและค่า */
+      '<div class="row" style="margin-top:11px;align-items:center">' +
+      '<span class="hint grow"><b>ขั้น 3 · ตัวแปรที่ต้องแทนค่า</b> ' +
+      'กดดึงจากสมการหลักได้ แล้วเติมค่าที่ถูกต้อง</span>' +
+      '<button class="sm" data-esvpull="' + i + '">ดึงตัวแปรจากสมการหลัก</button></div>' +
+      '<div data-esvars="' + i + '" class="esvars" style="margin-top:6px"></div>' +
+
+      /* ขั้น 4 — คำตอบ */
+      '<div class="row" style="margin-top:11px;align-items:center">' +
+      '<span class="hint"><b>ขั้น 4 · คำตอบที่ถูก</b></span>' +
+      '<input type="text" inputmode="decimal" data-esans="' + i + '" style="width:120px" ' +
+      'placeholder="เช่น 6" value="' + esc(it.ans == null ? '' : String(it.ans)) + '">' +
+      '<input type="text" data-esau="' + i + '" style="width:90px" placeholder="หน่วย" value="' +
+      esc(it.au || '') + '">' +
+      '<label class="hint">ยอมคลาด (%) <input type="number" data-estol="' + i + '" min="0" max="20" ' +
+      'style="width:64px" value="' + (it.tol == null ? 2 : it.tol) + '"></label></div>' +
       '</div>';
   }).join('') || '<div class="hint">ยังไม่มีข้อ — กด "เพิ่มข้อ" ด้านล่าง</div>';
 
@@ -4655,13 +4865,148 @@ function essayRows(list, root) {
       essayRows(list, root);
     });
   });
+
+  /* ── ส่วนของข้อแบบทำทีละขั้น ─────────────────────────────────────── */
+  const roleBtns = function (i, kind) {
+    // แถวปุ่มบอกบทบาทของแต่ละบรรทัด — วาดใหม่ทุกครั้งที่ข้อความเปลี่ยน
+    const it = list[i];
+    const arr = kind === 'chips' ? (it.chips || []) : (it.eqs || []);
+    const wrap = $('[data-es' + (kind === 'chips' ? 'chiproles' : 'eqroles') + '="' + i + '"]', box);
+    if (!wrap) return;
+    const opts = kind === 'chips'
+      ? [['g', 'โจทย์กำหนด'], ['f', 'ถามหา'], ['x', 'ตัวลวง']]
+      : [['m', 'สมการหลัก'], ['d', 'แปลงแล้ว'], ['x', 'ตัวลวง']];
+    wrap.innerHTML = arr.map(function (c, ci) {
+      return '<span class="esrole"><b>' + esc(c.t.slice(0, 22)) + '</b>' +
+        opts.map(function (o) {
+          return '<button class="sm' + (c.r === o[0] ? ' primary' : '') +
+            '" data-rr="' + i + '" data-rk="' + kind + '" data-rc="' + ci +
+            '" data-rv="' + o[0] + '">' + o[1] + '</button>';
+        }).join('') + '</span>';
+    }).join('') || '<span class="hint">พิมพ์บรรทัดด้านบนก่อน</span>';
+    $$('[data-rr]', wrap).forEach(function (b) {
+      b.addEventListener('click', function () {
+        const t = list[Number(b.dataset.rr)];
+        const a2 = b.dataset.rk === 'chips' ? t.chips : t.eqs;
+        const v = b.dataset.rv;
+        // ถามหา และ สมการหลัก มีได้อันเดียว เลือกใหม่ก็ย้ายไป
+        if (v === 'f' || v === 'm' || v === 'd') a2.forEach(function (z) { if (z.r === v) z.r = 'x'; });
+        a2[Number(b.dataset.rc)].r = v;
+        roleBtns(Number(b.dataset.rr), b.dataset.rk);
+      });
+    });
+  };
+  const varRows = function (i) {
+    const wrap = $('[data-esvars="' + i + '"]', box);
+    if (!wrap) return;
+    const vs = list[i].vars || [];
+    wrap.innerHTML = vs.map(function (v, vi) {
+      return '<div class="esvar"><label>' + esc(v.s) + '</label>' +
+        '<input type="text" inputmode="decimal" data-vv="' + i + '" data-vi="' + vi +
+        '" style="width:96px" placeholder="ค่า" value="' + esc(v.v == null ? '' : String(v.v)) + '">' +
+        '<input type="text" data-vu="' + i + '" data-vi="' + vi + '" style="width:74px" ' +
+        'placeholder="หน่วย" value="' + esc(v.u || '') + '">' +
+        '<button class="sm danger" data-vd="' + i + '" data-vi="' + vi + '">ลบ</button></div>';
+    }).join('') || '<span class="hint">ยังไม่มีตัวแปร — กดปุ่มดึงจากสมการหลัก</span>';
+    $$('[data-vv]', wrap).forEach(function (e2) {
+      e2.addEventListener('input', function () { vs[Number(e2.dataset.vi)].v = e2.value; });
+    });
+    $$('[data-vu]', wrap).forEach(function (e2) {
+      e2.addEventListener('input', function () { vs[Number(e2.dataset.vi)].u = e2.value; });
+    });
+    $$('[data-vd]', wrap).forEach(function (e2) {
+      e2.addEventListener('click', function () { vs.splice(Number(e2.dataset.vi), 1); varRows(i); });
+    });
+  };
+  const lines = function (v) {
+    return String(v || '').split('\n').map(function (x) { return x.trim(); })
+      .filter(Boolean).slice(0, 10);
+  };
+  $$('[data-eschips]', box).forEach(function (t) {
+    t.addEventListener('input', function (e) {
+      const i = Number(e.target.dataset.eschips), old = list[i].chips || [];
+      list[i].chips = lines(e.target.value).map(function (s, si) {
+        const prev = old[si];
+        return { t: s, r: (prev && prev.t === s) ? prev.r : (si === 0 ? 'g' : 'g') };
+      });
+      roleBtns(i, 'chips');
+    });
+  });
+  $$('[data-eseqs]', box).forEach(function (t) {
+    t.addEventListener('input', function (e) {
+      const i = Number(e.target.dataset.eseqs), old = list[i].eqs || [];
+      list[i].eqs = lines(e.target.value).map(function (s, si) {
+        const prev = old[si];
+        return { t: s, r: (prev && prev.t === s) ? prev.r : (si === 0 ? 'm' : 'x') };
+      });
+      roleBtns(i, 'eqs');
+    });
+  });
+  $$('[data-esvpull]', box).forEach(function (b) {
+    b.addEventListener('click', function () {
+      const i = Number(b.dataset.esvpull), it = list[i];
+      const main = (it.eqs || []).filter(function (e2) { return e2.r === 'm'; })[0] ||
+                   (it.eqs || [])[0];
+      if (!main) { toast('พิมพ์สมการก่อน', 'bad'); return; }
+      const have = {};
+      (it.vars || []).forEach(function (v) { have[v.s] = v; });
+      it.vars = essayVarsFrom(main.t).map(function (s) { return have[s] || { s: s, v: '', u: '' }; });
+      varRows(i);
+      toast('ดึงตัวแปรได้ ' + it.vars.length + ' ตัว — เติมค่าให้ครบ', 'ok');
+    });
+  });
+  $$('[data-esans]', box).forEach(function (e2) {
+    e2.addEventListener('input', function () { list[Number(e2.dataset.esans)].ans = e2.value; });
+  });
+  $$('[data-esau]', box).forEach(function (e2) {
+    e2.addEventListener('input', function () { list[Number(e2.dataset.esau)].au = e2.value; });
+  });
+  $$('[data-estol]', box).forEach(function (e2) {
+    e2.addEventListener('input', function () {
+      list[Number(e2.dataset.estol)].tol = clamp(Number(e2.value) || 0, 0, 20);
+    });
+  });
+  $$('[data-esskip]', box).forEach(function (e2) {
+    e2.addEventListener('change', function () { list[Number(e2.dataset.esskip)].skip5 = e2.checked; });
+  });
+  $$('[data-esimg]', box).forEach(function (b) {
+    b.addEventListener('click', function () {
+      const i = Number(b.dataset.esimg);
+      $('[data-esimgin="' + i + '"]', box).click();
+    });
+  });
+  $$('[data-esimgin]', box).forEach(function (inp) {
+    inp.addEventListener('change', function (e) {
+      const i = Number(e.target.dataset.esimgin), f = e.target.files && e.target.files[0];
+      if (!f) return;
+      essayShrinkImage(f, function (data) {
+        if (!data) { toast('อ่านรูปนี้ไม่ได้', 'bad'); return; }
+        list[i].img = data;
+        essayRows(list, root);
+        toast('แทรกรูปแล้ว (' + Math.round(data.length / 1024) + ' KB)', 'ok');
+      });
+    });
+  });
+  $$('[data-esimgdel]', box).forEach(function (b) {
+    b.addEventListener('click', function () {
+      list[Number(b.dataset.esimgdel)].img = '';
+      essayRows(list, root);
+    });
+  });
+  list.forEach(function (x, i) { roleBtns(i, 'chips'); roleBtns(i, 'eqs'); varRows(i); });
 }
 
 /** กล่องสร้างหรือแก้ข้อสอบอัตนัย — ส่ง quiz มาถ้าเป็นการแก้ของเดิม */
 function essayDialog(quiz) {
   const list = quiz ? quiz.items.filter(isEssayItem).map(function (it) {
-    return { stem: it.stem || '', key: it.key || '', max: itemMax(it), typed: !!it.typed };
-  }) : [{ stem: '', key: '', max: 10, typed: false }];
+    return { stem: it.stem || '', key: it.key || '', max: itemMax(it), typed: !!it.typed,
+             img: it.img || '', skip5: !!it.skip5,
+             chips: (it.chips || []).map(function (c) { return { t: c.t, r: c.r }; }),
+             eqs: (it.eqs || []).map(function (e2) { return { t: e2.t, r: e2.r }; }),
+             vars: (it.vars || []).map(function (v) { return { s: v.s, v: v.v, u: v.u }; }),
+             ans: it.ans == null ? '' : it.ans, au: it.au || '', tol: it.tol == null ? 2 : it.tol };
+  }) : [{ stem: '', key: '', max: 10, typed: false, img: '', skip5: false,
+          chips: [], eqs: [], vars: [], ans: '', au: '', tol: 2 }];
   openModal({
     wide: true,
     title: quiz ? ('แก้ข้อสอบอัตนัย ' + (quiz.title || '')) : 'สร้างข้อสอบอัตนัย',
@@ -4695,9 +5040,48 @@ function essayDialog(quiz) {
           const good = list.filter(function (x) { return String(x.stem || '').trim(); });
           if (!title) { msg.innerHTML = '<div class="notice bad">ตั้งชื่อชุดก่อน</div>'; return; }
           if (!good.length) { msg.innerHTML = '<div class="notice bad">ยังไม่มีข้อที่พิมพ์โจทย์ไว้</div>'; return; }
+          /* ข้อที่มีกล่องให้เลือกครบสามกล่องขึ้นไป ถือเป็นข้อแบบทำทีละขั้น
+             ข้อที่ไม่ได้กรอกส่วนนี้ ยังเป็นข้อแบบเดิมที่ครูติ๊กให้คะแนนเอง */
+          for (let gi = 0; gi < good.length; gi++) {
+            const x = good[gi];
+            const nch = (x.chips || []).length;
+            if (!nch) continue;
+            if (nch < 3) {
+              msg.innerHTML = '<div class="notice bad">ข้อ ' + (gi + 1) +
+                ' มีกล่องให้เลือกแค่ ' + nch + ' กล่อง — ต้องมีอย่างน้อย 3 กล่อง</div>';
+              return;
+            }
+            if (!(x.chips || []).some(function (c) { return c.r === 'f'; })) {
+              msg.innerHTML = '<div class="notice bad">ข้อ ' + (gi + 1) +
+                ' ยังไม่ได้เลือกว่ากล่องไหนคือ<b>สิ่งที่โจทย์ถามหา</b></div>';
+              return;
+            }
+            if (!(x.eqs || []).some(function (e2) { return e2.r === 'm'; })) {
+              msg.innerHTML = '<div class="notice bad">ข้อ ' + (gi + 1) +
+                ' ยังไม่ได้เลือก<b>สมการหลัก</b></div>';
+              return;
+            }
+            if (x.ans === '' || x.ans == null || parseNum(x.ans) == null) {
+              msg.innerHTML = '<div class="notice bad">ข้อ ' + (gi + 1) +
+                ' ยังไม่ได้กรอก<b>คำตอบที่ถูก</b>เป็นตัวเลข</div>';
+              return;
+            }
+          }
           const items = good.map(function (x) {
-            return { essay: 1, stem: String(x.stem).trim(), key: String(x.key || '').trim(),
-                     max: clamp(Math.round(Number(x.max) || 10), 1, 100), typed: x.typed ? 1 : 0 };
+            const o = { essay: 1, stem: String(x.stem).trim(), key: String(x.key || '').trim(),
+                        max: clamp(Math.round(Number(x.max) || 10), 1, 100), typed: x.typed ? 1 : 0 };
+            if (x.img) o.img = x.img;
+            if ((x.chips || []).length >= 3) {
+              o.chips = x.chips.map(function (c) { return { t: c.t, r: c.r || 'x' }; });
+              o.eqs = (x.eqs || []).map(function (e2) { return { t: e2.t, r: e2.r || 'x' }; });
+              o.vars = (x.vars || []).filter(function (v) { return String(v.v) !== ''; })
+                        .map(function (v) { return { s: v.s, v: parseNum(v.v), u: v.u || '' }; });
+              o.ans = parseNum(x.ans);
+              o.au = String(x.au || '');
+              o.tol = clamp(Number(x.tol) || 2, 0, 20);
+              if (x.skip5) o.skip5 = 1;
+            }
+            return o;
           });
           const tpv = $('#esTopic', root).value;
           const lim = clamp(Math.round(Number($('#esMin', root).value) || 0), 0, 300) * 60;
@@ -4725,7 +5109,9 @@ function essayDialog(quiz) {
       };
       const draw = () => { essayRows(list, root); sum(); };
       $('#esAdd', root).addEventListener('click', () => {
-        list.push({ stem: '', key: '', max: 10, typed: false }); draw();
+        list.push({ stem: '', key: '', max: 10, typed: false, img: '', skip5: false,
+                    chips: [], eqs: [], vars: [], ans: '', au: '', tol: 2 });
+        draw();
       });
       // ยอดคะแนนต้องขยับตามตอนพิมพ์ด้วย ไม่ใช่เฉพาะตอนเพิ่มหรือลบข้อ
       $('#esList', root).addEventListener('input', sum);
@@ -4733,6 +5119,29 @@ function essayDialog(quiz) {
       $('#esTitle', root).focus();
     }
   });
+}
+
+/** สรุปสิ่งที่นักเรียนเลือกในแต่ละขั้น — ครูจะได้เห็นว่าพลาดตรงไหน ไม่ใช่เห็นแค่ผ่านหรือไม่ผ่าน */
+function esGuideSummary(pp, x) {
+  const it = pp.it, gs = esGS(x);
+  const nameOf = function (arr, i2) { return (arr[i2] && arr[i2].t) || '—'; };
+  const chips = it.chips || [], eqs = it.eqs || [];
+  const parts = [];
+  parts.push('เลือกกำหนด: ' + ((gs.g || []).map(function (i2) { return nameOf(chips, i2); }).join(', ') || '—') +
+    ' · ถามหา: ' + (gs.f == null ? '—' : nameOf(chips, gs.f)));
+  parts.push('สมการ: ' + (gs.e[0] == null ? '—' : nameOf(eqs, gs.e[0])) +
+    ' → ' + (gs.e[1] == null ? '—' : nameOf(eqs, gs.e[1])));
+  const vs = esVars(it);
+  if (vs.length) {
+    parts.push('แทนค่า: ' + vs.map(function (v) {
+      return v.s + ' = ' + ((gs.v || {})[v.s] || '—');
+    }).join(', '));
+  }
+  parts.push('คำตอบที่กรอก: ' + (String(gs.a || '').trim() || '—') +
+    (it.ans != null ? ' (ที่ถูก ' + fmt(Number(it.ans)) + ')' : ''));
+  if (pp.nsteps === 5) parts.push('สรุป: ' + (String(gs.c || '').trim() || '—'));
+  return '<div class="hint" style="margin-top:6px;line-height:1.8">' +
+    parts.map(esc).join('<br>') + '</div>';
 }
 
 /** หน้าให้คะแนนอัตนัย — ครูติ๊กเกณฑ์ 5 ขั้นต่อข้อ ทีละคน */
@@ -4765,18 +5174,23 @@ function essayGradeBox(quizId) {
           '<span class="sub">' + fmt(x.p.max) + ' คะแนน · ขั้นละ ' +
           fmt(x.p.max / ESSAY_STEPS.length) + '</span></h3>' +
           '<div class="hint" style="margin-bottom:8px">' + M(x.p.stem) + '</div>' +
+          (x.p.guided ? '<div class="notice info" style="margin-bottom:8px">' +
+            '<b>ระบบตรวจให้แล้ว</b> ' + fmt(essayScore(x.p.max, it.rub, x.p.nsteps)) + ' คะแนน · ' +
+            (it.rubLock ? 'ครูแก้ทับไว้แล้ว' : 'ติ๊กแก้ด้านล่างได้ ถือเป็นการแก้ทับของครู') +
+            esGuideSummary(x.p, it) + '</div>' : '') +
           (x.p.keyText ? '<div class="notice info" style="margin-bottom:8px"><b>เฉลย</b> ' +
             M(x.p.keyText) + '</div>' : '') +
           (x.p.typed ? '<div class="notice" style="margin-bottom:8px;white-space:pre-wrap">' +
             (String(it.text || '').trim() ? esc(it.text) :
               '<span class="hint">นักเรียนไม่ได้พิมพ์คำตอบ</span>') + '</div>' : '') +
-          '<div>' + ESSAY_STEPS.map(function (s, si) {
+          '<div>' + ESSAY_STEPS.slice(0, x.p.nsteps).map(function (s, si) {
             return '<label class="chk"><input type="checkbox" data-eg="' + x.i + '" data-egs="' + si + '"' +
               (rub[si] ? ' checked' : '') + '><span><span class="t">' + (si + 1) + '. ' + esc(s) +
               '</span></span></label>';
           }).join('') + '</div>' +
           '<div class="hint" style="margin-top:7px">ได้ <b data-egsum="' + x.i + '">' +
-          fmt(essayScore(x.p.max, rub)) + '</b> จาก ' + fmt(x.p.max) + ' คะแนน</div></div>';
+          fmt(essayScore(x.p.max, rub, x.p.nsteps)) + '</b> จาก ' + fmt(x.p.max) +
+          ' คะแนน · ขั้นละ ' + fmt(x.p.max / x.p.nsteps) + '</div></div>';
       }).join('');
 
     $$('[data-eg]', box).forEach(function (c) {
@@ -4786,7 +5200,9 @@ function essayGradeBox(quizId) {
         if (!it.rub) it.rub = [false, false, false, false, false];
         it.rub[si] = e.target.checked;
         const pp = probs[k];
-        it.score = essayScore(pp.max, it.rub);
+        // ครูติ๊กเอง = แก้ทับผลที่ระบบตรวจ ห้ามให้ระบบคำนวณใหม่ทับอีก
+        if (pp.guided) it.rubLock = 1;
+        it.score = essayScore(pp.max, it.rub, pp.nsteps);
         const sumEl = $('[data-egsum="' + k + '"]', box);
         if (sumEl) sumEl.textContent = fmt(it.score);
         save(true);
@@ -4981,7 +5397,10 @@ function renderMake() {
         '<th></th></tr></thead><tbody>';
       papers.slice().reverse().forEach(q => {
         const nAt = DB.attempts.filter(a => a.quizId === q.id).length;
-        const key = hasEssay(q) ? 'อัตนัย ' + q.items.length + ' ข้อ'
+        const nImg = q.items.filter(function (x) { return x.img; }).length;
+        const key = hasEssay(q) ? ('อัตนัย ' + q.items.length + ' ข้อ' +
+            (q.items.some(isGuided) ? ' · ทีละขั้น' : '') +
+            (nImg ? ' · มีรูป ' + nImg : ''))
           : q.items.map(x => paperLabel(paperStyle(q), Number(x.ans))).join('');
         h += '<tr><td>' + esc(q.title || '(ไม่มีชื่อ)') +
           (q.id === DB.cur.quizId ? ' <b>← ชุดปัจจุบัน</b>' : '') + '</td>' +
@@ -5644,11 +6063,14 @@ function renderDo() {
       h += '<div class="card"><h3>ข้อ ' + (k + 1) +
         '<span class="sub">อัตนัย · ' + fmt(pp.max) + ' คะแนน</span></h3>' +
         '<div style="margin-bottom:10px;font-size:16px">' + M(pp.stem) + '</div>' +
-        '<div class="hint"><b>เกณฑ์ให้คะแนน</b> ขั้นละ ' + fmt(pp.max / ESSAY_STEPS.length) +
-        ' คะแนน<br>' + ESSAY_STEPS.map(function (s, si) {
+        (pp.img ? '<div class="esfig"><img src="' + esc(pp.img) + '" alt="รูปประกอบโจทย์"></div>' : '') +
+        '<div class="hint"><b>เกณฑ์ให้คะแนน</b> ขั้นละ ' + fmt(pp.max / pp.nsteps) +
+        ' คะแนน<br>' + ESSAY_STEPS.slice(0, pp.nsteps).map(function (s, si) {
           return (si + 1) + ') ' + esc(s);
-        }).join('<br>') + '</div>';
-      if (pp.typed) {
+        }).join('<br>') + (pp.nsteps === 4 ? '<br><i>ข้อนี้ไม่ต้องเขียนสรุป</i>' : '') + '</div>';
+      if (pp.guided) {
+        h += essayGuideHTML(pp, x, k);
+      } else if (pp.typed) {
         h += '<textarea class="esin" data-es="' + k + '" rows="6" ' +
           'style="width:100%;margin-top:10px;font-size:16px" ' +
           'placeholder="พิมพ์วิธีทำตามลำดับห้าขั้น">' + esc(x.text || '') + '</textarea>';
@@ -5664,6 +6086,7 @@ function renderDo() {
     $('#btnFinish').addEventListener('click', finishAttempt);
     $$('[data-pk]').forEach(b => b.addEventListener('click', () =>
       setPaperAnswer(Number(b.dataset.pk), Number(b.dataset.pc))));
+    bindEssayGuide(a, probs);
     $$('[data-es]').forEach(function (t) {
       t.addEventListener('input', function (e) {
         const k = Number(e.target.dataset.es), it = a.answers[k];
@@ -5790,6 +6213,188 @@ function renderDo() {
   bindSolutionToggle($('#pane-do'));
   const first = $('.numin:not([disabled])');
   if (first && (T || !it.checked)) first.focus();
+}
+
+/* ── หน้าจอทำข้อสอบอัตนัยทีละขั้น ───────────────────────────────────────
+   แต่ละขั้นเป็นการ์ดของตัวเอง เปิดทีละขั้นตามลำดับ เพื่อไม่ให้นักเรียนกระโดดข้าม
+   ขั้นก่อนหน้ายังกลับไปแก้ได้เสมอ และแป้นกดช่วยพิมพ์ตัวเลขบนไอแพด        */
+function essayGuideHTML(pp, x, k) {
+  const it = pp.it, gs = esGS(x);
+  const chips = it.chips || [], eqs = it.eqs || [], vs = esVars(it);
+  const rub = x.rub || [];
+  const stepHead = function (n, name) {
+    const done = rub[n - 1];
+    return '<div class="esstep' + (done ? ' done' : '') + '"><div class="esh">' +
+      '<span class="esn">' + n + '</span><b>' + esc(name) + '</b>' +
+      '<span class="grow"></span><span class="hint">' + fmt(pp.max / pp.nsteps) + ' คะแนน' +
+      (done ? ' · <span style="color:var(--ok)">ผ่าน</span>' : '') + '</span></div>';
+  };
+  let h = '<div class="esguide" data-esg="' + k + '">';
+
+  // ขั้น 1 — เลือกสิ่งที่โจทย์กำหนด และสิ่งที่ถามหา
+  h += stepHead(1, 'วิเคราะห์โจทย์') +
+    '<div class="hint">แตะเลือก<b>ทุกอย่างที่โจทย์กำหนดมาให้</b> แล้วเลือก<b>สิ่งที่โจทย์ถามหา</b>อีกหนึ่งอย่าง</div>' +
+    '<div class="hint" style="margin-top:7px">โจทย์กำหนด</div><div class="eschips">' +
+    chips.map(function (c, ci) {
+      return '<button class="eschip' + ((gs.g || []).indexOf(ci) >= 0 ? ' sel' : '') +
+        '" data-esg1="' + k + '" data-ci="' + ci + '">' + M(c.t) + '</button>';
+    }).join('') + '</div>' +
+    '<div class="hint" style="margin-top:9px">โจทย์ถามหา</div><div class="eschips">' +
+    chips.map(function (c, ci) {
+      return '<button class="eschip find' + (gs.f === ci ? ' sel' : '') +
+        '" data-esg1f="' + k + '" data-ci="' + ci + '">' + M(c.t) + '</button>';
+    }).join('') + '</div></div>';
+
+  // ขั้น 2 — สมการหลักและสมการที่แปลงแล้ว
+  h += stepHead(2, 'สมการที่ใช้') +
+    '<div class="hint">เลือกสองครั้ง — <b>สมการหลัก</b>ที่เป็นหลักการของเรื่องนี้ ' +
+    'แล้ว<b>สมการที่แปลงแล้ว</b>ที่ย้ายข้างจนได้ตัวที่โจทย์ถาม<br>' +
+    'ถ้าข้อนี้ใช้สมการเดียวไม่ต้องแปลง ให้<b>เลือกตัวเดิมซ้ำ</b>เพื่อยืนยัน</div>';
+  [0, 1].forEach(function (slot) {
+    h += '<div class="hint" style="margin-top:8px">' + (slot ? 'สมการที่แปลงแล้ว' : 'สมการหลัก') + '</div>' +
+      '<div class="eseqs">' + eqs.map(function (e, ei) {
+        return '<button class="eseq' + (gs.e[slot] === ei ? ' sel' : '') +
+          '" data-esg2="' + k + '" data-slot="' + slot + '" data-ei="' + ei + '">' + M(e.t) + '</button>';
+      }).join('') + '</div>';
+  });
+  h += '</div>';
+
+  // ขั้น 3 — แทนค่าลงในตัวแปร
+  h += stepHead(3, 'แทนค่าลงในสมการ') +
+    (vs.length
+      ? '<div class="hint">เติมตัวเลขของแต่ละตัวแปร ตามที่โจทย์กำหนด (ไม่ต้องพิมพ์หน่วย)</div>' +
+        '<div class="esvars">' + vs.map(function (v) {
+          return '<div class="esvar"><label>' + M(v.s) + '</label>' +
+            '<input type="text" inputmode="decimal" class="eskb" data-esg3="' + k +
+            '" data-vs="' + esc(v.s) + '" value="' + esc((gs.v || {})[v.s] || '') + '">' +
+            '<span class="unit">' + esc(v.u || '') + '</span></div>';
+        }).join('') + '</div>'
+      : '<div class="hint">ข้อนี้ครูยังไม่ได้กำหนดตัวแปรไว้</div>') + '</div>';
+
+  // ขั้น 4 — คำตอบที่คำนวณได้
+  h += stepHead(4, 'คำนวณคำตอบ') +
+    '<div class="hint">คำนวณแล้วกรอกคำตอบที่ได้ (ไม่ต้องพิมพ์หน่วย)</div>' +
+    '<div class="esvar" style="margin-top:7px"><label>คำตอบ</label>' +
+    '<input type="text" inputmode="decimal" class="eskb" data-esg4="' + k + '" value="' +
+    esc(gs.a || '') + '"><span class="unit">' + esc(it.au || '') + '</span></div></div>';
+
+  // ขั้น 5 — สรุปพร้อมหน่วย (ข้ามได้)
+  if (pp.nsteps === 5) {
+    h += stepHead(5, 'สรุปคำตอบพร้อมหน่วย') +
+      '<div class="hint">เขียนสรุปเป็นประโยค ต้องมีทั้ง<b>ตัวเลขคำตอบ</b>และ<b>หน่วย</b></div>' +
+      '<textarea data-esg5="' + k + '" rows="2" style="width:100%;margin-top:7px;font-size:16px" ' +
+      'placeholder="เช่น แรงลัพธ์มีขนาด 6 นิวตัน">' + esc(gs.c || '') + '</textarea></div>';
+  }
+
+  // แป้นกดช่วยพิมพ์ — ทำงานกับช่องที่แตะล่าสุด
+  h += '<div class="eskeys" data-eskeys="' + k + '">' +
+    ['7', '8', '9', '÷', '4', '5', '6', '×', '1', '2', '3', '−',
+     '0', '.', '−/+', '+', '(', ')', '^', '√', 'π', '×10^', 'ลบ', 'ล้าง']
+      .map(function (t) {
+        const cls = ('÷×−+()^√π' + '×10^').indexOf(t) >= 0 || t === '×10^' ? ' op' : '';
+        return '<button class="eskey' + (t === 'ลบ' || t === 'ล้าง' ? ' warn' : cls) +
+          '" data-esk="' + esc(t) + '">' + esc(t) + '</button>';
+      }).join('') + '</div>' +
+    '<div class="hint" style="margin-top:6px">แป้นกดนี้พิมพ์ลงในช่องที่แตะล่าสุด — ' +
+    'ใช้ตอนไม่อยากสลับแป้นพิมพ์บนไอแพด</div>';
+
+  return h + '</div>';
+}
+
+/** ผูกเหตุการณ์ของหน้าจอทีละขั้น — เรียกหลังวาดหน้าจอเสร็จทุกครั้ง */
+function bindEssayGuide(a, probs) {
+  const upd = function (k) {
+    const pp = probs[k];
+    essayRegrade(pp.it, a.answers[k]);
+    save(true);
+    renderDo();
+  };
+  $$('[data-esg1]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      const k = Number(b.dataset.esg1), ci = Number(b.dataset.ci);
+      const gs = esGS(a.answers[k]);
+      const at = gs.g.indexOf(ci);
+      if (at >= 0) gs.g.splice(at, 1); else gs.g.push(ci);
+      upd(k);
+    });
+  });
+  $$('[data-esg1f]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      const k = Number(b.dataset.esg1f), ci = Number(b.dataset.ci);
+      const gs = esGS(a.answers[k]);
+      gs.f = (gs.f === ci) ? null : ci;
+      upd(k);
+    });
+  });
+  $$('[data-esg2]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      const k = Number(b.dataset.esg2), slot = Number(b.dataset.slot), ei = Number(b.dataset.ei);
+      const gs = esGS(a.answers[k]);
+      gs.e[slot] = (gs.e[slot] === ei) ? null : ei;
+      upd(k);
+    });
+  });
+  // ช่องพิมพ์ไม่วาดหน้าจอใหม่ทุกตัวอักษร ไม่งั้นเคอร์เซอร์กระโดดและแป้นพิมพ์เด้ง
+  const soft = function (k) {
+    essayRegrade(probs[k].it, a.answers[k]);
+    save();
+  };
+  $$('[data-esg3]').forEach(function (inp) {
+    inp.addEventListener('input', function (e) {
+      const k = Number(e.target.dataset.esg3);
+      esGS(a.answers[k]).v[e.target.dataset.vs] = e.target.value;
+      soft(k);
+    });
+    inp.addEventListener('blur', function (e) { renderDo(); });
+  });
+  $$('[data-esg4]').forEach(function (inp) {
+    inp.addEventListener('input', function (e) {
+      const k = Number(e.target.dataset.esg4);
+      esGS(a.answers[k]).a = e.target.value;
+      soft(k);
+    });
+    inp.addEventListener('blur', function () { renderDo(); });
+  });
+  $$('[data-esg5]').forEach(function (inp) {
+    inp.addEventListener('input', function (e) {
+      const k = Number(e.target.dataset.esg5);
+      esGS(a.answers[k]).c = e.target.value;
+      soft(k);
+    });
+    inp.addEventListener('blur', function () { renderDo(); });
+  });
+  /* แป้นกด — จำช่องที่แตะล่าสุด โดยไม่ฝากไว้กับเหตุการณ์เดียว
+     focus ไม่ยิงในบางสภาพแวดล้อม ถ้าพึ่งตัวเดียวคือแป้นกดใช้ไม่ได้เลย */
+  const kbs = $$('.eskb');
+  let last = null;
+  kbs.forEach(function (inp) {
+    ['focus', 'click', 'touchstart'].forEach(function (ev) {
+      inp.addEventListener(ev, function () { last = inp; });
+    });
+  });
+  const target = function () {
+    if (last && last.isConnected) return last;
+    const act = document.activeElement;
+    if (act && act.classList && act.classList.contains('eskb')) return act;
+    // ยังไม่เคยแตะช่องไหนเลย — เริ่มที่ช่องแรกที่ยังว่าง ดีกว่ากดแล้วไม่เกิดอะไรขึ้น
+    for (let i = 0; i < kbs.length; i++) if (!kbs[i].value) return kbs[i];
+    return kbs[0] || null;
+  };
+  $$('[data-esk]').forEach(function (b) {
+    b.addEventListener('mousedown', function (e) { e.preventDefault(); });   // อย่าให้ช่องเสียโฟกัส
+    b.addEventListener('click', function () {
+      last = target();
+      if (!last) { toast('ข้อนี้ไม่มีช่องให้กรอก', 'bad'); return; }
+      const t = b.dataset.esk;
+      if (t === 'ล้าง') last.value = '';
+      else if (t === 'ลบ') last.value = last.value.slice(0, -1);
+      else if (t === '−/+') last.value = last.value.indexOf('-') === 0 ? last.value.slice(1) : '-' + last.value;
+      else if (t === '×10^') last.value += '×10^';
+      else last.value += t;
+      last.dispatchEvent(new Event('input', { bubbles: true }));
+      last.focus();
+    });
+  });
 }
 
 /** บันทึกคำตอบหนึ่งข้อบนใบตอบ — แตะซ้ำที่เดิมคือยกเลิกคำตอบ
@@ -5944,7 +6549,7 @@ function analyze(a) {
     const it = a.answers[i] || { score: 0, sec: 0, revealed: false };
     /* ข้ออัตนัยคิดคะแนนจากเกณฑ์ที่ครูติ๊กเสมอ ไม่ใช้ค่าที่เก็บไว้
        เผื่อครูแก้คะแนนเต็มของข้อนั้นทีหลัง คะแนนจะได้ขยับตามเองทุกที่ */
-    const sc = (p && p.essay) ? essayScore(p.max, it.rub) : (it.score || 0);
+    const sc = (p && p.essay) ? essayScore(p.max, it.rub, p.nsteps) : (it.score || 0);
     res.got += sc; res.sec += it.sec || 0;
     if (it.revealed) res.revealed++;
     // ข้อที่สร้างไม่ได้ (ใบงานอ้างแม่แบบที่ไฟล์รุ่นนี้ยังไม่มี) — นับคะแนนแต่ไม่แจกแจงตามเรื่อง
@@ -7060,11 +7665,21 @@ async function publishQuiz(quizId) {
             maxOut: numOf('#pbOut', 99),
             maxOutSec: numOf('#pbOutSec', 3600)
           }) : q;
+          /* ช่องหนึ่งช่องในชีตเก็บได้ราวห้าหมื่นตัวอักษร รูปที่แทรกไว้ทำให้รหัสโตเร็วมาก
+             กันตั้งแต่ตรงนี้ดีกว่าปล่อยไปพังที่ชีตแล้วครูได้ข้อความที่ไม่บอกสาเหตุ */
+          const spec = encodeQuiz(sent);
+          if (spec.length > 45000) {
+            msg.innerHTML = '<div class="notice bad"><b>ชุดนี้ใหญ่เกินกว่าจะส่งขึ้นชีตได้</b> (' +
+              Math.round(spec.length / 1024) + ' KB จากเพดาน 44 KB)<br>' +
+              'มักเกิดจากรูปที่แทรกไว้ — ลองลบรูปบางข้อออก หรือใช้รูปที่เล็กลง<br>' +
+              'อีกทางคือ<b>พิมพ์ใบข้อสอบแจก</b>แล้วให้นักเรียนกรอกคำตอบในแอป ซึ่งไม่ติดเพดานนี้</div>';
+            return;
+          }
           try {
             const code = makeCode(6);
             await api('assignSave', { assignment: {
               code: code, title: q.title, cls: $('#pbCls', root).value || '',
-              spec: encodeQuiz(sent), baseSeed: q.seed || 0, perStudent: false,
+              spec: spec, baseSeed: q.seed || 0, perStudent: false,
               g: q.g, easyG10: !!q.easyG10, openAt: '',
               closeAt: closeAt ? new Date(closeAt).toISOString() : '', active: true
             } });
@@ -8176,7 +8791,9 @@ function encodeQuiz(q) {
                        st: paperStyle(q) } : 0,
     it: isPaper(q)
       ? q.items.map(x => isEssayItem(x)
-          ? { e: 1, s: x.stem, k: x.key, m: itemMax(x), t: x.typed ? 1 : 0 }
+          ? { e: 1, s: x.stem, k: x.key, m: itemMax(x), t: x.typed ? 1 : 0,
+              g: x.img || '', sk: x.skip5 ? 1 : 0, ch: x.chips || 0, eq: x.eqs || 0,
+              vr: x.vars || 0, an: x.ans, au: x.au || '', tl: x.tol }
           : 'P~' + x.ans)
       : q.items.map(x => x.tplId + '~' + x.seed)
   };
@@ -8195,8 +8812,15 @@ function decodeQuiz(code) {
   for (const raw of c.it) {
     // ข้ออัตนัยส่งไปเป็นวัตถุ เพราะมีทั้งโจทย์ เฉลย และคะแนนเต็ม
     if (raw && typeof raw === 'object' && raw.e) {
-      items.push({ essay: 1, stem: String(raw.s || ''), key: String(raw.k || ''),
-                   max: Math.max(1, Number(raw.m) || 1), typed: raw.t ? 1 : 0 });
+      const eo = { essay: 1, stem: String(raw.s || ''), key: String(raw.k || ''),
+                   max: Math.max(1, Number(raw.m) || 1), typed: raw.t ? 1 : 0 };
+      if (raw.g) eo.img = String(raw.g);
+      if (raw.sk) eo.skip5 = 1;
+      if (raw.ch && raw.ch.length) {
+        eo.chips = raw.ch; eo.eqs = raw.eq || []; eo.vars = raw.vr || [];
+        eo.ans = raw.an; eo.au = String(raw.au || ''); eo.tol = Number(raw.tl) || 2;
+      }
+      items.push(eo);
       continue;
     }
     const p = String(raw).split('~');
@@ -8514,6 +9138,7 @@ function buildDoc(kind, opt) {
       pr.forEach(function (p, i) {
         hh += '<div class="pitem"><div class="pq"><span class="pn">' + (i + 1) + '.</span><span>' +
           M(p.stem) + ' &nbsp;<span class="tag">' + fmt(p.max) + ' คะแนน</span></span></div>';
+        if (p.img) hh += '<div class="fig"><img src="' + esc(p.img) + '" style="max-width:100%"></div>';
         if (isKey) {
           hh += '<div style="margin:5px 0 3px"><b>แนวคำตอบ:</b> ' +
             (p.keyText ? M(p.keyText) : '<i>ยังไม่ได้กรอกเฉลย</i>') + '</div>' +
