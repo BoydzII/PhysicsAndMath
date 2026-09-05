@@ -24,7 +24,9 @@ const FILES = [
   'ScienceAutoSheet/science.html',   'ScienceAutoSheet/index.html',
   'BiologyAutoSheet/bio.html',       'BiologyAutoSheet/index.html',
   'PhysicalScienceAutoSheet/physci.html', 'PhysicalScienceAutoSheet/index.html',
-  'EquilibriumLab/equilibrium.html', 'EquilibriumLab/index.html'
+  'EquilibriumLab/equilibrium.html', 'EquilibriumLab/index.html',
+  // ห้องวาดรูปโจทย์เป็นเครื่องมือของครู มีไฟล์เดียว ไม่มีฉบับนักเรียน จึงไม่มีคู่ใน PAIRS
+  'FigureLab/figure.html'
 ];
 
 // คู่ที่ต้องเหมือนกันทุกตัวอักษร ยกเว้นบล็อก BUILTIN

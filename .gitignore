@@ -66,6 +66,15 @@ PhysicsAutoSheet/*
 PhysicsAutoSheet/outputs/*
 !PhysicsAutoSheet/outputs/figures.html
 
+# ---- ห้องวาดรูปโจทย์ (เครื่องมือของครู ไม่มีฉบับนักเรียน) ----
+!FigureLab/
+FigureLab/*
+!FigureLab/figure.html
+!FigureLab/README-figure.md
+!FigureLab/outputs/
+FigureLab/outputs/*
+!FigureLab/outputs/parts.html
+
 # ---- ห้องเรียนสมดุลกล (ฟิสิกส์ ม.4) ----
 !EquilibriumLab/
 EquilibriumLab/*

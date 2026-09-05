@@ -208,6 +208,8 @@ const TEACHER_EMAIL_HASH = '2b6f1a703802e15e11e1186fccf029b32d9a8f884aab99c0a4eb
      teacher  ไฟล์ฉบับเต็มสำหรับครู · student ไฟล์ฉบับนักเรียน (ไม่มีเฉลย)
      openFree ใส่ true ถ้าวิชานั้นเข้าใช้ได้โดยไม่ต้องลงชื่อ (ไม่ได้พึ่งชีต)
      soon     ใส่ข้อความไว้ถ้าวิชานั้นยังไม่เสร็จ — การ์ดจะขึ้นเป็นสีจางและกดไม่ได้
+     teacherOnly  ใส่ true ถ้าเป็นเครื่องมือของครู — การ์ดจะขึ้นเฉพาะตอนครูลงชื่อเข้าใช้
+                  และไม่โผล่ในบรรทัดชื่อวิชาใต้หัวเรื่องที่นักเรียนเห็น
    ──────────────────────────────────────────────────────────────────────────── */
 const SUBJECTS = [
   { key: 'math', icon: '📐', name: 'คณิตศาสตร์', level: 'ม.1–ม.3', grades: [1, 2, 3],
@@ -243,7 +245,12 @@ const SUBJECTS = [
   { key: 'equilibrium', icon: '⚖️', name: 'ห้องเรียนสมดุลกล', level: 'ฟิสิกส์ ม.4', grades: [4, 5, 6],
     dir: 'EquilibriumLab/', teacher: 'equilibrium.html', student: 'index.html', openFree: true,
     desc: 'บทเรียน 8 หน่วย · ซิมมูเลชันโต้ตอบ 7 ชุด · โจทย์ 30 แม่แบบ<br>' +
-          'เรียน–ทดลอง–ฝึก–สอบ ครบในที่เดียว พร้อมเก็บ XP และเหรียญตรา' }
+          'เรียน–ทดลอง–ฝึก–สอบ ครบในที่เดียว พร้อมเก็บ XP และเหรียญตรา' },
+
+  { key: 'figure', icon: '✏️', name: 'ห้องวาดรูปโจทย์', level: 'เครื่องมือของครู', grades: [],
+    dir: 'FigureLab/', teacher: 'figure.html', student: 'figure.html', teacherOnly: true,
+    desc: 'วาดรูปประกอบโจทย์ฟิสิกส์ คณิตศาสตร์ และเคมี เก็บเป็นคลังใช้ซ้ำได้<br>' +
+          'ส่งออกเป็นโค้ด SVG วางลงแม่แบบโจทย์ได้ทันที' }
 
   /* เพิ่มวิชาใหม่ — คัดลอกบล็อกข้างบนมาหนึ่งชุด แล้วแก้ให้ตรงกับโฟลเดอร์จริง เช่น
      { key: 'chem', icon: '⚗️', name: 'เคมี', level: 'ม.5', grades: [5],
@@ -333,7 +340,8 @@ function showPicker(s) {
   // เอาวิชาที่ตรงกับชั้นของนักเรียนขึ้นก่อน จะได้ไม่ต้องมองหา — ครูเห็นตามลำดับในสารบัญ
   const lv = String(p.cls || '').match(/ม\.?\s*(\d)/);
   const g = lv ? Number(lv[1]) : 0;
-  const list = SUBJECTS.slice();
+  // เครื่องมือของครูไม่ต้องขึ้นให้นักเรียนเห็น
+  const list = SUBJECTS.filter(function (s) { return teacher || !s.teacherOnly; });
   if (!teacher && g) {
     list.sort((a, b) => ((b.grades || []).indexOf(g) >= 0 ? 1 : 0) -
                         ((a.grades || []).indexOf(g) >= 0 ? 1 : 0));
@@ -420,7 +428,7 @@ if (!freeSubs.length) {
 }
 
 /* บรรทัดชื่อวิชาใต้หัวเรื่อง — ต่อจาก SUBJECTS เอง เพิ่มวิชาแล้วไม่ต้องมาแก้ซ้ำ */
-$('#subLine').textContent = SUBJECTS.filter(s => !s.soon).map(s => s.name).join(' · ') +
+$('#subLine').textContent = SUBJECTS.filter(s => !s.soon && !s.teacherOnly).map(s => s.name).join(' · ') +
   ' — โรงเรียนปากช่อง จังหวัดนครราชสีมา';
 
 /* ---- เริ่มทำงาน ---------------------------------------------------------- */
