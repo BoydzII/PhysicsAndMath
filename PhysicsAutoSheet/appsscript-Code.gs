@@ -735,7 +735,12 @@ function teacherLogin_(user, pass) {
     throw new Error('บัญชีนี้ถูกระงับการใช้งาน');
   }
   var salt = String(t.salt || ''), hash = String(t.passHash || ''), needFix = false;
-  if (!hash) { salt = newSalt_(); hash = hashPass_(DEFAULT_TEACHER_PASS, salt); needFix = true; }
+  if (!hash) {
+    salt = newSalt_(); hash = hashPass_(DEFAULT_TEACHER_PASS, salt); needFix = true;
+  } else if (hash === pass) {
+    // ผู้ดูแลกรอกรหัสผ่านแบบข้อความธรรมดาลงในชีตโดยตรง ให้ยอมรับแล้วแปลงเป็นแฮชทันที
+    salt = newSalt_(); hash = hashPass_(pass, salt); needFix = true;
+  }
   if (hashPass_(pass, salt) !== hash) {
     cache.put(key, String(fails + 1), LOCK_MINUTES * 60);
     throw new Error('รหัสผ่านไม่ถูกต้อง (ผิดได้อีก ' + (MAX_LOGIN_FAIL - fails - 1) + ' ครั้ง)');

@@ -168,6 +168,9 @@ tbody tr:last-child td{border-bottom:none}
 .gate .actions{margin-top:16px;display:flex;gap:9px;flex-wrap:wrap}
 .gate .alt{margin-top:15px;padding-top:13px;border-top:1px solid var(--line);
   font-size:13px;color:var(--muted)}
+.gate-tabs{display:flex;gap:6px;margin-bottom:16px;background:var(--panel2);padding:4px;border-radius:10px;border:1px solid var(--line)}
+.gate-tab{flex:1;padding:8px 10px;font-size:13.5px;font-weight:600;border:1px solid transparent;border-radius:7px;background:transparent;color:var(--muted);cursor:pointer;transition:all .15s;text-align:center}
+.gate-tab.active{background:var(--card);color:var(--text);border-color:var(--line);box-shadow:0 1px 4px rgba(0,0,0,.08)}
 .gate .msg{margin-top:12px}
 #toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:200;
        display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none}
@@ -1466,26 +1469,34 @@ function renderGate() {
   const ab = DB.settings.about || {};
   el.innerHTML = '<div class="box">' +
     (DB.settings.logo ? '<img class="glogo" src="' + DB.settings.logo + '" alt="ตราโรงเรียน">' : '') +
-    '<h2>' + (stu ? 'ลงชื่อเข้าใช้' : 'เข้าใช้สำหรับผู้ดูแล') + '</h2>' +
+    (!studentOnlyBuild() ?
+      '<div class="gate-tabs">' +
+      '<button type="button" class="gate-tab' + (stu ? ' active' : '') + '" id="tabGateStu">👨‍🎓 สำหรับนักเรียน</button>' +
+      '<button type="button" class="gate-tab' + (!stu ? ' active' : '') + '" id="tabGateAdm">👩‍🏫 สำหรับครู / ผู้ดูแล</button>' +
+      '</div>' : '') +
+    '<h2>' + (stu ? 'ลงชื่อเข้าใช้ (นักเรียน)' : 'เข้าใช้สำหรับครูและผู้ดูแล') + '</h2>' +
     '<div class="lead">คลังโจทย์ฟิสิกส์ ม.4<br>' +
       (stu ? 'ใช้<b>เลขประจำตัวนักเรียน</b>เป็นชื่อผู้ใช้ ' +
-             'ถ้ายังไม่เคยเปลี่ยนรหัส ให้ใช้รหัสตั้งต้นที่ครูแจ้ง'
-           : 'ผู้ดูแลมีได้คนเดียว ใช้จัดการรายชื่อ มอบหมายใบงาน และดูผลทั้งหมด') + '</div>' +
+             'ถ้ายังไม่เคยเปลี่ยนรหัส ให้ใช้รหัสตั้งต้นที่ครูแจ้ง (1111)'
+           : '<b>ครูผู้สอน (แอดมินรอง):</b> กรอกชื่อผู้ใช้และรหัสผ่านที่คุณได้รับ<br>' +
+             '<b>ผู้ดูแลหลัก:</b> เว้นว่างช่องชื่อผู้ใช้ แล้วใส่รหัสผ่านผู้ดูแล') + '</div>' +
     (stu
       ? '<label class="f" for="gSid">เลขประจำตัวนักเรียน <span class="hint">(ตัวเลขไม่เกิน ' +
           SID_MAX + ' หลัก)</span></label>' +
         '<input type="text" id="gSid" inputmode="numeric" pattern="[0-9]*" maxlength="' + SID_MAX +
           '" autocomplete="username" placeholder="เช่น 30201">' +
+        '<div id="gSidHint" style="display:none;margin-top:6px;font-size:12.5px;color:var(--bad);line-height:1.5"></div>' +
         '<label class="f" for="gPass">รหัสผ่าน</label>' +
         '<input type="password" id="gPass" autocomplete="current-password">'
-      : '<label class="f" for="gUser">ชื่อผู้ใช้ <span class="hint">(เว้นว่างถ้าเป็นผู้ดูแลหลัก)</span></label>' +
-        '<input type="text" id="gUser" autocomplete="username" placeholder="เช่น kruaom">' +
+      : '<label class="f" for="gUser">ชื่อผู้ใช้ <span class="hint">(ครูผู้สอนกรอกที่นี่ · ผู้ดูแลหลักเว้นว่างได้)</span></label>' +
+        '<input type="text" id="gUser" autocomplete="username" placeholder="เช่น kruaom (ผู้ดูแลหลักไม่ต้องกรอก)">' +
         '<label class="f" for="gPass">รหัสผ่าน</label>' +
         '<input type="password" id="gPass" autocomplete="current-password">' +
-        '<div class="hint" style="margin-top:7px">เข้าไม่ได้? เปิดชีต → ส่วนขยาย → Apps Script → ' +
-        'เลือกฟังก์ชัน <code>resetAdminPassword</code> → กดเรียกใช้ ' +
-        'แล้วรหัสจะกลับเป็นค่าที่ตั้งไว้ในสคริปต์</div>') +
-    '<div class="actions"><button class="primary grow" id="gGo">เข้าใช้งาน</button></div>' +
+        '<div class="hint" style="margin-top:7px">เข้าไม่ได้? ' +
+        'หากเป็นครูผู้สอนให้แจ้งผู้ดูแลหลักเพื่อรีเซ็ตรหัส · ผู้ดูแลหลักให้เปิดชีต → ส่วนขยาย → Apps Script → ' +
+        'เลือกฟังก์ชัน <code>resetAdminPassword</code> → กดเรียกใช้</div>') +
+    '<div class="actions"><button class="primary grow" id="gGo">' +
+      (stu ? 'เข้าสู่ระบบนักเรียน' : 'เข้าสู่ระบบครู / ผู้ดูแล') + '</button></div>' +
     '<div class="msg" id="gateMsg"></div>' +
     /* บอกตั้งแต่ก่อนกรอกว่าเครื่องนี้ยังผูกกับใครอยู่ ดีกว่าให้กรอกจนเสร็จแล้วค่อยถูกปฏิเสธ */
     (stu && devLockLeft('') ? '<div class="notice warn" style="margin-top:9px">' +
@@ -1500,7 +1511,7 @@ function renderGate() {
       const links = [];
       if (!studentOnlyBuild()) {
         links.push('<a href="#" id="gSwap">' +
-          (stu ? 'เข้าใช้ในฐานะผู้ดูแล' : 'กลับไปหน้าเข้าใช้ของนักเรียน') + '</a>');
+          (stu ? 'สลับไปหน้าเข้าใช้ของครู / ผู้ดูแล' : 'กลับไปหน้าเข้าใช้ของนักเรียน') + '</a>');
         if (!lockCloudBuild()) {
           links.push('<a href="#" id="gOffline">ใช้งานแบบออฟไลน์ (ตัดการเชื่อมต่อชีต)</a>');
         }
@@ -1514,6 +1525,40 @@ function renderGate() {
   const un = $('#gUnlock');
   if (un) un.addEventListener('click', e => { e.preventDefault(); devLockUnlockBox(); });
 
+  const tStu = $('#tabGateStu');
+  if (tStu) tStu.addEventListener('click', () => { if (GATE.mode !== 'student') { GATE.mode = 'student'; renderGate(); } });
+  const tAdm = $('#tabGateAdm');
+  if (tAdm) tAdm.addEventListener('click', () => { if (GATE.mode !== 'admin') { GATE.mode = 'admin'; renderGate(); } });
+
+  const sidEl = $('#gSid');
+  if (sidEl) {
+    const chkSid = () => {
+      const v = sidEl.value || '';
+      const hEl = $('#gSidHint');
+      if (!hEl) return;
+      if (/[a-zA-Z]/.test(v)) {
+        hEl.style.display = 'block';
+        hEl.innerHTML = 'ตรวจพบตัวอักษร — หากคุณเป็นครูผู้สอน <a href="#" id="gSidSwitch" style="font-weight:700;text-decoration:underline">กดที่นี่เพื่อสลับไปหน้าครู</a>';
+        const swBtn = $('#gSidSwitch');
+        if (swBtn) swBtn.onclick = (e) => {
+          e.preventDefault();
+          GATE.mode = 'admin';
+          GATE.initUser = v.trim();
+          renderGate();
+        };
+      } else {
+        hEl.style.display = 'none'; hEl.innerHTML = '';
+      }
+    };
+    sidEl.addEventListener('input', chkSid);
+  }
+
+  if (!stu && GATE.initUser) {
+    const uEl = $('#gUser');
+    if (uEl) { uEl.value = GATE.initUser; }
+    GATE.initUser = '';
+  }
+
   const go = async () => {
     if (GATE.busy) return;
     GATE.busy = true;
@@ -1521,7 +1566,11 @@ function renderGate() {
     gateMsg('');
     try {
       if (stu) {
-        const sid = normSid($('#gSid').value);
+        const rawSid = ($('#gSid').value || '').trim();
+        if (/[a-zA-Z]/.test(rawSid)) {
+          throw new ApiError('เลขประจำตัวนักเรียนต้องเป็นตัวเลขเท่านั้น — หากคุณเป็นครูผู้สอน กรุณาเลือกแท็บ "ครูผู้สอน / ผู้ดูแล" ด้านบน');
+        }
+        const sid = normSid(rawSid);
         const pass = $('#gPass').value || '';
         if (!sid) throw new ApiError('กรอกเลขประจำตัวเป็นตัวเลข ไม่เกิน ' + SID_MAX + ' หลัก');
         /* กันการทำข้อสอบให้กัน — เครื่องที่เพิ่งใช้สอบ ยังเข้าในชื่อคนอื่นไม่ได้
@@ -1545,8 +1594,17 @@ function renderGate() {
         else toast('ยินดีต้อนรับ ' + (r.profile.name || ''), 'ok');
       } else {
         const uEl = $('#gUser');
-        const r = await api('adminLogin', { user: (uEl ? uEl.value : '') || '',
-                                            pass: $('#gPass').value || '' }, { noToken: true });
+        const userVal = ((uEl ? uEl.value : '') || '').trim();
+        let r;
+        try {
+          r = await api('adminLogin', { user: userVal,
+                                        pass: $('#gPass').value || '' }, { noToken: true });
+        } catch (err) {
+          if (userVal && (err.message || '').indexOf('รหัสผู้ดูแลไม่ถูกต้อง') >= 0) {
+            throw new Error('เข้าใช้งานไม่สำเร็จ: รหัสผ่านไม่ถูกต้อง หรือ Google Apps Script บน Google Drive ยังเป็นเวอร์ชันเก่า (ยังไม่รองรับครูผู้สอน) — ให้ผู้ดูแลหลักนำ appsscript-Code.gs รุ่นล่าสุดไป Deploy เป็นเวอร์ชันใหม่ใน Apps Script');
+          }
+          throw err;
+        }
         const isSub = r.role === 'sub';
         /* ครูที่ถูกจำกัดวิชาไว้ ต้องรู้ตั้งแต่ตอนนี้ว่าเข้าผิดวิชา
            ไม่งั้นจะเข้าได้แต่กดอะไรก็ถูกปฏิเสธทีละคำสั่งจนงง */
@@ -1569,7 +1627,7 @@ function renderGate() {
       gateMsg(esc(e.message || String(e)));
     } finally {
       GATE.busy = false;
-      const b = $('#gGo'); if (b) { b.disabled = false; b.textContent = 'เข้าใช้งาน'; }
+      const b = $('#gGo'); if (b) { b.disabled = false; b.textContent = stu ? 'เข้าสู่ระบบนักเรียน' : 'เข้าสู่ระบบครู / ผู้ดูแล'; }
     }
   };
 
