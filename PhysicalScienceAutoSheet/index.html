@@ -4732,13 +4732,25 @@ function paperDialog(quiz) {
           const items = keys.map(k => ({ paper: 1, ans: k }));
           const pp = { ch: ch, topic: tpv === '' ? null : Number(tpv), st: st };
           if (quiz) {
+            const oldItems = (quiz.items || []).map(x => ({ ...x }));
+            const changedKeys = [];
+            items.forEach((it, k) => {
+              const oldAns = (oldItems[k] && oldItems[k].ans != null) ? Number(oldItems[k].ans) : null;
+              if (oldAns !== Number(it.ans)) {
+                changedKeys.push({ k: k, oldAns: oldAns, newAns: Number(it.ans) });
+              }
+            });
+            const attempts = DB.attempts.filter(a => a.quizId === quiz.id);
+            if (changedKeys.length && attempts.length) {
+              close();
+              rescorePaperDialog(quiz, oldItems, items, pp, title, lim, changedKeys);
+              return;
+            }
             quiz.title = title; quiz.paper = pp; quiz.items = items;
             quiz.limitSec = lim.limitSec; quiz.maxOut = lim.maxOut; quiz.maxOutSec = lim.maxOutSec;
             delete PCACHE['paper:' + quiz.id];
-            const nRe = rescorePaperAttempts(quiz);
             save(true); close(); renderMake();
-            toast('บันทึกเฉลย ' + items.length + ' ข้อแล้ว' +
-              (nRe ? ' · ประมวลผลคะแนนใหม่ให้ ' + nRe + ' รายการ' : ''), 'ok');
+            toast('บันทึกเฉลย ' + items.length + ' ข้อแล้ว', 'ok');
             return;
           }
           const q = createPaperQuiz(title, pp, items, lim);
@@ -4766,6 +4778,153 @@ function paperDialog(quiz) {
       };
       box.addEventListener('input', show);
       show(); box.focus();
+    }
+  });
+}
+
+/** หน้าต่างเลือกห้องและเกณฑ์การตรวจคะแนนใหม่เมื่อครูแก้เฉลยกระดาษคำตอบ */
+function rescorePaperDialog(quiz, oldItems, newItems, pp, title, lim, changedKeys) {
+  const attempts = DB.attempts.filter(a => a.quizId === quiz.id);
+  const roomMap = {};
+  attempts.forEach(a => {
+    const wi = whoInfo(a);
+    const r = (wi.cls || a.room || 'ไม่ระบุห้อง').trim();
+    if (!roomMap[r]) roomMap[r] = [];
+    roomMap[r].push(a);
+  });
+  const roomList = Object.keys(roomMap).sort();
+
+  const keySummaryHTML = changedKeys.map(ck => {
+    const oldLbl = ck.oldAns != null ? paperLabel(pp.st, ck.oldAns) : '—';
+    const newLbl = paperLabel(pp.st, ck.newAns);
+    return '<span class="tag t" style="font-size:13.5px;padding:3px 9px;margin:2px 4px">' +
+      'ข้อ ' + (ck.k + 1) + ': เดิม <b>' + esc(oldLbl) + '</b> ➔ เฉลยใหม่ <b>' + esc(newLbl) + '</b></span>';
+  }).join(' ');
+
+  openModal({
+    wide: true,
+    title: 'แก้เฉลยและตรวจคะแนนใหม่ · ' + esc(title),
+    bodyHTML:
+      '<div class="hint" style="margin-bottom:12px">ตรวจพบการเปลี่ยนเฉลย <b>' + changedKeys.length + ' ข้อ</b> ' +
+      'ในชุด <b>' + esc(title) + '</b> (มีนักเรียนที่ทำชุดนี้แล้ว ' + attempts.length + ' คน)</div>' +
+      '<div class="notice info" style="margin-bottom:14px">' +
+      '<b>ข้อที่มีการแก้เฉลย:</b><div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:4px">' + keySummaryHTML + '</div></div>' +
+      '<div class="row" style="margin-bottom:14px;align-items:center">' +
+      '<label for="rcRoom" style="font-weight:700">เลือกห้องที่ต้องการตรวจคะแนนใหม่:</label>' +
+      '<select id="rcRoom" class="grow" style="max-width:320px">' +
+      '<option value="all">ทุกห้อง (ทั้งหมด ' + attempts.length + ' คน)</option>' +
+      roomList.map(r => '<option value="' + esc(r) + '">ห้อง ' + esc(r) + ' (' + roomMap[r].length + ' คน)</option>').join('') +
+      '</select></div>' +
+      '<div style="margin-bottom:12px;background:var(--line2);border-radius:10px;padding:12px 14px">' +
+      '<div style="font-weight:700;margin-bottom:6px">เกณฑ์การตรวจคะแนนในข้อที่แก้เฉลย:</div>' +
+      '<label style="display:block;margin:6px 0;cursor:pointer">' +
+      '<input type="radio" name="rcRule" value="free" checked> ' +
+      '<b>ให้คะแนนทุกคนในข้อที่แก้เฉลย (ฟรีข้อนี้)</b>' +
+      '<div class="hint" style="margin-left:22px">นักเรียนทุกคนในห้องที่เลือกจะได้ 1 คะแนนเต็มในข้อที่แก้เฉลยนี้ (ยกผลประโยชน์ให้นักเรียน แนะนำเมื่อเฉลยเดิมผิด)</div></label>' +
+      '<label style="display:block;margin:6px 0;cursor:pointer">' +
+      '<input type="radio" name="rcRule" value="strict"> ' +
+      '<b>ตรวจยึดตามเฉลยใหม่อย่างเคร่งครัด</b>' +
+      '<div class="hint" style="margin-left:22px">คนที่ตอบเฉลยเดิมจะถูกปรับเป็น 0 คะแนน และสามารถเลือกติ๊กรายชื่อคนที่ตอบเฉลยใหม่ถูกได้ด้านล่าง</div></label>' +
+      '</div>' +
+      '<div id="rcStudentBox" style="display:none;margin-top:10px">' +
+      '<div class="row" style="margin-bottom:6px;align-items:center">' +
+      '<span class="hint">ติ๊กเลือกนักเรียนที่ตอบเฉลยใหม่ถูกในข้อที่แก้:</span><div class="sp"></div>' +
+      '<button type="button" class="sm" id="btnRcCheckAll">เลือกทั้งหมด</button>' +
+      '<button type="button" class="sm" id="btnRcClearAll">ล้างทั้งหมด</button></div>' +
+      '<div id="rcStudentList" style="max-height:200px;overflow-y:auto;border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--bg)"></div>' +
+      '</div>',
+    buttons: [
+      { label: 'ยกเลิก', act: (c) => { c(); renderMake(); } },
+      { label: 'ประมวลผลคะแนนใหม่ทันที', cls: 'primary', act: async (close, root) => {
+          const chosenRoom = $('#rcRoom', root).value;
+          const rule = $('input[name=rcRule]:checked', root).value;
+          const targetAttempts = (chosenRoom === 'all') ? attempts : (roomMap[chosenRoom] || []);
+          const checkedIds = new Set($$('[data-rcstd]:checked', root).map(cb => cb.dataset.rcstd));
+
+          quiz.title = title;
+          quiz.paper = pp;
+          quiz.items = newItems;
+          quiz.limitSec = lim.limitSec;
+          quiz.maxOut = lim.maxOut;
+          quiz.maxOutSec = lim.maxOutSec;
+          delete PCACHE['paper:' + quiz.id];
+
+          let updatedCount = 0;
+          targetAttempts.forEach(a => {
+            changedKeys.forEach(ck => {
+              if (!a.answers[ck.k]) {
+                a.answers[ck.k] = { raw: [], pick: null, checked: false, score: 0, tries: 1, revealed: false, sec: 0 };
+              }
+              const it = a.answers[ck.k];
+              if (it.pick != null) {
+                it.score = (it.pick === ck.newAns) ? 1 : (rule === 'free' ? 1 : 0);
+              } else {
+                if (rule === 'free') {
+                  it.score = 1;
+                  it.pick = ck.newAns;
+                } else {
+                  if (checkedIds.has(a.id)) {
+                    it.score = 1;
+                    it.pick = ck.newAns;
+                  } else {
+                    it.score = 0;
+                    it.pick = ck.oldAns;
+                  }
+                }
+              }
+              it.checked = true;
+            });
+            delete PCACHE[a.id];
+            analyze(a);
+            updatedCount++;
+          });
+
+          save(true);
+          close();
+
+          DB.cur.statQuizId = quiz.id;
+          if (chosenRoom !== 'all') {
+            const c = (DB.classes || []).find(x => x.name === chosenRoom);
+            if (c) DB.cur.classId = c.id;
+          }
+          setTab('stats');
+          toast('บันทึกเฉลยและประมวลผลคะแนนใหม่ให้ ' + updatedCount + ' คนเรียบร้อยแล้ว', 'ok');
+        } }
+    ],
+    onMount: root => {
+      const roomSel = $('#rcRoom', root);
+      const stuBox = $('#rcStudentBox', root);
+      const stuList = $('#rcStudentList', root);
+      const renderStudents = () => {
+        const r = roomSel.value;
+        const list = (r === 'all' ? attempts : (roomMap[r] || [])).slice().sort((x, y) => {
+          const wx = whoInfo(x), wy = whoInfo(y);
+          return (Number(wx.no) || 999) - (Number(wy.no) || 999);
+        });
+        stuList.innerHTML = list.map(a => {
+          const wi = whoInfo(a);
+          return '<div style="padding:3px 0"><label style="cursor:pointer">' +
+            '<input type="checkbox" data-rcstd="' + esc(a.id) + '"> ' +
+            'เลขที่ ' + esc(wi.no || '—') + ' · <b>' + esc(wi.name) + '</b>' +
+            (r === 'all' && wi.cls ? ' (' + esc(wi.cls) + ')' : '') +
+            '</label></div>';
+        }).join('');
+      };
+
+      $$('input[name=rcRule]', root).forEach(r => r.addEventListener('change', () => {
+        const isStrict = $('input[name=rcRule]:checked', root).value === 'strict';
+        stuBox.style.display = isStrict ? 'block' : 'none';
+        if (isStrict) renderStudents();
+      }));
+      roomSel.addEventListener('change', () => {
+        if ($('input[name=rcRule]:checked', root).value === 'strict') renderStudents();
+      });
+      $('#btnRcCheckAll', root).addEventListener('click', () => {
+        $$('[data-rcstd]', stuList).forEach(cb => cb.checked = true);
+      });
+      $('#btnRcClearAll', root).addEventListener('click', () => {
+        $$('[data-rcstd]', stuList).forEach(cb => cb.checked = false);
+      });
     }
   });
 }
@@ -6279,7 +6438,8 @@ function renderMake() {
           '<td><code style="font-size:12px">' + esc(key.length > 30 ? key.slice(0, 30) + '…' : key) +
           '</code></td><td>' + (q.limitSec ? Math.round(q.limitSec / 60) + ' นาที' : 'ไม่จำกัด') +
           (q.maxOut ? ' · ออกได้ ' + q.maxOut + ' ครั้ง' : '') + '</td>' +
-          '<td>' + thDateTime(q.ts) + '</td><td class="num">' + nAt + '</td>' +
+          '<td>' + thDateTime(q.ts) + '</td><td class="num">' +
+          (nAt ? '<a href="javascript:void(0)" style="font-weight:700;text-decoration:underline" data-viewstat="' + q.id + '">' + nAt + '</a>' : 0) + '</td>' +
           '<td>' + (isAdmin() ? '<button class="sm primary" data-publish="' + q.id +
             '">เปิดให้นักเรียนสอบ</button> ' : '') +
           (hasEssay(q) ? '<button class="sm primary" data-esgrade="' + q.id + '">ให้คะแนนอัตนัย</button> ' +
@@ -6392,6 +6552,9 @@ function renderMake() {
     save(true); renderMake(); toast('ลบแล้ว');
   }));
   $$('[data-share]').forEach(b => b.addEventListener('click', () => shareQuiz(b.dataset.share)));
+  $$('[data-viewstat]').forEach(a => a.addEventListener('click', () => {
+    DB.cur.statQuizId = a.dataset.viewstat; setTab('stats');
+  }));
   $$('[data-editkey]').forEach(b => b.addEventListener('click', () =>
     paperDialog(DB.quizzes.find(x => x.id === b.dataset.editkey))));
   $$('[data-esedit]').forEach(b => b.addEventListener('click', () =>
@@ -7747,7 +7910,9 @@ function renderStats() {
     '<select id="selQz" class="grow" style="max-width:520px">' +
     quizzes.map(x => '<option value="' + x.id + '"' + (x.id === q.id ? ' selected' : '') + '>' +
       esc(x.title) + ' (' + x.items.length + ' ข้อ)</option>').join('') + '</select>' +
-    '<button class="sm" id="btnStatPrint">พิมพ์รายงาน</button></div></div>';
+    '<button class="sm" id="btnStatPrint">พิมพ์รายงาน</button>' +
+    (isPaper(q) ? ' <button class="sm primary" id="btnRescorePaper">แก้เฉลยชุดนี้และตรวจใหม่</button>' : '') +
+    '</div></div>';
 
   h += '<div class="card"><h3>ภาพรวมชั้นเรียน<span class="sub">' + esc(q.title) + '</span></h3><div class="statgrid">' +
     '<div class="stat"><div class="v">' + rows.length + '</div><div class="k">จำนวนผู้ทำ</div></div>' +
@@ -7859,6 +8024,8 @@ function renderStats() {
   $('#pane-stats').innerHTML = h;
   $('#selQz').addEventListener('change', e => { DB.cur.statQuizId = e.target.value; save(); renderStats(); });
   $('#btnStatPrint').addEventListener('click', () => { DB.cur.printKind = 'classreport'; save(); setTab('print'); });
+  const brp = $('#btnRescorePaper');
+  if (brp) brp.addEventListener('click', () => paperDialog(q));
   $('#btnCopyScore').addEventListener('click', () => exportScoreColumn(q.id));
   $('#btnCsvScore').addEventListener('click', () => exportScoreCsv(q.id));
   $$('[data-editat]').forEach(b => b.addEventListener('click', () => editPaperAttemptModal(b.dataset.editat)));
