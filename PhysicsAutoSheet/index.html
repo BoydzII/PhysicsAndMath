@@ -13670,8 +13670,10 @@ function paperDialog(quiz) {
             quiz.title = title; quiz.paper = pp; quiz.items = items;
             quiz.limitSec = lim.limitSec; quiz.maxOut = lim.maxOut; quiz.maxOutSec = lim.maxOutSec;
             delete PCACHE['paper:' + quiz.id];
+            const nRe = rescorePaperAttempts(quiz);
             save(true); close(); renderMake();
-            toast('บันทึกเฉลย ' + items.length + ' ข้อแล้ว', 'ok');
+            toast('บันทึกเฉลย ' + items.length + ' ข้อแล้ว' +
+              (nRe ? ' · ประมวลผลคะแนนใหม่ให้ ' + nRe + ' รายการ' : ''), 'ok');
             return;
           }
           const q = createPaperQuiz(title, pp, items, lim);
@@ -13699,6 +13701,136 @@ function paperDialog(quiz) {
       };
       box.addEventListener('input', show);
       show(); box.focus();
+    }
+  });
+}
+
+/** ตรวจคำตอบใหม่และประมวลผลคะแนนใหม่สำหรับชุดกระดาษคำตอบที่แก้เฉลย */
+function rescorePaperAttempts(quiz) {
+  if (!quiz || !isPaper(quiz)) return 0;
+  const pk = 'paper:' + quiz.id;
+  delete PCACHE[pk];
+  const probs = problemsOf(quiz);
+  let count = 0;
+  DB.attempts.filter(a => a.quizId === quiz.id).forEach(a => {
+    let changed = false;
+    probs.forEach((p, k) => {
+      if (p.essay) return;
+      const it = a.answers[k];
+      if (!it) return;
+      if (it.pick != null && p.choices && p.choices[it.pick]) {
+        const sc = p.choices[it.pick].correct ? 1 : 0;
+        if (it.score !== sc) {
+          it.score = sc;
+          changed = true;
+        }
+      }
+    });
+    if (changed) {
+      delete PCACHE[a.id];
+      count++;
+    }
+  });
+  return count;
+}
+
+/** กล่องแก้ไขคำตอบของกระดาษคำตอบออนไลน์ที่ทำไปแล้ว และประมวลผลคะแนนใหม่ */
+function editPaperAttemptModal(attemptId) {
+  const a = DB.attempts.find(x => x.id === attemptId);
+  if (!a) { toast('ไม่พบผลการทำนี้', 'bad'); return; }
+  const q = quizOf(a);
+  if (!q) { toast('ไม่พบชุดโจทย์', 'bad'); return; }
+  const probs = problemsOf(q);
+  const who = attemptWho(a);
+
+  // สำเนาตัวเลือกเดิมไว้ — ถ้าเดิมไม่มี pick แต่มี score=1 ให้เดาว่าเป็นข้อที่ถูก
+  const picks = probs.map((pp, k) => {
+    if (pp.essay) return null;
+    const it = a.answers[k];
+    if (it && it.pick != null) return it.pick;
+    if (it && it.score >= 1 && pp.choices) {
+      const idx = pp.choices.findIndex(c => c.correct);
+      return idx >= 0 ? idx : null;
+    }
+    return null;
+  });
+
+  openModal({
+    wide: true,
+    title: 'แก้ไขคำตอบกระดาษคำตอบ · ' + esc(who),
+    bodyHTML:
+      '<div class="hint" style="margin-bottom:11px">ชุด: <b>' + esc(q.title) + '</b> (' + probs.length + ' ข้อ) · ' +
+      'แตะตัวเลือกที่ต้องการแก้ แตะซ้ำเพื่อยกเลิกคำตอบ · เมื่อกด <b>ประมวลผลคะแนนใหม่</b> ระบบจะตรวจคำตอบและคำนวณคะแนนใหม่ทันที</div>' +
+      '<div class="papersheet" id="edPaperSheet" style="max-height:360px;overflow-y:auto;padding:2px">' +
+      probs.map(function (pp, k) {
+        if (pp.essay) return '<div class="paperrow"><span class="pno">' + (k + 1) + '</span><span class="hint">ข้ออัตนัย</span></div>';
+        const curPick = picks[k];
+        return '<div class="paperrow"><span class="pno">' + (k + 1) + '</span>' +
+          pp.choices.map(function (c, ci) {
+            return '<button type="button" class="pbub' + (curPick === ci ? ' sel' : '') +
+              '" data-epk="' + k + '" data-epc="' + ci + '">' + esc(c.text) + '</button>';
+          }).join('') + '</div>';
+      }).join('') + '</div>' +
+      '<div id="edPaperSummary" class="notice info" style="margin-top:12px">กำลังคำนวณคะแนน…</div>',
+    buttons: [
+      { label: 'ยกเลิก' },
+      { label: 'ประมวลผลคะแนนใหม่', cls: 'primary', act: async (close, root) => {
+          probs.forEach(function (pp, k) {
+            if (pp.essay) return;
+            if (!a.answers[k]) a.answers[k] = { raw: [], pick: null, checked: false, score: 0, tries: 1, revealed: false, sec: 0 };
+            const it = a.answers[k];
+            it.pick = picks[k];
+            it.checked = picks[k] != null;
+            it.score = (picks[k] != null && pp.choices[picks[k]] && pp.choices[picks[k]].correct) ? 1 : 0;
+          });
+          delete PCACHE[a.id];
+          const r = analyze(a);
+          save(true);
+          if (a.assignCode && cloudOn()) {
+            sendAttempt(a, 'final');
+          }
+          close();
+          render();
+          toast('ประมวลผลคะแนนใหม่แล้ว: ' + fmt(r.got) + '/' + r.max + ' คะแนน (' + Math.round(r.pct) + '%)', 'ok');
+        } }
+    ],
+    onMount: root => {
+      const sheet = $('#edPaperSheet', root);
+      const sumBox = $('#edPaperSummary', root);
+
+      const updateSummary = () => {
+        let got = 0, max = 0, answered = 0;
+        probs.forEach((pp, k) => {
+          if (pp.essay) {
+            const sc = essayScore(pp.max, (a.answers[k] || {}).rub, pp.nsteps);
+            got += sc; max += pp.max;
+            return;
+          }
+          max += 1;
+          const pk = picks[k];
+          if (pk != null) {
+            answered++;
+            if (pp.choices[pk] && pp.choices[pk].correct) got += 1;
+          }
+        });
+        const pct = max ? Math.round(got / max * 100) : 0;
+        sumBox.innerHTML = 'ตอบแล้ว <b>' + answered + '</b>/' + probs.length + ' ข้อ · ' +
+          'คะแนนที่จะได้: <b>' + fmt(got) + '/' + max + ' (' + pct + '%)</b>';
+      };
+
+      $$('[data-epk]', sheet).forEach(b => {
+        b.addEventListener('click', () => {
+          const k = Number(b.dataset.epk), ci = Number(b.dataset.epc);
+          if (picks[k] === ci) picks[k] = null;
+          else picks[k] = ci;
+          $$('[data-epk="' + k + '"]', sheet).forEach(btn => {
+            const bci = Number(btn.dataset.epc);
+            btn.classList.toggle('sel', picks[k] === bci);
+          });
+          updateSummary();
+        });
+      });
+      updateSummary();
     }
   });
 }
@@ -16360,7 +16492,9 @@ function renderResult() {
       return '<option value="' + x.id + '"' + (x.id === a.id ? ' selected' : '') + '>' +
         thDateTime(x.finishedAt) + ' · ' + esc((quizOf(x) || {}).title || '') + ' · ' + Math.round(r.pct) + '%</option>';
     }).join('') + '</select>' +
-    '<button class="sm" id="btnEvid">พิมพ์หลักฐานการเรียนรู้</button></div></div>';
+    '<button class="sm" id="btnEvid">พิมพ์หลักฐานการเรียนรู้</button>' +
+    (isPaper(res.quiz) ? ' <button class="sm primary" id="btnEditPaperAnswers">แก้ไขคำตอบและประมวลผลใหม่</button>' : '') +
+    '</div></div>';
 
   // สรุปคะแนนครั้งนี้
   h += '<div class="card"><h3>ผลการทำครั้งนี้<span class="sub">' + esc(res.quiz.title) + '</span></h3>' +
@@ -16466,6 +16600,8 @@ function renderResult() {
   $('#pane-result').innerHTML = h;
   $('#selAt').addEventListener('change', e => { DB.cur.showAttemptId = e.target.value; save(); renderResult(); });
   $('#btnEvid').addEventListener('click', () => { DB.cur.printKind = 'evidence'; save(); setTab('print'); });
+  const ep = $('#btnEditPaperAnswers');
+  if (ep) ep.addEventListener('click', () => editPaperAttemptModal(a.id));
   $$('[data-sol]').forEach(b => b.addEventListener('click', () => {
     const x = res.items[Number(b.dataset.sol)];
     if (!x || !x.p) { toast('ข้อนี้เปิดไม่ได้ในโปรแกรมรุ่นนี้', 'bad'); return; }
@@ -16572,7 +16708,9 @@ function renderStats() {
     '<th>ผล</th><th class="num">เวลา</th>' +
     // คอลัมน์นี้ขึ้นเฉพาะเมื่อมีคนในชุดนี้ถูกคุมสอบจริง ไม่งั้นตารางจะรกขึ้นมาเปล่า ๆ
     (rows.some(x => x.r.nOut || x.r.autoBy) ? '<th class="num">ออกจากแอป</th>' : '') +
-    '<th>จุดที่ต้องพัฒนา</th></tr></thead><tbody>';
+    '<th>จุดที่ต้องพัฒนา</th>' +
+    (isPaper(q) ? '<th></th>' : '') +
+    '</tr></thead><tbody>';
   rows.forEach((x, k) => {
     const weak = Object.keys(x.r.bySub).filter(s => x.r.bySub[s].pct < 50);
     const wi = whoInfo(x.a);
@@ -16587,7 +16725,9 @@ function renderStats() {
       (rows.some(y => y.r.nOut || y.r.autoBy)
         ? '<td class="num">' + (x.r.nOut ? '<b>' + x.r.nOut + '</b> (' + mmss(x.r.secOut) + ')' : '—') +
           (x.r.autoBy ? ' ⚠' : '') + '</td>' : '') +
-      '<td style="white-space:normal">' + (weak.length ? esc(weak.join(', ')) : '—') + '</td></tr>';
+      '<td style="white-space:normal">' + (weak.length ? esc(weak.join(', ')) : '—') + '</td>' +
+      (isPaper(q) ? '<td><button class="sm" data-editat="' + esc(x.a.id) + '">แก้คำตอบ</button></td>' : '') +
+      '</tr>';
   });
   h += '</tbody></table></div></div>';
 
@@ -16661,6 +16801,7 @@ function renderStats() {
   $('#btnStatPrint').addEventListener('click', () => { DB.cur.printKind = 'classreport'; save(); setTab('print'); });
   $('#btnCopyScore').addEventListener('click', () => exportScoreColumn(q.id));
   $('#btnCsvScore').addEventListener('click', () => exportScoreCsv(q.id));
+  $$('[data-editat]').forEach(b => b.addEventListener('click', () => editPaperAttemptModal(b.dataset.editat)));
   bindCloudPullCard(); bindImportCard();
 }
 
@@ -17456,13 +17597,32 @@ async function pullResults(code) {
   });
 
   const st = { added: 0, dup: 0, skipped: 0, noQuiz: 0, unmatched: [] };
+  const norm = v => String(v == null ? '' : v).replace(/\s+/g, ' ').trim();
+  const normSid = v => norm(v).replace(/^0+/, '') || '0';
+  const findStudent = (sid, name) => {
+    const sNorm = sid ? normSid(sid) : '';
+    const nNorm = name ? norm(name) : '';
+    let s = sNorm ? DB.students.find(x => x.sid && normSid(x.sid) === sNorm) : null;
+    if (!s && nNorm) s = DB.students.find(x => x.name && norm(x.name) === nNorm);
+    return s;
+  };
   rows.forEach(r => {
     const q = quizByCode[r.code];
     if (!q) { st.noQuiz++; return; }
     if (!Array.isArray(r.answers) || r.answers.length !== q.items.length) { st.skipped++; return; }
     const id = 'cloud:' + r.code + ':' + r.sid;
-    if (DB.attempts.some(a => a.id === id)) { st.dup++; return; }
-    const s = DB.students.find(x => String(x.sid || '').trim() === String(r.sid).trim());
+    const s = findStudent(r.sid, r.name);
+    if (DB.attempts.some(a => a.id === id)) {
+      const ex = DB.attempts.find(a => a.id === id);
+      if (ex && (!ex.studentId || !DB.students.some(st => st.id === ex.studentId)) && s) {
+        ex.studentId = s.id;
+        ex.soloName = s.name;
+        if (!ex.sid && r.sid) ex.sid = String(r.sid);
+        if (!ex.no && r.no) ex.no = String(r.no);
+        if (!ex.room && r.cls) ex.room = String(r.cls);
+      }
+      st.dup++; return;
+    }
     if (!s) st.unmatched.push(r.name || r.sid);
     DB.attempts.push({
       id: id, quizId: q.id, studentId: s ? s.id : null,
@@ -17471,7 +17631,7 @@ async function pullResults(code) {
       startedAt: new Date(r.ts).getTime() - (Number(r.sec) || 0) * 1000,
       finishedAt: new Date(r.ts).getTime(),
       answers: r.answers.map(a => ({
-        raw: [], pick: null, checked: true,
+        raw: [], pick: (a && a.k !== '' && a.k != null && isFinite(Number(a.k))) ? Number(a.k) : null, checked: true,
         score: Number(a && a.s != null ? a.s : a) || 0,
         tries: Number(a && a.t) || 1, revealed: !!(a && a.r), sec: Number(a && a.c) || 0
       })),
@@ -17506,7 +17666,7 @@ function attemptPayload(a, status) {
     code: a.assignCode, status: status,
     score: r.got, max: r.max, pct: Math.round(r.pct * 10) / 10, sec: Math.round(r.sec),
     revealed: a.answers.filter(x => x.revealed).length,
-    answers: a.answers.map(x => ({ s: x.score, t: x.tries, r: x.revealed ? 1 : 0, c: Math.round(x.sec) })),
+    answers: a.answers.map(x => ({ s: x.score, t: x.tries, r: x.revealed ? 1 : 0, c: Math.round(x.sec), k: x.pick != null ? x.pick : '' })),
     out: (a.proc && a.proc.nOut) || 0,
     outSec: Math.round((a.proc && a.proc.secOut) || 0),
     autoBy: (a.proc && a.proc.autoBy) || '',
@@ -18135,6 +18295,29 @@ async function dedupeRoster() {
   } catch (e) { toast(e.message, 'bad'); }
 }
 
+/** ซ่อมแซมผลการทำเดิมที่ studentId เป็น null หรือไม่ตรงกับรายชื่อ ให้ผูกกับนักเรียนตาม sid หรือชื่อ */
+function healAttempts() {
+  if (!DB.students || !DB.students.length || !DB.attempts || !DB.attempts.length) return 0;
+  const norm = v => String(v == null ? '' : v).replace(/\s+/g, ' ').trim();
+  const normSid = v => norm(v).replace(/^0+/, '') || '0';
+  let healed = 0;
+  DB.attempts.forEach(a => {
+    if (a.studentId && DB.students.some(s => s.id === a.studentId)) return;
+    const aSid = a.sid ? normSid(a.sid) : '';
+    const aName = a.soloName ? norm(a.soloName) : '';
+    let s = aSid ? DB.students.find(x => x.sid && normSid(x.sid) === aSid) : null;
+    if (!s && aName) s = DB.students.find(x => x.name && norm(x.name) === aName);
+    if (s) {
+      a.studentId = s.id;
+      a.soloName = s.name;
+      if (!a.sid && s.sid) a.sid = String(s.sid);
+      if (!a.no && s.no) a.no = String(s.no);
+      healed++;
+    }
+  });
+  return healed;
+}
+
 async function pullRoster() {
   try {
     const list = await api('rosterList', {});
@@ -18157,8 +18340,9 @@ async function pullRoster() {
     DB.cur.classId = DB.classes.length ? DB.classes[0].id : null;
     const l = studentsOf(DB.cur.classId);
     DB.cur.studentId = l.length ? l[0].id : null;
+    const h = healAttempts();
     save(true); render();
-    toast('ดึงรายชื่อ ' + list.length + ' คนเรียบร้อย', 'ok');
+    toast('ดึงรายชื่อ ' + list.length + ' คนเรียบร้อย' + (h ? ' (เชื่อมคะแนนเดิม ' + h + ' รายการ)' : ''), 'ok');
   } catch (e) { toast(e.message, 'bad'); }
 }
 
@@ -18607,16 +18791,39 @@ function scoreRows(quizId) {
   const rows = [];
   const roster = DB.students.filter(s => !DB.cur.classId || s.classId === DB.cur.classId);
   if (DB.mode === 'class' && roster.length) {
+    const norm = v => String(v == null ? '' : v).replace(/\s+/g, ' ').trim();
+    const normSid = v => norm(v).replace(/^0+/, '') || '0';
+    const claimedKeys = new Set();
     // ยึดรายชื่อในห้องเป็นหลัก คนที่ยังไม่ได้ทำให้เว้นว่างไว้ ตำแหน่งแถวจะได้ตรงกับสมุดคะแนน
     roster.slice().sort((a, b) => (a.no || 0) - (b.no || 0)).forEach(s => {
-      const a = best[s.id];
+      let a = best[s.id];
+      if (a) {
+        claimedKeys.add(s.id);
+      } else {
+        // Fallback: จับคู่ด้วย sid หรือชื่อ เผื่อผลถูกดึงมาก่อนมีรายชื่อในเครื่อง หรือ studentId หลุด
+        const sSidNorm = s.sid ? normSid(s.sid) : '';
+        const sNameNorm = norm(s.name);
+        for (const k of Object.keys(best)) {
+          if (claimedKeys.has(k)) continue;
+          const cand = best[k];
+          const candSidNorm = cand.sid ? normSid(cand.sid) : '';
+          const candNameNorm = cand.soloName ? norm(cand.soloName) : '';
+          if ((sSidNorm && candSidNorm && sSidNorm === candSidNorm) ||
+              (sNameNorm && candNameNorm && sNameNorm === candNameNorm)) {
+            a = cand;
+            claimedKeys.add(k);
+            if (!cand.studentId) cand.studentId = s.id;
+            break;
+          }
+        }
+      }
       const r = a ? analyze(a) : null;
       rows.push({ no: s.no, sid: s.sid || '', name: s.name, got: r ? r.got : '', max: quizMaxScore(q),
                   pct: r ? Math.round(r.pct) : '', sec: r ? r.sec : '', done: !!a });
     });
     // ผลที่จับคู่กับรายชื่อไม่ได้ (เช่น นักเรียนพิมพ์ชื่อไม่ตรง หรือย้ายเข้าใหม่)
     // ต่อท้ายไว้เสมอ ไม่ปล่อยให้หายไปเงียบ ๆ ครูจะได้เห็นแล้วแก้รายชื่อได้
-    Object.keys(best).filter(k => k.indexOf('solo:') === 0).forEach(k => {
+    Object.keys(best).filter(k => !claimedKeys.has(k) && k.indexOf('solo:') === 0).forEach(k => {
       const a = best[k], r = analyze(a);
       rows.push({ no: '', sid: '', name: a.soloName || '', got: r.got, max: quizMaxScore(q),
                   pct: Math.round(r.pct), sec: r.sec, done: true, orphan: true });
@@ -19247,6 +19454,7 @@ function runSelfTest(seeds) {
    9) เริ่มต้นโปรแกรม
    ========================================================================== */
 loadDB();
+healAttempts();
 applyBuiltin();
 adoptPortalSession();
 $$('#tabs button').forEach(b => b.addEventListener('click', () => {
