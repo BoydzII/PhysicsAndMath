@@ -1007,6 +1007,24 @@ function attemptWho(a) {
 }
 /** ระเบียนนักเรียนของผลการทำนี้ — คืน null ถ้าเป็นโหมดเดี่ยวหรือหาไม่เจอ */
 function studentOf(a) { return a && a.studentId ? studentById(a.studentId) : null; }
+/** แปลงชื่อห้องให้เป็นรูปแบบมาตรฐานเพื่อเปรียบเทียบ เช่น 'ม.4/1' -> '4/1' */
+function normRoom(r) {
+  return String(r || '').replace(/\s+/g, '').replace(/^ห้อง/, '').replace(/^ม\./, '');
+}
+/** หาชื่อห้องของผลการทำแบบทดสอบ (attempt) */
+function attemptRoom(a) {
+  if (!a) return '';
+  const s = studentOf(a);
+  if (s) {
+    const c = classById(s.classId);
+    if (c && c.name) return c.name;
+    if (s.cls) return s.cls;
+  }
+  if (a.room) return String(a.room).trim();
+  const wi = whoInfo(a);
+  if (wi && wi.cls) return String(wi.cls).trim();
+  return '';
+}
 /** ข้อมูลประจำตัวสำหรับหัวเอกสาร: {name, no, sid, cls} */
 function whoInfo(a) {
   const s = studentOf(a);
@@ -9082,17 +9100,107 @@ function renderStats() {
     const key = a.studentId || ('solo:' + (a.soloName || ''));
     if (!byWho[key] || a.finishedAt > byWho[key].finishedAt) byWho[key] = a;
   });
-  const rows = Object.values(byWho).map(a => ({ a: a, r: analyze(a) }))
+  const allQAttempts = Object.values(byWho);
+
+  // รวบรวมห้องทั้งหมดที่มีผลการทำ หรือมีในระบบ
+  const roomMap = new Map();
+  if (DB.mode === 'class' && Array.isArray(DB.classes)) {
+    DB.classes.forEach(c => {
+      if (c && c.name) {
+        const nr = normRoom(c.name);
+        if (nr && !roomMap.has(nr)) roomMap.set(nr, c.name.startsWith('ม.') ? c.name : ('ม.' + c.name));
+      }
+    });
+  }
+  allQAttempts.forEach(a => {
+    const rm = attemptRoom(a);
+    const nr = normRoom(rm);
+    if (nr && !roomMap.has(nr)) {
+      roomMap.set(nr, rm.startsWith('ม.') ? rm : ('ม.' + rm));
+    }
+  });
+
+  // นับจำนวนผู้ทำในแต่ละห้อง
+  const roomCounts = {};
+  allQAttempts.forEach(a => {
+    const nr = normRoom(attemptRoom(a));
+    roomCounts[nr] = (roomCounts[nr] || 0) + 1;
+  });
+
+  const sortedRooms = Array.from(roomMap.entries()).sort((a, b) => a[1].localeCompare(b[1], 'th', { numeric: true }));
+
+  // ตรวจสอบห้องปัจจุบันที่เลือก
+  if (DB.cur.statRoom == null) {
+    let defRoom = '';
+    if (DB.mode === 'class' && DB.cur.classId) {
+      const curC = classById(DB.cur.classId);
+      if (curC && curC.name) defRoom = normRoom(curC.name);
+    }
+    DB.cur.statRoom = defRoom;
+  }
+  let curRoomNorm = normRoom(DB.cur.statRoom || '');
+  if (curRoomNorm && !roomMap.has(curRoomNorm)) {
+    curRoomNorm = '';
+    DB.cur.statRoom = '';
+  }
+  const curRoomEntry = sortedRooms.find(r => r[0] === curRoomNorm);
+  const curRoomName = curRoomEntry ? curRoomEntry[1] : (curRoomNorm ? ('ม.' + curRoomNorm) : '');
+
+  // กรองผลการทำตามห้องที่เลือก (ถ้าว่าง = แสดงทุกห้อง)
+  const filteredAttempts = curRoomNorm
+    ? allQAttempts.filter(a => normRoom(attemptRoom(a)) === curRoomNorm)
+    : allQAttempts;
+
+  const rows = filteredAttempts.map(a => ({ a: a, r: analyze(a) }))
     .sort((x, y) => y.r.pct - x.r.pct);
   const pcts = rows.map(x => x.r.pct);
 
-  let h = '<div class="card noprint"><div class="row"><label for="selQz">ชุดโจทย์</label>' +
-    '<select id="selQz" class="grow" style="max-width:520px">' +
+  let h = '<div class="card noprint"><div class="row" style="flex-wrap:wrap;gap:10px;align-items:center">' +
+    '<div class="row" style="align-items:center;gap:6px">' +
+    '<label for="selQz" style="font-weight:700">ชุดโจทย์:</label>' +
+    '<select id="selQz" style="max-width:360px">' +
     quizzes.map(x => '<option value="' + x.id + '"' + (x.id === q.id ? ' selected' : '') + '>' +
-      esc(x.title) + ' (' + x.items.length + ' ข้อ)</option>').join('') + '</select>' +
-    '<button class="sm" id="btnStatPrint">พิมพ์รายงาน</button></div></div>';
+      esc(x.title) + ' (' + x.items.length + ' ข้อ)</option>').join('') + '</select></div>';
 
-  h += '<div class="card"><h3>ภาพรวมชั้นเรียน<span class="sub">' + esc(q.title) + '</span></h3><div class="statgrid">' +
+  if (sortedRooms.length > 0) {
+    h += '<div class="row" style="align-items:center;gap:6px">' +
+      '<label for="selStatRoom" style="font-weight:700">ห้อง:</label>' +
+      '<select id="selStatRoom">' +
+      '<option value=""' + (!curRoomNorm ? ' selected' : '') + '>ทุกห้อง (รวม ' + allQAttempts.length + ' คน)</option>' +
+      sortedRooms.map(([nr, nm]) => '<option value="' + esc(nr) + '"' + (curRoomNorm === nr ? ' selected' : '') + '>' +
+        esc(nm) + ' (' + (roomCounts[nr] || 0) + ' คน)</option>').join('') +
+      '</select></div>';
+  }
+
+  h += '<div class="row" style="margin-left:auto;gap:6px">' +
+    '<button class="sm" id="btnStatPrint">พิมพ์รายงาน</button>' +
+    (typeof isPaper === 'function' && isPaper(q) ? ' <button class="sm primary" id="btnRescorePaper">แก้เฉลยชุดนี้และตรวจใหม่</button>' : '') +
+    '</div></div></div>';
+
+  if (!rows.length) {
+    h += '<div class="card"><h3>ภาพรวมชั้นเรียน<span class="sub">' + esc(q.title) +
+      (curRoomName ? ' · ' + esc(curRoomName) : '') + '</span></h3>' +
+      '<div class="notice info">ยังไม่มีข้อมูลคะแนนของ' + (curRoomName ? ('ห้อง ' + esc(curRoomName)) : 'ชุดนี้') + ' ในชุดแบบทดสอบนี้</div></div>' +
+      cloudPullCardHTML() + importCardHTML();
+    $('#pane-stats').innerHTML = h;
+    $('#selQz').addEventListener('change', e => { DB.cur.statQuizId = e.target.value; save(); renderStats(); });
+    const sr = $('#selStatRoom');
+    if (sr) sr.addEventListener('change', e => { DB.cur.statRoom = e.target.value; save(); renderStats(); });
+    $('#btnStatPrint').addEventListener('click', () => {
+      DB.cur.printKind = 'classreport';
+      DB.cur.printQuizId = q.id;
+      DB.cur.printRoom = curRoomNorm;
+      save();
+      setTab('print');
+    });
+    const brp = $('#btnRescorePaper');
+    if (brp && typeof paperDialog === 'function') brp.addEventListener('click', () => paperDialog(q));
+    bindCloudPullCard(); bindImportCard();
+    return;
+  }
+
+  h += '<div class="card"><h3>ภาพรวมชั้นเรียน<span class="sub">' + esc(q.title) +
+    (curRoomName ? ' · ' + esc(curRoomName) : ' · ทุกห้อง') + '</span></h3><div class="statgrid">' +
     '<div class="stat"><div class="v">' + rows.length + '</div><div class="k">จำนวนผู้ทำ</div></div>' +
     '<div class="stat"><div class="v">' + fmt(mean(pcts), 1) + '%</div><div class="k">ค่าเฉลี่ย</div></div>' +
     '<div class="stat"><div class="v">' + fmt(median(pcts), 1) + '%</div><div class="k">มัธยฐาน</div></div>' +
@@ -9105,8 +9213,11 @@ function renderStats() {
   h += '<div style="margin-top:14px"><b>การกระจายของคะแนน</b>' + histogram(pcts) + '</div></div>';
 
   const showId = DB.mode === 'class';
-  h += '<div class="card"><h3>ผลรายคน<span class="sub">เรียงตามคะแนน</span></h3><div class="tablewrap"><table><thead><tr>' +
-    '<th class="num">อันดับ</th>' + (showId ? '<th class="num">เลขที่</th><th class="num">เลขประจำตัว</th>' : '') +
+  const showRoomCol = !curRoomNorm && sortedRooms.length > 0;
+  h += '<div class="card"><h3>ผลรายคน<span class="sub">' + (curRoomName ? esc(curRoomName) + ' · ' : '') + 'เรียงตามคะแนน</span></h3><div class="tablewrap"><table><thead><tr>' +
+    '<th class="num">อันดับ</th>' +
+    (showRoomCol ? '<th class="num">ห้อง</th>' : '') +
+    (showId ? '<th class="num">เลขที่</th><th class="num">เลขประจำตัว</th>' : '') +
     '<th>ชื่อ</th><th class="num">คะแนน</th><th class="num">ร้อยละ</th>' +
     '<th>ผล</th><th class="num">เวลา</th>' +
     // คอลัมน์นี้ขึ้นเฉพาะเมื่อมีคนในชุดนี้ถูกคุมสอบจริง ไม่งั้นตารางจะรกขึ้นมาเปล่า ๆ
@@ -9115,7 +9226,9 @@ function renderStats() {
   rows.forEach((x, k) => {
     const weak = Object.keys(x.r.bySub).filter(s => x.r.bySub[s].pct < 50);
     const wi = whoInfo(x.a);
+    const rm = attemptRoom(x.a);
     h += '<tr><td class="num">' + (k + 1) + '</td>' +
+      (showRoomCol ? '<td class="num">' + esc(rm || '—') + '</td>' : '') +
       (showId ? '<td class="num">' + esc(wi.no || '—') + '</td><td class="num">' + esc(wi.sid || '—') + '</td>' : '') +
       '<td>' + esc(wi.name) + '</td>' +
       '<td class="num">' + fmt(x.r.got) + '/' + x.r.max + '</td>' +
@@ -9183,23 +9296,41 @@ function renderStats() {
 
   // ส่งออกคะแนนไปยังโปรแกรมบันทึกคะแนน
   const done = rows.length;
-  const total = (DB.mode === 'class' && DB.cur.classId)
-    ? DB.students.filter(s => s.classId === DB.cur.classId).length : done;
-  h += '<div class="card noprint"><h3>ส่งออกคะแนน<span class="sub">' + esc(q.title) + '</span></h3>' +
-    '<div class="hint" style="margin-bottom:11px">คัดลอกคะแนนเป็นคอลัมน์เดียวเรียงตามเลขที่ ' +
+  let targetCls = null;
+  if (curRoomNorm && Array.isArray(DB.classes)) {
+    targetCls = DB.classes.find(c => normRoom(c.name) === curRoomNorm);
+  } else if (!curRoomNorm && DB.mode === 'class' && DB.cur.classId) {
+    targetCls = classById(DB.cur.classId);
+  }
+  const totalInRoom = targetCls ? DB.students.filter(s => s.classId === targetCls.id).length : done;
+  const roomLabel = curRoomName ? ('ห้อง ' + curRoomName) : 'ทุกห้อง';
+
+  h += '<div class="card noprint"><h3>ส่งออกคะแนน<span class="sub">' + esc(q.title) + ' (' + esc(roomLabel) + ')</span></h3>' +
+    '<div class="hint" style="margin-bottom:11px">คัดลอกคะแนน ' + esc(roomLabel) + ' เป็นคอลัมน์เดียวเรียงตามเลขที่ ' +
     'แล้วไปวางในช่องแรกของคอลัมน์คะแนนใน <b>gradebook.html</b> ได้ทันที' +
-    (total > done ? '<br><span style="color:var(--warn)">ยังมี ' + (total - done) +
+    (totalInRoom > done ? '<br><span style="color:var(--warn)">ยังมี ' + (totalInRoom - done) +
       ' คนที่ไม่ได้ทำ — แถวของคนเหล่านั้นจะเว้นว่างไว้ ตำแหน่งแถวจึงยังตรงกับสมุดคะแนน</span>' : '') +
-    '</div><div class="row"><button class="primary" id="btnCopyScore">คัดลอกคอลัมน์คะแนน</button>' +
-    '<button id="btnCsvScore">ดาวน์โหลด CSV แบบเต็ม</button></div></div>';
+    '</div><div class="row">' +
+    '<button class="primary" id="btnCopyScore">คัดลอกคอลัมน์คะแนน (' + esc(curRoomName || 'ทุกห้อง') + ')</button>' +
+    '<button id="btnCsvScore">ดาวน์โหลด CSV (' + esc(curRoomName || 'ทุกห้อง') + ')</button></div></div>';
 
   h += cloudPullCardHTML() + importCardHTML();
 
   $('#pane-stats').innerHTML = h;
   $('#selQz').addEventListener('change', e => { DB.cur.statQuizId = e.target.value; save(); renderStats(); });
-  $('#btnStatPrint').addEventListener('click', () => { DB.cur.printKind = 'classreport'; save(); setTab('print'); });
-  $('#btnCopyScore').addEventListener('click', () => exportScoreColumn(q.id));
-  $('#btnCsvScore').addEventListener('click', () => exportScoreCsv(q.id));
+  const sr = $('#selStatRoom');
+  if (sr) sr.addEventListener('change', e => { DB.cur.statRoom = e.target.value; save(); renderStats(); });
+  $('#btnStatPrint').addEventListener('click', () => {
+    DB.cur.printKind = 'classreport';
+    DB.cur.printQuizId = q.id;
+    DB.cur.printRoom = curRoomNorm;
+    save();
+    setTab('print');
+  });
+  const brp = $('#btnRescorePaper');
+  if (brp && typeof paperDialog === 'function') brp.addEventListener('click', () => paperDialog(q));
+  $('#btnCopyScore').addEventListener('click', () => exportScoreColumn(q.id, curRoomNorm));
+  $('#btnCsvScore').addEventListener('click', () => exportScoreCsv(q.id, curRoomNorm));
   bindCloudPullCard(); bindImportCard();
 }
 
@@ -10974,44 +11105,94 @@ async function mergeStudentFiles() {
 }
 
 /** แถวคะแนนของชุดโจทย์หนึ่ง เรียงตามเลขที่ เพื่อส่งออกไปยังโปรแกรมบันทึกคะแนน */
-function scoreRows(quizId) {
+function scoreRows(quizId, filterRoom) {
   const q = DB.quizzes.find(x => x.id === quizId);
   if (!q) return { q: null, rows: [] };
+  const filterNorm = filterRoom ? normRoom(filterRoom) : '';
   const best = {};
   DB.attempts.filter(a => a.quizId === quizId && a.finishedAt).forEach(a => {
+    if (filterNorm && normRoom(attemptRoom(a)) !== filterNorm) return;
     const key = a.studentId || ('solo:' + (a.soloName || ''));
     if (!best[key] || a.finishedAt > best[key].finishedAt) best[key] = a;
   });
   const rows = [];
-  const roster = DB.students.filter(s => !DB.cur.classId || s.classId === DB.cur.classId);
+  let targetCls = null;
+  if (filterNorm && Array.isArray(DB.classes)) {
+    targetCls = DB.classes.find(c => normRoom(c.name) === filterNorm);
+  } else if (!filterNorm && DB.mode === 'class' && DB.cur.classId) {
+    targetCls = classById(DB.cur.classId);
+  }
+  let roster = [];
+  if (targetCls) {
+    roster = DB.students.filter(s => s.classId === targetCls.id || (s.cls && normRoom(s.cls) === filterNorm));
+  } else if (filterNorm) {
+    roster = DB.students.filter(s => s.cls && normRoom(s.cls) === filterNorm);
+  } else if (DB.mode === 'class') {
+    roster = DB.students.slice();
+  }
+
   if (DB.mode === 'class' && roster.length) {
+    const norm = v => String(v == null ? '' : v).replace(/\s+/g, ' ').trim();
+    const normSid = v => norm(v).replace(/^0+/, '') || '0';
+    const claimedKeys = new Set();
     // ยึดรายชื่อในห้องเป็นหลัก คนที่ยังไม่ได้ทำให้เว้นว่างไว้ ตำแหน่งแถวจะได้ตรงกับสมุดคะแนน
-    roster.slice().sort((a, b) => (a.no || 0) - (b.no || 0)).forEach(s => {
-      const a = best[s.id];
+    roster.slice().sort((a, b) => {
+      if (a.classId !== b.classId) {
+        const ca = (classById(a.classId) || {}).name || '';
+        const cb = (classById(b.classId) || {}).name || '';
+        const cmp = ca.localeCompare(cb, 'th', { numeric: true });
+        if (cmp !== 0) return cmp;
+      }
+      return (a.no || 0) - (b.no || 0);
+    }).forEach(s => {
+      let a = best[s.id];
+      if (a) {
+        claimedKeys.add(s.id);
+      } else {
+        // Fallback: จับคู่ด้วย sid หรือชื่อ เผื่อผลถูกดึงมาก่อนมีรายชื่อในเครื่อง หรือ studentId หลุด
+        const sSidNorm = s.sid ? normSid(s.sid) : '';
+        const sNameNorm = norm(s.name);
+        for (const k of Object.keys(best)) {
+          if (claimedKeys.has(k)) continue;
+          const cand = best[k];
+          const candSidNorm = cand.sid ? normSid(cand.sid) : '';
+          const candNameNorm = cand.soloName ? norm(cand.soloName) : '';
+          if ((sSidNorm && candSidNorm && sSidNorm === candSidNorm) ||
+              (sNameNorm && candNameNorm && sNameNorm === candNameNorm)) {
+            a = cand;
+            claimedKeys.add(k);
+            if (!cand.studentId) cand.studentId = s.id;
+            break;
+          }
+        }
+      }
       const r = a ? analyze(a) : null;
-      rows.push({ no: s.no, sid: s.sid || '', name: s.name, got: r ? r.got : '', max: quizMaxScore(q),
+      const sCls = (classById(s.classId) || {}).name || '';
+      rows.push({ classId: s.classId, className: sCls, no: s.no, sid: s.sid || '', name: s.name, got: r ? r.got : '', max: quizMaxScore(q),
                   pct: r ? Math.round(r.pct) : '', sec: r ? r.sec : '', done: !!a });
     });
     // ผลที่จับคู่กับรายชื่อไม่ได้ (เช่น นักเรียนพิมพ์ชื่อไม่ตรง หรือย้ายเข้าใหม่)
-    // ต่อท้ายไว้เสมอ ไม่ปล่อยให้หายไปเงียบ ๆ ครูจะได้เห็นแล้วแก้รายชื่อได้
-    Object.keys(best).filter(k => k.indexOf('solo:') === 0).forEach(k => {
+    Object.keys(best).filter(k => !claimedKeys.has(k) && k.indexOf('solo:') === 0).forEach(k => {
       const a = best[k], r = analyze(a);
-      rows.push({ no: '', sid: '', name: a.soloName || '', got: r.got, max: quizMaxScore(q),
+      rows.push({ classId: '', className: attemptRoom(a), no: '', sid: '', name: a.soloName || '', got: r.got, max: quizMaxScore(q),
                   pct: Math.round(r.pct), sec: r.sec, done: true, orphan: true });
     });
   } else {
-    Object.values(best).sort((x, y) => String(x.soloName || '').localeCompare(String(y.soloName || ''), 'th'))
-      .forEach((a, i) => {
-        const r = analyze(a);
-        rows.push({ no: i + 1, sid: '', name: a.soloName || '', got: r.got, max: quizMaxScore(q),
-                    pct: Math.round(r.pct), sec: r.sec, done: true });
-      });
+    Object.values(best).sort((x, y) => {
+      const na = Number(x.no) || 999, nb = Number(y.no) || 999;
+      if (na !== nb) return na - nb;
+      return String(attemptWho(x)).localeCompare(String(attemptWho(y)), 'th');
+    }).forEach((a, i) => {
+      const r = analyze(a);
+      rows.push({ classId: '', className: attemptRoom(a), no: a.no || (i + 1), sid: a.sid || '', name: attemptWho(a), got: r.got, max: quizMaxScore(q),
+                  pct: Math.round(r.pct), sec: r.sec, done: true });
+    });
   }
-  return { q: q, rows: rows };
+  return { q: q, rows: rows, filterRoom: filterNorm, targetCls: targetCls };
 }
 
-async function exportScoreColumn(quizId) {
-  const { q, rows } = scoreRows(quizId);
+async function exportScoreColumn(quizId, filterRoom) {
+  const { q, rows, targetCls } = scoreRows(quizId, filterRoom);
   if (!q) return;
   // คอลัมน์ที่คัดลอกต้องมีเฉพาะคนในรายชื่อ ไม่งั้นแถวจะเลื่อนไม่ตรงกับสมุดคะแนน
   const inList = rows.filter(r => !r.orphan);
@@ -11019,27 +11200,30 @@ async function exportScoreColumn(quizId) {
   const txt = inList.map(r => (r.done ? fmt(r.got) : '')).join('\n');
   const ok = await copyText(txt);
   if (!ok) { toast('คัดลอกไม่สำเร็จ ให้ใช้ปุ่มดาวน์โหลด CSV แทน', 'bad'); return; }
+  const rName = targetCls ? targetCls.name : (filterRoom ? ('ม.' + filterRoom) : 'ทุกห้อง');
   if (orphans.length) {
-    toast('คัดลอก ' + inList.length + ' แถวแล้ว — แต่มี ' + orphans.length +
+    toast('คัดลอก ' + inList.length + ' แถวแล้ว (' + rName + ') — แต่มี ' + orphans.length +
       ' คนที่ไม่อยู่ในรายชื่อและไม่ถูกคัดลอก ดูรายละเอียดในไฟล์ CSV', 'warn');
   } else {
-    toast('คัดลอกคะแนน ' + inList.length + ' แถวแล้ว — ไปวางในช่องแรกของคอลัมน์คะแนนได้เลย', 'ok');
+    toast('คัดลอกคะแนน ' + inList.length + ' แถวแล้ว (' + rName + ') — ไปวางในช่องแรกของคอลัมน์คะแนนได้เลย', 'ok');
   }
 }
 
-function exportScoreCsv(quizId) {
-  const { q, rows } = scoreRows(quizId);
+function exportScoreCsv(quizId, filterRoom) {
+  const { q, rows, targetCls } = scoreRows(quizId, filterRoom);
   if (!q) return;
   const esc2 = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
-  const clsName = (DB.mode === 'class' && DB.cur.classId) ? (classById(DB.cur.classId) || {}).name || '' : '';
   const lines = [['ชั้น', 'เลขที่', 'เลขประจำตัว', 'ชื่อ-นามสกุล', 'คะแนน', 'คะแนนเต็ม', 'ร้อยละ',
     'เวลาที่ใช้(วินาที)', 'สถานะ'].map(esc2).join(',')];
-  rows.forEach(r => lines.push([r.orphan ? '' : clsName, r.no, r.sid || '', r.name,
-    r.done ? fmt(r.got) : '', r.max, r.done ? r.pct : '', r.done ? Math.round(r.sec) : '',
-    r.orphan ? 'ไม่พบชื่อนี้ในรายชื่อห้อง' : (r.done ? 'ทำแล้ว' : 'ยังไม่ได้ทำ')].map(esc2).join(',')));
-  // ﻿ เพื่อให้ Excel เปิดไฟล์แล้วภาษาไทยไม่เพี้ยน
-  download(new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' }),
-    'คะแนน_' + String(q.title).replace(/[\\/:*?"<>|]/g, '') + '.csv');
+  rows.forEach(r => {
+    const cName = r.className || (targetCls ? targetCls.name : '');
+    lines.push([r.orphan ? (r.className || '') : cName, r.no, r.sid || '', r.name,
+      r.done ? fmt(r.got) : '', r.max, r.done ? r.pct : '', r.done ? Math.round(r.sec) : '',
+      r.orphan ? 'ไม่พบชื่อนี้ในรายชื่อห้อง' : (r.done ? 'ทำแล้ว' : 'ยังไม่ได้ทำ')].map(esc2).join(','));
+  });
+  const rSuffix = targetCls ? ('_' + targetCls.name) : (filterRoom ? ('_ม.' + filterRoom) : '');
+  download(new Blob(['\ufeff' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' }),
+    'คะแนน' + rSuffix.replace(/[\\/:*?"<>|]/g, '') + '_' + String(q.title).replace(/[\\/:*?"<>|]/g, '') + '.csv');
   toast('ดาวน์โหลดไฟล์ CSV แล้ว', 'ok');
 }
 
@@ -11357,19 +11541,25 @@ function buildDoc(kind, opt) {
   if (kind === 'classreport') {
     const q = DB.quizzes.find(x => x.id === o.quizId);
     if (!q) return '<div class="hint">ยังไม่ได้เลือกชุดโจทย์</div>';
+    const filterNorm = normRoom(o && o.room != null ? o.room : (DB.cur.printRoom || ''));
     const probs = problemsOf(q);
     const byWho = {};
     DB.attempts.filter(a => a.quizId === q.id && a.finishedAt).forEach(a => {
+      if (filterNorm && normRoom(attemptRoom(a)) !== filterNorm) return;
       const key = a.studentId || ('solo:' + (a.soloName || ''));
       if (!byWho[key] || a.finishedAt > byWho[key].finishedAt) byWho[key] = a;
     });
     const rows = Object.values(byWho).map(a => ({ a: a, r: analyze(a) })).sort((x, y) => y.r.pct - x.r.pct);
-    if (!rows.length) return '<div class="hint">ยังไม่มีผู้ทำชุดนี้จนจบ</div>';
+    if (!rows.length) return '<div class="hint">ยังไม่มีผู้ทำชุดนี้' + (filterNorm ? (' ในห้อง ม.' + filterNorm) : '') + ' จนจบ</div>';
     const pcts = rows.map(x => x.r.pct);
-    const cls = DB.mode === 'class' && DB.cur.classId ? (classById(DB.cur.classId) || {}).name : '';
+    let clsTitle = 'ทุกห้อง';
+    if (filterNorm) {
+      const fc = (DB.classes || []).find(c => normRoom(c.name) === filterNorm);
+      clsTitle = fc ? ('ชั้น ' + fc.name) : ('ชั้น ม.' + filterNorm);
+    }
 
     let h = '<div class="pg">' + docHead('รายงานผลการทำแบบฝึกหัด', '<b>' + esc(q.title) + '</b>',
-      (cls ? 'ชั้น ' + esc(cls) + ' · ' : '') + 'ผู้ทำ ' + rows.length + ' คน · ออกรายงาน ' + thDate(Date.now()));
+      (clsTitle ? clsTitle + ' · ' : '') + 'ผู้ทำ ' + rows.length + ' คน · ออกรายงาน ' + thDate(Date.now()));
     h += '<b>สถิติภาพรวม</b><table style="margin:5px 0 10px"><tbody><tr>' +
       '<th>จำนวนผู้ทำ</th><td>' + rows.length + ' คน</td>' +
       '<th>คะแนนเต็ม</th><td>' + fmt(quizMaxScore(q)) + ' คะแนน</td></tr><tr>' +
@@ -11381,21 +11571,29 @@ function buildDoc(kind, opt) {
       '<th>ไม่ผ่านเกณฑ์</th><td>' + rows.filter(x => x.r.pct < DB.settings.passPct).length + ' คน</td></tr></tbody></table>';
     h += '<div style="text-align:center;margin:8px 0 12px">' + histogram(pcts) + '</div>';
 
-    // เรียงตามเลขที่ในเอกสารทางการ จะได้เทียบกับ ปพ. ได้ง่าย
+    // เรียงตามห้องและเลขที่ในเอกสารทางการ จะได้เทียบกับ ปพ. ได้ง่าย
     const byNo = rows.slice().sort((x, y) => {
+      const rmA = normRoom(attemptRoom(x.a)), rmB = normRoom(attemptRoom(y.a));
+      if (!filterNorm && rmA !== rmB) return rmA.localeCompare(rmB, 'th', { numeric: true });
       const a1 = Number(whoInfo(x.a).no) || 999, b1 = Number(whoInfo(y.a).no) || 999;
       return a1 - b1 || String(whoInfo(x.a).name).localeCompare(String(whoInfo(y.a).name), 'th');
     });
     // คอลัมน์คุมสอบขึ้นเฉพาะเมื่อมีคนในชุดนี้ถูกคุมสอบจริง ไม่งั้นรายงานปกติจะรกขึ้นมาเปล่า ๆ
     const showOut = rows.some(x => x.r.nOut || x.r.autoBy);
-    h += '<b>ผลรายคน</b><table style="margin:5px 0 10px"><thead><tr><th>เลขที่</th><th>เลขประจำตัว</th>' +
+    const showRoomInReport = !filterNorm && rows.some(x => attemptRoom(x.a));
+    h += '<b>ผลรายคน</b><table style="margin:5px 0 10px"><thead><tr>' +
+      (showRoomInReport ? '<th>ห้อง</th>' : '') +
+      '<th>เลขที่</th><th>เลขประจำตัว</th>' +
       '<th>ชื่อ-นามสกุล</th><th>คะแนน</th><th>ร้อยละ</th><th>ผล</th>' +
       (showOut ? '<th>ออกจากแอป</th>' : '') +
       '<th>หัวข้อที่ต่ำกว่าเกณฑ์</th></tr></thead><tbody>' +
       byNo.map(x => {
         const weak = Object.keys(x.r.bySub).filter(s => x.r.bySub[s].pct < 50);
         const wi = whoInfo(x.a);
-        return '<tr><td>' + esc(wi.no || '—') + '</td><td>' + esc(wi.sid || '—') + '</td>' +
+        const rm = attemptRoom(x.a);
+        return '<tr>' +
+          (showRoomInReport ? '<td>' + esc(rm || '—') + '</td>' : '') +
+          '<td>' + esc(wi.no || '—') + '</td><td>' + esc(wi.sid || '—') + '</td>' +
           '<td>' + esc(wi.name) + '</td>' +
           '<td>' + fmt(x.r.got) + '/' + x.r.max + '</td><td>' + Math.round(x.r.pct) + '</td>' +
           '<td>' + (x.r.pct >= DB.settings.passPct ? 'ผ่าน' : 'ไม่ผ่าน') + '</td>' +
@@ -11413,7 +11611,7 @@ function buildDoc(kind, opt) {
         if (!p) return '<tr><td>' + (i + 1) + '</td><td colspan="5">— ข้อนี้ใช้โจทย์จากบทที่โปรแกรมรุ่นนี้ยังไม่มี —</td></tr>';
         const sc = rows.map(x => (x.a.answers[i] || {}).score || 0);
         const pv = mean(sc);
-        const rv = mean(hi.map(x => (x.a.answers[i] || {}).score || 0)) - mean(lo.map(x => (x.a.answers[i] || {}).score || 0));
+        const rv = rows.length >= 2 ? mean(hi.map(x => (x.a.answers[i] || {}).score || 0)) - mean(lo.map(x => (x.a.answers[i] || {}).score || 0)) : 0;
         return '<tr><td>' + (i + 1) + '</td><td>' + esc(p.sub) + '</td><td>' + p.level + '</td>' +
           '<td>' + fmt(sc.reduce((s, v) => s + v, 0)) + '/' + rows.length + '</td>' +
           '<td>' + fmt(pv, 2) + '</td><td>' + fmt(rv, 2) + '</td></tr>';
@@ -11461,10 +11659,41 @@ function renderPrint() {
   h += '<div class="card noprint"><h3>2. ตั้งค่าเอกสาร</h3>';
   if (kind === 'worksheet' || kind === 'answerkey' || kind === 'classreport') {
     if (!DB.quizzes.length) h += '<div class="notice warn">ยังไม่มีชุดโจทย์ — ไปสร้างที่แท็บ <b>สร้างชุดโจทย์</b> ก่อน</div>';
-    else h += '<div class="row"><label for="pQuiz">ชุดโจทย์</label><select id="pQuiz" class="grow" style="max-width:520px">' +
-      DB.quizzes.slice().reverse().map(q => '<option value="' + q.id + '"' +
-        (q.id === DB.cur.printQuizId ? ' selected' : '') + '>' + esc(q.title) + ' (' + q.items.length + ' ข้อ)</option>').join('') +
-      '</select></div>';
+    else {
+      h += '<div class="row" style="flex-wrap:wrap;gap:10px;align-items:center">' +
+        '<div class="row" style="align-items:center;gap:6px">' +
+        '<label for="pQuiz" style="font-weight:700">ชุดโจทย์:</label><select id="pQuiz" style="max-width:380px">' +
+        DB.quizzes.slice().reverse().map(q => '<option value="' + q.id + '"' +
+          (q.id === DB.cur.printQuizId ? ' selected' : '') + '>' + esc(q.title) + ' (' + q.items.length + ' ข้อ)</option>').join('') +
+        '</select></div>';
+
+      if (kind === 'classreport') {
+        const pRoomMap = new Map();
+        if (DB.mode === 'class' && Array.isArray(DB.classes)) {
+          DB.classes.forEach(c => {
+            if (c && c.name) {
+              const nr = normRoom(c.name);
+              if (nr && !pRoomMap.has(nr)) pRoomMap.set(nr, c.name.startsWith('ม.') ? c.name : ('ม.' + c.name));
+            }
+          });
+        }
+        DB.attempts.filter(a => a.quizId === DB.cur.printQuizId && a.finishedAt).forEach(a => {
+          const rm = attemptRoom(a);
+          const nr = normRoom(rm);
+          if (nr && !pRoomMap.has(nr)) pRoomMap.set(nr, rm.startsWith('ม.') ? rm : ('ม.' + rm));
+        });
+        const pSortedRooms = Array.from(pRoomMap.entries()).sort((a, b) => a[1].localeCompare(b[1], 'th', { numeric: true }));
+        const curPrintRoom = normRoom(DB.cur.printRoom || '');
+
+        h += '<div class="row" style="align-items:center;gap:6px">' +
+          '<label for="pRoom" style="font-weight:700">ห้องเรียน:</label><select id="pRoom">' +
+          '<option value=""' + (!curPrintRoom ? ' selected' : '') + '>ทุกห้อง</option>' +
+          pSortedRooms.map(([nr, nm]) => '<option value="' + esc(nr) + '"' + (curPrintRoom === nr ? ' selected' : '') + '>' +
+            esc(nm) + '</option>').join('') +
+          '</select></div>';
+      }
+      h += '</div>';
+    }
   }
   if (kind === 'worksheet' || kind === 'answerkey') {
     h += '<div class="row" style="margin-top:11px"><label>ความหนาแน่น</label>' +
@@ -11519,7 +11748,8 @@ function renderPrint() {
   $('#pane-print').innerHTML = h;
   $('#printarea').innerHTML = buildDoc(kind, {
     quizId: DB.cur.printQuizId, attemptId: DB.cur.printAtId,
-    withSteps: DB.cur.wsSteps, onePer: DB.cur.wsOne, density: DB.cur.printDens
+    withSteps: DB.cur.wsSteps, onePer: DB.cur.wsOne, density: DB.cur.printDens,
+    room: DB.cur.printRoom
   });
   // คลาสความหนาแน่นคุมขนาดรูปและความสูงบรรทัด · keydoc ปล่อยให้ใบเฉลยแบ่งกลางข้อได้
   $('#printarea').className = 'dn-' + dens.k + (kind === 'answerkey' ? ' keydoc' : '');
@@ -11531,6 +11761,7 @@ function renderPrint() {
     DB.cur.printKind = e.target.value; save(); renderPrint();
   }));
   const pq = $('#pQuiz'); if (pq) pq.addEventListener('change', e => { DB.cur.printQuizId = e.target.value; save(); renderPrint(); });
+  const pr = $('#pRoom'); if (pr) pr.addEventListener('change', e => { DB.cur.printRoom = e.target.value; save(); renderPrint(); });
   const pa = $('#pAt'); if (pa) pa.addEventListener('change', e => { DB.cur.printAtId = e.target.value; save(); renderPrint(); });
   const ws = $('#wsSteps'); if (ws) ws.addEventListener('change', e => { DB.cur.wsSteps = e.target.checked; save(); renderPrint(); });
   const gw = $('#goSetWork'); if (gw) gw.addEventListener('click', () => setTab('setting'));
