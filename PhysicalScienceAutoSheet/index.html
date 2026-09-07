@@ -4782,15 +4782,34 @@ function paperDialog(quiz) {
   });
 }
 
+function normRoom(r) {
+  return String(r || '').replace(/^ห้อง\s*/, '').replace(/^ม\./, '').replace(/\s+/g, '').trim();
+}
+
+function isPickMatch(pick, target) {
+  if (pick == null || target == null) return false;
+  if (Number(pick) === Number(target)) return true;
+  const sPick = String(pick).trim().toUpperCase();
+  const sTarget = String(target).trim().toUpperCase();
+  if (sPick === sTarget) return true;
+  const th = 'กขคงจ', en = 'ABCDE';
+  const pIdx = th.indexOf(sPick) >= 0 ? th.indexOf(sPick) : en.indexOf(sPick);
+  const tIdx = th.indexOf(sTarget) >= 0 ? th.indexOf(sTarget) : en.indexOf(sTarget);
+  if (pIdx >= 0 && (pIdx === Number(target) || pIdx === tIdx)) return true;
+  if (tIdx >= 0 && Number(pick) === tIdx) return true;
+  return false;
+}
+
 /** หน้าต่างเลือกห้องและเกณฑ์การตรวจคะแนนใหม่เมื่อครูแก้เฉลยกระดาษคำตอบ */
 function rescorePaperDialog(quiz, oldItems, newItems, pp, title, lim, changedKeys) {
   const attempts = DB.attempts.filter(a => a.quizId === quiz.id);
   const roomMap = {};
   attempts.forEach(a => {
     const wi = whoInfo(a);
-    const r = (wi.cls || a.room || 'ไม่ระบุห้อง').trim();
-    if (!roomMap[r]) roomMap[r] = [];
-    roomMap[r].push(a);
+    const nr = normRoom(wi.cls || a.room);
+    const rKey = nr ? ('ม.' + nr) : 'ไม่ระบุห้อง';
+    if (!roomMap[rKey]) roomMap[rKey] = [];
+    roomMap[rKey].push(a);
   });
   const roomList = Object.keys(roomMap).sort();
 
@@ -4811,34 +4830,40 @@ function rescorePaperDialog(quiz, oldItems, newItems, pp, title, lim, changedKey
       '<b>ข้อที่มีการแก้เฉลย:</b><div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:4px">' + keySummaryHTML + '</div></div>' +
       '<div class="row" style="margin-bottom:14px;align-items:center">' +
       '<label for="rcRoom" style="font-weight:700">เลือกห้องที่ต้องการตรวจคะแนนใหม่:</label>' +
-      '<select id="rcRoom" class="grow" style="max-width:320px">' +
-      '<option value="all">ทุกห้อง (ทั้งหมด ' + attempts.length + ' คน)</option>' +
+      '<select id="rcRoom" class="grow" style="max-width:340px">' +
+      '<option value="all">ทุกห้องที่ทำชุดนี้ (ทั้งหมด ' + attempts.length + ' คน)</option>' +
       roomList.map(r => '<option value="' + esc(r) + '">ห้อง ' + esc(r) + ' (' + roomMap[r].length + ' คน)</option>').join('') +
       '</select></div>' +
       '<div style="margin-bottom:12px;background:var(--line2);border-radius:10px;padding:12px 14px">' +
       '<div style="font-weight:700;margin-bottom:6px">เกณฑ์การตรวจคะแนนในข้อที่แก้เฉลย:</div>' +
       '<label style="display:block;margin:6px 0;cursor:pointer">' +
-      '<input type="radio" name="rcRule" value="free" checked> ' +
-      '<b>ให้คะแนนทุกคนในข้อที่แก้เฉลย (ฟรีข้อนี้)</b>' +
-      '<div class="hint" style="margin-left:22px">นักเรียนทุกคนในห้องที่เลือกจะได้ 1 คะแนนเต็มในข้อที่แก้เฉลยนี้ (ยกผลประโยชน์ให้นักเรียน แนะนำเมื่อเฉลยเดิมผิด)</div></label>' +
+      '<input type="radio" name="rcRule" value="recheck" checked> ' +
+      '<b>ตรวจตามเฉลยใหม่ (คนตอบเฉลยใหม่ได้ 1 คะแนน)</b>' +
+      '<div class="hint" style="margin-left:22px">ตรวจคำตอบของนักเรียนทุกคนเทียบกับเฉลยใหม่ทันทีกรณีมีตัวเลือกบันทึกไว้ · คนที่ไม่มีข้อมูลตัวเลือกในระบบ (ผลเก่าจากชีต) สามารถติ๊กเลือกข้างล่างได้</div></label>' +
       '<label style="display:block;margin:6px 0;cursor:pointer">' +
-      '<input type="radio" name="rcRule" value="strict"> ' +
-      '<b>ตรวจยึดตามเฉลยใหม่อย่างเคร่งครัด</b>' +
-      '<div class="hint" style="margin-left:22px">คนที่ตอบเฉลยเดิมจะถูกปรับเป็น 0 คะแนน และสามารถเลือกติ๊กรายชื่อคนที่ตอบเฉลยใหม่ถูกได้ด้านล่าง</div></label>' +
+      '<input type="radio" name="rcRule" value="free"> ' +
+      '<b>ยกผลประโยชน์ให้นักเรียน (ฟรีข้อนี้ทุกคน)</b>' +
+      '<div class="hint" style="margin-left:22px">นักเรียนทุกคนในห้องที่เลือกจะได้ 1 คะแนนเต็มในข้อที่แก้เฉลยนี้</div></label>' +
       '</div>' +
-      '<div id="rcStudentBox" style="display:none;margin-top:10px">' +
+      '<div id="rcStudentBox" style="margin-top:10px">' +
       '<div class="row" style="margin-bottom:6px;align-items:center">' +
-      '<span class="hint">ติ๊กเลือกนักเรียนที่ตอบเฉลยใหม่ถูกในข้อที่แก้:</span><div class="sp"></div>' +
+      '<span class="hint" id="rcStudentHint">รายชื่อนักเรียนและคำตอบ:</span><div class="sp"></div>' +
+      '<button type="button" class="sm" id="btnRcCheckMatch">ติ๊กคนที่ตรงเฉลยใหม่อัตโนมัติ</button>' +
       '<button type="button" class="sm" id="btnRcCheckAll">เลือกทั้งหมด</button>' +
       '<button type="button" class="sm" id="btnRcClearAll">ล้างทั้งหมด</button></div>' +
-      '<div id="rcStudentList" style="max-height:200px;overflow-y:auto;border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--bg)"></div>' +
+      '<div id="rcStudentList" style="max-height:220px;overflow-y:auto;border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--bg)"></div>' +
       '</div>',
     buttons: [
       { label: 'ยกเลิก', act: (c) => { c(); renderMake(); } },
       { label: 'ประมวลผลคะแนนใหม่ทันที', cls: 'primary', act: async (close, root) => {
           const chosenRoom = $('#rcRoom', root).value;
           const rule = $('input[name=rcRule]:checked', root).value;
-          const targetAttempts = (chosenRoom === 'all') ? attempts : (roomMap[chosenRoom] || []);
+          const targetAttempts = (chosenRoom === 'all')
+            ? attempts
+            : attempts.filter(a => {
+                const wi = whoInfo(a);
+                return normRoom(wi.cls || a.room) === normRoom(chosenRoom);
+              });
           const checkedIds = new Set($$('[data-rcstd]:checked', root).map(cb => cb.dataset.rcstd));
 
           quiz.title = title;
@@ -4856,19 +4881,23 @@ function rescorePaperDialog(quiz, oldItems, newItems, pp, title, lim, changedKey
                 a.answers[ck.k] = { raw: [], pick: null, checked: false, score: 0, tries: 1, revealed: false, sec: 0 };
               }
               const it = a.answers[ck.k];
-              if (it.pick != null) {
-                it.score = (it.pick === ck.newAns) ? 1 : (rule === 'free' ? 1 : 0);
+              if (rule === 'free') {
+                it.score = 1;
+                if (it.pick == null) it.pick = ck.newAns;
               } else {
-                if (rule === 'free') {
-                  it.score = 1;
-                  it.pick = ck.newAns;
+                if (it.pick != null) {
+                  it.score = isPickMatch(it.pick, ck.newAns) ? 1 : 0;
                 } else {
                   if (checkedIds.has(a.id)) {
                     it.score = 1;
                     it.pick = ck.newAns;
                   } else {
-                    it.score = 0;
-                    it.pick = ck.oldAns;
+                    if (it.score >= 1) {
+                      it.pick = ck.oldAns;
+                      it.score = 0;
+                    } else {
+                      it.score = 0;
+                    }
                   }
                 }
               }
@@ -4884,40 +4913,75 @@ function rescorePaperDialog(quiz, oldItems, newItems, pp, title, lim, changedKey
 
           DB.cur.statQuizId = quiz.id;
           if (chosenRoom !== 'all') {
-            const c = (DB.classes || []).find(x => x.name === chosenRoom);
+            const c = (DB.classes || []).find(x => normRoom(x.name) === normRoom(chosenRoom));
             if (c) DB.cur.classId = c.id;
           }
           setTab('stats');
-          toast('บันทึกเฉลยและประมวลผลคะแนนใหม่ให้ ' + updatedCount + ' คนเรียบร้อยแล้ว', 'ok');
+          renderStats();
+          toast('บันทึกเฉลยและตรวจคะแนนใหม่ให้ ' + updatedCount + ' คนเรียบร้อยแล้ว', 'ok');
         } }
     ],
     onMount: root => {
       const roomSel = $('#rcRoom', root);
       const stuBox = $('#rcStudentBox', root);
       const stuList = $('#rcStudentList', root);
-      const renderStudents = () => {
+
+      const getList = () => {
         const r = roomSel.value;
-        const list = (r === 'all' ? attempts : (roomMap[r] || [])).slice().sort((x, y) => {
+        const list = (r === 'all'
+          ? attempts
+          : attempts.filter(a => normRoom(whoInfo(a).cls || a.room) === normRoom(r))
+        ).slice().sort((x, y) => {
           const wx = whoInfo(x), wy = whoInfo(y);
           return (Number(wx.no) || 999) - (Number(wy.no) || 999);
         });
+        return list;
+      };
+
+      const renderStudents = () => {
+        const list = getList();
         stuList.innerHTML = list.map(a => {
           const wi = whoInfo(a);
-          return '<div style="padding:3px 0"><label style="cursor:pointer">' +
-            '<input type="checkbox" data-rcstd="' + esc(a.id) + '"> ' +
-            'เลขที่ ' + esc(wi.no || '—') + ' · <b>' + esc(wi.name) + '</b>' +
-            (r === 'all' && wi.cls ? ' (' + esc(wi.cls) + ')' : '') +
+          // ดูว่านักเรียนตอบตรงกับเฉลยใหม่หรือไม่
+          const details = changedKeys.map(ck => {
+            const it = a.answers[ck.k];
+            if (!it || it.pick == null) return '<span class="hint">(ไม่มีข้อมูลตัวเลือก)</span>';
+            const matched = isPickMatch(it.pick, ck.newAns);
+            const ansLbl = paperLabel(pp.st, it.pick);
+            return matched
+              ? '<span class="tag ok" style="font-size:12px">ข้อ ' + (ck.k + 1) + ' ตอบ ' + esc(ansLbl) + ' ✓</span>'
+              : '<span class="tag bad" style="font-size:12px">ข้อ ' + (ck.k + 1) + ' ตอบ ' + esc(ansLbl) + '</span>';
+          }).join(' ');
+
+          // ถ้ามีตัวเลือกตรงเฉลยใหม่ ให้ pre-check
+          const shouldCheck = changedKeys.some(ck => {
+            const it = a.answers[ck.k];
+            return it && it.pick != null && isPickMatch(it.pick, ck.newAns);
+          });
+
+          return '<div style="padding:4px 0;border-bottom:1px dashed var(--line2)"><label style="cursor:pointer;display:flex;align-items:center;gap:6px">' +
+            '<input type="checkbox" data-rcstd="' + esc(a.id) + '"' + (shouldCheck ? ' checked' : '') + '> ' +
+            '<span>เลขที่ ' + esc(wi.no || '—') + ' · <b>' + esc(wi.name) + '</b>' +
+            (roomSel.value === 'all' && (wi.cls || a.room) ? ' (' + esc(wi.cls || a.room) + ')' : '') +
+            '</span> ' + details +
             '</label></div>';
         }).join('');
       };
 
-      $$('input[name=rcRule]', root).forEach(r => r.addEventListener('change', () => {
-        const isStrict = $('input[name=rcRule]:checked', root).value === 'strict';
-        stuBox.style.display = isStrict ? 'block' : 'none';
-        if (isStrict) renderStudents();
-      }));
-      roomSel.addEventListener('change', () => {
-        if ($('input[name=rcRule]:checked', root).value === 'strict') renderStudents();
+      renderStudents();
+      roomSel.addEventListener('change', renderStudents);
+
+      $('#btnRcCheckMatch', root).addEventListener('click', () => {
+        const list = getList();
+        list.forEach(a => {
+          const cb = $(`[data-rcstd="${CSS.escape(a.id)}"]`, stuList);
+          if (!cb) return;
+          const matches = changedKeys.some(ck => {
+            const it = a.answers[ck.k];
+            return it && it.pick != null && isPickMatch(it.pick, ck.newAns);
+          });
+          cb.checked = matches;
+        });
       });
       $('#btnRcCheckAll', root).addEventListener('click', () => {
         $$('[data-rcstd]', stuList).forEach(cb => cb.checked = true);
@@ -4942,8 +5006,9 @@ function rescorePaperAttempts(quiz) {
       if (p.essay) return;
       const it = a.answers[k];
       if (!it) return;
-      if (it.pick != null && p.choices && p.choices[it.pick]) {
-        const sc = p.choices[it.pick].correct ? 1 : 0;
+      if (it.pick != null && p.choices) {
+        const correctIdx = p.choices.findIndex(c => c.correct);
+        const sc = isPickMatch(it.pick, correctIdx) ? 1 : 0;
         if (it.score !== sc) {
           it.score = sc;
           changed = true;
@@ -4952,111 +5017,11 @@ function rescorePaperAttempts(quiz) {
     });
     if (changed) {
       delete PCACHE[a.id];
+      analyze(a);
       count++;
     }
   });
   return count;
-}
-
-/** กล่องแก้ไขคำตอบของกระดาษคำตอบออนไลน์ที่ทำไปแล้ว และประมวลผลคะแนนใหม่ */
-function editPaperAttemptModal(attemptId) {
-  const a = DB.attempts.find(x => x.id === attemptId);
-  if (!a) { toast('ไม่พบผลการทำนี้', 'bad'); return; }
-  const q = quizOf(a);
-  if (!q) { toast('ไม่พบชุดโจทย์', 'bad'); return; }
-  const probs = problemsOf(q);
-  const who = attemptWho(a);
-
-  // สำเนาตัวเลือกเดิมไว้ — ถ้าเดิมไม่มี pick แต่มี score=1 ให้เดาว่าเป็นข้อที่ถูก
-  const picks = probs.map((pp, k) => {
-    if (pp.essay) return null;
-    const it = a.answers[k];
-    if (it && it.pick != null) return it.pick;
-    if (it && it.score >= 1 && pp.choices) {
-      const idx = pp.choices.findIndex(c => c.correct);
-      return idx >= 0 ? idx : null;
-    }
-    return null;
-  });
-
-  openModal({
-    wide: true,
-    title: 'แก้ไขคำตอบกระดาษคำตอบ · ' + esc(who),
-    bodyHTML:
-      '<div class="hint" style="margin-bottom:11px">ชุด: <b>' + esc(q.title) + '</b> (' + probs.length + ' ข้อ) · ' +
-      'แตะตัวเลือกที่ต้องการแก้ แตะซ้ำเพื่อยกเลิกคำตอบ · เมื่อกด <b>ประมวลผลคะแนนใหม่</b> ระบบจะตรวจคำตอบและคำนวณคะแนนใหม่ทันที</div>' +
-      '<div class="papersheet" id="edPaperSheet" style="max-height:360px;overflow-y:auto;padding:2px">' +
-      probs.map(function (pp, k) {
-        if (pp.essay) return '<div class="paperrow"><span class="pno">' + (k + 1) + '</span><span class="hint">ข้ออัตนัย</span></div>';
-        const curPick = picks[k];
-        return '<div class="paperrow"><span class="pno">' + (k + 1) + '</span>' +
-          pp.choices.map(function (c, ci) {
-            return '<button type="button" class="pbub' + (curPick === ci ? ' sel' : '') +
-              '" data-epk="' + k + '" data-epc="' + ci + '">' + esc(c.text) + '</button>';
-          }).join('') + '</div>';
-      }).join('') + '</div>' +
-      '<div id="edPaperSummary" class="notice info" style="margin-top:12px">กำลังคำนวณคะแนน…</div>',
-    buttons: [
-      { label: 'ยกเลิก' },
-      { label: 'ประมวลผลคะแนนใหม่', cls: 'primary', act: async (close, root) => {
-          probs.forEach(function (pp, k) {
-            if (pp.essay) return;
-            if (!a.answers[k]) a.answers[k] = { raw: [], pick: null, checked: false, score: 0, tries: 1, revealed: false, sec: 0 };
-            const it = a.answers[k];
-            it.pick = picks[k];
-            it.checked = picks[k] != null;
-            it.score = (picks[k] != null && pp.choices[picks[k]] && pp.choices[picks[k]].correct) ? 1 : 0;
-          });
-          delete PCACHE[a.id];
-          const r = analyze(a);
-          save(true);
-          if (a.assignCode && cloudOn()) {
-            sendAttempt(a, 'final');
-          }
-          close();
-          render();
-          toast('ประมวลผลคะแนนใหม่แล้ว: ' + fmt(r.got) + '/' + r.max + ' คะแนน (' + Math.round(r.pct) + '%)', 'ok');
-        } }
-    ],
-    onMount: root => {
-      const sheet = $('#edPaperSheet', root);
-      const sumBox = $('#edPaperSummary', root);
-
-      const updateSummary = () => {
-        let got = 0, max = 0, answered = 0;
-        probs.forEach((pp, k) => {
-          if (pp.essay) {
-            const sc = essayScore(pp.max, (a.answers[k] || {}).rub, pp.nsteps);
-            got += sc; max += pp.max;
-            return;
-          }
-          max += 1;
-          const pk = picks[k];
-          if (pk != null) {
-            answered++;
-            if (pp.choices[pk] && pp.choices[pk].correct) got += 1;
-          }
-        });
-        const pct = max ? Math.round(got / max * 100) : 0;
-        sumBox.innerHTML = 'ตอบแล้ว <b>' + answered + '</b>/' + probs.length + ' ข้อ · ' +
-          'คะแนนที่จะได้: <b>' + fmt(got) + '/' + max + ' (' + pct + '%)</b>';
-      };
-
-      $$('[data-epk]', sheet).forEach(b => {
-        b.addEventListener('click', () => {
-          const k = Number(b.dataset.epk), ci = Number(b.dataset.epc);
-          if (picks[k] === ci) picks[k] = null;
-          else picks[k] = ci;
-          $$('[data-epk="' + k + '"]', sheet).forEach(btn => {
-            const bci = Number(btn.dataset.epc);
-            btn.classList.toggle('sel', picks[k] === bci);
-          });
-          updateSummary();
-        });
-      });
-      updateSummary();
-    }
-  });
 }
 
 /* --- 5.2ง ข้อสอบอัตนัย ---------------------------------------------------
@@ -7715,9 +7680,7 @@ function renderResult() {
       return '<option value="' + x.id + '"' + (x.id === a.id ? ' selected' : '') + '>' +
         thDateTime(x.finishedAt) + ' · ' + esc((quizOf(x) || {}).title || '') + ' · ' + Math.round(r.pct) + '%</option>';
     }).join('') + '</select>' +
-    '<button class="sm" id="btnEvid">พิมพ์หลักฐานการเรียนรู้</button>' +
-    (isPaper(res.quiz) ? ' <button class="sm primary" id="btnEditPaperAnswers">แก้ไขคำตอบและประมวลผลใหม่</button>' : '') +
-    '</div></div>';
+    '<button class="sm" id="btnEvid">พิมพ์หลักฐานการเรียนรู้</button></div></div>';
 
   // สรุปคะแนนครั้งนี้
   h += '<div class="card"><h3>ผลการทำครั้งนี้<span class="sub">' + esc(res.quiz.title) + '</span></h3>' +
@@ -7823,8 +7786,7 @@ function renderResult() {
   $('#pane-result').innerHTML = h;
   $('#selAt').addEventListener('change', e => { DB.cur.showAttemptId = e.target.value; save(); renderResult(); });
   $('#btnEvid').addEventListener('click', () => { DB.cur.printKind = 'evidence'; save(); setTab('print'); });
-  const ep = $('#btnEditPaperAnswers');
-  if (ep) ep.addEventListener('click', () => editPaperAttemptModal(a.id));
+
   $$('[data-sol]').forEach(b => b.addEventListener('click', () => {
     const x = res.items[Number(b.dataset.sol)];
     if (!x || !x.p) { toast('ข้อนี้เปิดไม่ได้ในโปรแกรมรุ่นนี้', 'bad'); return; }
@@ -7933,9 +7895,7 @@ function renderStats() {
     '<th>ผล</th><th class="num">เวลา</th>' +
     // คอลัมน์นี้ขึ้นเฉพาะเมื่อมีคนในชุดนี้ถูกคุมสอบจริง ไม่งั้นตารางจะรกขึ้นมาเปล่า ๆ
     (rows.some(x => x.r.nOut || x.r.autoBy) ? '<th class="num">ออกจากแอป</th>' : '') +
-    '<th>จุดที่ต้องพัฒนา</th>' +
-    (isPaper(q) ? '<th></th>' : '') +
-    '</tr></thead><tbody>';
+    '<th>จุดที่ต้องพัฒนา</th></tr></thead><tbody>';
   rows.forEach((x, k) => {
     const weak = Object.keys(x.r.bySub).filter(s => x.r.bySub[s].pct < 50);
     const wi = whoInfo(x.a);
@@ -7950,9 +7910,7 @@ function renderStats() {
       (rows.some(y => y.r.nOut || y.r.autoBy)
         ? '<td class="num">' + (x.r.nOut ? '<b>' + x.r.nOut + '</b> (' + mmss(x.r.secOut) + ')' : '—') +
           (x.r.autoBy ? ' ⚠' : '') + '</td>' : '') +
-      '<td style="white-space:normal">' + (weak.length ? esc(weak.join(', ')) : '—') + '</td>' +
-      (isPaper(q) ? '<td><button class="sm" data-editat="' + esc(x.a.id) + '">แก้คำตอบ</button></td>' : '') +
-      '</tr>';
+      '<td style="white-space:normal">' + (weak.length ? esc(weak.join(', ')) : '—') + '</td></tr>';
   });
   h += '</tbody></table></div></div>';
 
@@ -8028,7 +7986,6 @@ function renderStats() {
   if (brp) brp.addEventListener('click', () => paperDialog(q));
   $('#btnCopyScore').addEventListener('click', () => exportScoreColumn(q.id));
   $('#btnCsvScore').addEventListener('click', () => exportScoreCsv(q.id));
-  $$('[data-editat]').forEach(b => b.addEventListener('click', () => editPaperAttemptModal(b.dataset.editat)));
   bindCloudPullCard(); bindImportCard();
 }
 
@@ -8835,12 +8792,22 @@ async function pullResults(code) {
     const s = findStudent(r.sid, r.name);
     if (DB.attempts.some(a => a.id === id)) {
       const ex = DB.attempts.find(a => a.id === id);
-      if (ex && (!ex.studentId || !DB.students.some(st => st.id === ex.studentId)) && s) {
-        ex.studentId = s.id;
-        ex.soloName = s.name;
-        if (!ex.sid && r.sid) ex.sid = String(r.sid);
-        if (!ex.no && r.no) ex.no = String(r.no);
-        if (!ex.room && r.cls) ex.room = String(r.cls);
+      if (ex) {
+        if ((!ex.studentId || !DB.students.some(st => st.id === ex.studentId)) && s) {
+          ex.studentId = s.id;
+          ex.soloName = s.name;
+          if (!ex.sid && r.sid) ex.sid = String(r.sid);
+          if (!ex.no && r.no) ex.no = String(r.no);
+          if (!ex.room && r.cls) ex.room = String(r.cls);
+        }
+        if (Array.isArray(r.answers) && r.answers.length === (ex.answers || []).length) {
+          r.answers.forEach((ra, idx) => {
+            if (!ex.answers[idx]) return;
+            if (ra && ra.k !== '' && ra.k != null && isFinite(Number(ra.k))) {
+              ex.answers[idx].pick = Number(ra.k);
+            }
+          });
+        }
       }
       st.dup++; return;
     }
