@@ -424,6 +424,7 @@ input.numin.bad{border-color:var(--bad);background:var(--bad-bg)}
   <div class="brand" id="brandBox"><span class="dot"></span>คลังโจทย์วิทยาศาสตร์ ม.1–ม.3</div>
   <div class="who" id="whoBar"></div>
   <div class="spacer"></div>
+  <button class="sm" id="btnAppVer" title="คลิกเพื่อตรวจสอบและอัปเดตเวอร์ชัน" style="font-weight:700;border-radius:12px;cursor:pointer">🔄 v8.0</button>
   <button class="sm" id="btnBackup">สำรอง</button>
   <button class="sm" id="btnRestore">กู้คืน</button>
   <button class="sm" id="btnLogout" style="display:none">ออกจากระบบ</button>
@@ -1179,6 +1180,8 @@ function deviceId() {
 function cloudOn() { return !!(DB.cloud && DB.cloud.url); }
 function authValid() { return !!(DB.auth && DB.auth.token && DB.auth.exp > Date.now()); }
 function isAdmin()   { return authValid() && DB.auth.role === 'admin'; }
+function isSubAdmin() { return isAdmin() && !!(DB.auth && DB.auth.profile && DB.auth.profile.sub); }
+function isMainAdmin() { return isAdmin() && !isSubAdmin(); }
 function isStudent() { return authValid() && DB.auth.role === 'student'; }
 /** ออฟไลน์ล้วน = ยังไม่ได้เชื่อมชีต ให้ใช้งานได้ทุกอย่างเหมือนเดิม */
 function offlineMode() { return !cloudOn(); }
@@ -10608,8 +10611,19 @@ function renderWho() {
       '<span class="hint">' + [p.cls || p.room ? 'ชั้น ' + esc(p.room) : '',
         p.no ? 'เลขที่ ' + esc(p.no) : '', p.sid ? 'เลขประจำตัว ' + esc(p.sid) : '']
         .filter(Boolean).join(' · ') + '</span>';
-  } else if (isAdmin() && DB.mode === 'solo') {
-    el.innerHTML = '<span class="hint">เข้าใช้ในฐานะ</span> <b>ผู้ดูแล</b>';
+  } else if (isAdmin()) {
+    const prof = (DB.auth && DB.auth.profile) || {};
+    const isSub = isSubAdmin();
+    if (isSub) {
+      const uName = prof.name || 'ครูผู้สอน';
+      const uUser = prof.sub ? ' (@' + esc(prof.sub) + ')' : '';
+      const uCls = prof.classes && prof.classes.length ? ' · ดูแล ' + esc(prof.classes.join(', ')) : '';
+      el.innerHTML = '<span class="tag l2" style="font-weight:700;margin-right:5px">👩‍🏫 แอดมินรอง</span>' +
+        '<b>' + esc(uName) + '</b><span class="hint">' + uUser + uCls + '</span>';
+    } else {
+      el.innerHTML = '<span class="tag l3" style="font-weight:700;margin-right:5px">👑 ผู้ดูแลหลัก</span>' +
+        '<b>' + esc(prof.name || 'ผู้ดูแลระบบ') + '</b>';
+    }
   } else if (DB.mode === 'solo') {
     el.innerHTML = '<label for="soloName">ผู้เรียน</label>' +
       '<input type="text" id="soloName" style="width:170px" placeholder="ชื่อ-นามสกุล" value="' + esc(DB.profile.name) + '">';
@@ -11441,6 +11455,81 @@ function monitorExamDialog(code, cls) {
   });
 }
 // -----------------------
+
+
+const APP_VERSION = 'v8.0';
+
+async function checkAppUpdate() {
+  toast('กำลังตรวจสอบเวอร์ชัน…', 'info');
+  const t0 = Date.now();
+  let serverVer = null, serverOk = false, serverMsg = '';
+  if (cloudOn()) {
+    try {
+      const r = await api('ping', {}, { noToken: true });
+      serverVer = r.version || 1;
+      serverOk = true;
+      serverMsg = 'เชื่อมต่อสำเร็จใน ' + ((Date.now() - t0) / 1000).toFixed(1) + ' วินาที · มีนักเรียนในชีต ' + (r.students || 0) + ' คน';
+    } catch (e) {
+      serverMsg = 'เชื่อมต่อ Google Apps Script ไม่สำเร็จ: ' + e.message;
+    }
+  } else {
+    serverMsg = 'ยังไม่ได้เชื่อมต่อ Google Sheet (ทำงานแบบออฟไลน์)';
+  }
+
+  let body = '<div style="line-height:1.7">' +
+    '<div style="margin-bottom:12px;display:flex;align-items:center;gap:10px">' +
+      '<div style="font-size:28px">🚀</div>' +
+      '<div>' +
+        '<div style="font-size:16px;font-weight:700">เวอร์ชันของระบบ ' + APP_VERSION + '</div>' +
+        '<div class="hint">สเปกที่ต้องการ: Google Apps Script รุ่น ' + GS_VERSION + '</div>' +
+      '</div>' +
+    '</div>' +
+    '<hr style="border:none;border-top:1px solid var(--line);margin:10px 0">' +
+    '<div style="margin-bottom:10px">' +
+      '<b>สถานะสคริปต์หลังบ้าน (Google Drive):</b><br>' +
+      (serverOk
+        ? (serverVer >= GS_VERSION
+            ? '<span style="color:var(--ok);font-weight:700">✅ ใช้งานร่วมกันได้สมบูรณ์ (สคริปต์ในชีตเป็นรุ่น ' + serverVer + ')</span>'
+            : '<span style="color:var(--bad);font-weight:700">⚠️ สคริปต์ในชีตเป็นรุ่น ' + serverVer + ' (เก่ากว่าที่แอปต้องการรุ่น ' + GS_VERSION + ')</span><div class="hint" style="margin-top:4px">กรุณานำไฟล์ appsscript-Code.gs ล่าสุดไป Deploy เวอร์ชันใหม่ใน Apps Script</div>')
+        : '<span style="color:var(--warn)">' + esc(serverMsg) + '</span>') +
+    '</div>';
+
+  if (isAdmin()) {
+    const prof = (DB.auth && DB.auth.profile) || {};
+    const isSub = isSubAdmin();
+    body += '<div style="background:var(--card);border:1px solid var(--line);border-radius:8px;padding:9px 12px;margin:10px 0">' +
+      '<b>ผู้ดูแลที่เข้าสู่ระบบ:</b> ' + (isSub ? '<span class="tag l2" style="font-weight:700">👩‍🏫 แอดมินรอง</span>' : '<span class="tag l3" style="font-weight:700">👑 ผู้ดูแลหลัก</span>') + '<br>' +
+      '<b>ชื่อผู้ใช้งาน:</b> ' + esc(prof.name || (isSub ? 'ครูผู้สอน' : 'ผู้ดูแลระบบ')) +
+      (isSub ? ('<br><b>ชื่อผู้ใช้ (Username):</b> <code>' + esc(prof.sub) + '</code>' +
+                '<br><b>ชั้นที่ดูแล:</b> ' + esc((prof.classes || []).join(', ') || 'ทั้งหมด') +
+                (prof.subjects && prof.subjects.length ? '<br><b>วิชาที่สอน:</b> ' + esc(prof.subjects.join(', ')) : ''))
+             : '') +
+    '</div>';
+  }
+
+  body += '<div class="hint" style="margin-top:12px">' +
+    '💡 กดปุ่ม <b>"รีโหลดอัปเดตทันที"</b> เพื่อดึงไฟล์เวอร์ชันล่าสุดจากเซิร์ฟเวอร์โดยล้างแคชเบราว์เซอร์อัตโนมัติ' +
+  '</div></div>';
+
+  openModal({
+    title: 'ตรวจสอบและอัปเดตเวอร์ชัน',
+    bodyHTML: body,
+    buttons: [
+      { label: 'ปิด' },
+      { label: '🔄 รีโหลดอัปเดตทันที', cls: 'primary', act: () => {
+          try {
+            if ('caches' in window) {
+              caches.keys().then(names => { names.forEach(n => caches.delete(n)); });
+            }
+          } catch(e) {}
+          const u = new URL(window.location.href);
+          u.searchParams.set('_v', Date.now());
+          window.location.href = u.toString();
+        }
+      }
+    ]
+  });
+}
 
 async function startQuiz(quizId, assignCode) {
   const q = DB.quizzes.find(x => x.id === quizId);
@@ -13343,6 +13432,29 @@ function cloudCardHTML() {
     return h;
   }
 
+  
+  if (isAdmin()) {
+    const prof = (DB.auth && DB.auth.profile) || {};
+    const isSub = isSubAdmin();
+    h += '<div style="background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin:10px 0 14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">' +
+      '<div style="display:flex;align-items:center;gap:10px">' +
+        '<div style="font-size:24px">' + (isSub ? '👩‍🏫' : '👑') + '</div>' +
+        '<div>' +
+          '<div style="font-weight:700;font-size:14.5px">' +
+            (isSub ? '<span class="tag l2" style="font-weight:700;margin-right:6px">แอดมินรอง</span>' + esc(prof.name || 'ครูผู้สอน') + ' <span class="hint">(@' + esc(prof.sub) + ')</span>'
+                   : '<span class="tag l3" style="font-weight:700;margin-right:6px">ผู้ดูแลหลัก</span>' + esc(prof.name || 'ผู้ดูแลระบบ')) +
+          '</div>' +
+          '<div class="hint" style="font-size:12px;margin-top:2px">' +
+            (isSub ? ('ชั้นที่ดูแล: <b>' + esc((prof.classes || []).join(', ') || 'ทั้งหมด') + '</b>' +
+                      (prof.subjects && prof.subjects.length ? ' · วิชา: ' + esc(prof.subjects.join(', ')) : ''))
+                   : 'มีสิทธิ์เต็มทุกวิชาและทุกห้องเรียน') +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+      '<button class="sm" id="btnCheckUpdateCard" title="ตรวจสอบการอัปเดตเวอร์ชัน">🔄 ตรวจสอบเวอร์ชัน (' + APP_VERSION + ')</button>' +
+    '</div>';
+  }
+
   h += '<div class="hint" style="margin-bottom:11px">วาง <b>URL เว็บแอป</b> ที่ได้จาก Apps Script ' +
     '(ดูขั้นตอนใน <code>README-online.md</code>) แล้วกดทดสอบ<br>' +
     'ถ้าเว้นว่างไว้ แอพจะทำงานในเครื่องอย่างเดียวเหมือนเดิมทุกอย่าง</div>' +
@@ -13373,6 +13485,7 @@ function cloudCardHTML() {
 }
 
 function bindCloudCard() {
+  const buc = $('#btnCheckUpdateCard'); if (buc) buc.addEventListener('click', checkAppUpdate);
   const test = $('#btnCloudTest');
   if (test) test.addEventListener('click', async () => {
     const url = ($('#cloudUrl').value || '').trim();
@@ -14872,6 +14985,7 @@ $$('#tabs button').forEach(b => b.addEventListener('click', () => {
   if (TAB === 'do') stampTime();
   setTab(b.dataset.tab);
 }));
+const bVer = $('#btnAppVer'); if (bVer) bVer.addEventListener('click', checkAppUpdate);
 $('#btnBackup').addEventListener('click', backup);
 $('#btnRestore').addEventListener('click', restore);
 $('#btnLogout').addEventListener('click', doLogout);

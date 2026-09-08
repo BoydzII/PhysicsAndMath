@@ -93,7 +93,7 @@ footer{margin-top:26px;text-align:center;color:var(--muted);font-size:12.5px;lin
 <div class="wrap">
 
 <header>
-  <h1>คลังโจทย์ออนไลน์</h1>
+  <h1>คลังโจทย์ออนไลน์ <button id="btnVer" title="คลิกเพื่อตรวจสอบและรีโหลดเวอร์ชันใหม่" style="font-size:12px;vertical-align:middle;padding:3px 9px;border-radius:12px;border:1px solid #ccc;background:transparent;cursor:pointer;font-weight:700">🔄 v8.0</button></h1>
   <p class="sub" id="subLine">โรงเรียนปากช่อง จังหวัดนครราชสีมา</p>
 </header>
 
@@ -115,10 +115,10 @@ footer{margin-top:26px;text-align:center;color:var(--muted);font-size:12.5px;lin
   </div>
 
   <div id="fTea" class="hide">
-    <p class="lead">สำหรับครูผู้สอน ใช้จัดการรายชื่อ มอบหมายใบงาน และดูผลทั้งหมด</p>
-    <label class="f" for="mail">อีเมล</label>
-    <input type="email" id="mail" autocomplete="username" placeholder="you@example.com">
-    <label class="f" for="tpass">รหัสผ่านผู้ดูแล</label>
+    <p class="lead">สำหรับครูผู้สอนและผู้ดูแลระบบ (แอดมินหลัก / แอดมินรอง)</p>
+    <label class="f" for="tuser">ชื่อผู้ใช้ <span class="hint">(ครูผู้สอนกรอกที่นี่ · ผู้ดูแลหลักเว้นว่างได้)</span></label>
+    <input type="text" id="tuser" autocomplete="username" placeholder="เช่น kruaom (ผู้ดูแลหลักเว้นว่าง)">
+    <label class="f" for="tpass">รหัสผ่าน</label>
     <input type="password" id="tpass" autocomplete="current-password">
   </div>
 
@@ -331,10 +331,14 @@ function showLogin() {
 function showPicker(s) {
   const teacher = s.role === 'admin';
   const p = s.profile || {};
-  $('#avatar').textContent = teacher ? '👩‍🏫' : '🙂';
-  $('#whoName').textContent = teacher ? 'ครูผู้สอน' : (p.name || 'นักเรียน');
+  const isSub = !!p.sub;
+  $('#avatar').textContent = teacher ? (isSub ? '👩‍🏫' : '👑') : '🙂';
+  $('#whoName').textContent = teacher
+    ? (isSub ? ('แอดมินรอง: ' + (p.name || 'ครูผู้สอน') + (p.sub ? ' (@' + p.sub + ')' : '')) : '👑 ผู้ดูแลหลัก')
+    : (p.name || 'นักเรียน');
   $('#whoDetail').textContent = teacher
-    ? 'เข้าใช้ในฐานะผู้ดูแล — เห็นเฉลย สถิติชั้นเรียน และการมอบหมายใบงาน'
+    ? (isSub ? ('แอดมินรอง · ดูแล ' + (p.classes ? p.classes.join(', ') : 'ทุกชั้น') + (p.subjects && p.subjects.length ? ' · วิชา ' + p.subjects.join(', ') : ''))
+             : 'เข้าใช้ในฐานะผู้ดูแลหลัก — สิทธิ์เต็มทุกวิชา ทุกชั้นเรียน')
     : [p.cls ? 'ชั้น ' + p.cls : '', p.no ? 'เลขที่ ' + p.no : '',
        p.sid ? 'เลขประจำตัว ' + p.sid : ''].filter(Boolean).join(' · ') || 'ยินดีต้อนรับ';
   // เอาวิชาที่ตรงกับชั้นของนักเรียนขึ้นก่อน จะได้ไม่ต้องมองหา — ครูเห็นตามลำดับในสารบัญ
@@ -385,13 +389,17 @@ async function submit() {
       const r = await api('login', { sid: sid, pass: $('#spass').value || '' });
       showPicker(writeSession('student', r.token, r.profile));
     } else {
-      // อีเมลเทียบในหน้าเว็บเพื่อความสะดวก ส่วนรหัสผ่านให้ชีตเป็นคนตรวจ
-      const mail = String($('#mail').value || '');
-      if (!mail.trim()) throw new Error('กรอกอีเมลก่อน');
-      if (await hashEmail(mail) !== TEACHER_EMAIL_HASH)
-        throw new Error('อีเมลนี้ไม่ใช่ของครูผู้สอน');
-      const r = await api('adminLogin', { pass: $('#tpass').value || '' });
-      showPicker(writeSession('admin', r.token, { name: 'ครูผู้สอน' }));
+      const u = String($('#tuser') ? $('#tuser').value : '').trim();
+      const p = $('#tpass').value || '';
+      if (!p) throw new Error('กรอกรหัสผ่านก่อน');
+      const r = await api('adminLogin', { user: u, pass: p });
+      const isSub = r.role === 'sub';
+      showPicker(writeSession('admin', r.token, {
+        name: isSub ? (r.name || 'ครูผู้สอน') : 'ผู้ดูแลหลัก',
+        sub: isSub ? (r.user || u) : '',
+        classes: r.classes || null,
+        subjects: r.subjects || null
+      }));
     }
   } catch (e) {
     say(e.message || String(e), 'bad');
@@ -401,13 +409,32 @@ async function submit() {
   }
 }
 $('#go').addEventListener('click', submit);
-['sid', 'spass', 'mail', 'tpass'].forEach(id => {
-  $('#' + id).addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
+['sid', 'spass', 'tuser', 'tpass'].forEach(id => {
+  const el = $('#' + id);
+  if (el) el.addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
 });
+
+const bv = $('#btnVer');
+if (bv) {
+  bv.addEventListener('click', async () => {
+    try {
+      if ('caches' in window) {
+        const names = await caches.keys();
+        await Promise.all(names.map(n => caches.delete(n)));
+      }
+    } catch (e) {}
+    const u = new URL(window.location.href);
+    u.searchParams.set('_v', Date.now());
+    window.location.href = u.toString();
+  });
+}
 
 $('#out').addEventListener('click', () => {
   clearSession();
-  ['sid', 'spass', 'mail', 'tpass'].forEach(id => { $('#' + id).value = ''; });
+  ['sid', 'spass', 'tuser', 'tpass'].forEach(id => {
+    const el = $('#' + id);
+    if (el) el.value = '';
+  });
   showLogin();
 });
 
