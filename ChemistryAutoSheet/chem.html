@@ -10308,12 +10308,6 @@ function renderStats() {
       'ในโหมดครู ให้สลับผู้เรียนที่แถบบนแล้วให้แต่ละคนทำชุดเดียวกัน ระบบจะเปรียบเทียบผลให้อัตโนมัติ</div></div>' +
       cloudPullCardHTML() + importCardHTML();
     bindCloudPullCard(); bindImportCard();
-  $$('.student-item-link', $('#pane-stats')).forEach(btn => {
-    btn.addEventListener('click', e => {
-      e.preventDefault();
-      showStudentItemCompare(btn.dataset.atid);
-    });
-  });
     return;
   }
   if (!DB.cur.statQuizId || !quizzes.some(q => q.id === DB.cur.statQuizId)) DB.cur.statQuizId = quizzes[quizzes.length - 1].id;
@@ -10456,7 +10450,7 @@ function renderStats() {
     h += '<tr><td class="num">' + (k + 1) + '</td>' +
       (showRoomCol ? '<td class="num">' + esc(rm || '—') + '</td>' : '') +
       (showId ? '<td class="num">' + esc(wi.no || '—') + '</td><td class="num">' + esc(wi.sid || '—') + '</td>' : '') +
-      '<td><a href="javascript:void(0)" class="student-item-link" data-atid="' + esc(x.a.id) + '" style="color:var(--brand);font-weight:700;text-decoration:underline;cursor:pointer" title="คลิกเพื่อดูการเปรียบเทียบการตอบและเฉลยรายข้อ">' + esc(wi.name) + '</a></td>' +
+      '<td><a href="javascript:void(0)" class="student-item-link" data-atid="' + esc(x.a.id) + '" onclick="showStudentItemCompare(this.dataset.atid); return false;" style="color:var(--brand);font-weight:700;text-decoration:underline;cursor:pointer" title="คลิกเพื่อดูการเปรียบเทียบการตอบและเฉลยรายข้อ">' + esc(wi.name) + '</a></td>' +
       '<td class="num">' + fmt(x.r.got) + '/' + x.r.max + '</td>' +
       '<td class="num">' + Math.round(x.r.pct) + '%</td>' +
       '<td>' + (x.r.pct >= DB.settings.passPct ? '<span style="color:var(--ok)">ผ่าน</span>'
@@ -10558,6 +10552,12 @@ function renderStats() {
   $('#btnCopyScore').addEventListener('click', () => exportScoreColumn(q.id, curRoomNorm));
   $('#btnCsvScore').addEventListener('click', () => exportScoreCsv(q.id, curRoomNorm));
   bindCloudPullCard(); bindImportCard();
+  $$('.student-item-link', $('#pane-stats')).forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.preventDefault();
+      showStudentItemCompare(btn.dataset.atid);
+    });
+  });
 }
 
 /* ============================================================
@@ -10573,12 +10573,14 @@ function previewImgBox(url) {
     buttons: [{ label: 'ปิด' }]
   });
 }
+window.previewImgBox = previewImgBox;
 
 function showStudentItemCompare(atId) {
+  if (!atId) return;
   const a = DB.attempts.find(x => x.id === atId);
   if (!a) { toast('ไม่พบข้อมูลการทำข้อสอบของนักเรียนคนนี้', 'bad'); return; }
   const wi = whoInfo(a);
-  const q = quizOf(a);
+  const q = quizOf(a) || (DB.quizzes && DB.quizzes.find(x => x.id === a.quizId));
   if (!q) { toast('ไม่พบข้อมูลชุดข้อสอบ', 'bad'); return; }
   const res = analyze(a);
   const rm = attemptRoom(a);
@@ -10653,8 +10655,9 @@ function showStudentItemCompare(atId) {
         studentAnsHTML = stuParts.join('');
       }
 
-      keyAnsHTML = p.key
-        ? '<div style="white-space:pre-wrap;font-size:13px">' + esc(p.key) +
+      const keyVal = p.key || p.keyText || (p.it && p.it.key) || '';
+      keyAnsHTML = keyVal
+        ? '<div style="white-space:pre-wrap;font-size:13px">' + esc(keyVal) +
             (p.ans != null ? '<br><b>คำตอบ:</b> ' + esc(p.ans) + ' ' + esc(p.au || '') : '') + '</div>'
         : '<span class="hint">(ตรวจตามเกณฑ์รูบริก)</span>';
 
@@ -10670,28 +10673,31 @@ function showStudentItemCompare(atId) {
     } else if (p.paper) {
       // 2. Paper Answer Sheet
       const style = paperStyle(q);
-      const cIdx = p.choices.findIndex(c => c.correct);
+      const cIdx = (Array.isArray(p.choices)) ? p.choices.findIndex(c => c.correct) : -1;
       const keyLabel = cIdx >= 0 ? paperLabel(style, cIdx) : '—';
 
       const stuPick = it.pick;
-      const stuLabel = stuPick != null ? paperLabel(style, stuPick) : null;
-      const isCorrect = (stuPick != null && stuPick === cIdx);
+      const stuLabel = (stuPick != null && stuPick >= 0) ? paperLabel(style, stuPick) : null;
+      const isCorrect = (stuPick != null && cIdx >= 0 && stuPick === cIdx);
 
       stemHTML = '<div>กระดาษคำตอบ ข้อ ' + qNum +
         (p.topic != null ? ' <span class="hint">(' + esc(topicName(p.topic)) + ')</span>' : '') + '</div>';
 
-      if (stuPick == null) {
+      const pickChoice = (Array.isArray(p.choices) && stuPick != null && p.choices[stuPick]) ? p.choices[stuPick] : null;
+      const keyChoice = (Array.isArray(p.choices) && cIdx >= 0 && p.choices[cIdx]) ? p.choices[cIdx] : null;
+
+      if (stuPick == null || stuPick < 0) {
         studentAnsHTML = '<span class="hint">— (ไม่ได้ฝน/ตอบ)</span>';
         markHTML = '<span class="tag t">— ข้าม</span>';
       } else if (isCorrect) {
-        studentAnsHTML = '<b style="color:var(--ok)">' + esc(stuLabel) + '</b> <span class="hint">(' + esc(p.choices[stuPick].text) + ')</span>';
+        studentAnsHTML = '<b style="color:var(--ok)">' + esc(stuLabel) + '</b>' + (pickChoice ? ' <span class="hint">(' + esc(pickChoice.text) + ')</span>' : '');
         markHTML = '<span class="tag l1">✓ ถูก</span>';
       } else {
-        studentAnsHTML = '<b style="color:var(--bad)">' + esc(stuLabel) + '</b> <span class="hint">(' + esc(p.choices[stuPick].text) + ')</span>';
+        studentAnsHTML = '<b style="color:var(--bad)">' + esc(stuLabel) + '</b>' + (pickChoice ? ' <span class="hint">(' + esc(pickChoice.text) + ')</span>' : '');
         markHTML = '<span class="tag l3">✗ ผิด</span>';
       }
 
-      keyAnsHTML = '<b style="color:var(--ok)">' + esc(keyLabel) + '</b> <span class="hint">(' + (cIdx >= 0 ? esc(p.choices[cIdx].text) : '') + ')</span>';
+      keyAnsHTML = '<b style="color:var(--ok)">' + esc(keyLabel) + '</b>' + (keyChoice ? ' <span class="hint">(' + esc(keyChoice.text) + ')</span>' : '');
       scoreHTML = (isCorrect ? 1 : 0) + ' / 1';
     } else if (Array.isArray(p.choices) && p.choices.length > 0) {
       // 3. Multiple Choice Objective
@@ -10702,7 +10708,7 @@ function showStudentItemCompare(atId) {
       stemHTML = '<div>' + M(p.stem || ('ข้อที่ ' + qNum)) +
         (p.sub ? ' <span class="hint">(' + esc(p.sub) + ')</span>' : '') + '</div>';
 
-      if (stuPick == null) {
+      if (stuPick == null || stuPick < 0) {
         studentAnsHTML = '<span class="hint">— (ไม่ได้ตอบ)</span>';
         markHTML = '<span class="tag t">— ข้าม</span>';
       } else {
@@ -10716,7 +10722,7 @@ function showStudentItemCompare(atId) {
         }
       }
 
-      const correctText = cIdx >= 0 ? p.choices[cIdx].text : '—';
+      const correctText = cIdx >= 0 && p.choices[cIdx] ? p.choices[cIdx].text : '—';
       keyAnsHTML = '<b style="color:var(--ok)">' + esc(correctText) + '</b>';
       scoreHTML = (isCorrect ? (p.max || 1) : 0) + ' / ' + (p.max || 1);
     } else {
@@ -10753,6 +10759,7 @@ function showStudentItemCompare(atId) {
     buttons: [{ label: 'ปิด' }]
   });
 }
+window.showStudentItemCompare = showStudentItemCompare;
 
 /** ฮิสโทแกรมการกระจายคะแนนเป็นช่วงละ 10% */
 function histogram(pcts) {
