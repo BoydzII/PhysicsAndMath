@@ -402,6 +402,95 @@ input.numin.bad{border-color:var(--bad);background:var(--bad-bg)}
 .segbtn button:last-child{border-right:none}
 .segbtn button.on{background:var(--brand);color:var(--brand-ink);font-weight:600}
 
+
+/* ---------- In-App PDF & Split View ---------- */
+.exam-split-wrap {
+  display: flex; gap: 14px; align-items: flex-start; transition: all 0.25s ease; width: 100%;
+}
+.exam-split-wrap.mode-split .pdf-pane {
+  flex: 0 0 46%; max-width: 50%; display: flex; flex-direction: column;
+}
+.exam-split-wrap.mode-split .exam-pane {
+  flex: 1 1 54%; min-width: 0;
+}
+.exam-split-wrap.mode-drawer .pdf-pane {
+  position: fixed; top: 0; right: -530px; width: min(520px, 94vw); height: 100vh;
+  z-index: 999; box-shadow: -6px 0 28px rgba(0,0,0,0.25);
+  transition: right 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  background: var(--panel); display: flex; flex-direction: column;
+}
+.exam-split-wrap.mode-drawer.drawer-open .pdf-pane {
+  right: 0;
+}
+.exam-split-wrap.mode-drawer .exam-pane {
+  flex: 1 1 100%; min-width: 0;
+}
+.pdf-pane.hide-pane { display: none !important; }
+
+.pdf-box {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+  overflow: hidden; box-shadow: var(--shadow); display: flex; flex-direction: column;
+  height: calc(100vh - 85px); position: sticky; top: 12px;
+}
+.pdf-head {
+  padding: 8px 12px; background: var(--panel2); border-bottom: 1px solid var(--line);
+  display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;
+}
+.pdf-controls { display: flex; align-items: center; gap: 6px; }
+.pdf-body {
+  flex: 1 1 auto; background: #525659; position: relative; overflow: hidden; height: 100%;
+}
+.pdf-dropzone {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  height: 100%; padding: 24px; text-align: center; color: #fff; gap: 10px;
+}
+
+/* ---------- Handwriting Pad (iPad & Apple Pencil) ---------- */
+.hw-bar {
+  display: flex; flex-wrap: wrap; gap: 6px; align-items: center; justify-content: space-between;
+  margin-bottom: 8px; padding: 6px 8px; background: var(--panel2); border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.hw-tools, .hw-actions { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+.btn-tool {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 6px;
+  padding: 5px 9px; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 4px;
+  min-height: 34px;
+}
+.btn-tool.active {
+  background: var(--brand); color: #fff; border-color: var(--brand); font-weight: 600;
+}
+.color-swatch {
+  width: 20px; height: 20px; border-radius: 50%; border: 2px solid transparent; cursor: pointer;
+  transition: transform 0.15s;
+}
+.color-swatch.active { border-color: var(--ink); transform: scale(1.2); }
+
+.hw-canvas-wrap {
+  position: relative; width: 100%; border: 1.5px solid var(--line); border-radius: 8px;
+  overflow: hidden; touch-action: none; -webkit-user-select: none; user-select: none;
+  background-color: #ffffff;
+}
+.hw-canvas-wrap.bg-lined {
+  background-image: repeating-linear-gradient(transparent, transparent 31px, #e2e8f0 31px, #e2e8f0 32px);
+  background-size: 100% 32px;
+}
+.hw-canvas-wrap.bg-grid {
+  background-image:
+    repeating-linear-gradient(transparent, transparent 23px, #e2e8f0 23px, #e2e8f0 24px),
+    repeating-linear-gradient(90deg, transparent, transparent 23px, #e2e8f0 23px, #e2e8f0 24px);
+  background-size: 24px 24px;
+}
+.hw-canvas-wrap.bg-blank { background-image: none; }
+
+.hw-canvas {
+  display: block; width: 100%; height: 380px; cursor: crosshair; touch-action: none;
+}
+.hw-footer {
+  display: flex; justify-content: space-between; align-items: center; margin-top: 6px;
+  font-size: 12px; color: var(--muted);
+}
+
 /* ============================================================
    หน้าเอกสารสำหรับพิมพ์
    ============================================================ */
@@ -5277,10 +5366,130 @@ function esBankCardHTML() {
       ? '<b style="color:var(--bad)">คลังใหญ่เกิน 3.5 MB แล้ว</b> ที่เก็บในเบราว์เซอร์มีราว 5 MB ' +
         'ให้ส่งออกเป็นไฟล์แล้วลบข้อที่มีรูปออกบ้าง'
       : 'ย้ายเครื่องหรือสำรองไว้ด้วยปุ่ม <b>ส่งออกเป็นไฟล์</b>') + '</div>' +
-    '<div class="row" style="margin-top:11px">' +
+    '<div class="row" style="margin-top:11px;flex-wrap:wrap;gap:6px">' +
+    '<button class="sm primary" id="bkAddNew">➕ เพิ่มโจทย์</button>' +
     '<button class="sm" id="bkManage">ดูและจัดการทั้งหมด</button>' +
     '<button class="sm" id="bkExport">ส่งออกเป็นไฟล์</button>' +
-    '<button class="sm" id="bkImport">นำเข้าจากไฟล์</button></div></div>';
+    '<button class="sm" id="bkImport">นำเข้าจากไฟล์</button>' +
+    '<button class="sm" id="bkTpl">📥 แม่แบบ Excel</button></div></div>';
+}
+
+
+/** สร้างโจทย์อัตนัยใหม่ลงคลังทีละข้อ */
+function esNewQuestionDialog() {
+  const item = {
+    stem: '',
+    key: '',
+    max: 10,
+    typed: false,
+    img: '',
+    ans: '',
+    au: '',
+    tol: 2,
+    topic: ''
+  };
+
+  openModal({
+    wide: true,
+    title: 'เพิ่มโจทย์อัตนัยใหม่ลงคลัง',
+    bodyHTML: '<div class="hint" style="margin-bottom:10px">' +
+      'กรอกเนื้อหาโจทย์ สัญลักษณ์ สูตร รูปภาพประกอบ และเฉลยวิธีทำ ' +
+      'เพื่อบันทึกลงคลังและนำไปจัดชุดสอบได้ทันที</div>' +
+      '<div class="row" style="margin-bottom:8px">' +
+      '<div class="grow"><label class="hint" for="nqStem">เนื้อหาโจทย์ *</label><br>' +
+      '<textarea id="nqStem" rows="4" style="width:100%" placeholder="พิมพ์โจทย์ที่ต้องการ..."></textarea></div></div>' +
+      '<div class="essym" style="margin-bottom:10px"><b class="hint">แทรกสัญลักษณ์:</b>' +
+      ES_SYMS.map(s => '<button class="sm" type="button" data-nqsym="' + esc(s.ins) + '" title="' + esc(s.t) + '">' + s.lab + '</button>').join('') +
+      '</div>' +
+      '<div class="row" style="gap:12px;margin-bottom:10px;flex-wrap:wrap">' +
+      '<div><label class="hint" for="nqMax">คะแนนเต็ม</label><br>' +
+      '<input type="number" id="nqMax" min="1" max="100" value="10" style="width:90px"></div>' +
+      '<div><label class="hint" for="nqAns">คำตอบตัวเลข (ถ้ามี)</label><br>' +
+      '<input type="text" id="nqAns" style="width:120px" placeholder="เช่น 20.5"></div>' +
+      '<div><label class="hint" for="nqAu">หน่วย</label><br>' +
+      '<input type="text" id="nqAu" style="width:90px" placeholder="เช่น m/s"></div>' +
+      '<div class="grow"><label class="hint" for="nqTopic">บทเรียน</label><br>' +
+      '<select id="nqTopic" style="width:100%"><option value="">(ไม่ระบุบท)</option>' +
+      TOPICS.map(t => '<option value="' + t.id + '">' + esc(t.icon + ' ' + t.name) + '</option>').join('') +
+      '</select></div></div>' +
+      '<div class="row" style="gap:10px;margin-bottom:10px;align-items:flex-end">' +
+      '<div class="grow"><label class="hint" for="nqImg">รูปภาพประกอบ (URL หรือจากห้องวาดรูปโจทย์)</label><br>' +
+      '<input type="text" id="nqImg" class="grow" placeholder="https://... หรือคลิกปุ่มเลือกรูป"></div>' +
+      '<button class="sm" type="button" id="nqPickFig">🎨 เลือกจากห้องวาดรูป</button>' +
+      '<button class="sm" type="button" id="nqUploadImg">📁 อัปโหลดรูป</button></div>' +
+      '<div id="nqImgPrev" style="margin-bottom:10px;display:none;text-align:center;padding:8px;background:#fff;border:1px solid var(--line);border-radius:8px"></div>' +
+      '<label class="hint" for="nqKey">เฉลยวิธีทำ / แนวทางการคิด (สำหรับครูตรวจ)</label>' +
+      '<textarea id="nqKey" rows="3" style="width:100%" placeholder="เขียนอธิบายวิธีทำทีละขั้น..."></textarea>' +
+      '<div id="nqMsg" style="margin-top:8px"></div>',
+    buttons: [
+      { label: 'ยกเลิก' },
+      { label: 'บันทึกลงคลัง', cls: 'primary', act: (close, root) => {
+          const stem = ($('#nqStem', root).value || '').trim();
+          if (!stem) { $('#nqMsg', root).innerHTML = '<div class="notice bad">กรุณากรอกเนื้อหาโจทย์</div>'; return; }
+          const max = clamp(Number($('#nqMax', root).value) || 10, 1, 100);
+          const ans = ($('#nqAns', root).value || '').trim();
+          const au = ($('#nqAu', root).value || '').trim();
+          const key = ($('#nqKey', root).value || '').trim();
+          const img = ($('#nqImg', root).value || '').trim();
+          const topic = $('#nqTopic', root).value;
+
+          const rec = {
+            essay: 1,
+            stem: stem,
+            max: max,
+            key: key,
+            img: img || '',
+            ans: ans ? parseNum(ans) : null,
+            au: au,
+            typed: false,
+            topic: topic ? Number(topic) : null,
+            at: Date.now()
+          };
+          esBankPut(rec, { topic: topic ? Number(topic) : null });
+          close();
+          toast('เพิ่มโจทย์ลงในคลังเรียบร้อย', 'ok');
+          renderMake();
+        } }
+    ],
+    onMount: root => {
+      $$('[data-nqsym]', root).forEach(b => {
+        b.addEventListener('click', () => {
+          const t = $('#nqStem', root);
+          const ins = b.dataset.nqsym;
+          const at = t.selectionStart || t.value.length;
+          t.value = t.value.slice(0, at) + ins + t.value.slice(at);
+          t.focus();
+          t.setSelectionRange(at + ins.length, at + ins.length);
+        });
+      });
+      $('#nqPickFig', root).addEventListener('click', () => {
+        figPicker((url) => {
+          $('#nqImg', root).value = url;
+          const pv = $('#nqImgPrev', root);
+          pv.innerHTML = '<img src="' + esc(url) + '" style="max-height:120px;max-width:100%">';
+          pv.style.display = 'block';
+        }, () => $('#nqUploadImg', root).click());
+      });
+      $('#nqUploadImg', root).addEventListener('click', async () => {
+        const f = await pickFile('image/png,image/jpeg,image/webp,image/svg+xml');
+        if (!f) return;
+        const r = await shrinkImage(f, 600);
+        $('#nqImg', root).value = r.url;
+        const pv = $('#nqImgPrev', root);
+        pv.innerHTML = '<img src="' + esc(r.url) + '" style="max-height:120px;max-width:100%">';
+        pv.style.display = 'block';
+      });
+    }
+  });
+}
+
+/** ดาวน์โหลดแม่แบบตารางสำหรับนำเข้าโจทย์ */
+function esDownloadExcelTemplate() {
+  const csv = '\uFEFF"โจทย์","คะแนน","เฉลยวิธีทำ","คำตอบสุดท้าย","หน่วย","รูปภาพURL"\n' +
+    '"คลื่นเสียงความถี่ 500 Hz เคลื่อนที่ในอากาศอุณหภูมิ 25 C จงหาความเร็วเสียงและความยาวคลื่น",10,"v = 331 + 0.6*25 = 346 m/s, lambda = v/f = 0.692 m",346,"m/s",""\n' +
+    '"วัตถุมวล 2 kg เคลื่อนที่ด้วยความเร่ง 3 m/s^2 จงหาแรงลัพธ์ที่กระทำต่อวัตถุ",5,"F = ma = 2 * 3 = 6 N",6,"N",""\n';
+  download(new Blob([csv], { type: 'text/csv;charset=utf-8;' }), 'แม่แบบนำเข้าโจทย์ข้อสอบ_' + SUBJECT + '.csv');
+  toast('ดาวน์โหลดแม่แบบเรียบร้อย สามารถเปิดแก้ไขใน Excel ได้เลย', 'ok');
 }
 
 /** หน้าต่างจัดการคลัง */
@@ -5309,7 +5518,9 @@ function esBankManage() {
   openModal({
     wide: true,
     title: 'จัดการคลังข้อสอบอัตนัย',
-    bodyHTML: '<div class="row" style="margin-bottom:9px">' +
+    bodyHTML: '<div class="row" style="margin-bottom:9px;gap:8px;flex-wrap:wrap">' +
+      '<button class="sm primary" id="bmAddNew">➕ เพิ่มโจทย์ใหม่</button>' +
+      '<button class="sm" id="bmTpl">📥 ดาวน์โหลดแม่แบบ Excel</button>' +
       '<input type="text" id="bmQ" class="grow" placeholder="ค้นจากโจทย์ คำค้น หรือชื่อบท">' +
       '<span class="hint" id="bmCount"></span></div>' +
       '<div id="bmList" style="max-height:56vh;overflow:auto"></div>',
@@ -5317,6 +5528,10 @@ function esBankManage() {
     onMount: function (root) {
       draw(root);
       $('#bmQ', root).addEventListener('input', function () { draw(root); });
+      const bAdd = $('#bmAddNew', root);
+      if (bAdd) bAdd.addEventListener('click', () => { esNewQuestionDialog(); draw(root); });
+      const bTpl = $('#bmTpl', root);
+      if (bTpl) bTpl.addEventListener('click', esDownloadExcelTemplate);
     }
   });
 }
@@ -5333,10 +5548,73 @@ function esBankExport() {
   toast('ส่งออก ' + all.length + ' ข้อแล้ว', 'ok');
 }
 
-/** นำเข้าคลังจากไฟล์ — เพิ่มต่อท้าย ไม่ทับของเดิม เพราะทับแล้วกู้ไม่ได้ */
+/** นำเข้าคลังจากไฟล์ — รองรับทั้ง JSON, Excel (.xlsx) และ CSV */
 async function esBankImport() {
-  const f = await pickFile('.json,application/json');
+  const f = await pickFile('.json,.xlsx,.csv,application/json,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv');
   if (!f) return;
+
+  const fn = f.name.toLowerCase();
+  if (fn.endsWith('.xlsx') || fn.endsWith('.csv') || fn.endsWith('.tsv')) {
+    // นำเข้าจากตาราง Excel / CSV
+    try {
+      const sheets = await readTableFile(f);
+      if (!sheets.length || !sheets[0].rows.length) { toast('ไฟล์นี้ไม่มีข้อมูลตาราง', 'bad'); return; }
+      const rows = sheets[0].rows;
+      if (rows.length < 2) { toast('ไฟล์ต้องมีหัวตารางและข้อมูลอย่างน้อย 1 แถว', 'bad'); return; }
+
+      // หาหัวคอลัมน์
+      const h = rows[0].map(c => String(c || '').trim().toLowerCase());
+      const findCol = names => {
+        for (let i = 0; i < h.length; i++) {
+          if (names.some(n => h[i].indexOf(n.toLowerCase()) >= 0)) return i;
+        }
+        return -1;
+      };
+      const cStem = findCol(['โจทย์', 'stem', 'question', 'ข้อสอบ']);
+      const cMax = findCol(['คะแนน', 'max', 'point', 'score']);
+      const cKey = findCol(['เฉลย', 'key', 'solution', 'วิธีทำ']);
+      const cAns = findCol(['คำตอบ', 'ans', 'answer']);
+      const cUnit = findCol(['หน่วย', 'unit']);
+      const cImg = findCol(['รูป', 'image', 'img', 'url']);
+
+      if (cStem < 0) {
+        toast('ไม่พบคอลัมน์ "โจทย์" ในตาราง กรุณาใช้แม่แบบ Excel ที่ระบบจัดไว้ให้', 'bad');
+        return;
+      }
+
+      let added = 0;
+      for (let r = 1; r < rows.length; r++) {
+        const row = rows[r];
+        const stem = String(row[cStem] || '').trim();
+        if (!stem) continue;
+        const max = cMax >= 0 ? clamp(Number(row[cMax]) || 10, 1, 100) : 10;
+        const key = cKey >= 0 ? String(row[cKey] || '').trim() : '';
+        const ansRaw = cAns >= 0 ? String(row[cAns] || '').trim() : '';
+        const au = cUnit >= 0 ? String(row[cUnit] || '').trim() : '';
+        const img = cImg >= 0 ? String(row[cImg] || '').trim() : '';
+
+        esBankPut({
+          essay: 1,
+          stem: stem,
+          max: max,
+          key: key,
+          ans: ansRaw ? parseNum(ansRaw) : null,
+          au: au,
+          img: img,
+          typed: false,
+          at: Date.now()
+        });
+        added++;
+      }
+      toast('นำเข้าโจทย์ ' + added + ' ข้อจากไฟล์ Excel/CSV เรียบร้อย', 'ok');
+      renderMake();
+      return;
+    } catch (err) {
+      toast('อ่านไฟล์ตารางไม่สำเร็จ: ' + err.message, 'bad');
+      return;
+    }
+  }
+
   let o;
   try { o = JSON.parse(await f.text()); } catch (e) { toast('ไฟล์นี้อ่านไม่ได้', 'bad'); return; }
   if (!o || o.kind !== 'esbank' || !Array.isArray(o.items)) {
@@ -5388,6 +5666,299 @@ const ES_SYMS = [
   { lab: '±', ins: ' ± ', t: 'บวกลบ' },
   { lab: '→', ins: ' → ', t: 'ลูกศร' }
 ];
+
+
+/* ============================================================
+   In-App PDF Viewer Engine (Open-Book Notes Reader)
+   ============================================================ */
+var PDF_STATE = {
+  visible: false,
+  mode: 'split',    // 'split' | 'drawer'
+  url: '',
+  fileName: ''
+};
+
+function togglePdfViewer() {
+  const wrap = $('#examSplitWrap');
+  const pane = $('#pdfPane');
+  if (!wrap || !pane) return;
+  PDF_STATE.visible = !PDF_STATE.visible;
+  if (PDF_STATE.mode === 'split') {
+    pane.classList.toggle('hide-pane', !PDF_STATE.visible);
+  } else {
+    pane.classList.remove('hide-pane');
+    wrap.classList.toggle('drawer-open', PDF_STATE.visible);
+  }
+  const btn = $('#btnTogglePDF');
+  if (btn) btn.classList.toggle('primary', PDF_STATE.visible);
+  window.dispatchEvent(new Event('resize'));
+}
+
+function togglePdfMode() {
+  const wrap = $('#examSplitWrap');
+  const pane = $('#pdfPane');
+  const lbl = $('#lblPdfMode');
+  if (!wrap || !pane) return;
+  if (PDF_STATE.mode === 'split') {
+    PDF_STATE.mode = 'drawer';
+    wrap.classList.remove('mode-split');
+    wrap.classList.add('mode-drawer');
+    if (lbl) lbl.textContent = 'หน้าต่างลอย';
+    if (PDF_STATE.visible) wrap.classList.add('drawer-open');
+  } else {
+    PDF_STATE.mode = 'split';
+    wrap.classList.remove('mode-drawer', 'drawer-open');
+    wrap.classList.add('mode-split');
+    if (lbl) lbl.textContent = 'แบ่งจอ';
+    if (PDF_STATE.visible) pane.classList.remove('hide-pane');
+    else pane.classList.add('hide-pane');
+  }
+  window.dispatchEvent(new Event('resize'));
+}
+
+function bindPdfEvents() {
+  const btnTog = $('#btnTogglePDF');
+  if (btnTog && !btnTog._b) {
+    btnTog._b = 1;
+    btnTog.addEventListener('click', togglePdfViewer);
+  }
+  const btnClose = $('#btnClosePdf');
+  if (btnClose && !btnClose._b) {
+    btnClose._b = 1;
+    btnClose.addEventListener('click', () => {
+      PDF_STATE.visible = false;
+      const wrap = $('#examSplitWrap'), pane = $('#pdfPane');
+      if (pane) pane.classList.add('hide-pane');
+      if (wrap) wrap.classList.remove('drawer-open');
+      const btn = $('#btnTogglePDF');
+      if (btn) btn.classList.remove('primary');
+      window.dispatchEvent(new Event('resize'));
+    });
+  }
+  const btnMode = $('#btnPdfModeToggle');
+  if (btnMode && !btnMode._b) {
+    btnMode._b = 1;
+    btnMode.addEventListener('click', togglePdfMode);
+  }
+  const btnChange = $('#btnChangePdf');
+  if (btnChange && !btnChange._b) {
+    btnChange._b = 1;
+    btnChange.addEventListener('click', () => {
+      const inp = $('#pdfFileInput');
+      if (inp) inp.click();
+    });
+  }
+  const inp = $('#pdfFileInput');
+  if (inp && !inp._b) {
+    inp._b = 1;
+    inp.addEventListener('change', e => {
+      const f = e.target.files && e.target.files[0];
+      if (!f) return;
+      if (PDF_STATE.url) URL.revokeObjectURL(PDF_STATE.url);
+      PDF_STATE.url = URL.createObjectURL(f);
+      PDF_STATE.fileName = f.name;
+      const frame = $('#pdfFrame'), drop = $('#pdfDrop');
+      if (frame) { frame.src = PDF_STATE.url; frame.style.display = 'block'; }
+      if (drop) drop.style.display = 'none';
+      toast('โหลดสมุดจด ' + esc(f.name) + ' แล้ว', 'ok');
+    });
+  }
+}
+
+/* ============================================================
+   Digital Handwriting Pad Engine (iPad & Apple Pencil 100%)
+   ============================================================ */
+var HW_INSTANCES = {};
+
+function initHandwritingPad(k, canvasEl, wrapEl, initialStrokes, onSave) {
+  if (!canvasEl || !wrapEl) return null;
+  const ctx = canvasEl.getContext('2d');
+  const pad = {
+    k: k,
+    canvas: canvasEl,
+    wrap: wrapEl,
+    ctx: ctx,
+    tool: 'pen',
+    color: '#1e293b',
+    size: 2.5,
+    isDrawing: false,
+    curStroke: null,
+    strokes: Array.isArray(initialStrokes) ? JSON.parse(JSON.stringify(initialStrokes)) : [],
+    saveTimer: null
+  };
+
+  function resize() {
+    const dpr = window.devicePixelRatio || 1;
+    const rect = wrapEl.getBoundingClientRect();
+    const curH = parseInt(canvasEl.style.height) || 380;
+    canvasEl.width = rect.width * dpr;
+    canvasEl.height = curH * dpr;
+    canvasEl.style.width = rect.width + 'px';
+    canvasEl.style.height = curH + 'px';
+    ctx.scale(dpr, dpr);
+    redraw();
+  }
+
+  function getPos(e) {
+    const rect = canvasEl.getBoundingClientRect();
+    return {
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+      p: e.pressure || 0.5,
+      type: e.pointerType
+    };
+  }
+
+  function redraw() {
+    const rect = canvasEl.getBoundingClientRect();
+    ctx.clearRect(0, 0, rect.width, rect.height);
+    pad.strokes.forEach(s => drawStroke(s));
+  }
+
+  function drawStroke(s) {
+    if (!s.points || !s.points.length) return;
+    ctx.save();
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    if (s.tool === 'highlighter') {
+      ctx.strokeStyle = 'rgba(250, 204, 21, 0.45)';
+      ctx.lineWidth = 16;
+      ctx.globalCompositeOperation = 'multiply';
+    } else if (s.tool === 'eraser') {
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 22;
+      ctx.globalCompositeOperation = 'destination-out';
+    } else {
+      ctx.strokeStyle = s.color || '#1e293b';
+      ctx.lineWidth = s.size || 2.5;
+      ctx.globalCompositeOperation = 'source-over';
+    }
+
+    if (s.points.length === 1) {
+      ctx.beginPath();
+      ctx.arc(s.points[0].x, s.points[0].y, (s.size || 2.5) / 2, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      ctx.beginPath();
+      ctx.moveTo(s.points[0].x, s.points[0].y);
+      for (let i = 1; i < s.points.length - 1; i++) {
+        const xc = (s.points[i].x + s.points[i + 1].x) / 2;
+        const yc = (s.points[i].y + s.points[i + 1].y) / 2;
+        ctx.quadraticCurveTo(s.points[i].x, s.points[i].y, xc, yc);
+      }
+      ctx.lineTo(s.points[s.points.length - 1].x, s.points[s.points.length - 1].y);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function scheduleSave() {
+    clearTimeout(pad.saveTimer);
+    pad.saveTimer = setTimeout(() => {
+      try {
+        const dataUrl = canvasEl.toDataURL('image/png');
+        if (typeof onSave === 'function') {
+          onSave(pad.strokes, dataUrl);
+        }
+        const st = $('#esSaveState_' + k);
+        if (st) st.textContent = '● บันทึกลายมือแล้ว';
+      } catch (e) {}
+    }, 450);
+  }
+
+  // Pointer event listeners (Apple Pencil + Touch)
+  canvasEl.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    canvasEl.setPointerCapture(e.pointerId);
+    pad.isDrawing = true;
+    const p = getPos(e);
+    pad.curStroke = {
+      tool: pad.tool,
+      color: pad.color,
+      size: pad.tool === 'pen' ? pad.size : (pad.tool === 'highlighter' ? 16 : 22),
+      points: [p]
+    };
+    pad.strokes.push(pad.curStroke);
+  });
+
+  canvasEl.addEventListener('pointermove', e => {
+    if (!pad.isDrawing || !pad.curStroke) return;
+    e.preventDefault();
+    const p = getPos(e);
+    pad.curStroke.points.push(p);
+
+    const pts = pad.curStroke.points;
+    const len = pts.length;
+    if (len >= 3) {
+      ctx.save();
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      if (pad.curStroke.tool === 'highlighter') {
+        ctx.strokeStyle = 'rgba(250, 204, 21, 0.45)';
+        ctx.lineWidth = 16;
+        ctx.globalCompositeOperation = 'multiply';
+      } else if (pad.curStroke.tool === 'eraser') {
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 22;
+        ctx.globalCompositeOperation = 'destination-out';
+      } else {
+        ctx.strokeStyle = pad.curStroke.color;
+        ctx.lineWidth = pad.curStroke.size;
+        ctx.globalCompositeOperation = 'source-over';
+      }
+      ctx.beginPath();
+      ctx.moveTo(pts[len - 3].x, pts[len - 3].y);
+      const xc = (pts[len - 2].x + pts[len - 1].x) / 2;
+      const yc = (pts[len - 2].y + pts[len - 1].y) / 2;
+      ctx.quadraticCurveTo(pts[len - 2].x, pts[len - 2].y, xc, yc);
+      ctx.stroke();
+      ctx.restore();
+    }
+  });
+
+  const endDraw = e => {
+    if (!pad.isDrawing) return;
+    pad.isDrawing = false;
+    pad.curStroke = null;
+    redraw();
+    scheduleSave();
+  };
+
+  canvasEl.addEventListener('pointerup', endDraw);
+  canvasEl.addEventListener('pointercancel', endDraw);
+
+  pad.resize = resize;
+  pad.redraw = redraw;
+  pad.undo = function () {
+    if (pad.strokes.length) {
+      pad.strokes.pop();
+      redraw();
+      scheduleSave();
+    }
+  };
+  pad.clear = function () {
+    if (confirm('ต้องการล้างลายมือในข้อนี้หรือไม่?')) {
+      pad.strokes = [];
+      redraw();
+      scheduleSave();
+    }
+  };
+  pad.expand = function () {
+    const curH = parseInt(canvasEl.style.height) || 380;
+    canvasEl.style.height = (curH + 200) + 'px';
+    resize();
+  };
+
+  HW_INSTANCES[k] = pad;
+  setTimeout(resize, 40);
+  return pad;
+}
+
+window.addEventListener('resize', () => {
+  Object.keys(HW_INSTANCES).forEach(k => {
+    if (HW_INSTANCES[k] && HW_INSTANCES[k].resize) HW_INSTANCES[k].resize();
+  });
+});
 
 /* ── คลังข้อสอบอัตนัย ───────────────────────────────────────────────────
    เก็บ "รายข้อ" ไม่ใช่รายชุด เพราะครูหยิบทีละข้อมาประกอบชุดใหม่
@@ -6283,9 +6854,15 @@ function essayGradeBox(quizId) {
             esGuideSummary(x.p, it) + '</div>' : '') +
           (x.p.keyText ? '<div class="notice info" style="margin-bottom:8px"><b>เฉลย</b> ' +
             M(x.p.keyText) + '</div>' : '') +
-          (x.p.typed ? '<div class="notice" style="margin-bottom:8px;white-space:pre-wrap">' +
-            (String(it.text || '').trim() ? esc(it.text) :
-              '<span class="hint">นักเรียนไม่ได้พิมพ์คำตอบ</span>') + '</div>' : '') +
+          (it.img ? '<div style="margin-bottom:10px;border:1.5px solid var(--line);border-radius:8px;overflow:hidden;background:#fff">' +
+            '<div style="padding:6px 10px;background:var(--panel2);font-size:12px;font-weight:600;border-bottom:1px solid var(--line);display:flex;justify-content:space-between">' +
+            '<span>✍️ ลายมือวิธีทำของนักเรียน:</span>' +
+            '<span class="hint">ส่งจาก iPad / หน้าจอสัมผัส</span></div>' +
+            '<div style="padding:8px;text-align:center;background:#fff">' +
+            '<img src="' + esc(it.img) + '" style="max-width:100%;max-height:480px;border-radius:4px;box-shadow:0 1px 3px rgba(0,0,0,0.08)" alt="ลายมือนักเรียน">' +
+            '</div></div>' : '') +
+          (it.finalAns ? '<div class="notice ok" style="margin-bottom:8px"><b>🎯 คำตอบสรุปสุดท้ายของนักเรียน:</b> ' + esc(it.finalAns) + '</div>' : '') +
+          (it.text ? '<div class="notice" style="margin-bottom:8px;white-space:pre-wrap"><b>วิธีทำที่พิมพ์:</b> ' + esc(it.text) + '</div>' : '') +
           '<div>' + ESSAY_STEPS.slice(0, x.p.nsteps).map(function (s, si) {
             return '<label class="chk"><input type="checkbox" data-eg="' + x.i + '" data-egs="' + si + '"' +
               (rub[si] ? ' checked' : '') + '><span><span class="t">' + (si + 1) + '. ' + esc(s) +
@@ -6615,9 +7192,11 @@ function renderMake() {
   if (bp) bp.addEventListener('click', () => paperDialog(null));
   const be = $('#btnEssay');
   if (be) be.addEventListener('click', () => essayDialog(null));
+  const bka = $('#bkAddNew'); if (bka) bka.addEventListener('click', esNewQuestionDialog);
   const bm = $('#bkManage'); if (bm) bm.addEventListener('click', esBankManage);
   const bx = $('#bkExport'); if (bx) bx.addEventListener('click', esBankExport);
   const bi = $('#bkImport'); if (bi) bi.addEventListener('click', esBankImport);
+  const bkt = $('#bkTpl'); if (bkt) bkt.addEventListener('click', esDownloadExcelTemplate);
   $$('[data-mktest]').forEach(b => b.addEventListener('click', () => makeTestDialog(b.dataset.mktest)));
   if (isStudent()) bindMyAssignments();
   $$('[data-start]').forEach(b => b.addEventListener('click', () => startQuiz(b.dataset.start)));
@@ -7269,7 +7848,9 @@ function renderDo() {
     (T && a.limitSec ? ' · เหลือเวลา <span class="tag t" id="examClock">' + mmss(procSecLeft(a)) + '</span>' : '') +
     (T && a.proc && a.proc.nOut ? ' · <span class="tag l3">ออกจากแอป ' + a.proc.nOut + ' ครั้ง</span>' : '') +
     '</div></div>' +
-    '<button class="sm" id="btnFinish">ส่งคำตอบ / จบชุดนี้</button></div>' +
+    '<div style="display:flex;gap:6px;align-items:center">' +
+    '<button class="sm' + (PDF_STATE.visible ? ' primary' : '') + '" id="btnTogglePDF">📄 ดูสมุดจด (PDF)</button>' +
+    '<button class="sm" id="btnFinish">ส่งคำตอบ / จบชุดนี้</button></div></div>' +
     '<div class="bar" style="margin-top:9px"><i style="width:' + Math.round(done / probs.length * 100) + '%"></i></div>' +
     '<div class="qnav" style="margin-top:11px">' +
     a.answers.map((x, k) => {
@@ -7309,7 +7890,27 @@ function renderDo() {
   /* ใบตอบแสดงทุกข้อในหน้าเดียว ไม่ใช่ทีละข้อ
      เพราะนักเรียนอ่านโจทย์จากกระดาษ การบังคับกดเปลี่ยนหน้าทีละข้อมีแต่ทำให้ช้า */
   if (isPaper(q)) {
-    h += '<div class="card"><h3>กระดาษคำตอบ<span class="sub">ข้อสอบอยู่บนกระดาษ ' +
+    h += '<div class="exam-split-wrap ' + (PDF_STATE.mode === 'drawer' ? 'mode-drawer' : 'mode-split') +
+      (PDF_STATE.mode === 'drawer' && PDF_STATE.visible ? ' drawer-open' : '') + '" id="examSplitWrap">' +
+      '<div class="pdf-pane ' + (!PDF_STATE.visible ? 'hide-pane' : '') + '" id="pdfPane">' +
+      '<div class="pdf-box">' +
+      '<div class="pdf-head"><b>📄 สมุดจด / เอกสารอ้างอิง</b>' +
+      '<div class="pdf-controls">' +
+      '<button class="btn-tool sm" id="btnChangePdf">เปลี่ยนไฟล์</button>' +
+      '<button class="btn-tool sm" id="btnPdfModeToggle">🔀 สลับโหมด</button>' +
+      '<button class="btn-tool sm" id="btnClosePdf">✕ ปิด</button>' +
+      '</div></div>' +
+      '<div class="pdf-body">' +
+      '<div class="pdf-dropzone" id="pdfDrop" style="' + (PDF_STATE.url ? 'display:none' : '') + '">' +
+      '<div style="font-size:32px">📑</div>' +
+      '<div><b>เปิดสมุดจด / สรุปสูตร (PDF)</b><br><span style="font-size:12.5px;opacity:0.85">เปิดอ่านในหน้านี้ได้เลย ไม่ต้องสลับแอป ไม่โดนระบบคุมสอบนับครั้งออก</span></div>' +
+      '<input type="file" id="pdfFileInput" accept="application/pdf" style="display:none">' +
+      '<button class="btn-tool" style="background:#fff;color:#111;font-weight:600;padding:6px 14px" onclick="$(\'#pdfFileInput\').click()">เลือกไฟล์ PDF จากเครื่อง</button>' +
+      '</div>' +
+      '<iframe id="pdfFrame" src="' + (PDF_STATE.url || '') + '" style="' + (PDF_STATE.url ? '' : 'display:none') + ';width:100%;height:100%;border:none"></iframe>' +
+      '</div></div></div>' +
+      '<div class="exam-pane">' +
+      '<div class="card"><h3>กระดาษคำตอบ<span class="sub">ข้อสอบอยู่บนกระดาษ ' +
       'อ่านโจทย์จากข้อสอบที่ครูแจก แล้วแตะตัวเลือกที่นี่</span></h3>' +
       '<div class="hint" style="margin-bottom:11px">แตะซ้ำที่ตัวเลือกเดิม = ยกเลิกคำตอบข้อนั้น · ' +
       'ตอบแล้ว <b>' + done + '</b> จาก ' + probs.length + ' ข้อ</div>' +
@@ -7324,13 +7925,12 @@ function renderDo() {
           }).join('') + '</div>';
       }).join('') + '</div></div>';
 
-    /* ข้ออัตนัยแสดงเป็นการ์ดเต็มความกว้าง เพราะมีโจทย์ให้อ่านจริง
-       ข้อที่ครูให้เขียนลงกระดาษ จะไม่มีช่องพิมพ์ แต่ต้องบอกเกณฑ์ให้ครบ
-       นักเรียนจะได้รู้ว่าต้องเขียนอะไรถึงจะได้คะแนนแต่ละส่วน */
+    /* ข้ออัตนัย: กระดานเขียนแสดงวิธีทำ (Apple Pencil 100%) + ช่องสรุปคำตอบสุดท้าย */
     probs.forEach(function (pp, k) {
       if (!pp.essay) return;
       const x = a.answers[k];
-      h += '<div class="card"><h3>ข้อ ' + (k + 1) +
+      if (!x.mode) x.mode = (pp.typed ? 'type' : 'draw');
+      h += '<div class="card hw-card" data-q="' + k + '"><h3>ข้อ ' + (k + 1) +
         '<span class="sub">อัตนัย · ' + fmt(pp.max) + ' คะแนน</span></h3>' +
         '<div style="margin-bottom:10px;font-size:16px">' + M(pp.stem) + '</div>' +
         (pp.img ? '<div class="esfig"><img src="' + esc(pp.img) + '" alt="รูปประกอบโจทย์"></div>' : '') +
@@ -7338,30 +7938,164 @@ function renderDo() {
         ' คะแนน<br>' + ESSAY_STEPS.slice(0, pp.nsteps).map(function (s, si) {
           return (si + 1) + ') ' + esc(s);
         }).join('<br>') + (pp.nsteps === 4 ? '<br><i>ข้อนี้ไม่ต้องเขียนสรุป</i>' : '') + '</div>';
+
       if (pp.guided) {
         h += essayGuideHTML(pp, x, k);
-      } else if (pp.typed) {
-        h += '<textarea class="esin" data-es="' + k + '" rows="6" ' +
-          'style="width:100%;margin-top:10px;font-size:16px" ' +
-          'placeholder="พิมพ์วิธีทำตามลำดับห้าขั้น">' + esc(x.text || '') + '</textarea>';
       } else {
-        h += '<div class="notice info" style="margin-top:10px">' +
-          '<b>เขียนคำตอบข้อนี้ลงในกระดาษคำตอบ</b> — ครูจะตรวจและกรอกคะแนนให้ภายหลัง</div>';
+        h += '<div class="row" style="margin-top:10px;margin-bottom:8px;justify-content:space-between;align-items:center">' +
+          '<div class="segbtn" style="max-width:260px">' +
+          '<button class="sm ' + (x.mode !== 'type' ? 'on' : '') + '" data-esmode="draw" data-esk="' + k + '">✍️ เขียนลายมือ (iPad)</button>' +
+          '<button class="sm ' + (x.mode === 'type' ? 'on' : '') + '" data-esmode="type" data-esk="' + k + '">⌨️ พิมพ์วิธีทำ</button>' +
+          '</div>' +
+          '<span class="hint" id="esSaveState_' + k + '" style="color:var(--ok)">' + (x.checked ? '● บันทึกแล้ว' : '') + '</span>' +
+          '</div>' +
+
+          // 1. Handwriting Canvas
+          '<div id="hwBox_' + k + '" style="' + (x.mode === 'type' ? 'display:none' : '') + '">' +
+          '<div class="hw-bar">' +
+          '<div class="hw-tools">' +
+          '<button class="btn-tool active" data-hwtool="pen" data-esk="' + k + '">✏️ ปากกา</button>' +
+          '<button class="btn-tool" data-hwtool="highlighter" data-esk="' + k + '">🖍️ ไฮไลต์</button>' +
+          '<button class="btn-tool" data-hwtool="eraser" data-esk="' + k + '">🧹 ยางลบ</button>' +
+          '<div style="display:flex;gap:4px;margin-left:4px;align-items:center">' +
+          '<div class="color-swatch active" data-hwcolor="#1e293b" data-esk="' + k + '" style="background:#1e293b"></div>' +
+          '<div class="color-swatch" data-hwcolor="#2563eb" data-esk="' + k + '" style="background:#2563eb"></div>' +
+          '<div class="color-swatch" data-hwcolor="#dc2626" data-esk="' + k + '" style="background:#dc2626"></div>' +
+          '</div>' +
+          '<select class="btn-tool" data-hwgrid="' + k + '" style="margin-left:4px">' +
+          '<option value="bg-lined">เส้นบรรทัด</option>' +
+          '<option value="bg-grid">ตารางกราฟ</option>' +
+          '<option value="bg-blank">กระดาษขาว</option>' +
+          '</select>' +
+          '</div>' +
+          '<div class="hw-actions">' +
+          '<button class="btn-tool" data-hwact="undo" data-esk="' + k + '">↩️ ย้อน</button>' +
+          '<button class="btn-tool" data-hwact="clear" data-esk="' + k + '">🗑️ ล้าง</button>' +
+          '<button class="btn-tool" data-hwact="expand" data-esk="' + k + '">➕ เพิ่มที่เขียน</button>' +
+          '</div></div>' +
+          '<div class="hw-canvas-wrap bg-lined" id="hwWrap_' + k + '">' +
+          '<canvas class="hw-canvas" id="hwCanvas_' + k + '" data-esk="' + k + '"></canvas>' +
+          '</div>' +
+          '<div class="hw-footer">' +
+          '<span>✍️ Apple Pencil / Stylus / สัมผัส — หน้าจอไม่เลื่อนขณะเขียน</span>' +
+          '<span>ภาพจะถูกบันทึกให้ครูตรวจโดยอัตโนมัติ</span>' +
+          '</div></div>' +
+
+          // 2. Typing textarea
+          '<div id="typeBox_' + k + '" style="' + (x.mode === 'type' ? '' : 'display:none') + '">' +
+          '<textarea class="esin" data-es="' + k + '" rows="7" ' +
+          'style="width:100%;font-size:16px" placeholder="พิมพ์แสดงวิธีทำตามลำดับขั้นตอน">' +
+          esc(x.text || '') + '</textarea>' +
+          '</div>' +
+
+          // 3. Final Answer Box
+          '<div style="margin-top:10px;padding:10px 12px;background:var(--panel2);border:1px solid var(--line);border-radius:8px">' +
+          '<div class="row" style="align-items:center;flex-wrap:wrap;gap:8px">' +
+          '<b>🎯 สรุปคำตอบสุดท้าย:</b> ' +
+          '<input type="text" class="grow" style="max-width:280px" data-esans="' + k + '" ' +
+          'placeholder="เช่น 346 m/s หรือ สรุปคำตอบสั้นๆ" value="' + esc(x.finalAns || '') + '">' +
+          '<span class="hint">กรอกคำตอบสรุปเพื่อให้ตรวจได้รวดเร็ว</span>' +
+          '</div></div>';
       }
       h += '</div>';
     });
-    h += '</div>';
+
+    // Close exam pane and split container
+    h += '</div></div>';   // close exam-pane and exam-split-wrap
     $('#pane-do').innerHTML = h;
     $$('[data-go]').forEach(b => b.addEventListener('click', () => gotoQ(Number(b.dataset.go))));
     $('#btnFinish').addEventListener('click', finishAttempt);
     $$('[data-pk]').forEach(b => b.addEventListener('click', () =>
       setPaperAnswer(Number(b.dataset.pk), Number(b.dataset.pc))));
     bindEssayGuide(a, probs);
+    bindPdfEvents();
+
+    // Mode switch: Draw vs Type
+    $$('[data-esmode]').forEach(b => {
+      b.addEventListener('click', () => {
+        const k = Number(b.dataset.esk), m = b.dataset.esmode;
+        const it = a.answers[k];
+        it.mode = m;
+        const boxHw = $('#hwBox_' + k), boxType = $('#typeBox_' + k);
+        if (boxHw) boxHw.style.display = m === 'type' ? 'none' : 'block';
+        if (boxType) boxType.style.display = m === 'type' ? 'block' : 'none';
+        $$('[data-esk="' + k + '"][data-esmode]').forEach(x => x.classList.remove('on'));
+        b.classList.add('on');
+        if (m === 'draw' && HW_INSTANCES[k]) setTimeout(() => HW_INSTANCES[k].resize(), 30);
+        save();
+      });
+    });
+
+    // Final answer inputs
+    $$('[data-esans]').forEach(inp => {
+      inp.addEventListener('input', e => {
+        const k = Number(e.target.dataset.esans), it = a.answers[k];
+        it.finalAns = e.target.value;
+        it.checked = !!(it.finalAns.trim() || (it.strokes && it.strokes.length) || (it.text && it.text.trim()));
+        save();
+      });
+    });
+
+    // Initialize handwriting canvases
+    probs.forEach(function (pp, k) {
+      if (!pp.essay || pp.guided) return;
+      const cvEl = $('#hwCanvas_' + k);
+      const wrapEl = $('#hwWrap_' + k);
+      if (!cvEl || !wrapEl) return;
+      const it = a.answers[k];
+      const pad = initHandwritingPad(k, cvEl, wrapEl, it.strokes, function (strokes, imgUrl) {
+        it.strokes = strokes;
+        it.img = imgUrl;
+        it.checked = !!(strokes.length || (it.finalAns && it.finalAns.trim()));
+        save();
+      });
+
+      // Bind tools
+      $$('[data-esk="' + k + '"][data-hwtool]').forEach(tb => {
+        tb.addEventListener('click', () => {
+          $$('[data-esk="' + k + '"][data-hwtool]').forEach(x => x.classList.remove('active'));
+          tb.classList.add('active');
+          if (pad) pad.tool = tb.dataset.hwtool;
+        });
+      });
+
+      // Bind color swatches
+      $$('[data-esk="' + k + '"][data-hwcolor]').forEach(sw => {
+        sw.addEventListener('click', () => {
+          $$('[data-esk="' + k + '"][data-hwcolor]').forEach(x => x.classList.remove('active'));
+          sw.classList.add('active');
+          if (pad) {
+            pad.color = sw.dataset.hwcolor;
+            if (pad.tool !== 'pen') {
+              const penBtn = $('[data-esk="' + k + '"][data-hwtool="pen"]');
+              if (penBtn) penBtn.click();
+            }
+          }
+        });
+      });
+
+      // Bind grid background
+      const selG = $('[data-hwgrid="' + k + '"]');
+      if (selG) {
+        selG.addEventListener('change', e => {
+          wrapEl.className = 'hw-canvas-wrap ' + e.target.value;
+        });
+      }
+
+      // Bind actions
+      $$('[data-esk="' + k + '"][data-hwact]').forEach(actBtn => {
+        actBtn.addEventListener('click', () => {
+          const act = actBtn.dataset.hwact;
+          if (pad && pad[act]) pad[act]();
+        });
+      });
+    });
+
     $$('[data-es]').forEach(function (t) {
       t.addEventListener('input', function (e) {
         const k = Number(e.target.dataset.es), it = a.answers[k];
         it.text = e.target.value;
-        it.checked = !!it.text.trim();
+        it.checked = !!(it.text.trim() || (it.finalAns && it.finalAns.trim()));
         save();
       });
     });
