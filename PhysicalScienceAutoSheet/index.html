@@ -981,9 +981,33 @@ function attemptWho(a) {
 }
 /** ระเบียนนักเรียนของผลการทำนี้ — คืน null ถ้าเป็นโหมดเดี่ยวหรือหาไม่เจอ */
 function studentOf(a) { return a && a.studentId ? studentById(a.studentId) : null; }
+/** แปลงชื่อห้องให้เป็นรูปแบบมาตรฐาน ม.X/Y และแก้กรณี Google Sheets แปลงเป็นวันที่ */
+function normCls(v) {
+  if (v == null) return '';
+  if (Object.prototype.toString.call(v) === '[object Date]' || (v instanceof Date)) {
+    if (!isNaN(v.getTime())) {
+      var bkk = new Date(v.getTime() + 7 * 3600 * 1000);
+      return 'ม.' + bkk.getUTCDate() + '/' + (bkk.getUTCMonth() + 1);
+    }
+  }
+  var s = String(v).trim();
+  if (!s) return '';
+  if (/^\d{4}-\d{2}-\d{2}T[\d:.]+Z?$/i.test(s)) {
+    var d = new Date(s);
+    if (!isNaN(d.getTime())) {
+      var bkk = new Date(d.getTime() + 7 * 3600 * 1000);
+      return 'ม.' + bkk.getUTCDate() + '/' + (bkk.getUTCMonth() + 1);
+    }
+  }
+  var m = s.match(/^(?:ม\.?|ห้อง)\s*(\d+\/\d+)$/i);
+  if (m) return 'ม.' + m[1];
+  if (/^\d+\/\d+$/.test(s)) return 'ม.' + s;
+  return s;
+}
+
 /** แปลงชื่อห้องให้เป็นรูปแบบมาตรฐานเพื่อเปรียบเทียบ เช่น 'ม.4/1' -> '4/1' */
 function normRoom(r) {
-  return String(r || '').replace(/\s+/g, '').replace(/^ห้อง/, '').replace(/^ม\./, '');
+  return String(normCls(r) || '').replace(/\s+/g, '').replace(/^ห้อง/, '').replace(/^ม\./, '');
 }
 /** หาชื่อห้องของผลการทำแบบทดสอบ (attempt) */
 function attemptRoom(a) {
@@ -1374,7 +1398,7 @@ function adoptPortalSession() {
     const p = s.profile || {};
     if (s.role === 'student' && p.sid) {
       DB.mode = 'solo';
-      DB.profile = { name: p.name || '', room: String(p.cls || ''),
+      DB.profile = { name: p.name || '', room: normCls(p.cls || ''),
                      no: String(p.no || ''), sid: String(p.sid || '') };
     }
   }
@@ -1598,7 +1622,7 @@ function renderGate() {
         setAuth('student', r.token, r.profile);
         // ผูกโปรไฟล์ในเครื่องให้ตรงกับบัญชี เพื่อให้เอกสารและผลลัพธ์แสดงชื่อถูก
         DB.mode = 'solo';
-        DB.profile = { name: r.profile.name || '', room: String(r.profile.cls || ''),
+        DB.profile = { name: r.profile.name || '', room: normCls(r.profile.cls || ''),
                        no: String(r.profile.no || ''), sid: String(r.profile.sid || '') };
         save(true);
         devLockSet(r.profile.sid || sid, r.profile.name || '');
@@ -9632,7 +9656,7 @@ async function pushRoster() {
   DB.students.forEach(s => {
     const sid = String(s.sid || '').trim();
     const row = { sid: sid, name: s.name, no: s.no || '',
-                  cls: (classById(s.classId) || {}).name || '' };
+                  cls: normCls((classById(s.classId) || {}).name || '') };
     if (!sid) noSid.push(s.name);
     else if (!validSid(sid)) badSid.push(s.name + ' (' + sid + ')');
     else good.push(row);
@@ -9886,24 +9910,28 @@ async function pullRoster() {
     const list = await api('rosterList', {});
     if (!list.length) { toast('ยังไม่มีรายชื่อในชีต', 'bad'); return; }
     const byCls = {};
-    list.forEach(s => { const k = String(s.cls || '(ไม่ระบุชั้น)'); byCls[k] = (byCls[k] || 0) + 1; });
+    list.forEach(s => { const k = normCls(s.cls) || '(ไม่ระบุชั้น)'; byCls[k] = (byCls[k] || 0) + 1; });
+    const clsSummary = Object.keys(byCls)
+      .sort((a, b) => a.localeCompare(b, 'th', { numeric: true }))
+      .map(k => esc(k) + ' ' + byCls[k] + ' คน').join(' · ');
     if (!await confirmBox('ดึงรายชื่อจากชีต',
       'พบ <b>' + list.length + ' คน</b> ในชีต<br>' +
-      Object.keys(byCls).map(k => esc(k) + ' ' + byCls[k] + ' คน').join(' · ') +
+      clsSummary +
       '<br><br>จะ<b>แทนที่รายชื่อในเครื่องทั้งหมด</b> (ผลการทำที่เก็บไว้ยังอยู่ครบ)', 'ดึงมาแทนที่')) return;
     DB.mode = 'class';
     DB.classes = []; DB.students = [];
     list.forEach(s => {
-      const nm = String(s.cls || 'ไม่ระบุชั้น').trim();
+      const nm = normCls(s.cls) || 'ไม่ระบุชั้น';
       let c = DB.classes.find(x => x.name === nm);
       if (!c) { c = { id: uid(), name: nm }; DB.classes.push(c); }
       DB.students.push({ id: uid(), classId: c.id, no: Number(s.no) || null,
                          sid: String(s.sid), name: String(s.name || '') });
     });
+    DB.classes.sort((a, b) => a.name.localeCompare(b.name, 'th', { numeric: true }));
     DB.cur.classId = DB.classes.length ? DB.classes[0].id : null;
     const l = studentsOf(DB.cur.classId);
     DB.cur.studentId = l.length ? l[0].id : null;
-    const h = healAttempts();
+    const h = typeof healAttempts === 'function' ? healAttempts() : 0;
     save(true); render();
     toast('ดึงรายชื่อ ' + list.length + ' คนเรียบร้อย' + (h ? ' (เชื่อมคะแนนเดิม ' + h + ' รายการ)' : ''), 'ok');
   } catch (e) { toast(e.message, 'bad'); }
@@ -9925,7 +9953,7 @@ async function resetStudentPass() {
       '<div class="tablewrap" style="max-height:320px"><table><thead><tr><th style="width:40px"></th>' +
       '<th>เลขประจำตัว</th><th>ชื่อ-นามสกุล</th><th>ชั้น</th><th>เข้าใช้ล่าสุด</th></tr></thead><tbody id="rsBody">' +
       list.map(s => '<tr data-k="' + esc(s.sid + ' ' + s.name) + '"><td><input type="checkbox" data-rs="' + esc(s.sid) + '"></td>' +
-        '<td>' + esc(s.sid) + '</td><td>' + esc(s.name) + '</td><td>' + esc(s.cls || '—') + '</td>' +
+        '<td>' + esc(s.sid) + '</td><td>' + esc(s.name) + '</td><td>' + esc(normCls(s.cls) || '—') + '</td>' +
         '<td class="hint">' + (s.lastLogin ? esc(String(s.lastLogin).slice(0, 16)) : 'ยังไม่เคยเข้า') +
         (s.mustChange ? ' <span class="tag l1">ยังใช้รหัสตั้งต้น</span>' : '') + '</td></tr>').join('') +
       '</tbody></table></div>',
@@ -10020,7 +10048,7 @@ async function importRosterFromFile(classId, f) {
       const noRaw = pick(r, S.map.no);
       const no = /^\d+$/.test(noRaw) ? Number(noRaw) : ++auto;
       if (no > auto) auto = no;
-      out.push({ no: no, sid: pick(r, S.map.sid), name: name, cls: pick(r, S.map.cls) });
+      out.push({ no: no, sid: pick(r, S.map.sid), name: name, cls: normCls(pick(r, S.map.cls)) });
     }
     return out;
   };

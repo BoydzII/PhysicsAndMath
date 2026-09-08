@@ -300,6 +300,30 @@ async function api(action, params) {
   return j.data;
 }
 
+/** แปลงชื่อห้องให้เป็นรูปแบบมาตรฐาน ม.X/Y และแก้กรณี Google Sheets แปลงเป็นวันที่ */
+function normCls(v) {
+  if (v == null) return '';
+  if (Object.prototype.toString.call(v) === '[object Date]' || (v instanceof Date)) {
+    if (!isNaN(v.getTime())) {
+      var bkk = new Date(v.getTime() + 7 * 3600 * 1000);
+      return 'ม.' + bkk.getUTCDate() + '/' + (bkk.getUTCMonth() + 1);
+    }
+  }
+  var s = String(v).trim();
+  if (!s) return '';
+  if (/^\d{4}-\d{2}-\d{2}T[\d:.]+Z?$/i.test(s)) {
+    var d = new Date(s);
+    if (!isNaN(d.getTime())) {
+      var bkk = new Date(d.getTime() + 7 * 3600 * 1000);
+      return 'ม.' + bkk.getUTCDate() + '/' + (bkk.getUTCMonth() + 1);
+    }
+  }
+  var m = s.match(/^(?:ม\.?|ห้อง)\s*(\d+\/\d+)$/i);
+  if (m) return 'ม.' + m[1];
+  if (/^\d+\/\d+$/.test(s)) return 'ม.' + s;
+  return s;
+}
+
 function readSession() {
   let s = null;
   try { s = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null'); } catch (e) { return null; }
@@ -336,13 +360,14 @@ function showPicker(s) {
   $('#whoName').textContent = teacher
     ? (isSub ? ('แอดมินรอง: ' + (p.name || 'ครูผู้สอน') + (p.sub ? ' (@' + p.sub + ')' : '')) : '👑 ผู้ดูแลหลัก')
     : (p.name || 'นักเรียน');
+  const pCls = normCls(p.cls);
   $('#whoDetail').textContent = teacher
-    ? (isSub ? ('แอดมินรอง · ดูแล ' + (p.classes ? p.classes.join(', ') : 'ทุกชั้น') + (p.subjects && p.subjects.length ? ' · วิชา ' + p.subjects.join(', ') : ''))
+    ? (isSub ? ('แอดมินรอง · ดูแล ' + (p.classes ? p.classes.map(normCls).join(', ') : 'ทุกชั้น') + (p.subjects && p.subjects.length ? ' · วิชา ' + p.subjects.join(', ') : ''))
              : 'เข้าใช้ในฐานะผู้ดูแลหลัก — สิทธิ์เต็มทุกวิชา ทุกชั้นเรียน')
-    : [p.cls ? 'ชั้น ' + p.cls : '', p.no ? 'เลขที่ ' + p.no : '',
+    : [pCls ? 'ชั้น ' + pCls : '', p.no ? 'เลขที่ ' + p.no : '',
        p.sid ? 'เลขประจำตัว ' + p.sid : ''].filter(Boolean).join(' · ') || 'ยินดีต้อนรับ';
   // เอาวิชาที่ตรงกับชั้นของนักเรียนขึ้นก่อน จะได้ไม่ต้องมองหา — ครูเห็นตามลำดับในสารบัญ
-  const lv = String(p.cls || '').match(/ม\.?\s*(\d)/);
+  const lv = String(pCls || '').match(/ม\.?\s*(\d)/);
   const g = lv ? Number(lv[1]) : 0;
   // เครื่องมือของครูไม่ต้องขึ้นให้นักเรียนเห็น
   const list = SUBJECTS.filter(function (s) { return teacher || !s.teacherOnly; });
@@ -387,6 +412,7 @@ async function submit() {
       const sid = String($('#sid').value || '').replace(/\D/g, '').slice(0, 5);
       if (!sid) throw new Error('กรอกเลขประจำตัวเป็นตัวเลข ไม่เกิน 5 หลัก');
       const r = await api('login', { sid: sid, pass: $('#spass').value || '' });
+      if (r.profile && r.profile.cls) r.profile.cls = normCls(r.profile.cls);
       showPicker(writeSession('student', r.token, r.profile));
     } else {
       const u = String($('#tuser') ? $('#tuser').value : '').trim();

@@ -157,8 +157,11 @@ function sheet_(name) {
     sh.getRange(1, 1, 1, HEADERS[name].length).setValues([HEADERS[name]]);
     sh.getRange(1, 1, 1, HEADERS[name].length).setFontWeight('bold');
     sh.setFrozenRows(1);
-    // คอลัมน์เลขประจำตัวต้องเป็นข้อความ ไม่งั้นเลขศูนย์นำหน้าอย่าง 00123 จะหายไป
-    if (name === 'students') sh.getRange('B:B').setNumberFormat('@');
+    // คอลัมน์เลขประจำตัวและชั้นต้องเป็นข้อความ ไม่งั้นศูนย์นำหน้าหาย และชั้นจะไม่ถูกแปลงเป็นวันที่
+    if (name === 'students') {
+      sh.getRange('B:B').setNumberFormat('@');
+      sh.getRange('D:D').setNumberFormat('@');
+    }
     if (name === 'submissions') sh.getRange('C:C').setNumberFormat('@');
   }
   _sheets[name] = sh;
@@ -190,8 +193,12 @@ function readAll_(name) {
   for (var r = 0; r < vals.length; r++) {
     var o = { _row: r + 2 }, blank = true;
     for (var c = 0; c < wide; c++) {
-      o[keys[c]] = vals[r][c];
-      if (String(vals[r][c]).length) blank = false;
+      var v = vals[r][c];
+      if (name === 'students' && keys[c] === 'cls') v = normCls_(v);
+      else if (name === 'students' && keys[c] === 'sid') v = normSid_(v);
+      else if (name === 'assignments' && keys[c] === 'cls') v = normCls_(v);
+      o[keys[c]] = v;
+      if (String(v).length) blank = false;
     }
     if (!blank) out.push(o);
   }
@@ -305,12 +312,34 @@ function readToken_(tok) {
    ขอบเขตเก็บอยู่ใน "โทเคน" ที่เซ็นด้วย SECRET จึงแก้จากฝั่งเบราว์เซอร์ไม่ได้
    คำสั่งไหนที่คืนหรือแก้ข้อมูลนักเรียน ต้องกรองด้วย inScope_ ทุกครั้ง       */
 
+/** แปลงชื่อชั้นให้เป็นมาตรฐาน ม.X/Y และแก้กรณีชีตแปลงเป็นวันที่ เช่น 5/1 -> ม.5/1 */
+function normCls_(v) {
+  if (v == null) return '';
+  if (Object.prototype.toString.call(v) === '[object Date]' || (v instanceof Date)) {
+    if (!isNaN(v.getTime())) {
+      return 'ม.' + Utilities.formatDate(v, 'Asia/Bangkok', 'd/M');
+    }
+  }
+  var s = String(v).trim();
+  if (!s) return '';
+  if (/^\d{4}-\d{2}-\d{2}T/i.test(s)) {
+    var dt = new Date(s);
+    if (!isNaN(dt.getTime())) {
+      return 'ม.' + Utilities.formatDate(dt, 'Asia/Bangkok', 'd/M');
+    }
+  }
+  var m = s.match(/^(?:ม\.?|ห้อง)\s*(\d+\/\d+)$/i);
+  if (m) return 'ม.' + m[1];
+  if (/^\d+\/\d+$/.test(s)) return 'ม.' + s;
+  return s;
+}
+
 function normUser_(v) { return String(v == null ? '' : v).trim().toLowerCase(); }
-/** ชื่อชั้นใช้เทียบแบบตรงตัวหลังตัดช่องว่างหัวท้าย (ในชีตเขียนเหมือนกันหมดทุกแถวอยู่แล้ว) */
-function clsKey_(v) { return String(v == null ? '' : v).trim(); }
+/** ชื่อชั้นใช้เทียบแบบตรงตัวหลังตัดช่องว่างหัวท้าย และแปลงเป็นมาตรฐาน ม.X/Y */
+function clsKey_(v) { return normCls_(v); }
 /** แปลงข้อความ "ม.4/1, ม.4/2" เป็นอาเรย์ */
 function parseClasses_(v) {
-  return String(v == null ? '' : v).split(',').map(clsKey_).filter(function (x) { return !!x; });
+  return String(v == null ? '' : v).split(',').map(normCls_).filter(function (x) { return !!x; });
 }
 function findTeacher_(user) {
   var u = normUser_(user), list = readAll_('teachers');
@@ -457,8 +486,11 @@ function repairSheets_() {
           });
           r.reordered = true;
         }
-        // เลขประจำตัวเก็บเป็นข้อความเสมอ กันศูนย์นำหน้าหาย
-        body.forEach(function (row) { row[C_SID - 1] = normSid_(row[C_SID - 1]); });
+        // เลขประจำตัวและชั้นเก็บเป็นข้อความเสมอ กันศูนย์นำหน้าหายและกัน Google Sheet แปลงชั้นเป็นวันที่
+        body.forEach(function (row) {
+          row[C_SID - 1] = normSid_(row[C_SID - 1]);
+          row[C_CLS - 1] = normCls_(row[C_CLS - 1]);
+        });
       }
 
       // แถวเก่าที่ยังไม่มีวิชา = ฟิสิกส์ (ตอนนั้นยังมีวิชาเดียว)
@@ -472,7 +504,10 @@ function repairSheets_() {
       sh.clear();
       sh.getRange(1, 1, 1, wide).setValues([HEADERS[n]]).setFontWeight('bold');
       if (body.length) {
-        if (n === 'students') sh.getRange(2, C_SID, body.length, 1).setNumberFormat('@');
+        if (n === 'students') {
+          sh.getRange(2, C_SID, body.length, 1).setNumberFormat('@');
+          sh.getRange(2, C_CLS, body.length, 1).setNumberFormat('@');
+        }
         if (n === 'submissions') sh.getRange(2, 3, body.length, 1).setNumberFormat('@');
         sh.getRange(2, 1, body.length, wide).setValues(body);
       }
@@ -979,7 +1014,7 @@ function apiRosterSave_(req) {
         return;
       }
       var salt = salts[n];
-      newRows.push([r.no == null ? '' : r.no, sid, name, r.cls == null ? '' : r.cls,
+      newRows.push([r.no == null ? '' : r.no, sid, name, normCls_(r.cls),
                     hashPass_(DEFAULT_STUDENT_PASS, salt), salt, true, true, '']);
       idx[key] = -1;                             // กันซ้ำกันเองภายในก้อนเดียวกัน
       added++;
@@ -987,15 +1022,17 @@ function apiRosterSave_(req) {
 
     if (newRows.length) {
       var at = sh.getLastRow() + 1;
-      // บังคับให้คอลัมน์เลขประจำตัวเป็นข้อความก่อนเขียน ไม่งั้นศูนย์นำหน้าจะหาย
+      // บังคับให้คอลัมน์เลขประจำตัวและชั้นเป็นข้อความก่อนเขียน ไม่งั้นศูนย์นำหน้าจะหาย และชั้นจะไม่กลายเป็นวันที่
       sh.getRange(at, C_SID, newRows.length, 1).setNumberFormat('@');
+      sh.getRange(at, C_CLS, newRows.length, 1).setNumberFormat('@');
       sh.getRange(at, 1, newRows.length, W).setValues(newRows);
     }
     // อัปเดตของเดิมเฉพาะเมื่อสั่งมาเท่านั้น และเขียนแค่คอลัมน์ B-D
     if (upd.length) {
       upd.sort(function (a, b) { return a.row - b.row; });
       upd.forEach(function (u) {
-        sh.getRange(u.row, 1, 1, 4).setValues([[u.no, u.sid, u.name, u.cls]]);
+        sh.getRange(u.row, C_CLS, 1, 1).setNumberFormat('@');
+        sh.getRange(u.row, 1, 1, 4).setValues([[u.no, u.sid, u.name, normCls_(u.cls)]]);
       });
       updated = upd.length;
     }
@@ -1184,7 +1221,7 @@ function apiMyAssignments_(req) {
   var subject = reqSubject_(req);
   // ต้องการแค่ "ชั้น" ของตัวเอง จึงหาแถวแล้วอ่านช่องเดียว ไม่อ่านทั้งแผ่น
   var row = findStudentRow_(t.sid);
-  var myCls = row > 0 ? String(sheet_('students').getRange(row, C_CLS).getValue() || '').trim() : '';
+  var myCls = row > 0 ? normCls_(sheet_('students').getRange(row, C_CLS).getValue()) : '';
   // การส่งของตัวเองในวิชานี้ ใช้บอกว่าใบไหนทำไปแล้ว
   var mine = {};
   submissionKeys_().forEach(function (r) {
@@ -1198,7 +1235,7 @@ function apiMyAssignments_(req) {
     if (String(a.active) === 'false') return false;
     if (a.closeAt && new Date(a.closeAt) < now) return false;
     if (a.openAt && new Date(a.openAt) > now) return false;
-    var c = String(a.cls || '').trim();
+    var c = normCls_(a.cls);
     return c && c === myCls;
   }).map(function (a) {
     var o = assignPublic_(a, t.sid);
