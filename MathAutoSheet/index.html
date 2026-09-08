@@ -11,6 +11,17 @@
 <meta name="theme-color" content="#2563eb">
 <meta name="description" content="คลังโจทย์คณิตศาสตร์ ม.1–ม.3 — สุ่มโจทย์ แสดงวิธีทำ 7 ขั้น ตรวจคำตอบ วิเคราะห์ผู้เรียน และพิมพ์เป็น PDF">
 <!-- ไอคอนหน้าจอโฮม: ใส่ค่าจริงตอนโหลดด้วย applyAppIcon() ซึ่งจะใช้โลโก้โรงเรียนถ้ามี -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,600&family=Prompt:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<script>
+(function() {
+  try {
+    var s = localStorage.getItem('ui_theme_style') || 'vibrant';
+    if (s === 'minimal') document.documentElement.setAttribute('data-theme-style', 'minimal');
+  } catch(e) {}
+})();
+</script>
 <link rel="apple-touch-icon" id="linkAppIcon">
 <link rel="icon" id="linkFavicon">
 <title>คลังโจทย์คณิตศาสตร์ ม.1–ม.3</title>
@@ -18,164 +29,394 @@
 /* ============================================================
    ธีมและตัวแปรสี — ชุดเดียวกับ gradebook.html
    ============================================================ */
-:root{
-  --bg:#f4f6fa; --panel:#ffffff; --panel2:#f9fafc; --ink:#16202e; --muted:#67748a;
-  --line:#dde3ec; --line2:#eef2f7; --brand:#1f6feb; --brand-ink:#ffffff;
-  --ok:#0f8a53; --ok-bg:#e6f6ee; --bad:#c62828; --bad-bg:#fdecec;
-  --warn:#a05a00; --warn-bg:#fff5e2; --group:#6b3fd4; --group-bg:#f1ecfd;
-  --lv1:#0f8a53; --lv2:#a05a00; --lv3:#c62828;   /* ง่าย / ปานกลาง / ยาก */
-  --shadow:0 1px 2px rgba(16,30,54,.06),0 8px 24px rgba(16,30,54,.08);
-  --r:10px;
+/* ============================================================
+   Modern Design System (Vibrant EdTech & Minimal Focus Mode)
+   ============================================================ */
+:root {
+  --font-sans: 'Prompt', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Sarabun', 'Leelawadee UI', 'Segoe UI', Tahoma, sans-serif;
+  
+  /* Vibrant Theme Tokens (Default: Style 2) */
+  --bg: #f8fafc;
+  --bg-gradient: radial-gradient(at 0% 0%, rgba(37, 99, 235, 0.05) 0px, transparent 50%),
+                 radial-gradient(at 100% 100%, rgba(6, 182, 212, 0.05) 0px, transparent 50%);
+  --panel: #ffffff;
+  --panel2: #f8fafc;
+  --panel-glass: rgba(255, 255, 255, 0.88);
+  --ink: #0f172a;
+  --muted: #64748b;
+  --line: #e2e8f0;
+  --line2: #f1f5f9;
+  
+  /* Brand Subject Gradients */
+  --brand: #d97706;
+  --brand-gradient: linear-gradient(135deg, #d97706 0%, #f97316 100%);
+  --brand-ink: #ffffff;
+  --brand-glow: 0 4px 14px rgba(217, 119, 6, 0.35);
+  
+  /* Semantics */
+  --ok: #059669; --ok-bg: #ecfdf5; --ok-line: #a7f3d0;
+  --bad: #e11d48; --bad-bg: #fff1f2; --bad-line: #fecdd3;
+  --warn: #d97706; --warn-bg: #fffbeb; --warn-line: #fde68a;
+  --group: #7c3aed; --group-bg: #f5f3ff; --group-line: #ddd6fe;
+
+  --lv1: #059669; --lv2: #d97706; --lv3: #e11d48;
+
+  /* Elevation & Curves */
+  --r-sm: 8px;
+  --r: 14px;
+  --r-lg: 18px;
+  --r-pill: 9999px;
+  --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.05), 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.06), 0 2px 6px -1px rgba(15, 23, 42, 0.03);
+  --shadow-lg: 0 12px 32px -4px rgba(15, 23, 42, 0.08), 0 4px 12px -2px rgba(15, 23, 42, 0.03);
 }
-@media (prefers-color-scheme:dark){
-  :root{
-    --bg:#11151c; --panel:#181e27; --panel2:#1e2530; --ink:#e6ecf5; --muted:#95a3b8;
-    --line:#2b3441; --line2:#232b36; --brand:#4d8dfb; --brand-ink:#0b1220;
-    --ok:#4bd08b; --ok-bg:#123024; --bad:#ff7b7b; --bad-bg:#3a1c1c;
-    --warn:#ffc46b; --warn-bg:#3a2c12; --group:#b79bff; --group-bg:#2a2340;
-    --lv1:#4bd08b; --lv2:#ffc46b; --lv3:#ff7b7b;
-    --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.35);
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #090d16;
+    --bg-gradient: radial-gradient(at 0% 0%, rgba(37, 99, 235, 0.08) 0px, transparent 50%),
+                   radial-gradient(at 100% 100%, rgba(6, 182, 212, 0.08) 0px, transparent 50%);
+    --panel: #131b2a;
+    --panel2: #1b263b;
+    --panel-glass: rgba(19, 27, 42, 0.88);
+    --ink: #f8fafc;
+    --muted: #94a3b8;
+    --line: #233047;
+    --line2: #1e293b;
+    --brand: #d97706;
+    --brand-gradient: linear-gradient(135deg, #d97706 0%, #f97316 100%);
+    --brand-ink: #ffffff;
+    --brand-glow: 0 4px 14px rgba(217, 119, 6, 0.35);
+    
+    --ok: #10b981; --ok-bg: #06281e; --ok-line: #064e3b;
+    --bad: #f43f5e; --bad-bg: #350d17; --bad-line: #881337;
+    --warn: #f59e0b; --warn-bg: #351f05; --warn-line: #78350f;
+    --group: #a78bfa; --group-bg: #22143d; --group-line: #4c1d95;
+    
+    --lv1: #10b981; --lv2: #f59e0b; --lv3: #f43f5e;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,.3);
+    --shadow: 0 4px 20px -2px rgba(0,0,0,.45), 0 2px 6px -1px rgba(0,0,0,.25);
+    --shadow-lg: 0 14px 36px -4px rgba(0,0,0,.6);
   }
 }
+
+/* ============================================================
+   Style 1: Clean Minimal Focus Mode (data-theme-style="minimal")
+   ============================================================ */
+html[data-theme-style="minimal"] {
+  --bg: #f8fafc;
+  --bg-gradient: none !important;
+  --panel: #ffffff;
+  --panel2: #f8fafc;
+  --panel-glass: #ffffff;
+  --ink: #0f172a;
+  --muted: #475569;
+  --line: #cbd5e1;
+  --line2: #e2e8f0;
+  --brand: #1e293b;
+  --brand-gradient: none !important;
+  --brand-ink: #ffffff;
+  --brand-glow: none !important;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+  --shadow: 0 2px 8px rgba(0,0,0,0.06);
+  --shadow-lg: 0 8px 20px rgba(0,0,0,0.08);
+  --r: 10px;
+  --r-lg: 12px;
+}
+
+@media (prefers-color-scheme: dark) {
+  html[data-theme-style="minimal"] {
+    --bg: #0f172a;
+    --bg-gradient: none !important;
+    --panel: #1e293b;
+    --panel2: #0f172a;
+    --panel-glass: #1e293b;
+    --ink: #f8fafc;
+    --muted: #94a3b8;
+    --line: #334155;
+    --line2: #1e293b;
+    --brand: #f8fafc;
+    --brand-gradient: none !important;
+    --brand-ink: #0f172a;
+    --brand-glow: none !important;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+    --shadow: 0 2px 8px rgba(0,0,0,0.4);
+    --shadow-lg: 0 8px 20px rgba(0,0,0,0.5);
+  }
+}
+
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
 html{-webkit-text-size-adjust:100%}
 body{
-  background:var(--bg); color:var(--ink);
-  font-family:"Sarabun","Leelawadee UI","Noto Sans Thai","Segoe UI",Tahoma,sans-serif;
-  font-size:16px; line-height:1.6;
-  padding-left:env(safe-area-inset-left); padding-right:env(safe-area-inset-right);
+  background-color:var(--bg);
+  background-image:var(--bg-gradient);
+  background-attachment:fixed;
+  color:var(--ink);
+  font-family:var(--font-sans);
+  font-size:15.5px;
+  line-height:1.6;
+  padding-left:env(safe-area-inset-left);
+  padding-right:env(safe-area-inset-right);
   -webkit-tap-highlight-color:transparent;
+  -webkit-font-smoothing:antialiased;
 }
-button,input,select,textarea{font-family:inherit;font-size:16px;color:inherit;touch-action:manipulation}
+button,input,select,textarea{font-family:inherit;font-size:15px;color:inherit;touch-action:manipulation}
 
-/* ---------- แถบบนสุด ---------- */
-.stickytop{position:sticky; top:0; z-index:40; background:var(--bg); padding-top:env(safe-area-inset-top)}
+/* ---------- แถบบนสุด (Sticky Frosted Header) ---------- */
+.stickytop{
+  position:sticky; top:0; z-index:50;
+  background:var(--panel-glass);
+  backdrop-filter:blur(16px);
+  -webkit-backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--line);
+  box-shadow:var(--shadow-sm);
+  padding-top:env(safe-area-inset-top);
+  transition:all .2s ease;
+}
 .topbar{
-  background:var(--panel); border-bottom:1px solid var(--line); padding:8px 14px;
-  display:flex; flex-wrap:wrap; gap:10px; align-items:center; box-shadow:var(--shadow);
+  padding:10px 16px;
+  display:flex; flex-wrap:wrap; gap:10px; align-items:center;
+  max-width:1280px; margin:0 auto;
 }
-.brand{font-weight:700; font-size:17px; white-space:nowrap; display:flex; align-items:center; gap:7px}
-.brand .dot{width:10px;height:10px;border-radius:3px;background:var(--brand);display:inline-block}
-.who{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--muted);flex-wrap:wrap}
+.brand{
+  font-weight:800; font-size:17.5px; letter-spacing:-0.02em;
+  white-space:nowrap; display:flex; align-items:center; gap:8px;
+}
+.brand .dot{
+  width:12px; height:12px; border-radius:4px;
+  background:var(--brand-gradient, var(--brand));
+  display:inline-block;
+  box-shadow:var(--brand-glow);
+}
+.who{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--muted);flex-wrap:wrap}
 .spacer{flex:1 1 auto}
-.savestate{font-size:12.5px;color:var(--muted);white-space:nowrap;min-width:80px;text-align:right}
+
+/* Cloud Sync Live Pulse */
+.savestate{
+  font-size:12.5px; color:var(--muted); white-space:nowrap;
+  display:inline-flex; align-items:center; gap:6px; font-weight:500;
+  min-width:74px; text-align:right; justify-content:flex-end;
+}
+.savestate::before{
+  content:''; width:7px; height:7px; border-radius:50%; background:var(--muted);
+  display:inline-block; transition:all .2s ease;
+}
 .savestate.on{color:var(--ok)}
-
-select,input[type=text],input[type=number],textarea{
-  background:var(--panel2); border:1px solid var(--line); border-radius:8px;
-  padding:8px 10px; outline:none; max-width:100%; min-height:40px;
-}
-select:focus,input:focus,textarea:focus{border-color:var(--brand);box-shadow:0 0 0 3px rgba(31,111,235,.15)}
-button{
-  background:var(--panel2); border:1px solid var(--line); border-radius:8px;
-  padding:9px 14px; cursor:pointer; white-space:nowrap; min-height:44px;
-}
-button.primary{background:var(--brand);color:var(--brand-ink);border-color:var(--brand);font-weight:600}
-button.danger{color:var(--bad);border-color:var(--line)}
-button.ghost{background:transparent}
-button.sm{padding:5px 10px;font-size:14px;border-radius:7px;min-height:36px}
-button.sm.on{background:var(--brand);color:var(--brand-ink);border-color:var(--brand);font-weight:600}
-button:disabled{opacity:.45;cursor:not-allowed}
-@media (hover:hover){
-  button:hover{border-color:var(--brand)}
-  button.primary:hover{filter:brightness(1.08)}
-  button.danger:hover{border-color:var(--bad);background:var(--bad-bg)}
+.savestate.on::before{
+  background:var(--ok);
+  box-shadow:0 0 0 3px var(--ok-line);
 }
 
-/* ---------- แท็บ ---------- */
+/* User Identity Chip */
+.user-chip{
+  display:inline-flex; align-items:center; gap:8px;
+  background:var(--panel2); border:1px solid var(--line);
+  padding:4px 10px; border-radius:var(--r-pill); font-size:13.5px;
+}
+
+/* Theme Style Switcher */
+.btn-theme-toggle{
+  display:inline-flex; align-items:center; gap:5px;
+  background:var(--panel2); border:1px solid var(--line);
+  border-radius:var(--r-pill); padding:5px 12px;
+  font-size:13px; font-weight:600; cursor:pointer;
+  transition:all .2s ease;
+}
+.btn-theme-toggle:hover{
+  background:var(--panel); border-color:var(--brand);
+}
+
+/* ---------- Pill Navigation Tabs ---------- */
 .tabs{
-  display:flex; gap:2px; padding:0 10px;
-  background:var(--bg); border-bottom:1px solid var(--line);
+  display:flex; gap:6px; padding:4px 16px 8px;
+  max-width:1280px; margin:0 auto;
   overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none;
 }
 .tabs::-webkit-scrollbar{display:none}
 .tabs button{
-  border:none;background:none;border-radius:0;border-bottom:3px solid transparent;
-  padding:11px 13px;color:var(--muted);font-weight:600;min-height:46px;font-size:15px;
+  border:1px solid transparent; background:transparent;
+  border-radius:var(--r-pill); padding:7px 15px;
+  color:var(--muted); font-weight:600; min-height:38px; font-size:14px;
+  transition:all .18s cubic-bezier(0.4, 0, 0.2, 1);
+  display:flex; align-items:center; gap:6px; white-space:nowrap;
 }
-.tabs button.active{color:var(--brand);border-bottom-color:var(--brand)}
+.tabs button:hover{
+  color:var(--ink); background:var(--panel2);
+}
+.tabs button.active{
+  color:#ffffff;
+  background:var(--brand-gradient, var(--brand));
+  box-shadow:var(--brand-glow);
+  font-weight:700;
+}
+html[data-theme-style="minimal"] .tabs button.active{
+  background:var(--brand); color:var(--brand-ink); box-shadow:none;
+}
 
-main{padding:16px 14px 60px; max-width:1180px; margin:0 auto}
+main{padding:20px 16px 60px; max-width:1240px; margin:0 auto}
 section.tabpane{display:none}
 section.tabpane.active{display:block}
 
-/* ---------- การ์ด ---------- */
-.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
-      padding:14px 16px;box-shadow:var(--shadow);margin-bottom:14px}
-.card>h3{margin:0 0 10px;font-size:16px}
-.card>h3 .sub{font-weight:400;color:var(--muted);font-size:14px;margin-left:6px}
+/* ---------- Bento Cards & Content ---------- */
+.card{
+  background:var(--panel); border:1px solid var(--line);
+  border-radius:var(--r-lg); padding:20px;
+  box-shadow:var(--shadow); margin-bottom:16px;
+  transition:transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+  position:relative; overflow:hidden;
+}
+html:not([data-theme-style="minimal"]) .card::before{
+  content:''; position:absolute; top:0; left:0; right:0; height:3px;
+  background:var(--brand-gradient, var(--brand)); opacity:0.85;
+}
+.card>h3{
+  margin:0 0 14px; font-size:17px; font-weight:700;
+  letter-spacing:-0.015em; display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+}
+.card>h3 .sub{font-weight:500; color:var(--muted); font-size:13.5px}
+
 .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .grow{flex:1 1 auto}
 .hint{font-size:13.5px;color:var(--muted)}
-.notice{border-radius:var(--r);padding:10px 13px;margin-bottom:12px;font-size:14.5px}
-.notice.bad{background:var(--bad-bg);color:var(--bad);border:1px solid var(--bad)}
-.notice.warn{background:var(--warn-bg);color:var(--warn);border:1px solid var(--warn)}
-.notice.info{background:var(--panel2);border:1px solid var(--line);color:var(--muted)}
+
+/* Notices & Callouts */
+.notice{
+  border-radius:var(--r); padding:12px 16px; margin-bottom:14px; font-size:14.5px;
+  display:flex; align-items:flex-start; gap:10px; line-height:1.55;
+}
+.notice.bad{background:var(--bad-bg); color:var(--bad); border:1px solid var(--bad-line)}
+.notice.warn{background:var(--warn-bg); color:var(--warn); border:1px solid var(--warn-line)}
+.notice.info{background:var(--panel2); border:1px solid var(--line); color:var(--muted)}
+.notice.ok{background:var(--ok-bg); color:var(--ok); border:1px solid var(--ok-line)}
 
 /* ---------- ตาราง ---------- */
 .tablewrap{overflow:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);border-radius:var(--r)}
 table{border-collapse:collapse;width:100%;font-size:14.5px}
-th,td{padding:7px 9px;text-align:left;border-bottom:1px solid var(--line2);white-space:nowrap}
-th{background:var(--panel2);position:sticky;top:0;font-weight:600;font-size:13.5px;color:var(--muted);z-index:1}
+th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line2);white-space:nowrap}
+th{background:var(--panel2);position:sticky;top:0;font-weight:700;font-size:13px;color:var(--muted);z-index:1;text-transform:uppercase;letter-spacing:0.03em}
 td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+tbody tr:hover td{background:rgba(37,99,235,0.02)}
 tbody tr:last-child td{border-bottom:none}
 
-/* ---------- สถิติ / แถบ ---------- */
-.statgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
-.stat{background:var(--panel2);border:1px solid var(--line);border-radius:var(--r);padding:10px 12px}
-.stat .v{font-size:24px;font-weight:700;font-variant-numeric:tabular-nums}
-.stat .k{font-size:12.5px;color:var(--muted)}
+/* ---------- Bento Stat Grid ---------- */
+.statgrid{
+  display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:12px;
+}
+.stat{
+  background:var(--panel2); border:1px solid var(--line);
+  border-radius:var(--r); padding:14px 16px;
+  transition:transform .15s ease;
+}
+.stat:hover{transform:translateY(-2px)}
+.stat .v{
+  font-size:26px; font-weight:800; font-variant-numeric:tabular-nums;
+  letter-spacing:-0.02em; color:var(--brand);
+}
+html[data-theme-style="minimal"] .stat .v{color:var(--ink)}
+.stat .k{
+  font-size:12px; font-weight:700; color:var(--muted);
+  text-transform:uppercase; letter-spacing:0.04em; margin-top:3px;
+}
 .bar{height:9px;border-radius:5px;background:var(--line2);overflow:hidden}
 .bar>i{display:block;height:100%;background:var(--brand);transition:width .25s}
 .bar.ok>i{background:var(--ok)} .bar.warn>i{background:var(--warn)} .bar.bad>i{background:var(--bad)}
 
 /* ---------- ป้ายระดับ / เรื่อง ---------- */
-.tag{display:inline-block;padding:1px 9px;border-radius:20px;font-size:12.5px;font-weight:600;
-     border:1px solid currentColor;white-space:nowrap}
-.tag.l0{color:var(--group)}
-.tag.l1{color:var(--lv1)} .tag.l2{color:var(--lv2)} .tag.l3{color:var(--lv3)}
-.tag.t{color:var(--muted);font-weight:400}
+.tag{
+  display:inline-flex; align-items:center; gap:4px;
+  padding:2px 10px; border-radius:var(--r-pill); font-size:12px; font-weight:700;
+  border:1px solid currentColor; white-space:nowrap;
+}
+.tag.l0{color:var(--group); background:var(--group-bg); border-color:var(--group-line)}
+.tag.l1{color:var(--lv1); background:var(--ok-bg); border-color:var(--ok-line)}
+.tag.l2{color:var(--lv2); background:var(--warn-bg); border-color:var(--warn-line)}
+.tag.l3{color:var(--lv3); background:var(--bad-bg); border-color:var(--bad-line)}
+.tag.t{color:var(--muted); font-weight:500; border-color:var(--line); background:var(--panel2)}
+
+/* ---------- Buttons & Inputs ---------- */
+button{
+  background:var(--panel); color:var(--ink); border:1px solid var(--line);
+  border-radius:var(--r-sm); padding:8px 16px; cursor:pointer;
+  white-space:nowrap; min-height:40px; font-weight:600; font-size:14px;
+  transition:all .18s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow:var(--shadow-sm); display:inline-flex; align-items:center; justify-content:center; gap:6px;
+}
+button:active{transform:scale(0.97)}
+button.primary{
+  background:var(--brand-gradient, var(--brand));
+  color:var(--brand-ink); border:none;
+  box-shadow:var(--brand-glow, var(--shadow-sm));
+}
+button.primary:hover{filter:brightness(1.08); transform:translateY(-1px)}
+html[data-theme-style="minimal"] button.primary{
+  background:var(--brand); color:var(--brand-ink); box-shadow:none;
+}
+button.danger{color:var(--bad);border-color:var(--bad-line);background:var(--bad-bg)}
+button.ghost{background:transparent;border-color:transparent;box-shadow:none}
+button.ghost:hover{background:var(--panel2)}
+button.sm{padding:5px 12px;font-size:13px;border-radius:7px;min-height:34px}
+button:disabled{opacity:.45;cursor:not-allowed}
+
+select,input[type=text],input[type=number],textarea{
+  background:var(--panel); border:1.5px solid var(--line); border-radius:var(--r-sm);
+  padding:9px 12px; outline:none; max-width:100%; font-size:15px; color:var(--ink);
+  transition:border-color .15s ease, box-shadow .15s ease;
+}
+select:focus,input:focus,textarea:focus{
+  border-color:var(--brand);
+  box-shadow:0 0 0 3px rgba(37, 99, 235, 0.15);
+}
 
 /* ---------- โมดัล ---------- */
-.modal-bg{position:fixed;inset:0;background:rgba(10,16,26,.5);display:flex;
-          align-items:center;justify-content:center;z-index:100;padding:14px}
-.modal{background:var(--panel);border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.3);
-       width:100%;max-width:640px;max-height:92vh;display:flex;flex-direction:column}
-.modal header{padding:13px 16px;border-bottom:1px solid var(--line);font-weight:700;display:flex;align-items:center}
-.modal .body{padding:16px;overflow:auto;flex:1 1 auto}
-.modal footer{padding:12px 16px;border-top:1px solid var(--line);display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
-.modal .x{margin-left:auto;background:none;border:none;font-size:24px;line-height:1;padding:0 4px;color:var(--muted);min-height:auto}
+.modal-bg{
+  position:fixed;inset:0;background:rgba(10,16,26,.55);
+  backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
+  display:flex;align-items:center;justify-content:center;z-index:100;padding:14px;
+}
+.modal{
+  background:var(--panel);border-radius:var(--r-lg);box-shadow:var(--shadow-lg);
+  width:100%;max-width:640px;max-height:92vh;display:flex;flex-direction:column;
+  border:1px solid var(--line);
+}
+.modal header{padding:14px 18px;border-bottom:1px solid var(--line);font-weight:700;font-size:16.5px;display:flex;align-items:center}
+.modal .body{padding:18px;overflow:auto;flex:1 1 auto}
+.modal footer{padding:14px 18px;border-top:1px solid var(--line);display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.modal .x{margin-left:auto;background:none;border:none;font-size:24px;line-height:1;padding:0 4px;color:var(--muted);min-height:auto;box-shadow:none}
 
-/* ---------- toast ---------- */
-/* หน้าเข้าใช้งาน — คลุมทั้งจอเมื่อเชื่อมชีตแล้วแต่ยังไม่ได้ลงชื่อเข้าใช้ */
+/* ---------- Toasts ---------- */
+#toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);z-index:200;
+       display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none}
+.toast{background:#1e293b;color:#fff;padding:11px 20px;border-radius:var(--r-pill);
+       box-shadow:var(--shadow-lg);font-size:14px;font-weight:500;animation:tin .2s ease;max-width:88vw;text-align:center}
+.toast.bad{background:var(--bad)} .toast.ok{background:var(--ok)} .toast.warn{background:var(--warn)}
+@keyframes tin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* Gate / Login Screen */
 .gate{display:none;position:fixed;inset:0;z-index:150;background:var(--bg);
   overflow:auto;padding:24px 16px calc(24px + env(safe-area-inset-bottom))}
-.gate .box{max-width:430px;margin:6vh auto;background:var(--card);border:1px solid var(--line);
-  border-radius:var(--r);padding:22px;box-shadow:0 6px 26px rgba(0,0,0,.09)}
+.gate .box{max-width:430px;margin:6vh auto;background:var(--panel);border:1px solid var(--line);
+  border-radius:var(--r-lg);padding:24px;box-shadow:var(--shadow-lg)}
 .gate .glogo{display:block;margin:0 auto 12px;max-height:110px;max-width:150px;object-fit:contain}
 .gate .credit{margin-top:16px;text-align:center;font-size:12px;color:var(--muted);line-height:1.7}
 .brandlogo{height:30px;width:auto;max-width:44px;object-fit:contain;margin-right:8px;vertical-align:middle;flex:none}
 .logopick{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
 .logobox{width:96px;height:96px;border:1px dashed var(--line);border-radius:var(--r);
-  display:flex;align-items:center;justify-content:center;background:var(--bg);flex:none;overflow:hidden}
+  display:flex;align-items:center;justify-content:center;background:var(--panel2);flex:none;overflow:hidden}
 .logobox img{max-width:88px;max-height:88px;object-fit:contain}
 .credit-print{margin-top:14px;padding-top:8px;border-top:1px solid #ccc;
   font-size:9pt;color:#555;text-align:center;line-height:1.6}
-.gate h2{margin:0 0 4px;font-size:20px}
+.gate h2{margin:0 0 4px;font-size:21px;font-weight:800;letter-spacing:-0.02em}
 .gate .lead{color:var(--muted);font-size:13.5px;margin-bottom:16px;line-height:1.7}
 .gate label.f{display:block;font-size:13px;color:var(--muted);margin:11px 0 4px}
 .gate input{width:100%;font-size:16px}
 .gate .actions{margin-top:16px;display:flex;gap:9px;flex-wrap:wrap}
 .gate .alt{margin-top:15px;padding-top:13px;border-top:1px solid var(--line);
   font-size:13px;color:var(--muted)}
+.gate-tabs{display:flex;gap:6px;margin-bottom:16px;background:var(--panel2);padding:4px;border-radius:10px;border:1px solid var(--line)}
+.gate-tab{flex:1;padding:8px 10px;font-size:13.5px;font-weight:600;border:1px solid transparent;border-radius:7px;background:transparent;color:var(--muted);cursor:pointer;transition:all .15s;text-align:center;box-shadow:none}
+.gate-tab.active{background:var(--panel);color:var(--ink);border-color:var(--line);box-shadow:var(--shadow-sm)}
 .gate .msg{margin-top:12px}
-#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:200;
-       display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none}
-.toast{background:#1e2732;color:#fff;padding:10px 18px;border-radius:22px;
-       box-shadow:0 8px 24px rgba(0,0,0,.3);font-size:14.5px;animation:tin .2s ease;max-width:88vw;text-align:center}
-.toast.bad{background:var(--bad)} .toast.ok{background:var(--ok)} .toast.warn{background:var(--warn)}
-@keyframes tin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 
 /* ============================================================
    ส่วนของโจทย์และวิธีทำ
@@ -424,6 +665,7 @@ input.numin.bad{border-color:var(--bad);background:var(--bad-bg)}
   <div class="brand" id="brandBox"><span class="dot"></span>คลังโจทย์คณิตศาสตร์ ม.1–ม.3</div>
   <div class="who" id="whoBar"></div>
   <div class="spacer"></div>
+  <button class="btn-theme-toggle sm" id="btnThemeStyle" title="สลับสไตล์: โหมดสีสันสดใส / โหมดโฟกัสคลีนมินิมอล">✨ <span class="theme-label">สีสันสดใส</span></button>
   <button class="sm" id="btnAppVer" title="คลิกเพื่อตรวจสอบและอัปเดตเวอร์ชัน" style="font-weight:700;border-radius:12px;cursor:pointer">🔄 v8.0</button>
   <button class="sm" id="btnBackup">สำรอง</button>
   <button class="sm" id="btnRestore">กู้คืน</button>
@@ -1541,8 +1783,12 @@ function applyTabVisibility() {
   $$('#tabs button').forEach(b => {
     const t = b.dataset.tab;
     b.style.display = tabAllowed(t) ? '' : 'none';
-    if (t === 'make') b.textContent = stu ? 'ใบงานของฉัน' : 'สร้างชุดโจทย์';
-    if (t === 'result') b.textContent = stu ? 'ผลของฉัน' : 'ผลและวิเคราะห์';
+    if (t === 'make') b.textContent = stu ? '📋 ใบงานของฉัน' : '📝 สร้างชุดโจทย์';
+    else if (t === 'do') b.textContent = '✍️ ทำแบบฝึกหัด';
+    else if (t === 'result') b.textContent = stu ? '🎯 ผลของฉัน' : '📊 ผลและวิเคราะห์';
+    else if (t === 'stats') b.textContent = '📈 สถิติชั้นเรียน';
+    else if (t === 'print') b.textContent = '🖨️ พิมพ์ / PDF';
+    else if (t === 'setting') b.textContent = '⚙️ ตั้งค่า';
   });
 }
 function setTab(t) {
@@ -1553,6 +1799,45 @@ function setTab(t) {
   render();
   window.scrollTo(0, 0);
 }
+/* ============================================================
+   UI Theme Style Controller (Vibrant EdTech & Minimal Focus Mode)
+   ============================================================ */
+function getThemeStyle() {
+  try { return localStorage.getItem('ui_theme_style') || 'vibrant'; } catch(e) { return 'vibrant'; }
+}
+
+function applyThemeStyle(style) {
+  if (style === 'minimal') {
+    document.documentElement.setAttribute('data-theme-style', 'minimal');
+  } else {
+    document.documentElement.removeAttribute('data-theme-style');
+  }
+  try { localStorage.setItem('ui_theme_style', style); } catch(e) {}
+  updateThemeSwitcherUI();
+}
+
+function toggleThemeStyle() {
+  const cur = getThemeStyle();
+  const next = cur === 'minimal' ? 'vibrant' : 'minimal';
+  applyThemeStyle(next);
+  toast(next === 'minimal' ? '🎯 เปิดโหมดโฟกัส (คลีนมินิมอล)' : '✨ เปิดโหมดสีสันสดใส (Modern EdTech)', 'ok');
+}
+
+function updateThemeSwitcherUI() {
+  const btn = $('#btnThemeStyle');
+  if (!btn) return;
+  const cur = getThemeStyle();
+  if (cur === 'minimal') {
+    btn.innerHTML = '🎯 <span class="theme-label">มินิมอล</span>';
+    btn.title = 'คลิกเพื่อสลับเป็นโหมดสีสันสดใส (Modern EdTech)';
+    btn.classList.add('on');
+  } else {
+    btn.innerHTML = '✨ <span class="theme-label">สีสันสดใส</span>';
+    btn.title = 'คลิกเพื่อสลับเป็นโหมดโฟกัสคลีนมินิมอล';
+    btn.classList.remove('on');
+  }
+}
+
 function render() {
   renderStorageWarn();
   applyTabVisibility();
@@ -11409,10 +11694,10 @@ function renderWho() {
   if (isStudent()) {
     // ลงชื่อเข้าใช้แล้ว ชื่อมาจากบัญชี แก้เองไม่ได้
     const p = DB.profile;
-    el.innerHTML = '<span class="hint">ผู้เรียน</span> <b>' + esc(p.name || '') + '</b>' +
-      '<span class="hint">' + [p.cls || p.room ? 'ชั้น ' + esc(p.room) : '',
-        p.no ? 'เลขที่ ' + esc(p.no) : '', p.sid ? 'เลขประจำตัว ' + esc(p.sid) : '']
-        .filter(Boolean).join(' · ') + '</span>';
+    el.innerHTML = '<div class="user-chip"><span class="tag l1">🎓 นักเรียน</span> <b>' + esc(p.name || '') + '</b>' +
+      '<span class="hint">' + [p.cls || p.room ? 'ห้อง ' + esc(p.room) : '',
+        p.no ? 'เลขที่ ' + esc(p.no) : '', p.sid ? 'รหัส ' + esc(p.sid) : '']
+        .filter(Boolean).join(' · ') + '</span></div>';
   } else if (isAdmin()) {
     const prof = (DB.auth && DB.auth.profile) || {};
     const isSub = isSubAdmin();
@@ -11420,11 +11705,11 @@ function renderWho() {
       const uName = prof.name || 'ครูผู้สอน';
       const uUser = prof.sub ? ' (@' + esc(prof.sub) + ')' : '';
       const uCls = prof.classes && prof.classes.length ? ' · ดูแล ' + esc(prof.classes.join(', ')) : '';
-      el.innerHTML = '<span class="tag l2" style="font-weight:700;margin-right:5px">👩‍🏫 แอดมินรอง</span>' +
-        '<b>' + esc(uName) + '</b><span class="hint">' + uUser + uCls + '</span>';
+      el.innerHTML = '<div class="user-chip"><span class="tag l2" style="font-weight:700">🛡️ แอดมินรอง</span>' +
+        '<b>' + esc(uName) + '</b><span class="hint">' + uUser + uCls + '</span></div>';
     } else {
-      el.innerHTML = '<span class="tag l3" style="font-weight:700;margin-right:5px">👑 ผู้ดูแลหลัก</span>' +
-        '<b>' + esc(prof.name || 'ผู้ดูแลระบบ') + '</b>';
+      el.innerHTML = '<div class="user-chip"><span class="tag l3" style="font-weight:700">👑 ผู้ดูแลหลัก</span>' +
+        '<b>' + esc(prof.name || 'ผู้ดูแลระบบ') + '</b></div>';
     }
   } else if (DB.mode === 'solo') {
     el.innerHTML = '<label for="soloName">ผู้เรียน</label>' +
@@ -15852,6 +16137,12 @@ if (/[?&]selftest=1/.test(location.search)) {
 } else {
   // เริ่มที่แท็บที่เหมาะกับสถานะปัจจุบัน
   const a = curAttempt();
+    const bTheme = $('#btnThemeStyle');
+  if (bTheme && !bTheme._b) {
+    bTheme._b = 1;
+    bTheme.addEventListener('click', toggleThemeStyle);
+  }
+  updateThemeSwitcherUI();
   setTab(a && !a.finishedAt ? 'do' : 'make');
   renderGate();
   if (isStudent()) {
