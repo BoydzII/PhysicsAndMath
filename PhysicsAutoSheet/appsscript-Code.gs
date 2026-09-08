@@ -590,6 +590,8 @@ function route_(action, req) {
     case 'submit':        return apiSubmit_(req);
     case 'myResults':     return apiMyResults_(req);
     case 'resultsList':   return apiResultsList_(req);
+    case 'examPing':      return apiExamPing_(req);
+    case 'examMonitor':   return apiExamMonitor_(req);
     default: throw new Error('ไม่รู้จักคำสั่ง: ' + action);
   }
 }
@@ -1197,7 +1199,7 @@ function apiMyAssignments_(req) {
     if (a.closeAt && new Date(a.closeAt) < now) return false;
     if (a.openAt && new Date(a.openAt) > now) return false;
     var c = String(a.cls || '').trim();
-    return !c || !myCls || c === myCls;
+    return c && c === myCls;
   }).map(function (a) {
     var o = assignPublic_(a, t.sid);
     o.myStatus = mine[String(a.code).toUpperCase()] || '';

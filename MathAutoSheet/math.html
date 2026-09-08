@@ -11927,7 +11927,12 @@ function renderMake() {
       const nAt = DB.attempts.filter(a => a.quizId === q.id).length;
       const lv = LEVELS.filter(l => q.counts[l]).map(l =>
         '<span class="tag ' + LEVEL_CLS[l] + '">' + l + ' ' + q.counts[l] + '</span>').join(' ');
-      h += '<tr><td>' + esc(q.title || '(ไม่มีชื่อ)') +
+      
+      const isTeacherAssign = DB.attempts.some(a => a.quizId === q.id && !!a.assignCode);
+      const badgeHTML = isTeacherAssign
+        ? '<span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:#0f8a53;color:#fff;font-weight:bold;font-size:12px;margin-right:5px" title="ครูส่งให้">T</span>'
+        : '<span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:#c62828;color:#fff;font-weight:bold;font-size:12px;margin-right:5px" title="นักเรียนสร้างเอง">S</span>';
+      h += '<tr><td style="display:flex;align-items:center">' + badgeHTML + esc(q.title || '(ไม่มีชื่อ)') +
         ' <span class="tag ' + QUIZ_KINDS[quizKind(q)].cls + '">' + QUIZ_KINDS[quizKind(q)].short + '</span>' +
         (q.id === DB.cur.quizId ? ' <b>← ชุดปัจจุบัน</b>' : '') +
         '</td><td class="num">' + q.items.length + '</td><td>' + lv + '</td>' +
@@ -12167,9 +12172,82 @@ function needLearnerName() {
   return true;
 }
 
+
+// --- Exam Ping Logic ---
+let examPingTimer = null;
+function startExamPing() {
+  if (examPingTimer) clearInterval(examPingTimer);
+  examPingTimer = setInterval(pingExamStatus, 15000);
+  pingExamStatus();
+}
+function pingExamStatus() {
+  if (!DB.cur.examCode || !isStudent()) return;
+  const a = curAttempt();
+  const payload = { 
+    code: DB.cur.examCode, 
+    q: (a && a.finishedAt) ? 'done' : DB.cur.i, 
+    out: a && a.proc ? (a.proc.out || 0) : 0, 
+    sec: Math.round(a && a.proc ? (a.proc.outSec || 0) : 0) 
+  };
+  api('examPing', payload).catch(e=>{});
+}
+function stopExamPing() {
+  if (examPingTimer) clearInterval(examPingTimer);
+  examPingTimer = null;
+  pingExamStatus();
+}
+
+function monitorExamDialog(code, cls) {
+  let timer = null;
+  openModal({
+    title: 'คุมสอบ: ' + code + ' (' + cls + ')',
+    bodyHTML: '<div id="monContainer"><div class="hint">กำลังโหลด...</div></div>',
+    buttons: [{ label: 'ปิด', act: close => close() }],
+    onMount: root => {
+      const sids = DB.students.filter(s => String(s.room || '').trim() === String(cls || '').trim()).map(s => s.sid);
+      if (!sids.length) {
+        $('#monContainer', root).innerHTML = '<div class="notice warn">ไม่พบนักเรียนในห้องนี้ หรือยังไม่ได้ดึงรายชื่อ</div>';
+        return;
+      }
+      const poll = async () => {
+        try {
+          const res = await api('examMonitor', { code: code, sids: sids });
+          let html = '<div class="tablewrap"><table><thead><tr><th>เลขที่</th><th>ชื่อ</th><th>สถานะ</th><th>พับจอ (ครั้ง)</th><th>เวลานอกแอป (วิ)</th></tr></thead><tbody>';
+          const students = DB.students.filter(s => String(s.room || '').trim() === String(cls || '').trim()).sort((a,b) => Number(a.no||999) - Number(b.no||999));
+          for (const s of students) {
+            const state = res[s.sid];
+            let stText = '<span style="color:var(--muted)">ยังไม่เริ่ม</span>';
+            if (state) {
+              if (state.q === 'done') stText = '<span style="color:var(--ok);font-weight:bold">ส่งแล้ว</span>';
+              else stText = '<span style="color:var(--brand)">กำลังทำ (ข้อ ' + (Number(state.q)+1) + ')</span>';
+            }
+            const out = state && state.out ? state.out : 0;
+            const sec = state && state.sec ? state.sec : 0;
+            html += '<tr><td>' + esc(s.no||'') + '</td><td>' + esc(s.name) + '</td><td>' + stText + '</td>' +
+              '<td class="num"' + (out > 0 ? ' style="color:var(--bad);font-weight:bold"' : '') + '>' + out + '</td>' +
+              '<td class="num"' + (sec > 0 ? ' style="color:var(--bad);font-weight:bold"' : '') + '>' + sec + '</td></tr>';
+          }
+          html += '</tbody></table></div>';
+          $('#monContainer', root).innerHTML = html;
+        } catch(e) {}
+      };
+      poll();
+      timer = setInterval(poll, 5000);
+    },
+    onClose: () => {
+      if (timer) clearInterval(timer);
+    }
+  });
+}
+// -----------------------
+
 async function startQuiz(quizId, assignCode) {
   const q = DB.quizzes.find(x => x.id === quizId);
   if (!q) return;
+    if (assignCode) {
+    DB.cur.examCode = assignCode;
+    startExamPing();
+  }
   const who = currentLearner();
   if (!who) { toast('เลือกผู้เรียนที่แถบบนก่อน (หรือเพิ่มรายชื่อในแท็บตั้งค่า)', 'bad'); return; }
   if (needLearnerName()) return;
@@ -12573,6 +12651,7 @@ async function doFinish(why) {
   if (a.proc && a.proc.openAt) procReturn();
   stampTime();
   a.finishedAt = Date.now();
+  stopExamPing();
   save(true);                       // บันทึกก่อนทำอย่างอื่นเสมอ คำตอบห้ามหาย
   setTab('result');
   if (why) toast('ระบบส่งข้อสอบให้อัตโนมัติ — ' + why, 'warn');
