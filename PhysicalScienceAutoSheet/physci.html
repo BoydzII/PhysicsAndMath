@@ -7365,7 +7365,7 @@ function renderMake() {
         'ซึ่งกันจอดับและเตือนเมื่อหลุดออกจากหน้าจอสอบ<br>' +
         '<b>เวลาสอบตั้งได้ตอนกดเปิดให้สอบ</b> ชุดเดียวกันจึงแจกคนละชั้นคนละเวลาได้</div>' +
         '<div class="tablewrap" style="margin-top:11px"><table><thead><tr><th>ชื่อชุด</th>' +
-        '<th class="num">ข้อ</th><th>เฉลย</th><th>เวลาสอบ</th><th>สร้างเมื่อ</th>' +
+        '<th class="num">ข้อ</th><th>เวลาสอบ</th><th>สร้างเมื่อ</th>' +
         '<th class="num">ทำแล้ว</th>' +
         '<th></th></tr></thead><tbody>';
       papers.slice().reverse().forEach(q => {
@@ -7383,8 +7383,7 @@ function renderMake() {
       h += '<tr><td style="display:flex;align-items:center">' + badgeHTML + esc(q.title || '(ไม่มีชื่อ)') +
           (q.id === DB.cur.quizId ? ' <b>← ชุดปัจจุบัน</b>' : '') + '</td>' +
           '<td class="num">' + q.items.length + '</td>' +
-          '<td><code style="font-size:12px">' + esc(key.length > 30 ? key.slice(0, 30) + '…' : key) +
-          '</code></td><td>' + (q.limitSec ? Math.round(q.limitSec / 60) + ' นาที' : 'ไม่จำกัด') +
+          '<td>' + (q.limitSec ? Math.round(q.limitSec / 60) + ' นาที' : 'ไม่จำกัด') +
           (q.maxOut ? ' · ออกได้ ' + q.maxOut + ' ครั้ง' : '') + '</td>' +
           '<td>' + thDateTime(q.ts) + '</td><td class="num">' +
           (nAt ? '<a href="javascript:void(0)" style="font-weight:700;text-decoration:underline" data-viewstat="' + q.id + '">' + nAt + '</a>' : 0) + '</td>' +
@@ -9146,6 +9145,12 @@ function renderStats() {
       'ในโหมดครู ให้สลับผู้เรียนที่แถบบนแล้วให้แต่ละคนทำชุดเดียวกัน ระบบจะเปรียบเทียบผลให้อัตโนมัติ</div></div>' +
       cloudPullCardHTML() + importCardHTML();
     bindCloudPullCard(); bindImportCard();
+  $$('.student-item-link', $('#pane-stats')).forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.preventDefault();
+      showStudentItemCompare(btn.dataset.atid);
+    });
+  });
     return;
   }
   if (!DB.cur.statQuizId || !quizzes.some(q => q.id === DB.cur.statQuizId)) DB.cur.statQuizId = quizzes[quizzes.length - 1].id;
@@ -9288,7 +9293,7 @@ function renderStats() {
     h += '<tr><td class="num">' + (k + 1) + '</td>' +
       (showRoomCol ? '<td class="num">' + esc(rm || '—') + '</td>' : '') +
       (showId ? '<td class="num">' + esc(wi.no || '—') + '</td><td class="num">' + esc(wi.sid || '—') + '</td>' : '') +
-      '<td>' + esc(wi.name) + '</td>' +
+      '<td><a href="javascript:void(0)" class="student-item-link" data-atid="' + esc(x.a.id) + '" style="color:var(--brand);font-weight:700;text-decoration:underline;cursor:pointer" title="คลิกเพื่อดูการเปรียบเทียบการตอบและเฉลยรายข้อ">' + esc(wi.name) + '</a></td>' +
       '<td class="num">' + fmt(x.r.got) + '/' + x.r.max + '</td>' +
       '<td class="num">' + Math.round(x.r.pct) + '%</td>' +
       '<td>' + (x.r.pct >= DB.settings.passPct ? '<span style="color:var(--ok)">ผ่าน</span>'
@@ -9390,6 +9395,200 @@ function renderStats() {
   $('#btnCopyScore').addEventListener('click', () => exportScoreColumn(q.id, curRoomNorm));
   $('#btnCsvScore').addEventListener('click', () => exportScoreCsv(q.id, curRoomNorm));
   bindCloudPullCard(); bindImportCard();
+}
+
+/* ============================================================
+   Student Item Comparison Modal (เปรียบเทียบการตอบและเฉลยรายข้อ)
+   ============================================================ */
+function previewImgBox(url) {
+  openModal({
+    wide: true,
+    title: '✍️ ภาพลายมือวิธีทำของนักเรียน (iPad)',
+    bodyHTML: '<div style="text-align:center;padding:10px;background:#fff;border-radius:8px">' +
+      '<img src="' + esc(url) + '" style="max-width:100%;max-height:75vh;border-radius:6px;box-shadow:0 2px 10px rgba(0,0,0,0.15)">' +
+      '</div>',
+    buttons: [{ label: 'ปิด' }]
+  });
+}
+
+function showStudentItemCompare(atId) {
+  const a = DB.attempts.find(x => x.id === atId);
+  if (!a) { toast('ไม่พบข้อมูลการทำข้อสอบของนักเรียนคนนี้', 'bad'); return; }
+  const wi = whoInfo(a);
+  const q = quizOf(a);
+  if (!q) { toast('ไม่พบข้อมูลชุดข้อสอบ', 'bad'); return; }
+  const res = analyze(a);
+  const rm = attemptRoom(a);
+
+  const roomText = rm ? 'ห้อง ' + esc(rm) : '';
+  const noText = wi.no ? 'เลขที่ ' + esc(wi.no) : '';
+  const sidText = wi.sid ? 'รหัส ' + esc(wi.sid) : '';
+  const metaText = [roomText, noText, sidText].filter(Boolean).join(' · ');
+
+  let bodyHTML = '<div style="margin-bottom:12px;padding:12px 14px;background:var(--panel2);border:1px solid var(--line);border-radius:var(--r)">' +
+    '<div class="row" style="justify-content:space-between;align-items:flex-start;gap:8px">' +
+    '<div>' +
+    '<div style="font-size:16px;font-weight:700">👤 ' + esc(wi.name) +
+      (metaText ? ' <span class="hint" style="font-weight:400">(' + metaText + ')</span>' : '') + '</div>' +
+    '<div class="hint" style="margin-top:2px">ชุด: <b>' + esc(q.title) + '</b> · ทำเมื่อ: ' + thDateTime(a.finishedAt) + '</div>' +
+    '</div>' +
+    '<div style="text-align:right">' +
+    '<div style="font-size:19px;font-weight:800;color:' + (res.pct >= DB.settings.passPct ? 'var(--ok)' : 'var(--bad)') + '">' +
+      fmt(res.got) + ' / ' + res.max + ' <span style="font-size:14px">(' + Math.round(res.pct) + '%)</span></div>' +
+    '<div style="margin-top:2px">' +
+    (res.pct >= DB.settings.passPct ? '<span class="tag l1">ผ่านเกณฑ์</span>' : '<span class="tag l3">ไม่ผ่านเกณฑ์</span>') +
+    ' <span class="hint">ใช้เวลา ' + mmss(res.sec) + '</span>' +
+    (res.nOut ? ' <span class="tag l3">ออกนอกแอป ' + res.nOut + ' ครั้ง</span>' : '') +
+    '</div>' +
+    '</div></div></div>';
+
+  bodyHTML += '<div class="tablewrap" style="max-height:65vh;overflow:auto"><table><thead><tr>' +
+    '<th class="num" style="width:46px">ข้อ</th>' +
+    '<th>โจทย์ / เรื่อง</th>' +
+    '<th style="min-width:160px">คำตอบที่นักเรียนเลือก/ตอบ</th>' +
+    '<th style="min-width:160px">เฉลยที่ถูกต้อง</th>' +
+    '<th style="width:80px;text-align:center">ผลตรวจ</th>' +
+    '<th class="num" style="width:70px">คะแนน</th>' +
+    '<th class="num" style="width:70px">เวลา</th>' +
+    '</tr></thead><tbody>';
+
+  res.items.forEach((x, idx) => {
+    const p = x.p;
+    const it = x.it || {};
+    const qNum = x.i + 1;
+
+    let stemHTML = '';
+    let studentAnsHTML = '';
+    let keyAnsHTML = '';
+    let markHTML = '';
+    let scoreHTML = fmt(x.score);
+    let secHTML = it.sec ? mmss(it.sec) : '—';
+
+    if (!p) {
+      stemHTML = '<span class="hint">ข้อนี้ใช้โจทย์จากบทที่ไม่มีในระบบ</span>';
+      studentAnsHTML = '—';
+      keyAnsHTML = '—';
+      markHTML = '<span class="hint">—</span>';
+    } else if (p.essay) {
+      // 1. Subjective / Essay Question
+      stemHTML = '<div><b>' + M(p.stem || ('ข้อสอบอัตนัย ข้อที่ ' + qNum)) + '</b>' +
+        (p.img ? '<div style="margin-top:4px"><img src="' + esc(p.img) + '" style="max-height:80px;max-width:100%"></div>' : '') + '</div>';
+
+      let stuParts = [];
+      if (it.finalAns && String(it.finalAns).trim()) {
+        stuParts.push('<div><b>🎯 ตอบ:</b> ' + esc(String(it.finalAns).trim()) + '</div>');
+      }
+      if (it.text && String(it.text).trim()) {
+        stuParts.push('<div style="font-size:13px;white-space:pre-wrap;color:var(--ink)"><b>วิธีทำ:</b> ' + esc(String(it.text).trim()) + '</div>');
+      }
+      if (it.img) {
+        stuParts.push('<div style="margin-top:6px"><button class="sm" type="button" data-hwimg="' + esc(it.img) + '" onclick="previewImgBox(this.dataset.hwimg)">✍️ ดูภาพลายมือ iPad</button></div>');
+      }
+      if (!stuParts.length) {
+        studentAnsHTML = '<span class="hint">(ไม่ได้ส่งคำตอบ)</span>';
+      } else {
+        studentAnsHTML = stuParts.join('');
+      }
+
+      keyAnsHTML = p.key
+        ? '<div style="white-space:pre-wrap;font-size:13px">' + esc(p.key) +
+            (p.ans != null ? '<br><b>คำตอบ:</b> ' + esc(p.ans) + ' ' + esc(p.au || '') : '') + '</div>'
+        : '<span class="hint">(ตรวจตามเกณฑ์รูบริก)</span>';
+
+      const maxScore = p.max || 10;
+      scoreHTML = fmt(x.score) + ' / ' + fmt(maxScore);
+      if (x.score >= maxScore) {
+        markHTML = '<span class="tag l1" style="display:inline-block">✓ เต็ม</span>';
+      } else if (x.score > 0) {
+        markHTML = '<span class="tag l2" style="display:inline-block">◑ ได้บางส่วน</span>';
+      } else {
+        markHTML = '<span class="tag l3" style="display:inline-block">✗ 0 คะแนน</span>';
+      }
+    } else if (p.paper) {
+      // 2. Paper Answer Sheet
+      const style = paperStyle(q);
+      const cIdx = p.choices.findIndex(c => c.correct);
+      const keyLabel = cIdx >= 0 ? paperLabel(style, cIdx) : '—';
+
+      const stuPick = it.pick;
+      const stuLabel = stuPick != null ? paperLabel(style, stuPick) : null;
+      const isCorrect = (stuPick != null && stuPick === cIdx);
+
+      stemHTML = '<div>กระดาษคำตอบ ข้อ ' + qNum +
+        (p.topic != null ? ' <span class="hint">(' + esc(topicName(p.topic)) + ')</span>' : '') + '</div>';
+
+      if (stuPick == null) {
+        studentAnsHTML = '<span class="hint">— (ไม่ได้ฝน/ตอบ)</span>';
+        markHTML = '<span class="tag t">— ข้าม</span>';
+      } else if (isCorrect) {
+        studentAnsHTML = '<b style="color:var(--ok)">' + esc(stuLabel) + '</b> <span class="hint">(' + esc(p.choices[stuPick].text) + ')</span>';
+        markHTML = '<span class="tag l1">✓ ถูก</span>';
+      } else {
+        studentAnsHTML = '<b style="color:var(--bad)">' + esc(stuLabel) + '</b> <span class="hint">(' + esc(p.choices[stuPick].text) + ')</span>';
+        markHTML = '<span class="tag l3">✗ ผิด</span>';
+      }
+
+      keyAnsHTML = '<b style="color:var(--ok)">' + esc(keyLabel) + '</b> <span class="hint">(' + (cIdx >= 0 ? esc(p.choices[cIdx].text) : '') + ')</span>';
+      scoreHTML = (isCorrect ? 1 : 0) + ' / 1';
+    } else if (Array.isArray(p.choices) && p.choices.length > 0) {
+      // 3. Multiple Choice Objective
+      const cIdx = p.choices.findIndex(c => c.correct);
+      const stuPick = it.pick;
+      const isCorrect = (stuPick != null && stuPick === cIdx);
+
+      stemHTML = '<div>' + M(p.stem || ('ข้อที่ ' + qNum)) +
+        (p.sub ? ' <span class="hint">(' + esc(p.sub) + ')</span>' : '') + '</div>';
+
+      if (stuPick == null) {
+        studentAnsHTML = '<span class="hint">— (ไม่ได้ตอบ)</span>';
+        markHTML = '<span class="tag t">— ข้าม</span>';
+      } else {
+        const cText = p.choices[stuPick] ? p.choices[stuPick].text : '';
+        if (isCorrect) {
+          studentAnsHTML = '<b style="color:var(--ok)">' + esc(cText) + '</b>';
+          markHTML = '<span class="tag l1">✓ ถูก</span>';
+        } else {
+          studentAnsHTML = '<b style="color:var(--bad)">' + esc(cText) + '</b>';
+          markHTML = '<span class="tag l3">✗ ผิด</span>';
+        }
+      }
+
+      const correctText = cIdx >= 0 ? p.choices[cIdx].text : '—';
+      keyAnsHTML = '<b style="color:var(--ok)">' + esc(correctText) + '</b>';
+      scoreHTML = (isCorrect ? (p.max || 1) : 0) + ' / ' + (p.max || 1);
+    } else {
+      // 4. Fill-in Calculation
+      stemHTML = '<div>' + M(p.stem || ('ข้อที่ ' + qNum)) +
+        (p.sub ? ' <span class="hint">(' + esc(p.sub) + ')</span>' : '') + '</div>';
+      const stuVal = it.val != null ? it.val : (it.text ? String(it.text).trim() : '');
+      const isCorrect = ((it.score || 0) >= (p.max || 1));
+
+      studentAnsHTML = stuVal ? ('<b style="color:' + (isCorrect ? 'var(--ok)' : 'var(--bad)') + '">' + esc(stuVal) + ' ' + esc(p.au || '') + '</b>')
+        : '<span class="hint">— (ไม่ได้ตอบ)</span>';
+      keyAnsHTML = '<b style="color:var(--ok)">' + esc(p.ans != null ? p.ans : (p.key || '—')) + ' ' + esc(p.au || '') + '</b>';
+      markHTML = isCorrect ? '<span class="tag l1">✓ ถูก</span>' : '<span class="tag l3">✗ ผิด</span>';
+      scoreHTML = fmt(x.score) + ' / ' + (p.max || 1);
+    }
+
+    bodyHTML += '<tr>' +
+      '<td class="num"><b>' + qNum + '</b></td>' +
+      '<td>' + stemHTML + '</td>' +
+      '<td>' + studentAnsHTML + '</td>' +
+      '<td>' + keyAnsHTML + '</td>' +
+      '<td style="text-align:center">' + markHTML + '</td>' +
+      '<td class="num">' + scoreHTML + '</td>' +
+      '<td class="num">' + secHTML + '</td>' +
+      '</tr>';
+  });
+
+  bodyHTML += '</tbody></table></div>';
+
+  openModal({
+    wide: true,
+    title: '📊 รายละเอียดการตอบเทียบกับเฉลยรายข้อ — ' + esc(wi.name),
+    bodyHTML: bodyHTML,
+    buttons: [{ label: 'ปิด' }]
+  });
 }
 
 /** ฮิสโทแกรมการกระจายคะแนนเป็นช่วงละ 10% */
