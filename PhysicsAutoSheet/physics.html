@@ -1146,7 +1146,7 @@ window.__LSKEY = LS_KEY;   // ให้ตัวดักหน้าขาว�
    ชีตเดียวเก็บได้หลายวิชา ฝั่งชีตใช้ค่านี้แยกใบงานและผลของแต่ละวิชาออกจากกัน */
 /* สคริปต์ในชีตที่แอปรุ่นนี้ต้องการ — ใช้เตือนตอนทดสอบการเชื่อมต่อ
    ขยับเลขนี้ทุกครั้งที่เพิ่มคำสั่งใหม่ในไฟล์ appsscript-Code.gs */
-const GS_VERSION = 8;
+const GS_VERSION = 9;
 const SUBJECT = 'physics';
 /* ────────────────────────────────────────────────────────────────────────────
    สารบัญเรื่อง — จุดเดียวที่ต้องแก้เมื่อจะ "เพิ่มบทใหม่"
@@ -19201,6 +19201,10 @@ async function publishQuiz(quizId) {
   const my = myClasses();
   const classes = my ? my.map(function (n) { return { name: n }; })
                      : DB.classes.slice();
+  /* ผู้ดูแลหลักที่ยังไม่ได้สร้างชั้นเรียนไว้ในเครื่องนี้จะได้ช่องเลือกที่ว่างเปล่า
+     เดิมกดมอบหมายผ่านทุกครั้ง แต่ส่งชั้นเป็นค่าว่างขึ้นชีตไปเงียบ ๆ
+     ต้องมีตัวเลือก "ทุกห้อง" ที่มองเห็นได้ ครูจะได้รู้ว่าตัวเองกำลังแจกให้ใคร */
+  const anyRoom = !my && !classes.length;
   openModal({
     title: 'มอบหมายใบงาน "' + (q.title || '') + '"',
     bodyHTML:
@@ -19209,9 +19213,12 @@ async function publishQuiz(quizId) {
       'หรือกรอกรหัสเองก็ได้</div>' +
       '<label class="hint" for="pbCls">มอบหมายให้</label><br>' +
       '<select id="pbCls" style="max-width:100%">' +
-      
+      (anyRoom ? '<option value="">ทุกห้อง (นักเรียนทุกคนที่ลงชื่อเข้าใช้)</option>' : '') +
       classes.map(c => '<option value="' + esc(c.name) + '">' + esc(c.name) + '</option>').join('') +
       '</select>' +
+      (anyRoom ? '<div class="hint" style="margin-top:6px">เครื่องนี้ยังไม่มีรายชื่อชั้นเรียน ' +
+        'จึงแจกได้แบบทุกห้องอย่างเดียว — ถ้าต้องการเจาะจงห้อง ให้เพิ่มชั้นเรียนที่แท็บ ' +
+        '<b>ตั้งค่า</b> ก่อน</div>' : '') +
       '<label class="hint" for="pbClose" style="display:block;margin-top:11px">ปิดรับเมื่อ (เว้นว่าง = ไม่กำหนด)</label>' +
       '<input type="datetime-local" id="pbClose" style="max-width:100%">' +
       /* กติกาคุมสอบตั้งตรงนี้ได้ เพราะเป็นเรื่องของรอบที่แจก ไม่ใช่ของตัวชุด

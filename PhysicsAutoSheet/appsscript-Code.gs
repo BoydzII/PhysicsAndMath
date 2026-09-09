@@ -582,7 +582,7 @@ function json_(o) {
 }
 
 function doGet() {
-  return json_({ ok: true, service: 'quiz-bank', version: 8, subjects: SUBJECTS,
+  return json_({ ok: true, service: 'quiz-bank', version: 9, subjects: SUBJECTS,
                  note: 'ใช้งานผ่าน POST จากแอพเท่านั้น' });
 }
 
@@ -672,7 +672,7 @@ function apiPing_(req) {
   submissionKeys_().forEach(function (s) { bySub[s.subject].submissions++; });
 
   return {
-    version: 8, role: role, myClasses: myCls,
+    version: 9, role: role, myClasses: myCls,
     teachers: Math.max(0, sheet_('teachers').getLastRow() - 1),
     needRepair: needRepair, layout: layout, subjects: SUBJECTS,
     students: sids.length, badSid: bad, blankSid: blank, dupSid: dup,
@@ -1235,8 +1235,13 @@ function apiMyAssignments_(req) {
     if (String(a.active) === 'false') return false;
     if (a.closeAt && new Date(a.closeAt) < now) return false;
     if (a.openAt && new Date(a.openAt) > now) return false;
+    /* ไม่ระบุชั้น = มอบหมายให้ทุกห้อง ต้องขึ้นที่เครื่องนักเรียนเสมอ
+       เคยถูกเปลี่ยนเป็น "ต้องตรงชั้นเท่านั้น" ตอนทำเรื่องบังคับเลือกห้องสอบ
+       ผลคือครูกดมอบหมายสำเร็จทุกครั้ง แต่ของไม่ขึ้นที่เครื่องนักเรียนและไม่มีข้อความบอกเหตุ
+       การบังคับเลือกห้องเป็นเรื่องของ "ตอนมอบหมาย" (assignSave) ไม่ใช่ตอนนักเรียนอ่าน
+       ชั้นที่ยังไม่ได้บันทึกในชีตก็ต้องเห็น ไม่งั้นนักเรียนที่ข้อมูลไม่ครบจะไม่เห็นอะไรเลย */
     var c = normCls_(a.cls);
-    return c && c === myCls;
+    return !c || !myCls || c === myCls;
   }).map(function (a) {
     var o = assignPublic_(a, t.sid);
     o.myStatus = mine[String(a.code).toUpperCase()] || '';
@@ -1288,6 +1293,59 @@ function apiMyResults_(req) {
     return { code: k, ts: String(s.ts), score: Number(s.score), max: Number(s.max),
              pct: Number(s.pct), sec: Number(s.sec) };
   });
+}
+
+/* ====== คุมสอบตามเวลาจริง ==============================================
+   นักเรียนส่งสถานะสั้น ๆ ทุกสิบห้าวินาที ครูอ่านรวมทีเดียวทั้งห้อง
+   เก็บใน CacheService ไม่ใช่ในชีต เพราะเป็นข้อมูลชั่วคราวของคาบเดียว
+   ถ้าเขียนลงชีต ห้องละสี่สิบคนคูณทุกสิบห้าวินาทีจะกินโควตาจนชีตช้าไปทั้งระบบ
+   ผลจริงที่ต้องเก็บถาวรอยู่ในแผ่น submissions อยู่แล้ว ตรงนี้จึงหายได้ไม่เสียหาย */
+var EXAM_PING_TTL = 21600;                      /* หกชั่วโมง = เพดานของ CacheService */
+
+function examKey_(code, sid) {
+  return 'exam:' + String(code).trim().toUpperCase() + ':' + sidKey_(sid);
+}
+
+/** นักเรียนรายงานว่าทำถึงข้อไหน และออกจากแอปไปกี่ครั้ง */
+function apiExamPing_(req) {
+  var t = needStudent_(req);
+  var code = String(req.code || '').trim().toUpperCase();
+  if (!code) return { ok: true };
+  var v = { q: String(req.q) === 'done' ? 'done' : (Number(req.q) || 0),
+            out: Number(req.out) || 0, sec: Number(req.sec) || 0, at: Date.now() };
+  try {
+    CacheService.getScriptCache().put(examKey_(code, t.sid), JSON.stringify(v), EXAM_PING_TTL);
+  } catch (e) {}                                /* รายงานไม่ถึงไม่ควรทำให้การสอบสะดุด */
+  return { ok: true };
+}
+
+/** ครูอ่านสถานะของนักเรียนที่ระบุมา — คืนเป็น { เลขประจำตัว: {q,out,sec,at} } */
+function apiExamMonitor_(req) {
+  var me = needAdmin_(req), sc = scopeOf_(me);
+  needSubject_(me, reqSubject_(req));
+  var code = String(req.code || '').trim().toUpperCase();
+  var sids = Array.isArray(req.sids) ? req.sids.slice(0, 200) : [];
+  if (!code || !sids.length) return {};
+  // ครูผู้สอนดูได้เฉพาะชั้นที่ตัวเองดูแล จึงต้องรู้ชั้นของแต่ละเลขประจำตัวก่อน
+  var cls = {};
+  readAll_('students').forEach(function (st) { cls[sidKey_(st.sid)] = st.cls; });
+  var keys = [], owner = {};
+  sids.forEach(function (raw) {
+    var k = sidKey_(raw);
+    if (!inScope_(sc, cls[k])) return;
+    var key = examKey_(code, raw);
+    if (owner[key]) return;                     /* กันส่งเลขซ้ำมาแล้วอ่านซ้ำ */
+    owner[key] = String(raw);
+    keys.push(key);
+  });
+  if (!keys.length) return {};
+  var got = {};
+  try { got = CacheService.getScriptCache().getAll(keys) || {}; } catch (e) { got = {}; }
+  var out = {};
+  Object.keys(got).forEach(function (key) {
+    try { out[owner[key]] = JSON.parse(got[key]); } catch (e) {}
+  });
+  return out;
 }
 
 /** ผู้ดูแลดึงผลของใบงานหนึ่ง (ไม่ระบุ code = ทุกใบงานของวิชานี้) */
