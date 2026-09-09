@@ -4754,6 +4754,19 @@ function essayRegrade(it, x) {
                  String(gs.a || '').trim() || String(gs.c || '').trim());
 }
 function isPaper(q) { return !!(q && (q.paper || hasEssay(q))); }
+/* ── ชุดผสม ปรนัย + อัตนัย ───────────────────────────────────────────────
+   ข้อสอบจริงมักมีสองส่วนในฉบับเดียว ปรนัยข้อ 1-20 แล้วอัตนัยข้อ 21-23
+   เก็บไว้ในอาเรย์ items เดียวกัน โดยตกลงว่า "ปรนัยอยู่ก่อน อัตนัยต่อท้าย"
+   เลขข้อในแอปจึงตรงกับข้อสอบกระดาษที่ครูแจกโดยไม่ต้องเก็บเลขข้อเพิ่ม
+   ตัวตรวจ ตัวรวมคะแนน และตัวเข้ารหัสส่งขึ้นชีต แยกรายข้ออยู่แล้ว จึงรองรับได้ทันที */
+function quizEssayItems(q) { return ((q && q.items) || []).filter(isEssayItem); }
+function quizChoiceItems(q) {
+  return ((q && q.items) || []).filter(function (it) { return !isEssayItem(it); });
+}
+/** ประกอบกลับเป็นชุดเดียว — ใช้ทุกครั้งที่บันทึกส่วนใดส่วนหนึ่ง
+    กล่องแก้เฉลยกับกล่องแก้ข้ออัตนัยเคยเขียนทับ items ทั้งก้อน
+    แก้ส่วนหนึ่งแล้วอีกส่วนหายไปทั้งหมดโดยไม่มีอะไรเตือน */
+function mixItems(choice, essay) { return (choice || []).concat(essay || []); }
 /** โจทย์เทียม — มีแค่ตัวเลือกกับเฉลย ตัวตรวจคำตอบเดิมใช้ได้ทันที
     ตั้ง paper: true ไว้ให้ที่อื่นแยกออกว่าข้อนี้ไม่มีเนื้อโจทย์ให้แสดง */
 function paperProblems(quiz) {
@@ -5115,7 +5128,10 @@ function printFormulas() {
 /** กล่องสร้างหรือแก้ใบตอบ — ส่ง quiz มาถ้าเป็นการแก้เฉลยของชุดเดิม */
 function paperDialog(quiz) {
   const cur = quiz && quiz.paper ? quiz.paper : { ch: 4, topic: null };
-  const keyNow = quiz ? quiz.items.map(x => paperLabel(paperStyle(quiz), Number(x.ans))).join('') : '';
+  // อ่านเฉพาะส่วนปรนัย ไม่งั้นข้ออัตนัยจะโผล่มาเป็นตัวอักษรมั่ว ๆ ในช่องเฉลย
+  const keyNow = quiz ? quizChoiceItems(quiz)
+    .map(x => paperLabel(paperStyle(quiz), Number(x.ans))).join('') : '';
+  const esNow = quizEssayItems(quiz);
   openModal({
     title: quiz ? ('แก้เฉลย "' + esc(quiz.title) + '"') : 'สร้างกระดาษคำตอบออนไลน์',
     guard: function (root) {
@@ -5196,7 +5212,7 @@ function paperDialog(quiz) {
           const items = keys.map(k => ({ paper: 1, ans: k }));
           const pp = { ch: ch, topic: tpv === '' ? null : Number(tpv), st: st };
           if (quiz) {
-            const oldItems = (quiz.items || []).map(x => ({ ...x }));
+            const oldItems = quizChoiceItems(quiz).map(x => ({ ...x }));
             const changedKeys = [];
             items.forEach((it, k) => {
               const oldAns = (oldItems[k] && oldItems[k].ans != null) ? Number(oldItems[k].ans) : null;
@@ -5210,7 +5226,8 @@ function paperDialog(quiz) {
               rescorePaperDialog(quiz, oldItems, items, pp, title, lim, changedKeys);
               return;
             }
-            quiz.title = title; quiz.paper = pp; quiz.items = items;
+            // ข้ออัตนัยของชุดนี้ต้องอยู่ครบ แก้เฉลยปรนัยไม่ใช่การสร้างชุดใหม่
+            quiz.title = title; quiz.paper = pp; quiz.items = mixItems(items, esNow);
             quiz.limitSec = lim.limitSec; quiz.maxOut = lim.maxOut; quiz.maxOutSec = lim.maxOutSec;
             delete PCACHE['paper:' + quiz.id];
             save(true); close(); renderMake();
@@ -5328,7 +5345,7 @@ function rescorePaperDialog(quiz, oldItems, newItems, pp, title, lim, changedKey
 
           quiz.title = title;
           quiz.paper = pp;
-          quiz.items = newItems;
+          quiz.items = mixItems(newItems, quizEssayItems(quiz));
           quiz.limitSec = lim.limitSec;
           quiz.maxOut = lim.maxOut;
           quiz.maxOutSec = lim.maxOutSec;
@@ -6304,6 +6321,7 @@ function esBankPut(it, meta) {
   const m = meta || {};
   const now = Date.now();
   const clean = JSON.parse(JSON.stringify(it));
+  clean.essay = 1;            // เก็บให้เป็นข้ออัตนัยเต็มรูปเสมอ ไม่ว่าจะถูกส่งมาจากทางไหน
   if (m.id) {
     const at = list.findIndex(function (r) { return r.id === m.id; });
     if (at >= 0) {
@@ -6875,6 +6893,12 @@ function essayDialog(quiz) {
              ans: it.ans == null ? '' : it.ans, au: it.au || '', tol: it.tol == null ? 2 : it.tol };
   }) : [{ stem: '', key: '', max: 10, typed: false, img: '', skip5: false,
           chips: [], eqs: [], vars: [], ans: '', au: '', tol: 2 }];
+  /* ชุดปรนัยที่ยังไม่มีข้ออัตนัยเลย (กดปุ่ม "+ เพิ่มอัตนัย" มาจากรายการชุด)
+     ต้องมีข้อว่างให้เริ่มพิมพ์ ไม่งั้นกล่องเปิดมาแล้วไม่มีอะไรให้กรอก */
+  if (!list.length) {
+    list.push({ stem: '', key: '', max: 10, typed: false, img: '', skip5: false,
+                chips: [], eqs: [], vars: [], ans: '', au: '', tol: 2 });
+  }
   const draftId = quiz ? quiz.id : 'new';
   const draft = esDraftGet(draftId);
   let saveTimer = 0;
@@ -6982,8 +7006,13 @@ function essayDialog(quiz) {
           const tpv = $('#esTopic', root).value;
           const lim = clamp(Math.round(Number($('#esMin', root).value) || 0), 0, 300) * 60;
           if (quiz) {
-            quiz.title = title; quiz.items = items; quiz.limitSec = lim;
-            quiz.paper = { ch: 4, topic: tpv === '' ? null : Number(tpv), st: 'th' };
+            /* ส่วนปรนัยของชุดนี้ต้องอยู่ครบ และรูปแบบตัวเลือกที่ครูตั้งไว้ต้องไม่ถูกรีเซ็ต
+               ของเดิมเขียน ch:4 st:'th' ทับเสมอ ชุดที่ตั้งไว้ 5 ตัวเลือกหรือ A B C D จึงเพี้ยน */
+            quiz.title = title; quiz.limitSec = lim;
+            quiz.items = mixItems(quizChoiceItems(quiz), items);
+            quiz.paper = { ch: (quiz.paper && quiz.paper.ch) || 4,
+                           topic: tpv === '' ? null : Number(tpv),
+                           st: paperStyle(quiz) };
             delete PCACHE['paper:' + quiz.id];
             if (saveTimer) clearInterval(saveTimer);
             esDraftPut(draftId, null);              // บันทึกลงชุดจริงแล้ว ไม่ต้องเก็บร่างอีก
@@ -7020,7 +7049,12 @@ function essayDialog(quiz) {
       $('#esFromBank', root).addEventListener('click', function () {
         esBankPick(function (picked) {
           picked.forEach(function (it) {
-            list.push({ stem: it.stem || '', key: it.key || '', max: itemMax(it),
+            /* อ่านคะแนนเต็มจากตัวข้อโดยตรง ห้ามผ่าน itemMax()
+               เพราะ itemMax() คืน 1 ให้ทุกอย่างที่ไม่มีธง essay
+               ข้อที่เก็บเข้าคลังจากกล่องแก้ข้อสอบยังไม่มีธงนั้น (ธงถูกใส่ตอนบันทึกลงชุด)
+               ผลคือข้อ 12 คะแนนที่หยิบกลับมาจากคลัง กลายเป็น 1 คะแนนเงียบ ๆ */
+            list.push({ stem: it.stem || '', key: it.key || '',
+                        max: clamp(Math.round(Number(it.max) || 10), 1, 100),
                         typed: !!it.typed, img: it.img || '', skip5: !!it.skip5,
                         chips: (it.chips || []).slice(), eqs: (it.eqs || []).slice(),
                         vars: (it.vars || []).slice(),
@@ -7380,10 +7414,15 @@ function renderMake() {
       papers.slice().reverse().forEach(q => {
         const nAt = DB.attempts.filter(a => a.quizId === q.id).length;
         const nImg = q.items.filter(function (x) { return x.img; }).length;
-        const key = hasEssay(q) ? ('อัตนัย ' + q.items.length + ' ข้อ' +
-            (q.items.some(isGuided) ? ' · ทีละขั้น' : '') +
-            (nImg ? ' · มีรูป ' + nImg : ''))
-          : q.items.map(x => paperLabel(paperStyle(q), Number(x.ans))).join('');
+        /* ตัวแปรนี้เคยเก็บสตริงเฉลยไว้โชว์ในตาราง แล้วถูกเลิกใช้เพราะเฉลยไม่ควรโผล่ในรายการ
+           แต่ค้างไว้เฉย ๆ ไม่ได้ถูกลบ ตอนนี้ใช้บอกส่วนประกอบของชุดแทน
+           ซึ่งจำเป็นเมื่อชุดหนึ่งมีทั้งปรนัยและอัตนัย ครูต้องเห็นว่าชุดไหนมีอะไรบ้าง */
+        const nCh = quizChoiceItems(q).length, nEs = quizEssayItems(q).length;
+        const key = (nCh ? 'ปรนัย ' + nCh + ' ข้อ' : '') + (nCh && nEs ? ' · ' : '') +
+          (nEs ? 'อัตนัย ' + nEs + ' ข้อ' +
+                 (quizEssayItems(q).some(isGuided) ? ' ทีละขั้น' : '') : '') +
+          ' · เต็ม ' + fmt(quizMaxScore(q)) + ' คะแนน' +
+          (nImg ? ' · มีรูป ' + nImg : '');
         
       /* ป้าย S/T บอกว่าชุดนี้มาจากไหน — มีความหมายเฉพาะบนเครื่องนักเรียน
          ของเดิมดูแค่ "เคยทำผ่านรหัสใบงานไหม" ซึ่งบนเครื่องครูไม่มีทางเป็นจริง
@@ -7393,8 +7432,10 @@ function renderMake() {
       const badgeHTML = isTeacherAssign
         ? '<span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:#0f8a53;color:#fff;font-weight:bold;font-size:12px;margin-right:5px" title="ชุดของครู">T</span>'
         : '<span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:#c62828;color:#fff;font-weight:bold;font-size:12px;margin-right:5px" title="นักเรียนสร้างเอง">S</span>';
-      h += '<tr><td style="display:flex;align-items:center">' + badgeHTML + esc(q.title || '(ไม่มีชื่อ)') +
-          (q.id === DB.cur.quizId ? ' <b>← ชุดปัจจุบัน</b>' : '') + '</td>' +
+      h += '<tr><td style="display:flex;align-items:center;flex-wrap:wrap;gap:2px 0">' + badgeHTML +
+          '<span>' + esc(q.title || '(ไม่มีชื่อ)') +
+          (q.id === DB.cur.quizId ? ' <b>← ชุดปัจจุบัน</b>' : '') + '</span>' +
+          '<span class="sub" style="flex-basis:100%;margin-left:25px">' + esc(key) + '</span></td>' +
           '<td class="num">' + q.items.length + '</td>' +
           '<td>' + (q.limitSec ? Math.round(q.limitSec / 60) + ' นาที' : 'ไม่จำกัด') +
           (q.maxOut ? ' · ออกได้ ' + q.maxOut + ' ครั้ง' : '') + '</td>' +
@@ -7402,9 +7443,14 @@ function renderMake() {
           (nAt ? '<a href="javascript:void(0)" style="font-weight:700;text-decoration:underline" data-viewstat="' + q.id + '">' + nAt + '</a>' : 0) + '</td>' +
           '<td>' + (isAdmin() ? '<button class="sm primary" data-publish="' + q.id +
             '">เปิดให้นักเรียนสอบ</button> ' : '') +
-          (hasEssay(q) ? '<button class="sm primary" data-esgrade="' + q.id + '">ให้คะแนนอัตนัย</button> ' +
-            '<button class="sm" data-esedit="' + q.id + '">แก้ข้อสอบ</button> '
-            : '<button class="sm" data-editkey="' + q.id + '">แก้เฉลย</button> ') +
+          /* ชุดผสมต้องแก้ได้ทั้งสองส่วน ของเดิมเลือกให้อย่างใดอย่างหนึ่ง
+             ชุดที่มีอัตนัยจึงไม่มีทางแก้เฉลยปรนัย และกลับกัน
+             ปุ่มที่ยังไม่มีของส่วนนั้นเขียนว่า "เพิ่ม" เพื่อให้เห็นว่ารวมกันได้ */
+          (nEs ? '<button class="sm primary" data-esgrade="' + q.id + '">ให้คะแนนอัตนัย</button> ' : '') +
+          '<button class="sm" data-editkey="' + q.id + '">' +
+            (nCh ? 'แก้เฉลยปรนัย' : '+ เพิ่มปรนัย') + '</button> ' +
+          '<button class="sm" data-esedit="' + q.id + '">' +
+            (nEs ? 'แก้ข้ออัตนัย' : '+ เพิ่มอัตนัย') + '</button> ' +
           '<button class="sm" data-share="' + q.id + '">แชร์รหัส</button> ' +
           '<button class="sm" data-start="' + q.id + '">ลองทำเอง</button> ' +
           '<button class="sm danger" data-delq="' + q.id + '">ลบ</button></td></tr>';
