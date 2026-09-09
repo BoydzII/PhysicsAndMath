@@ -23,8 +23,13 @@ import { fileURLToPath } from 'url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
-// ที่อยู่เว็บแอปของ Google Apps Script — ต้องตรงกับที่ตั้งไว้ใน index.html หน้าพอร์ทัล
-const APPS_URL = 'https://script.google.com/macros/s/AKfycbxVa8BYYQeIhBDmg85w2UBwsIqt6a2YudehUfCbyMny9T-5TTh1UfFxsJjTk9HLNuFc/exec';
+/* ที่อยู่เว็บแอปของ Google Apps Script — วิชาละหนึ่งชีต จึงต้องแยกที่อยู่กันคนละอัน
+   เคยรวมเป็นตัวเดียวชื่อ APPS_URL แล้วมีคนแก้ให้ชี้ไปชีตวิทย์กายภาพ
+   แอปฟิสิกส์จึงไปอ่านชีตผิดใบเงียบ ๆ ครูมอบหมายงานแล้วนักเรียนไม่เห็นอยู่หลายวัน
+   ทั้งที่คะแนนฟิสิกส์สามพันกว่ารายการยังอยู่ครบในชีตของมันเอง
+   เอามาจาก Apps Script ของชีตวิชานั้น → จัดการการทำให้ใช้งานได้ → URL เว็บแอป (ลงท้าย /exec) */
+const PHYS_APPS_URL = 'https://script.google.com/macros/s/AKfycbzuuRbnE_oB7a9vx7zZizyPVEKao31ERDTU82DvydMuRTDqVoQvgns9EsjTIzpbBjuM/exec';
+const PSCI_APPS_URL = 'https://script.google.com/macros/s/AKfycbxVa8BYYQeIhBDmg85w2UBwsIqt6a2YudehUfCbyMny9T-5TTh1UfFxsJjTk9HLNuFc/exec';
 
 // ที่อยู่เว็บแอปของ "ห้องเรียนสมดุลกล" ซึ่งใช้ชีตคนละใบกับสี่วิชาข้างบน
 // เอามาจาก Apps Script ของชีตสมดุลกล → ทำให้ใช้งานได้ → เว็บแอป (ลงท้าย /exec)
@@ -37,7 +42,7 @@ const TARGETS = [
     out: 'PhysicsAutoSheet/index.html',
     // ครูยังลงชื่อเข้าใช้ในฐานะผู้ดูแลจากเว็บได้ แต่ห้ามตัดการเชื่อมต่อชีต
     // เพราะถ้านักเรียนเผลอกด ผลที่ทำรอบนั้นจะไม่ถูกส่งขึ้นชีต
-    builtin: { url: APPS_URL, studentOnly: false, lockCloud: true, logo: '', header: null, about: null }
+    builtin: { url: PHYS_APPS_URL, studentOnly: false, lockCloud: true, logo: '', header: null, about: null }
   },
   {
     src: 'MathAutoSheet/math.html',
@@ -69,7 +74,7 @@ const TARGETS = [
     // ต่อชีตใบเดียวกับฟิสิกส์ (ชีตใบนี้เก็บได้หลายวิชา แยกด้วยคอลัมน์ subject)
     // ตั้งเหมือนฟิสิกส์ทุกอย่าง — ครูยังลงชื่อเป็นผู้ดูแลจากเว็บได้ แต่ห้ามตัดการเชื่อมต่อ
     // เพราะถ้านักเรียนเผลอกด ผลที่ทำรอบนั้นจะไม่ถูกส่งขึ้นชีต
-    builtin: { url: APPS_URL, studentOnly: false, lockCloud: true, logo: '', header: null, about: null }
+    builtin: { url: PSCI_APPS_URL, studentOnly: false, lockCloud: true, logo: '', header: null, about: null }
   },
   {
     src: 'EquilibriumLab/equilibrium.html',

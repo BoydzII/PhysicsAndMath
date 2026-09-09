@@ -1731,6 +1731,11 @@ function adoptPortalSession() {
   let s = null;
   try { s = JSON.parse(localStorage.getItem('pcportal.v1') || 'null'); } catch (e) { return; }
   if (!s || s.v !== 1 || !s.token || !s.exp || s.exp < Date.now()) return;
+  /* แต่ละวิชามีชีตของตัวเอง ส่วนพอร์ทัลลงชื่อเข้าใช้กับชีตใบเดียว
+     โทเคนที่ออกจากชีตอีกใบใช้กับชีตนี้ไม่ได้ เพราะคนละกุญแจกัน
+     รับมาก็จะเด้งออกตอนเรียกคำสั่งแรก แล้วขึ้นข้อความที่ไม่บอกสาเหตุ
+     ถ้าไม่ใช่ชีตเดียวกัน ให้ข้ามไปเฉย ๆ หน้าเข้าใช้ของแอปจะทำงานตามปกติ */
+  if (BUILTIN.url && s.url && s.url !== BUILTIN.url) return;
   // ไฟล์ที่แจกนักเรียนไม่รับสิทธิ์ผู้ดูแลจากพอร์ทัล กันการเข้าถึงส่วนของครูโดยไม่ตั้งใจ
   if (studentOnlyBuild() && s.role === 'admin') return;
   let touched = false;
