@@ -6089,6 +6089,84 @@ function bindPdfEvents() {
    ============================================================ */
 var HW_INSTANCES = {};
 
+/* ── ลายมือที่เดินทางไปถึงครูได้จริง ─────────────────────────────────────
+   หน้าจอนักเรียนเขียนว่า "ภาพจะถูกบันทึกให้ครูตรวจโดยอัตโนมัติ"
+   แต่ตอนส่งขึ้นชีตส่งไปแค่คะแนน จำนวนครั้ง เวลา และตัวเลือกที่กด
+   ลายมือจึงค้างอยู่ในเครื่องนักเรียนเครื่องนั้นตลอดไป ครูเปิดจากเครื่องตัวเองไม่เห็นเลย
+
+   ส่งเป็น "เส้นที่ลาก" ไม่ใช่รูป เพราะรูป PNG หนึ่งหน้าใหญ่กว่าที่ช่องหนึ่งช่องในชีต
+   รับได้ (ราวห้าหมื่นตัวอักษร) ส่วนเส้นที่ปัดพิกัดเป็นจำนวนเต็ม เก็บเป็นผลต่าง
+   จากจุดก่อนหน้า แล้วเขียนด้วยเลขฐานสามสิบหก จะเล็กลงราวสิบเท่า
+   และครูซูมดูได้คมกว่ารูป เพราะวาดใหม่จากเส้นจริง ไม่ใช่ขยายภาพ           */
+function hwNum(n) { n = Math.round(n); return (n < 0 ? '-' : '') + Math.abs(n).toString(36); }
+/** step > 1 = เก็บจุดเว้นจุด ใช้ตอนงานใหญ่เกินที่ชีตรับได้ ปลายเส้นเก็บไว้เสมอ */
+function hwEncode(strokes, step) {
+  if (!strokes || !strokes.length) return '';
+  const st = Math.max(1, Number(step) || 1);
+  return strokes.map(function (s) {
+    const src = s.points || [];
+    const use = src.filter(function (p, i) { return i % st === 0 || i === src.length - 1; });
+    let px = 0, py = 0;
+    const pts = use.map(function (p) {
+      const x = Math.round(p.x), y = Math.round(p.y);
+      const t = hwNum(x - px) + '.' + hwNum(y - py);
+      px = x; py = y;
+      return t;
+    });
+    return (s.color || '') + '~' + (s.size || '') + '~' + pts.join(' ');
+  }).join(';');
+}
+function hwDecode(str) {
+  if (!str) return [];
+  return String(str).split(';').filter(Boolean).map(function (row) {
+    const a = row.split('~');
+    let px = 0, py = 0;
+    const points = (a[2] || '').split(' ').filter(Boolean).map(function (t) {
+      const q = t.split('.');
+      px += parseInt(q[0], 36) || 0;
+      py += parseInt(q[1], 36) || 0;
+      return { x: px, y: py };
+    });
+    return { color: a[0] || '#1e293b', size: Number(a[1]) || 2.5, points: points };
+  }).filter(function (s) { return s.points.length; });
+}
+/** วาดเส้นกลับเป็นรูป เพื่อให้ปุ่ม "ดูภาพลายมือ" ในหน้าตรวจของครูใช้ได้ทันที */
+function hwToImage(strokes) {
+  if (!strokes || !strokes.length) return '';
+  let maxX = 0, maxY = 0;
+  strokes.forEach(function (s) {
+    s.points.forEach(function (p) {
+      if (p.x > maxX) maxX = p.x;
+      if (p.y > maxY) maxY = p.y;
+    });
+  });
+  const cv = document.createElement('canvas');
+  cv.width = Math.max(320, Math.ceil(maxX) + 20);
+  cv.height = Math.max(200, Math.ceil(maxY) + 20);
+  const ctx = cv.getContext('2d');
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, cv.width, cv.height);
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  strokes.forEach(function (s) {
+    ctx.strokeStyle = s.color || '#1e293b';
+    ctx.lineWidth = s.size || 2.5;
+    ctx.beginPath();
+    s.points.forEach(function (p, i) { i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y); });
+    ctx.stroke();
+  });
+  try { return cv.toDataURL('image/png'); } catch (e) { return ''; }
+}
+/** อ่านงานอัตนัยที่ส่งกลับมาจากชีต ให้กลับเป็นรูปแบบเดียวกับที่ทำในเครื่อง */
+function hwFromRow(a) {
+  const o = { text: (a && a.x) || '', finalAns: (a && a.f) || '', strokes: [], img: '' };
+  if (a && a.h) {
+    o.strokes = hwDecode(a.h);
+    o.img = hwToImage(o.strokes);
+  }
+  return o;
+}
+
 function initHandwritingPad(k, canvasEl, wrapEl, initialStrokes, onSave) {
   if (!canvasEl || !wrapEl) return null;
   const ctx = canvasEl.getContext('2d');
@@ -8305,36 +8383,12 @@ function renderDo() {
           '<span class="hint" id="esSaveState_' + k + '" style="color:var(--ok)">' + (x.checked ? '● บันทึกแล้ว' : '') + '</span>' +
           '</div>' +
 
-          // 1. Handwriting Canvas
-          '<div id="hwBox_' + k + '" style="' + (x.mode === 'type' ? 'display:none' : '') + '">' +
-          '<div class="hw-bar">' +
-          '<div class="hw-tools">' +
-          '<button class="btn-tool active" data-hwtool="pen" data-esk="' + k + '">✏️ ปากกา</button>' +
-          '<button class="btn-tool" data-hwtool="highlighter" data-esk="' + k + '">🖍️ ไฮไลต์</button>' +
-          '<button class="btn-tool" data-hwtool="eraser" data-esk="' + k + '">🧹 ยางลบ</button>' +
-          '<div style="display:flex;gap:4px;margin-left:4px;align-items:center">' +
-          '<div class="color-swatch active" data-hwcolor="#1e293b" data-esk="' + k + '" style="background:#1e293b"></div>' +
-          '<div class="color-swatch" data-hwcolor="#2563eb" data-esk="' + k + '" style="background:#2563eb"></div>' +
-          '<div class="color-swatch" data-hwcolor="#dc2626" data-esk="' + k + '" style="background:#dc2626"></div>' +
-          '</div>' +
-          '<select class="btn-tool" data-hwgrid="' + k + '" style="margin-left:4px">' +
-          '<option value="bg-lined">เส้นบรรทัด</option>' +
-          '<option value="bg-grid">ตารางกราฟ</option>' +
-          '<option value="bg-blank">กระดาษขาว</option>' +
-          '</select>' +
-          '</div>' +
-          '<div class="hw-actions">' +
-          '<button class="btn-tool" data-hwact="undo" data-esk="' + k + '">↩️ ย้อน</button>' +
-          '<button class="btn-tool" data-hwact="clear" data-esk="' + k + '">🗑️ ล้าง</button>' +
-          '<button class="btn-tool" data-hwact="expand" data-esk="' + k + '">➕ เพิ่มที่เขียน</button>' +
-          '</div></div>' +
-          '<div class="hw-canvas-wrap bg-lined" id="hwWrap_' + k + '">' +
-          '<canvas class="hw-canvas" id="hwCanvas_' + k + '" data-esk="' + k + '"></canvas>' +
-          '</div>' +
-          '<div class="hw-footer">' +
-          '<span>✍️ Apple Pencil / Stylus / สัมผัส — หน้าจอไม่เลื่อนขณะเขียน</span>' +
-          '<span>ภาพจะถูกบันทึกให้ครูตรวจโดยอัตโนมัติ</span>' +
-          '</div></div>' +
+          // 1. กระดาษเขียนลายมือ — ใช้ตัวสร้างตัวเดียวกับข้อแบบทำทีละขั้น
+          hwPadHTML(k, x.mode === 'type',
+            '<div class="hw-footer">' +
+            '<span>✍️ Apple Pencil / Stylus / สัมผัส — หน้าจอไม่เลื่อนขณะเขียน</span>' +
+            '<span>ลายมือถูกส่งให้ครูตรวจพร้อมคำตอบ</span>' +
+            '</div>') +
 
           // 2. Typing textarea
           '<div id="typeBox_' + k + '" style="' + (x.mode === 'type' ? '' : 'display:none') + '">' +
@@ -8393,7 +8447,8 @@ function renderDo() {
 
     // Initialize handwriting canvases
     probs.forEach(function (pp, k) {
-      if (!pp.essay || pp.guided) return;
+      // ข้อแบบทำทีละขั้นมีกระดาษทดแล้ว จึงต้องผูกให้ด้วย ไม่ใช่ข้ามไป
+      if (!pp.essay) return;
       const cvEl = $('#hwCanvas_' + k);
       const wrapEl = $('#hwWrap_' + k);
       if (!cvEl || !wrapEl) return;
@@ -8577,6 +8632,38 @@ function renderDo() {
 /* ── หน้าจอทำข้อสอบอัตนัยทีละขั้น ───────────────────────────────────────
    แต่ละขั้นเป็นการ์ดของตัวเอง เปิดทีละขั้นตามลำดับ เพื่อไม่ให้นักเรียนกระโดดข้าม
    ขั้นก่อนหน้ายังกลับไปแก้ได้เสมอ และแป้นกดช่วยพิมพ์ตัวเลขบนไอแพด        */
+/* ── กระดาษเขียนลายมือ ใช้ร่วมกันทั้งข้ออิสระและข้อแบบทำทีละขั้น ──────────
+   เดิมมีเฉพาะข้ออิสระ ข้อที่ครูตั้งกล่องให้เลือกและแทนค่าจึงไม่มีที่แสดงวิธีทำ
+   ทั้งที่นักเรียนทำบนไอแพดและมีปากกาอยู่ในมือ ทำเป็นตัวสร้างตัวเดียว
+   ไอดีและปุ่มจึงเหมือนกันเป๊ะ ตัวผูกเหตุการณ์ชุดเดิมใช้ได้กับทั้งสองแบบทันที */
+function hwPadHTML(k, hidden, footer) {
+  return '<div id="hwBox_' + k + '" style="' + (hidden ? 'display:none' : '') + '">' +
+    '<div class="hw-bar">' +
+    '<div class="hw-tools">' +
+    '<button class="btn-tool active" data-hwtool="pen" data-esk="' + k + '">✏️ ปากกา</button>' +
+    '<button class="btn-tool" data-hwtool="highlighter" data-esk="' + k + '">🖍️ ไฮไลต์</button>' +
+    '<button class="btn-tool" data-hwtool="eraser" data-esk="' + k + '">🧹 ยางลบ</button>' +
+    '<div style="display:flex;gap:4px;margin-left:4px;align-items:center">' +
+    '<div class="color-swatch active" data-hwcolor="#1e293b" data-esk="' + k + '" style="background:#1e293b"></div>' +
+    '<div class="color-swatch" data-hwcolor="#2563eb" data-esk="' + k + '" style="background:#2563eb"></div>' +
+    '<div class="color-swatch" data-hwcolor="#dc2626" data-esk="' + k + '" style="background:#dc2626"></div>' +
+    '</div>' +
+    '<select class="btn-tool" data-hwgrid="' + k + '" style="margin-left:4px">' +
+    '<option value="bg-lined">เส้นบรรทัด</option>' +
+    '<option value="bg-grid">ตารางกราฟ</option>' +
+    '<option value="bg-blank">กระดาษขาว</option>' +
+    '</select>' +
+    '</div>' +
+    '<div class="hw-actions">' +
+    '<button class="btn-tool" data-hwact="undo" data-esk="' + k + '">↩️ ย้อน</button>' +
+    '<button class="btn-tool" data-hwact="clear" data-esk="' + k + '">🗑️ ล้าง</button>' +
+    '<button class="btn-tool" data-hwact="expand" data-esk="' + k + '">➕ เพิ่มที่เขียน</button>' +
+    '</div></div>' +
+    '<div class="hw-canvas-wrap bg-lined" id="hwWrap_' + k + '">' +
+    '<canvas class="hw-canvas" id="hwCanvas_' + k + '" data-esk="' + k + '"></canvas>' +
+    '</div>' + (footer || '') + '</div>';
+}
+
 function essayGuideHTML(pp, x, k) {
   const it = pp.it, gs = esGS(x);
   const chips = it.chips || [], eqs = it.eqs || [], vs = esVars(it);
@@ -8659,6 +8746,13 @@ function essayGuideHTML(pp, x, k) {
       }).join('') + '</div>' +
     '<div class="hint" style="margin-top:6px">แป้นกดนี้พิมพ์ลงในช่องที่แตะล่าสุด — ' +
     'ใช้ตอนไม่อยากสลับแป้นพิมพ์บนไอแพด</div>';
+
+  /* กระดาษทด — ขั้นตอนด้านบนเก็บคำตอบเป็นข้อ ๆ แต่การแสดงวิธีทำจริงยังต้องเขียน
+     โดยเฉพาะบนไอแพดที่มีปากกา ครูจะได้เห็นว่านักเรียนคิดมาอย่างไร ไม่ใช่เห็นแต่ผลลัพธ์ */
+  h += '<div class="esstep" style="margin-top:10px"><div class="esh">' +
+    '<span class="esn">✍️</span><b>กระดาษทด — แสดงวิธีทำด้วยลายมือ</b>' +
+    '<span class="grow"></span><span class="hint">ไม่บังคับ · ครูเห็นตอนตรวจ</span></div>' +
+    hwPadHTML(k, false) + '</div>';
 
   return h + '</div>';
 }
@@ -10508,6 +10602,9 @@ async function pullResults(code) {
             if (ra && ra.k !== '' && ra.k != null && isFinite(Number(ra.k))) {
               ex.answers[idx].pick = Number(ra.k);
             }
+            // ดึงซ้ำแล้วงานอัตนัยต้องอัปเดตตามด้วย ไม่ใช่ค้างของรอบก่อน
+            const hw = hwFromRow(ra);
+            if (hw.strokes.length || hw.text || hw.finalAns) Object.assign(ex.answers[idx], hw);
           });
         }
       }
@@ -10520,11 +10617,11 @@ async function pullResults(code) {
       sid: String(r.sid), no: String(r.no || ''), room: String(r.cls || ''),
       startedAt: new Date(r.ts).getTime() - (Number(r.sec) || 0) * 1000,
       finishedAt: new Date(r.ts).getTime(),
-      answers: r.answers.map(a => ({
+      answers: r.answers.map(a => Object.assign({
         raw: [], pick: (a && a.k !== '' && a.k != null && isFinite(Number(a.k))) ? Number(a.k) : null, checked: true,
         score: Number(a && a.s != null ? a.s : a) || 0,
         tries: Number(a && a.t) || 1, revealed: !!(a && a.r), sec: Number(a && a.c) || 0
-      })),
+      }, hwFromRow(a))),
       /* ข้อมูลคุมสอบที่ชีตเก็บไว้ ต้องพากลับมาด้วย ไม่งั้นรายงานชั้นเรียนของผลที่ดึงมา
          จะไม่ขึ้นคอลัมน์ออกจากแอปเลย ทั้งที่ในชีตมีข้อมูลอยู่ครบ
          ผลที่ดึงมาปิดจบไปแล้ว (มี finishedAt) จึงไม่ไปยุ่งกับการคุมสอบที่กำลังทำอยู่ */
@@ -10550,13 +10647,36 @@ async function pullResults(code) {
 
 /* --- การส่งคำตอบขึ้นชีต พร้อมคิวสำรองเมื่อเน็ตหลุด ----------------------- */
 
+/* งานอัตนัยของทั้งชุดรวมกันอาจใหญ่เกินที่ช่องหนึ่งช่องในชีตรับได้
+   ลดความละเอียดของเส้นลงทีละครึ่งจนพอดี ดีกว่าตัดงานของนักเรียนทิ้งทั้งข้อ
+   เส้นยังเป็นเส้นเดิม แค่จุดห่างขึ้น ซึ่งแทบไม่ต่างเมื่อมองด้วยตา */
+var SHEET_CELL_MAX = 45000;
+function answersForSheet(a) {
+  let step = 1, out;
+  for (;;) {
+    out = a.answers.map(function (x) {
+      const o = { s: x.score, t: x.tries, r: x.revealed ? 1 : 0,
+                  c: Math.round(x.sec), k: x.pick != null ? x.pick : '' };
+      // h = เส้นลายมือ · x = วิธีทำที่พิมพ์ · f = คำตอบสรุป — ใส่เฉพาะที่มีจริง
+      const hw = hwEncode(x.strokes, step);
+      if (hw) o.h = hw;
+      if (x.text && String(x.text).trim()) o.x = String(x.text).trim();
+      if (x.finalAns && String(x.finalAns).trim()) o.f = String(x.finalAns).trim();
+      return o;
+    });
+    if (JSON.stringify(out).length <= SHEET_CELL_MAX || step >= 16) break;
+    step *= 2;
+  }
+  return out;
+}
+
 function attemptPayload(a, status) {
   const r = analyze(a);
   return {
     code: a.assignCode, status: status,
     score: r.got, max: r.max, pct: Math.round(r.pct * 10) / 10, sec: Math.round(r.sec),
     revealed: a.answers.filter(x => x.revealed).length,
-    answers: a.answers.map(x => ({ s: x.score, t: x.tries, r: x.revealed ? 1 : 0, c: Math.round(x.sec), k: x.pick != null ? x.pick : '' })),
+    answers: answersForSheet(a),
     out: (a.proc && a.proc.nOut) || 0,
     outSec: Math.round((a.proc && a.proc.secOut) || 0),
     autoBy: (a.proc && a.proc.autoBy) || '',
