@@ -11824,6 +11824,10 @@ async function checkAppUpdate() {
       '<div>' +
         '<div style="font-size:16px;font-weight:700">เวอร์ชันของระบบ ' + APP_VERSION + '</div>' +
         '<div class="hint">สเปกที่ต้องการ: Google Apps Script รุ่น ' + GS_VERSION + '</div>' +
+        /* วันเวลาที่ไฟล์นี้ถูกสร้าง ประทับไว้ตอนขึ้นเว็บ
+           ใช้ตรวจว่าเครื่องนี้โหลดไฟล์ใหม่มาแล้วหรือยัง โดยไม่ต้องใช้ลิงก์พิเศษ */
+        '<div class="hint">ไฟล์แอปในเครื่องนี้: <b>' +
+        esc(BUILTIN.build || 'รุ่นพัฒนา (ยังไม่ได้สร้างไฟล์ขึ้นเว็บ)') + '</b></div>' +
       '</div>' +
     '</div>' +
     '<hr style="border:none;border-top:1px solid var(--line);margin:10px 0">' +

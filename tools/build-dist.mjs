@@ -23,6 +23,12 @@ import { fileURLToPath } from 'url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
+/* ตราวันเวลาที่สร้างไฟล์ ประทับลงทุกไฟล์ที่ขึ้นเว็บในรอบเดียวกัน
+   ครูจะได้ตรวจได้เองว่าเครื่องนั้นโหลดไฟล์ใหม่มาหรือยัง โดยไม่ต้องพึ่งลิงก์พิเศษ
+   เดิมเลขรุ่นแอปเขียนตายไว้ในโค้ด แก้ไปกี่รอบก็ยังเป็นเลขเดิม ดูไม่ออกว่าใหม่หรือเก่า
+   บล็อกนี้ถูกตัดออกก่อนเทียบไฟล์ใน check.mjs อยู่แล้ว จึงไม่กระทบการตรวจความตรงกัน */
+const BUILD_STAMP = new Date().toLocaleString('sv-SE', { timeZone: 'Asia/Bangkok' }).slice(0, 16);
+
 /* ที่อยู่เว็บแอปของ Google Apps Script — วิชาละหนึ่งชีต จึงต้องแยกที่อยู่กันคนละอัน
    เคยรวมเป็นตัวเดียวชื่อ APPS_URL แล้วมีคนแก้ให้ชี้ไปชีตวิทย์กายภาพ
    แอปฟิสิกส์จึงไปอ่านชีตผิดใบเงียบ ๆ ครูมอบหมายงานแล้วนักเรียนไม่เห็นอยู่หลายวัน
@@ -105,10 +111,11 @@ for (const t of TARGETS) {
     fail++; continue;
   }
   const eol = src.indexOf('\r\n') >= 0 ? '\r\n' : '\n';
-  const block = ['/* @@BUILTIN@@ */', 'const BUILTIN = ' + JSON.stringify(t.builtin) + ';',
+  const builtin = Object.assign({}, t.builtin, { build: BUILD_STAMP });
+  const block = ['/* @@BUILTIN@@ */', 'const BUILTIN = ' + JSON.stringify(builtin) + ';',
                  '/* @@BUILTIN-END@@ */'].join(eol);
   fs.writeFileSync(outPath, src.replace(RE, block));
-  console.log('✓ ' + t.out + '  (studentOnly=' + t.builtin.studentOnly +
+  console.log('✓ ' + t.out + '  (' + BUILD_STAMP + ' · studentOnly=' + t.builtin.studentOnly +
     ' · lockCloud=' + t.builtin.lockCloud + ' · ' + (t.builtin.url ? 'ต่อชีต' : 'ออฟไลน์') + ')');
 }
 process.exit(fail ? 1 : 0);
