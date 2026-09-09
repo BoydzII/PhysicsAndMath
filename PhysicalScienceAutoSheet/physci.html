@@ -281,6 +281,10 @@ html:not([data-theme-style="minimal"]) .card::before{
 }
 .card>h3 .sub{font-weight:500; color:var(--muted); font-size:13.5px}
 
+/* การ์ดที่ย่อไว้ — ซ่อนทุกอย่างยกเว้นหัวเรื่อง หัวเรื่องยังบอกสรุปว่าเลือกอะไรไว้ */
+.card.tfold>*:not(h3){display:none}
+.card.tfold>h3{margin-bottom:0}
+
 .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .grow{flex:1 1 auto}
 .hint{font-size:13.5px;color:var(--muted)}
@@ -6673,7 +6677,11 @@ function hwEncode(strokes, step) {
     });
     /* ต้องส่งชนิดเส้นไปด้วย ไม่งั้นเส้นประ ไฮไลต์ และยางลบ จะกลายเป็นเส้นทึบหมดตอนครูเปิดดู
        เติมเป็นช่องที่สี่ ของเดิมที่มีสามช่องยังอ่านได้เหมือนเดิม */
-    return (s.color || '') + '~' + (s.size || '') + '~' + (s.tool || 'pen') + '~' + pts.join(' ');
+    /* เส้นประเป็นลักษณะของเส้น ไม่ใช่เครื่องมือ จึงห้อยท้ายชนิดเส้นเป็น pen:d
+       เติมแบบนี้แทนการเพิ่มช่องที่ห้า ตัวอ่านรุ่นเก่าจะเห็นเป็นชนิดที่ไม่รู้จัก
+       แล้วตกไปเป็นเส้นทึบธรรมดา ซึ่งยังอ่านออก ไม่ใช่พังทั้งเส้น */
+    return (s.color || '') + '~' + (s.size || '') +
+           '~' + (s.tool || 'pen') + (s.dash ? ':d' : '') + '~' + pts.join(' ');
   }).join(';');
 }
 function hwDecode(str) {
@@ -6681,7 +6689,9 @@ function hwDecode(str) {
   return String(str).split(';').filter(Boolean).map(function (row) {
     const a = row.split('~');
     // ของเก่ามีสามช่อง (สี ขนาด จุด) ของใหม่มีสี่ (เพิ่มชนิดเส้น) รับได้ทั้งสองแบบ
-    const tool = a.length >= 4 ? (a[2] || 'pen') : 'pen';
+    const kind = String(a.length >= 4 ? (a[2] || 'pen') : 'pen').split(':');
+    const tool = kind[0] || 'pen';
+    const dash = kind[1] === 'd' ? 1 : 0;
     const raw = a.length >= 4 ? a[3] : a[2];
     let px = 0, py = 0;
     const points = (raw || '').split(' ').filter(Boolean).map(function (t) {
@@ -6690,7 +6700,8 @@ function hwDecode(str) {
       py += parseInt(q[1], 36) || 0;
       return { x: px, y: py };
     });
-    return { color: a[0] || '#1e293b', size: Number(a[1]) || 2.5, tool: tool, points: points };
+    return { color: a[0] || '#1e293b', size: Number(a[1]) || 2.5,
+             tool: tool, dash: dash, points: points };
   }).filter(function (s) { return s.points.length; });
 }
 /** วาดเส้นกลับเป็นรูป เพื่อให้ปุ่ม "ดูภาพลายมือ" ในหน้าตรวจของครูใช้ได้ทันที */
@@ -6728,9 +6739,30 @@ function hwToImage(strokes) {
       ctx.strokeStyle = s.color || '#1e293b';
       ctx.lineWidth = s.size || 2.5;
       ctx.globalCompositeOperation = 'source-over';
-      if (s.tool === 'dash') {
+      // s.tool === 'dash' คือของที่นักเรียนเขียนไว้ก่อนย้ายเส้นประมาอยู่กับปากกา
+      if (s.dash || s.tool === 'dash') {
         ctx.setLineDash([Math.max(6, (s.size || 2.5) * 3), Math.max(5, (s.size || 2.5) * 2.4)]);
       }
+    }
+    if (s.tool === 'arrow' && s.points.length) {
+      const a0 = s.points[0], b0 = s.points[s.points.length - 1];
+      const len = Math.hypot(b0.x - a0.x, b0.y - a0.y);
+      ctx.beginPath();
+      ctx.moveTo(a0.x, a0.y);
+      ctx.lineTo(b0.x, b0.y);
+      ctx.stroke();
+      if (len >= 6) {
+        ctx.setLineDash([]);                     // หัวลูกศรทึบเสมอ ไม่งั้นดูไม่ออกว่าเป็นลูกศร
+        const ang = Math.atan2(b0.y - a0.y, b0.x - a0.x);
+        const hl = Math.min(len * 0.4, Math.max(11, (s.size || 2.5) * 4.5));
+        ctx.beginPath();
+        ctx.moveTo(b0.x - hl * Math.cos(ang - 0.42), b0.y - hl * Math.sin(ang - 0.42));
+        ctx.lineTo(b0.x, b0.y);
+        ctx.lineTo(b0.x - hl * Math.cos(ang + 0.42), b0.y - hl * Math.sin(ang + 0.42));
+        ctx.stroke();
+      }
+      ctx.restore();
+      return;
     }
     ctx.beginPath();
     s.points.forEach(function (p, i) { i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y); });
@@ -6760,6 +6792,7 @@ function initHandwritingPad(k, canvasEl, wrapEl, initialStrokes, onSave) {
     tool: 'pen',
     color: '#1e293b',
     size: 2.5,
+    dash: false,               // ลักษณะเส้นของปากกาและลูกศร ไม่ใช่เครื่องมือแยกตัว
     isDrawing: false,
     curStroke: null,
     /* ลากแล้วกดค้างไว้กับที่ เส้นจะถูกดัดให้ตรง เหมือนแอปโน้ตบนไอแพด
@@ -6813,17 +6846,40 @@ function initHandwritingPad(k, canvasEl, wrapEl, initialStrokes, onSave) {
       ctx.strokeStyle = '#ffffff';
       ctx.lineWidth = 22;
       ctx.globalCompositeOperation = 'destination-out';
-    } else if (s.tool === 'dash') {
-      /* เส้นประ — ใช้ลากแนวช่วย เส้นโครง หรือแนวแรงที่ไม่ใช่เส้นจริงของรูป
-         ความยาวขีดผูกกับความหนาปากกา เส้นหนาขึ้นขีดก็ยาวขึ้นตาม จะได้ดูเป็นเส้นประเสมอ */
-      ctx.strokeStyle = s.color || '#1e293b';
-      ctx.lineWidth = s.size || 2.5;
-      ctx.setLineDash([Math.max(6, (s.size || 2.5) * 3), Math.max(5, (s.size || 2.5) * 2.4)]);
-      ctx.globalCompositeOperation = 'source-over';
     } else {
       ctx.strokeStyle = s.color || '#1e293b';
       ctx.lineWidth = s.size || 2.5;
       ctx.globalCompositeOperation = 'source-over';
+      /* เส้นประ — ใช้ลากแนวช่วย เส้นโครง หรือแนวแรงที่ไม่ใช่เส้นจริงของรูป
+         ความยาวขีดผูกกับความหนาปากกา เส้นหนาขึ้นขีดก็ยาวขึ้นตาม จะได้ดูเป็นเส้นประเสมอ
+         รุ่นก่อนเก็บเส้นประเป็นเครื่องมือชื่อ dash ต้องอ่านของเดิมได้ด้วย
+         ไม่งั้นลายมือที่นักเรียนเขียนไว้แล้วจะกลายเป็นเส้นทึบทั้งหมด */
+      if (s.dash || s.tool === 'dash') {
+        ctx.setLineDash([Math.max(6, (s.size || 2.5) * 3), Math.max(5, (s.size || 2.5) * 2.4)]);
+      }
+    }
+
+    /* ลูกศร — เอาแค่จุดเริ่มกับจุดปลาย ระหว่างทางไม่เกี่ยว จะได้เป็นเส้นตรงเสมอ */
+    if (s.tool === 'arrow') {
+      const a = s.points[0], b = s.points[s.points.length - 1];
+      const len = Math.hypot(b.x - a.x, b.y - a.y);
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y);
+      ctx.lineTo(b.x, b.y);
+      ctx.stroke();
+      if (len >= 6) {
+        // หัวลูกศรวาดทึบเสมอ ถ้าปล่อยให้เป็นเส้นประหัวจะขาดจนดูไม่ออกว่าเป็นลูกศร
+        ctx.setLineDash([]);
+        const ang = Math.atan2(b.y - a.y, b.x - a.x);
+        const hl = Math.min(len * 0.4, Math.max(11, (s.size || 2.5) * 4.5));
+        ctx.beginPath();
+        ctx.moveTo(b.x - hl * Math.cos(ang - 0.42), b.y - hl * Math.sin(ang - 0.42));
+        ctx.lineTo(b.x, b.y);
+        ctx.lineTo(b.x - hl * Math.cos(ang + 0.42), b.y - hl * Math.sin(ang + 0.42));
+        ctx.stroke();
+      }
+      ctx.restore();
+      return;
     }
 
     if (s.points.length === 1) {
@@ -6870,15 +6926,18 @@ function initHandwritingPad(k, canvasEl, wrapEl, initialStrokes, onSave) {
     try { canvasEl.setPointerCapture(e.pointerId); } catch (err) {}
     pad.isDrawing = true;
     const p = getPos(e);
+    const freeHand = pad.tool === 'pen' || pad.tool === 'arrow';
     pad.curStroke = {
       tool: pad.tool,
       color: pad.color,
-      size: pad.tool === 'pen' ? pad.size : (pad.tool === 'highlighter' ? 16 : 22),
+      size: freeHand ? pad.size : (pad.tool === 'highlighter' ? 16 : 22),
+      dash: (pad.dash && freeHand) ? 1 : 0,
       points: [p]
     };
     pad.strokes.push(pad.curStroke);
     pad.straight = false;
-    armHold();
+    // ลูกศรตรงอยู่แล้วโดยธรรมชาติ ไม่ต้องรอกดค้างเพื่อดัดให้ตรง
+    if (pad.tool !== 'arrow') armHold();
   });
 
   /* ดัดเส้นที่กำลังลากให้เป็นเส้นตรงจากจุดเริ่มถึงจุดปัจจุบัน */
@@ -6900,7 +6959,7 @@ function initHandwritingPad(k, canvasEl, wrapEl, initialStrokes, onSave) {
     if (!pad.isDrawing || !pad.curStroke) return;
     e.preventDefault();
     const p = getPos(e);
-    if (pad.straight) {
+    if (pad.straight || pad.curStroke.tool === 'arrow') {
       // ดัดเป็นเส้นตรงแล้ว ขยับต่อได้ ปลายเส้นวิ่งตามนิ้ว แต่ยังตรงอยู่
       pad.curStroke.points[1] = p;
       redraw();
@@ -6912,6 +6971,9 @@ function initHandwritingPad(k, canvasEl, wrapEl, initialStrokes, onSave) {
 
     const pts = pad.curStroke.points;
     const len = pts.length;
+    /* เส้นประต้องวาดใหม่ทั้งเส้นทุกครั้ง ถ้าต่อทีละท่อนจังหวะขีดจะไม่ต่อเนื่องกัน
+       กลายเป็นเส้นทึบตอนลาก แล้วค่อยเด้งเป็นเส้นประตอนยกปากกา ซึ่งดูสับสน */
+    if (pad.curStroke.dash) { redraw(); return; }
     if (len >= 3) {
       ctx.save();
       ctx.lineCap = 'round';
@@ -8248,6 +8310,33 @@ function presetsHTML() {
     '<span class="hint">หรือเลื่อนลงไปตั้งค่าชุดโจทย์เองได้ด้านล่าง</span></div></div>';
 }
 
+/* ── ย่อการ์ดเลือกเรื่อง ───────────────────────────────────────────────
+   รายการบทยาวเป็นหน้าจอ ครูที่ตั้งเรื่องไว้แล้วต้องเลื่อนผ่านทุกครั้ง
+   กว่าจะถึงขั้นเลือกจำนวนข้อ ย่อเก็บได้ แต่ยังต้องเห็นว่าเลือกอะไรค้างไว้ */
+const TFOLD_KEY = LS_KEY + '.tfold';
+function topicFolded(c) {
+  try {
+    const v = localStorage.getItem(TFOLD_KEY);
+    if (v === '1') return true;
+    if (v === '0') return false;
+  } catch (e) {}
+  /* ยังไม่เคยเลือกเอง — คนที่ตั้งเรื่องไว้แล้วให้ย่อไว้ก่อน
+     ส่วนคนที่ยังไม่ได้เลือกอะไรเลย ต้องเห็นรายการเต็ม ไม่งั้นไม่รู้ว่าเริ่มตรงไหน */
+  return ((c && c.topics) || []).length > 0;
+}
+function topicFoldSet(on) {
+  try { localStorage.setItem(TFOLD_KEY, on ? '1' : '0'); } catch (e) {}
+}
+/** สรุปว่าตอนนี้เลือกเรื่องอะไรไว้ ใช้แสดงตอนย่อ จะได้ไม่ต้องขยายเพื่อดู */
+function topicFoldSummary(c) {
+  const on = TOPICS.filter(function (t) { return (c.topics || []).indexOf(t.id) >= 0; });
+  if (!on.length) return 'ยังไม่ได้เลือกเรื่อง';
+  if (on.length === TOPICS.length) return 'ทุกเรื่อง (' + on.length + ' เรื่อง)';
+  const names = on.map(function (t) { return String(t.name || ''); });
+  return on.length + ' เรื่อง — ' + names.slice(0, 2).join(' · ') +
+         (names.length > 2 ? ' และอีก ' + (names.length - 2) : '');
+}
+
 function renderMake() {
   const c = mkCfg();
   const total = c.mode === 'mix' ? LEVELS.reduce((s, l) => s + (c.counts[l] || 0), 0) : c.n;
@@ -8256,8 +8345,12 @@ function renderMake() {
   // การ์ดโปรไฟล์ของผู้เรียนอยู่บนสุด เห็นเลเวลกับความคืบหน้าทันทีที่เปิดแอป
   let h = isStudent() ? (xpCardHTML() + myAssignmentsHTML()) : '';
   h += presetsHTML();
-  h += '<div class="card"><h3>' + (isStudent() ? 'ฝึกเอง — ' : '') +
-    '1. เลือกเรื่อง<span class="sub">เลือกได้มากกว่าหนึ่งเรื่อง</span></h3>' +
+  const tFold = topicFolded(c);
+  h += '<div class="card' + (tFold ? ' tfold' : '') + '"><h3>' + (isStudent() ? 'ฝึกเอง — ' : '') +
+    '1. เลือกเรื่อง<span class="sub">' +
+    esc(tFold ? topicFoldSummary(c) : 'เลือกได้มากกว่าหนึ่งเรื่อง') + '</span>' +
+    '<button class="sm" id="btnTopicFold" style="margin-left:auto">' +
+    (tFold ? '▾ ขยาย' : '▴ ย่อ') + '</button></h3>' +
     '<div class="row" style="margin-bottom:11px"><button class="sm" id="btnAllTopic">เลือกทุกบท</button>' +
     '<button class="sm" id="btnCoreTopic">เลือกทุกบท</button></div>' +
     '<div class="gridcards">';
@@ -8451,6 +8544,8 @@ function renderMake() {
   $$('[data-fx]').forEach(b => b.addEventListener('click', () => showFormulas(Number(b.dataset.fx))));
   $('#btnAllFx').addEventListener('click', showAllFormulas);
   const setTopics = ids => { c.topics = ids; c.subs = []; save(); renderMake(); };
+  const bTF = $('#btnTopicFold');
+  if (bTF) bTF.addEventListener('click', () => { topicFoldSet(!topicFolded(mkCfg())); renderMake(); });
   $('#btnAllTopic').addEventListener('click', () => setTopics(ALL_TOPIC_IDS.slice()));
   $('#btnCoreTopic').addEventListener('click', () => setTopics(TOPICS.filter(t => !t.exam).map(t => t.id)));
   $$('[data-topic]').forEach(cb => cb.addEventListener('change', e => {
@@ -9387,6 +9482,16 @@ function renderDo() {
         });
       });
 
+      /* เส้นประเป็นสวิตช์เปิดปิด ไม่ใช่เครื่องมือ กดแล้วปากกาหรือลูกศรที่ถืออยู่เปลี่ยนลักษณะเส้น */
+      const dashBtn = $('[data-esk="' + k + '"][data-hwdash]');
+      if (dashBtn) {
+        dashBtn.addEventListener('click', () => {
+          const on = !dashBtn.classList.contains('active');
+          dashBtn.classList.toggle('active', on);
+          if (pad) pad.dash = on;
+        });
+      }
+
       // Bind color swatches
       $$('[data-esk="' + k + '"][data-hwcolor]').forEach(sw => {
         sw.addEventListener('click', () => {
@@ -9576,7 +9681,8 @@ function hwPadHTML(k, hidden, footer, bgImg, tall) {
     '<div class="hw-tools">' +
     '<button class="btn-tool active" data-hwtool="pen" data-esk="' + k + '">✏️ ปากกา</button>' +
     '<button class="btn-tool" data-hwtool="highlighter" data-esk="' + k + '">🖍️ ไฮไลต์</button>' +
-    '<button class="btn-tool" data-hwtool="dash" data-esk="' + k + '">┄ เส้นประ</button>' +
+    '<button class="btn-tool" data-hwtool="arrow" data-esk="' + k + '" ' +
+    'title="ลากจากหางไปหัว ได้เส้นตรงพร้อมหัวลูกศร">➜ ลูกศร</button>' +
     '<button class="btn-tool" data-hwtool="eraser" data-esk="' + k + '">🧹 ยางลบ</button>' +
     '<div style="display:flex;gap:4px;margin-left:4px;align-items:center">' +
     '<div class="color-swatch active" data-hwcolor="#1e293b" data-esk="' + k + '" style="background:#1e293b"></div>' +
@@ -9584,10 +9690,14 @@ function hwPadHTML(k, hidden, footer, bgImg, tall) {
     '<div class="color-swatch" data-hwcolor="#dc2626" data-esk="' + k + '" style="background:#dc2626"></div>' +
     '</div>' +
     '<div style="display:flex;gap:4px;margin-left:4px;align-items:center">' +
+    /* ลักษณะเส้นของปากกาและลูกศรอยู่กลุ่มเดียวกัน — บาง กลาง หนา แล้วต่อด้วยเส้นประ
+       เส้นประไม่ใช่เครื่องมือคนละตัว เป็นแค่ลักษณะของเส้นที่ลากด้วยปากกาหรือลูกศร */
     HW_SIZES.map(function (s, si) {
       return '<button class="btn-tool' + (si === 1 ? ' active' : '') +
         '" data-hwsize="' + s.v + '" data-esk="' + k + '" title="ขนาดเส้น">' + s.id + '</button>';
-    }).join('') + '</div>' +
+    }).join('') +
+    '<button class="btn-tool" data-hwdash="1" data-esk="' + k + '" ' +
+    'title="สลับเป็นเส้นประ ใช้ได้ทั้งปากกาและลูกศร">┄ เส้นประ</button></div>' +
     '<select class="btn-tool" data-hwgrid="' + k + '" style="margin-left:4px">' +
     '<option value="bg-lined">เส้นบรรทัด</option>' +
     '<option value="bg-grid">ตารางกราฟ</option>' +

@@ -281,6 +281,10 @@ html:not([data-theme-style="minimal"]) .card::before{
 }
 .card>h3 .sub{font-weight:500; color:var(--muted); font-size:13.5px}
 
+/* การ์ดที่ย่อไว้ — ซ่อนทุกอย่างยกเว้นหัวเรื่อง หัวเรื่องยังบอกสรุปว่าเลือกอะไรไว้ */
+.card.tfold>*:not(h3){display:none}
+.card.tfold>h3{margin-bottom:0}
+
 .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .grow{flex:1 1 auto}
 .hint{font-size:13.5px;color:var(--muted)}
@@ -12519,6 +12523,33 @@ function presetsHTML() {
     '<span class="hint">หรือเลื่อนลงไปตั้งค่าชุดโจทย์เองได้ด้านล่าง</span></div></div>';
 }
 
+/* ── ย่อการ์ดเลือกเรื่อง ───────────────────────────────────────────────
+   รายการบทยาวเป็นหน้าจอ ครูที่ตั้งเรื่องไว้แล้วต้องเลื่อนผ่านทุกครั้ง
+   กว่าจะถึงขั้นเลือกจำนวนข้อ ย่อเก็บได้ แต่ยังต้องเห็นว่าเลือกอะไรค้างไว้ */
+const TFOLD_KEY = LS_KEY + '.tfold';
+function topicFolded(c) {
+  try {
+    const v = localStorage.getItem(TFOLD_KEY);
+    if (v === '1') return true;
+    if (v === '0') return false;
+  } catch (e) {}
+  /* ยังไม่เคยเลือกเอง — คนที่ตั้งเรื่องไว้แล้วให้ย่อไว้ก่อน
+     ส่วนคนที่ยังไม่ได้เลือกอะไรเลย ต้องเห็นรายการเต็ม ไม่งั้นไม่รู้ว่าเริ่มตรงไหน */
+  return ((c && c.topics) || []).length > 0;
+}
+function topicFoldSet(on) {
+  try { localStorage.setItem(TFOLD_KEY, on ? '1' : '0'); } catch (e) {}
+}
+/** สรุปว่าตอนนี้เลือกเรื่องอะไรไว้ ใช้แสดงตอนย่อ จะได้ไม่ต้องขยายเพื่อดู */
+function topicFoldSummary(c) {
+  const on = TOPICS.filter(function (t) { return (c.topics || []).indexOf(t.id) >= 0; });
+  if (!on.length) return 'ยังไม่ได้เลือกเรื่อง';
+  if (on.length === TOPICS.length) return 'ทุกเรื่อง (' + on.length + ' เรื่อง)';
+  const names = on.map(function (t) { return String(t.name || ''); });
+  return on.length + ' เรื่อง — ' + names.slice(0, 2).join(' · ') +
+         (names.length > 2 ? ' และอีก ' + (names.length - 2) : '');
+}
+
 function renderMake() {
   const c = mkCfg();
   const total = c.mode === 'mix' ? LEVELS.reduce((s, l) => s + (c.counts[l] || 0), 0) : c.n;
@@ -12527,8 +12558,12 @@ function renderMake() {
   // การ์ดโปรไฟล์ของผู้เรียนอยู่บนสุด เห็นเลเวลกับความคืบหน้าทันทีที่เปิดแอป
   let h = isStudent() ? (xpCardHTML() + myAssignmentsHTML()) : '';
   h += presetsHTML();
-  h += '<div class="card"><h3>' + (isStudent() ? 'ฝึกเอง — ' : '') +
-    '1. เลือกเรื่อง<span class="sub">เลือกได้มากกว่าหนึ่งเรื่อง</span></h3>' +
+  const tFold = topicFolded(c);
+  h += '<div class="card' + (tFold ? ' tfold' : '') + '"><h3>' + (isStudent() ? 'ฝึกเอง — ' : '') +
+    '1. เลือกเรื่อง<span class="sub">' +
+    esc(tFold ? topicFoldSummary(c) : 'เลือกได้มากกว่าหนึ่งเรื่อง') + '</span>' +
+    '<button class="sm" id="btnTopicFold" style="margin-left:auto">' +
+    (tFold ? '▾ ขยาย' : '▴ ย่อ') + '</button></h3>' +
     '<div class="row" style="margin-bottom:11px"><button class="sm" id="btnAllTopic">เลือกทุกบท</button>' +
     gradesInUse().map(g => '<button class="sm" data-gsel="' + g.id + '">' +
       (g.id ? 'เฉพาะ ' + g.label : '🎓 เฉพาะแนวข้อสอบ') + '</button>').join('') + '</div>';
@@ -12644,6 +12679,8 @@ function renderMake() {
   $$('[data-fx]').forEach(b => b.addEventListener('click', () => showFormulas(Number(b.dataset.fx))));
   $('#btnAllFx').addEventListener('click', showAllFormulas);
   const setTopics = ids => { c.topics = ids; c.subs = []; save(); renderMake(); };
+  const bTF = $('#btnTopicFold');
+  if (bTF) bTF.addEventListener('click', () => { topicFoldSet(!topicFolded(mkCfg())); renderMake(); });
   $('#btnAllTopic').addEventListener('click', () => setTopics(ALL_TOPIC_IDS.slice()));
   $$('[data-gsel]').forEach(b => b.addEventListener('click', () => {
     const g = Number(b.dataset.gsel);
