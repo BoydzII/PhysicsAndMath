@@ -20,6 +20,21 @@
  *   4) กลับมาที่แอพ → แท็บตั้งค่า → ปุ่ม "ซ่อมโครงสร้างชีต" หนึ่งครั้ง
  *      เพื่อเติมหัวตารางของคอลัมน์ใหม่ (ข้อมูลเดิมไม่หาย)
  *
+ * ── รุ่น 13 เพิ่มอะไร (คลังข้ออัตนัยอยู่บนชีต) ───────────────────────────
+ *   เดิมคลังข้ออัตนัยเก็บใน localStorage ของเบราว์เซอร์ล้วน ๆ ครูสร้างข้อบนคอมพิวเตอร์
+ *   แล้วเปิดไอแพดจึงเจอคลังเปล่าคนละใบ รุ่นนี้เพิ่มแผ่น esbank ให้ชีตเป็นตัวกลาง
+ *   เครื่องยังเก็บสำเนาไว้ใช้ตอนไม่มีเน็ตได้เหมือนเดิม แล้วค่อยซิงก์กันทีหลัง
+ *
+ *   หนึ่งข้ออาจกินหลายแถว เพราะช่องหนึ่งช่องเก็บได้ราวห้าหมื่นตัวอักษร
+ *   ข้อที่แทรกรูปไว้จึงถูกหั่นเป็นท่อน ๆ แล้วประกอบกลับตอนอ่าน
+ *   ข้อที่ลบแล้วเหลือไว้หนึ่งแถวเป็น "หลุมศพ" อย่าลบแถวนั้นทิ้งเอง
+ *   ไม่งั้นเครื่องที่ยังมีข้อนั้นอยู่จะส่งกลับขึ้นมาใหม่ทุกครั้งที่ซิงก์
+ *
+ * ── รุ่น 12 เพิ่มอะไร (แต้มสะสม เลเวล และอันดับ) ─────────────────────────
+ *   แผ่น students เพิ่มเก้าคอลัมน์ท้ายตาราง เก็บนามแฝง หน้าตา ของแต่งตัว
+ *   และแต้มจากการเข้าใช้กับการฝึกเอง ส่วนแต้มจากงานที่ครูสั่งคิดสดจากแผ่นส่งคำตอบ
+ *   จึงไม่มีทางได้ซ้ำ และย้อนหลังได้ถูกต้องเสมอแม้แก้คะแนนทีหลัง
+ *
  * ── รุ่น 8 เพิ่มอะไร (จำกัดครูผู้สอนตามวิชาด้วย) ──────────────────────────
  *   เดิมสิทธิ์ผูกกับชั้นอย่างเดียว ครูที่ได้ ม.5/1 จึงเห็น ม.5/1 ของทุกวิชาในชีตใบนี้
  *   รุ่นนี้แผ่น teachers เพิ่มคอลัมน์ท้ายตาราง "วิชาที่สอน"
@@ -102,7 +117,11 @@ var SHEETS = {
   submissions: ['ts', 'code', 'sid', 'status', 'score', 'max', 'pct', 'sec', 'revealed',
                 'answers', 'device', 'subject', 'out', 'outSec', 'autoBy'],
   teachers:    ['user', 'name', 'passHash', 'salt', 'classes', 'mustChange', 'active',
-                'lastLogin', 'createdAt', 'subjects']
+                'lastLogin', 'createdAt', 'subjects'],
+  /* คลังข้ออัตนัยของครู — หนึ่งข้ออาจกินหลายแถว ดูคำอธิบายที่หัวข้อ "คลังข้ออัตนัย" ด้านล่าง
+     คอลัมน์เนื้อข้อมูลต้องอยู่ท้ายสุดเสมอ จะได้อ่านสารบัญโดยไม่ต้องลากเนื้อข้อมูลมาด้วย */
+  esbank:      ['id', 'subject', 'topic', 'tags', 'at', 'up', 'use', 'used', 'del',
+                'bytes', 'part', 'parts', 'data']
 };
 /* หัวตารางภาษาไทยที่คนอ่านเข้าใจ — เขียนไว้ที่แถว 1 ของแต่ละแผ่น */
 var HEADERS = {
@@ -118,8 +137,16 @@ var HEADERS = {
                 'ร้อยละ', 'เวลาที่ใช้ (วินาที)', 'เปิดเฉลย', 'คำตอบรายข้อ', 'อุปกรณ์', 'วิชา',
                 'ออกจากแอป (ครั้ง)', 'เวลานอกแอป (วินาที)', 'ระบบส่งให้เพราะ'],
   teachers:    ['ชื่อผู้ใช้', 'ชื่อ-นามสกุล', 'รหัสผ่าน (เข้ารหัสแล้ว)', 'salt', 'ชั้นที่ดูแล',
-                'ต้องเปลี่ยนรหัส', 'เปิดใช้งาน', 'เข้าใช้ล่าสุด', 'สร้างเมื่อ', 'วิชาที่สอน']
+                'ต้องเปลี่ยนรหัส', 'เปิดใช้งาน', 'เข้าใช้ล่าสุด', 'สร้างเมื่อ', 'วิชาที่สอน'],
+  esbank:      ['รหัสข้อ', 'วิชา', 'บทที่', 'คำค้น', 'สร้างเมื่อ', 'แก้ล่าสุด',
+                'ถูกใช้ (ครั้ง)', 'ใช้ล่าสุด', 'ลบแล้ว', 'ขนาด (ตัวอักษร)',
+                'ท่อนที่', 'ทั้งหมดกี่ท่อน', 'เนื้อข้อสอบ']
 };
+/* คอลัมน์ของแผ่นคลังข้ออัตนัย (นับจาก 1) */
+var C_EB_ID = 1, C_EB_SUBJ = 2, C_EB_TOPIC = 3, C_EB_TAGS = 4, C_EB_AT = 5,
+    C_EB_UP = 6, C_EB_USE = 7, C_EB_USED = 8, C_EB_DEL = 9, C_EB_BYTES = 10,
+    C_EB_PART = 11, C_EB_PARTS = 12, C_EB_DATA = 13;
+
 /* ตำแหน่งคอลัมน์ที่ใช้บ่อย (นับจาก 1) */
 var C_NO = 1, C_SID = 2, C_NAME = 3, C_CLS = 4, C_HASH = 5, C_SALT = 6,
     C_MUST = 7, C_ACTIVE = 8, C_LOGIN = 9;
@@ -182,7 +209,8 @@ function looksLikeHeader_(row) {
   var low = j.toLowerCase();
   if (/(^|\|)(sid|name|no|cls|code|ts|title)(\||$)/.test(low)) return true;
   return j.indexOf('เลขประจำตัว') >= 0 || j.indexOf('เลขที่') >= 0 ||
-         j.indexOf('ชื่อ-นามสกุล') >= 0 || j.indexOf('รหัสใบงาน') >= 0 || j.indexOf('เวลาที่ส่ง') >= 0;
+         j.indexOf('ชื่อ-นามสกุล') >= 0 || j.indexOf('รหัสใบงาน') >= 0 ||
+         j.indexOf('เวลาที่ส่ง') >= 0 || j.indexOf('รหัสข้อ') >= 0;
 }
 
 /** อ่านทั้งแผ่นเป็นอาเรย์ของออบเจ็กต์ โดยยึด "ตำแหน่งคอลัมน์" ไม่ใช่ข้อความหัวตาราง
@@ -619,7 +647,7 @@ function json_(o) {
 }
 
 function doGet() {
-  return json_({ ok: true, service: 'quiz-bank', version: 12, subjects: SUBJECTS,
+  return json_({ ok: true, service: 'quiz-bank', version: 13, subjects: SUBJECTS,
                  note: 'ใช้งานผ่าน POST จากแอพเท่านั้น' });
 }
 
@@ -664,6 +692,10 @@ function route_(action, req) {
     case 'resultsList':   return apiResultsList_(req);
     case 'xpMe':          return apiXpMe_(req);
     case 'xpBoard':       return apiXpBoard_(req);
+    case 'esBankList':    return apiEsBankList_(req);
+    case 'esBankGet':     return apiEsBankGet_(req);
+    case 'esBankSave':    return apiEsBankSave_(req);
+    case 'esBankDel':     return apiEsBankDel_(req);
     case 'xpPractice':    return apiXpPractice_(req);
     case 'xpSkin':        return apiXpSkin_(req);
     case 'lockList':      return apiLockList_(req);
@@ -726,7 +758,7 @@ function apiPing_(req) {
   try { locale = String(book_().getSpreadsheetLocale() || ''); } catch (e) {}
 
   return {
-    version: 12, role: role, myClasses: myCls,
+    version: 13, role: role, myClasses: myCls,
     locale: locale, monthFirst: monthFirstSheet_(), classes: clsCount,
     teachers: Math.max(0, sheet_('teachers').getLastRow() - 1),
     needRepair: needRepair, layout: layout, subjects: SUBJECTS,
@@ -1550,6 +1582,147 @@ function apiXpBoard_(req) {
   });
   return { scope: scope, cls: myCls, total: list.length, top: top,
            me: meRow && meRow.rank > 10 ? meRow : null };
+}
+
+/* ====== คลังข้ออัตนัย ==================================================
+   ปัญหาที่แก้: คลังเดิมอยู่ใน localStorage ของเบราว์เซอร์ล้วน ๆ ครูสร้างข้อบนคอมพิวเตอร์
+   แล้วเปิดไอแพดจึงเจอคลังเปล่าคนละใบ ไม่ใช่ของหาย แต่คนละที่เก็บกันตั้งแต่แรก
+   รุ่นนี้ให้ชีตเป็นตัวกลาง เครื่องยังเก็บสำเนาไว้ทำงานตอนไม่มีเน็ตได้เหมือนเดิม
+
+   ทำไมหนึ่งข้อกินหลายแถว: ช่องหนึ่งช่องในชีตเก็บได้ราวห้าหมื่นตัวอักษร
+   ข้อที่แทรกรูปไว้โตเกินนั้นได้ง่าย จึงหั่นเป็นท่อน แถวละท่อน ใช้ id เดียวกัน
+   แล้วประกอบกลับตอนอ่านโดยเรียงตามเลขท่อน
+
+   ทำไมลบแล้วยังเก็บแถวไว้: คลังอยู่หลายเครื่อง ถ้าลบแถวทิ้งเลย เครื่องอื่นที่ยังมี
+   ข้อนั้นอยู่จะซิงก์กลับขึ้นมาใหม่ไม่รู้จบ จึงเหลือแถวเดียวไว้ทำเครื่องหมายว่าลบแล้ว
+   พร้อมเวลาที่ลบ ฝั่งเครื่องจึงรู้ว่าควรลบตามหรือควรส่งของใหม่กว่าขึ้นไปแทน
+
+   คลังนี้เป็นของครูทุกคนร่วมกัน ไม่ได้แบ่งตามชั้นเรียนเหมือนรายชื่อหรือใบงาน
+   เพราะเป็นคลังข้อสอบของวิชา ไม่ใช่ข้อมูลของนักเรียนคนไหน                */
+
+var EB_CHUNK = 45000;          // ตัวอักษรต่อหนึ่งท่อน (ช่องหนึ่งช่องรับได้ราวห้าหมื่น)
+var EB_ITEM_MAX = 900000;      // ข้อเดียวใหญ่ได้ไม่เกินนี้ กันรูปความละเอียดสูงถล่มชีต
+var EB_REPLY_MAX = 3000000;    // ตอบกลับครั้งละไม่เกินนี้ ที่เหลือให้ขอรอบต่อไป
+
+/** สารบัญของคลัง — ไม่ลากเนื้อข้อสอบมาด้วย จึงเบาพอจะเรียกทุกครั้งที่เปิดแอป */
+function apiEsBankList_(req) {
+  needAdmin_(req);
+  var subj = normSubject_(req.subject);
+  var rows = cols_('esbank', 1, C_EB_DATA - 1);
+  var out = [];
+  rows.forEach(function (r) {
+    var id = String(r[C_EB_ID - 1] == null ? '' : r[C_EB_ID - 1]).trim();
+    if (!id) return;
+    if (normSubject_(r[C_EB_SUBJ - 1]) !== subj) return;
+    if (Number(r[C_EB_PART - 1] || 1) !== 1) return;   // เอาแถวแรกของแต่ละข้อพอ
+    out.push({
+      id: id,
+      topic: String(r[C_EB_TOPIC - 1] == null ? '' : r[C_EB_TOPIC - 1]),
+      tags: String(r[C_EB_TAGS - 1] == null ? '' : r[C_EB_TAGS - 1]),
+      at: Number(r[C_EB_AT - 1]) || 0,
+      up: Number(r[C_EB_UP - 1]) || 0,
+      use: Number(r[C_EB_USE - 1]) || 0,
+      used: Number(r[C_EB_USED - 1]) || 0,
+      del: String(r[C_EB_DEL - 1]) === 'true' || Number(r[C_EB_DEL - 1]) === 1,
+      bytes: Number(r[C_EB_BYTES - 1]) || 0
+    });
+  });
+  return { subject: subj, items: out };
+}
+
+/** ดึงเนื้อข้อสอบตาม id ที่ขอมา — เกินเพดานขนาดเมื่อไรก็หยุด แล้วบอกว่ายังเหลือข้อไหน
+    ฝั่งแอปค่อยขอรอบต่อไป ดีกว่าตอบก้อนใหญ่จนหลุดเพดานของ Apps Script แล้วพังทั้งครั้ง */
+function apiEsBankGet_(req) {
+  needAdmin_(req);
+  var want = {};
+  (req.ids || []).forEach(function (i) { want[String(i).trim()] = 1; });
+  var rows = readAll_('esbank');
+  var buf = {}, order = [];
+  rows.forEach(function (r) {
+    var id = String(r.id == null ? '' : r.id).trim();
+    if (!id || !want[id]) return;
+    if (!buf[id]) {
+      buf[id] = { id: id, topic: String(r.topic == null ? '' : r.topic),
+                  tags: String(r.tags == null ? '' : r.tags),
+                  at: Number(r.at) || 0, up: Number(r.up) || 0,
+                  use: Number(r.use) || 0, used: Number(r.used) || 0,
+                  parts: [] };
+      order.push(id);
+    }
+    buf[id].parts[Math.max(1, Number(r.part) || 1) - 1] = String(r.data == null ? '' : r.data);
+  });
+  var items = [], more = [], total = 0;
+  order.forEach(function (id) {
+    var b = buf[id];
+    var data = b.parts.join('');
+    if (items.length && total + data.length > EB_REPLY_MAX) { more.push(id); return; }
+    total += data.length;
+    items.push({ id: b.id, topic: b.topic, tags: b.tags, at: b.at, up: b.up,
+                 use: b.use, used: b.used, data: data });
+  });
+  return { items: items, more: more };
+}
+
+/** ลบแถวทั้งหมดของข้อหนึ่ง แล้วเขียนแถวชุดใหม่ลงไปแทน
+    ลบจากล่างขึ้นบนเสมอ ถ้าลบจากบนลงล่างเลขแถวที่จำไว้จะเลื่อนจนลบผิดแถว */
+function ebReplace_(id, rows) {
+  var sh = sheet_('esbank');
+  var ids = cols_('esbank', C_EB_ID, 1);
+  var hits = [];
+  ids.forEach(function (r, i) {
+    if (String(r[0] == null ? '' : r[0]).trim() === id) hits.push(i + 2);
+  });
+  for (var k = hits.length - 1; k >= 0; k--) sh.deleteRow(hits[k]);
+  if (rows.length) {
+    sh.getRange(sh.getLastRow() + 1, 1, rows.length, SHEETS.esbank.length).setValues(rows);
+  }
+  dropCache_('esbank');
+}
+
+/** เก็บข้อหนึ่งขึ้นชีต — มีอยู่แล้วคือเขียนทับ ยังไม่มีคือเพิ่มใหม่ */
+function apiEsBankSave_(req) {
+  needAdmin_(req);
+  var rec = req.rec || {};
+  var id = String(rec.id == null ? '' : rec.id).trim();
+  if (!id) throw new Error('ข้อนี้ไม่มีรหัสประจำข้อ');
+  var data = String(rec.data == null ? '' : rec.data);
+  if (!data) throw new Error('ข้อนี้ไม่มีเนื้อข้อสอบ');
+  if (data.length > EB_ITEM_MAX) {
+    throw new Error('ข้อนี้ใหญ่เกินกว่าจะเก็บขึ้นชีตได้ (' +
+      Math.round(data.length / 1024) + ' KB จากเพดาน ' + Math.round(EB_ITEM_MAX / 1024) +
+      ' KB) — มักเกิดจากรูปที่แทรกไว้ ลองใช้รูปที่เล็กลง');
+  }
+  var subj = normSubject_(req.subject);
+  var now = Date.now();
+  var up = Number(rec.up) || now;
+  var lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    var parts = Math.ceil(data.length / EB_CHUNK);
+    var rows = [];
+    for (var i = 0; i < parts; i++) {
+      rows.push([id, subj, rec.topic == null ? '' : rec.topic, rec.tags == null ? '' : rec.tags,
+                 Number(rec.at) || now, up, Number(rec.use) || 0, Number(rec.used) || 0,
+                 false, data.length, i + 1, parts, data.substr(i * EB_CHUNK, EB_CHUNK)]);
+    }
+    ebReplace_(id, rows);
+    return { id: id, up: up, parts: parts, bytes: data.length };
+  } finally { lock.releaseLock(); }
+}
+
+/** ลบข้อหนึ่ง — เหลือแถวเดียวไว้เป็นหลุมศพ เครื่องอื่นจะได้ลบตาม ไม่ใช่ส่งกลับขึ้นมาใหม่ */
+function apiEsBankDel_(req) {
+  needAdmin_(req);
+  var id = String(req.id == null ? '' : req.id).trim();
+  if (!id) throw new Error('ไม่ได้บอกว่าจะลบข้อไหน');
+  var subj = normSubject_(req.subject);
+  var now = Number(req.up) || Date.now();
+  var lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    ebReplace_(id, [[id, subj, '', '', 0, now, 0, 0, true, 0, 1, 0, '']]);
+    return { id: id, up: now, deleted: true };
+  } finally { lock.releaseLock(); }
 }
 
 /* ====== ปลดล็อกนักเรียนที่กรอกรหัสผิดหลายครั้ง =========================

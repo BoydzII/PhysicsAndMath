@@ -1023,7 +1023,7 @@ html[data-theme-style="minimal"] .btn-tool.active {
    *** ห้ามลบบรรทัดเครื่องหมาย @@BUILTIN@@ ทั้งสองอัน ตัวสร้างไฟล์ใช้หาตำแหน่ง ***
    ========================================================================== */
 /* @@BUILTIN@@ */
-const BUILTIN = {"url":"https://script.google.com/macros/s/AKfycbxVa8BYYQeIhBDmg85w2UBwsIqt6a2YudehUfCbyMny9T-5TTh1UfFxsJjTk9HLNuFc/exec","studentOnly":false,"lockCloud":true,"logo":"","header":null,"about":null,"build":"2026-09-10 00:31"};
+const BUILTIN = {"url":"https://script.google.com/macros/s/AKfycbxVa8BYYQeIhBDmg85w2UBwsIqt6a2YudehUfCbyMny9T-5TTh1UfFxsJjTk9HLNuFc/exec","studentOnly":false,"lockCloud":true,"logo":"","header":null,"about":null,"build":"2026-09-10 01:13"};
 /* @@BUILTIN-END@@ */
 
 /* ถ่ายภาพซอร์สของหน้านี้ไว้ตั้งแต่สคริปต์เพิ่งเริ่มทำงาน
@@ -1237,7 +1237,7 @@ window.__LSKEY = LS_KEY;   // ให้ตัวดักหน้าขาว�
    ชีตเดียวเก็บได้หลายวิชา ฝั่งชีตใช้ค่านี้แยกใบงานและผลของแต่ละวิชาออกจากกัน */
 /* สคริปต์ในชีตที่แอปรุ่นนี้ต้องการ — ใช้เตือนตอนทดสอบการเชื่อมต่อ
    ขยับเลขนี้ทุกครั้งที่เพิ่มคำสั่งใหม่ในไฟล์ appsscript-Code.gs */
-const GS_VERSION = 12;
+const GS_VERSION = 13;
 const SUBJECT = 'physci';
 /* ────────────────────────────────────────────────────────────────────────────
    สารบัญเรื่อง — จุดเดียวที่ต้องแก้เมื่อจะ "เพิ่มบทใหม่"
@@ -6171,7 +6171,10 @@ function esBankCardHTML() {
   return '<div class="card"><h3>คลังข้อสอบอัตนัย' +
     '<span class="sub">' + all.length + ' ข้อ · ' + esBankSizeText() +
     (nImg ? ' · มีรูป ' + nImg + ' ข้อ' : '') + '</span></h3>' +
-    '<div class="hint">เก็บไว้ในเครื่องนี้ แยกตามวิชา และไม่หายเมื่อกู้คืนไฟล์สำรองหรือล้างข้อมูล<br>' +
+    '<div class="hint">' +
+    (cloudOn() ? 'เก็บไว้ทั้งในเครื่องนี้และบนชีต เปิดเครื่องอื่นก็เจอข้อเดียวกัน'
+               : 'เก็บไว้ในเครื่องนี้') +
+    ' แยกตามวิชา และไม่หายเมื่อกู้คืนไฟล์สำรองหรือล้างข้อมูล<br>' +
     (kb > 3500
       ? '<b style="color:var(--bad)">คลังใหญ่เกิน 3.5 MB แล้ว</b> ที่เก็บในเบราว์เซอร์มีราว 5 MB ' +
         'ให้ส่งออกเป็นไฟล์แล้วลบข้อที่มีรูปออกบ้าง'
@@ -6181,7 +6184,10 @@ function esBankCardHTML() {
     '<button class="sm" id="bkManage">ดูและจัดการทั้งหมด</button>' +
     '<button class="sm" id="bkExport">ส่งออกเป็นไฟล์</button>' +
     '<button class="sm" id="bkImport">นำเข้าจากไฟล์</button>' +
-    '<button class="sm" id="bkTpl">📥 แม่แบบ Excel</button></div></div>';
+    '<button class="sm" id="bkTpl">📥 แม่แบบ Excel</button>' +
+    (cloudOn() ? '<button class="sm" id="bkSync"' + (ESSYNC.busy ? ' disabled' : '') + '>' +
+                 (ESSYNC.busy ? 'กำลังซิงก์…' : '🔄 ซิงก์กับชีต') + '</button>' : '') +
+    '</div><div style="margin-top:7px">' + esBankSyncLine() + '</div></div>';
 }
 
 
@@ -6444,7 +6450,11 @@ async function esBankImport() {
     list.push(r); add++;
   });
   if (!add) { toast('ไม่มีข้อใหม่ให้เพิ่ม (มีอยู่แล้วทั้งหมด)', 'ok'); return; }
-  if (esBankWrite(list)) { toast('นำเข้า ' + add + ' ข้อแล้ว', 'ok'); renderMake(); }
+  if (esBankWrite(list)) {
+    toast('นำเข้า ' + add + ' ข้อแล้ว', 'ok');
+    renderMake();
+    esBankSync(false);        // ส่งข้อที่เพิ่งนำเข้าขึ้นชีตให้เครื่องอื่นเห็นด้วย
+  }
 }
 
 /* ── กล่องที่ครูใช้ออกข้อสอบทีละขั้น ─────────────────────────────────── */
@@ -7052,17 +7062,25 @@ function esBankPut(it, meta) {
       list[at].up = now;
       if (m.topic !== undefined) list[at].topic = m.topic;
       if (m.tags !== undefined) list[at].tags = m.tags;
-      return esBankWrite(list) ? list[at] : null;
+      const okUp = esBankWrite(list);
+      if (okUp) esBankSync(false);
+      return okUp ? list[at] : null;
     }
   }
   const rec = { id: uid(), at: now, up: now, use: 0, used: 0,
                 topic: m.topic == null ? null : Number(m.topic),
                 tags: m.tags || [], it: clean };
   list.push(rec);
-  return esBankWrite(list) ? rec : null;
+  const okNew = esBankWrite(list);
+  if (okNew) esBankSync(false);
+  return okNew ? rec : null;
 }
 function esBankDel(id) {
-  return esBankWrite(esBankAll().filter(function (r) { return r.id !== id; }));
+  // จำไว้ว่าลบเมื่อไร ไม่งั้นพอซิงก์ เครื่องอื่นที่ยังมีข้อนี้จะส่งกลับขึ้นมาใหม่
+  esBankTombAdd(id);
+  const okDel = esBankWrite(esBankAll().filter(function (r) { return r.id !== id; }));
+  esBankSync(false);
+  return okDel;
 }
 /** นับว่าถูกหยิบไปใช้ — ทำให้เรียงตาม "ใช้บ่อย" ได้ และเห็นว่าข้อไหนไม่เคยถูกใช้ */
 function esBankUsed(ids) {
@@ -7073,6 +7091,167 @@ function esBankUsed(ids) {
   });
   if (hit) esBankWrite(list);
 }
+/* ── ซิงก์คลังข้ออัตนัยกับชีต ─────────────────────────────────────────
+   คลังยังอยู่ในเครื่องเหมือนเดิม เปิดแอปไม่มีเน็ตก็ยังออกข้อสอบได้
+   ชีตทำหน้าที่เป็นตัวกลาง ให้เครื่องอื่นของครูตามของกันได้
+
+   รวมกันด้วย up (เวลาที่แก้ล่าสุด) ของแต่ละข้อ ใครใหม่กว่าคนนั้นชนะ
+   ข้อที่ลบทิ้งต้องจำไว้ทั้งสองฝั่งว่า "ลบแล้วเมื่อไร" ไม่ใช่หายไปเฉย ๆ
+   ไม่งั้นเครื่องที่ยังมีข้อนั้นอยู่จะส่งกลับขึ้นไปใหม่ทุกครั้งที่ซิงก์
+
+   จำนวนครั้งที่ถูกหยิบไปใช้ไม่ซิงก์ เป็นของใครของมัน เพราะถ้านับเป็นการแก้ไข
+   ข้อที่มีรูปจะถูกส่งขึ้นชีตใหม่ทั้งก้อนทุกครั้งที่ครูหยิบไปใช้ ซึ่งไม่คุ้มกันเลย */
+const ESBANK_TOMB_KEY = LS_KEY + '.esbanktomb';
+const ESBANK_PULL_BATCH = 15;        // ขอเนื้อข้อสอบทีละกี่ข้อต่อการเรียกหนึ่งครั้ง
+let ESSYNC = { busy: false, at: 0, msg: '', err: '' };
+
+/** ทะเบียนข้อที่ลบไปแล้ว {id: เวลาที่ลบ} — เก็บไว้ให้เครื่องอื่นรู้ว่าควรลบตาม */
+function esBankTombs() {
+  try {
+    const o = JSON.parse(localStorage.getItem(ESBANK_TOMB_KEY) || '{}');
+    return (o && typeof o === 'object') ? o : {};
+  } catch (e) { return {}; }
+}
+function esBankTombWrite(o) {
+  try { localStorage.setItem(ESBANK_TOMB_KEY, JSON.stringify(o)); } catch (e) {}
+}
+function esBankTombAdd(id) {
+  const o = esBankTombs();
+  o[id] = Date.now();
+  esBankTombWrite(o);
+}
+
+/** แปลงข้อในคลังเป็นรูปที่ส่งขึ้นชีต — เนื้อข้อสอบทั้งก้อนเป็นข้อความชิ้นเดียว */
+function esBankToWire(r) {
+  return {
+    id: r.id, at: r.at || 0, up: r.up || 0, use: r.use || 0, used: r.used || 0,
+    topic: r.topic == null ? '' : r.topic,
+    // คำค้นคั่นด้วยขึ้นบรรทัดใหม่ ไม่ใช่จุลภาค เพราะครูใส่จุลภาคในคำค้นได้
+    tags: (r.tags || []).join('\n'),
+    data: JSON.stringify(r.it || {})
+  };
+}
+function esBankFromWire(w) {
+  let it = {};
+  try { it = JSON.parse(w.data || '{}'); } catch (e) { it = {}; }
+  const tp = String(w.topic == null ? '' : w.topic).trim();
+  return {
+    id: w.id, at: Number(w.at) || 0, up: Number(w.up) || 0,
+    use: Number(w.use) || 0, used: Number(w.used) || 0,
+    topic: tp === '' ? null : Number(tp),
+    tags: String(w.tags || '').split('\n').filter(Boolean),
+    it: it
+  };
+}
+
+/** ซิงก์สองทาง — เรียกเองด้วยปุ่ม หรือเรียกเงียบ ๆ ตอนครูเปิดแอป */
+async function esBankSync(loud) {
+  if (ESSYNC.busy) return;
+  if (!canManage() || !cloudOn() || !authValid() || !isAdmin()) {
+    if (loud) toast('ต้องเชื่อมชีตและลงชื่อเข้าใช้ในฐานะครูก่อน', 'bad');
+    return;
+  }
+  ESSYNC.busy = true; ESSYNC.err = ''; ESSYNC.msg = 'กำลังซิงก์…';
+  if (loud) renderMake();
+  let pulled = 0, pushed = 0, removed = 0;
+  try {
+    const idx = await api('esBankList', {});
+    const srv = {};
+    (idx.items || []).forEach(function (r) { srv[r.id] = r; });
+    const loc = {};
+    esBankAll().forEach(function (r) { loc[r.id] = r; });
+    const tomb = esBankTombs();
+
+    const pullIds = [], pushRecs = [], delRemote = [], delLocal = [];
+    Object.keys(srv).forEach(function (id) {
+      const s = srv[id], l = loc[id], t = Number(tomb[id]) || 0;
+      if (s.del) {
+        /* ชีตบอกว่าลบแล้ว — ถ้าเครื่องนี้ยังมีของที่แก้ทีหลังการลบ แปลว่าครูตั้งใจเก็บไว้
+           จึงส่งของใหม่กว่ากลับขึ้นไปแทน ไม่ใช่ลบทิ้งตามคำสั่งเก่า */
+        if (l && (l.up || 0) > (s.up || 0)) pushRecs.push(l);
+        else if (l) delLocal.push(id);
+        return;
+      }
+      if (t > (s.up || 0)) { delRemote.push(id); return; }     // เครื่องนี้ลบทีหลังของบนชีต
+      if (!l) pullIds.push(id);
+      else if ((s.up || 0) > (l.up || 0)) pullIds.push(id);
+      else if ((l.up || 0) > (s.up || 0)) pushRecs.push(l);
+    });
+    Object.keys(loc).forEach(function (id) { if (!srv[id]) pushRecs.push(loc[id]); });
+
+    // ดึงลงมาก่อน แล้วค่อยส่งขึ้นไป จะได้ไม่ทับของใหม่ที่เพิ่งดึงมา
+    let want = pullIds.slice();
+    while (want.length) {
+      const batch = want.slice(0, ESBANK_PULL_BATCH);
+      want = want.slice(ESBANK_PULL_BATCH);
+      const got = await api('esBankGet', { ids: batch });
+      const list = esBankAll();
+      (got.items || []).forEach(function (w) {
+        const rec = esBankFromWire(w);
+        const at = list.findIndex(function (r) { return r.id === rec.id; });
+        if (at >= 0) list[at] = rec; else list.push(rec);
+        pulled++;
+      });
+      if (!esBankWrite(list)) throw new Error('ที่เก็บในเครื่องเต็ม');
+      // ข้อที่ชีตยังส่งมาไม่หมดในรอบนี้ ให้ต่อคิวไว้ขอรอบถัดไป
+      if (got.more && got.more.length) want = got.more.concat(want);
+    }
+
+    for (let i = 0; i < pushRecs.length; i++) {
+      await api('esBankSave', { rec: esBankToWire(pushRecs[i]) });
+      pushed++;
+    }
+    for (let i = 0; i < delRemote.length; i++) {
+      await api('esBankDel', { id: delRemote[i], up: Number(tomb[delRemote[i]]) || Date.now() });
+      removed++;
+    }
+    if (delLocal.length) {
+      const keep = esBankAll().filter(function (r) { return delLocal.indexOf(r.id) < 0; });
+      esBankWrite(keep);
+      removed += delLocal.length;
+    }
+    /* หลุมศพที่ชีตรับรู้แล้วไม่ต้องเก็บไว้ให้รก แต่ของที่ยังไม่ได้ส่งต้องเก็บต่อ */
+    const t2 = esBankTombs();
+    delRemote.forEach(function (id) { delete t2[id]; });
+    esBankTombWrite(t2);
+
+    ESSYNC.at = Date.now();
+    ESSYNC.msg = (pulled || pushed || removed)
+      ? 'ซิงก์แล้ว — รับมา ' + pulled + ' ข้อ · ส่งขึ้น ' + pushed + ' ข้อ' +
+        (removed ? ' · ลบ ' + removed + ' ข้อ' : '')
+      : 'ตรงกันกับชีตอยู่แล้ว';
+    if (loud) toast(ESSYNC.msg, 'ok');
+  } catch (e) {
+    const m = (e && e.message) || 'ซิงก์ไม่สำเร็จ';
+    /* ชีตรุ่นเก่ายังไม่รู้จักคำสั่งคลัง ไม่ต้องรบกวนครูตอนเปิดแอปเงียบ ๆ
+       แต่ถ้าครูกดปุ่มเอง ต้องบอกให้ชัดว่าติดที่ยังไม่ได้อัปเดตสคริปต์ชีต */
+    ESSYNC.err = /ไม่รู้จัก|ไม่รองรับ|unknown/i.test(m)
+      ? 'ชีตยังเป็นรุ่นเก่า ยังไม่รองรับคลังบนชีต — ให้ผู้ดูแลนำ appsscript-Code.gs ล่าสุดไป Deploy'
+      : m;
+    ESSYNC.msg = '';
+    if (loud) toast(ESSYNC.err, 'bad');
+  } finally {
+    ESSYNC.busy = false;
+    renderMake();
+  }
+}
+
+/** บรรทัดสถานะใต้ปุ่มซิงก์ — บอกตรง ๆ ว่าคลังนี้ตามกับชีตแล้วหรือยัง */
+function esBankSyncLine() {
+  if (!cloudOn()) {
+    return '<span class="hint">โหมดออฟไลน์ — คลังอยู่ในเครื่องนี้เท่านั้น ' +
+           'ย้ายเครื่องด้วยปุ่มส่งออก/นำเข้าไฟล์</span>';
+  }
+  if (ESSYNC.busy) return '<span class="hint">กำลังซิงก์กับชีต…</span>';
+  if (ESSYNC.err) return '<span class="hint" style="color:var(--bad)">' + esc(ESSYNC.err) + '</span>';
+  if (ESSYNC.at) {
+    const t = new Date(ESSYNC.at);
+    const hh = String(t.getHours()).padStart(2, '0') + ':' + String(t.getMinutes()).padStart(2, '0');
+    return '<span class="hint">' + esc(ESSYNC.msg) + ' · เมื่อ ' + hh + '</span>';
+  }
+  return '<span class="hint">คลังนี้ซิงก์กับชีตได้ เปิดเครื่องไหนก็เจอข้อเดียวกัน</span>';
+}
+
 /** ข้อความสั้น ๆ ที่ใช้แทนชื่อข้อในรายการ — ตัดจากโจทย์ให้พออ่านออก */
 function esBankLabel(r) {
   const s = String((r.it && r.it.stem) || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
@@ -8310,6 +8489,7 @@ function renderMake() {
   const bx = $('#bkExport'); if (bx) bx.addEventListener('click', esBankExport);
   const bi = $('#bkImport'); if (bi) bi.addEventListener('click', esBankImport);
   const bkt = $('#bkTpl'); if (bkt) bkt.addEventListener('click', esDownloadExcelTemplate);
+  const bks = $('#bkSync'); if (bks) bks.addEventListener('click', () => esBankSync(true));
   $$('[data-mktest]').forEach(b => b.addEventListener('click', () => makeTestDialog(b.dataset.mktest)));
   if (isStudent()) bindMyAssignments();
   $$('[data-start]').forEach(b => b.addEventListener('click', () => startQuiz(b.dataset.start)));
@@ -13630,6 +13810,9 @@ if (/[?&]selftest=1/.test(location.search)) {
     flushOutbox(false);
     loadMyAssignments(true);
     xpLoad(false);
+  } else if (canManage() && cloudOn() && !ESSYNC.at) {
+    // ครูเปิดแอปครั้งแรกของรอบนี้ ดึงคลังจากชีตให้เลย จะได้ไม่ต้องกดเอง
+    esBankSync(false);
   }
 }
 $('#saveState').textContent = storageOK ? 'พร้อมใช้งาน' : 'บันทึกไม่ได้';
