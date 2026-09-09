@@ -15187,6 +15187,14 @@ var HW_INSTANCES = {};
    รับได้ (ราวห้าหมื่นตัวอักษร) ส่วนเส้นที่ปัดพิกัดเป็นจำนวนเต็ม เก็บเป็นผลต่าง
    จากจุดก่อนหน้า แล้วเขียนด้วยเลขฐานสามสิบหก จะเล็กลงราวสิบเท่า
    และครูซูมดูได้คมกว่ารูป เพราะวาดใหม่จากเส้นจริง ไม่ใช่ขยายภาพ           */
+/* ค่ามาตรฐานของการเขียน รวมไว้ที่เดียว จะได้ปรับทีเดียวเหมือนกันทุกวิชา
+   HW_HOLD_MS   ลากแล้วกดค้างนานเท่านี้ เส้นจะถูกดัดให้ตรง
+   HW_ROOM_BELOW ที่ว่างใต้รูปสำหรับคำนวณ (จุดเริ่มต้น กดเพิ่มได้อีก)
+   HW_SIZES     ขนาดปากกาที่เลือกได้ ไม่ต้องเดาเอง */
+var HW_HOLD_MS = 550;
+var HW_ROOM_BELOW = 360;
+var HW_SIZES = [{ id: 'บาง', v: 1.6 }, { id: 'กลาง', v: 2.8 }, { id: 'หนา', v: 4.5 }];
+
 function hwNum(n) { n = Math.round(n); return (n < 0 ? '-' : '') + Math.abs(n).toString(36); }
 /** step > 1 = เก็บจุดเว้นจุด ใช้ตอนงานใหญ่เกินที่ชีตรับได้ ปลายเส้นเก็บไว้เสมอ */
 function hwEncode(strokes, step) {
@@ -15272,11 +15280,11 @@ function hwToImage(strokes) {
 }
 /** อ่านงานอัตนัยที่ส่งกลับมาจากชีต ให้กลับเป็นรูปแบบเดียวกับที่ทำในเครื่อง */
 function hwFromRow(a) {
-  const o = { text: (a && a.x) || '', finalAns: (a && a.f) || '', strokes: [], img: '' };
-  if (a && a.h) {
-    o.strokes = hwDecode(a.h);
-    o.img = hwToImage(o.strokes);
-  }
+  /* เก็บแต่เส้น ไม่เก็บรูป — ผลที่ดึงมาทั้งห้องมีหลายสิบคน
+     ถ้าเก็บรูปทุกคนไว้ในเครื่อง ที่เก็บของเบราว์เซอร์เต็มตั้งแต่ห้องแรก
+     หน้าตรวจของครูวาดรูปจากเส้นตอนกดดูอยู่แล้ว */
+  const o = { text: (a && a.x) || '', finalAns: (a && a.f) || '', strokes: [] };
+  if (a && a.h) o.strokes = hwDecode(a.h);
   return o;
 }
 
@@ -15293,6 +15301,12 @@ function initHandwritingPad(k, canvasEl, wrapEl, initialStrokes, onSave) {
     size: 2.5,
     isDrawing: false,
     curStroke: null,
+    /* ลากแล้วกดค้างไว้กับที่ เส้นจะถูกดัดให้ตรง เหมือนแอปโน้ตบนไอแพด
+       จับจากการที่ปลายปากกาไม่ขยับเกินสองพิกเซลติดต่อกันตามเวลาที่ตั้งไว้
+       พอดัดแล้ว ขยับต่อได้ ปลายเส้นจะวิ่งตาม แต่ยังเป็นเส้นตรงเสมอ */
+    straight: false,
+    holdTimer: null,
+    lastMove: 0,
     strokes: Array.isArray(initialStrokes) ? JSON.parse(JSON.stringify(initialStrokes)) : [],
     saveTimer: null
   };
@@ -15402,12 +15416,37 @@ function initHandwritingPad(k, canvasEl, wrapEl, initialStrokes, onSave) {
       points: [p]
     };
     pad.strokes.push(pad.curStroke);
+    pad.straight = false;
+    armHold();
   });
+
+  /* ดัดเส้นที่กำลังลากให้เป็นเส้นตรงจากจุดเริ่มถึงจุดปัจจุบัน */
+  function makeStraight() {
+    const pts = pad.curStroke && pad.curStroke.points;
+    if (!pts || pts.length < 2) return;
+    pad.straight = true;
+    pad.curStroke.points = [pts[0], pts[pts.length - 1]];
+    redraw();
+  }
+  function armHold() {
+    clearTimeout(pad.holdTimer);
+    pad.holdTimer = setTimeout(function () {
+      if (pad.isDrawing && !pad.straight) makeStraight();
+    }, HW_HOLD_MS);
+  }
 
   canvasEl.addEventListener('pointermove', e => {
     if (!pad.isDrawing || !pad.curStroke) return;
     e.preventDefault();
     const p = getPos(e);
+    if (pad.straight) {
+      // ดัดเป็นเส้นตรงแล้ว ขยับต่อได้ ปลายเส้นวิ่งตามนิ้ว แต่ยังตรงอยู่
+      pad.curStroke.points[1] = p;
+      redraw();
+      return;
+    }
+    const prev = pad.curStroke.points[pad.curStroke.points.length - 1];
+    if (prev && Math.abs(p.x - prev.x) + Math.abs(p.y - prev.y) > 2) armHold();
     pad.curStroke.points.push(p);
 
     const pts = pad.curStroke.points;
@@ -15441,6 +15480,8 @@ function initHandwritingPad(k, canvasEl, wrapEl, initialStrokes, onSave) {
 
   const endDraw = e => {
     if (!pad.isDrawing) return;
+    clearTimeout(pad.holdTimer);
+    pad.straight = false;
     pad.isDrawing = false;
     pad.curStroke = null;
     redraw();
@@ -15472,8 +15513,29 @@ function initHandwritingPad(k, canvasEl, wrapEl, initialStrokes, onSave) {
     resize();
   };
 
+  /* กระดาษที่เขียนทับรูป ต้องสูงพอให้เหลือที่ว่างใต้รูปไว้คำนวณ
+     วัดสัดส่วนรูปจริงก่อน แล้วบวกที่ว่างเพิ่มตามค่าที่ตั้งไว้
+     ทำหลังรูปโหลดเสร็จ เพราะก่อนหน้านั้นยังไม่รู้ความสูงจริงของรูป */
+  function fitToBackground() {
+    let url = '';
+    try {
+      const m = /url\(["']?([^"')]+)["']?\)/.exec(getComputedStyle(wrapEl).backgroundImage || '');
+      url = m ? m[1] : '';
+    } catch (e) { url = ''; }
+    if (!url) return;
+    const im = new Image();
+    im.onload = function () {
+      const w = wrapEl.getBoundingClientRect().width || 600;
+      if (!im.naturalWidth) return;
+      const shown = Math.round(w * im.naturalHeight / im.naturalWidth);
+      canvasEl.style.height = (shown + HW_ROOM_BELOW) + 'px';
+      resize();
+    };
+    im.src = url;
+  }
+
   HW_INSTANCES[k] = pad;
-  setTimeout(resize, 40);
+  setTimeout(function () { resize(); fitToBackground(); }, 40);
   return pad;
 }
 
@@ -17627,9 +17689,21 @@ function renderDo() {
       const wrapEl = $('#hwWrap_' + k);
       if (!cvEl || !wrapEl) return;
       const it = a.answers[k];
-      const pad = initHandwritingPad(k, cvEl, wrapEl, it.strokes, function (strokes, imgUrl) {
-        it.strokes = strokes;
-        it.img = imgUrl;
+      const pad = initHandwritingPad(k, cvEl, wrapEl, it.strokes, function (strokes) {
+        /* เก็บแต่ "เส้นที่ลาก" ไม่เก็บรูป PNG ของลายมือลงเครื่อง
+           รูปหนึ่งหน้าใหญ่ราวร้อยห้าสิบกิโลไบต์ หลายข้อหลายคนก็เต็มที่เก็บของเบราว์เซอร์
+           ส่วนเส้นเล็กกว่าสิบเท่า และวาดกลับเป็นรูปตอนครูเปิดดูได้ทุกเมื่อ
+
+           และเก็บเฉพาะที่ใช้วาดจริง — ปัดพิกัดเหลือทศนิยมตำแหน่งเดียว
+           ตัดแรงกดกับชนิดอุปกรณ์ทิ้ง เพราะตอนวาดไม่ได้ใช้ทั้งคู่
+           ขนาดที่เก็บลดลงราวสองเท่าครึ่ง โดยตาดูไม่ออกว่าต่างกัน */
+        it.strokes = strokes.map(function (s) {
+          return { tool: s.tool, color: s.color, size: s.size,
+                   points: (s.points || []).map(function (p) {
+                     return { x: Math.round(p.x * 10) / 10, y: Math.round(p.y * 10) / 10 };
+                   }) };
+        });
+        if (it.img) delete it.img;
         it.checked = !!(strokes.length || (it.finalAns && it.finalAns.trim()));
         save();
       });
@@ -17640,6 +17714,15 @@ function renderDo() {
           $$('[data-esk="' + k + '"][data-hwtool]').forEach(x => x.classList.remove('active'));
           tb.classList.add('active');
           if (pad) pad.tool = tb.dataset.hwtool;
+        });
+      });
+
+      // ขนาดเส้น — ตั้งเป็นค่ามาตรฐานสามระดับ ไม่ต้องเดาเอง
+      $$('[data-esk="' + k + '"][data-hwsize]').forEach(sb => {
+        sb.addEventListener('click', () => {
+          $$('[data-esk="' + k + '"][data-hwsize]').forEach(x => x.classList.remove('active'));
+          sb.classList.add('active');
+          if (pad) pad.size = Number(sb.dataset.hwsize) || 2.8;
         });
       });
 
@@ -17839,6 +17922,11 @@ function hwPadHTML(k, hidden, footer, bgImg, tall) {
     '<div class="color-swatch" data-hwcolor="#2563eb" data-esk="' + k + '" style="background:#2563eb"></div>' +
     '<div class="color-swatch" data-hwcolor="#dc2626" data-esk="' + k + '" style="background:#dc2626"></div>' +
     '</div>' +
+    '<div style="display:flex;gap:4px;margin-left:4px;align-items:center">' +
+    HW_SIZES.map(function (s, si) {
+      return '<button class="btn-tool' + (si === 1 ? ' active' : '') +
+        '" data-hwsize="' + s.v + '" data-esk="' + k + '" title="ขนาดเส้น">' + s.id + '</button>';
+    }).join('') + '</div>' +
     '<select class="btn-tool" data-hwgrid="' + k + '" style="margin-left:4px">' +
     '<option value="bg-lined">เส้นบรรทัด</option>' +
     '<option value="bg-grid">ตารางกราฟ</option>' +
@@ -17975,24 +18063,14 @@ function essayGuideHTML(pp, x, k, showKey) {
   h += '<div class="esq">' + M(pp.stem) + '</div>';
 
   if (x.writing) {
-    /* ข้อที่มีรูป ตั้งต้นให้เขียนทับรูปเลย เพราะเป็นสิ่งที่ครูอยากได้เป็นหลัก
-       แต่สลับไปกระดาษเปล่าได้ เผื่ออยากคำนวณยาว ๆ โดยไม่มีรูปมาบัง */
-    if (pp.img && x.onimg == null) x.onimg = 1;
-    const onImg = !!(pp.img && x.onimg);
-    if (pp.img) {
-      h += '<div class="row" style="margin-bottom:8px">' +
-        '<div class="segbtn" style="max-width:300px">' +
-        '<button class="sm ' + (onImg ? 'on' : '') + '" data-esbg="on" data-esk3="' + k + '">🖼️ เขียนทับรูป</button>' +
-        '<button class="sm ' + (onImg ? '' : 'on') + '" data-esbg="off" data-esk3="' + k + '">📄 กระดาษเปล่า</button>' +
-        '</div></div>';
-    }
-    h += (pp.img && !onImg
-            ? '<div class="esfig"><img src="' + esc(pp.img) + '" alt="รูปประกอบโจทย์"></div>' : '') +
-      hwPadHTML(k, false,
-        '<div class="hw-footer"><span>✍️ Apple Pencil' +
-        (onImg ? ' — ลากทับรูปได้เลย' : '') + '</span>' +
-        '<span>ลายมือถูกส่งให้ครูตรวจพร้อมคำตอบ</span></div>',
-        onImg ? pp.img : '', onImg);
+    /* ข้อที่มีรูป เขียนทับรูปเสมอ ครูบอกว่าไม่ต้องมีกระดาษเปล่าให้เลือก
+       เพราะมีที่ว่างใต้รูปให้คำนวณอยู่แล้ว และกดเพิ่มที่เขียนได้อีกเรื่อย ๆ */
+    h += hwPadHTML(k, false,
+      '<div class="hw-footer">' +
+      '<span>✍️ Apple Pencil' + (pp.img ? ' — ลากทับรูปได้เลย' : '') +
+      ' · ลากแล้วกดค้างไว้ เส้นจะตรงให้เอง</span>' +
+      '<span>ลายมือถูกส่งให้ครูตรวจพร้อมคำตอบ</span></div>',
+      pp.img || '', !!pp.img);
     return h;
   }
 
@@ -18083,14 +18161,6 @@ function bindEssayGuide(a, probs) {
   };
   /* สลับระหว่างตอบทีละขั้นกับเขียนแสดงวิธีทำ เก็บสถานะไว้ในคำตอบของข้อนั้น
      จะได้ไม่หลุดกลับทุกครั้งที่หน้าจอวาดใหม่ (กดเลือกกล่องทีก็วาดใหม่ที) */
-  $$('[data-esbg]').forEach(function (b) {
-    b.addEventListener('click', function () {
-      const k = Number(b.dataset.esk3);
-      a.answers[k].onimg = b.dataset.esbg === 'on' ? 1 : 0;
-      save(true);
-      renderDo();
-    });
-  });
   $$('[data-esgm]').forEach(function (b) {
     b.addEventListener('click', function () {
       const k = Number(b.dataset.esk2);
@@ -18984,8 +19054,10 @@ function showStudentItemCompare(atId) {
       if (it.text && String(it.text).trim()) {
         stuParts.push('<div style="font-size:13px;white-space:pre-wrap;color:var(--ink)"><b>วิธีทำ:</b> ' + esc(String(it.text).trim()) + '</div>');
       }
-      if (it.img) {
-        stuParts.push('<div style="margin-top:6px"><button class="sm" type="button" data-hwimg="' + esc(it.img) + '" onclick="previewImgBox(this.dataset.hwimg)">✍️ ดูภาพลายมือ iPad</button></div>');
+      /* วาดรูปจากเส้นตอนจะเปิดดูเท่านั้น ไม่ต้องเก็บรูปไว้ในเครื่องตลอดเวลา */
+      const hwPic = it.img || (it.strokes && it.strokes.length ? hwToImage(it.strokes) : '');
+      if (hwPic) {
+        stuParts.push('<div style="margin-top:6px"><button class="sm" type="button" data-hwimg="' + esc(hwPic) + '" onclick="previewImgBox(this.dataset.hwimg)">✍️ ดูภาพลายมือ iPad</button></div>');
       }
       if (!stuParts.length) {
         studentAnsHTML = '<span class="hint">(ไม่ได้ส่งคำตอบ)</span>';
