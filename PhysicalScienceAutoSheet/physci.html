@@ -4946,13 +4946,28 @@ function myAssignmentsHTML() {
   const done = {};
   DB.attempts.filter(a => a.finishedAt && a.assignCode).forEach(a => { done[a.assignCode] = a; });
 
+  /* ชั้นที่ชีตบันทึกไว้ให้นักเรียนคนนี้ ติดมากับตอนลงชื่อเข้าใช้อยู่แล้ว
+     ต้องแสดงไว้ตลอด เพราะใบงานจับคู่กับนักเรียนด้วยชั้นนี้ล้วน ๆ
+     เคยเสียเวลาไล่หาสาเหตุ "ครูมอบหมายแล้วแต่ไม่ขึ้น" อยู่หลายรอบ
+     ทั้งที่ต้นเหตุคือชั้นของใบงานกับชั้นของนักเรียนไม่ตรงกัน แต่หน้าจอไม่บอกอะไรเลย */
+  const myRoom = String((DB.profile && DB.profile.room) || '').trim();
   let h = '<div class="card"><h3>ใบงานที่ครูมอบหมาย' +
+    (myRoom ? '<span class="sub">ชั้น ' + esc(myRoom) + '</span>' : '') +
     (MYA.list ? '<span class="sub">' + MYA.list.length + ' ใบ</span>' : '') + '</h3>';
 
   if (MYA.loading) h += '<div class="hint">กำลังโหลด…</div>';
   else if (MYA.err) h += '<div class="notice bad">' + esc(MYA.err) + '</div>';
   else if (!MYA.list) h += '<div class="hint">กด <b>โหลดรายการ</b> เพื่อดูใบงานที่ครูมอบหมาย</div>';
-  else if (!MYA.list.length) h += '<div class="hint">ยังไม่มีใบงานที่มอบหมายให้ตอนนี้</div>';
+  else if (!MYA.list.length) {
+    h += '<div class="notice info">ยังไม่มีใบงานที่มอบหมายให้' +
+      (myRoom ? ' <b>' + esc(myRoom) + '</b>' : 'ชั้นของคุณ') + ' ตอนนี้' +
+      '<div class="hint" style="margin-top:5px">' +
+      (myRoom ? 'ชั้นนี้คือชั้นที่ชีตบันทึกไว้ให้คุณ — <b>ถ้าไม่ตรงกับห้องจริง ให้แจ้งครู</b> ' +
+                'เพราะใบงานจะมาถึงเฉพาะคนที่ชั้นตรงกันเท่านั้น'
+              : 'ชีตยังไม่ได้บันทึกชั้นของคุณไว้ — แจ้งครูให้เติมชั้นในรายชื่อ') +
+      '<br>ถ้าครูเพิ่งมอบหมาย ให้กด <b>โหลดรายการใหม่</b> · หรือกรอกรหัส 6 ตัวที่ครูให้มาก็ได้' +
+      '</div></div>';
+  }
   else {
     h += '<div class="tablewrap"><table><thead><tr><th>รหัส</th><th>ชื่อใบงาน</th>' +
       '<th>กำหนดส่ง</th><th>สถานะ</th><th></th></tr></thead><tbody>' +
