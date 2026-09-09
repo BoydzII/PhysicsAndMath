@@ -978,7 +978,7 @@ html[data-theme-style="minimal"] .btn-tool.active {
    *** ห้ามลบบรรทัดเครื่องหมาย @@BUILTIN@@ ทั้งสองอัน ตัวสร้างไฟล์ใช้หาตำแหน่ง ***
    ========================================================================== */
 /* @@BUILTIN@@ */
-const BUILTIN = {"url":"","studentOnly":true,"lockCloud":false,"logo":"","header":null,"about":null,"build":"2026-09-09 19:18"};
+const BUILTIN = {"url":"","studentOnly":true,"lockCloud":false,"logo":"","header":null,"about":null,"build":"2026-09-09 20:13"};
 /* @@BUILTIN-END@@ */
 
 /* ถ่ายภาพซอร์สของหน้านี้ไว้ตั้งแต่สคริปต์เพิ่งเริ่มทำงาน
@@ -9874,8 +9874,7 @@ function renderDo() {
           (pp.img ? '<div class="esfig"><img src="' + esc(pp.img) + '" alt="รูปประกอบโจทย์"></div>' : ''));
 
       if (pp.guided) {
-        // ครูเห็นถูกผิดเสมอ นักเรียนเห็นเฉพาะแบบฝึกหัด ไม่ใช่ตอนสอบ
-        h += essayGuideHTML(pp, x, k, canSeeSolution(q));
+        h += essayGuideHTML(pp, x, k);
       } else {
         /* ซ้ายคือปุ่มสลับโหมดกับช่องสรุปคำตอบ ขวาคือที่เขียนจริง
            จอแคบกว่า 900px จะกลับไปเรียงลงล่างเองตามเดิม */
@@ -10253,10 +10252,9 @@ function esWorkHTML(pp, x) {
   return h + '</div>';
 }
 
-function essayGuideHTML(pp, x, k, showKey) {
+function essayGuideHTML(pp, x, k) {
   const it = pp.it, gs = esGS(x);
   const chips = it.chips || [], eqs = it.eqs || [], vs = esVars(it);
-  const rub = x.rub || [];
   const txt = function (v) { return String(v == null ? '' : v).trim(); };
 
   /* ครูสั่งว่าอย่าบอกผ่านหรือไม่ผ่าน ให้บอกแค่ว่า "ครบ · เกิน · ขาด"
@@ -10284,16 +10282,14 @@ function essayGuideHTML(pp, x, k, showKey) {
     txt(gs.a) !== '',
     txt(gs.c) !== ''
   ];
+  /* หัวขั้นบอกแค่ "กรอกครบหรือยัง" เท่านั้น ไม่บอกผ่าน ไม่บอกคะแนน
+     ไม่ว่าจะเป็นครูเปิดดู เป็นแบบฝึกหัด หรือเป็นข้อสอบจริง
+     ของเดิมแยกทางกันตามสิทธิ์ ครูจึงยังเห็น "ผ่าน" อยู่ กลายเป็นเฉลยเวลาสาธิตให้เด็กดู
+     คะแนนกับความถูกผิดอยู่ในหน้าตรวจของครูอยู่แล้ว ไม่ต้องมาโผล่ตอนทำ */
   const stepHead = function (n, name) {
-    const ok = showKey ? rub[n - 1] : done[n - 1];
-    return '<div class="esstep' + (ok ? ' done' : '') + '"><div class="esh">' +
+    return '<div class="esstep' + (done[n - 1] ? ' done' : '') + '"><div class="esh">' +
       '<span class="esn">' + n + '</span><b>' + esc(name) + '</b>' +
-      '<span class="grow"></span><span class="hint">' +
-      (showKey
-        ? fmt(pp.max / pp.nsteps) + ' คะแนน' +
-          (ok ? ' · <span style="color:var(--ok)">ผ่าน</span>' : '')
-        : state[n - 1]) +
-      '</span></div>';
+      '<span class="grow"></span><span class="hint">' + state[n - 1] + '</span></div>';
   };
 
   let h = '<div class="row esmodebar">' +
