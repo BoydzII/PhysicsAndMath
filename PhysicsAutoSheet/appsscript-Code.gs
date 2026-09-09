@@ -312,21 +312,45 @@ function readToken_(tok) {
    ขอบเขตเก็บอยู่ใน "โทเคน" ที่เซ็นด้วย SECRET จึงแก้จากฝั่งเบราว์เซอร์ไม่ได้
    คำสั่งไหนที่คืนหรือแก้ข้อมูลนักเรียน ต้องกรองด้วย inScope_ ทุกครั้ง       */
 
+/* Google Sheet อ่าน "5/4" เป็นวันที่ ตัวเลขสองตัวจึงกลายเป็นวันกับเดือน
+   จะเรียงกลับเป็นชั้นได้ถูกต้องหรือไม่ ขึ้นกับภาษาของชีต
+     ภาษาไทย (วัน/เดือน)  "5/4" -> วันที่ 5 เดือน 4  ต้องอ่านกลับเป็น วัน/เดือน
+     ภาษาอังกฤษอเมริกา    "5/4" -> เดือน 5 วันที่ 4  ต้องอ่านกลับเป็น เดือน/วัน
+   เดาเองไม่ได้ จึงถามภาษาของชีตตรง ๆ ถามครั้งเดียวแล้วจำไว้ เพราะเรียกทีละแถวจะช้ามาก */
+var _mFirst = null;
+function monthFirstSheet_() {
+  if (_mFirst === null) {
+    var loc = '';
+    try { loc = String(book_().getSpreadsheetLocale() || ''); } catch (e) { loc = ''; }
+    // เขียนเดือนก่อนวันมีอยู่ไม่กี่ที่ ที่เหลือทั้งโลกเขียนวันก่อนเดือน
+    _mFirst = /^(en_US|en_PH|en_CA|fil_PH)$/i.test(loc);
+  }
+  return _mFirst;
+}
+/** เรียงตัวเลขจากวันที่กลับเป็นชั้น โดยยึดว่าเลขหน้าต้องเป็นระดับชั้น ม.1-ม.6 */
+function clsFromDate_(dt) {
+  var d = Number(Utilities.formatDate(dt, 'Asia/Bangkok', 'd'));
+  var m = Number(Utilities.formatDate(dt, 'Asia/Bangkok', 'M'));
+  var dm = d + '/' + m, md = m + '/' + d;
+  var dmOK = d >= 1 && d <= 6, mdOK = m >= 1 && m <= 6;
+  // ถ้ามีทางเดียวที่เป็นชั้นได้จริง ให้ใช้ทางนั้น ไม่ต้องสนภาษาของชีต
+  if (dmOK && !mdOK) return 'ม.' + dm;
+  if (mdOK && !dmOK) return 'ม.' + md;
+  // สองทางเป็นไปได้ทั้งคู่ เช่น 5/4 กับ 4/5 ตัดสินด้วยภาษาของชีต
+  return 'ม.' + (monthFirstSheet_() ? md : dm);
+}
+
 /** แปลงชื่อชั้นให้เป็นมาตรฐาน ม.X/Y และแก้กรณีชีตแปลงเป็นวันที่ เช่น 5/1 -> ม.5/1 */
 function normCls_(v) {
   if (v == null) return '';
   if (Object.prototype.toString.call(v) === '[object Date]' || (v instanceof Date)) {
-    if (!isNaN(v.getTime())) {
-      return 'ม.' + Utilities.formatDate(v, 'Asia/Bangkok', 'd/M');
-    }
+    if (!isNaN(v.getTime())) return clsFromDate_(v);
   }
   var s = String(v).trim();
   if (!s) return '';
   if (/^\d{4}-\d{2}-\d{2}T/i.test(s)) {
     var dt = new Date(s);
-    if (!isNaN(dt.getTime())) {
-      return 'ม.' + Utilities.formatDate(dt, 'Asia/Bangkok', 'd/M');
-    }
+    if (!isNaN(dt.getTime())) return clsFromDate_(dt);
   }
   var m = s.match(/^(?:ม\.?|ห้อง)\s*(\d+\/\d+)$/i);
   if (m) return 'ม.' + m[1];
@@ -582,7 +606,7 @@ function json_(o) {
 }
 
 function doGet() {
-  return json_({ ok: true, service: 'quiz-bank', version: 9, subjects: SUBJECTS,
+  return json_({ ok: true, service: 'quiz-bank', version: 10, subjects: SUBJECTS,
                  note: 'ใช้งานผ่าน POST จากแอพเท่านั้น' });
 }
 
@@ -671,8 +695,20 @@ function apiPing_(req) {
   readAll_('assignments').forEach(function (a) { bySub[normSubject_(a.subject)].assignments++; });
   submissionKeys_().forEach(function (s) { bySub[s.subject].submissions++; });
 
+  /* รายชื่อห้องที่ระบบ "อ่านได้จริง" จากชีต พร้อมจำนวนคน
+     ถ้าห้องที่เห็นตรงนี้ไม่ตรงกับที่ครูตั้งใจ แปลว่าช่องชั้นถูกแปลงเป็นวันที่
+     ใส่ไว้ให้หาสาเหตุได้จบในครั้งเดียว ไม่ต้องไล่ถามทีละจุด */
+  var clsCount = {};
+  readAll_('students').forEach(function (st) {
+    var c = normCls_(st.cls) || '(ไม่ระบุ)';
+    clsCount[c] = (clsCount[c] || 0) + 1;
+  });
+  var locale = '';
+  try { locale = String(book_().getSpreadsheetLocale() || ''); } catch (e) {}
+
   return {
-    version: 9, role: role, myClasses: myCls,
+    version: 10, role: role, myClasses: myCls,
+    locale: locale, monthFirst: monthFirstSheet_(), classes: clsCount,
     teachers: Math.max(0, sheet_('teachers').getLastRow() - 1),
     needRepair: needRepair, layout: layout, subjects: SUBJECTS,
     students: sids.length, badSid: bad, blankSid: blank, dupSid: dup,
