@@ -463,22 +463,35 @@ svg .arh2{fill:var(--ink);stroke:none}
            font-size:.62em;line-height:1.06;margin-right:1px}
 .nuc .nel{font-weight:600}
 
-/* ── เขียนตอบแบบจอคู่ ─────────────────────────────────────────────────
-   ซ้าย = โจทย์ รูป และการวิเคราะห์โจทย์ · ขวา = ขั้นตอนที่เหลือ
-   ครูขอให้วิเคราะห์โจทย์อยู่ข้างรูป จะได้ไม่ต้องเลื่อนไปมาตอนอ่านโจทย์
-   จอแคบกว่า 900px เรียงลงล่างเหมือนเดิม เพราะแบ่งครึ่งแล้วอ่านไม่ออก */
-.esq{font-size:16px;margin-bottom:8px}
+/* ── หน้าตอบข้อสอบอัตนัย ───────────────────────────────────────────────
+   โจทย์อยู่เต็มความกว้างด้านบน กรอบขั้นตอนจึงเริ่มต่ำกว่าโจทย์เสมอ
+   ของเดิมโจทย์อยู่ในคอลัมน์ซ้าย พอโจทย์ยาว กรอบฝั่งขวาจะขึ้นไปซ้อนกับโจทย์
+   ซ้าย = รูปกับโจทย์กำหนดวางคู่กัน แล้วต่อด้วยขั้นเลือกสมการ แทนค่า คำนวณ สรุป
+   ขวา = วิธีทำที่เรียงเครื่องหมายเท่ากับให้ตรงคอลัมน์เดียวกัน คำอธิบายชิดซ้าย */
+.esq{font-size:16px;margin:4px 0 12px;line-height:1.75}
 .esmodebar{margin:8px 0;align-items:center;gap:8px;flex-wrap:wrap}
-/* สมการที่แทนค่าแล้ว โชว์ค้างไว้ด้านซ้าย เห็นผลทันทีที่กรอกตัวแปร */
-.esprev{margin-top:10px;padding:9px 11px;border:1px solid var(--line);
-        border-radius:9px;background:var(--panel2)}
-.esprevline{font-size:19px;line-height:1.7;margin-top:2px;overflow-x:auto}
-.esprevline.hot{color:var(--brand);font-weight:600}
-.esprevline.ok{color:var(--ok);font-weight:700}
-@media (min-width: 900px) {
-  .esguide{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+.esrow2{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;margin-bottom:10px}
+.eswbox{padding:11px 13px;border:1px solid var(--line);border-radius:10px;background:var(--panel2)}
+.eswhint{color:var(--muted);font-size:13px;line-height:1.7}
+/* เครื่องหมายเท่ากับอยู่คอลัมน์ของตัวเอง ทุกบรรทัดจึงตรงกันเสมอ
+   ซ้ายของเท่ากับชิดขวา ขวาของเท่ากับชิดซ้าย เหมือนเขียนวิธีทำในสมุด */
+.ewgrid{display:grid;grid-template-columns:max-content max-content max-content minmax(0,1fr);
+        gap:7px 8px;align-items:baseline}
+.ewlab{color:var(--muted);font-size:12.5px;white-space:nowrap}
+.ewl{text-align:right;font-size:18px;line-height:1.7}
+.eweq{font-size:18px;color:var(--muted)}
+.ewr{font-size:18px;line-height:1.7;overflow-x:auto}
+.ewr.ok{color:var(--ok);font-weight:700}
+.ewsum{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:8px;
+       margin-top:9px;padding-top:9px;border-top:1px dashed var(--line);
+       font-size:14px;line-height:1.7}
+@media (min-width: 760px) {
+  .esrow2{grid-template-columns:minmax(0,300px) minmax(0,1fr);align-items:start}
+}
+@media (min-width: 1000px) {
+  .esguide{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,360px);
            gap:14px;align-items:start}
-  .esleft{position:sticky;top:8px}
+  .esright{position:sticky;top:8px}
   .es-split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);
             gap:12px;align-items:start}
   .es-split > .es-write{grid-column:2;grid-row:1 / span 9;position:sticky;top:8px}
@@ -8870,7 +8883,16 @@ function renderDo() {
    เดิมมีเฉพาะข้ออิสระ ข้อที่ครูตั้งกล่องให้เลือกและแทนค่าจึงไม่มีที่แสดงวิธีทำ
    ทั้งที่นักเรียนทำบนไอแพดและมีปากกาอยู่ในมือ ทำเป็นตัวสร้างตัวเดียว
    ไอดีและปุ่มจึงเหมือนกันเป๊ะ ตัวผูกเหตุการณ์ชุดเดิมใช้ได้กับทั้งสองแบบทันที */
-function hwPadHTML(k, hidden, footer) {
+function hwPadHTML(k, hidden, footer, bgImg, tall) {
+  /* เขียนทับรูปโจทย์ได้ — ลากแนวแรง ลากเส้นช่วย หรือกากบาทลงบนรูปได้เลย
+     ใช้เป็นภาพพื้นหลังของกรอบ ผืนผ้าใบยังเป็นชั้นบนเหมือนเดิม เส้นที่ลากจึงไม่ถูกรูปบัง
+     ตั้งขนาดเป็น 100% auto ชิดบน ไม่ใช่ contain เพราะกด "เพิ่มที่เขียน" แล้วกรอบสูงขึ้น
+     ถ้าใช้ contain รูปจะถูกยืดตาม แล้วลายมือที่เขียนไว้จะเลื่อนไม่ตรงกับรูปอีก */
+  const safe = bgImg ? String(bgImg).replace(/["')\s]/g, '') : '';
+  const wrapCls = safe ? 'bg-blank' : 'bg-lined';
+  const wrapSty = safe ? ' style="background-image:url(' + safe + ');' +
+    'background-size:100% auto;background-repeat:no-repeat;background-position:top center"' : '';
+  const cvSty = tall ? ' style="height:460px"' : '';
   return '<div id="hwBox_' + k + '" style="' + (hidden ? 'display:none' : '') + '">' +
     '<div class="hw-bar">' +
     '<div class="hw-tools">' +
@@ -8894,13 +8916,13 @@ function hwPadHTML(k, hidden, footer) {
     '<button class="btn-tool" data-hwact="clear" data-esk="' + k + '">🗑️ ล้าง</button>' +
     '<button class="btn-tool" data-hwact="expand" data-esk="' + k + '">➕ เพิ่มที่เขียน</button>' +
     '</div></div>' +
-    '<div class="hw-canvas-wrap bg-lined" id="hwWrap_' + k + '">' +
-    '<canvas class="hw-canvas" id="hwCanvas_' + k + '" data-esk="' + k + '"></canvas>' +
+    '<div class="hw-canvas-wrap ' + wrapCls + '" id="hwWrap_' + k + '"' + wrapSty + '>' +
+    '<canvas class="hw-canvas" id="hwCanvas_' + k + '" data-esk="' + k + '"' + cvSty + '></canvas>' +
     '</div>' + (footer || '') + '</div>';
 }
 
-/** สมการที่แทนค่าแล้ว — เอาไว้โชว์ด้านซ้ายให้เห็นเป็นสมการสวย ๆ ทันทีที่กรอกตัวแปร
-    ต้องกันชื่อฟังก์ชันไว้ก่อนแทนค่า ไม่งั้นตัว a ใน frac() จะโดนแทนค่าไปด้วย */
+/** สมการที่แทนค่าแล้ว — ต้องกันชื่อฟังก์ชันไว้ก่อนแทนค่า
+    ไม่งั้นตัว s ใน frac() จะโดนแทนค่าไปด้วย */
 function esSubstShow(it, gs) {
   const eq = esSubstEq(it);
   if (!eq) return '';
@@ -8916,21 +8938,51 @@ function esSubstShow(it, gs) {
   return t.replace(/@@(\d+)@@/g, function (m, i) { return keep[Number(i)]; });
 }
 
-/** กล่องสรุปด้านซ้าย — สมการที่ใช้ สมการที่แทนค่าแล้ว และคำตอบที่กรอก
-    ครูขอให้เห็นผลเป็นสมการสวย ๆ ทันทีที่กดเลือกตัวแปร จะได้ไม่ต้องเลื่อนไปมา */
-function esPreviewHTML(pp, x) {
-  const it = pp.it, gs = esGS(x), eq = esSubstEq(it);
-  if (!eq) return '';
-  const sub = esSubstShow(it, gs), ans = String(gs.a == null ? '' : gs.a).trim();
-  return '<div class="esprev">' +
-    '<div class="hint">สมการที่ใช้แทนค่า</div>' +
-    '<div class="esprevline">' + M(eq.t) + '</div>' +
-    (sub && sub !== String(eq.t || '')
-      ? '<div class="hint" style="margin-top:7px">แทนค่าแล้ว</div>' +
-        '<div class="esprevline hot">' + M(sub) + '</div>' : '') +
-    (ans ? '<div class="hint" style="margin-top:7px">คำตอบที่กรอก</div>' +
-           '<div class="esprevline ok">' + M(ans) + ' ' + esc(it.au || '') + '</div>' : '') +
-    '</div>';
+/** บรรทัดของ "วิธีทำ" ที่ก่อตัวขึ้นเรื่อย ๆ ตามที่นักเรียนกรอก
+    ครูขอให้ฝั่งขวาแสดงเป็นวิธีทำจริง ไม่ใช่แค่ช่องกรอกซ้ำ */
+function esWorkLines(pp, x) {
+  const it = pp.it, gs = esGS(x), eqs = it.eqs || [];
+  const at = function (i) { return (eqs[i] && eqs[i].t) ? String(eqs[i].t) : ''; };
+  const out = [];
+  if (gs.e[0] != null && at(gs.e[0])) out.push({ lab: 'สมการหลัก', t: at(gs.e[0]) });
+  if (gs.e[1] != null && gs.e[1] !== gs.e[0] && at(gs.e[1])) {
+    out.push({ lab: 'จัดรูปสมการ', t: at(gs.e[1]) });
+  }
+  const sub = esSubstShow(it, gs), base = esSubstEq(it);
+  if (sub && base && sub !== String(base.t || '')) out.push({ lab: 'แทนค่า', t: sub });
+  const ans = String(gs.a == null ? '' : gs.a).trim();
+  if (ans) {
+    // ขึ้นต้นด้วยตัวที่โจทย์ถามหา เครื่องหมายเท่ากับจะได้เรียงตรงกับบรรทัดบน
+    const lhs = base ? String(base.t || '').split('=')[0].trim() : '';
+    out.push({ lab: 'คำตอบ', t: (lhs ? lhs + ' = ' : '') + ans + (it.au ? ' ' + it.au : ''), ok: 1 });
+  }
+  return out;
+}
+
+/** วิธีทำฝั่งขวา — แยกที่เครื่องหมายเท่ากับตัวแรก เพื่อให้ทุกบรรทัดเรียงตรงคอลัมน์เดียวกัน
+    คำอธิบายชิดซ้าย ตามที่ครูขอ */
+function esWorkHTML(pp, x) {
+  const lines = esWorkLines(pp, x), gs = esGS(x);
+  const sum = String(gs.c == null ? '' : gs.c).trim();
+  let h = '<div class="eswork">';
+  if (!lines.length) {
+    h += '<div class="eswhint">เลือกสมการและกรอกตัวเลขทางซ้าย ' +
+      'แล้ววิธีทำจะขึ้นมาให้ตรงนี้ทีละบรรทัด</div>';
+  } else {
+    h += '<div class="ewgrid">' + lines.map(function (L) {
+      const i = String(L.t).indexOf('=');
+      const lhs = i > 0 ? L.t.slice(0, i) : '';
+      const rhs = i > 0 ? L.t.slice(i + 1) : L.t;
+      return '<span class="ewlab">' + esc(L.lab) + '</span>' +
+        '<span class="ewl">' + (lhs ? M(lhs) : '') + '</span>' +
+        '<span class="eweq">' + (i > 0 ? '=' : '') + '</span>' +
+        '<span class="ewr' + (L.ok ? ' ok' : '') + '">' + M(rhs) + '</span>';
+    }).join('') + '</div>';
+  }
+  if (sum) {
+    h += '<div class="ewsum"><span class="ewlab">สรุป</span><div>' + esc(sum) + '</div></div>';
+  }
+  return h + '</div>';
 }
 
 function essayGuideHTML(pp, x, k, showKey) {
@@ -8938,79 +8990,103 @@ function essayGuideHTML(pp, x, k, showKey) {
   const chips = it.chips || [], eqs = it.eqs || [], vs = esVars(it);
   const rub = x.rub || [];
   const txt = function (v) { return String(v == null ? '' : v).trim(); };
-  /* "กรอกครบหรือยัง" ของแต่ละขั้น — คนละเรื่องกับ "ถูกหรือไม่" ใช้ตอนทำข้อสอบ */
-  const filled = [
-    (gs.g || []).length > 0 && gs.f != null,
-    gs.e && gs.e[0] != null && gs.e[1] != null,
-    !vs.length || vs.every(function (v) { return txt((gs.v || {})[v.s]) !== ''; }),
+
+  /* ครูสั่งว่าอย่าบอกผ่านหรือไม่ผ่าน ให้บอกแค่ว่า "ครบ · เกิน · ขาด"
+     ซึ่งบอกแค่จำนวน ไม่ได้บอกว่าตัวไหนถูก เด็กจึงยังต้องคิดเองว่าเลือกอะไร */
+  const tally = function (n, need) {
+    if (!need) return n ? 'กรอกแล้ว' : 'ยังไม่ได้กรอก';
+    if (!n) return 'ยังไม่ได้เลือก';
+    if (n < need) return '<span style="color:var(--warn)">ขาดอีก ' + (need - n) + '</span>';
+    if (n > need) return '<span style="color:var(--bad)">เกินมา ' + (n - need) + '</span>';
+    return '<span style="color:var(--ok)">ครบ</span>';
+  };
+  const nGiven = chips.filter(function (c) { return c.r === 1 || c.r === '1'; }).length;
+  const nVarOK = vs.filter(function (v) { return txt((gs.v || {})[v.s]) !== ''; }).length;
+  const state = [
+    tally((gs.g || []).length, nGiven) + (gs.f == null ? ' · ยังไม่เลือกสิ่งที่ถามหา' : ' · เลือกสิ่งที่ถามหาแล้ว'),
+    tally((gs.e[0] != null ? 1 : 0) + (gs.e[1] != null ? 1 : 0), 2),
+    vs.length ? tally(nVarOK, vs.length) : 'ไม่มีตัวแปรให้กรอก',
+    tally(txt(gs.a) !== '' ? 1 : 0, 0),
+    tally(txt(gs.c) !== '' ? 1 : 0, 0)
+  ];
+  const done = [
+    (gs.g || []).length === nGiven && gs.f != null,
+    gs.e[0] != null && gs.e[1] != null,
+    !vs.length || nVarOK === vs.length,
     txt(gs.a) !== '',
     txt(gs.c) !== ''
   ];
-  /* ระหว่างทำข้อสอบห้ามบอกว่าขั้นไหนผ่าน ไม่งั้นกลายเป็นเฉลยไปในตัว
-     เด็กกดสุ่มไปเรื่อย ๆ จนเขียวครบทุกขั้นได้โดยไม่ต้องคิดเลย
-     แบบฝึกหัดกับฝั่งครูยังบอกตามเดิม เพราะมีไว้ให้ฝึกจนถูก และครูต้องเห็นของจริง */
   const stepHead = function (n, name) {
-    const ok = showKey ? rub[n - 1] : filled[n - 1];
+    const ok = showKey ? rub[n - 1] : done[n - 1];
     return '<div class="esstep' + (ok ? ' done' : '') + '"><div class="esh">' +
       '<span class="esn">' + n + '</span><b>' + esc(name) + '</b>' +
       '<span class="grow"></span><span class="hint">' +
       (showKey
         ? fmt(pp.max / pp.nsteps) + ' คะแนน' +
           (ok ? ' · <span style="color:var(--ok)">ผ่าน</span>' : '')
-        : (ok ? '<span style="color:var(--ok)">กรอกแล้ว</span>' : 'ยังไม่ได้กรอก')) +
+        : state[n - 1]) +
       '</span></div>';
   };
 
-  /* สองโหมด สลับด้วยปุ่ม และ "ห้ามอยู่หน้าจอเดียวกัน" เด็ดขาด
-     บนไอแพด ถ้ามีช่องกรอกอยู่ข้าง ๆ กระดาษเขียน ระบบเขียนด้วยมือของ iPad (Scribble)
-     จะแปลงลายมือเป็นตัวอักษรแล้วยัดลงช่องนั้นทันที ครูเจอจริงว่าวาดรูปแล้วกลายเป็นตัวเลข
-     แยกหน้าจอกันไปเลยจึงเป็นทางเดียวที่กันได้จริง หน้าเว็บสั่งปิด Scribble ไม่ได้ */
   let h = '<div class="row esmodebar">' +
     '<div class="segbtn" style="max-width:320px">' +
     '<button class="sm ' + (x.writing ? '' : 'on') + '" data-esgm="ans" data-esk2="' + k + '">📝 ตอบทีละขั้น</button>' +
-    '<button class="sm ' + (x.writing ? 'on' : '') + '" data-esgm="write" data-esk2="' + k + '">✍️ แสดงวิธีทำ</button>' +
+    '<button class="sm ' + (x.writing ? 'on' : '') + '" data-esgm="write" data-esk2="' + k + '">✍️ เขียนด้วยปากกา</button>' +
     '</div><span class="hint grow">' +
-    (x.writing ? 'เขียนได้เต็มหน้าจอ ไม่มีช่องกรอกมากวนปากกา'
-               : 'จะเขียนแสดงวิธีทำ ให้กดปุ่ม "แสดงวิธีทำ"') + '</span></div>';
+    (x.writing ? 'โหมดเขียน — ไม่มีช่องกรอกบนจอ ปากกาจึงไม่ไปแปลงเป็นตัวอักษร'
+               : 'กรอกทางซ้าย วิธีทำจะขึ้นทางขวาให้เอง') + '</span></div>';
+
+  /* โจทย์อยู่นอกตารางและเต็มความกว้าง กรอบขั้นตอนจึงเริ่มต่ำกว่าโจทย์เสมอ
+     ของเดิมโจทย์อยู่ในคอลัมน์ซ้าย พอโจทย์ยาว กรอบฝั่งขวาจะขึ้นไปซ้อนกับโจทย์ */
+  h += '<div class="esq">' + M(pp.stem) + '</div>';
 
   if (x.writing) {
-    h += '<div class="esq">' + M(pp.stem) + '</div>' +
-      (pp.img ? '<div class="esfig"><img src="' + esc(pp.img) + '" alt="รูปประกอบโจทย์"></div>' : '') +
+    /* ข้อที่มีรูป ตั้งต้นให้เขียนทับรูปเลย เพราะเป็นสิ่งที่ครูอยากได้เป็นหลัก
+       แต่สลับไปกระดาษเปล่าได้ เผื่ออยากคำนวณยาว ๆ โดยไม่มีรูปมาบัง */
+    if (pp.img && x.onimg == null) x.onimg = 1;
+    const onImg = !!(pp.img && x.onimg);
+    if (pp.img) {
+      h += '<div class="row" style="margin-bottom:8px">' +
+        '<div class="segbtn" style="max-width:300px">' +
+        '<button class="sm ' + (onImg ? 'on' : '') + '" data-esbg="on" data-esk3="' + k + '">🖼️ เขียนทับรูป</button>' +
+        '<button class="sm ' + (onImg ? '' : 'on') + '" data-esbg="off" data-esk3="' + k + '">📄 กระดาษเปล่า</button>' +
+        '</div></div>';
+    }
+    h += (pp.img && !onImg
+            ? '<div class="esfig"><img src="' + esc(pp.img) + '" alt="รูปประกอบโจทย์"></div>' : '') +
       hwPadHTML(k, false,
-        '<div class="hw-footer"><span>✍️ Apple Pencil — เขียนได้เต็มความกว้าง</span>' +
-        '<span>ลายมือถูกส่งให้ครูตรวจพร้อมคำตอบ</span></div>');
+        '<div class="hw-footer"><span>✍️ Apple Pencil' +
+        (onImg ? ' — ลากทับรูปได้เลย' : '') + '</span>' +
+        '<span>ลายมือถูกส่งให้ครูตรวจพร้อมคำตอบ</span></div>',
+        onImg ? pp.img : '', onImg);
     return h;
   }
 
-  h += '<div class="esguide" data-esg="' + k + '">';
+  h += '<div class="esguide" data-esg="' + k + '"><div class="esleft">';
 
-  /* ── ซ้าย: โจทย์ รูป ขั้นที่ 1 และสมการที่แทนค่าแล้ว ────────────────────
-     ครูขอให้วิเคราะห์โจทย์อยู่ข้างรูป จะได้ไม่ต้องเลื่อนไปมาระหว่างอ่านโจทย์กับเลือกกล่อง */
-  h += '<div class="esleft">' +
-    '<div class="esq">' + M(pp.stem) + '</div>' +
-    (pp.img ? '<div class="esfig"><img src="' + esc(pp.img) + '" alt="รูปประกอบโจทย์"></div>' : '') +
-    stepHead(1, 'วิเคราะห์โจทย์') +
-    '<div class="hint">แตะเลือก<b>ทุกอย่างที่โจทย์กำหนดมาให้</b> แล้วเลือก<b>สิ่งที่โจทย์ถามหา</b>อีกหนึ่งอย่าง</div>' +
-    '<div class="hint" style="margin-top:7px">โจทย์กำหนด</div><div class="eschips">' +
-    chips.map(function (c, ci) {
-      return '<button class="eschip' + ((gs.g || []).indexOf(ci) >= 0 ? ' sel' : '') +
-        '" data-esg1="' + k + '" data-ci="' + ci + '">' + M(c.t) + '</button>';
-    }).join('') + '</div>' +
-    '<div class="hint" style="margin-top:9px">โจทย์ถามหา</div><div class="eschips">' +
-    chips.map(function (c, ci) {
-      return '<button class="eschip find' + (gs.f === ci ? ' sel' : '') +
-        '" data-esg1f="' + k + '" data-ci="' + ci + '">' + M(c.t) + '</button>';
-    }).join('') + '</div></div>' +
-    esPreviewHTML(pp, x) +
-    '</div>';
-
-  /* ── ขวา: ขั้นที่ 2 ถึง 5 และแป้นกด ─────────────────────────────────── */
-  h += '<div class="esright">';
+  /* แถวบนของฝั่งซ้าย — รูปอยู่ซ้าย โจทย์กำหนดอยู่ขวาของรูป ตามที่ครูขอ */
+  h += '<div class="esrow2">' +
+    '<div>' + (pp.img
+      ? '<div class="esfig"><img src="' + esc(pp.img) + '" alt="รูปประกอบโจทย์"></div>'
+      : '<div class="hint">ข้อนี้ไม่มีรูปประกอบ</div>') + '</div>' +
+    '<div>' + stepHead(1, 'วิเคราะห์โจทย์') +
+      '<div class="hint">เลือก<b>ทุกอย่างที่โจทย์กำหนดมาให้</b> แล้วเลือก<b>สิ่งที่โจทย์ถามหา</b>อีกหนึ่งอย่าง</div>' +
+      '<div class="hint" style="margin-top:7px">โจทย์กำหนด</div><div class="eschips">' +
+      chips.map(function (c, ci) {
+        return '<button class="eschip' + ((gs.g || []).indexOf(ci) >= 0 ? ' sel' : '') +
+          '" data-esg1="' + k + '" data-ci="' + ci + '">' + M(c.t) + '</button>';
+      }).join('') + '</div>' +
+      '<div class="hint" style="margin-top:9px">โจทย์ถามหา</div><div class="eschips">' +
+      chips.map(function (c, ci) {
+        return '<button class="eschip find' + (gs.f === ci ? ' sel' : '') +
+          '" data-esg1f="' + k + '" data-ci="' + ci + '">' + M(c.t) + '</button>';
+      }).join('') + '</div></div>' +
+    '</div></div>';
 
   h += stepHead(2, 'สมการที่ใช้') +
     '<div class="hint">เลือกสองครั้ง — <b>สมการหลัก</b>ที่เป็นหลักการของเรื่องนี้ ' +
-    'แล้ว<b>สมการที่แปลงแล้ว</b>ที่ย้ายข้างจนได้ตัวที่โจทย์ถาม<br>' +
-    'ถ้าข้อนี้ใช้สมการเดียวไม่ต้องแปลง ให้<b>เลือกตัวเดิมซ้ำ</b>เพื่อยืนยัน</div>';
+    'แล้ว<b>สมการที่แปลงแล้ว</b>ที่ย้ายข้างจนได้ตัวที่โจทย์ถาม ' +
+    'ถ้าไม่ต้องแปลงให้<b>เลือกตัวเดิมซ้ำ</b></div>';
   [0, 1].forEach(function (slot) {
     h += '<div class="hint" style="margin-top:8px">' + (slot ? 'สมการที่แปลงแล้ว' : 'สมการหลัก') + '</div>' +
       '<div class="eseqs">' + eqs.map(function (e, ei) {
@@ -9022,11 +9098,9 @@ function essayGuideHTML(pp, x, k, showKey) {
 
   const useEq = esSubstEq(it);
   h += stepHead(3, 'แทนค่าลงในสมการ') +
-    (useEq ? '<div class="esuse">แทนค่าลงใน ' + M(useEq.t) +
-      (useEq.r === 'd' ? ' <span class="hint">(สมการที่แปลงแล้ว)</span>' : '') + '</div>' : '') +
+    (useEq ? '<div class="esuse">แทนค่าลงใน ' + M(useEq.t) + '</div>' : '') +
     (vs.length
-      ? '<div class="hint">เติมตัวเลขของแต่ละตัวแปร ตามที่โจทย์กำหนด (ไม่ต้องพิมพ์หน่วย)</div>' +
-        '<div class="esvars">' + vs.map(function (v) {
+      ? '<div class="esvars">' + vs.map(function (v) {
           return '<div class="esvar"><label>' + M(v.s) + '</label>' +
             '<input type="text" inputmode="decimal" class="eskb" data-esg3="' + k +
             '" data-vs="' + esc(v.s) + '" value="' + esc((gs.v || {})[v.s] || '') + '">' +
@@ -9035,16 +9109,15 @@ function essayGuideHTML(pp, x, k, showKey) {
       : '<div class="hint">ข้อนี้ครูยังไม่ได้กำหนดตัวแปรไว้</div>') + '</div>';
 
   h += stepHead(4, 'คำนวณคำตอบ') +
-    '<div class="hint">คำนวณแล้วกรอกคำตอบที่ได้ (ไม่ต้องพิมพ์หน่วย)</div>' +
     '<div class="esvar" style="margin-top:7px"><label>คำตอบ</label>' +
     '<input type="text" inputmode="decimal" class="eskb" data-esg4="' + k + '" value="' +
     esc(gs.a || '') + '"><span class="unit">' + esc(it.au || '') + '</span></div></div>';
 
   if (pp.nsteps === 5) {
     h += stepHead(5, 'สรุปคำตอบพร้อมหน่วย') +
-      '<div class="hint">เขียนสรุปเป็นประโยค ต้องมีทั้ง<b>ตัวเลขคำตอบ</b>และ<b>หน่วย</b></div>' +
+      '<div class="hint">เขียนเป็นประโยค ต้องมีทั้ง<b>ตัวเลข</b>และ<b>หน่วย</b></div>' +
       '<textarea data-esg5="' + k + '" rows="2" style="width:100%;margin-top:7px;font-size:16px" ' +
-      'placeholder="เช่น แรงลัพธ์มีขนาด 6 นิวตัน">' + esc(gs.c || '') + '</textarea></div>';
+      'placeholder="เช่น ความเร่งมีขนาด 6 เมตรต่อวินาทีกำลังสอง">' + esc(gs.c || '') + '</textarea></div>';
   }
 
   h += '<div class="eskeys" data-eskeys="' + k + '">' +
@@ -9054,11 +9127,15 @@ function essayGuideHTML(pp, x, k, showKey) {
         const cls = ('÷×−+()^√π' + '×10^').indexOf(t) >= 0 || t === '×10^' ? ' op' : '';
         return '<button class="eskey' + (t === 'ลบ' || t === 'ล้าง' ? ' warn' : cls) +
           '" data-esk="' + esc(t) + '">' + esc(t) + '</button>';
-      }).join('') + '</div>' +
-    '<div class="hint" style="margin-top:6px">แป้นกดนี้พิมพ์ลงในช่องที่แตะล่าสุด — ' +
-    'ใช้ตอนไม่อยากสลับแป้นพิมพ์บนไอแพด</div>';
+      }).join('') + '</div>';
 
-  h += '</div>';
+  h += '</div>';                                  // ปิดคอลัมน์ซ้าย
+
+  /* ── ขวา: วิธีทำที่เรียงเครื่องหมายเท่ากับให้ตรงกัน ───────────────────── */
+  h += '<div class="esright"><div class="eswbox">' +
+    '<div class="hint" style="margin-bottom:6px"><b>แสดงวิธีทำ</b></div>' +
+    esWorkHTML(pp, x) + '</div></div>';
+
   return h + '</div>';
 }
 
@@ -9072,6 +9149,14 @@ function bindEssayGuide(a, probs) {
   };
   /* สลับระหว่างตอบทีละขั้นกับเขียนแสดงวิธีทำ เก็บสถานะไว้ในคำตอบของข้อนั้น
      จะได้ไม่หลุดกลับทุกครั้งที่หน้าจอวาดใหม่ (กดเลือกกล่องทีก็วาดใหม่ที) */
+  $$('[data-esbg]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      const k = Number(b.dataset.esk3);
+      a.answers[k].onimg = b.dataset.esbg === 'on' ? 1 : 0;
+      save(true);
+      renderDo();
+    });
+  });
   $$('[data-esgm]').forEach(function (b) {
     b.addEventListener('click', function () {
       const k = Number(b.dataset.esk2);
