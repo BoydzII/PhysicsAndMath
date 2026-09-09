@@ -95,7 +95,8 @@ function reqSubject_(req) { return normSubject_(req && req.subject); }
    ⚠ คอลัมน์ใหม่ต้อง "ต่อท้าย" เท่านั้น ห้ามแทรกกลาง
      เพราะแถวเก่าอ่านตามตำแหน่ง ถ้าแทรกกลางข้อมูลเดิมจะเลื่อนผิดหมด */
 var SHEETS = {
-  students:    ['no', 'sid', 'name', 'cls', 'passHash', 'salt', 'mustChange', 'active', 'lastLogin'],
+  students:    ['no', 'sid', 'name', 'cls', 'passHash', 'salt', 'mustChange', 'active', 'lastLogin',
+                'alias', 'avatar', 'gear', 'showName', 'xpLogin', 'xpPrac', 'xpDay', 'xpDays', 'xpPracDay'],
   assignments: ['code', 'title', 'cls', 'spec', 'baseSeed', 'perStudent', 'g', 'easyG10',
                 'openAt', 'closeAt', 'active', 'createdAt', 'subject', 'piMode'],
   submissions: ['ts', 'code', 'sid', 'status', 'score', 'max', 'pct', 'sec', 'revealed',
@@ -106,7 +107,10 @@ var SHEETS = {
 /* หัวตารางภาษาไทยที่คนอ่านเข้าใจ — เขียนไว้ที่แถว 1 ของแต่ละแผ่น */
 var HEADERS = {
   students:    ['เลขที่', 'เลขประจำตัว', 'ชื่อ-นามสกุล', 'ชั้น',
-                'รหัสผ่าน (เข้ารหัสแล้ว)', 'salt', 'ต้องเปลี่ยนรหัส', 'เปิดใช้งาน', 'เข้าใช้ล่าสุด'],
+                'รหัสผ่าน (เข้ารหัสแล้ว)', 'salt', 'ต้องเปลี่ยนรหัส', 'เปิดใช้งาน', 'เข้าใช้ล่าสุด',
+                'นามแฝง', 'หน้าตา', 'ของแต่งตัว', 'เปิดเผยชื่อ',
+                'แต้มเข้าใช้', 'แต้มฝึกเอง', 'วันที่ได้แต้มเข้าใช้', 'เข้าต่อเนื่อง (วัน)',
+                'วันที่ได้แต้มฝึกเอง'],
   assignments: ['รหัสใบงาน', 'ชื่อใบงาน', 'ชั้น', 'สเปกโจทย์', 'เลขสุ่มฐาน', 'เลขต่างรายคน',
                 'ค่า g', 'ระดับง่ายใช้ g=10', 'เปิดเมื่อ', 'ปิดรับเมื่อ', 'เปิดใช้งาน', 'สร้างเมื่อ',
                 'วิชา', 'ค่า π'],
@@ -119,6 +123,9 @@ var HEADERS = {
 /* ตำแหน่งคอลัมน์ที่ใช้บ่อย (นับจาก 1) */
 var C_NO = 1, C_SID = 2, C_NAME = 3, C_CLS = 4, C_HASH = 5, C_SALT = 6,
     C_MUST = 7, C_ACTIVE = 8, C_LOGIN = 9;
+/* คอลัมน์ของระบบเลเวล ต่อท้ายจากของเดิม แถวเก่าที่ยังว่างถือเป็นศูนย์ทั้งหมด */
+var C_ALIAS = 10, C_AVATAR = 11, C_GEAR = 12, C_SHOW = 13,
+    C_XPLOGIN = 14, C_XPPRAC = 15, C_XPDAY = 16, C_XPDAYS = 17, C_XPPRACDAY = 18;
 /* คอลัมน์ "วิชา" ของแผ่นส่งคำตอบ (ตัวที่ 12) — ใช้ตอนอ่านแบบแคบ
    คอลัมน์คุมสอบที่เพิ่มมาใหม่อยู่ท้ายกว่านี้ ค่านี้จึงไม่ต้องแก้ */
 var C_SUB_SUBJECT = 12;
@@ -241,11 +248,13 @@ function readStudentRow_(row) {
 /** อ่านแผ่นส่งคำตอบแบบแคบ — เอาแค่ รหัสใบงาน · เลขประจำตัว · สถานะ · วิชา
     เลี่ยงการดึงคอลัมน์คำตอบรายข้อซึ่งเป็น JSON ยาวมาโดยไม่จำเป็น */
 function submissionKeys_() {
-  var head = cols_('submissions', 2, 3);                 // B,C,D
+  // อ่านถึงคอลัมน์ร้อยละด้วย เพราะระบบแต้มคิดโบนัสจากคะแนนที่ทำได้
+  var head = cols_('submissions', 2, 6);                 // B..G รหัส เลขประจำตัว สถานะ คะแนน เต็ม ร้อยละ
   if (!head.length) return [];
   var subj = cols_('submissions', C_SUB_SUBJECT, 1);     // L
   return head.map(function (r, i) {
     return { code: String(r[0]).toUpperCase(), sid: r[1], status: String(r[2]),
+             pct: Number(r[5]) || 0,
              subject: normSubject_(subj[i] ? subj[i][0] : '') };
   });
 }
@@ -606,7 +615,7 @@ function json_(o) {
 }
 
 function doGet() {
-  return json_({ ok: true, service: 'quiz-bank', version: 11, subjects: SUBJECTS,
+  return json_({ ok: true, service: 'quiz-bank', version: 12, subjects: SUBJECTS,
                  note: 'ใช้งานผ่าน POST จากแอพเท่านั้น' });
 }
 
@@ -649,6 +658,9 @@ function route_(action, req) {
     case 'submit':        return apiSubmit_(req);
     case 'myResults':     return apiMyResults_(req);
     case 'resultsList':   return apiResultsList_(req);
+    case 'xpMe':          return apiXpMe_(req);
+    case 'xpPractice':    return apiXpPractice_(req);
+    case 'xpSkin':        return apiXpSkin_(req);
     case 'lockList':      return apiLockList_(req);
     case 'unlock':        return apiUnlock_(req);
     case 'examPing':      return apiExamPing_(req);
@@ -709,7 +721,7 @@ function apiPing_(req) {
   try { locale = String(book_().getSpreadsheetLocale() || ''); } catch (e) {}
 
   return {
-    version: 11, role: role, myClasses: myCls,
+    version: 12, role: role, myClasses: myCls,
     locale: locale, monthFirst: monthFirstSheet_(), classes: clsCount,
     teachers: Math.max(0, sheet_('teachers').getLastRow() - 1),
     needRepair: needRepair, layout: layout, subjects: SUBJECTS,
@@ -1052,8 +1064,12 @@ function apiRosterSave_(req) {
         return;
       }
       var salt = salts[n];
-      newRows.push([r.no == null ? '' : r.no, sid, name, normCls_(r.cls),
-                    hashPass_(DEFAULT_STUDENT_PASS, salt), salt, true, true, '']);
+      /* แถวต้องยาวเท่าจำนวนคอลัมน์จริงเสมอ ไม่งั้นตอนเพิ่มคอลัมน์ใหม่ท้ายตาราง
+         การเขียนลงชีตจะพังเพราะความกว้างไม่ตรงกัน */
+      var nrow = [r.no == null ? '' : r.no, sid, name, normCls_(r.cls),
+                  hashPass_(DEFAULT_STUDENT_PASS, salt), salt, true, true, ''];
+      while (nrow.length < W) nrow.push('');
+      newRows.push(nrow);
       idx[key] = -1;                             // กันซ้ำกันเองภายในก้อนเดียวกัน
       added++;
     });
@@ -1331,6 +1347,130 @@ function apiMyResults_(req) {
     return { code: k, ts: String(s.ts), score: Number(s.score), max: Number(s.max),
              pct: Number(s.pct), sec: Number(s.sec) };
   });
+}
+
+/* ====== แต้มสะสมและเลเวลของนักเรียน ====================================
+   แต้มต้องให้ฝั่งชีตเป็นคนคิดเท่านั้น ห้ามให้แอปส่งมาบอกว่าขอแต้มเท่าไร
+   ไม่งั้นนักเรียนแก้ตัวเลขในเครื่องตัวเองแล้วขึ้นอันดับหนึ่งได้ทันที
+
+   แต้มมาจากสามทาง
+     เข้าใช้ครั้งแรกของวัน  ชีตจำวันที่ไว้ วันเดียวกันขอซ้ำไม่ได้ ต่อเนื่องกันมีโบนัส
+     ฝึกเองครบห้าข้อในวัน   ชีตจำวันที่ไว้เหมือนกัน วันละครั้ง
+     ส่งใบงานของครู         ไม่เก็บสถานะเลย คิดสดจากแผ่นส่งคำตอบทุกครั้ง
+                            จึงไม่มีทางได้ซ้ำ และย้อนหลังได้ถูกต้องเสมอ      */
+var XP_LOGIN = 10;
+var XP_STREAK_MAX = 20;
+var XP_PRACTICE = 20;
+var XP_PRACTICE_MIN = 5;
+var XP_ASSIGN = 100;
+var LEVEL_MAX = 99;
+
+/** แต้มสะสมที่ต้องมีเพื่ออยู่ที่เลเวลนั้น — เลเวล 99 ราวหมื่นสองพันแต้ม
+    เท่ากับขยันสม่ำเสมอทั้งปีการศึกษา ทำแต่แบบฝึกหัดอย่างเดียวไปไม่ถึง */
+function xpForLevel_(L) { return Math.round(1.2 * L * L + 8 * L); }
+function levelOfXp_(xp) {
+  var lv = 0;
+  for (var i = 1; i <= LEVEL_MAX; i++) { if (xp >= xpForLevel_(i)) lv = i; else break; }
+  return lv;
+}
+function todayStr_() { return Utilities.formatDate(new Date(), 'Asia/Bangkok', 'yyyy-MM-dd'); }
+function dayDiff_(a, b) {
+  var x = new Date(a + 'T00:00:00Z').getTime(), y = new Date(b + 'T00:00:00Z').getTime();
+  if (isNaN(x) || isNaN(y)) return 999;
+  return Math.round((y - x) / 86400000);
+}
+
+/** แต้มจากงานที่ครูสั่ง คิดสดจากแผ่นส่งคำตอบ นับใบละครั้งด้วยคะแนนที่ดีที่สุด */
+function xpFromWork_(sid) {
+  var best = {};
+  submissionKeys_().forEach(function (r) {
+    if (r.status !== 'final') return;
+    if (sidKey_(r.sid) !== sidKey_(sid)) return;
+    var k = String(r.code).toUpperCase();
+    var pct = Math.max(0, Math.min(100, Number(r.pct) || 0));
+    if (best[k] == null || pct > best[k]) best[k] = pct;
+  });
+  var xp = 0, n = 0;
+  Object.keys(best).forEach(function (k) { xp += XP_ASSIGN + Math.round(best[k]); n++; });
+  return { xp: xp, works: n };
+}
+
+/** อ่านโปรไฟล์เกมของนักเรียนหนึ่งคน พร้อมให้แต้มเข้าใช้ประจำวันถ้ายังไม่ได้ */
+function xpProfile_(row, giveDaily) {
+  var sh = sheet_('students');
+  var cells = sh.getRange(row, 1, 1, SHEETS.students.length).getValues()[0];
+  var get = function (c) { return cells[c - 1]; };
+  var today = todayStr_();
+  var xpLogin = Number(get(C_XPLOGIN)) || 0;
+  var xpPrac = Number(get(C_XPPRAC)) || 0;
+  var lastDay = String(get(C_XPDAY) || '');
+  var days = Number(get(C_XPDAYS)) || 0;
+  var gained = 0;
+
+  if (giveDaily && lastDay !== today) {
+    // ต่อเนื่องจากเมื่อวานนับต่อ ขาดไปแล้วเริ่มนับหนึ่งใหม่
+    days = (lastDay && dayDiff_(lastDay, today) === 1) ? days + 1 : 1;
+    gained = XP_LOGIN + Math.min(XP_STREAK_MAX, Math.max(0, days - 1) * 2);
+    xpLogin += gained;
+    sh.getRange(row, C_XPLOGIN).setValue(xpLogin);
+    sh.getRange(row, C_XPDAY).setValue(today);
+    sh.getRange(row, C_XPDAYS).setValue(days);
+  }
+
+  var work = xpFromWork_(get(C_SID));
+  var xp = xpLogin + xpPrac + work.xp;
+  var lv = levelOfXp_(xp);
+  return {
+    xp: xp, level: lv, gained: gained, days: days, works: work.works,
+    nextAt: lv >= LEVEL_MAX ? null : xpForLevel_(lv + 1),
+    thisAt: xpForLevel_(lv),
+    fromLogin: xpLogin, fromPractice: xpPrac, fromWork: work.xp,
+    alias: String(get(C_ALIAS) || ''), avatar: String(get(C_AVATAR) || ''),
+    gear: String(get(C_GEAR) || ''), showName: String(get(C_SHOW)) !== 'false',
+    canAlias: lv >= 5, name: String(get(C_NAME) || ''), cls: normCls_(get(C_CLS))
+  };
+}
+
+/** นักเรียนเปิดแอป — ให้แต้มประจำวันแล้วคืนโปรไฟล์ */
+function apiXpMe_(req) {
+  var t = needStudent_(req);
+  var row = findStudentRow_(t.sid);
+  if (row < 0) throw new Error('ไม่พบรายชื่อของคุณในชีต');
+  return xpProfile_(row, true);
+}
+
+/** ฝึกเองครบตามจำนวนในหนึ่งวัน — ชีตเป็นคนตัดสินว่าวันนี้ได้ไปหรือยัง */
+function apiXpPractice_(req) {
+  var t = needStudent_(req);
+  var row = findStudentRow_(t.sid);
+  if (row < 0) throw new Error('ไม่พบรายชื่อของคุณในชีต');
+  var n = Number(req.n) || 0;
+  var sh = sheet_('students'), today = todayStr_();
+  var lastP = String(sh.getRange(row, C_XPPRACDAY).getValue() || '');
+  if (n >= XP_PRACTICE_MIN && lastP !== today) {
+    var cur = Number(sh.getRange(row, C_XPPRAC).getValue()) || 0;
+    sh.getRange(row, C_XPPRAC).setValue(cur + XP_PRACTICE);
+    sh.getRange(row, C_XPPRACDAY).setValue(today);
+  }
+  return xpProfile_(row, false);
+}
+
+/** นักเรียนตั้งหน้าตา ของแต่งตัว และนามแฝงของตัวเอง */
+function apiXpSkin_(req) {
+  var t = needStudent_(req);
+  var row = findStudentRow_(t.sid);
+  if (row < 0) throw new Error('ไม่พบรายชื่อของคุณในชีต');
+  var me = xpProfile_(row, false);
+  var sh = sheet_('students');
+  if (req.avatar != null) sh.getRange(row, C_AVATAR).setValue(String(req.avatar).slice(0, 20));
+  if (req.gear != null) sh.getRange(row, C_GEAR).setValue(String(req.gear).slice(0, 60));
+  if (req.showName != null) sh.getRange(row, C_SHOW).setValue(!!req.showName);
+  if (req.alias != null) {
+    // นามแฝงเปิดให้ตั้งตั้งแต่เลเวลห้าขึ้นไป กันการตั้งชื่อเล่นตั้งแต่วันแรก
+    if (!me.canAlias) throw new Error('ตั้งนามแฝงได้เมื่อถึงเลเวล 5 ขึ้นไป');
+    sh.getRange(row, C_ALIAS).setValue(String(req.alias).trim().slice(0, 24));
+  }
+  return xpProfile_(row, false);
 }
 
 /* ====== ปลดล็อกนักเรียนที่กรอกรหัสผิดหลายครั้ง =========================

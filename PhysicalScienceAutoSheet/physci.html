@@ -497,6 +497,34 @@ svg .arh2{fill:var(--ink);stroke:none}
   .es-split > .es-write{grid-column:2;grid-row:1 / span 9;position:sticky;top:8px}
 }
 
+/* ── การ์ดโปรไฟล์และเลเวลของผู้เรียน ─────────────────────────────────── */
+.xpcard{background:linear-gradient(135deg,var(--panel2),var(--panel));border:1px solid var(--line)}
+.xprow{display:flex;align-items:center;gap:13px}
+.xpav{position:relative;width:62px;height:62px;flex:0 0 auto;border-radius:50%;
+      display:flex;align-items:center;justify-content:center;font-size:36px;
+      background:var(--panel);border:2px solid var(--brand)}
+.xpav .xpgear{position:absolute;right:-4px;bottom:-2px;font-size:20px;
+              background:var(--panel);border-radius:50%;padding:1px 2px;line-height:1}
+.xpname{font-size:17px;font-weight:800}
+.xpname .sub{margin-left:7px;font-size:12.5px;font-weight:600;color:var(--muted)}
+.xplv{font-size:13.5px;margin-top:2px}
+.xpbar{height:9px;border-radius:99px;background:var(--panel2);overflow:hidden;margin-top:6px;
+       border:1px solid var(--line)}
+.xpbar i{display:block;height:100%;background:linear-gradient(90deg,var(--brand),var(--ok));
+         transition:width .4s ease}
+.xpstat{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:11px;text-align:center}
+.xpstat div{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:7px 4px}
+.xpstat b{display:block;font-size:19px;line-height:1.2}
+.xpstat span{font-size:11.5px;color:var(--muted)}
+.xpgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:7px;margin-top:6px}
+.xppick{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 4px;
+        border:1px solid var(--line);border-radius:11px;background:var(--panel);cursor:pointer}
+.xppick.sel{border-color:var(--brand);background:var(--panel2);box-shadow:inset 0 0 0 1px var(--brand)}
+.xppick.lock{opacity:.45;cursor:not-allowed}
+.xppick .xpe{font-size:27px;line-height:1.1}
+.xppick .xpn{font-size:11.5px;color:var(--muted)}
+.xppick .xplock{font-size:10.5px;color:var(--muted)}
+
 /* รากที่สองและรากที่สาม */
 .sqrt{display:inline-block;font-style:normal;white-space:nowrap}
 .sqrt .sg{margin-right:0}
@@ -601,8 +629,13 @@ input.numin.bad{border-color:var(--bad);background:var(--bad-bg)}
 .eschip,.eseq{padding:8px 12px;border:1px solid var(--line);border-radius:999px;background:var(--panel);
               font-size:15px;cursor:pointer}
 .eseq{border-radius:10px}
-.eschip.sel,.eseq.sel{background:var(--acc);color:#fff;border-color:var(--acc)}
-.eschip.find.sel{background:var(--warn);border-color:var(--warn)}
+/* กล่องที่เลือกแล้วเป็นสีเทาจาง ๆ ตัวหนังสือยังอ่านออก
+   ของเดิมใช้ตัวแปรสี --acc ซึ่งไม่มีอยู่จริงในธีมนี้ พื้นจึงเป็นสีขาว
+   แต่ตัวหนังสือถูกสั่งเป็นสีขาวไว้ กล่องที่เลือกเลยกลายเป็นกล่องเปล่ามองไม่เห็นอะไรเลย */
+.eschip.sel,.eseq.sel{background:var(--panel2);color:var(--ink);
+                      border-color:var(--muted);font-weight:700;
+                      box-shadow:inset 0 0 0 1px var(--muted)}
+.eschip.find.sel{background:var(--warn);color:#fff;border-color:var(--warn);box-shadow:none}
 .esvars{display:flex;flex-wrap:wrap;gap:9px;margin-top:6px}
 .esvar{display:flex;align-items:center;gap:6px}
 .esvar label{min-width:34px;font-weight:600}
@@ -1187,7 +1220,7 @@ window.__LSKEY = LS_KEY;   // ให้ตัวดักหน้าขาว�
    ชีตเดียวเก็บได้หลายวิชา ฝั่งชีตใช้ค่านี้แยกใบงานและผลของแต่ละวิชาออกจากกัน */
 /* สคริปต์ในชีตที่แอปรุ่นนี้ต้องการ — ใช้เตือนตอนทดสอบการเชื่อมต่อ
    ขยับเลขนี้ทุกครั้งที่เพิ่มคำสั่งใหม่ในไฟล์ appsscript-Code.gs */
-const GS_VERSION = 11;
+const GS_VERSION = 12;
 const SUBJECT = 'physci';
 /* ────────────────────────────────────────────────────────────────────────────
    สารบัญเรื่อง — จุดเดียวที่ต้องแก้เมื่อจะ "เพิ่มบทใหม่"
@@ -4799,7 +4832,12 @@ function essayNSteps(it) { return (it && it.skip5) ? 4 : ESSAY_STEPS.length; }
 function isGuided(it) { return !!(it && it.chips && it.chips.length); }
 /** คะแนนที่ได้จากเกณฑ์ — ติ๊กกี่ขั้นก็ได้สัดส่วนนั้นของคะแนนเต็มข้อ */
 function essayScore(max, rub, nSteps) {
-  const n = (rub || []).filter(Boolean).length;
+  /* รวมค่าของแต่ละขั้น ไม่ใช่นับว่ามีกี่ขั้นที่ผ่าน
+     เพราะขั้นแรกให้คะแนนครึ่งขั้นได้ (ส่วนที่กำหนด กับ ส่วนที่ถามหา)
+     ค่าที่เป็น true ยังนับเป็นหนึ่งเต็มเหมือนเดิม ของเก่าจึงคิดคะแนนได้ตามปกติ */
+  const n = (rub || []).reduce(function (s, v) {
+    return s + (v === true ? 1 : (Number(v) || 0));
+  }, 0);
   const d = Math.max(1, Number(nSteps) || ESSAY_STEPS.length);
   return Math.max(0, Number(max) || 0) * Math.min(n, d) / d;
 }
@@ -4842,7 +4880,12 @@ function essayAutoRub(it, gs) {
   const wantG = esRoleIdx(chips, 'g').slice().sort().join(',');
   const gotG = (gs.g || []).slice().sort().join(',');
   const wantF = esRoleIdx(chips, 'f')[0];
-  out.push(chips.length ? (gotG === wantG && wantF != null && gs.f === wantF) : false);
+  /* ขั้นนี้มีสองส่วนที่แยกกันคิด ตามที่ครูวางแผนไว้
+     เลือกสิ่งที่โจทย์กำหนดครบและไม่เกิน ได้ครึ่งหนึ่งของขั้น (10% ของข้อ)
+     เลือกสิ่งที่โจทย์ถามถูกตัว ได้อีกครึ่ง รวมเป็น 20% ของข้อเหมือนเดิม
+     ของเดิมต้องถูกทั้งสองส่วนถึงจะได้คะแนน ผิดส่วนเดียวคือศูนย์ทั้งขั้น */
+  out.push(!chips.length ? 0
+    : (gotG === wantG ? 0.5 : 0) + (wantF != null && gs.f === wantF ? 0.5 : 0));
 
   // ขั้น 2 — สมการหลักและสมการที่แปลงแล้ว ข้อที่ใช้ขั้นเดียวต้องเลือกตัวเดิมซ้ำ
   const mainI = esRoleIdx(eqs, 'm')[0];
@@ -5054,6 +5097,204 @@ function renderWho() {
 
 /* --- 5.2 แท็บสร้างชุดโจทย์ ------------------------------------------------ */
 /* --- 5.2ก แท็บ "ใบงานของฉัน" สำหรับนักเรียนที่ลงชื่อเข้าใช้ ---------------- */
+/* ── แต้มสะสม เลเวล และโปรไฟล์ของผู้เรียน ───────────────────────────────
+   แต้มทั้งหมดคิดที่ฝั่งชีต แอปเป็นแค่คนแสดงผลกับส่งสัญญาณว่า "วันนี้ฝึกไปกี่ข้อ"
+   จึงแก้ตัวเลขในเครื่องให้เลเวลสูงขึ้นไม่ได้
+
+   หน้าตาใช้อีโมจิ ไม่ใช่รูปภาพ เพราะไฟล์แอปใหญ่อยู่แล้ว
+   อีโมจิคมทุกความละเอียด ไม่กินที่เก็บ และดูน่ารักเข้ากับเด็ก        */
+const XP_AVATARS = [
+  { id: 'cat', e: '🐱', n: 'แมว', lv: 0 },
+  { id: 'dog', e: '🐶', n: 'หมา', lv: 0 },
+  { id: 'panda', e: '🐼', n: 'แพนด้า', lv: 0 },
+  { id: 'bunny', e: '🐰', n: 'กระต่าย', lv: 0 },
+  { id: 'frog', e: '🐸', n: 'กบ', lv: 3 },
+  { id: 'fox', e: '🦊', n: 'จิ้งจอก', lv: 5 },
+  { id: 'owl', e: '🦉', n: 'นกฮูก', lv: 8 },
+  { id: 'penguin', e: '🐧', n: 'เพนกวิน', lv: 12 },
+  { id: 'uni', e: '🦄', n: 'ยูนิคอร์น', lv: 16 },
+  { id: 'robot', e: '🤖', n: 'หุ่นยนต์', lv: 22 },
+  { id: 'alien', e: '👽', n: 'เอเลี่ยน', lv: 30 },
+  { id: 'dragon', e: '🐲', n: 'มังกร', lv: 40 },
+  { id: 'star', e: '🌟', n: 'ดาว', lv: 55 },
+  { id: 'rocket', e: '🚀', n: 'จรวด', lv: 70 },
+  { id: 'crown', e: '👑', n: 'มงกุฎ', lv: 90 }
+];
+const XP_GEARS = [
+  { id: '', e: '', n: 'ไม่ใส่', lv: 0 },
+  { id: 'cap', e: '🧢', n: 'หมวกแก๊ป', lv: 2 },
+  { id: 'glass', e: '🕶️', n: 'แว่นกันแดด', lv: 6 },
+  { id: 'medal', e: '🏅', n: 'เหรียญ', lv: 10 },
+  { id: 'book', e: '📘', n: 'หนังสือ', lv: 14 },
+  { id: 'wand', e: '🪄', n: 'ไม้กายสิทธิ์', lv: 20 },
+  { id: 'fire', e: '🔥', n: 'เปลวไฟ', lv: 28 },
+  { id: 'sparkle', e: '✨', n: 'ประกาย', lv: 36 },
+  { id: 'trophy', e: '🏆', n: 'ถ้วยรางวัล', lv: 50 },
+  { id: 'gold', e: '👑', n: 'มงกุฎทอง', lv: 75 }
+];
+function xpAvatar(id) {
+  return XP_AVATARS.find(function (a) { return a.id === id; }) || XP_AVATARS[0];
+}
+function xpGear(id) { return XP_GEARS.find(function (g) { return g.id === id; }) || XP_GEARS[0]; }
+
+let XPME = null;           // โปรไฟล์ล่าสุดจากชีต · null = ยังไม่ได้โหลดหรือชีตยังไม่รองรับ
+let XPBUSY = false;
+
+/** ชื่อที่แสดงต่อคนอื่น — ใช้นามแฝงถ้าตั้งไว้ หรือเลือกไม่เปิดเผยชื่อ */
+function xpDisplayName(p) {
+  if (!p) return '';
+  if (p.alias) return p.alias;
+  return p.showName ? (p.name || '') : 'ไม่เปิดเผยชื่อ';
+}
+
+/** โหลดโปรไฟล์จากชีต — ให้แต้มเข้าใช้ประจำวันไปในตัว
+    ชีตรุ่นเก่ายังไม่รู้จักคำสั่งนี้ ให้เงียบไว้ ไม่ต้องรบกวนนักเรียน */
+async function xpLoad(afterWork) {
+  if (!isStudent() || !cloudOn() || XPBUSY) return;
+  XPBUSY = true;
+  const before = XPME ? XPME.level : null;
+  try {
+    XPME = await api('xpMe', {});
+    if (before != null && XPME.level > before) xpLevelUp(before, XPME.level);
+    else if (!afterWork && XPME.gained > 0) {
+      toast('เข้าใช้วันนี้ +' + XPME.gained + ' แต้ม · ต่อเนื่อง ' + XPME.days + ' วัน', 'ok');
+    }
+  } catch (e) { XPME = null; }
+  finally { XPBUSY = false; renderMyAssignments(); }
+}
+
+/** บอกชีตว่าวันนี้ฝึกเองไปกี่ข้อ — ชีตเป็นคนตัดสินว่าจะให้แต้มหรือไม่ */
+async function xpPractice(n) {
+  if (!isStudent() || !cloudOn() || !(n > 0)) return;
+  const before = XPME ? XPME.level : null;
+  try {
+    const r = await api('xpPractice', { n: n });
+    const gained = XPME ? r.fromPractice - XPME.fromPractice : 0;
+    XPME = r;
+    if (gained > 0) toast('ฝึกครบวันนี้ +' + gained + ' แต้ม', 'ok');
+    if (before != null && r.level > before) xpLevelUp(before, r.level);
+    renderMyAssignments();
+  } catch (e) {}
+}
+
+/** ฉลองตอนเลเวลขึ้น พร้อมบอกว่าปลดล็อกอะไรใหม่บ้าง */
+function xpLevelUp(from, to) {
+  const newA = XP_AVATARS.filter(function (a) { return a.lv > from && a.lv <= to; });
+  const newG = XP_GEARS.filter(function (g) { return g.lv > from && g.lv <= to; });
+  openModal({
+    title: '🎉 เลเวลขึ้น!',
+    bodyHTML:
+      '<div style="text-align:center;padding:6px 0">' +
+      '<div style="font-size:54px;line-height:1.1">' + xpAvatar(XPME && XPME.avatar).e + '</div>' +
+      '<div style="font-size:15px;color:var(--muted);margin-top:4px">เลเวล ' + from + ' → </div>' +
+      '<div style="font-size:44px;font-weight:800;color:var(--brand);line-height:1.1">' + to + '</div>' +
+      (newA.length || newG.length
+        ? '<div class="notice ok" style="margin-top:12px;text-align:left"><b>ปลดล็อกใหม่</b><br>' +
+          newA.map(function (a) { return a.e + ' ' + esc(a.n); })
+            .concat(newG.map(function (g) { return g.e + ' ' + esc(g.n); })).join(' · ') +
+          '<div class="hint" style="margin-top:4px">เลือกได้ที่ปุ่มแต่งตัวในการ์ดโปรไฟล์</div></div>'
+        : '<div class="hint" style="margin-top:10px">สะสมต่อไปเพื่อปลดล็อกหน้าตาและของแต่งตัวใหม่</div>') +
+      '</div>',
+    buttons: [{ label: 'เยี่ยม!', cls: 'primary' }]
+  });
+}
+
+/** การ์ดโปรไฟล์ของผู้เรียน — หน้าตา เลเวล ความคืบหน้า และสถิติการใช้งาน */
+function xpCardHTML() {
+  if (!XPME) return '';
+  const p = XPME, av = xpAvatar(p.avatar), ge = xpGear(p.gear);
+  const span = p.nextAt == null ? 1 : Math.max(1, p.nextAt - p.thisAt);
+  const got = p.nextAt == null ? 1 : Math.max(0, p.xp - p.thisAt);
+  const pct = Math.min(100, Math.round(got / span * 100));
+  return '<div class="card xpcard"><div class="xprow">' +
+    '<div class="xpav">' + av.e + (ge.e ? '<span class="xpgear">' + ge.e + '</span>' : '') + '</div>' +
+    '<div class="grow">' +
+      '<div class="xpname">' + esc(xpDisplayName(p)) +
+      (p.cls ? '<span class="sub">' + esc(p.cls) + '</span>' : '') + '</div>' +
+      '<div class="xplv">เลเวล <b>' + p.level + '</b>' +
+        (p.nextAt == null ? ' <span class="hint">สูงสุดแล้ว</span>'
+          : ' <span class="hint">อีก ' + (p.nextAt - p.xp) + ' แต้มถึงเลเวล ' + (p.level + 1) + '</span>') +
+      '</div>' +
+      '<div class="xpbar"><i style="width:' + pct + '%"></i></div>' +
+    '</div>' +
+    '<button class="sm" id="xpEdit">แต่งตัว</button>' +
+    '</div>' +
+    '<div class="xpstat">' +
+      '<div><b>' + p.xp + '</b><span>แต้มรวม</span></div>' +
+      '<div><b>' + p.days + '</b><span>เข้าต่อเนื่อง (วัน)</span></div>' +
+      '<div><b>' + p.works + '</b><span>งานที่ส่งแล้ว</span></div>' +
+    '</div>' +
+    '<div class="hint" style="margin-top:8px">' +
+      'แต้มจากงานของครู <b>' + p.fromWork + '</b> · เข้าใช้ <b>' + p.fromLogin + '</b> · ฝึกเอง <b>' + p.fromPractice + '</b>' +
+      '<br>ทำใบงานหรือข้อสอบที่ครูส่งให้ ได้แต้มมากที่สุด' +
+    '</div></div>';
+}
+
+/** กล่องแต่งตัว — เลือกหน้าตา ของแต่งตัว นามแฝง และจะเปิดเผยชื่อหรือไม่ */
+function xpSkinBox() {
+  if (!XPME) return;
+  const p = XPME;
+  const grid = function (list, cur, attr) {
+    return '<div class="xpgrid">' + list.map(function (o) {
+      const lock = p.level < o.lv;
+      return '<button class="xppick' + (o.id === cur ? ' sel' : '') + (lock ? ' lock' : '') + '"' +
+        (lock ? ' disabled' : '') + ' data-' + attr + '="' + esc(o.id) + '">' +
+        '<span class="xpe">' + (o.e || '—') + '</span>' +
+        '<span class="xpn">' + esc(o.n) + '</span>' +
+        (lock ? '<span class="xplock">🔒 Lv.' + o.lv + '</span>' : '') + '</button>';
+    }).join('') + '</div>';
+  };
+  openModal({
+    title: 'แต่งตัวและตั้งค่าโปรไฟล์',
+    wide: true,
+    bodyHTML:
+      '<div class="hint" style="margin-bottom:9px">เลเวลสูงขึ้นจะปลดล็อกหน้าตาและของแต่งตัวเพิ่ม ' +
+      'ตอนนี้อยู่เลเวล <b>' + p.level + '</b></div>' +
+      '<div class="hint" style="margin-top:6px"><b>หน้าตา</b></div>' + grid(XP_AVATARS, p.avatar || 'cat', 'xpav') +
+      '<div class="hint" style="margin-top:11px"><b>ของแต่งตัว</b></div>' + grid(XP_GEARS, p.gear || '', 'xpge') +
+      '<div class="hint" style="margin-top:13px"><b>ชื่อที่คนอื่นเห็น</b></div>' +
+      '<label class="row" style="align-items:center;gap:7px;margin-top:5px">' +
+      '<input type="checkbox" id="xpShow"' + (p.showName ? ' checked' : '') + '>' +
+      '<span>เปิดเผยชื่อจริงของฉัน</span></label>' +
+      '<div style="margin-top:9px"><label class="hint" for="xpAlias">นามแฝง' +
+      (p.canAlias ? '' : ' (ปลดล็อกเมื่อถึงเลเวล 5)') + '</label><br>' +
+      '<input type="text" id="xpAlias" maxlength="24" style="max-width:260px" ' +
+      (p.canAlias ? '' : 'disabled ') + 'value="' + esc(p.alias || '') + '" ' +
+      'placeholder="เว้นว่าง = ใช้ชื่อจริงหรือ ไม่เปิดเผยชื่อ"></div>' +
+      '<div id="xpMsg" style="margin-top:9px"></div>',
+    buttons: [
+      { label: 'ปิด' },
+      { label: 'บันทึก', cls: 'primary', act: async function (close, root) {
+          const sel = function (attr) {
+            const b = $$('[data-' + attr + '].sel', root)[0];
+            return b ? b.dataset[attr === 'xpav' ? 'xpav' : 'xpge'] : null;
+          };
+          const body = { avatar: sel('xpav') || 'cat', gear: sel('xpge') || '',
+                         showName: $('#xpShow', root).checked };
+          if (p.canAlias) body.alias = ($('#xpAlias', root).value || '').trim();
+          try {
+            XPME = await api('xpSkin', body);
+            close(); renderMyAssignments();
+            toast('บันทึกโปรไฟล์แล้ว', 'ok');
+          } catch (e) {
+            $('#xpMsg', root).innerHTML = '<div class="notice bad">' + esc(e.message) + '</div>';
+          }
+        } }
+    ],
+    onMount: function (root) {
+      // เลือกได้ทีละอันในแต่ละหมวด กดแล้วเห็นทันทีว่าเลือกอะไรอยู่
+      [['xpav', XP_AVATARS], ['xpge', XP_GEARS]].forEach(function (pair) {
+        $$('[data-' + pair[0] + ']', root).forEach(function (b) {
+          b.addEventListener('click', function () {
+            $$('[data-' + pair[0] + ']', root).forEach(function (x) { x.classList.remove('sel'); });
+            b.classList.add('sel');
+          });
+        });
+      });
+    }
+  });
+}
+
 let MYA = { list: null, loading: false, err: '' };
 
 async function loadMyAssignments(force) {
@@ -5136,6 +5377,7 @@ function myAssignmentsHTML() {
   return h;
 }
 function bindMyAssignments() {
+  const xe = $('#xpEdit'); if (xe) xe.addEventListener('click', xpSkinBox);
   const l = $('#myaLoad'); if (l) l.addEventListener('click', () => loadMyAssignments(true));
   const c = $('#myaCode'); if (c) c.addEventListener('click', takeByCode);
   const fb = $('#myaFlush'); if (fb) fb.addEventListener('click', () => flushOutbox(true));
@@ -7659,7 +7901,8 @@ function renderMake() {
   const total = c.mode === 'mix' ? LEVELS.reduce((s, l) => s + (c.counts[l] || 0), 0) : c.n;
 
   // นักเรียนที่ลงชื่อเข้าใช้เห็นใบงานที่ครูมอบหมายก่อน แล้วค่อยเป็นตัวสร้างชุดของตัวเอง
-  let h = isStudent() ? myAssignmentsHTML() : '';
+  // การ์ดโปรไฟล์ของผู้เรียนอยู่บนสุด เห็นเลเวลกับความคืบหน้าทันทีที่เปิดแอป
+  let h = isStudent() ? (xpCardHTML() + myAssignmentsHTML()) : '';
   h += presetsHTML();
   h += '<div class="card"><h3>' + (isStudent() ? 'ฝึกเอง — ' : '') +
     '1. เลือกเรื่อง<span class="sub">เลือกได้มากกว่าหนึ่งเรื่อง</span></h3>' +
@@ -9086,17 +9329,27 @@ function essayGuideHTML(pp, x, k) {
     if (n > need) return '<span style="color:var(--bad)">เกินมา ' + (n - need) + '</span>';
     return '<span style="color:var(--ok)">ครบ</span>';
   };
-  const nGiven = chips.filter(function (c) { return c.r === 1 || c.r === '1'; }).length;
+  /* บทบาทของกล่องคือ g (โจทย์กำหนด) · f (ถามหา) · x (ตัวลวง) ไม่ใช่เลข 1
+     ของเดิมนับด้วยเลข 1 จึงได้ศูนย์เสมอ ขั้นนี้เลยไม่เคยขึ้นว่าครบและไม่เคยเป็นสีเขียว */
+  const nGiven = esRoleIdx(chips, 'g').length;
   const nVarOK = vs.filter(function (v) { return txt((gs.v || {})[v.s]) !== ''; }).length;
+  const nG = (gs.g || []).length;
+  const gTxt = !nGiven ? (nG ? 'เลือกสิ่งที่โจทย์กำหนดแล้ว' : 'ยังไม่ได้เลือกสิ่งที่โจทย์กำหนด')
+    : !nG ? 'ยังไม่ได้เลือกสิ่งที่โจทย์กำหนด'
+    : nG < nGiven ? '<span style="color:var(--warn)">สิ่งที่โจทย์กำหนด ขาดอีก ' + (nGiven - nG) + '</span>'
+    : nG > nGiven ? '<span style="color:var(--bad)">สิ่งที่โจทย์กำหนด เกินมา ' + (nG - nGiven) + '</span>'
+    : '<span style="color:var(--ok)">เลือกสิ่งที่โจทย์กำหนดครบแล้ว</span>';
+  const fTxt = gs.f == null ? 'ยังไม่เลือกสิ่งที่โจทย์ถาม'
+    : '<span style="color:var(--ok)">เลือกสิ่งที่โจทย์ถามแล้ว</span>';
   const state = [
-    tally((gs.g || []).length, nGiven) + (gs.f == null ? ' · ยังไม่เลือกสิ่งที่ถามหา' : ' · เลือกสิ่งที่ถามหาแล้ว'),
+    gTxt + ' · ' + fTxt,
     tally((gs.e[0] != null ? 1 : 0) + (gs.e[1] != null ? 1 : 0), 2),
     vs.length ? tally(nVarOK, vs.length) : 'ไม่มีตัวแปรให้กรอก',
     tally(txt(gs.a) !== '' ? 1 : 0, 0),
     tally(txt(gs.c) !== '' ? 1 : 0, 0)
   ];
   const done = [
-    (gs.g || []).length === nGiven && gs.f != null,
+    nGiven > 0 && nG === nGiven && gs.f != null,
     gs.e[0] != null && gs.e[1] != null,
     !vs.length || nVarOK === vs.length,
     txt(gs.a) !== '',
@@ -9430,6 +9683,12 @@ async function doFinish(why) {
     if (ok) { MYA.list = null; toast('ส่งผลให้ครูเรียบร้อยแล้ว', 'ok'); }
     else toast('ส่งไม่สำเร็จ — เก็บไว้ในคิวแล้ว จะส่งให้เองเมื่อต่อเน็ตได้', 'warn');
     renderResult();
+    // งานของครูให้แต้มเยอะที่สุด ชีตคิดให้เองจากผลที่เพิ่งส่งไป
+    if (ok) xpLoad(true);
+  } else if (isStudent()) {
+    /* ฝึกเองไม่ได้ส่งขึ้นชีต จึงบอกไปว่าวันนี้ทำไปกี่ข้อ
+       แล้วให้ชีตตัดสินเองว่าถึงเกณฑ์และยังไม่ได้แต้มของวันนี้หรือเปล่า */
+    xpPractice((a.answers || []).filter(function (x) { return x && x.checked; }).length);
   }
 }
 
@@ -13177,6 +13436,7 @@ if (/[?&]selftest=1/.test(location.search)) {
   if (isStudent()) {
     flushOutbox(false);
     loadMyAssignments(true);
+    xpLoad(false);
   }
 }
 $('#saveState').textContent = storageOK ? 'พร้อมใช้งาน' : 'บันทึกไม่ได้';
