@@ -212,7 +212,11 @@ function readAll_(name) {
   _cacheAll[name] = out;
   return out;
 }
-function dropCache_(name) { delete _cacheAll[name]; }
+function dropCache_(name) {
+  delete _cacheAll[name];
+  // แต้มจากงานคิดจากแผ่นส่งคำตอบล้วน ๆ พอมีการส่งเพิ่มก็ต้องคิดใหม่
+  if (name === 'submissions') _xpWork = null;
+}
 
 /* ── อ่านเฉพาะคอลัมน์ที่ต้องใช้ ────────────────────────────────────────────
    readAll_ อ่านทั้งแผ่นทุกคอลัมน์ ซึ่งเปลืองเวลามากเมื่อข้อมูลเยอะ
@@ -549,7 +553,7 @@ function repairSheets_() {
       r.addedHeader = !hasHeader;
       report[n] = r;
     });
-    _sheets = {}; _cacheAll = {}; _sidCol = null;
+    _sheets = {}; _cacheAll = {}; _sidCol = null; _xpWork = null;
     return report;
   } finally { lock.releaseLock(); }
 }
@@ -659,6 +663,7 @@ function route_(action, req) {
     case 'myResults':     return apiMyResults_(req);
     case 'resultsList':   return apiResultsList_(req);
     case 'xpMe':          return apiXpMe_(req);
+    case 'xpBoard':       return apiXpBoard_(req);
     case 'xpPractice':    return apiXpPractice_(req);
     case 'xpSkin':        return apiXpSkin_(req);
     case 'lockList':      return apiLockList_(req);
@@ -1380,19 +1385,34 @@ function dayDiff_(a, b) {
   return Math.round((y - x) / 86400000);
 }
 
-/** แต้มจากงานที่ครูสั่ง คิดสดจากแผ่นส่งคำตอบ นับใบละครั้งด้วยคะแนนที่ดีที่สุด */
-function xpFromWork_(sid) {
-  var best = {};
+/** แต้มจากงานที่ครูสั่ง ของ "ทุกคน" ในรอบเดียว
+    ไล่แผ่นส่งคำตอบครั้งเดียวแล้วแจกให้ทุกคนพร้อมกัน
+    ถ้าไล่ทีละคนแบบเดิม พอทำอันดับทั้งโรงเรียนจะกลายเป็นไล่ข้อมูลเป็นล้านรอบ ชีตค้างแน่
+    เก็บผลไว้ในหน่วยความจำของรอบทำงานนั้น เรียกซ้ำในคำสั่งเดียวกันจึงไม่คิดใหม่ */
+var _xpWork = null;
+function xpWorkAll_() {
+  if (_xpWork) return _xpWork;
+  var best = {};                       // เลขประจำตัว -> รหัสใบงาน -> ร้อยละที่ดีที่สุด
   submissionKeys_().forEach(function (r) {
     if (r.status !== 'final') return;
-    if (sidKey_(r.sid) !== sidKey_(sid)) return;
+    var who = sidKey_(r.sid);
+    if (!who) return;
     var k = String(r.code).toUpperCase();
     var pct = Math.max(0, Math.min(100, Number(r.pct) || 0));
-    if (best[k] == null || pct > best[k]) best[k] = pct;
+    if (!best[who]) best[who] = {};
+    if (best[who][k] == null || pct > best[who][k]) best[who][k] = pct;
   });
-  var xp = 0, n = 0;
-  Object.keys(best).forEach(function (k) { xp += XP_ASSIGN + Math.round(best[k]); n++; });
-  return { xp: xp, works: n };
+  var out = {};
+  Object.keys(best).forEach(function (who) {
+    var xp = 0, n = 0;
+    Object.keys(best[who]).forEach(function (k) { xp += XP_ASSIGN + Math.round(best[who][k]); n++; });
+    out[who] = { xp: xp, works: n };
+  });
+  _xpWork = out;
+  return out;
+}
+function xpFromWork_(sid) {
+  return xpWorkAll_()[sidKey_(sid)] || { xp: 0, works: 0 };
 }
 
 /** อ่านโปรไฟล์เกมของนักเรียนหนึ่งคน พร้อมให้แต้มเข้าใช้ประจำวันถ้ายังไม่ได้ */
@@ -1415,6 +1435,7 @@ function xpProfile_(row, giveDaily) {
     sh.getRange(row, C_XPLOGIN).setValue(xpLogin);
     sh.getRange(row, C_XPDAY).setValue(today);
     sh.getRange(row, C_XPDAYS).setValue(days);
+    dropCache_('students');
   }
 
   var work = xpFromWork_(get(C_SID));
@@ -1451,6 +1472,7 @@ function apiXpPractice_(req) {
     var cur = Number(sh.getRange(row, C_XPPRAC).getValue()) || 0;
     sh.getRange(row, C_XPPRAC).setValue(cur + XP_PRACTICE);
     sh.getRange(row, C_XPPRACDAY).setValue(today);
+    dropCache_('students');
   }
   return xpProfile_(row, false);
 }
@@ -1470,7 +1492,64 @@ function apiXpSkin_(req) {
     if (!me.canAlias) throw new Error('ตั้งนามแฝงได้เมื่อถึงเลเวล 5 ขึ้นไป');
     sh.getRange(row, C_ALIAS).setValue(String(req.alias).trim().slice(0, 24));
   }
+  dropCache_('students');
   return xpProfile_(row, false);
+}
+
+/** ชื่อที่คนอื่นเห็นในอันดับ — นามแฝงมาก่อน ถ้าเลือกไม่เปิดเผยก็ไม่บอกชื่อจริง */
+function xpShownName_(st) {
+  var alias = String(st.alias || '').trim();
+  if (alias) return alias;
+  return String(st.showName) !== 'false' ? String(st.name || '') : 'ไม่เปิดเผยชื่อ';
+}
+
+/** อันดับเลเวล — ดูเฉพาะห้องตัวเอง หรือทั้งโรงเรียน
+    คิดแต้มของทุกคนจากข้อมูลที่มีอยู่แล้ว ไม่ได้เก็บอันดับไว้ที่ไหน
+    จึงไม่มีทางค้างเป็นอันดับเก่า และไม่ต้องมีงานคอยอัปเดตเบื้องหลัง
+
+    ส่งกลับเฉพาะสิบอันดับแรก บวกแถวของคนที่ถามเองเสมอ แม้จะอยู่อันดับท้าย ๆ
+    เพราะรายชื่อทั้งโรงเรียนสามร้อยกว่าคนไม่มีใครอ่านจนจบ และเปลืองเน็ตของนักเรียน */
+function apiXpBoard_(req) {
+  var t = readToken_(req.token);
+  if (!t) throw new Error('AUTH: ต้องเข้าใช้ก่อน');
+  var meSid = t.role === 'student' ? sidKey_(t.sid) : '';
+  // ครูผู้สอนเห็นได้เฉพาะชั้นที่ตัวเองดูแล แม้จะขอดู "ทั้งโรงเรียน"
+  // นักเรียนไม่ถูกจำกัด เพราะอันดับเป็นของทั้งโรงเรียนอยู่แล้วโดยตั้งใจ
+  var sc = t.role === 'student' ? null : scopeOf_(t);
+  var work = xpWorkAll_();
+  var all = readAll_('students').filter(function (st) {
+    return String(st.active) !== 'false' && normSid_(st.sid) && inScope_(sc, st.cls);
+  }).map(function (st) {
+    var w = work[sidKey_(st.sid)] || { xp: 0, works: 0 };
+    var xp = (Number(st.xpLogin) || 0) + (Number(st.xpPrac) || 0) + w.xp;
+    return { sid: sidKey_(st.sid), cls: normCls_(st.cls), xp: xp, level: levelOfXp_(xp),
+             works: w.works, days: Number(st.xpDays) || 0,
+             name: xpShownName_(st), avatar: String(st.avatar || ''), gear: String(st.gear || '') };
+  });
+
+  var myCls = '';
+  if (meSid) {
+    all.forEach(function (r) { if (r.sid === meSid) myCls = r.cls; });
+  } else {
+    myCls = normCls_(req.cls || '');
+  }
+  var scope = String(req.scope || 'class') === 'school' ? 'school' : 'class';
+  var list = scope === 'school' ? all
+    : all.filter(function (r) { return myCls && r.cls === myCls; });
+
+  // เรียงจากแต้มมากไปน้อย เท่ากันให้คนที่ส่งงานมากกว่าอยู่ก่อน
+  list.sort(function (a, b) { return (b.xp - a.xp) || (b.works - a.works); });
+
+  var top = [], meRow = null;
+  list.forEach(function (r, i) {
+    var row = { rank: i + 1, name: r.name, cls: r.cls, level: r.level, xp: r.xp,
+                works: r.works, days: r.days, avatar: r.avatar, gear: r.gear,
+                me: !!(meSid && r.sid === meSid) };
+    if (i < 10) top.push(row);
+    if (row.me) meRow = row;
+  });
+  return { scope: scope, cls: myCls, total: list.length, top: top,
+           me: meRow && meRow.rank > 10 ? meRow : null };
 }
 
 /* ====== ปลดล็อกนักเรียนที่กรอกรหัสผิดหลายครั้ง =========================
