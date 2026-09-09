@@ -162,6 +162,11 @@ body{
   -webkit-font-smoothing:antialiased;
 }
 button,input,select,textarea{font-family:inherit;font-size:15px;color:inherit;touch-action:manipulation}
+/* ระหว่างสอบ ห้ามให้หน้าจอดึงเกินขอบได้ — บนไอแพด การปัดลงจากบนสุด
+   คือคำสั่ง "โหลดหน้าใหม่" ของ Safari ถ้าโดนกลางคันจะหลุดจากเต็มหน้าจอ
+   นาฬิกาเดินต่อโดยไม่มีใครดู และนักเรียนตกใจว่าคำตอบหาย (จริง ๆ ไม่หาย)
+   ใส่เฉพาะตอนสอบ เวลาอื่นยังเลื่อนได้ตามปกติทุกอย่าง */
+body.examlock{overscroll-behavior:none;overscroll-behavior-y:none}
 
 /* ---------- แถบบนสุด (Sticky Frosted Header) ---------- */
 .stickytop{
@@ -9608,7 +9613,35 @@ function procBack() {
 }
 /** เดินทุกวินาที — มีตัวเดียวในแอป เริ่มตอนบูตแล้วตรวจเงื่อนไขเอง
     (ห้ามเปิด-ปิดตามการวาดหน้าจอ เดี๋ยวหลุดค้างซ้อนกันหลายตัว) */
+/* เปิดตัวกันเฉพาะตอนอยู่บนหน้าทำข้อสอบและมีข้อสอบที่ยังไม่จบ
+   เรียกจากตัวนับวินาทีที่เดินอยู่แล้ว จึงตรงกับสถานะจริงเสมอ
+   ไม่ต้องไปแทรกตามจุดเริ่มและจุดจบของการสอบทีละที่ ซึ่งมีหลายทางและตกหล่นง่าย */
+function syncExamLock() {
+  const on = !!(procCur() && TAB === 'do');
+  if (document.body.classList.contains('examlock') !== on) {
+    document.body.classList.toggle('examlock', on);
+  }
+  return on;
+}
+/* เครื่องรุ่นเก่าที่ยังไม่รองรับ overscroll-behavior ต้องกันด้วยตัวเองอีกชั้น
+   ห้ามเฉพาะตอนอยู่บนสุดของหน้าแล้วลากนิ้วลง ซึ่งเป็นท่าที่สั่งโหลดหน้าใหม่
+   ท่าอื่นปล่อยผ่านหมด ไม่งั้นเลื่อนอ่านโจทย์ไม่ได้
+   กระดาษเขียนลายมือมีตัวกันของตัวเองอยู่แล้ว (touch-action:none) จึงไม่ชนกัน */
+let pullY = 0;
+document.addEventListener('touchstart', function (e) {
+  pullY = (e.touches && e.touches[0]) ? e.touches[0].clientY : 0;
+}, { passive: true });
+document.addEventListener('touchmove', function (e) {
+  if (!document.body.classList.contains('examlock')) return;
+  if (!e.touches || !e.touches[0] || e.touches.length > 1) return;
+  const top = window.scrollY || document.documentElement.scrollTop || 0;
+  if (top > 0) return;                                  // ไม่ได้อยู่บนสุด ปล่อยเลื่อนตามปกติ
+  if (e.touches[0].clientY - pullY < 12) return;         // ไม่ใช่การลากลง
+  if (e.cancelable) e.preventDefault();
+}, { passive: false });
+
 function procTick() {
+  syncExamLock();
   const a = procCur(); if (!a) return;
   const left = procSecLeft(a);
   if (left == null) return;
@@ -9769,7 +9802,8 @@ function renderDo() {
         }).join('<br>') + (pp.nsteps === 4 ? '<br><i>ข้อนี้ไม่ต้องเขียนสรุป</i>' : '') + '</div>';
 
       if (pp.guided) {
-        h += essayGuideHTML(pp, x, k);
+        // ครูเห็นถูกผิดเสมอ นักเรียนเห็นเฉพาะแบบฝึกหัด ไม่ใช่ตอนสอบ
+        h += essayGuideHTML(pp, x, k, canSeeSolution(q));
       } else {
         /* ซ้ายคือปุ่มสลับโหมดกับช่องสรุปคำตอบ ขวาคือที่เขียนจริง
            จอแคบกว่า 900px จะกลับไปเรียงลงล่างเองตามเดิม */
@@ -10048,16 +10082,34 @@ function hwPadHTML(k, hidden, footer) {
     '</div>' + (footer || '') + '</div>';
 }
 
-function essayGuideHTML(pp, x, k) {
+function essayGuideHTML(pp, x, k, showKey) {
   const it = pp.it, gs = esGS(x);
   const chips = it.chips || [], eqs = it.eqs || [], vs = esVars(it);
   const rub = x.rub || [];
+  /* "กรอกครบหรือยัง" ของแต่ละขั้น — คนละเรื่องกับ "ถูกหรือไม่"
+     ใช้ตอนทำข้อสอบ ซึ่งห้ามบอกว่าถูกผิด */
+  const txt = function (v) { return String(v == null ? '' : v).trim(); };
+  const filled = [
+    (gs.g || []).length > 0 && gs.f != null,
+    gs.e && gs.e[0] != null && gs.e[1] != null,
+    !vs.length || vs.every(function (v) { return txt((gs.v || {})[v.s]) !== ''; }),
+    txt(gs.a) !== '',
+    txt(gs.c) !== ''
+  ];
+  /* ระหว่างทำข้อสอบห้ามบอกว่าขั้นไหนผ่าน ไม่งั้นกลายเป็นเฉลยไปในตัว
+     เด็กกดสุ่มไปเรื่อย ๆ จนเขียวครบทุกขั้นได้โดยไม่ต้องคิดเลย
+     ตอนทำจึงเขียวเมื่อ "กรอกครบ" เท่านั้น ส่วนถูกผิดและคะแนนเก็บไว้ให้ครูเห็นตอนตรวจ
+     แบบฝึกหัด (ไม่ใช่แบบทดสอบ) ยังบอกได้ตามเดิม เพราะมีไว้ให้ฝึกจนถูก */
   const stepHead = function (n, name) {
-    const done = rub[n - 1];
-    return '<div class="esstep' + (done ? ' done' : '') + '"><div class="esh">' +
+    const ok = showKey ? rub[n - 1] : filled[n - 1];
+    return '<div class="esstep' + (ok ? ' done' : '') + '"><div class="esh">' +
       '<span class="esn">' + n + '</span><b>' + esc(name) + '</b>' +
-      '<span class="grow"></span><span class="hint">' + fmt(pp.max / pp.nsteps) + ' คะแนน' +
-      (done ? ' · <span style="color:var(--ok)">ผ่าน</span>' : '') + '</span></div>';
+      '<span class="grow"></span><span class="hint">' +
+      (showKey
+        ? fmt(pp.max / pp.nsteps) + ' คะแนน' +
+          (ok ? ' · <span style="color:var(--ok)">ผ่าน</span>' : '')
+        : (ok ? '<span style="color:var(--ok)">กรอกแล้ว</span>' : 'ยังไม่ได้กรอก')) +
+      '</span></div>';
   };
   let h = '<div class="esguide" data-esg="' + k + '">';
 

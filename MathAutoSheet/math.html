@@ -162,6 +162,11 @@ body{
   -webkit-font-smoothing:antialiased;
 }
 button,input,select,textarea{font-family:inherit;font-size:15px;color:inherit;touch-action:manipulation}
+/* ระหว่างสอบ ห้ามให้หน้าจอดึงเกินขอบได้ — บนไอแพด การปัดลงจากบนสุด
+   คือคำสั่ง "โหลดหน้าใหม่" ของ Safari ถ้าโดนกลางคันจะหลุดจากเต็มหน้าจอ
+   นาฬิกาเดินต่อโดยไม่มีใครดู และนักเรียนตกใจว่าคำตอบหาย (จริง ๆ ไม่หาย)
+   ใส่เฉพาะตอนสอบ เวลาอื่นยังเลื่อนได้ตามปกติทุกอย่าง */
+body.examlock{overscroll-behavior:none;overscroll-behavior-y:none}
 
 /* ---------- แถบบนสุด (Sticky Frosted Header) ---------- */
 .stickytop{
@@ -12816,7 +12821,35 @@ function procBack() {
 }
 /** เดินทุกวินาที — มีตัวเดียวในแอป เริ่มตอนบูตแล้วตรวจเงื่อนไขเอง
     (ห้ามเปิด-ปิดตามการวาดหน้าจอ เดี๋ยวหลุดค้างซ้อนกันหลายตัว) */
+/* เปิดตัวกันเฉพาะตอนอยู่บนหน้าทำข้อสอบและมีข้อสอบที่ยังไม่จบ
+   เรียกจากตัวนับวินาทีที่เดินอยู่แล้ว จึงตรงกับสถานะจริงเสมอ
+   ไม่ต้องไปแทรกตามจุดเริ่มและจุดจบของการสอบทีละที่ ซึ่งมีหลายทางและตกหล่นง่าย */
+function syncExamLock() {
+  const on = !!(procCur() && TAB === 'do');
+  if (document.body.classList.contains('examlock') !== on) {
+    document.body.classList.toggle('examlock', on);
+  }
+  return on;
+}
+/* เครื่องรุ่นเก่าที่ยังไม่รองรับ overscroll-behavior ต้องกันด้วยตัวเองอีกชั้น
+   ห้ามเฉพาะตอนอยู่บนสุดของหน้าแล้วลากนิ้วลง ซึ่งเป็นท่าที่สั่งโหลดหน้าใหม่
+   ท่าอื่นปล่อยผ่านหมด ไม่งั้นเลื่อนอ่านโจทย์ไม่ได้
+   กระดาษเขียนลายมือมีตัวกันของตัวเองอยู่แล้ว (touch-action:none) จึงไม่ชนกัน */
+let pullY = 0;
+document.addEventListener('touchstart', function (e) {
+  pullY = (e.touches && e.touches[0]) ? e.touches[0].clientY : 0;
+}, { passive: true });
+document.addEventListener('touchmove', function (e) {
+  if (!document.body.classList.contains('examlock')) return;
+  if (!e.touches || !e.touches[0] || e.touches.length > 1) return;
+  const top = window.scrollY || document.documentElement.scrollTop || 0;
+  if (top > 0) return;                                  // ไม่ได้อยู่บนสุด ปล่อยเลื่อนตามปกติ
+  if (e.touches[0].clientY - pullY < 12) return;         // ไม่ใช่การลากลง
+  if (e.cancelable) e.preventDefault();
+}, { passive: false });
+
 function procTick() {
+  syncExamLock();
   const a = procCur(); if (!a) return;
   const left = procSecLeft(a);
   if (left == null) return;
