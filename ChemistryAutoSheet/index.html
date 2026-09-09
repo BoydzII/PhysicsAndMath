@@ -8693,9 +8693,13 @@ function renderMake() {
             (nImg ? ' · มีรูป ' + nImg : ''))
           : q.items.map(x => paperLabel(paperStyle(q), Number(x.ans))).join('');
         
-      const isTeacherAssign = DB.attempts.some(a => a.quizId === q.id && !!a.assignCode);
+      /* ป้าย S/T บอกว่าชุดนี้มาจากไหน — มีความหมายเฉพาะบนเครื่องนักเรียน
+         ของเดิมดูแค่ "เคยทำผ่านรหัสใบงานไหม" ซึ่งบนเครื่องครูไม่มีทางเป็นจริง
+         ชุดที่ครูสร้างเองจึงขึ้น S ว่านักเรียนสร้างเอง ทั้งที่ครูเป็นคนสร้าง */
+      const isTeacherAssign = !isStudent() ||
+        DB.attempts.some(a => a.quizId === q.id && !!a.assignCode);
       const badgeHTML = isTeacherAssign
-        ? '<span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:#0f8a53;color:#fff;font-weight:bold;font-size:12px;margin-right:5px" title="ครูส่งให้">T</span>'
+        ? '<span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:#0f8a53;color:#fff;font-weight:bold;font-size:12px;margin-right:5px" title="ชุดของครู">T</span>'
         : '<span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:#c62828;color:#fff;font-weight:bold;font-size:12px;margin-right:5px" title="นักเรียนสร้างเอง">S</span>';
       h += '<tr><td style="display:flex;align-items:center">' + badgeHTML + esc(q.title || '(ไม่มีชื่อ)') +
           (q.id === DB.cur.quizId ? ' <b>← ชุดปัจจุบัน</b>' : '') + '</td>' +
@@ -8738,9 +8742,13 @@ function renderMake() {
       const lv = LEVELS.filter(l => q.counts[l]).map(l =>
         '<span class="tag ' + LEVEL_CLS[l] + '">' + l + ' ' + q.counts[l] + '</span>').join(' ');
       
-      const isTeacherAssign = DB.attempts.some(a => a.quizId === q.id && !!a.assignCode);
+      /* ป้าย S/T บอกว่าชุดนี้มาจากไหน — มีความหมายเฉพาะบนเครื่องนักเรียน
+         ของเดิมดูแค่ "เคยทำผ่านรหัสใบงานไหม" ซึ่งบนเครื่องครูไม่มีทางเป็นจริง
+         ชุดที่ครูสร้างเองจึงขึ้น S ว่านักเรียนสร้างเอง ทั้งที่ครูเป็นคนสร้าง */
+      const isTeacherAssign = !isStudent() ||
+        DB.attempts.some(a => a.quizId === q.id && !!a.assignCode);
       const badgeHTML = isTeacherAssign
-        ? '<span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:#0f8a53;color:#fff;font-weight:bold;font-size:12px;margin-right:5px" title="ครูส่งให้">T</span>'
+        ? '<span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:#0f8a53;color:#fff;font-weight:bold;font-size:12px;margin-right:5px" title="ชุดของครู">T</span>'
         : '<span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:#c62828;color:#fff;font-weight:bold;font-size:12px;margin-right:5px" title="นักเรียนสร้างเอง">S</span>';
       h += '<tr><td style="display:flex;align-items:center">' + badgeHTML + esc(q.title || '(ไม่มีชื่อ)') +
         ' <span class="tag ' + QUIZ_KINDS[quizKind(q)].cls + '">' + QUIZ_KINDS[quizKind(q)].short + '</span>' +
@@ -11774,6 +11782,7 @@ function cloudCardHTML() {
       '<button id="btnRepair">ซ่อมโครงสร้างชีต</button>' +
       '<button id="btnDedupe">ลบแถวซ้ำในชีต</button>' +
       '<button id="btnResetPass">รีเซ็ตรหัสนักเรียน</button>' +
+      '<button id="btnUnlock">ปลดล็อกกรอกรหัสผิด</button>' +
       '<button id="btnAdminPass">เปลี่ยนรหัสผู้ดูแล</button></div>' +
       '<div class="row" style="margin-top:11px"><button class="primary" id="btnMakeStudentFile">' +
       'สร้างไฟล์สำหรับแจกนักเรียน</button>' +
@@ -11864,6 +11873,7 @@ function bindCloudCard() {
   const fx = $('#btnRepair'); if (fx) fx.addEventListener('click', () => repairSheet(false));
   const mk = $('#btnMakeStudentFile'); if (mk) mk.addEventListener('click', makeStudentFile);
   const rp = $('#btnResetPass');  if (rp) rp.addEventListener('click', resetStudentPass);
+  const ul = $('#btnUnlock');     if (ul) ul.addEventListener('click', unlockStudents);
   const ap = $('#btnAdminPass');  if (ap) ap.addEventListener('click', changeAdminPass);
 }
 
@@ -12158,6 +12168,68 @@ async function pullRoster() {
     save(true); render();
     toast('ดึงรายชื่อ ' + list.length + ' คนเรียบร้อย' + (h ? ' (เชื่อมคะแนนเดิม ' + h + ' รายการ)' : ''), 'ok');
   } catch (e) { toast(e.message, 'bad'); }
+}
+
+/* ── ปลดล็อกนักเรียนที่กรอกรหัสผิดหลายครั้ง ─────────────────────────────
+   ระบบพักการเข้าใช้ไว้สิบนาทีเพื่อกันการเดารหัส แต่ในคาบสอนจริงเด็กที่จำรหัสตัวเอง
+   ไม่ได้จะติดค้างจนหมดคาบ ครูต้องปลดให้ได้เองทันที ไม่ใช่ยืนรอ
+   การปลดลบแค่ตัวนับการกรอกผิด ไม่ได้แตะรหัสผ่าน ต่างจาก "รีเซ็ตรหัสนักเรียน"
+   จึงไม่ต้องให้เด็กตั้งรหัสใหม่ ใช้รหัสเดิมเข้าได้เลย                        */
+async function unlockStudents() {
+  let list;
+  try { list = await api('lockList', {}); }
+  catch (e) {
+    // ชีตที่ยังไม่ได้อัปเดตสคริปต์จะไม่รู้จักคำสั่งนี้ บอกให้ตรงสาเหตุดีกว่าโยนข้อความดิบ
+    toast(/ไม่รู้จักคำสั่ง/.test(e.message)
+      ? 'สคริปต์ในชีตยังเป็นรุ่นเก่า — นำ appsscript-Code.gs ล่าสุดไป Deploy เวอร์ชันใหม่ก่อน'
+      : e.message, 'bad');
+    return;
+  }
+  if (!list.length) {
+    toast('ตอนนี้ไม่มีใครติดล็อกหรือกรอกรหัสผิดค้างไว้', 'ok');
+    return;
+  }
+  const rows = list.slice().sort((a, b) => (b.locked - a.locked) || (b.fails - a.fails));
+  const nLock = rows.filter(r => r.locked).length;
+  openModal({
+    title: 'ปลดล็อกนักเรียนที่กรอกรหัสผิด',
+    wide: true,
+    bodyHTML: '<div class="hint" style="margin-bottom:9px">' +
+      (nLock ? '<b style="color:var(--bad)">ติดล็อกอยู่ ' + nLock + ' คน</b> — เข้าใช้ไม่ได้จนกว่าจะครบ 10 นาที หรือครูกดปลดให้'
+             : 'ยังไม่มีใครติดล็อก') +
+      ' · คนที่ยังไม่ติดคือกรอกผิดไปบ้างแล้ว ปลดตอนนี้ได้เลยเพื่อกันไม่ให้ติด<br>' +
+      'การปลดจะ<b>ไม่เปลี่ยนรหัสผ่าน</b> นักเรียนใช้รหัสเดิมเข้าได้ทันที ' +
+      '(ถ้าจำรหัสไม่ได้จริง ๆ ให้ใช้ปุ่ม <b>รีเซ็ตรหัสนักเรียน</b> แทน)</div>' +
+      '<div class="row" style="margin-bottom:8px"><button class="sm" id="ukAll">เลือกทั้งหมด</button>' +
+      '<button class="sm" id="ukNone">ไม่เลือกเลย</button></div>' +
+      '<div class="tablewrap" style="max-height:320px"><table><thead><tr><th style="width:40px"></th>' +
+      '<th>เลขประจำตัว</th><th>ชื่อ-นามสกุล</th><th>ชั้น</th><th>สถานะ</th></tr></thead><tbody>' +
+      rows.map(r => '<tr><td><input type="checkbox" data-uk="' + esc(r.sid) + '"' +
+        (r.locked ? ' checked' : '') + '></td>' +
+        '<td>' + esc(r.sid) + '</td><td>' + esc(r.name) + '</td>' +
+        '<td>' + esc(normCls(r.cls) || '—') + '</td><td>' +
+        (r.locked ? '<span style="color:var(--bad);font-weight:700">ติดล็อก</span>'
+                  : '<span class="hint">ผิดไป ' + r.fails + ' ครั้ง · เหลืออีก ' + r.left + '</span>') +
+        '</td></tr>').join('') +
+      '</tbody></table></div>',
+    buttons: [
+      { label: 'ปิด' },
+      { label: 'ปลดล็อกที่เลือก', cls: 'primary', act: async (close, root) => {
+          const sids = $$('[data-uk]', root).filter(c => c.checked).map(c => c.dataset.uk);
+          if (!sids.length) { toast('ยังไม่ได้เลือกใคร', 'bad'); return; }
+          try {
+            const r = await api('unlock', { sids: sids });
+            toast('ปลดล็อกแล้ว ' + r.unlocked + ' คน — ให้ลองเข้าใช้ใหม่ได้เลย', 'ok');
+            close();
+          } catch (e) { toast(e.message, 'bad'); }
+        } }
+    ],
+    onMount: root => {
+      const set = v => $$('[data-uk]', root).forEach(c => { c.checked = v; });
+      $('#ukAll', root).addEventListener('click', () => set(true));
+      $('#ukNone', root).addEventListener('click', () => set(false));
+    }
+  });
 }
 
 async function resetStudentPass() {

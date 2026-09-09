@@ -606,7 +606,7 @@ function json_(o) {
 }
 
 function doGet() {
-  return json_({ ok: true, service: 'quiz-bank', version: 10, subjects: SUBJECTS,
+  return json_({ ok: true, service: 'quiz-bank', version: 11, subjects: SUBJECTS,
                  note: 'ใช้งานผ่าน POST จากแอพเท่านั้น' });
 }
 
@@ -649,6 +649,8 @@ function route_(action, req) {
     case 'submit':        return apiSubmit_(req);
     case 'myResults':     return apiMyResults_(req);
     case 'resultsList':   return apiResultsList_(req);
+    case 'lockList':      return apiLockList_(req);
+    case 'unlock':        return apiUnlock_(req);
     case 'examPing':      return apiExamPing_(req);
     case 'examMonitor':   return apiExamMonitor_(req);
     default: throw new Error('ไม่รู้จักคำสั่ง: ' + action);
@@ -707,7 +709,7 @@ function apiPing_(req) {
   try { locale = String(book_().getSpreadsheetLocale() || ''); } catch (e) {}
 
   return {
-    version: 10, role: role, myClasses: myCls,
+    version: 11, role: role, myClasses: myCls,
     locale: locale, monthFirst: monthFirstSheet_(), classes: clsCount,
     teachers: Math.max(0, sheet_('teachers').getLastRow() - 1),
     needRepair: needRepair, layout: layout, subjects: SUBJECTS,
@@ -1329,6 +1331,71 @@ function apiMyResults_(req) {
     return { code: k, ts: String(s.ts), score: Number(s.score), max: Number(s.max),
              pct: Number(s.pct), sec: Number(s.sec) };
   });
+}
+
+/* ====== ปลดล็อกนักเรียนที่กรอกรหัสผิดหลายครั้ง =========================
+   ระบบพักการเข้าใช้ไว้สิบนาทีเพื่อกันการเดารหัส ซึ่งจำเป็นเมื่อเปิดให้เข้าจากที่ไหนก็ได้
+   แต่ในคาบสอนจริง นักเรียนที่จำรหัสตัวเองไม่ได้จะติดค้างจนหมดคาบ
+   ครูจึงต้องปลดให้ได้เอง ไม่ใช่ยืนรอสิบนาทีทั้งห้อง
+   การปลดคือการลบตัวนับที่เก็บไว้ ไม่ได้แตะรหัสผ่านและไม่ได้ลดความปลอดภัยของบัญชี
+   ครูผู้สอนปลดได้เฉพาะนักเรียนในชั้นที่ตัวเองดูแล เหมือนคำสั่งอื่นทุกคำสั่ง      */
+
+/** อ่านตัวนับการกรอกผิดของหลายคนพร้อมกัน อ่านทีละร้อยกันเกินขีดจำกัดของแคช */
+function failCounts_(sids) {
+  var cache = CacheService.getScriptCache(), out = {};
+  for (var i = 0; i < sids.length; i += 100) {
+    var part = sids.slice(i, i + 100);
+    var keys = part.map(function (s) { return failKey_(sidKey_(s)); });
+    var got = {};
+    try { got = cache.getAll(keys) || {}; } catch (e) { got = {}; }
+    for (var j = 0; j < part.length; j++) {
+      var n = Number(got[keys[j]] || 0);
+      if (n > 0) out[sidKey_(part[j])] = n;
+    }
+  }
+  return out;
+}
+
+/** ใครกำลังถูกพักการเข้าใช้อยู่บ้าง รวมคนที่ผิดไปบ้างแล้วแต่ยังไม่ถูกพัก
+    เพื่อให้ครูเห็นว่าใครกำลังจะติด และช่วยได้ก่อนที่จะติดจริง */
+function apiLockList_(req) {
+  var me = needAdmin_(req), sc = scopeOf_(me);
+  var list = readAll_('students').filter(function (st) { return inScope_(sc, st.cls); });
+  var fails = failCounts_(list.map(function (st) { return st.sid; }));
+  var out = [];
+  list.forEach(function (st) {
+    var n = fails[sidKey_(st.sid)];
+    if (!n) return;
+    out.push({ sid: String(st.sid), name: st.name || '', no: st.no || '', cls: st.cls || '',
+               fails: n, left: Math.max(0, MAX_LOGIN_FAIL - n), locked: n >= MAX_LOGIN_FAIL });
+  });
+  return out;
+}
+
+/** ปลดล็อกให้คนที่ระบุ ถ้าไม่ส่ง sids มา = ปลดทุกคนในชั้นที่ตัวเองดูแล */
+function apiUnlock_(req) {
+  var me = needAdmin_(req), sc = scopeOf_(me);
+  var only = null;
+  if (Array.isArray(req.sids) && req.sids.length) {
+    only = {};
+    req.sids.forEach(function (s) { only[sidKey_(s)] = 1; });
+  }
+  var target = [];
+  readAll_('students').forEach(function (st) {
+    if (!inScope_(sc, st.cls)) return;
+    var k = sidKey_(st.sid);
+    if (only && !only[k]) return;
+    target.push(st.sid);
+  });
+  // นับเฉพาะคนที่ติดอยู่จริง ครูจะได้รู้ว่าปลดไปกี่คน ไม่ใช่จำนวนคนที่ไล่ดู
+  var fails = failCounts_(target);
+  var cache = CacheService.getScriptCache(), n = 0;
+  target.forEach(function (sid) {
+    var k = sidKey_(sid);
+    if (!fails[k]) return;
+    try { cache.remove(failKey_(k)); n++; } catch (e) {}
+  });
+  return { unlocked: n };
 }
 
 /* ====== คุมสอบตามเวลาจริง ==============================================
