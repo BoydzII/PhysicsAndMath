@@ -458,6 +458,34 @@ svg .arh2{fill:var(--ink);stroke:none}
            font-size:.62em;line-height:1.06;margin-right:1px}
 .nuc .nel{font-weight:600}
 
+/* ── เขียนตอบแบบจอคู่ ซ้ายโจทย์และคำตอบ ขวากระดาษเขียน ──────────────────
+   บนไอแพดแนวนอนจอกว้างพอ แต่ของเดิมวางเรียงลงล่างอย่างเดียว
+   นักเรียนต้องเลื่อนขึ้นลงสลับระหว่างโจทย์กับที่เขียนตลอดเวลา
+   จอแคบกว่านี้ยังเรียงลงล่างเหมือนเดิม เพราะแบ่งครึ่งแล้วจะเขียนไม่ถนัด */
+@media (min-width: 900px) {
+  .esguide {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 12px;
+    align-items: start;
+  }
+  .esguide > .esstep { grid-column: 1; }
+  /* กระดาษเขียนกินคอลัมน์ขวาทั้งแถบ และหนึบไว้ให้เห็นตลอดขณะเลื่อนอ่านขั้นตอน */
+  .esguide > .esstep.es-pad {
+    grid-column: 2;
+    grid-row: 1 / span 99;
+    position: sticky;
+    top: 8px;
+  }
+  .es-split {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 12px;
+    align-items: start;
+  }
+  .es-split > .es-write { grid-column: 2; grid-row: 1 / span 9; position: sticky; top: 8px; }
+}
+
 /* รากที่สองและรากที่สาม */
 .sqrt{display:inline-block;font-style:normal;white-space:nowrap}
 .sqrt .sg{margin-right:0}
@@ -836,6 +864,7 @@ html[data-theme-style="minimal"] .btn-tool.active {
 </div>
 
 <main>
+  <div id="previewBar"></div>
   <div id="storageWarn"></div>
   <section class="tabpane" id="pane-make"></section>
   <section class="tabpane" id="pane-do"></section>
@@ -1298,6 +1327,72 @@ function save(immediate) {
   saveTimer = setTimeout(doIt, 350);
 }
 
+/** แถบเตือนว่ากำลังดูแบบนักเรียนอยู่ — ต้องเห็นชัดตลอดเวลา
+    ไม่งั้นครูลืมว่าอยู่ในโหมดทดลอง แล้วงงว่าทำไมเครื่องมือของครูหายไปหมด */
+function renderPreviewBar() {
+  const el = $('#previewBar');
+  if (!el) return;
+  el.innerHTML = !previewOn() ? '' :
+    '<div class="notice warn" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
+    '<b>👀 กำลังดูแบบนักเรียน</b>' +
+    '<span>ชั้น <b>' + esc(PREVIEW.cls || '(ไม่ระบุชั้น)') + '</b></span>' +
+    '<span class="hint grow">เห็นเหมือนที่นักเรียนห้องนี้เห็นจริง · ' +
+    'ทำข้อสอบได้ตามปกติแต่<b>จะไม่ส่งคะแนนขึ้นชีต</b></span>' +
+    '<button class="sm primary" id="btnPreviewOff">ออกจากโหมดทดลอง</button></div>';
+  const b = $('#btnPreviewOff');
+  if (b) b.addEventListener('click', function () {
+    PREVIEW = null;
+    MYA = { list: null, loading: false, err: '' };
+    renderPreviewBar();
+    renderGate();
+    render();
+    toast('กลับมาเป็นผู้ดูแลแล้ว', 'ok');
+  });
+}
+
+/** ผู้ดูแลเลือกชั้นแล้วดูหน้าจอแบบนักเรียนห้องนั้น */
+async function previewAsStudent() {
+  let cls = [];
+  try {
+    const r = await api('ping', {}, { noToken: true });
+    cls = Object.keys(r.classes || {}).map(function (n) { return { name: n, n: r.classes[n] }; });
+  } catch (e) {}
+  /* เรียงตามระดับชั้นแล้วห้อง ไม่ใช่เรียงตามตัวอักษร
+     ไม่งั้น ม.0 กับ ชุมนุม จะขึ้นมาก่อน ม.1 เสมอ */
+  const ord = function (n) {
+    const m = String(n).match(/(\d+)\s*\/\s*(\d+)/);
+    return m ? Number(m[1]) * 1000 + Number(m[2]) : 999999;
+  };
+  cls.sort(function (a, b) { return ord(a.name) - ord(b.name) || (a.name < b.name ? -1 : 1); });
+  if (!cls.length) { toast('ยังอ่านรายชื่อห้องจากชีตไม่ได้ — ตรวจการเชื่อมต่อก่อน', 'bad'); return; }
+  openModal({
+    title: 'ทดลองดูแบบนักเรียน',
+    bodyHTML:
+      '<div class="hint" style="margin-bottom:11px">เลือกห้องที่จะจำลอง แล้วหน้าจอจะเปลี่ยนเป็น' +
+      'แบบที่นักเรียนห้องนั้นเห็นจริง ใช้ตรวจว่า<b>ใบงานที่แจกไปขึ้นหรือยัง</b>ได้ทันที ' +
+      'โดยไม่ต้องยืมเลขประจำตัวนักเรียนมาล็อกอิน<br>' +
+      'ทำข้อสอบดูได้ด้วย แต่<b>คะแนนจะไม่ถูกส่งขึ้นชีต</b> ไม่ปนกับผลจริงของนักเรียน</div>' +
+      '<label class="hint" for="pvCls">ห้อง</label><br>' +
+      '<select id="pvCls" style="max-width:100%">' +
+      cls.map(function (c) {
+        return '<option value="' + esc(c.name) + '">' + esc(c.name) + ' (' + c.n + ' คน)</option>';
+      }).join('') + '</select>',
+    buttons: [
+      { label: 'ยกเลิก' },
+      { label: 'เริ่มดูแบบนักเรียน', cls: 'primary', act: function (close, root) {
+          PREVIEW = { cls: $('#pvCls', root).value || '' };
+          MYA = { list: null, loading: false, err: '' };
+          close();
+          renderPreviewBar();
+          renderGate();
+          setTab('make');
+          render();
+          loadMyAssignments(true);
+        } }
+    ]
+  });
+}
+
 function renderStorageWarn() {
   $('#storageWarn').innerHTML = storageOK ? '' :
     '<div class="notice bad">เบราว์เซอร์นี้ไม่อนุญาตให้บันทึกข้อมูลอัตโนมัติ ' +
@@ -1661,7 +1756,19 @@ function isMainAdmin() { return isAdmin() && !isSubAdmin(); }
 function myClasses() {
   const p = DB.auth && DB.auth.profile;
   return (p && p.classes && p.classes.length) ? p.classes : null;
-}function isStudent() { return authValid() && DB.auth.role === 'student'; }
+}
+/* ── โหมดทดลองเป็นนักเรียน (สำหรับผู้ดูแล) ──────────────────────────────
+   ครูต้องรู้ให้ได้ว่า "แจกไปแล้วนักเรียนเห็นไหม" ก่อนถึงคาบสอน
+   ของเดิมต้องยืมเลขประจำตัวนักเรียนมาล็อกอินจริง ซึ่งลำบาก และยังไปติดล็อกเครื่อง
+   สองชั่วโมงของระบบกันทำข้อสอบให้กันอีก กว่าจะกลับมาเป็นครูได้
+   โหมดนี้พลิกหน้าจอให้เป็นแบบนักเรียนโดยไม่แตะการลงชื่อเข้าใช้เลย
+   รายการใบงานดึงด้วยสิทธิ์ครู (assignList) แล้วกรองด้วยกติกาเดียวกับฝั่งชีต
+   เก็บไว้ในหน่วยความจำอย่างเดียว ปิดหน้าแล้วหาย และห้ามส่งคำตอบขึ้นชีตเด็ดขาด */
+let PREVIEW = null;
+function previewOn() { return !!PREVIEW; }
+function isStudent() {
+  return previewOn() || (authValid() && DB.auth.role === 'student');
+}
 /** ออฟไลน์ล้วน = ยังไม่ได้เชื่อมชีต ให้ใช้งานได้ทุกอย่างเหมือนเดิม */
 function offlineMode() { return !cloudOn(); }
 /** ไฟล์ที่แจกนักเรียนถูกฝังธงนี้ไว้ ทำให้ไม่มีทางเข้าถึงส่วนของผู้ดูแลได้เลย
@@ -1670,7 +1777,10 @@ function studentOnlyBuild() { return !!BUILTIN.studentOnly; }
 /** ไฟล์ที่วางบนเว็บ — ห้ามตัดการเชื่อมต่อชีต แต่ยัง "ลงชื่อเข้าใช้เป็นผู้ดูแล" ได้
     แยกจาก studentOnly เพราะเดิมสองเรื่องนี้ถูกมัดรวมกัน ทำให้ครูเข้าหน้าผู้ดูแลจากเว็บไม่ได้เลย */
 function lockCloudBuild() { return !!BUILTIN.lockCloud; }
-function canManage() { return !studentOnlyBuild() && (offlineMode() || isAdmin()); }
+function canManage() {
+  // อยู่ในโหมดทดลอง ต้องไม่เห็นเครื่องมือของครูเลย ไม่งั้นดูไม่ออกว่านักเรียนเห็นอะไรจริง
+  return !previewOn() && !studentOnlyBuild() && (offlineMode() || isAdmin());
+}
 
 class ApiError extends Error {
   constructor(msg, isAuth) { super(msg); this.isAuth = !!isAuth; }
@@ -4940,7 +5050,24 @@ async function loadMyAssignments(force) {
   if (MYA.list && !force) return;
   MYA.loading = true; MYA.err = '';
   renderMyAssignments();
-  try { MYA.list = await api('myAssignments', {}); }
+  try {
+    /* โหมดทดลองใช้สิทธิ์ครูดึงใบงานทั้งหมด แล้วกรองด้วยกติกาเดียวกับที่ฝั่งชีตใช้
+       ตรงชั้น · ยังเปิดใช้งาน · ถึงเวลาเปิดแล้ว · ยังไม่เลยกำหนดปิดรับ
+       ถ้ากติกาสองฝั่งไม่ตรงกัน สิ่งที่ครูเห็นตอนทดลองจะไม่ใช่ของจริง */
+    if (previewOn()) {
+      const now = Date.now();
+      const mine = normCls(PREVIEW.cls || '');
+      MYA.list = (await api('assignList', {})).filter(function (a) {
+        if (a.active === false) return false;
+        if (a.openAt && new Date(a.openAt).getTime() > now) return false;
+        if (a.closeAt && new Date(a.closeAt).getTime() < now) return false;
+        const c = normCls(a.cls || '');
+        return !c || !mine || c === mine;
+      }).map(function (a) { return Object.assign({}, a, { myStatus: '' }); });
+    } else {
+      MYA.list = await api('myAssignments', {});
+    }
+  }
   catch (e) { MYA.err = e.message; }
   finally { MYA.loading = false; renderMyAssignments(); }
 }
@@ -4955,7 +5082,8 @@ function myAssignmentsHTML() {
      ต้องแสดงไว้ตลอด เพราะใบงานจับคู่กับนักเรียนด้วยชั้นนี้ล้วน ๆ
      เคยเสียเวลาไล่หาสาเหตุ "ครูมอบหมายแล้วแต่ไม่ขึ้น" อยู่หลายรอบ
      ทั้งที่ต้นเหตุคือชั้นของใบงานกับชั้นของนักเรียนไม่ตรงกัน แต่หน้าจอไม่บอกอะไรเลย */
-  const myRoom = String((DB.profile && DB.profile.room) || '').trim();
+  const myRoom = previewOn() ? String(PREVIEW.cls || '').trim()
+                             : String((DB.profile && DB.profile.room) || '').trim();
   let h = '<div class="card"><h3>ใบงานที่ครูมอบหมาย' +
     (myRoom ? '<span class="sub">ชั้น ' + esc(myRoom) + '</span>' : '') +
     (MYA.list ? '<span class="sub">' + MYA.list.length + ' ใบ</span>' : '') + '</h3>';
@@ -6133,21 +6261,26 @@ function hwEncode(strokes, step) {
       px = x; py = y;
       return t;
     });
-    return (s.color || '') + '~' + (s.size || '') + '~' + pts.join(' ');
+    /* ต้องส่งชนิดเส้นไปด้วย ไม่งั้นเส้นประ ไฮไลต์ และยางลบ จะกลายเป็นเส้นทึบหมดตอนครูเปิดดู
+       เติมเป็นช่องที่สี่ ของเดิมที่มีสามช่องยังอ่านได้เหมือนเดิม */
+    return (s.color || '') + '~' + (s.size || '') + '~' + (s.tool || 'pen') + '~' + pts.join(' ');
   }).join(';');
 }
 function hwDecode(str) {
   if (!str) return [];
   return String(str).split(';').filter(Boolean).map(function (row) {
     const a = row.split('~');
+    // ของเก่ามีสามช่อง (สี ขนาด จุด) ของใหม่มีสี่ (เพิ่มชนิดเส้น) รับได้ทั้งสองแบบ
+    const tool = a.length >= 4 ? (a[2] || 'pen') : 'pen';
+    const raw = a.length >= 4 ? a[3] : a[2];
     let px = 0, py = 0;
-    const points = (a[2] || '').split(' ').filter(Boolean).map(function (t) {
+    const points = (raw || '').split(' ').filter(Boolean).map(function (t) {
       const q = t.split('.');
       px += parseInt(q[0], 36) || 0;
       py += parseInt(q[1], 36) || 0;
       return { x: px, y: py };
     });
-    return { color: a[0] || '#1e293b', size: Number(a[1]) || 2.5, points: points };
+    return { color: a[0] || '#1e293b', size: Number(a[1]) || 2.5, tool: tool, points: points };
   }).filter(function (s) { return s.points.length; });
 }
 /** วาดเส้นกลับเป็นรูป เพื่อให้ปุ่ม "ดูภาพลายมือ" ในหน้าตรวจของครูใช้ได้ทันที */
@@ -6169,11 +6302,30 @@ function hwToImage(strokes) {
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
   strokes.forEach(function (s) {
-    ctx.strokeStyle = s.color || '#1e293b';
-    ctx.lineWidth = s.size || 2.5;
+    /* วาดให้เหมือนที่นักเรียนเห็นบนจอ ทั้งไฮไลต์ ยางลบ และเส้นประ
+       ไม่งั้นครูเปิดดูแล้วเห็นเป็นเส้นทึบสีเดียวกันหมด อ่านรูปไม่ออก */
+    ctx.save();
+    ctx.setLineDash([]);
+    if (s.tool === 'highlighter') {
+      ctx.strokeStyle = 'rgba(250, 204, 21, 0.45)';
+      ctx.lineWidth = 16;
+      ctx.globalCompositeOperation = 'multiply';
+    } else if (s.tool === 'eraser') {
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 22;
+      ctx.globalCompositeOperation = 'destination-out';
+    } else {
+      ctx.strokeStyle = s.color || '#1e293b';
+      ctx.lineWidth = s.size || 2.5;
+      ctx.globalCompositeOperation = 'source-over';
+      if (s.tool === 'dash') {
+        ctx.setLineDash([Math.max(6, (s.size || 2.5) * 3), Math.max(5, (s.size || 2.5) * 2.4)]);
+      }
+    }
     ctx.beginPath();
     s.points.forEach(function (p, i) { i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y); });
     ctx.stroke();
+    ctx.restore();
   });
   try { return cv.toDataURL('image/png'); } catch (e) { return ''; }
 }
@@ -6245,6 +6397,13 @@ function initHandwritingPad(k, canvasEl, wrapEl, initialStrokes, onSave) {
       ctx.strokeStyle = '#ffffff';
       ctx.lineWidth = 22;
       ctx.globalCompositeOperation = 'destination-out';
+    } else if (s.tool === 'dash') {
+      /* เส้นประ — ใช้ลากแนวช่วย เส้นโครง หรือแนวแรงที่ไม่ใช่เส้นจริงของรูป
+         ความยาวขีดผูกกับความหนาปากกา เส้นหนาขึ้นขีดก็ยาวขึ้นตาม จะได้ดูเป็นเส้นประเสมอ */
+      ctx.strokeStyle = s.color || '#1e293b';
+      ctx.lineWidth = s.size || 2.5;
+      ctx.setLineDash([Math.max(6, (s.size || 2.5) * 3), Math.max(5, (s.size || 2.5) * 2.4)]);
+      ctx.globalCompositeOperation = 'source-over';
     } else {
       ctx.strokeStyle = s.color || '#1e293b';
       ctx.lineWidth = s.size || 2.5;
@@ -6286,7 +6445,13 @@ function initHandwritingPad(k, canvasEl, wrapEl, initialStrokes, onSave) {
   // Pointer event listeners (Apple Pencil + Touch)
   canvasEl.addEventListener('pointerdown', e => {
     e.preventDefault();
-    canvasEl.setPointerCapture(e.pointerId);
+    /* บนไอแพด ถ้าช่องกรอกคำตอบยังถือโฟกัสอยู่ แป้นพิมพ์จะค้างขึ้นมา
+       และทุกครั้งที่หน้าจอคำนวณใหม่ เบราว์เซอร์จะเลื่อนกลับไปหาช่องนั้นเสมอ
+       กลายเป็นอาการ "เขียนอยู่แล้วจอเด้งไปช่องเติมคำตอบ"
+       พอเริ่มเขียน ให้ปล่อยโฟกัสทิ้งก่อน แป้นพิมพ์จะยุบ และไม่มีอะไรให้เลื่อนไปหา */
+    const act = document.activeElement;
+    if (act && act !== canvasEl && typeof act.blur === 'function') act.blur();
+    try { canvasEl.setPointerCapture(e.pointerId); } catch (err) {}
     pad.isDrawing = true;
     const p = getPos(e);
     pad.curStroke = {
@@ -6371,7 +6536,13 @@ function initHandwritingPad(k, canvasEl, wrapEl, initialStrokes, onSave) {
   return pad;
 }
 
+/* บนไอแพด แป้นพิมพ์เด้งขึ้นหรือยุบลงจะยิง resize ทุกครั้ง
+   ถ้าปรับขนาดผืนผ้าใบใหม่ทุกรอบ ลายมือจะถูกวาดใหม่และหน้าจอกระตุกตามไปด้วย
+   ทั้งที่ความกว้างเท่าเดิม ปรับเฉพาะตอนความกว้างเปลี่ยนจริงเท่านั้น */
+let hwLastW = window.innerWidth;
 window.addEventListener('resize', () => {
+  if (window.innerWidth === hwLastW) return;
+  hwLastW = window.innerWidth;
   Object.keys(HW_INSTANCES).forEach(k => {
     if (HW_INSTANCES[k] && HW_INSTANCES[k].resize) HW_INSTANCES[k].resize();
   });
@@ -8395,7 +8566,10 @@ function renderDo() {
       if (pp.guided) {
         h += essayGuideHTML(pp, x, k);
       } else {
-        h += '<div class="row" style="margin-top:10px;margin-bottom:8px;justify-content:space-between;align-items:center">' +
+        /* ซ้ายคือปุ่มสลับโหมดกับช่องสรุปคำตอบ ขวาคือที่เขียนจริง
+           จอแคบกว่า 900px จะกลับไปเรียงลงล่างเองตามเดิม */
+        h += '<div class="es-split">' +
+          '<div class="row" style="margin-top:10px;margin-bottom:8px;justify-content:space-between;align-items:center">' +
           '<div class="segbtn" style="max-width:260px">' +
           '<button class="sm ' + (x.mode !== 'type' ? 'on' : '') + '" data-esmode="draw" data-esk="' + k + '">✍️ เขียนลายมือ (iPad)</button>' +
           '<button class="sm ' + (x.mode === 'type' ? 'on' : '') + '" data-esmode="type" data-esk="' + k + '">⌨️ พิมพ์วิธีทำ</button>' +
@@ -8404,6 +8578,7 @@ function renderDo() {
           '</div>' +
 
           // 1. กระดาษเขียนลายมือ — ใช้ตัวสร้างตัวเดียวกับข้อแบบทำทีละขั้น
+          '<div class="es-write">' +
           hwPadHTML(k, x.mode === 'type',
             '<div class="hw-footer">' +
             '<span>✍️ Apple Pencil / Stylus / สัมผัส — หน้าจอไม่เลื่อนขณะเขียน</span>' +
@@ -8415,7 +8590,7 @@ function renderDo() {
           '<textarea class="esin" data-es="' + k + '" rows="7" ' +
           'style="width:100%;font-size:16px" placeholder="พิมพ์แสดงวิธีทำตามลำดับขั้นตอน">' +
           esc(x.text || '') + '</textarea>' +
-          '</div>' +
+          '</div></div>' +          // ปิด typeBox และปิดคอลัมน์ที่เขียน
 
           // 3. Final Answer Box
           '<div style="margin-top:10px;padding:10px 12px;background:var(--panel2);border:1px solid var(--line);border-radius:8px">' +
@@ -8424,7 +8599,8 @@ function renderDo() {
           '<input type="text" class="grow" style="max-width:280px" data-esans="' + k + '" ' +
           'placeholder="เช่น 346 m/s หรือ สรุปคำตอบสั้นๆ" value="' + esc(x.finalAns || '') + '">' +
           '<span class="hint">กรอกคำตอบสรุปเพื่อให้ตรวจได้รวดเร็ว</span>' +
-          '</div></div>';
+          '</div></div>' +
+          '</div>';                 // ปิดกล่องจอคู่
       }
       h += '</div>';
     });
@@ -8514,7 +8690,14 @@ function renderDo() {
 
       // Bind actions
       $$('[data-esk="' + k + '"][data-hwact]').forEach(actBtn => {
+        /* กันไม่ให้ปุ่มรับโฟกัส ไม่งั้นกดย้อนกลับแล้วเบราว์เซอร์เลื่อนจอไปหาปุ่ม
+           หรือเลื่อนกลับไปช่องกรอกที่โฟกัสอยู่ก่อนหน้า */
+        actBtn.addEventListener('pointerdown', ev => ev.preventDefault());
         actBtn.addEventListener('click', () => {
+          /* ถ้าช่องกรอกคำตอบยังถือโฟกัสอยู่ แป้นพิมพ์จะค้าง แล้วจอเลื่อนกลับไปหาช่องนั้น
+             ตอนนี้กำลังทำงานอยู่บนกระดาษ จึงปล่อยโฟกัสทิ้งเหมือนตอนเริ่มเขียน */
+          const act2 = document.activeElement;
+          if (act2 && typeof act2.blur === 'function') act2.blur();
           const act = actBtn.dataset.hwact;
           if (pad && pad[act]) pad[act]();
         });
@@ -8662,6 +8845,7 @@ function hwPadHTML(k, hidden, footer) {
     '<div class="hw-tools">' +
     '<button class="btn-tool active" data-hwtool="pen" data-esk="' + k + '">✏️ ปากกา</button>' +
     '<button class="btn-tool" data-hwtool="highlighter" data-esk="' + k + '">🖍️ ไฮไลต์</button>' +
+    '<button class="btn-tool" data-hwtool="dash" data-esk="' + k + '">┄ เส้นประ</button>' +
     '<button class="btn-tool" data-hwtool="eraser" data-esk="' + k + '">🧹 ยางลบ</button>' +
     '<div style="display:flex;gap:4px;margin-left:4px;align-items:center">' +
     '<div class="color-swatch active" data-hwcolor="#1e293b" data-esk="' + k + '" style="background:#1e293b"></div>' +
@@ -8769,7 +8953,7 @@ function essayGuideHTML(pp, x, k) {
 
   /* กระดาษทด — ขั้นตอนด้านบนเก็บคำตอบเป็นข้อ ๆ แต่การแสดงวิธีทำจริงยังต้องเขียน
      โดยเฉพาะบนไอแพดที่มีปากกา ครูจะได้เห็นว่านักเรียนคิดมาอย่างไร ไม่ใช่เห็นแต่ผลลัพธ์ */
-  h += '<div class="esstep" style="margin-top:10px"><div class="esh">' +
+  h += '<div class="esstep es-pad" style="margin-top:10px"><div class="esh">' +
     '<span class="esn">✍️</span><b>กระดาษทด — แสดงวิธีทำด้วยลายมือ</b>' +
     '<span class="grow"></span><span class="hint">ไม่บังคับ · ครูเห็นตอนตรวจ</span></div>' +
     hwPadHTML(k, false) + '</div>';
@@ -10705,6 +10889,8 @@ function attemptPayload(a, status) {
 }
 
 async function sendAttempt(a, status) {
+  // โหมดทดลองของครูต้องไม่ปนกับผลจริงของนักเรียนในชีตเด็ดขาด
+  if (previewOn()) return false;
   if (!isStudent() || !a || !a.assignCode) return false;
   const payload = attemptPayload(a, status);
   try {
@@ -10995,6 +11181,7 @@ function cloudCardHTML() {
       '<button id="btnDedupe">ลบแถวซ้ำในชีต</button>' +
       '<button id="btnResetPass">รีเซ็ตรหัสนักเรียน</button>' +
       '<button id="btnUnlock">ปลดล็อกกรอกรหัสผิด</button>' +
+      '<button id="btnPreview">👀 ทดลองดูแบบนักเรียน</button>' +
       '<button id="btnAdminPass">เปลี่ยนรหัสผู้ดูแล</button></div>' +
       '<div class="row" style="margin-top:11px"><button class="primary" id="btnMakeStudentFile">' +
       'สร้างไฟล์สำหรับแจกนักเรียน</button>' +
@@ -11086,6 +11273,7 @@ function bindCloudCard() {
   const mk = $('#btnMakeStudentFile'); if (mk) mk.addEventListener('click', makeStudentFile);
   const rp = $('#btnResetPass');  if (rp) rp.addEventListener('click', resetStudentPass);
   const ul = $('#btnUnlock');     if (ul) ul.addEventListener('click', unlockStudents);
+  const pv = $('#btnPreview');    if (pv) pv.addEventListener('click', previewAsStudent);
   const ap = $('#btnAdminPass');  if (ap) ap.addEventListener('click', changeAdminPass);
 }
 
