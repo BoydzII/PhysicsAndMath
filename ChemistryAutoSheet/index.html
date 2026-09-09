@@ -1011,7 +1011,7 @@ html[data-theme-style="minimal"] .btn-tool.active {
    *** ห้ามลบบรรทัดเครื่องหมาย @@BUILTIN@@ ทั้งสองอัน ตัวสร้างไฟล์ใช้หาตำแหน่ง ***
    ========================================================================== */
 /* @@BUILTIN@@ */
-const BUILTIN = {"url":"","studentOnly":true,"lockCloud":false,"logo":"","header":null,"about":null,"build":"2026-09-09 22:11"};
+const BUILTIN = {"url":"","studentOnly":true,"lockCloud":false,"logo":"","header":null,"about":null,"build":"2026-09-09 23:31"};
 /* @@BUILTIN-END@@ */
 
 /* ถ่ายภาพซอร์สของหน้านี้ไว้ตั้งแต่สคริปต์เพิ่งเริ่มทำงาน
@@ -2214,8 +2214,10 @@ function mInner(raw, box) {
   let h = esc(t);
   h = h.replace(/\^\{([^}]*)\}/g, (m, a) => '<sup>' + a + '</sup>')
        .replace(/\^(-?[\w°]+)/g, (m, a) => '<sup>' + a + '</sup>');
+  /* ตัวห้อยยาวกว่าหนึ่งตัวอักษรก็ได้ เช่น v_x  F_net  a_max
+     ของเดิมรับตัวเดียว F_net จึงกลายเป็น F ห้อย n แล้วตามด้วย et ลอย ๆ */
   h = h.replace(/_\{([^}]*)\}/g, (m, a) => '<sub>' + a + '</sub>')
-       .replace(/_(-?\w)/g, (m, a) => '<sub>' + a + '</sub>');
+       .replace(/_(-?\w+)/g, (m, a) => '<sub>' + a + '</sub>');
   h = h.replace(/`([^`]*)`/g, (m, a) => '<span class="u">' + a + '</span>');
   // ข้อความไทยเป็นตัวตรง — รวมคำย่อที่มีจุดคั่นอย่าง ห.ร.ม. และ ค.ร.น. ไว้เป็นก้อนเดียว
   h = h.replace(/([฀-๿]+(?:\.[฀-๿]+)*\.?)/g, '<span class="u">$1</span>');
@@ -6344,11 +6346,33 @@ function esVars(it) { return (it && it.vars) || []; }
 /** สมการที่ใช้แทนค่าจริง — ตัวที่แปลงแล้วถ้ามี ไม่งั้นคือสมการหลัก
     กติกานี้สำคัญ เพราะข้อที่ต้องแปลงสมการก่อน ตัวแปรที่ต้องแทนค่าจะคนละชุดกับสมการหลัก
     เช่น หลักคือ F = ma แต่โจทย์หา a ต้องแปลงเป็น a = F/m แล้วแทนค่า F กับ m */
+/* บทบาทของสมการ — m คือสมการหลัก แล้วแปลงต่อได้ถึงสามขั้น
+   ข้อที่ทำไว้ก่อนหน้านี้ใช้ 'd' ตัวเดียว ถือว่าเท่ากับ 'd1' จึงยังทำงานเหมือนเดิม */
+var ES_EQ_STEPS = ['d1', 'd2', 'd3'];
+function esEqRole(r) { return r === 'd' ? 'd1' : String(r || ''); }
+/** ลำดับสมการที่นักเรียนต้องเลือก — หลักก่อน แล้วตามขั้นแปลงที่ครูตั้งไว้จริง
+    ข้อที่ไม่ได้ตั้งขั้นแปลงเลย ยังต้องเลือกสองครั้งเหมือนเดิมเพื่อยืนยันสมการหลัก */
+function esEqChain(it) {
+  const eqs = (it && it.eqs) || [];
+  const out = [];
+  var main = -1;
+  eqs.forEach(function (e, i) { if (e.r === 'm' && main < 0) main = i; });
+  if (main >= 0) out.push(main);
+  ES_EQ_STEPS.forEach(function (rk) {
+    var at = -1;
+    eqs.forEach(function (e, i) { if (esEqRole(e.r) === rk && at < 0) at = i; });
+    if (at >= 0) out.push(at);
+  });
+  if (out.length === 1) out.push(main >= 0 ? main : 0);
+  return out;
+}
+/** สมการที่ใช้แทนค่าจริง — ขั้นแปลงสุดท้ายที่ครูตั้งไว้ ไม่มีก็คือสมการหลัก
+    กติกานี้สำคัญ เพราะข้อที่ต้องแปลงก่อน ตัวแปรที่ต้องแทนค่าจะคนละชุดกับสมการหลัก */
 function esSubstEq(it) {
   const eqs = (it && it.eqs) || [];
-  const der = eqs.filter(function (e) { return e.r === 'd'; })[0];
-  if (der) return der;
-  return eqs.filter(function (e) { return e.r === 'm'; })[0] || eqs[0] || null;
+  const chain = esEqChain(it);
+  const last = chain.length ? eqs[chain[chain.length - 1]] : null;
+  return last || eqs.filter(function (e) { return e.r === 'm'; })[0] || eqs[0] || null;
 }
 /** ตรวจทีละขั้น คืนอาเรย์ห้าช่อง (หรือสี่ช่องถ้าข้ามขั้นสรุป) */
 function essayAutoRub(it, gs) {
@@ -6367,10 +6391,12 @@ function essayAutoRub(it, gs) {
   out.push(!chips.length ? 0
     : (gotG === wantG ? 0.5 : 0) + (wantF != null && gs.f === wantF ? 0.5 : 0));
 
-  // ขั้น 2 — สมการหลักและสมการที่แปลงแล้ว ข้อที่ใช้ขั้นเดียวต้องเลือกตัวเดิมซ้ำ
-  const mainI = esRoleIdx(eqs, 'm')[0];
-  const derI = esRoleIdx(eqs, 'd').length ? esRoleIdx(eqs, 'd')[0] : mainI;
-  out.push(eqs.length ? (gs.e[0] === mainI && gs.e[1] === derI) : false);
+  /* ขั้น 2 — ต้องเลือกให้ครบทุกขั้นตามลำดับที่ครูตั้งไว้
+     ข้อที่ใช้สมการเดียวไม่ต้องแปลง ยังต้องเลือกตัวเดิมซ้ำเพื่อยืนยันเหมือนเดิม */
+  const chain = esEqChain(it);
+  out.push(eqs.length
+    ? chain.every(function (want, si) { return gs.e[si] === want; })
+    : false);
 
   // ขั้น 3 — แทนค่าให้ตรงทุกตัวแปร ยอมคลาดเคลื่อนเล็กน้อยเผื่อการปัดเศษ
   const vs = esVars(it);
@@ -8443,7 +8469,9 @@ const ES_WORDS = ['pOH', 'pH', 'Ksp', 'Kw', 'Ka', 'Kb', 'Kc', 'Kp', 'Kf', 'Kd',
                   'ΔH', 'ΔG', 'ΔS', 'ΔT', 'Ea', 'Mr', 'Ar', 'STP'];
 /** รูปแบบของชื่อตัวแปรหนึ่งตัว — ตัวอักษรหนึ่งตัว ตามด้วยตัวห้อย (ถ้ามี) */
 function esVarRe(flags) {
-  return new RegExp('[' + ES_BASE + '](?:_\\{[^}]*\\}|_[A-Za-z0-9]|[' + ES_SUB + ']+)?', flags);
+  /* ตัวห้อยยาวกว่าหนึ่งตัวอักษรก็ได้ เช่น v_x  F_net  a_max
+     ของเดิมรับตัวเดียว F_net จึงถูกอ่านเป็น F_n แล้วตามด้วย e กับ t เป็นตัวแปรลอย ๆ */
+  return new RegExp('[' + ES_BASE + '](?:_\\{[^}]*\\}|_[A-Za-z0-9]+|[' + ES_SUB + ']+)?', flags);
 }
 /** จับชื่อตัวแปรที่ยาวกว่าหนึ่งตัวอักษรจากรายชื่อที่รู้จักก่อน
     ทำเป็นกฎทั่วไปไม่ได้ เพราะ F = ma จะกลายเป็นตัวแปรชื่อ ma แทนที่จะเป็น m กับ a
@@ -8452,10 +8480,20 @@ function esWordRe() {
   if (!ES_WORDS.length) return null;
   const w = ES_WORDS.slice().sort(function (a, b) { return b.length - a.length; })
     .map(function (s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); });
-  return new RegExp('(?:' + w.join('|') + ')(?:_\\{[^}]*\\}|_[A-Za-z0-9]|[' + ES_SUB + ']+)?', 'g');
+  return new RegExp('(?:' + w.join('|') + ')(?:_\\{[^}]*\\}|_[A-Za-z0-9]+|[' + ES_SUB + ']+)?', 'g');
 }
+/* มุมที่ระบุองศามาแล้ว เช่น sin30 cos45 tan60 ถือเป็น "ค่าเดียว"
+   นักเรียนต้องเปิดตารางหรือกดเครื่องคิดเลขแล้วกรอกค่าที่ได้ลงไปช่องเดียว
+   ไม่ใช่แยกเป็น sin กับ 30 ซึ่งแทนค่าไม่ได้ทั้งคู่ */
+var ES_TRIG_RE = /\b(sin|cos|tan)\s*(-?\d+(?:\.\d+)?)\s*°?/g;
+
 function essayVarsFrom(eqText) {
-  let t = String(eqText || '').replace(/\b(sin|cos|tan|log|ln|sqrt\d*|frac|nuc|pi)\b/g, ' ');
+  let t = String(eqText || '');
+  /* ดึงมุมออกมาเป็นตัวแปรก่อน แล้วเอาออกจากข้อความ
+     ต้องทำก่อนขั้นตัดชื่อฟังก์ชัน ไม่งั้น sin จะถูกตัดทิ้งเหลือแต่เลข 30 ลอย ๆ */
+  const trig = [];
+  t = t.replace(ES_TRIG_RE, function (m, f, d) { trig.push(f + d); return ' '; });
+  t = t.replace(/\b(sin|cos|tan|log|ln|sqrt\d*|frac|nuc|pi)\b/g, ' ');
   /* ตัดเลขชี้กำลังทิ้งก่อนทุกแบบ ครูสั่งให้ยึดตัวแปรหลักก่อนยกกำลัง
      ถ้าไม่ตัด s² จะถูกอ่านเป็นคนละตัวกับ s และ ^2 จะกลายเป็นตัวแปรชื่อแปลก ๆ */
   t = t.replace(new RegExp('[' + ES_SUP + ']+', 'g'), '')
@@ -8475,6 +8513,7 @@ function essayVarsFrom(eqText) {
   }
   const seen = {}, out = [];
   const take = function (s) { if (s !== skip && !seen[s]) { seen[s] = 1; out.push(s); } };
+  trig.forEach(take);              // มุมมาก่อน จะได้อยู่ต้นรายการตามที่อ่านเจอ
   /* จับชื่อยาวก่อน แล้วเอาออกจากข้อความ ที่เหลือค่อยจับเป็นตัวอักษรเดียว
      ไม่งั้น pH จะถูกอ่านเป็น p กับ H */
   const wre = esWordRe();
@@ -8580,7 +8619,8 @@ function essayRows(list, root) {
     if (!wrap) return;
     const opts = kind === 'chips'
       ? [['g', 'โจทย์กำหนด'], ['f', 'ถามหา'], ['x', 'ตัวลวง']]
-      : [['m', 'สมการหลัก'], ['d', 'แปลงแล้ว'], ['x', 'ตัวลวง']];
+      : [['m', 'สมการหลัก'], ['d1', 'แปลงขั้น 1'], ['d2', 'แปลงขั้น 2'],
+         ['d3', 'แปลงขั้น 3'], ['x', 'ตัวลวง']];
     wrap.innerHTML = arr.map(function (c, ci) {
       return '<span class="esrole"><b>' + M(c.t) + '</b>' +
         opts.map(function (o) {
@@ -8595,7 +8635,10 @@ function essayRows(list, root) {
         const a2 = b.dataset.rk === 'chips' ? t.chips : t.eqs;
         const v = b.dataset.rv;
         // ถามหา และ สมการหลัก มีได้อันเดียว เลือกใหม่ก็ย้ายไป
-        if (v === 'f' || v === 'm' || v === 'd') a2.forEach(function (z) { if (z.r === v) z.r = 'x'; });
+        // บทบาทที่มีได้อันเดียว เลือกใหม่ก็ย้ายของเดิมไปเป็นตัวลวง
+        if (v === 'f' || v === 'm' || /^d\d$/.test(v)) {
+          a2.forEach(function (z) { if (esEqRole(z.r) === v) z.r = 'x'; });
+        }
         a2[Number(b.dataset.rc)].r = v;
         roleBtns(Number(b.dataset.rr), b.dataset.rk);
       });
@@ -8866,16 +8909,28 @@ function essayDialog(quiz) {
         } }
     ],
     onMount: root => {
-      /* ประกาศไว้บนสุด เพราะ draw() ข้างล่างเรียก watchFields() ที่ผูกตัวจับ focus
-         แล้ว $('#esTitle').focus() ยิงตัวจับนั้นทันที ซึ่งเขียนค่าลงตัวแปรนี้
-         ถ้าประกาศไว้ข้างล่าง จะกลายเป็นเข้าถึงตัวแปรก่อนบรรทัดประกาศ แล้วกล่องพังทั้งกล่อง */
+      /* ช่องที่แตะล่าสุด — ใช้บอกว่าปุ่มสัญลักษณ์จะแทรกลงช่องไหน
+         จับด้วยตัวจับตัวเดียวที่กล่องใหญ่ ไม่ใช่ไล่ผูกทีละช่อง
+         เพราะแถวตัวแปร แถวสมการ และกล่องให้เลือก ถูกวาดใหม่ได้ตลอดเวลา
+         ผูกทีละช่องแล้วช่องที่วาดใหม่จะไม่ถูกจับ สัญลักษณ์จึงไปลงช่องเก่าที่ยังจำไว้
+         ซึ่งมักเป็นช่องโจทย์ ครูจึงเห็นสัญลักษณ์ไปโผล่ในโจทย์ที่พิมพ์ไว้ */
       let lastFld = null;
+      ['focusin', 'click', 'keyup'].forEach(function (ev) {
+        root.addEventListener(ev, function (e) {
+          const el = e.target;
+          if (!el || !el.tagName) return;
+          const tag = el.tagName.toLowerCase();
+          if (tag === 'textarea' || (tag === 'input' && /^(text|search|)$/i.test(el.type || ''))) {
+            lastFld = el;
+          }
+        }, true);
+      });
       const sum = () => {
         const el = $('#esSum', root);
         const tot = list.reduce(function (s, x) { return s + (Number(x.max) || 0); }, 0);
         if (el) el.innerHTML = list.length + ' ข้อ · รวม <b>' + tot + ' คะแนน</b>';
       };
-      const draw = () => { essayRows(list, root); sum(); if (typeof watchFields === 'function') watchFields(); };
+      const draw = () => { essayRows(list, root); sum(); };
       $('#esAdd', root).addEventListener('click', () => {
         list.push({ stem: '', key: '', max: 10, typed: false, img: '', skip5: false,
                     chips: [], eqs: [], vars: [], ans: '', au: '', tol: 2 });
@@ -8905,18 +8960,8 @@ function essayDialog(quiz) {
       draw();
       $('#esTitle', root).focus();
 
-      /* แถบสัญลักษณ์ — จำช่องที่พิมพ์ค้างไว้ล่าสุด แล้วแทรกตรงตำแหน่งเคอร์เซอร์
-         ต้องกัน mousedown ไม่ให้ช่องเสียโฟกัส ไม่งั้นตำแหน่งเคอร์เซอร์หาย
-         (ตัวแปร lastFld ประกาศไว้บนสุดของ onMount แล้ว) */
-      function watchFields() {
-        $$('#esList textarea, #esList input[type="text"], #esTitle', root).forEach(function (el) {
-          if (el.__esw) return;
-          el.__esw = 1;
-          ['focus', 'click', 'keyup'].forEach(function (ev) {
-            el.addEventListener(ev, function () { lastFld = el; });
-          });
-        });
-      }
+      /* แถบสัญลักษณ์ — แทรกตรงตำแหน่งเคอร์เซอร์ของช่องที่แตะล่าสุด
+         ต้องกัน mousedown ไม่ให้ช่องเสียโฟกัส ไม่งั้นตำแหน่งเคอร์เซอร์หาย */
       $$('[data-essym]', root).forEach(function (b) {
         b.addEventListener('mousedown', function (e) { e.preventDefault(); });
         b.addEventListener('click', function () {
@@ -10454,10 +10499,16 @@ function esWorkLines(pp, x) {
   const it = pp.it, gs = esGS(x), eqs = it.eqs || [];
   const at = function (i) { return (eqs[i] && eqs[i].t) ? String(eqs[i].t) : ''; };
   const out = [];
-  if (gs.e[0] != null && at(gs.e[0])) out.push({ lab: 'สมการหลัก', t: at(gs.e[0]) });
-  if (gs.e[1] != null && gs.e[1] !== gs.e[0] && at(gs.e[1])) {
-    out.push({ lab: 'จัดรูปสมการ', t: at(gs.e[1]) });
-  }
+  /* ไล่ทีละขั้นตามที่นักเรียนเลือก ขั้นที่ซ้ำกับขั้นก่อนหน้าไม่ต้องเขียนซ้ำ */
+  const chain = esEqChain(it);
+  chain.forEach(function (_, si) {
+    const ei = gs.e[si];
+    if (ei == null || !at(ei)) return;
+    if (si > 0 && ei === gs.e[si - 1]) return;
+    out.push({ lab: si === 0 ? 'สมการหลัก'
+                 : (chain.length <= 2 ? 'จัดรูปสมการ' : 'แปลงขั้นที่ ' + si),
+               t: at(ei) });
+  });
   const sub = esSubstShow(it, gs), base = esSubstEq(it);
   if (sub && base && sub !== String(base.t || '')) out.push({ lab: 'แทนค่า', t: sub });
   const ans = String(gs.a == null ? '' : gs.a).trim();
@@ -10523,14 +10574,15 @@ function essayGuideHTML(pp, x, k) {
     : '<span style="color:var(--ok)">เลือกสิ่งที่โจทย์ถามแล้ว</span>';
   const state = [
     gTxt + ' · ' + fTxt,
-    tally((gs.e[0] != null ? 1 : 0) + (gs.e[1] != null ? 1 : 0), 2),
+    tally(esEqChain(it).filter(function (_, si) { return gs.e[si] != null; }).length,
+          esEqChain(it).length),
     vs.length ? tally(nVarOK, vs.length) : 'ไม่มีตัวแปรให้กรอก',
     tally(txt(gs.a) !== '' ? 1 : 0, 0),
     tally(txt(gs.c) !== '' ? 1 : 0, 0)
   ];
   const done = [
     nGiven > 0 && nG === nGiven && gs.f != null,
-    gs.e[0] != null && gs.e[1] != null,
+    esEqChain(it).every(function (_, si) { return gs.e[si] != null; }),
     !vs.length || nVarOK === vs.length,
     txt(gs.a) !== '',
     txt(gs.c) !== ''
@@ -10590,12 +10642,20 @@ function essayGuideHTML(pp, x, k) {
       }).join('') + '</div></div>' +
     '</div></div>';
 
+  /* จำนวนช่องเท่ากับที่ครูตั้งไว้จริง — สมการหลัก แล้วตามด้วยขั้นแปลงถึงสามขั้น
+     ข้อที่ไม่ได้ตั้งขั้นแปลง ยังเป็นสองช่องเหมือนเดิม (เลือกตัวเดิมซ้ำเพื่อยืนยัน) */
+  const chain = esEqChain(it);
+  const slotName = function (si) {
+    if (si === 0) return 'สมการหลัก';
+    return chain.length <= 2 ? 'สมการที่แปลงแล้ว' : ('แปลงขั้นที่ ' + si);
+  };
   h += stepHead(2, 'สมการที่ใช้') +
-    '<div class="hint">เลือกสองครั้ง — <b>สมการหลัก</b>ที่เป็นหลักการของเรื่องนี้ ' +
-    'แล้ว<b>สมการที่แปลงแล้ว</b>ที่ย้ายข้างจนได้ตัวที่โจทย์ถาม ' +
-    'ถ้าไม่ต้องแปลงให้<b>เลือกตัวเดิมซ้ำ</b></div>';
-  [0, 1].forEach(function (slot) {
-    h += '<div class="hint" style="margin-top:8px">' + (slot ? 'สมการที่แปลงแล้ว' : 'สมการหลัก') + '</div>' +
+    '<div class="hint">เลือกให้ครบทีละขั้น — <b>สมการหลัก</b>ที่เป็นหลักการของเรื่องนี้ ' +
+    'แล้วขั้นแปลงจนได้ตัวที่โจทย์ถาม ' +
+    (chain.length <= 2 ? 'ถ้าไม่ต้องแปลงให้<b>เลือกตัวเดิมซ้ำ</b>' :
+      'ข้อนี้ต้องแปลง <b>' + (chain.length - 1) + ' ขั้น</b>') + '</div>';
+  chain.forEach(function (_, slot) {
+    h += '<div class="hint" style="margin-top:8px">' + slotName(slot) + '</div>' +
       '<div class="eseqs">' + eqs.map(function (e, ei) {
         return '<button class="eseq' + (gs.e[slot] === ei ? ' sel' : '') +
           '" data-esg2="' + k + '" data-slot="' + slot + '" data-ei="' + ei + '">' + M(e.t) + '</button>';
