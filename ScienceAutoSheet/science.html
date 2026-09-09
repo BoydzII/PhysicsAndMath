@@ -1551,7 +1551,16 @@ function applyBuiltin() {
     DB.auth = { role: '', token: '', profile: null, exp: 0 };
     touched = true;
   }
-  if (BUILTIN.url && !DB.cloud.url) { DB.cloud.url = BUILTIN.url; touched = true; }
+  /* ที่อยู่ชีตที่ฝังมากับไฟล์ ถือเป็นของจริงเสมอสำหรับไฟล์ที่ล็อกการเชื่อมต่อไว้
+     เดิมเติมให้เฉพาะเครื่องที่ยังไม่เคยเก็บค่าไว้ เครื่องที่เคยเปิดแอปแล้วจึงค้างอยู่กับ
+     ที่อยู่เดิมตลอดไป แม้ครูจะย้ายไปใช้ deployment ใหม่แล้วก็ตาม
+     นักเรียนแก้เองไม่ได้ด้วย เพราะช่องแก้ที่อยู่ชีตเปิดให้เฉพาะผู้ดูแล
+     ผลคือทั้งห้องยิงไปที่สคริปต์รุ่นเก่าโดยไม่มีใครรู้ตัว
+     ไฟล์ที่ไม่ได้ล็อก (ไฟล์ต้นฉบับที่ครูใช้ทดสอบ) ยังเคารพค่าที่ตั้งเองเหมือนเดิม */
+  const lockedUrl = BUILTIN.url && lockCloudBuild();
+  if (BUILTIN.url && (lockedUrl ? DB.cloud.url !== BUILTIN.url : !DB.cloud.url)) {
+    DB.cloud.url = BUILTIN.url; touched = true;
+  }
   if (BUILTIN.logo && !DB.settings.logo) { DB.settings.logo = BUILTIN.logo; touched = true; }
   if (BUILTIN.header) {
     Object.keys(BUILTIN.header).forEach(k => {

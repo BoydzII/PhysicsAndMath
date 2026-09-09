@@ -863,7 +863,11 @@ function load() {
   if (!DB.progress) DB.progress = freshProgress();
   else DB.progress = Object.assign(freshProgress(), DB.progress);
   if (!DB.deviceId) DB.deviceId = uid();
-  if (BUILTIN.url && !DB.cloud.url) DB.cloud.url = BUILTIN.url;
+  /* ไฟล์ที่ล็อกการเชื่อมต่อไว้ ให้ที่อยู่ที่ฝังมากับไฟล์ชนะค่าที่ค้างอยู่ในเครื่องเสมอ
+     ไม่งั้นเครื่องที่เคยเปิดแอปแล้วจะยิงไปที่ deployment เก่าตลอดไปโดยไม่มีใครรู้ตัว */
+  if (BUILTIN.url && (BUILTIN.lockCloud ? DB.cloud.url !== BUILTIN.url : !DB.cloud.url)) {
+    DB.cloud.url = BUILTIN.url;
+  }
 }
 
 let saveT = null;
