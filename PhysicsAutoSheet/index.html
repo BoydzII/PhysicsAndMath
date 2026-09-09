@@ -1022,7 +1022,7 @@ html[data-theme-style="minimal"] .btn-tool.active {
    *** ห้ามลบบรรทัดเครื่องหมาย @@BUILTIN@@ ทั้งสองอัน ตัวสร้างไฟล์ใช้หาตำแหน่ง ***
    ========================================================================== */
 /* @@BUILTIN@@ */
-const BUILTIN = {"url":"https://script.google.com/macros/s/AKfycbzuuRbnE_oB7a9vx7zZizyPVEKao31ERDTU82DvydMuRTDqVoQvgns9EsjTIzpbBjuM/exec","studentOnly":false,"lockCloud":true,"logo":"","header":null,"about":null,"build":"2026-09-10 00:01"};
+const BUILTIN = {"url":"https://script.google.com/macros/s/AKfycbzuuRbnE_oB7a9vx7zZizyPVEKao31ERDTU82DvydMuRTDqVoQvgns9EsjTIzpbBjuM/exec","studentOnly":false,"lockCloud":true,"logo":"","header":null,"about":null,"build":"2026-09-10 00:31"};
 /* @@BUILTIN-END@@ */
 
 /* ถ่ายภาพซอร์สของหน้านี้ไว้ตั้งแต่สคริปต์เพิ่งเริ่มทำงาน
@@ -15400,7 +15400,17 @@ const ES_SYMS = [
     ins: 'nuc(,,)', back: 3, t: 'สัญลักษณ์นิวเคลียร์ — เลขมวล, เลขอะตอม, ธาตุ' },
   { lab: 'π', ins: 'pi', t: 'พาย' },
   { lab: 'Δ', ins: 'Δ', t: 'เดลตา' },
-  { lab: 'θ', ins: 'θ', t: 'ทีตา' },
+  { lab: 'θ', ins: 'θ', t: 'ทีตา — มุม' },
+  { lab: 'ϕ', ins: 'ϕ', t: 'ฟาย — มุมเฟส' },
+  { lab: 'α', ins: 'α', t: 'แอลฟา' },
+  { lab: 'β', ins: 'β', t: 'บีตา' },
+  { lab: 'γ', ins: 'γ', t: 'แกมมา' },
+  { lab: 'ε', ins: 'ε', t: 'เอปไซลอน' },
+  { lab: 'μ', ins: 'μ', t: 'มิว — สัมประสิทธิ์ความเสียดทาน' },
+  { lab: 'ρ', ins: 'ρ', t: 'โร — ความหนาแน่น' },
+  { lab: 'τ', ins: 'τ', t: 'ทาว — ทอร์ก' },
+  { lab: 'ω', ins: 'ω', t: 'โอเมกา — ความเร็วเชิงมุม' },
+  { lab: 'Σ', ins: 'Σ', t: 'ซิกมา — ผลรวม' },
   { lab: '°', ins: '°', t: 'องศา' },
   { lab: '×', ins: ' × ', t: 'คูณ' },
   { lab: '÷', ins: ' ÷ ', t: 'หาร' },
@@ -16244,7 +16254,12 @@ function essayShrinkImage(file, cb) {
    รับทั้งแบบยูนิโคดที่แถบสัญลักษณ์ใส่ให้ และแบบ _1 ^2 ที่พิมพ์เอง */
 const ES_SUP = '⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻ⁿ';
 const ES_SUB = '₀₁₂₃₄₅₆₇₈₉₊₋ₙ';
-const ES_BASE = 'A-Za-zΔα-ωΑ-Ω';
+/* Δ (ผลต่าง) และ Σ (ผลรวม) ไม่ใช่ตัวแปร แต่เป็นตัวนำหน้าที่ผูกกับตัวแปรถัดไป
+   Δv กับ Δt เป็นคนละตัวกับ v กับ t และ Δ เดี่ยว ๆ ไม่มีค่าให้นักเรียนแทน
+   จึงต้องเอาออกจากรายชื่อตัวอักษรฐาน แล้วไปรับเป็นตัวนำหน้าแทน
+   (Σ อยู่กลางช่วง Α-Ω พอดี ต้องเขียนช่วงข้ามมันเป็น Α-Ρ กับ Τ-Ω) */
+const ES_PRE = 'ΔΣ';
+const ES_BASE = 'A-Za-zα-ωΑ-ΡΤ-Ωϕ';
 /* ชื่อตัวแปรที่ยาวกว่าหนึ่งตัวอักษร — วิชานี้ยังไม่มี จึงอ่านทีละตัวอักษรตามเดิม
    ถ้าจะเพิ่ม ให้เติมในอาเรย์นี้ (ดูตัวอย่างในไฟล์เคมี) */
 const ES_WORDS = [];
@@ -16252,7 +16267,8 @@ const ES_WORDS = [];
 function esVarRe(flags) {
   /* ตัวห้อยยาวกว่าหนึ่งตัวอักษรก็ได้ เช่น v_x  F_net  a_max
      ของเดิมรับตัวเดียว F_net จึงถูกอ่านเป็น F_n แล้วตามด้วย e กับ t เป็นตัวแปรลอย ๆ */
-  return new RegExp('[' + ES_BASE + '](?:_\\{[^}]*\\}|_[A-Za-z0-9]+|[' + ES_SUB + ']+)?', flags);
+  return new RegExp('[' + ES_PRE + ']?[' + ES_BASE +
+    '](?:_\\{[^}]*\\}|_[A-Za-z0-9]+|[' + ES_SUB + ']+)?', flags);
 }
 /** จับชื่อตัวแปรที่ยาวกว่าหนึ่งตัวอักษรจากรายชื่อที่รู้จักก่อน
     ทำเป็นกฎทั่วไปไม่ได้ เพราะ F = ma จะกลายเป็นตัวแปรชื่อ ma แทนที่จะเป็น m กับ a
@@ -16263,17 +16279,26 @@ function esWordRe() {
     .map(function (s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); });
   return new RegExp('(?:' + w.join('|') + ')(?:_\\{[^}]*\\}|_[A-Za-z0-9]+|[' + ES_SUB + ']+)?', 'g');
 }
-/* มุมที่ระบุองศามาแล้ว เช่น sin30 cos45 tan60 ถือเป็น "ค่าเดียว"
+/* สัญลักษณ์ที่ใช้แทนมุมได้ — อักษรกรีกทั้งตัวเล็กตัวใหญ่ รวม ϕ ที่อยู่นอกช่วง */
+const ES_ANG = 'Δϕα-ωΑ-Ω';
+/* มุมถือเป็น "ค่าเดียว" ทั้งแบบที่ระบุองศามาแล้ว เช่น sin30 cos45 tan60
+   และแบบที่เขียนด้วยสัญลักษณ์มุม เช่น sinθ cosα tanϕ รวมถึงมุมที่มีตัวห้อย sinθ₁
    นักเรียนต้องเปิดตารางหรือกดเครื่องคิดเลขแล้วกรอกค่าที่ได้ลงไปช่องเดียว
-   ไม่ใช่แยกเป็น sin กับ 30 ซึ่งแทนค่าไม่ได้ทั้งคู่ */
-var ES_TRIG_RE = /\b(sin|cos|tan)\s*(-?\d+(?:\.\d+)?)\s*°?/g;
+   ไม่ใช่แยกเป็น sin กับ θ ซึ่งแทนค่าไม่ได้ทั้งคู่ */
+const ES_ANGSYM = '[' + ES_ANG + '](?:_\\{[^}]*\\}|_[A-Za-z0-9]+|[' + ES_SUB + ']+)?';
+const ES_ANGNUM = '-?\\d+(?:\\.\\d+)?';
+/* ตัวคูณนำหน้ามุมนับรวมไปด้วย เช่น sin2θ ในสูตรระยะทางของโพรเจกไทล์
+   ต้องลองแบบ "เลขแล้วตามด้วยสัญลักษณ์" ก่อน ไม่งั้น sin2θ จะได้แค่ sin2 แล้ว θ หลุดเป็นตัวแปรลอย */
+const ES_TRIG_RE = new RegExp('\\b(sin|cos|tan)\\s*(' +
+  ES_ANGNUM + '\\s*' + ES_ANGSYM + '|' + ES_ANGNUM + '|' + ES_ANGSYM + ')\\s*°?', 'g');
 
 function essayVarsFrom(eqText) {
   let t = String(eqText || '');
   /* ดึงมุมออกมาเป็นตัวแปรก่อน แล้วเอาออกจากข้อความ
      ต้องทำก่อนขั้นตัดชื่อฟังก์ชัน ไม่งั้น sin จะถูกตัดทิ้งเหลือแต่เลข 30 ลอย ๆ */
   const trig = [];
-  t = t.replace(ES_TRIG_RE, function (m, f, d) { trig.push(f + d); return ' '; });
+  // ช่องว่างที่ครูเผลอเคาะระหว่างทาง ไม่ควรกลายเป็นชื่อตัวแปรคนละตัว
+  t = t.replace(ES_TRIG_RE, function (m, f, d) { trig.push(f + d.replace(/\s+/g, '')); return ' '; });
   t = t.replace(/\b(sin|cos|tan|log|ln|sqrt\d*|frac|nuc|pi)\b/g, ' ');
   /* ตัดเลขชี้กำลังทิ้งก่อนทุกแบบ ครูสั่งให้ยึดตัวแปรหลักก่อนยกกำลัง
      ถ้าไม่ตัด s² จะถูกอ่านเป็นคนละตัวกับ s และ ^2 จะกลายเป็นตัวแปรชื่อแปลก ๆ */
@@ -18339,7 +18364,12 @@ function esSubstShow(it, gs) {
   const eq = esSubstEq(it);
   if (!eq) return '';
   let t = String(eq.t || ''), keep = [];
-  t = t.replace(/\b(frac|sqrt\d*|sin|cos|tan|log|ln|pi|nuc)\b/g, function (m) {
+  /* ชื่อฟังก์ชันต้องกันไว้ก่อนแทนค่า ไม่งั้นตัวแปรชื่อ s หรือ n จะไปทับตัวอักษรใน sin
+     ยกเว้น sin cos tan ที่ตามด้วยสัญลักษณ์มุม เพราะทั้งก้อนเป็นชื่อตัวแปรตัวเดียว
+     ถ้ากันไว้ด้วย sinθ จะกลายเป็นโทเคนบวก θ แล้วหาชื่อตัวแปรไม่เจอ
+     ค่าที่นักเรียนกรอกก็จะไม่ขึ้นในวิธีทำ (แบบ sin30 ไม่มีปัญหา เพราะไม่มีขอบคำคั่น) */
+  t = t.replace(new RegExp('\\b(?:frac|sqrt\\d*|log|ln|pi|nuc)\\b|' +
+                           '\\b(?:sin|cos|tan)\\b(?!\\s*[' + ES_ANG + '])', 'g'), function (m) {
     keep.push(m); return '@@' + (keep.length - 1) + '@@';
   });
   esVars(it).slice().sort(function (p, q) { return q.s.length - p.s.length; })
