@@ -1218,7 +1218,7 @@ table td,table th,.num,.xpstat b,.tick,
    *** ห้ามลบบรรทัดเครื่องหมาย @@BUILTIN@@ ทั้งสองอัน ตัวสร้างไฟล์ใช้หาตำแหน่ง ***
    ========================================================================== */
 /* @@BUILTIN@@ */
-const BUILTIN = {"url":"","studentOnly":false,"lockCloud":false,"logo":"","header":null,"about":null,"build":"2026-09-10 21:05","ver":"v8.105"};
+const BUILTIN = {"url":"","studentOnly":false,"lockCloud":false,"logo":"","header":null,"about":null,"build":"2026-09-10 21:14","ver":"v8.106"};
 /* @@BUILTIN-END@@ */
 
 /* ถ่ายภาพซอร์สของหน้านี้ไว้ตั้งแต่สคริปต์เพิ่งเริ่มทำงาน
@@ -10147,6 +10147,10 @@ const FOCUS_EV_MAX = 60;       // เก็บบันทึกการออ�
 let FTICK = null;              // ตัวเดินนาฬิกาบนหน้าจอ
 const FWIN = { w: 0, h: 0, split: false };
 
+/** จำไว้ว่านักเรียนคนนี้เลือกใช้โหมดตั้งใจเรียนหรือไม่ — ค่าตั้งต้นคือเปิด */
+function focusWantFull() {
+  return DB.settings.focusFull !== false;
+}
 function focusDB() {
   if (!DB.focus || typeof DB.focus !== 'object') DB.focus = { cur: null, log: [] };
   if (!Array.isArray(DB.focus.log)) DB.focus.log = [];
@@ -10183,7 +10187,64 @@ function focusMin(sec) {
   return m < 60 ? m + ' นาที' : Math.floor(m / 60) + ' ชม. ' + (m % 60) + ' นาที';
 }
 
-function focusStart(topicId) {
+/* ── โหมดตั้งใจเรียน ─────────────────────────────────────────────────────
+   สิ่งที่ทำได้จริงบนเว็บ — เต็มหน้าจอซ่อนแถบที่อยู่และแท็บอื่นไว้
+   กันจอดับระหว่างที่ก้มอ่านหนังสือ และรู้ทันทีเมื่อหลุดออกจากเต็มหน้าจอ
+   ทั้งสามอย่างไม่ใช่ด่านกัน คนที่ตั้งใจจะออกยังออกได้อยู่ดี
+   หน้าที่จริงคือทำให้การออกเป็น "การตัดสินใจ" ไม่ใช่การเผลอ และเจ้าตัวรู้ตัว
+
+   จงใจไม่มีอะไรขึ้นจอฉาย ครูเห็นสรุปทีหลังในรายงานของตัวเองเท่านั้น
+   การประจานหน้าห้องได้ผลระยะสั้นแต่แลกกับความไว้ใจ ซึ่งไม่คุ้ม        */
+const FMODE = { want: false, warned: false, wake: null };
+
+/** ข้อสอบคุมเวลาเป็นเจ้าของเต็มหน้าจออยู่แล้ว ช่วงเรียนต้องไม่ไปแย่ง */
+function focusExamBusy() {
+  return typeof procCur === 'function' && !!procCur();
+}
+function focusFsIsOn() {
+  return !!(document.fullscreenElement || document.webkitFullscreenElement);
+}
+/** ต้องเรียกจากในตัวจับการกดปุ่มโดยตรง ถ้ารอ Promise ก่อนเบราว์เซอร์จะปฏิเสธ */
+function focusFsOn() {
+  const el = document.documentElement;
+  const fn = el.requestFullscreen || el.webkitRequestFullscreen;
+  if (!fn) return false;
+  try {
+    const r = fn.call(el);
+    if (r && r.catch) r.catch(function () {});
+    return true;
+  } catch (e) { return false; }
+}
+function focusFsOff() {
+  const fn = document.exitFullscreen || document.webkitExitFullscreen;
+  if (fn && focusFsIsOn()) { try { fn.call(document); } catch (e) {} }
+}
+/** กันจอดับ — ระบบปล่อยล็อกนี้เองทุกครั้งที่แอปถูกซ่อน ต้องขอใหม่ตอนกลับมา */
+function focusWakeOn() {
+  if (FMODE.wake || !navigator.wakeLock || !navigator.wakeLock.request) return;
+  navigator.wakeLock.request('screen').then(function (w) {
+    FMODE.wake = w;
+    w.addEventListener('release', function () { FMODE.wake = null; });
+  }).catch(function () { FMODE.wake = null; });
+}
+function focusWakeOff() {
+  if (!FMODE.wake) return;
+  try { FMODE.wake.release(); } catch (e) {}
+  FMODE.wake = null;
+}
+function focusModeOff() {
+  FMODE.want = false; FMODE.warned = false;
+  focusWakeOff();
+  if (!focusExamBusy()) focusFsOff();
+}
+/** เตือนครั้งเดียวต่อช่วงเรียน ไม่ใช่เด้งทุกครั้งที่สลับ ไม่งั้นกลายเป็นรบกวน */
+function focusWarnLeave() {
+  if (FMODE.warned || !focusCur()) return;
+  FMODE.warned = true;
+  toast('ออกจากโหมดตั้งใจเรียนแล้ว — นาฬิกาจะหยุดเดินตอนที่ไม่ได้อยู่กับบทเรียน', 'warn');
+}
+
+function focusStart(topicId, wantFull) {
   if (focusCur()) return;
   const t = topicId == null || topicId === '' ? null : topicOf(Number(topicId));
   focusDB().cur = {
@@ -10194,6 +10255,11 @@ function focusStart(topicId) {
     device: String(navigator.userAgent || '').slice(0, 60), sent: false
   };
   FWIN.w = window.innerWidth; FWIN.h = window.innerHeight; FWIN.split = false;
+  /* เต็มหน้าจอต้องสั่งจากในการกดปุ่มโดยตรง จึงทำก่อนงานอื่นทั้งหมด
+     ถ้าไปสั่งหลัง save() หรือ renderMake() เบราว์เซอร์จะถือว่าไม่ได้มาจากการกด */
+  FMODE.want = !!wantFull && !focusExamBusy();
+  FMODE.warned = false;
+  if (FMODE.want) { focusFsOn(); focusWakeOn(); }
   save(true);
   focusTickOn();
   renderMake();
@@ -10247,6 +10313,14 @@ function focusResume() {
   save(true);
   focusPaintBar();
   if (TAB === 'make') focusPaintCard();
+  /* ระบบปล่อยตัวกันจอดับเองทุกครั้งที่แอปถูกซ่อน กลับมาแล้วต้องขอใหม่ */
+  if (FMODE.want) focusWakeOn();
+  /* บอกให้เจ้าตัวเห็นราคาของการออกไปทันทีที่กลับมา ไม่ต้องรอครูมาบอก
+     เกณฑ์ 20 วินาทีขึ้นไป เพราะสั้นกว่านั้นมักเป็นการเผลอ ไม่ใช่การไปทำอย่างอื่น */
+  if (sec >= 20) {
+    toast('ออกไป ' + focusClock(sec) + ' — นาฬิกาหยุดให้แล้ว รวมคาบนี้ออกไป ' +
+          s.nOut + ' ครั้ง', 'warn');
+  }
 }
 
 /** เปิดจอคู่ — หน้าต่างแคบลงมากแต่สูงเท่าเดิม ดูคำอธิบายที่หัวข้อด้านบน */
@@ -10277,6 +10351,7 @@ async function focusStop() {
   f.cur = null;
   save(true);
   focusTickOff();
+  focusModeOff();          // คืนจอปกติและปล่อยการกันจอดับ
   focusPaintBar();
   renderMake();
   if (s.focusSec < FOCUS_MIN_SEC) {
@@ -10378,7 +10453,12 @@ function focusCardHTML() {
       '<div class="row" style="margin-top:12px"><label for="fTopic" class="hint">บทที่กำลังเรียน</label>' +
       '<select id="fTopic" style="min-width:210px"><option value="">ไม่ระบุ</option>' + list + '</select>' +
       '<button class="primary" id="btnFocusStart">เริ่มช่วงเรียน</button>' +
-      '<button id="btnNote">📓 สมุดจดของฉัน</button></div>';
+      '<button id="btnNote">📓 สมุดจดของฉัน</button></div>' +
+      '<label class="chk" style="min-height:auto;margin-top:11px">' +
+      '<input type="checkbox" id="fFull"' + (focusWantFull() ? ' checked' : '') + '>' +
+      '<span><span class="t">โหมดตั้งใจเรียน</span><span class="d">' +
+      'เต็มหน้าจอและกันจอดับระหว่างเรียน · สลับไปแอปอื่นได้อยู่ ' +
+      'แต่จะรู้ตัวว่ากำลังออกจากบทเรียน และนาฬิกาจะหยุดเดิน</span></span></label>';
     if (f.log.length) {
       const today = f.log.filter(x => focusSameDay(x.startAt, Date.now()));
       const sum = today.reduce((a, x) => a + (x.focusSec || 0), 0);
@@ -10429,7 +10509,12 @@ function focusHelp() {
 }
 function focusBind() {
   const b1 = $('#btnFocusStart');
-  if (b1) b1.addEventListener('click', () => { const t = $('#fTopic'); focusStart(t ? t.value : ''); });
+  if (b1) b1.addEventListener('click', () => {
+    const t = $('#fTopic'), fl = $('#fFull');
+    // จำค่าที่เลือกไว้ ครั้งต่อไปไม่ต้องมาติ๊กใหม่ทุกคาบ
+    if (fl) { DB.settings.focusFull = !!fl.checked; save(); }
+    focusStart(t ? t.value : '', focusWantFull());
+  });
   const b2 = $('#btnFocusStop'); if (b2) b2.addEventListener('click', focusStop);
   const b3 = $('#btnFocusHelp'); if (b3) b3.addEventListener('click', focusHelp);
   const b4 = $('#btnFocusCancel');
@@ -10439,7 +10524,8 @@ function focusBind() {
       bodyHTML: '<div class="hint">เวลาที่จับไว้จะหายไปเลย ไม่ถูกบันทึกและไม่ถูกส่งขึ้นชีต</div>',
       buttons: [{ label: 'ไม่ทิ้ง' },
                 { label: 'ทิ้งเลย', cls: 'danger', act: c => {
-                    focusDB().cur = null; save(true); focusTickOff(); focusPaintBar(); c(); renderMake();
+                    focusDB().cur = null; save(true); focusTickOff(); focusModeOff();
+                    focusPaintBar(); c(); renderMake();
                   } }]
     });
   });
@@ -10514,6 +10600,14 @@ function focusInit() {
   });
   window.addEventListener('pagehide', function () { focusPause('ปิดแอป'); });
   window.addEventListener('resize', focusCheckSplit);
+  /* หลุดจากเต็มหน้าจอระหว่างช่วงเรียน — บอกให้รู้ตัว ไม่บังคับกลับ
+     เพราะบางเครื่องกดกลับไม่ได้ และการบังคับจะกลายเป็นขวางการเรียน */
+  ['fullscreenchange', 'webkitfullscreenchange'].forEach(function (ev) {
+    document.addEventListener(ev, function () {
+      if (!FMODE.want || !focusCur()) return;
+      if (!focusFsIsOn()) focusWarnLeave();
+    });
+  });
   /* บนไอแพด การเข้า-ออกจอคู่ยิง resize อยู่แล้ว แต่บางรุ่นยิงที่ visualViewport ก่อน
      ผูกไว้ทั้งสองที่ ตัวตรวจเป็นชุดเดียวกันและอ่านค่าจาก window.innerWidth เหมือนกัน
      จึงยิงซ้ำได้ไม่เสียหาย (แป้นพิมพ์เด้งขึ้นก็ยิงตัวนี้ แต่กว้างไม่เปลี่ยน จึงไม่เข้าเงื่อนไข) */
