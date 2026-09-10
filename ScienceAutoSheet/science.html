@@ -508,6 +508,29 @@ svg .fpt{fill:var(--brand);stroke:var(--panel);stroke-width:1.8}
 .eq{font-family:"Times New Roman","Cambria Math",Georgia,serif;font-size:18px;
     font-style:italic;white-space:nowrap;display:inline-block}
 .eq .u{font-style:normal}            /* หน่วยและตัวเลข ไม่เอียง */
+
+/* ประโยคที่มีสมการปนอยู่ต้องพับบรรทัดได้
+   ของเดิมตั้ง white-space:nowrap ไว้ทั้งก้อน .eq ซึ่งถูกสำหรับ "สูตรเดี่ยว"
+   แต่โจทย์อัตนัยกับตัวเลือกเป็นประโยคเต็มที่ผ่านตัวจัดรูปเดียวกัน
+   ยาวหน่อยก็ล้นออกนอกกรอบไปทางขวาแทนที่จะขึ้นบรรทัดใหม่
+   ของที่ห้ามฉีกกลางคือ "ก้อนสูตร" ซึ่งกันไว้ในตัวเองแล้วด้วย inline-flex
+   และ inline-block (เศษส่วน ราก สัญลักษณ์นิวเคลียร์) จึงไม่มีทางแตกกลางสูตร */
+.eq{white-space:normal}
+/* บรรทัดสมการแบบบล็อกยังไม่ให้พับ ถ้ากว้างเกินกรอบให้เลื่อนในกรอบของตัวเอง
+   ดีกว่าปล่อยให้ดันหน้าทั้งหน้ากว้างออกไป */
+.eqblk{overflow-x:auto}
+.eqblk .eq{white-space:nowrap}
+
+/* ---------- ตัวหนาและสีในโจทย์ที่ครูสร้างเอง ---------- */
+/* ใช้ชื่อแท็กสั้น ๆ แทน span+style เพื่อไม่ต้องเปิดให้ใส่แอตทริบิวต์อะไรก็ได้
+   ซึ่งจะกลายเป็นช่องฝัง HTML แปลกปลอมลงคลังข้อสอบ
+   สีอ้างจากโทเคนของแอป จึงเปลี่ยนตามโหมดสว่าง-มืดเองและคอนทราสต์ผ่านทั้งสองโหมด */
+red,blue,green,orange,hl{font-style:inherit;font-weight:inherit}
+red{color:var(--bad)}
+blue{color:var(--brand)}
+green{color:var(--ok)}
+orange{color:var(--warn)}
+hl{background:var(--warn-bg);border-radius:4px;padding:0 3px}
 .eqblk{margin:5px 0 5px 8px}
 .eqblk .eq{font-size:18.5px}
 /* เศษส่วนซ้อนสองชั้น — เขียนแบบเดียวกับที่นักเรียนเขียนในสมุด */
@@ -814,6 +837,13 @@ table td,table th,.num,.xpstat b,.tick,
   .stickytop,.tabs,.topbar,#toast,#modal-root,.noprint,main{display:none !important}
   #printarea{display:block !important;padding:0;border:none;color:#000}
   #printarea *{color:#000 !important}
+  /* สีในโจทย์ต้องรอดมาถึงกระดาษ กฎบรรทัดบนบังคับดำทั้งหมด จึงต้องเจาะเป็นราย ๆ ไป
+     และทำตัวหนาให้ด้วย เพราะถ้าครูพิมพ์ขาวดำ สีจะกลายเป็นเทาที่แยกไม่ออก */
+  #printarea red{color:#c0242a !important;font-weight:700}
+  #printarea blue{color:#14509b !important;font-weight:700}
+  #printarea green{color:#0d6b45 !important;font-weight:700}
+  #printarea orange{color:#a35a06 !important;font-weight:700}
+  #printarea hl{background:#ffe9a8 !important;color:#000 !important}
   #printarea svg .ln,#printarea svg .ln2,#printarea svg .dash,#printarea svg .frc{stroke:#000}
   #printarea svg .bdy{fill:#e8e8e8;stroke:#000}
   /* กราฟบนกระดาษ — แท่งเทาเข้มพออ่านออกตอนพิมพ์ขาวดำ เส้นตารางจางลง */
@@ -1000,7 +1030,7 @@ table td,table th,.num,.xpstat b,.tick,
    *** ห้ามลบบรรทัดเครื่องหมาย @@BUILTIN@@ ทั้งสองอัน ตัวสร้างไฟล์ใช้หาตำแหน่ง ***
    ========================================================================== */
 /* @@BUILTIN@@ */
-const BUILTIN = {"url":"","studentOnly":false,"lockCloud":false,"logo":"","header":null,"about":null,"build":"2026-09-10 21:14","ver":"v8.106"};
+const BUILTIN = {"url":"","studentOnly":false,"lockCloud":false,"logo":"","header":null,"about":null,"build":"2026-09-10 22:15","ver":"v8.108"};
 /* @@BUILTIN-END@@ */
 
 /* ถ่ายภาพซอร์สของหน้านี้ไว้ตั้งแต่สคริปต์เพิ่งเริ่มทำงาน
@@ -2248,7 +2278,10 @@ function mInner(raw, box) {
   const stash = html => '\u0001' + String.fromCharCode(0xE000 + (box.push(html) - 1)) + '\u0002';
   // อนุญาตแท็กเน้นข้อความไม่กี่ตัว โดยซ่อนไว้ก่อน esc() แล้วคืนกลับตอนท้าย
   // ทำให้เขียน M('เส้นขนาน ⇒ <b>มุมแย้งเท่ากัน</b>') ได้ โดยแท็กไม่หลุดออกมาเป็นตัวหนังสือ
-  let t = String(raw).replace(/<\/?(?:b|i|em|strong|br)\s*\/?>/gi, m => stash(m))
+  /* แท็กที่ยอมให้ผ่าน — ปิดตายเท่านี้ ไม่รับแอตทริบิวต์ใด ๆ
+     u ขีดเส้นใต้ · red blue green orange สีตัวอักษร · hl เน้นพื้น
+     ครูกดจากปุ่มในหน้าสร้างโจทย์ ไม่ต้องพิมพ์เอง */
+  let t = String(raw).replace(/<\/?(?:b|i|em|strong|br|u|red|blue|green|orange|hl)\s*\/?>/gi, m => stash(m))
                      .replace(/\bpi\b/g, 'π');
   // แปลงรากและเศษส่วนสลับกันไปเรื่อย ๆ จนไม่มีอะไรเปลี่ยน
   // ทั้งสองแบบรับเฉพาะเนื้อในที่ไม่มีวงเล็บซ้อน การวนแบบนี้จึงแปลงชั้นในสุดก่อนเสมอ
