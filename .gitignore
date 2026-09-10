@@ -94,3 +94,12 @@ node_modules/
 __pycache__/
 .DS_Store
 Thumbs.db
+
+# ---- แอป Interactive ฟิสิกส์ 2 ----
+!Physics2App/
+Physics2App/*
+!Physics2App/index.html
+!Physics2App/style.css
+!Physics2App/app.js
+!Physics2App/draw.js
+!Physics2App/data.js

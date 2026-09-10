@@ -1,0 +1,77 @@
+const physicsData = {
+  topics: {
+    work: {
+      id: "work",
+      title: "งานและพลังงาน",
+      theory: `
+        <h2>1. งาน (Work)</h2>
+        <p>ในทางฟิสิกส์ <b>งาน ($W$)</b> เกิดขึ้นเมื่อมีแรง ($F$) กระทำต่อวัตถุ และทำให้วัตถุเคลื่อนที่ไปตามแนวการกระจัด ($s$) โดยมีสมการดังนี้:</p>
+        <div class="formula-box">
+          $$ W = F s \\cos \\theta $$
+        </div>
+        <p>เมื่อ $\\theta$ คือมุมระหว่างเวกเตอร์ของแรงและการกระจัด</p>
+        <ul>
+          <li>ถ้า $\\theta = 0^\\circ$ แรงและการกระจัดทิศเดียวกัน $W = Fs$</li>
+          <li>ถ้า $\\theta = 90^\\circ$ แรงตั้งฉากกับการกระจัด $W = 0$</li>
+          <li>ถ้า $\\theta = 180^\\circ$ แรงทิศตรงข้ามการกระจัด $W = -Fs$</li>
+        </ul>
+        <br>
+        <canvas id="simWork" class="sim-canvas"></canvas>
+        <p class="hint-box" style="margin-top:12px"><b>💡 Tips:</b> ลากกล่องในภาพจำลองด้านบนเพื่อดูการเกิดงาน</p>
+      `,
+      problems: [
+        {
+          id: "w1",
+          text: "กล่องมวล 5 kg ถูกลากด้วยแรง 20 N ทำมุม $37^\\circ$ กับแนวระดับ ให้เคลื่อนที่ไปบนพื้นราบได้ระยะทาง 4 m จงหางานที่เกิดขึ้น (กำหนด $\\cos 37^\\circ = 0.8$)",
+          hints: "แตกแรง 20 N ให้อยู่ในแนวขนานกับการกระจัด (แนวราบ) จะได้ $F \\cos 37^\\circ$",
+          guide: `
+            <div class="step">
+              1. จากสมการของงาน: <br>
+              $$ W = F s \\cos \\theta $$
+            </div>
+            <div class="step">
+              2. แทนค่าที่โจทย์กำหนดให้: <br>
+              $F = $ <input type="text" class="answer-input" placeholder="20"> N<br>
+              $s = $ <input type="text" class="answer-input" placeholder="4"> m<br>
+              $\\cos 37^\\circ = $ <input type="text" class="answer-input" placeholder="0.8">
+            </div>
+            <div class="step">
+              3. คำนวณหาค่า W: <br>
+              $W = 20 \\times 4 \\times 0.8 = $ <input type="text" class="answer-input" placeholder="64"> J
+            </div>
+          `,
+          advancedHtml: `
+            <div style="margin-top: 100px; display: flex; align-items: center; gap: 12px; font-weight:bold;">
+              คำตอบ: $W = $ <input type="text" class="answer-input" style="width: 120px"> J
+            </div>
+          `
+        },
+        {
+          id: "w2",
+          text: "ชายคนหนึ่งแบกของมวล 10 kg เดินไปข้างหน้าในแนวระดับเป็นระยะทาง 5 m จากนั้นเดินขึ้นบันไดสูง 3 m งานที่ชายคนนี้ทำทั้งหมดมีค่าเท่าใด (กำหนด $g = 10 \\text{ m/s}^2$)",
+          hints: "งานในการเดินแนวราบเป็นศูนย์ เพราะแรงแบกชี้ขึ้นตั้งฉากกับการกระจัด คิดเฉพาะตอนเดินขึ้นบันได",
+          guide: `
+            <div class="step">
+              1. งานตอนเดินพื้นราบ: แรงแบก (ขึ้น) ตั้งฉากกับการกระจัด (ราบ) <br>
+              $\\theta = 90^\\circ \\rightarrow W_1 = 0$ J
+            </div>
+            <div class="step">
+              2. งานตอนเดินขึ้นบันได: แรงแบก (ขึ้น) ทิศเดียวกับการกระจัด (ขึ้น) <br>
+              $F = mg = 10 \\times 10 = 100$ N<br>
+              $s = $ <input type="text" class="answer-input" placeholder="3"> m
+            </div>
+            <div class="step">
+              3. คำนวณหาค่า W รวม: <br>
+              $W = 100 \\times 3 = $ <input type="text" class="answer-input" placeholder="300"> J
+            </div>
+          `,
+          advancedHtml: `
+            <div style="margin-top: 100px; display: flex; align-items: center; gap: 12px; font-weight:bold;">
+              คำตอบ: $W = $ <input type="text" class="answer-input" style="width: 120px"> J
+            </div>
+          `
+        }
+      ]
+    }
+  }
+};

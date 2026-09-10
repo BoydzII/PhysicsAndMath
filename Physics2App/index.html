@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>ฟิสิกส์ 2 - Interactive Notebook</title>
+  
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="logo">
+      <i class="ph ph-atom"></i>
+      <span>ฟิสิกส์ 2 (สสวท.)</span>
+    </div>
+    
+    <div class="tools">
+      <select id="topicSelector">
+        <option value="work">บทที่ 1: งานและพลังงาน</option>
+      </select>
+
+      <div class="level-switch">
+        <span>ระดับ:</span>
+        <label class="toggle-btn">
+          <input type="radio" name="level" value="beginner" checked>
+          <span class="btn-text">พื้นฐาน (มีไกด์)</span>
+        </label>
+        <label class="toggle-btn">
+          <input type="radio" name="level" value="advanced">
+          <span class="btn-text">ขั้นสูง (โจทย์ล้วน)</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button id="btnExport" class="primary" onclick="window.print()"><i class="ph ph-export"></i> บันทึก PDF</button>
+      <button id="btnSubmit" class="secondary"><i class="ph ph-paper-plane-right"></i> ส่งงาน</button>
+    </div>
+  </header>
+
+  <div class="drawing-toolbar">
+    <div class="tool-group">
+      <button class="tool-btn active" data-tool="pen" title="ปากกา"><i class="ph ph-pen"></i></button>
+      <button class="tool-btn" data-tool="eraser" title="ยางลบ"><i class="ph ph-eraser"></i></button>
+    </div>
+    <div class="tool-group colors">
+      <div class="color-swatch active" data-color="#000000" style="background:#000000"></div>
+      <div class="color-swatch" data-color="#2563eb" style="background:#2563eb"></div>
+      <div class="color-swatch" data-color="#dc2626" style="background:#dc2626"></div>
+      <div class="color-swatch" data-color="#16a34a" style="background:#16a34a"></div>
+    </div>
+    <button class="tool-btn danger" id="btnClearDraw" title="ล้างหน้า"><i class="ph ph-trash"></i></button>
+  </div>
+
+  <main class="workspace">
+    <section class="content-panel">
+      <div class="panel-inner" id="theoryContainer"></div>
+    </section>
+
+    <section class="notebook-panel">
+      <div class="notebook-wrapper">
+        <div class="notebook-paper" id="notebookContainer"></div>
+        <canvas id="drawingCanvas"></canvas>
+      </div>
+    </section>
+  </main>
+
+  <script src="data.js"></script>
+  <script src="draw.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
