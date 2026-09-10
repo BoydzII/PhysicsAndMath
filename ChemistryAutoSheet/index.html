@@ -37,6 +37,13 @@
   /* หน้าพิมพ์ใช้ Sarabun ซึ่งเป็นแบบที่เอกสารไทยใช้กันจนคุ้นตา
      บนกระดาษตัวมีหัวอ่านง่ายกว่า ส่วนบนจอ Anuphan ที่ไม่มีหัวคมกว่า */
   --font-print: 'Sarabun', 'Anuphan', 'Leelawadee UI', Tahoma, sans-serif;
+
+  /* น้ำหนักสามค่า ห่างกันจริง — 600 คู่ 700 สายตาอ่านว่าพลาด ไม่ใช่ลำดับชั้น
+     เลือก 400 คู่ 700 ไม่ใช่ 300 คู่ 800 เพราะแอปนี้เด็กอ่านบนไอแพดรวม
+     ความอ่านง่ายสำคัญกว่าความดราม่า ส่วน 300 ใช้เฉพาะข้อความที่ใหญ่พอ */
+  --w-quiet: 300;
+  --w-body: 400;
+  --w-loud: 700;
   
   /* Vibrant Theme Tokens (Default: Style 2) */
   --bg: #f8fafc;
@@ -63,6 +70,12 @@
   --group: #7c3aed; --group-bg: #f5f3ff; --group-line: #ddd6fe;
 
   --lv1: #059669; --lv2: #d97706; --lv3: #e11d48;
+
+  /* สีของกราฟ แยกจาก --brand เพราะ --brand เป็นสีเดียวกันทั้งโหมดสว่างและมืด
+     บนพื้นมืดสีน้ำเงินกลางจะจมพื้น โหมดมืดจึงต้องเลือกขั้นที่สว่างขึ้นเอง
+     ตรวจอัตราคอนทราสต์กับพื้นจริงของแอปแล้วทั้งสองโหมด ผ่านเกณฑ์ 3:1 */
+  --chart: #2563eb;
+  --chart-soft: rgba(37, 99, 235, .13);
 
   /* Elevation & Curves */
   --r-sm: 8px;
@@ -97,6 +110,8 @@
     --group: #a78bfa; --group-bg: #22143d; --group-line: #4c1d95;
     
     --lv1: #10b981; --lv2: #f59e0b; --lv3: #f43f5e;
+    --chart: #60a5fa;
+    --chart-soft: rgba(96, 165, 250, .16);
     --shadow-sm: 0 1px 3px rgba(0,0,0,.3);
     --shadow: 0 4px 20px -2px rgba(0,0,0,.45), 0 2px 6px -1px rgba(0,0,0,.25);
     --shadow-lg: 0 14px 36px -4px rgba(0,0,0,.6);
@@ -157,8 +172,12 @@ body{
   background-attachment:fixed;
   color:var(--ink);
   font-family:var(--font-sans);
-  font-size:15.5px;
-  line-height:1.7;
+  font-size:16px;
+  /* ไทยมีสระซ้อนขึ้นสองชั้นและลงล่างหนึ่งชั้น ที่ 1.6 วรรณยุกต์บรรทัดล่าง
+     ไปแตะสระบรรทัดบน เห็นชัดที่สุดในโจทย์ยาว ๆ และคำอธิบายวิธีทำ */
+  line-height:1.75;
+  font-weight:var(--w-body);
+  text-wrap:pretty;
   padding-left:env(safe-area-inset-left);
   padding-right:env(safe-area-inset-right);
   -webkit-tap-highlight-color:transparent;
@@ -188,7 +207,7 @@ body.examlock{overscroll-behavior:none;overscroll-behavior-y:none}
   max-width:1280px; margin:0 auto;
 }
 .brand{
-  font-weight:800; font-size:17.5px; letter-spacing:-0.02em;
+  font-weight:700; font-size:17.5px; letter-spacing:-0.02em;
   white-space:nowrap; display:flex; align-items:center; gap:8px;
 }
 .brand .dot{
@@ -228,7 +247,7 @@ body.examlock{overscroll-behavior:none;overscroll-behavior-y:none}
   display:inline-flex; align-items:center; gap:5px;
   background:var(--panel2); border:1px solid var(--line);
   border-radius:var(--r-pill); padding:5px 12px;
-  font-size:13px; font-weight:600; cursor:pointer;
+  font-size:13px; font-weight:700; cursor:pointer;
   transition:all .2s ease;
 }
 .btn-theme-toggle:hover{
@@ -245,7 +264,7 @@ body.examlock{overscroll-behavior:none;overscroll-behavior-y:none}
 .tabs button{
   border:1px solid transparent; background:transparent;
   border-radius:var(--r-pill); padding:7px 15px;
-  color:var(--muted); font-weight:600; min-height:38px; font-size:14px;
+  color:var(--muted); font-weight:700; min-height:38px; font-size:14px;
   transition:all .18s cubic-bezier(0.4, 0, 0.2, 1);
   display:flex; align-items:center; gap:6px; white-space:nowrap;
 }
@@ -287,6 +306,12 @@ html:not([data-theme-style="minimal"]) .card::before{
 /* การ์ดที่ย่อไว้ — ซ่อนทุกอย่างยกเว้นหัวเรื่อง หัวเรื่องยังบอกสรุปว่าเลือกอะไรไว้ */
 .card.tfold>*:not(h3){display:none}
 .card.tfold>h3{margin-bottom:0}
+/* ปุ่มย่อ — เล็กและจางไว้ ไม่ควรแข่งกับหัวเรื่องหรือปุ่มทำงานในกล่อง
+   ชิดขวาสุดเสมอด้วย margin-left:auto จึงหาได้ที่เดิมทุกกล่อง */
+.foldbtn{margin-left:auto;padding:2px 9px;font-size:13px;line-height:1.5;
+  color:var(--muted);background:transparent;border-color:transparent}
+@media (hover:hover){.foldbtn:hover{color:var(--ink);border-color:var(--line);background:var(--panel2)}}
+.card.tfold>h3 .sub{display:inline}
 
 .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .grow{flex:1 1 auto}
@@ -322,7 +347,7 @@ tbody tr:last-child td{border-bottom:none}
 }
 .stat:hover{transform:translateY(-2px)}
 .stat .v{
-  font-size:26px; font-weight:800; font-variant-numeric:tabular-nums;
+  font-size:26px; font-weight:700; font-variant-numeric:tabular-nums;
   letter-spacing:-0.02em; color:var(--brand);
 }
 html[data-theme-style="minimal"] .stat .v{color:var(--ink)}
@@ -350,7 +375,7 @@ html[data-theme-style="minimal"] .stat .v{color:var(--ink)}
 button{
   background:var(--panel); color:var(--ink); border:1px solid var(--line);
   border-radius:var(--r-sm); padding:8px 16px; cursor:pointer;
-  white-space:nowrap; min-height:40px; font-weight:600; font-size:14px;
+  white-space:nowrap; min-height:40px; font-weight:700; font-size:14px;
   transition:all .18s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow:var(--shadow-sm); display:inline-flex; align-items:center; justify-content:center; gap:6px;
 }
@@ -418,7 +443,7 @@ select:focus,input:focus,textarea:focus{
 .logobox img{max-width:88px;max-height:88px;object-fit:contain}
 .credit-print{margin-top:14px;padding-top:8px;border-top:1px solid #ccc;
   font-size:9pt;color:#555;text-align:center;line-height:1.6}
-.gate h2{margin:0 0 4px;font-size:21px;font-weight:800;letter-spacing:-0.02em}
+.gate h2{margin:0 0 4px;font-size:21px;font-weight:700;letter-spacing:-0.02em}
 .gate .lead{color:var(--muted);font-size:13.5px;margin-bottom:16px;line-height:1.7}
 .gate label.f{display:block;font-size:13px;color:var(--muted);margin:11px 0 4px}
 .gate input{width:100%;font-size:16px}
@@ -426,7 +451,7 @@ select:focus,input:focus,textarea:focus{
 .gate .alt{margin-top:15px;padding-top:13px;border-top:1px solid var(--line);
   font-size:13px;color:var(--muted)}
 .gate-tabs{display:flex;gap:6px;margin-bottom:16px;background:var(--panel2);padding:4px;border-radius:10px;border:1px solid var(--line)}
-.gate-tab{flex:1;padding:8px 10px;font-size:13.5px;font-weight:600;border:1px solid transparent;border-radius:7px;background:transparent;color:var(--muted);cursor:pointer;transition:all .15s;text-align:center;box-shadow:none}
+.gate-tab{flex:1;padding:8px 10px;font-size:13.5px;font-weight:700;border:1px solid transparent;border-radius:7px;background:transparent;color:var(--muted);cursor:pointer;transition:all .15s;text-align:center;box-shadow:none}
 .gate-tab.active{background:var(--panel);color:var(--ink);border-color:var(--line);box-shadow:var(--shadow-sm)}
 .gate .msg{margin-top:12px}
 
@@ -452,6 +477,24 @@ svg text{fill:var(--ink);font-size:14.5px;font-family:inherit;
 svg text.mut{fill:var(--muted);font-size:13px;stroke-width:3px}
 svg .arh{fill:var(--brand);stroke:none}
 svg .arh2{fill:var(--ink);stroke:none}
+
+/* ── กราฟข้อมูล ────────────────────────────────────────────────────────
+   แยกคลาสจากรูปฟิสิกส์โดยตั้งใจ ของเดิมยืม .bdy ที่ตั้งไว้ให้เป็นก้อนวัตถุ
+   (เทาอ่อน ตัดขอบหมึกหนา 1.6) แท่งกราฟจึงแข่งกับเส้นขอบของตัวเอง
+   หลักที่ใช้ — แท่งบางไม่ตัดขอบ · เส้นตารางบางกว่าหมึกหนึ่งขั้น ·
+   เว้นช่องสีพื้นระหว่างแท่ง 2px แทนการตีเส้นแบ่ง · จุดใหญ่พอกดโดน */
+svg .cbar{fill:var(--chart);stroke:none}
+svg .cgrid{stroke:var(--line);fill:none;stroke-width:1}      /* เส้นตารางบาง ไม่ประ */
+svg .caxis{stroke:var(--line);fill:none;stroke-width:1}
+svg .cthr{stroke:var(--bad);fill:none;stroke-width:1.4;stroke-dasharray:5 4;opacity:.75}
+svg .cline{stroke:var(--chart);fill:none;stroke-width:2;
+           stroke-linejoin:round;stroke-linecap:round}
+svg .carea{fill:var(--chart-soft);stroke:none}
+svg .cdot{fill:var(--chart);stroke:var(--panel);stroke-width:2}   /* วงแหวนสีพื้น 2px */
+svg text.cnum{fill:var(--muted);font-size:12px;font-weight:400;stroke-width:2.6px;
+              font-variant-numeric:tabular-nums}
+svg text.clab{fill:var(--muted);font-size:12.5px;font-weight:400;stroke-width:2.6px}
+svg text.cthrlab{fill:var(--bad);font-size:12px;font-weight:700;stroke-width:2.6px}
 /* คลาสของรูปคณิตศาสตร์ — ขึ้นต้นด้วย f ทุกตัวเพื่อไม่ให้ชนกับคลาสของหน้าเว็บ
    (เบราว์เซอร์ถือ width/height ของ SVG เป็นสมบัติ CSS ด้วย ถ้าชนกับ .bar ของ
    แถบสถิติ ความสูงของแท่งกราฟจะถูกทับจนกลายเป็นขีดสั้น ๆ ลอยอยู่กลางอากาศ) */
@@ -476,7 +519,7 @@ svg .fpt{fill:var(--brand);stroke:var(--panel);stroke-width:1.8}
 .nuc{display:inline-flex;align-items:center;font-style:normal;white-space:nowrap;margin:0 1px}
 .nuc .nnum{display:inline-flex;flex-direction:column;align-items:flex-end;
            font-size:.62em;line-height:1.06;margin-right:1px}
-.nuc .nel{font-weight:600}
+.nuc .nel{font-weight:700}
 
 /* ── หน้าตอบข้อสอบอัตนัย ───────────────────────────────────────────────
    โจทย์อยู่เต็มความกว้างด้านบน กรอบขั้นตอนจึงเริ่มต่ำกว่าโจทย์เสมอ
@@ -520,8 +563,8 @@ svg .fpt{fill:var(--brand);stroke:var(--panel);stroke-width:1.8}
       background:var(--panel);border:2px solid var(--brand)}
 .xpav .xpgear{position:absolute;right:-4px;bottom:-2px;font-size:20px;
               background:var(--panel);border-radius:50%;padding:1px 2px;line-height:1}
-.xpname{font-size:17px;font-weight:800}
-.xpname .sub{margin-left:7px;font-size:12.5px;font-weight:600;color:var(--muted)}
+.xpname{font-size:17px;font-weight:700}
+.xpname .sub{margin-left:7px;font-size:12.5px;font-weight:700;color:var(--muted)}
 .xplv{font-size:13.5px;margin-top:2px}
 .xpbar{height:9px;border-radius:99px;background:var(--panel2);overflow:hidden;margin-top:6px;
        border:1px solid var(--line)}
@@ -543,14 +586,14 @@ svg .fpt{fill:var(--brand);stroke:var(--panel);stroke-width:1.8}
 .xpbrow{display:flex;align-items:center;gap:10px;padding:7px 10px;margin-bottom:6px;
         border:1px solid var(--line);border-radius:12px;background:var(--panel)}
 .xpbrow.me{border-color:var(--brand);background:var(--panel2);box-shadow:inset 0 0 0 1px var(--brand)}
-.xpbrk{min-width:32px;text-align:center;font-size:17px;font-weight:800}
+.xpbrk{min-width:32px;text-align:center;font-size:17px;font-weight:700}
 .xpbav{position:relative;width:40px;height:40px;flex:0 0 auto;border-radius:50%;
        display:flex;align-items:center;justify-content:center;font-size:23px;
        background:var(--panel2);border:1px solid var(--line)}
 .xpbav .xpgear{position:absolute;right:-3px;bottom:-2px;font-size:13px;
                background:var(--panel);border-radius:50%;padding:1px;line-height:1}
 .xpbnm{font-size:14.5px;font-weight:700}
-.xpbnm .sub{margin-left:7px;font-size:12px;font-weight:600;color:var(--muted)}
+.xpbnm .sub{margin-left:7px;font-size:12px;font-weight:700;color:var(--muted)}
 .xpbme{font-size:11px;font-weight:700;color:var(--brand)}
 .xpblv{text-align:right;min-width:66px}
 .xpblv b{display:block;font-size:19px;line-height:1.15}
@@ -568,7 +611,7 @@ svg .fpt{fill:var(--brand);stroke:var(--panel);stroke-width:1.8}
 .solstep{border-bottom:1px solid var(--line2)}
 .solstep:last-child{border-bottom:none}
 .solstep>.h{display:flex;gap:9px;align-items:center;padding:9px 12px;background:var(--panel2);
-            cursor:pointer;font-weight:600;font-size:14.5px;user-select:none}
+            cursor:pointer;font-weight:700;font-size:14.5px;user-select:none}
 .solstep>.h .n{background:var(--brand);color:var(--brand-ink);width:23px;height:23px;border-radius:50%;
                display:flex;align-items:center;justify-content:center;font-size:13px;flex:0 0 auto}
 .solstep>.h .cv{margin-left:auto;color:var(--muted);font-size:13px;font-weight:400}
@@ -582,7 +625,7 @@ table.given td{border-bottom:1px solid var(--line2);padding:5px 11px;white-space
 table.given td.s{font-family:"Times New Roman","Cambria Math",Georgia,serif;font-style:italic;
                  font-size:17px;text-align:right;padding-right:2px}
 table.given td.e{padding:0 3px;color:var(--muted)}
-table.given td.v{font-variant-numeric:tabular-nums;font-weight:600}
+table.given td.v{font-variant-numeric:tabular-nums;font-weight:700}
 table.given td.d{color:var(--muted);font-size:13.5px}
 
 /* ---------- ช่องตอบ ---------- */
@@ -611,6 +654,13 @@ input.numin.bad{border-color:var(--bad);background:var(--bad-bg)}
 .choice{display:flex;gap:10px;align-items:center;padding:11px 13px;border:1px solid var(--line);
         border-radius:var(--r);background:var(--panel);cursor:pointer;text-align:left;min-height:52px;width:100%}
 .choice .k{font-weight:700;color:var(--muted);flex:0 0 auto}
+/* ตัวเลือกต้องเริ่มที่ขอบซ้ายเดียวกันทุกข้อ
+   ของเดิมสืบ justify-content:center มาจากสไตล์ปุ่ม ทำให้ทั้งก้อนลอยกลางกล่อง
+   วัดจริงแล้วขอบซ้ายของสี่ตัวเลือกอยู่ที่ 522 470 509 413 คนละที่กันหมด
+   ตาจึงต้องไล่หาจุดเริ่มของแต่ละตัวเลือกใหม่ทุกครั้ง อ่านช้ากว่าที่ควร
+   เรื่องนี้เป็นความเร็วในการอ่าน ไม่ใช่ความสวย */
+.choice{justify-content:flex-start}
+.choice .k{min-width:1.7em}      /* ป้าย ก ข ค ง กว้างเท่ากัน ข้อความจึงตรงกันทุกบรรทัด */
 .choice.sel{border-color:var(--brand);box-shadow:0 0 0 3px rgba(31,111,235,.15)}
 .choice.ok{border-color:var(--ok);background:var(--ok-bg)}
 .choice.bad{border-color:var(--bad);background:var(--bad-bg)}
@@ -619,7 +669,7 @@ input.numin.bad{border-color:var(--bad);background:var(--bad-bg)}
 
 /* ---------- แถบความคืบหน้าข้อ ---------- */
 .qnav{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
-.qnav button{width:40px;height:40px;min-height:40px;padding:0;border-radius:9px;font-weight:600;font-size:14px}
+.qnav button{width:40px;height:40px;min-height:40px;padding:0;border-radius:9px;font-weight:700;font-size:14px}
 /* แถวข้อสอบในคลัง */
 .esbrow{display:flex;gap:9px;align-items:flex-start;padding:9px 11px;border:1px solid var(--line);
         border-radius:10px;margin-bottom:6px;cursor:pointer}
@@ -637,7 +687,7 @@ input.numin.bad{border-color:var(--bad);background:var(--bad-bg)}
 /* แถวเลือกบทบาทของกล่องและสมการ ในกล่องที่ครูใช้ออกข้อสอบ */
 .esrole{display:inline-flex;align-items:center;gap:5px;padding:4px 7px;border:1px solid var(--line);
         border-radius:9px;margin:0 5px 5px 0}
-.esrole b{font-weight:600;font-size:13px;max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.esrole b{font-weight:700;font-size:13px;max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 /* ข้อสอบอัตนัยแบบทำทีละขั้น */
 .esfig{margin:10px 0;text-align:center}
@@ -662,7 +712,7 @@ input.numin.bad{border-color:var(--bad);background:var(--bad-bg)}
 .eschip.find.sel{background:var(--warn);color:#fff;border-color:var(--warn);box-shadow:none}
 .esvars{display:flex;flex-wrap:wrap;gap:9px;margin-top:6px}
 .esvar{display:flex;align-items:center;gap:6px}
-.esvar label{min-width:34px;font-weight:600}
+.esvar label{min-width:34px;font-weight:700}
 .esvar input{width:110px;font-size:16px;text-align:right}
 .eskeys{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;max-width:330px;margin-top:12px}
 .eskey{padding:11px 0;font-size:17px;border-radius:10px}
@@ -672,8 +722,8 @@ input.numin.bad{border-color:var(--bad);background:var(--bad-bg)}
 /* ใบตอบข้อสอบกระดาษ — แถวละข้อ ปุ่มกลมเหมือนฝนคำตอบ */
 .papersheet{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:7px}
 .paperrow{display:flex;align-items:center;gap:6px;padding:5px 7px;border:1px solid var(--line);border-radius:10px}
-.paperrow .pno{min-width:26px;text-align:right;font-weight:600;color:var(--dim)}
-.pbub{width:38px;height:38px;min-height:38px;padding:0;border-radius:50%;font-weight:600}
+.paperrow .pno{min-width:26px;text-align:right;font-weight:700;color:var(--dim)}
+.pbub{width:38px;height:38px;min-height:38px;padding:0;border-radius:50%;font-weight:700}
 .pbub.sel{background:var(--acc);color:#fff;border-color:var(--acc)}
 .qnav button.cur{border-color:var(--brand);box-shadow:0 0 0 3px rgba(31,111,235,.15)}
 .qnav button.ok{background:var(--ok-bg);border-color:var(--ok);color:var(--ok)}
@@ -685,7 +735,7 @@ input.numin.bad{border-color:var(--bad);background:var(--bad-bg)}
      border-radius:var(--r);background:var(--panel2);cursor:pointer;min-height:44px}
 .chk.on{border-color:var(--brand);background:rgba(31,111,235,.07)}
 .chk input{margin:3px 0 0;width:19px;height:19px;flex:0 0 auto;min-height:auto}
-.chk .t{font-weight:600;font-size:15px}
+.chk .t{font-weight:700;font-size:15px}
 .chk .d{font-size:13px;color:var(--muted)}
 .gridcards{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px}
 .subgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:7px;
@@ -707,10 +757,10 @@ input.numin.bad{border-color:var(--bad);background:var(--bad-bg)}
 .gradehead{display:flex;align-items:center;gap:8px;margin:16px 0 8px;font-weight:700;font-size:15px}
 .gradehead:first-of-type{margin-top:2px}
 .gradehead .gb{color:var(--brand);background:rgba(31,111,235,.12);border-radius:999px;
-  padding:2px 12px;font-size:13px;font-weight:800;letter-spacing:.3px}
+  padding:2px 12px;font-size:13px;font-weight:700;letter-spacing:.3px}
 .gradehead .gn{color:var(--muted);font-weight:500;font-size:13px}
 .lvdots{display:flex;gap:5px;flex-wrap:wrap;margin:6px 0 3px}
-.lvdot{font-size:11.5px;font-weight:600;padding:0 7px;border-radius:20px;border:1px solid currentColor;white-space:nowrap}
+.lvdot{font-size:11.5px;font-weight:700;padding:0 7px;border-radius:20px;border:1px solid currentColor;white-space:nowrap}
 .lvdot.l0{color:var(--group)}
 .lvdot.l1{color:var(--lv1)} .lvdot.l2{color:var(--lv2)} .lvdot.l3{color:var(--lv3)}
 .fxbtn{margin:6px 0 0 2px;font-size:12.5px;padding:3px 10px;min-height:30px;
@@ -752,7 +802,7 @@ input.numin.bad{border-color:var(--bad);background:var(--bad-bg)}
 
 /* ปุ่ม ! บนหัวการ์ด — เปิดคำอธิบายความหมายของสีและป้าย */
 .ibtn{width:23px;height:23px;min-height:23px;padding:0;border-radius:50%;flex:0 0 auto;
-  font-weight:800;font-size:13px;line-height:1;
+  font-weight:700;font-size:13px;line-height:1;
   color:var(--brand);border-color:var(--brand);background:transparent}
 @media (hover:hover){.ibtn:hover{background:var(--brand);color:var(--brand-ink)}}
 /* ป้ายจำนวนข้อในคอลัมน์ระดับ — ไม่มีคำกำกับแล้ว จึงต้องกว้างเท่ากันทุกใบ
@@ -766,7 +816,35 @@ input.numin.bad{border-color:var(--bad);background:var(--bad-bg)}
 .lgdbdg{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;
   width:20px;height:20px;border-radius:50%;color:#fff;font-weight:bold;font-size:12px}
 
-/* ---------- ปุ่มชุดลัด ---------- */
+/* ---------- ชุดลัด: หนึ่งจุดโฟกัส แล้วที่เหลือเงียบ ----------
+   ของเดิมเป็นการ์ดห้าใบขนาดเท่ากัน ทุกใบตะโกนเท่ากันจนไม่รู้ว่าควรกดอันไหน
+   แบบนี้ให้ตัวที่ใช้บ่อยที่สุดใหญ่จริงหนึ่งตัว ที่เหลือถอยไปเป็นบรรทัดเล็ก
+   เปลี่ยนตัวหลักได้ที่ค่า PRESET_HERO ในโค้ด ไม่ต้องแก้หน้าตา          */
+.phero{display:flex;align-items:center;gap:16px;width:100%;text-align:left;
+  padding:18px 20px;border-radius:var(--r-lg);background:var(--panel2);
+  border:1px solid var(--line);white-space:normal}
+.phero .pi{font-size:34px;line-height:1;flex:0 0 auto}
+.phero .pt{display:block;font-weight:700;font-size:21px;line-height:1.3}
+.phero .pd{display:block;font-size:13.5px;color:var(--muted);line-height:1.55;margin-top:3px}
+.phero .pgo{flex:0 0 auto;font-weight:700;font-size:14.5px;color:var(--brand-ink);
+  background:var(--brand);background-image:var(--brand-gradient);
+  padding:10px 20px;border-radius:var(--r-pill)}
+@media (hover:hover){.phero:hover{border-color:var(--brand)}}
+@media (max-width:560px){.phero{flex-wrap:wrap;gap:11px}.phero .pgo{width:100%;text-align:center}}
+
+/* ที่เหลือ — เส้นบางคั่น ไม่ใช่การ์ดซ้อนการ์ด */
+.plist{margin-top:14px;border-top:1px solid var(--line)}
+.prow{display:flex;align-items:baseline;gap:12px;width:100%;text-align:left;
+  padding:13px 4px;border:0;border-bottom:1px solid var(--line);border-radius:0;
+  background:transparent;white-space:normal}
+.prow .pi{font-size:17px;line-height:1.3;flex:0 0 auto}
+.prow .pt{font-weight:700;font-size:14.5px;flex:0 0 auto}
+.prow .pd{font-size:13px;color:var(--muted);line-height:1.55;flex:1 1 auto}
+.prow .pgo{flex:0 0 auto;color:var(--muted);font-size:17px}
+@media (hover:hover){.prow:hover{background:var(--panel2)}.prow:hover .pgo{color:var(--brand)}}
+@media (max-width:560px){.prow{flex-wrap:wrap;gap:4px 10px}.prow .pd{flex-basis:100%}}
+
+/* ---------- ปุ่มชุดลัด (แบบเดิม เก็บไว้เผื่อย้อนกลับ) ---------- */
 .presetbtn{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;
   padding:12px 14px;height:100%;white-space:normal;border-radius:var(--r);background:var(--panel2)}
 .presetbtn .pi{font-size:22px;line-height:1.2}
@@ -790,7 +868,7 @@ input.numin.bad{border-color:var(--bad);background:var(--bad-bg)}
 .segbtn{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}
 .segbtn button{border:none;border-radius:0;border-right:1px solid var(--line);background:var(--panel2);flex:1 1 auto}
 .segbtn button:last-child{border-right:none}
-.segbtn button.on{background:var(--brand);color:var(--brand-ink);font-weight:600}
+.segbtn button.on{background:var(--brand);color:var(--brand-ink);font-weight:700}
 
 /* ---------- In-App PDF & Split View ---------- */
 .exam-split-wrap {
@@ -843,7 +921,7 @@ input.numin.bad{border-color:var(--bad);background:var(--bad-bg)}
 .hw-tools, .hw-actions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .btn-tool {
   background: var(--panel2); border: 1px solid var(--line); border-radius: var(--r-pill);
-  padding: 6px 13px; font-size: 13px; font-weight: 600; cursor: pointer;
+  padding: 6px 13px; font-size: 13px; font-weight:700; cursor: pointer;
   display: flex; align-items: center; gap: 5px; min-height: 34px; transition: all .15s ease;
   box-shadow: none;
 }
@@ -893,6 +971,32 @@ html[data-theme-style="minimal"] .btn-tool.active {
 /* ============================================================
    หน้าเอกสารสำหรับพิมพ์
    ============================================================ */
+
+/* ── ชั้นตัวอักษร (web-design-craft) ───────────────────────────────────────
+   แก้เฉพาะชั้นตัวอักษร ไม่แตะสี ไม่แตะตรรกะ ย้อนกลับได้ด้วยการลบบล็อกนี้
+   วางไว้ก่อนกฎของหน้าพิมพ์ กฎหน้าพิมพ์จะได้ยังชนะเหมือนเดิม            */
+
+/* ข้อความประกอบใช้น้ำหนักบางลงหนึ่งขั้น ให้ต่างจากหัวเรื่องชัดขึ้น
+   ใส่เฉพาะที่ขนาด 14px ขึ้นไป ต่ำกว่านั้นน้ำหนัก 300 บางจนอ่านยากบนไอแพด */
+.hint{font-weight:var(--w-body)}
+.card>h3 .sub{font-weight:var(--w-quiet)}
+.topiccard .d{font-weight:var(--w-quiet)}
+
+/* หัวเรื่องกับตัวเลขเด่น — ใช้ค่าสูงสุดของสามค่า ไม่มีอะไรอยู่ตรงกลาง */
+.card>h3,h1,h2,h3{font-weight:var(--w-loud)}
+/* ไทยห้ามบีบช่องไฟ หัวตัวอักษรจะขาดจากกัน จึงจัดที่ท้ายบรรทัดแทน */
+.card>h3,h1,h2{letter-spacing:0;text-wrap:balance}
+
+/* ตัวเลขในตารางและคะแนนต้องกว้างเท่ากัน ไม่งั้นขยับซ้ายขวาตอนค่าเปลี่ยน
+   หน้าคะแนนกับหน้าสถิติชั้นเรียนเห็นผลข้อนี้ชัดที่สุด */
+table td,table th,.num,.xpstat b,.tick,
+.xpblv b,.xpbrk,.pill,.tag{font-variant-numeric:tabular-nums lining-nums}
+
+/* ระยะระหว่างหัวเรื่องกับเนื้อความของมัน ต้องน้อยกว่าระยะระหว่างบล็อกชัด ๆ
+   ไม่งั้นสายตาแยกไม่ออกว่าอะไรเป็นพวกกับอะไร */
+.card>h3{margin-bottom:10px}
+.card>h3+.hint,.card>h3+.row{margin-top:0}
+
 #printarea{display:none;font-family:var(--font-print)}
 .docpreview #printarea{display:block;background:#fff;color:#000;padding:16px;
                        border:1px solid var(--line);border-radius:var(--r)}
@@ -905,6 +1009,15 @@ html[data-theme-style="minimal"] .btn-tool.active {
   #printarea *{color:#000 !important}
   #printarea svg .ln,#printarea svg .ln2,#printarea svg .dash,#printarea svg .frc{stroke:#000}
   #printarea svg .bdy{fill:#e8e8e8;stroke:#000}
+  /* กราฟบนกระดาษ — แท่งเทาเข้มพออ่านออกตอนพิมพ์ขาวดำ เส้นตารางจางลง */
+  #printarea svg .cbar{fill:#8a8a8a}
+  #printarea svg .cline{stroke:#000}
+  #printarea svg .cdot{fill:#000;stroke:#fff}
+  #printarea svg .cgrid,#printarea svg .caxis{stroke:#bbb}
+  #printarea svg .cthr{stroke:#000}
+  #printarea svg .carea{fill:#eee}
+  #printarea svg text.cnum,#printarea svg text.clab{fill:#444;stroke:#fff}
+  #printarea svg text.cthrlab{fill:#000;stroke:#fff}
   #printarea svg .arh,#printarea svg .arh2{fill:#000}
   #printarea svg text{fill:#000;stroke:#fff;stroke-width:3px;paint-order:stroke fill}
   .pg{page-break-after:always}
@@ -1085,7 +1198,7 @@ html[data-theme-style="minimal"] .btn-tool.active {
    *** ห้ามลบบรรทัดเครื่องหมาย @@BUILTIN@@ ทั้งสองอัน ตัวสร้างไฟล์ใช้หาตำแหน่ง ***
    ========================================================================== */
 /* @@BUILTIN@@ */
-const BUILTIN = {"url":"","studentOnly":true,"lockCloud":false,"logo":"","header":null,"about":null,"build":"2026-09-10 20:03","ver":"v8.102"};
+const BUILTIN = {"url":"","studentOnly":true,"lockCloud":false,"logo":"","header":null,"about":null,"build":"2026-09-10 20:51","ver":"v8.103"};
 /* @@BUILTIN-END@@ */
 
 /* ถ่ายภาพซอร์สของหน้านี้ไว้ตั้งแต่สคริปต์เพิ่งเริ่มทำงาน
@@ -1828,21 +1941,28 @@ function usageChart(days, n) {
     arr.push({ k: dayKey(d.getTime()), d: d, v: days[dayKey(d.getTime())] || 0 });
   }
   const mx = Math.max(1, Math.max.apply(null, arr.map(x => x.v)));
-  const W = 460, H = 150, ox = 26, oy = 112, w = W - ox - 10, h = 88;
+  const W = 460, H = 150, ox = 30, oy = 112, w = W - ox - 12, h = 88;
   const bw = w / N;
-  let s = '<line class="ln2" x1="' + ox + '" y1="' + oy + '" x2="' + (ox + w) + '" y2="' + oy + '"/>';
-  s += '<line class="ln2" x1="' + ox + '" y1="' + oy + '" x2="' + ox + '" y2="' + (oy - h) + '"/>';
+  /* เส้นตารางแนวนอนสองเส้นพอ (ยอดกับครึ่งทาง) แล้วเส้นฐานหนึ่งเส้น
+     ของเดิมมีเส้นแกนตั้งด้วย ซึ่งไม่ได้ช่วยอ่านค่าอะไรเลยในกราฟแท่ง */
+  let s = '';
+  [mx, mx / 2].forEach(function (v) {
+    const gy = oy - h * v / mx;
+    s += '<line class="cgrid" x1="' + ox + '" y1="' + n1(gy) + '" x2="' + (ox + w) + '" y2="' + n1(gy) + '"/>';
+  });
+  s += '<line class="caxis" x1="' + ox + '" y1="' + oy + '" x2="' + (ox + w) + '" y2="' + oy + '"/>';
   arr.forEach((x, i) => {
     if (!x.v) return;
     const bh = Math.max(2, h * x.v / mx);
-    s += '<rect class="bdy" x="' + n1(ox + i * bw + 1) + '" y="' + n1(oy - bh) + '" width="' +
-      n1(Math.max(2, bw - 2)) + '" height="' + n1(bh) + '" rx="1.5"/>';
+    // เว้นช่อง 2px ระหว่างแท่งด้วยการหักความกว้าง ไม่ใช่ตีเส้นขอบ
+    s += '<g><title>' + esc(thDate(x.d.getTime())) + ' — ' + x.v + ' ครั้ง</title>' +
+      cBar(ox + i * bw + 1, oy - bh, Math.max(2, bw - 2), bh, 2.5) + '</g>';
   });
-  s += svgTxt(ox - 5, oy - h + 5, String(mx), 'end', true);
-  s += svgTxt(ox - 5, oy, '0', 'end', true);
-  s += svgTxt(ox, oy + 15, thDate(arr[0].d.getTime()), 'start', true);
-  s += svgTxt(ox + w, oy + 15, 'วันนี้', 'end', true);
-  s += svgTxt(ox + w / 2, oy + 32, 'จำนวนครั้งที่เปิดใช้งานย้อนหลัง ' + N + ' วัน', 'middle', true);
+  s += svgTxt(ox - 6, oy - h + 4, String(mx), 'end', false, 'cnum');
+  s += svgTxt(ox - 6, oy + 4, '0', 'end', false, 'cnum');
+  s += svgTxt(ox, oy + 17, thDate(arr[0].d.getTime()), 'start', false, 'clab');
+  s += svgTxt(ox + w, oy + 17, 'วันนี้', 'end', false, 'clab');
+  s += svgTxt(ox + w / 2, oy + 34, 'จำนวนครั้งที่เปิดใช้งานย้อนหลัง ' + N + ' วัน', 'middle', false, 'clab');
   return svgWrap(W, H, s);
 }
 
@@ -2246,6 +2366,65 @@ function setTab(t) {
   render();
   window.scrollTo(0, 0);
 }
+/* ── ย่อ/ขยายได้ทุกกล่อง ───────────────────────────────────────────────
+   ของเดิมมีปุ่มย่อแค่กล่องเลือกเรื่อง กล่องอื่นย่อไม่ได้เลย
+   ตัวนี้เดินหากล่องที่มีหัวเรื่องหลังวาดหน้าเสร็จ แล้วแปะปุ่มให้เอง
+   จึงครอบทุกกล่องในทุกแท็บด้วยโค้ดชุดเดียว ไม่ต้องไปแก้ HTML ทีละที่
+   และกล่องที่เพิ่มมาในอนาคตก็ได้ปุ่มไปด้วยโดยไม่ต้องทำอะไรเพิ่ม
+
+   คีย์ที่ใช้จำสถานะมาจากข้อความหัวเรื่อง โดยตัดคำโปรยกับป้ายออกก่อน
+   หัวเรื่องบางกล่องมีตัวเลขที่เปลี่ยนตามข้อมูล (เช่น "คลังข้อสอบ 12 ข้อ")
+   ถ้าไม่ตัดออก สถานะย่อจะหลุดทุกครั้งที่จำนวนเปลี่ยน                    */
+const FOLD_KEY = LS_KEY + '.folds';
+function foldRead() {
+  try { const o = JSON.parse(localStorage.getItem(FOLD_KEY) || '{}');
+        return (o && typeof o === 'object') ? o : {}; } catch (e) { return {}; }
+}
+function foldWrite(o) { try { localStorage.setItem(FOLD_KEY, JSON.stringify(o)); } catch (e) {} }
+function foldKeyOf(h3) {
+  const c = h3.cloneNode(true);
+  c.querySelectorAll('.sub,button,.tag,.pill,.chip').forEach(function (e) { e.remove(); });
+  return c.textContent.replace(/[0-9๐-๙]+/g, '#').replace(/\s+/g, ' ').trim().slice(0, 44);
+}
+/** แปะปุ่มย่อให้ทุกกล่องที่ยังไม่มี แล้วคืนค่าสถานะที่จำไว้ */
+function foldify(root) {
+  const st = foldRead();
+  (root || document).querySelectorAll('.card > h3').forEach(function (h3) {
+    const card = h3.parentElement;
+    /* กล่องที่มีปุ่มย่อของตัวเองอยู่แล้ว (กล่องเลือกเรื่อง) ปล่อยไว้
+       เพราะหัวเรื่องของมันโชว์สรุปว่าเลือกอะไรไว้ ซึ่งดีกว่าปุ่มกลาง ๆ ของเรา */
+    if (h3.querySelector('#btnTopicFold') || h3.querySelector('[data-fold]')) return;
+    if (!h3.textContent.replace(/\s+/g, '')) return;      // หัวเรื่องว่าง ไม่ต้องมีปุ่ม
+    const key = foldKeyOf(h3);
+    if (!key) return;
+    const on = !!st[key];
+    card.classList.toggle('tfold', on);
+    const b = document.createElement('button');
+    b.className = 'sm foldbtn';
+    b.setAttribute('data-fold', key);
+    b.type = 'button';
+    b.textContent = on ? '▾' : '▴';
+    b.title = on ? 'ขยายกล่องนี้' : 'ย่อกล่องนี้';
+    h3.appendChild(b);
+  });
+}
+/* ดักที่กรอบนอกทีเดียว ปุ่มถูกสร้างใหม่ทุกครั้งที่วาดหน้า
+   ถ้าผูกทีละปุ่มจะหลุดทันทีที่กล่องถูกวาดใหม่ */
+document.addEventListener('click', function (e) {
+  const b = e.target.closest && e.target.closest('[data-fold]');
+  if (!b) return;
+  e.preventDefault();
+  const key = b.getAttribute('data-fold');
+  const st = foldRead();
+  const on = !st[key];
+  if (on) st[key] = 1; else delete st[key];
+  foldWrite(st);
+  const card = b.closest('.card');
+  if (card) card.classList.toggle('tfold', on);
+  b.textContent = on ? '▾' : '▴';
+  b.title = on ? 'ขยายกล่องนี้' : 'ย่อกล่องนี้';
+});
+
 function render() {
   renderStorageWarn();
   applyTabVisibility();
@@ -2261,6 +2440,7 @@ function render() {
   if (TAB === 'stats')   renderStats();
   if (TAB === 'print')   renderPrint();
   if (TAB === 'setting') renderSetting();
+  foldify();                 // แปะปุ่มย่อให้กล่องที่เพิ่งวาดเสร็จ
 }
 
 /* ============================================================================
@@ -2439,6 +2619,17 @@ function SEQ(tmpl, vals, dp) { return EQ(S(tmpl, vals, dp)); }
 function n1(x) { return (Math.round(x * 10) / 10).toString(); }
 /** ครอบ SVG ให้ยืดตามความกว้างที่มี แต่ไม่โตเกินจนดูเทอะทะ
     เดิมตรึงไว้ที่ความกว้างพิกเซลของ viewBox ทำให้รูปเล็กเกินไปบนจอกว้าง */
+/** แท่งกราฟที่มุมบนกลม ก้นแท่งชิดเส้นฐาน
+    rect กับ rx จะกลมทั้งสี่มุม ก้นแท่งจึงลอยไม่ติดเส้นฐาน ต้องวาดเป็น path
+    ปลายด้านที่เป็นข้อมูลกลม ปลายที่เป็นฐานตรง คือกติกาของแท่งที่อ่านง่าย */
+function cBar(x, y, w, h, r) {
+  const rr = Math.max(0, Math.min(r == null ? 4 : r, w / 2, h));
+  return '<path class="cbar" d="M' + n1(x) + ' ' + n1(y + h) +
+    'V' + n1(y + rr) + 'q0 ' + n1(-rr) + ' ' + n1(rr) + ' ' + n1(-rr) +
+    'h' + n1(w - rr * 2) + 'q' + n1(rr) + ' 0 ' + n1(rr) + ' ' + n1(rr) +
+    'V' + n1(y + h) + 'Z"/>';
+}
+
 function svgWrap(w, h, inner) {
   // ขยายรูปบนหน้าจอขึ้นอีก 30% จากเดิม (1.55 → 2.0 และเพดาน 640 → 830 พิกเซล)
   // ครูแจ้งว่ารูปเดิมเล็กเกินไปจนดูรายละเอียดยาก
@@ -2458,9 +2649,12 @@ function svgArrow(x1, y1, x2, y2, cls, lbl, lox, loy) {
   if (lbl) s += '<text x="' + n1(x2 + (lox || 0)) + '" y="' + n1(y2 + (loy || 0)) + '" text-anchor="middle">' + lbl + '</text>';
   return s;
 }
-function svgTxt(x, y, t, anchor, mut) {
+function svgTxt(x, y, t, anchor, mut, cls) {
+  // เปิดช่องรับชื่อคลาสเพิ่ม เพื่อให้กราฟใช้ตัวหนังสือของตัวเองได้
+  // ของเดิมส่งมาห้าอาร์กิวเมนต์เหมือนเดิมทุกจุด จึงไม่กระทบรูปโจทย์
+  const c = [mut ? 'mut' : '', cls || ''].filter(Boolean).join(' ');
   return '<text x="' + n1(x) + '" y="' + n1(y) + '"' + (anchor ? ' text-anchor="' + anchor + '"' : '') +
-    (mut ? ' class="mut"' : '') + '>' + t + '</text>';
+    (c ? ' class="' + c + '"' : '') + '>' + t + '</text>';
 }
 /** พื้นแบบขีดเฉียง (hatch) ใต้เส้นตรงจาก (x1,y1) ถึง (x2,y2) */
 function svgHatch(x1, y1, x2, y2, n, len) {
@@ -6876,7 +7070,7 @@ function xpLevelUp(from, to) {
       '<div style="text-align:center;padding:6px 0">' +
       '<div style="font-size:54px;line-height:1.1">' + xpAvatar(XPME && XPME.avatar).e + '</div>' +
       '<div style="font-size:15px;color:var(--muted);margin-top:4px">เลเวล ' + from + ' → </div>' +
-      '<div style="font-size:44px;font-weight:800;color:var(--brand);line-height:1.1">' + to + '</div>' +
+      '<div style="font-size:44px;font-weight:700;color:var(--brand);line-height:1.1">' + to + '</div>' +
       (newA.length || newG.length
         ? '<div class="notice ok" style="margin-top:12px;text-align:left"><b>ปลดล็อกใหม่</b><br>' +
           newA.map(function (a) { return a.e + ' ' + esc(a.n); })
@@ -8855,7 +9049,7 @@ function figPicker(onPick, onUpload) {
         'height:104px;display:grid;place-items:center;background:#fff;border-radius:8px;overflow:hidden">' +
         (ok ? '<img src="' + esc(figUrl(e.svg)) + '" style="max-width:100%;max-height:100%">'
             : '<span class="hint">ไม่มีรูปที่เรนเดอร์ไว้</span>') + '</div>' +
-        '<div style="margin-top:6px;font-weight:600;font-size:13.5px;line-height:1.35">' +
+        '<div style="margin-top:6px;font-weight:700;font-size:13.5px;line-height:1.35">' +
         esc(e.name || 'ไม่มีชื่อ') + '</div>' +
         '<div class="hint" style="font-size:11.5px">' +
         esc(FIG_SUBJECTS[e.subject] || e.subject || '') +
@@ -9609,7 +9803,7 @@ function essayGradeBox(quizId) {
           (x.p.keyText ? '<div class="notice info" style="margin-bottom:8px"><b>เฉลย</b> ' +
             M(x.p.keyText) + '</div>' : '') +
           (it.img ? '<div style="margin-bottom:10px;border:1.5px solid var(--line);border-radius:8px;overflow:hidden;background:#fff">' +
-            '<div style="padding:6px 10px;background:var(--panel2);font-size:12px;font-weight:600;border-bottom:1px solid var(--line);display:flex;justify-content:space-between">' +
+            '<div style="padding:6px 10px;background:var(--panel2);font-size:12px;font-weight:700;border-bottom:1px solid var(--line);display:flex;justify-content:space-between">' +
             '<span>✍️ ลายมือวิธีทำของนักเรียน:</span>' +
             '<span class="hint">ส่งจาก iPad / หน้าจอสัมผัส</span></div>' +
             '<div style="padding:8px;text-align:center;background:#fff">' +
@@ -9762,14 +9956,27 @@ function presetGradeBarHTML() {
     '</span></div>';
 }
 
+/* ชุดที่อยากให้เป็นจุดโฟกัสของหน้า — ถ้าชั้นที่เลือกไม่มีชุดนี้ ใช้ชุดแรกที่มี
+   ของเดิมเป็นการ์ดขนาดเท่ากันทุกใบ ทุกใบตะโกนเท่ากันจนไม่รู้ว่าควรกดอันไหน */
+const PRESET_HERO = 'quick';
+
 function presetsHTML() {
+  const list = presetsAvailable();
+  const hero = list.find(p => p.key === PRESET_HERO) || list[0] || null;
+  const rest = hero ? list.filter(p => p !== hero) : list;
   return '<div class="card"><h3>เริ่มเร็วด้วยชุดลัด<span class="sub">กดปุ่มเดียวได้ชุดโจทย์พร้อมทำทันที</span></h3>' +
     presetGradeBarHTML() +
-    '<div class="gridcards">' + presetsAvailable().map(p =>
-      '<button class="presetbtn' + (p.key === 'onet' ? ' hot' : '') + '" data-preset="' + p.key + '">' +
+    (hero ? '<button class="phero" data-preset="' + hero.key + '">' +
+      '<span class="pi">' + hero.icon + '</span>' +
+      '<span class="grow"><span class="pt">' + esc(hero.name) + '</span>' +
+      '<span class="pd">' + esc(hero.desc) + '</span></span>' +
+      '<span class="pgo">เริ่มทำเลย</span></button>' : '') +
+    '<div class="plist">' + rest.map(p =>
+      '<button class="prow" data-preset="' + p.key + '">' +
       '<span class="pi">' + p.icon + '</span>' +
       '<span class="pt">' + esc(p.name) + '</span>' +
-      '<span class="pd">' + esc(p.desc) + '</span></button>').join('') +
+      '<span class="pd">' + esc(p.desc) + '</span>' +
+      '<span class="pgo">›</span></button>').join('') +
     '</div>' +
     '<div class="row" style="margin-top:11px"><button class="sm" id="btnAllFx">📘 ดูสรุปสูตรทุกบท</button>' +
     '<span class="hint">หรือเลื่อนลงไปตั้งค่าชุดโจทย์เองได้ด้านล่าง</span></div></div>';
@@ -11202,7 +11409,7 @@ function renderDo() {
       '<div style="font-size:32px">📑</div>' +
       '<div><b>เปิดสมุดจด / สรุปสูตร (PDF)</b><br><span style="font-size:12.5px;opacity:0.85">เปิดอ่านในหน้านี้ได้เลย ไม่ต้องสลับแอป ไม่โดนระบบคุมสอบนับครั้งออก</span></div>' +
       '<input type="file" id="pdfFileInput" accept="application/pdf" style="display:none">' +
-      '<button class="btn-tool" style="background:#fff;color:#111;font-weight:600;padding:6px 14px" onclick="$(\'#pdfFileInput\').click()">เลือกไฟล์ PDF จากเครื่อง</button>' +
+      '<button class="btn-tool" style="background:#fff;color:#111;font-weight:700;padding:6px 14px" onclick="$(\'#pdfFileInput\').click()">เลือกไฟล์ PDF จากเครื่อง</button>' +
       '</div>' +
       '<iframe id="pdfFrame" src="' + (PDF_STATE.url || '') + '" style="' + (PDF_STATE.url ? '' : 'display:none') + ';width:100%;height:100%;border:none"></iframe>' +
       '</div></div></div>' +
@@ -12290,17 +12497,40 @@ function renderResult() {
 
 /** กราฟเส้นเล็ก ๆ แสดงแนวโน้มคะแนน */
 function sparkline(pcts) {
-  const W = 420, H = 90, ox = 30, oy = 72, w = W - ox - 14, h = 56;
+  // ขอบซ้ายต้องกว้างพอสำหรับป้าย "100%" ที่วาดชิดขวาที่ ox-6
+  // ที่ 30 ตัวเลขตัวแรกหลุดขอบ เห็นเป็น "00%"
+  const W = 420, H = 90, ox = 44, oy = 72, w = W - ox - 14, h = 56;
   const n = pcts.length;
   const px = i => ox + (n === 1 ? w / 2 : w * i / (n - 1));
   const py = v => oy - h * (v / 100);
   let s = '';
+  /* เส้นตารางเป็นเส้นทึบบาง ไม่ใช่เส้นประ — เส้นประอ่านว่า "เกณฑ์" ไม่ใช่ "ตาราง"
+     เก็บเส้นประไว้ใช้กับเส้นเกณฑ์ผ่านอย่างเดียว จะได้ไม่สับสนกัน */
   [0, 50, 100].forEach(v => {
-    s += '<line class="dash" x1="' + ox + '" y1="' + n1(py(v)) + '" x2="' + (ox + w) + '" y2="' + n1(py(v)) + '"/>';
-    s += svgTxt(ox - 5, py(v) + 4, v + '%', 'end', true);
+    s += '<line class="cgrid" x1="' + ox + '" y1="' + n1(py(v)) + '" x2="' + (ox + w) + '" y2="' + n1(py(v)) + '"/>';
+    s += svgTxt(ox - 6, py(v) + 4, v + '%', 'end', false, 'cnum');
   });
-  s += '<polyline class="frc" points="' + pcts.map((v, i) => n1(px(i)) + ',' + n1(py(v))).join(' ') + '"/>';
-  pcts.forEach((v, i) => { s += '<circle class="arh" cx="' + n1(px(i)) + '" cy="' + n1(py(v)) + '" r="3.5"/>'; });
+  // แรเงาใต้เส้นบาง ๆ ช่วยให้เห็นทิศทางขึ้นลงเร็วขึ้นโดยไม่เพิ่มสีใหม่
+  if (pcts.length > 1) {
+    s += '<path class="carea" d="M' + n1(px(0)) + ' ' + n1(oy) + 'L' +
+      pcts.map((v, i) => n1(px(i)) + ' ' + n1(py(v))).join('L') +
+      'L' + n1(px(pcts.length - 1)) + ' ' + n1(oy) + 'Z"/>';
+  }
+  s += '<polyline class="cline" points="' + pcts.map((v, i) => n1(px(i)) + ',' + n1(py(v))).join(' ') + '"/>';
+  pcts.forEach((v, i) => {
+    // จุดใหญ่ 9px มีวงแหวนสีพื้น จะได้ไม่จมกับเส้นตอนค่าติดกัน
+    s += '<g><title>ครั้งที่ ' + (i + 1) + ' — ' + Math.round(v) + '%</title>' +
+      '<circle class="cdot" cx="' + n1(px(i)) + '" cy="' + n1(py(v)) + '" r="4.5"/></g>';
+  });
+  // ป้ายค่าเฉพาะจุดสุดท้าย ไม่ใส่ทุกจุด ตัวเลขเต็มกราฟอ่านไม่รู้เรื่อง
+  if (pcts.length) {
+    const last = pcts[pcts.length - 1];
+    /* ป้ายของจุดสุดท้ายต้องอยู่ในกรอบให้ครบ — จุดนี้อยู่ริมขวาสุดเสมอ
+       ถ้าจัดกลางบนจุด ครึ่งขวาของตัวเลขจะพ้นขอบกรอบไป จึงชิดขวาแล้วยื่นไปทางซ้าย
+       และถ้าค่าสูงจนชนขอบบน ให้ย้ายไปอยู่ใต้จุดแทน (เห็นชัดที่สุดตอนได้ 100%) */
+    const ly = py(last) - 11 < 13 ? py(last) + 17 : py(last) - 11;
+    s += svgTxt(px(pcts.length - 1), ly, Math.round(last) + '%', 'end', false, 'cnum');
+  }
   return svgWrap(W, H, s);
 }
 
@@ -12631,7 +12861,7 @@ function showStudentItemCompare(atId) {
     '<div class="hint" style="margin-top:2px">ชุด: <b>' + esc(q.title) + '</b> · ทำเมื่อ: ' + thDateTime(a.finishedAt) + '</div>' +
     '</div>' +
     '<div style="text-align:right">' +
-    '<div style="font-size:19px;font-weight:800;color:' + (res.pct >= DB.settings.passPct ? 'var(--ok)' : 'var(--bad)') + '">' +
+    '<div style="font-size:19px;font-weight:700;color:' + (res.pct >= DB.settings.passPct ? 'var(--ok)' : 'var(--bad)') + '">' +
       fmt(res.got) + ' / ' + res.max + ' <span style="font-size:14px">(' + Math.round(res.pct) + '%)</span></div>' +
     '<div style="margin-top:2px">' +
     (res.pct >= DB.settings.passPct ? '<span class="tag l1">ผ่านเกณฑ์</span>' : '<span class="tag l3">ไม่ผ่านเกณฑ์</span>') +
@@ -12824,21 +13054,33 @@ function histogram(pcts) {
   const bins = new Array(10).fill(0);
   pcts.forEach(p => bins[clamp(Math.floor(p / 10), 0, 9)]++);
   const maxB = Math.max(1, Math.max.apply(null, bins));
-  const W = 440, H = 170, ox = 34, oy = 128, w = W - ox - 12, h = 100;
+  const W = 440, H = 175, ox = 36, oy = 128, w = W - ox - 12, h = 100;
   const bw = w / 10;
   let s = '';
-  s += '<line class="ln2" x1="' + ox + '" y1="' + oy + '" x2="' + (ox + w) + '" y2="' + oy + '"/>';
-  s += '<line class="ln2" x1="' + ox + '" y1="' + oy + '" x2="' + ox + '" y2="' + (oy - h) + '"/>';
-  bins.forEach((n, i) => {
-    const bh = h * n / maxB;
-    s += '<rect class="bdy" x="' + n1(ox + i * bw + 2) + '" y="' + n1(oy - bh) + '" width="' + n1(bw - 4) +
-      '" height="' + n1(bh) + '" rx="2"/>';
-    if (n) s += svgTxt(ox + i * bw + bw / 2, oy - bh - 4, String(n), 'middle');
-    if (i % 2 === 0) s += svgTxt(ox + i * bw, oy + 15, String(i * 10), 'middle', true);
+  [maxB, maxB / 2].forEach(function (v) {
+    const gy = oy - h * v / maxB;
+    s += '<line class="cgrid" x1="' + ox + '" y1="' + n1(gy) + '" x2="' + (ox + w) + '" y2="' + n1(gy) + '"/>';
   });
-  s += svgTxt(ox + w, oy + 15, '100', 'middle', true);
-  s += svgTxt(ox + w / 2, oy + 32, 'ช่วงคะแนน (ร้อยละ)', 'middle', true);
-  s += svgTxt(ox - 6, oy - h + 4, 'คน', 'end', true);
+  s += '<line class="caxis" x1="' + ox + '" y1="' + oy + '" x2="' + (ox + w) + '" y2="' + oy + '"/>';
+  bins.forEach((n, i) => {
+    if (!n) return;                       // ถังว่างไม่ต้องวาดแท่งความสูงศูนย์
+    const bh = Math.max(2, h * n / maxB);
+    s += '<g><title>' + (i * 10) + '–' + (i * 10 + 9) + '% — ' + n + ' คน</title>' +
+      cBar(ox + i * bw + 2, oy - bh, bw - 4, bh, 3) + '</g>';
+    s += svgTxt(ox + i * bw + bw / 2, oy - bh - 5, String(n), 'middle', false, 'cnum');
+  });
+  /* เส้นเกณฑ์ผ่านครึ่ง — เป็นเส้นเดียวในกราฟนี้ที่ควรเป็นเส้นประ
+     ครูมองปุ๊บรู้ว่ามีเด็กกี่คนอยู่ทางซ้ายของเส้น ซึ่งเป็นคำถามแรกที่ครูถามทุกครั้ง */
+  const tx = ox + w * 0.5;
+  s += '<line class="cthr" x1="' + n1(tx) + '" y1="' + n1(oy - h - 4) + '" x2="' + n1(tx) + '" y2="' + n1(oy) + '"/>';
+  /* ป้ายเกณฑ์อยู่ใต้แกน ไม่ใช่ด้านบน — ด้านบนมันชนตัวเลขจำนวนคน
+     เมื่อแท่งที่สูงสุดอยู่ติดเส้นเกณฑ์พอดี ซึ่งเกิดขึ้นบ่อยเพราะเด็กกองกันแถวกลาง
+     ใต้แกนตรงกลางเป็นที่ว่างอยู่แล้ว ขอแค่เอาขีด 40 กับ 60 ออกให้มันนั่ง */
+  s += svgTxt(tx, oy + 17, 'เกณฑ์ 50%', 'middle', false, 'cthrlab');
+  [0, 2, 8].forEach(i => { s += svgTxt(ox + i * bw, oy + 17, String(i * 10), 'middle', false, 'clab'); });
+  s += svgTxt(ox + w, oy + 17, '100', 'middle', false, 'clab');
+  s += svgTxt(ox + w / 2, oy + 34, 'ช่วงคะแนน (ร้อยละ)', 'middle', false, 'clab');
+  s += svgTxt(ox - 7, oy - h + 4, 'คน', 'end', false, 'clab');
   return svgWrap(W, H, s);
 }
 
@@ -13512,7 +13754,7 @@ async function publishQuiz(quizId) {
             openModal({ title: 'มอบหมายเรียบร้อย',
               bodyHTML: '<div style="text-align:center;padding:8px 0">' +
                 '<div class="hint">รหัสใบงาน</div>' +
-                '<div style="font-size:34px;font-weight:800;letter-spacing:5px;margin:6px 0">' + code + '</div>' +
+                '<div style="font-size:34px;font-weight:700;letter-spacing:5px;margin:6px 0">' + code + '</div>' +
                 '<div class="hint">นักเรียนที่ลงชื่อเข้าใช้แล้วจะเห็นใบงานนี้ในรายการเลย<br>' +
                 'หรือบอกรหัสนี้ให้กรอกเองก็ได้</div></div>',
               buttons: [{ label: 'ปิด' }, { label: 'คัดลอกรหัส', cls: 'primary', act: async c => {
