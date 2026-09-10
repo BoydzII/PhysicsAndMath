@@ -22,8 +22,11 @@
   } catch(e) {}
 })();
 </script>
-<link rel="apple-touch-icon" id="linkAppIcon">
-<link rel="icon" id="linkFavicon">
+<!-- ไอคอนตั้งต้นฝังมาในไฟล์เลย ไม่ใช่ปล่อย href ว่างไว้รอโค้ดเติมตอนมีโลโก้โรงเรียน
+     เครื่องที่ยังไม่ได้ใส่โลโก้ เบราว์เซอร์จะไปขอ /favicon.ico แล้วได้ 404 ทุกครั้งที่เปิดแอป
+     ซึ่งไม่ได้พังอะไร แต่ทำให้คอนโซลมีข้อผิดพลาดค้างอยู่ตลอด จนตอนไล่บั๊กจริงแยกไม่ออก -->
+<link rel="apple-touch-icon" id="linkAppIcon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232563eb'/%3E%3Ccircle cx='16' cy='16' r='3.4' fill='%23fff'/%3E%3Cg fill='none' stroke='%23fff' stroke-width='1.9'%3E%3Cellipse cx='16' cy='16' rx='12' ry='5.2'/%3E%3Cellipse cx='16' cy='16' rx='12' ry='5.2' transform='rotate(60 16 16)'/%3E%3Cellipse cx='16' cy='16' rx='12' ry='5.2' transform='rotate(120 16 16)'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="icon" id="linkFavicon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232563eb'/%3E%3Ccircle cx='16' cy='16' r='3.4' fill='%23fff'/%3E%3Cg fill='none' stroke='%23fff' stroke-width='1.9'%3E%3Cellipse cx='16' cy='16' rx='12' ry='5.2'/%3E%3Cellipse cx='16' cy='16' rx='12' ry='5.2' transform='rotate(60 16 16)'/%3E%3Cellipse cx='16' cy='16' rx='12' ry='5.2' transform='rotate(120 16 16)'/%3E%3C/g%3E%3C/svg%3E">
 <title>คลังโจทย์วิทยาศาสตร์กายภาพ ม.5</title>
 <style>
 /* ============================================================
@@ -850,6 +853,13 @@ input.numin.bad{border-color:var(--bad);background:var(--bad-bg)}
 .lgd>.lgdh:first-child{margin-top:0}
 .lgdrow{display:flex;gap:10px;align-items:flex-start;padding:4px 0;font-size:13.5px;line-height:1.6}
 .lgdrow>span:last-child{flex:1 1 auto}
+
+/* ---------- กล่องพิมพ์ข้อสอบปรนัยของครู ---------- */
+.mcq{border:1px solid var(--line);border-radius:var(--r);padding:11px 12px;margin-bottom:11px}
+.mccs{display:grid;gap:6px;margin-top:7px}
+.mcrow{display:flex;align-items:center;gap:9px}
+.mcrow input[type=radio]{width:19px;height:19px;min-height:auto;flex:0 0 auto}
+.mcrow .lab{flex:0 0 auto;min-width:1.4em;font-weight:700;color:var(--muted)}
 .lgdbdg{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;
   width:20px;height:20px;border-radius:50%;color:#fff;font-weight:bold;font-size:12px}
 
@@ -1243,7 +1253,7 @@ table td,table th,.num,.xpstat b,.tick,
    *** ห้ามลบบรรทัดเครื่องหมาย @@BUILTIN@@ ทั้งสองอัน ตัวสร้างไฟล์ใช้หาตำแหน่ง ***
    ========================================================================== */
 /* @@BUILTIN@@ */
-const BUILTIN = {"url":"https://script.google.com/macros/s/AKfycbxVa8BYYQeIhBDmg85w2UBwsIqt6a2YudehUfCbyMny9T-5TTh1UfFxsJjTk9HLNuFc/exec","studentOnly":false,"lockCloud":true,"logo":"","header":null,"about":null,"build":"2026-09-10 22:15","ver":"v8.108"};
+const BUILTIN = {"url":"https://script.google.com/macros/s/AKfycbxVa8BYYQeIhBDmg85w2UBwsIqt6a2YudehUfCbyMny9T-5TTh1UfFxsJjTk9HLNuFc/exec","studentOnly":false,"lockCloud":true,"logo":"","header":null,"about":null,"build":"2026-09-10 22:26","ver":"v8.109"};
 /* @@BUILTIN-END@@ */
 
 /* ถ่ายภาพซอร์สของหน้านี้ไว้ตั้งแต่สคริปต์เพิ่งเริ่มทำงาน
@@ -5426,6 +5436,18 @@ function isPaper(q) { return !!(q && (q.paper || hasEssay(q))); }
    เลขข้อในแอปจึงตรงกับข้อสอบกระดาษที่ครูแจกโดยไม่ต้องเก็บเลขข้อเพิ่ม
    ตัวตรวจ ตัวรวมคะแนน และตัวเข้ารหัสส่งขึ้นชีต แยกรายข้ออยู่แล้ว จึงรองรับได้ทันที */
 function quizEssayItems(q) { return ((q && q.items) || []).filter(isEssayItem); }
+/** ข้อปรนัยที่ครูพิมพ์เอง — มีทั้งเนื้อโจทย์และตัวเลือกจริงอยู่ในตัวข้อ
+    ต่างจากข้อของกระดาษคำตอบที่เก็บแค่เฉลย (ตัวโจทย์อยู่บนกระดาษของครู) */
+function isMcItem(it) { return !!(it && it.mc); }
+function quizMcItems(q) { return ((q && q.items) || []).filter(isMcItem); }
+/** เฉพาะข้อของกระดาษคำตอบ — กล่องแก้เฉลยต้องไม่ไปแตะข้อที่ครูพิมพ์เอง
+    ไม่งั้นเปิดกล่องแก้เฉลยครั้งเดียว เนื้อโจทย์กับตัวเลือกที่พิมพ์ไว้หายทั้งชุด */
+function quizKeyItems(q) {
+  return ((q && q.items) || []).filter(function (it) {
+    return !isEssayItem(it) && !isMcItem(it);
+  });
+}
+
 function quizChoiceItems(q) {
   return ((q && q.items) || []).filter(function (it) { return !isEssayItem(it); });
 }
@@ -5447,6 +5469,24 @@ function paperProblems(quiz) {
         stem: String(it.stem || ''), keyText: String(it.key || ''), typed: !!it.typed,
         img: it.img || '', guided: isGuided(it), nsteps: essayNSteps(it), it: it,
         given: [], finds: [], choices: null
+      };
+    }
+    if (isMcItem(it)) {
+      /* ข้อที่ครูพิมพ์เอง — รูปร่างเดียวกับโจทย์เชิงแนวคิดที่มาจากแม่แบบ
+         (theory: true คือตัวเลือกเป็นข้อความ ไม่ใช่ตัวเลข) ตัวตรวจคำตอบ
+         หน้าทำข้อสอบ และรายงานผล จึงใช้ของเดิมได้ทั้งหมดโดยไม่ต้องแก้อะไร */
+      const list = Array.isArray(it.cs) ? it.cs : [];
+      const kk = clamp(Math.round(Number(it.ans) || 0), 0, Math.max(0, list.length - 1));
+      return {
+        paper: true, theory: true, no: i + 1,
+        topic: (quiz.paper && quiz.paper.topic != null) ? Number(quiz.paper.topic) : null,
+        sub: 'ปรนัยที่ครูพิมพ์เอง', level: 'ทฤษฎี', skills: [],
+        stem: String(it.stem || ''), img: it.img || '',
+        given: [], finds: [],
+        choices: list.map(function (t, k) {
+          return { text: String(t), correct: k === kk,
+                   why: k === kk ? String(it.why || '') : '' };
+        })
       };
     }
     const key = Number(it.ans);
@@ -6116,11 +6156,225 @@ function printFormulas() {
    ครูกรอกแค่จำนวนข้อกับเฉลย แล้วได้ใบตอบที่ตรวจอัตโนมัติ
    ระบบคุมสอบ จับเวลา ส่งขึ้นชีต และรายงานชั้นเรียน ใช้ของเดิมทั้งหมด      */
 
+/* ── ครูพิมพ์ข้อสอบปรนัยของตัวเอง ────────────────────────────────────────
+   ใช้โครงของชุดกระดาษคำตอบเดิมทั้งหมด เพิ่มแค่ชนิดข้อใหม่ (mc)
+   จึงได้ระบบคุมสอบ จับเวลา ส่งขึ้นชีต และรายงานชั้นเรียนมาครบโดยไม่ต้องเขียนใหม่
+   ส่ง quiz มาถ้าเป็นการแก้ชุดเดิม                                        */
+const MC_CH_MIN = 2, MC_CH_MAX = 5, MC_MAX_Q = 60;
+
+function mcBlank(nCh) {
+  const cs = [];
+  for (let k = 0; k < nCh; k++) cs.push('');
+  return { stem: '', cs: cs, ans: 0, why: '', img: '' };
+}
+
+function mcDialog(quiz) {
+  const nCh0 = clamp(Math.round(Number((quiz && quiz.paper && quiz.paper.ch) || 4)),
+                     MC_CH_MIN, MC_CH_MAX);
+  const rows = quizMcItems(quiz).map(function (it) {
+    const cs = (Array.isArray(it.cs) ? it.cs : []).map(function (t) { return String(t); });
+    while (cs.length < nCh0) cs.push('');
+    return { stem: String(it.stem || ''), cs: cs, ans: Number(it.ans) || 0,
+             why: String(it.why || ''), img: String(it.img || '') };
+  });
+  if (!rows.length) rows.push(mcBlank(nCh0));
+  let nCh = nCh0;
+  let lastFld = null;
+
+  const topicNow = quiz && quiz.paper && quiz.paper.topic != null ? String(quiz.paper.topic) : '';
+  const minNow = quiz && quiz.limitSec ? Math.round(quiz.limitSec / 60) : 0;
+
+  openModal({
+    wide: true,
+    title: quiz ? ('แก้ข้อสอบปรนัย "' + esc(quiz.title) + '"') : 'พิมพ์ข้อสอบปรนัยของครู',
+    bodyHTML:
+      '<div class="hint" style="margin-bottom:11px">พิมพ์โจทย์กับตัวเลือกลงไปเลย ' +
+      '<b>เครื่องตรวจให้อัตโนมัติ</b> และผลขึ้นชีตเหมือนข้อสอบอื่นทุกอย่าง<br>' +
+      'สูตรพิมพ์เป็น <code>frac(บน,ล่าง)</code> · <code>sqrt(ข้างใน)</code> · ' +
+      '<code>x^2</code> · <code>v_1</code> แล้วจะแสดงเป็นรูปจริงให้นักเรียนเห็น</div>' +
+      '<div class="row" style="gap:12px;margin-bottom:10px;flex-wrap:wrap">' +
+      '<div class="grow" style="min-width:200px"><label class="hint" for="mcTitle">ชื่อชุด</label><br>' +
+      '<input type="text" id="mcTitle" style="width:100%" value="' +
+      esc(quiz ? quiz.title : ('ข้อสอบปรนัย — ' + thDate(Date.now()))) + '"></div>' +
+      '<div><label class="hint" for="mcCh">จำนวนตัวเลือก</label><br>' +
+      '<select id="mcCh">' +
+      [2, 3, 4, 5].map(function (n) {
+        return '<option value="' + n + '"' + (n === nCh0 ? ' selected' : '') + '>' + n + '</option>';
+      }).join('') + '</select></div>' +
+      '<div><label class="hint" for="mcMin">จำกัดเวลา (นาที)</label><br>' +
+      '<input type="number" id="mcMin" min="0" max="300" value="' + minNow +
+      '" style="width:110px" inputmode="numeric"></div>' +
+      '<div class="grow" style="min-width:170px"><label class="hint" for="mcTopic">บทเรียน</label><br>' +
+      '<select id="mcTopic" style="width:100%"><option value="">(ไม่ระบุบท)</option>' +
+      TOPICS.map(function (t) {
+        return '<option value="' + t.id + '"' + (String(t.id) === topicNow ? ' selected' : '') +
+          '>' + esc(chLabel(t) + ' ' + t.name) + '</option>';
+      }).join('') + '</select></div></div>' +
+      esFmtBarHTML('data-mcfmt', 'เน้นข้อความ') +
+      '<div class="essym"><b class="hint">แทรกสัญลักษณ์</b>' +
+      ES_SYMS.map(function (s) {
+        return '<button class="sm" type="button" data-mcsym="' + esc(s.ins) + '"' +
+          (s.back ? ' data-mcback="' + s.back + '"' : '') + ' title="' + esc(s.t) + '">' +
+          s.lab + '</button>';
+      }).join('') + '</div>' +
+      '<div class="hint" style="margin:5px 0 10px">แตะช่องที่จะแทรกหรือจะเน้นก่อน แล้วกดปุ่ม</div>' +
+      '<div id="mcList"></div>' +
+      '<div class="row" style="margin-top:10px"><button class="sm" type="button" id="mcAdd">+ เพิ่มข้อ</button>' +
+      '<span class="hint" id="mcCount"></span></div>' +
+      '<div id="mcMsg" style="margin-top:9px"></div>',
+    buttons: [
+      { label: 'ยกเลิก' },
+      { label: quiz ? 'บันทึกการแก้' : 'สร้างชุดข้อสอบ', cls: 'primary', act: function (close, root) {
+          const title = ($('#mcTitle', root).value || '').trim() || 'ข้อสอบปรนัย';
+          const msg = $('#mcMsg', root);
+          const good = [], bad = [];
+          rows.forEach(function (r, i) {
+            const stem = String(r.stem || '').trim();
+            const cs = r.cs.slice(0, nCh).map(function (t) { return String(t).trim(); });
+            const filled = cs.filter(function (t) { return t !== ''; }).length;
+            if (!stem && !filled) return;                 /* ข้อว่างเปล่า ข้ามไปเลย */
+            if (!stem) { bad.push('ข้อ ' + (i + 1) + ' ยังไม่มีเนื้อโจทย์'); return; }
+            if (filled < nCh) { bad.push('ข้อ ' + (i + 1) + ' ยังกรอกตัวเลือกไม่ครบ'); return; }
+            if (!(r.ans >= 0 && r.ans < nCh)) { bad.push('ข้อ ' + (i + 1) + ' ยังไม่ได้เลือกข้อที่ถูก'); return; }
+            good.push({ mc: 1, stem: stem, cs: cs, ans: r.ans,
+                        why: String(r.why || '').trim(), img: String(r.img || '').trim() });
+          });
+          if (bad.length) {
+            msg.innerHTML = '<div class="notice bad">' + bad.map(esc).join('<br>') + '</div>';
+            return;
+          }
+          if (!good.length) {
+            msg.innerHTML = '<div class="notice bad">ยังไม่มีข้อที่กรอกครบเลย</div>';
+            return;
+          }
+          const tpv = $('#mcTopic', root).value;
+          const lim = { limitSec: clamp(Math.round(Number($('#mcMin', root).value) || 0), 0, 300) * 60,
+                        maxOut: 0, maxOutSec: 0 };
+          const pp = { ch: nCh, topic: tpv === '' ? null : Number(tpv),
+                       st: quiz ? paperStyle(quiz) : 'th' };
+          if (quiz) {
+            /* ส่วนอื่นของชุดต้องอยู่ครบ — ข้อกระดาษคำตอบและข้ออัตนัยไม่ใช่ของกล่องนี้ */
+            quiz.title = title;
+            quiz.paper = pp;
+            quiz.items = mixItems(mixItems(quizKeyItems(quiz), good), quizEssayItems(quiz));
+            quiz.limitSec = lim.limitSec;
+            delete PCACHE['paper:' + quiz.id];
+            save(true); close(); renderMake();
+            toast('บันทึกข้อสอบปรนัย ' + good.length + ' ข้อแล้ว', 'ok');
+            return;
+          }
+          const q = createPaperQuiz(title, pp, good, lim);
+          DB.quizzes.push(q);
+          DB.cur.quizId = q.id;
+          save(true); close(); renderMake();
+          toast('สร้างข้อสอบปรนัย ' + good.length + ' ข้อแล้ว — กดเริ่มทำหรือมอบหมายได้เลย', 'ok');
+        } }
+    ],
+    onMount: function (root) {
+      const box = $('#mcList', root);
+
+      function draw() {
+        box.innerHTML = rows.map(function (r, i) {
+          const cs = [];
+          for (let k = 0; k < nCh; k++) {
+            const lab = paperLabel(quiz ? paperStyle(quiz) : 'th', k);
+            cs.push('<label class="mcrow">' +
+              '<input type="radio" name="mcA_' + i + '" data-mcans="' + i + '" value="' + k + '"' +
+              (r.ans === k ? ' checked' : '') + ' title="ข้อที่ถูก">' +
+              '<b class="lab">' + lab + '.</b>' +
+              '<input type="text" class="grow" data-mcc="' + i + '_' + k + '" value="' +
+              esc(r.cs[k] || '') + '" placeholder="ตัวเลือก ' + lab + '"></label>');
+          }
+          return '<div class="mcq"><div class="row" style="margin-bottom:6px">' +
+            '<b class="grow">ข้อ ' + (i + 1) + '</b>' +
+            '<button class="sm danger" type="button" data-mcdel="' + i + '">ลบข้อนี้</button></div>' +
+            '<textarea data-mcs="' + i + '" rows="2" style="width:100%" ' +
+            'placeholder="เนื้อโจทย์ข้อนี้">' + esc(r.stem) + '</textarea>' +
+            '<div class="mccs">' + cs.join('') + '</div>' +
+            '<input type="text" data-mcwhy="' + i + '" style="width:100%;margin-top:6px" ' +
+            'placeholder="อธิบายว่าทำไมข้อนี้ถูก (ไม่ใส่ก็ได้ · นักเรียนเห็นตอนเฉลย)" value="' +
+            esc(r.why) + '"></div>';
+        }).join('');
+        const cnt = $('#mcCount', root);
+        if (cnt) cnt.textContent = 'ทั้งหมด ' + rows.length + ' ข้อ · ข้อละ 1 คะแนน';
+      }
+
+      /* อ่านค่าจากช่องกลับเข้าตัวแปรทุกครั้งที่พิมพ์ ไม่ใช่ไปอ่านตอนกดบันทึก
+         เพราะการวาดรายการใหม่ (เพิ่ม/ลบข้อ) จะล้างค่าที่พิมพ์ค้างไว้ */
+      box.addEventListener('input', function (e) {
+        const t = e.target;
+        if (t.dataset.mcs != null) rows[Number(t.dataset.mcs)].stem = t.value;
+        else if (t.dataset.mcwhy != null) rows[Number(t.dataset.mcwhy)].why = t.value;
+        else if (t.dataset.mcc != null) {
+          const parts = t.dataset.mcc.split('_');
+          rows[Number(parts[0])].cs[Number(parts[1])] = t.value;
+        }
+      });
+      box.addEventListener('change', function (e) {
+        const t = e.target;
+        if (t.dataset.mcans != null) rows[Number(t.dataset.mcans)].ans = Number(t.value);
+      });
+      box.addEventListener('click', function (e) {
+        const b = e.target.closest ? e.target.closest('[data-mcdel]') : null;
+        if (!b) return;
+        const i = Number(b.dataset.mcdel);
+        rows.splice(i, 1);
+        if (!rows.length) rows.push(mcBlank(nCh));
+        draw();
+      });
+      // จำช่องที่แตะล่าสุด ไว้ให้ปุ่มสัญลักษณ์และปุ่มเน้นข้อความรู้ว่าจะลงที่ไหน
+      box.addEventListener('focusin', function (e) {
+        const t = e.target;
+        if (t.tagName === 'TEXTAREA' || (t.tagName === 'INPUT' && t.type === 'text')) lastFld = t;
+      });
+
+      $('#mcAdd', root).addEventListener('click', function () {
+        if (rows.length >= MC_MAX_Q) { toast('ชุดเดียวได้ไม่เกิน ' + MC_MAX_Q + ' ข้อ', 'warn'); return; }
+        rows.push(mcBlank(nCh));
+        draw();
+      });
+      $('#mcCh', root).addEventListener('change', function (e) {
+        nCh = clamp(Number(e.target.value) || 4, MC_CH_MIN, MC_CH_MAX);
+        rows.forEach(function (r) {
+          while (r.cs.length < nCh) r.cs.push('');
+          if (r.ans >= nCh) r.ans = 0;      /* ลดจำนวนตัวเลือกแล้วเฉลยต้องไม่ชี้ไปช่องที่ไม่มี */
+        });
+        draw();
+      });
+
+      $$('[data-mcfmt]', root).forEach(function (b) {
+        b.addEventListener('mousedown', function (e) { e.preventDefault(); });
+        b.addEventListener('click', function () {
+          if (!lastFld || !lastFld.isConnected) { toast('แตะช่องที่จะเน้นก่อน', 'bad'); return; }
+          esFmtWrap(lastFld, b.dataset.mcfmt);
+        });
+      });
+      $$('[data-mcsym]', root).forEach(function (b) {
+        b.addEventListener('mousedown', function (e) { e.preventDefault(); });
+        b.addEventListener('click', function () {
+          if (!lastFld || !lastFld.isConnected) { toast('แตะช่องที่จะแทรกก่อน', 'bad'); return; }
+          const ins = b.dataset.mcsym, back = Number(b.dataset.mcback) || 0;
+          const at = lastFld.selectionStart == null ? lastFld.value.length : lastFld.selectionStart;
+          const to = lastFld.selectionEnd == null ? at : lastFld.selectionEnd;
+          lastFld.value = lastFld.value.slice(0, at) + ins + lastFld.value.slice(to);
+          const pos = at + ins.length - back;
+          lastFld.focus();
+          try { lastFld.setSelectionRange(pos, pos); } catch (e2) {}
+          lastFld.dispatchEvent(new Event('input', { bubbles: true }));
+        });
+      });
+
+      draw();
+      $('#mcTitle', root).focus();
+    }
+  });
+}
+
 /** กล่องสร้างหรือแก้ใบตอบ — ส่ง quiz มาถ้าเป็นการแก้เฉลยของชุดเดิม */
 function paperDialog(quiz) {
   const cur = quiz && quiz.paper ? quiz.paper : { ch: 4, topic: null };
   // อ่านเฉพาะส่วนปรนัย ไม่งั้นข้ออัตนัยจะโผล่มาเป็นตัวอักษรมั่ว ๆ ในช่องเฉลย
-  const keyNow = quiz ? quizChoiceItems(quiz)
+  const keyNow = quiz ? quizKeyItems(quiz)
     .map(x => paperLabel(paperStyle(quiz), Number(x.ans))).join('') : '';
   const esNow = quizEssayItems(quiz);
   openModal({
@@ -6203,7 +6457,7 @@ function paperDialog(quiz) {
           const items = keys.map(k => ({ paper: 1, ans: k }));
           const pp = { ch: ch, topic: tpv === '' ? null : Number(tpv), st: st };
           if (quiz) {
-            const oldItems = quizChoiceItems(quiz).map(x => ({ ...x }));
+            const oldItems = quizKeyItems(quiz).map(x => ({ ...x }));
             const changedKeys = [];
             items.forEach((it, k) => {
               const oldAns = (oldItems[k] && oldItems[k].ans != null) ? Number(oldItems[k].ans) : null;
@@ -6218,7 +6472,9 @@ function paperDialog(quiz) {
               return;
             }
             // ข้ออัตนัยของชุดนี้ต้องอยู่ครบ แก้เฉลยปรนัยไม่ใช่การสร้างชุดใหม่
-            quiz.title = title; quiz.paper = pp; quiz.items = mixItems(items, esNow);
+            // ข้อที่ครูพิมพ์เองต้องอยู่ครบ แก้เฉลยกระดาษคำตอบไม่ใช่การลบข้อพวกนั้น
+            quiz.title = title; quiz.paper = pp;
+            quiz.items = mixItems(mixItems(items, quizMcItems(quiz)), esNow);
             quiz.limitSec = lim.limitSec; quiz.maxOut = lim.maxOut; quiz.maxOutSec = lim.maxOutSec;
             delete PCACHE['paper:' + quiz.id];
             save(true); close(); renderMake();
@@ -9799,7 +10055,8 @@ function renderMake() {
       '<div class="hint">แอปเก็บแค่เฉลย ไม่ได้เก็บตัวโจทย์ — แจกข้อสอบเป็นกระดาษ ' +
       'หรือฉายขึ้นจอ แล้วให้นักเรียนแตะตอบในแอป</div>' +
       '<div class="row" style="margin-top:11px">' +
-      '<button class="primary" id="btnPaper">+ สร้างกระดาษคำตอบใหม่</button>' +
+      '<button class="primary" id="btnMc">+ พิมพ์ข้อสอบปรนัยของครู</button>' +
+      '<button id="btnPaper">+ สร้างกระดาษคำตอบใหม่</button>' +
       '<button id="btnEssay">+ สร้างข้อสอบอัตนัย</button></div>';
     if (!papers.length) {
       h += '<div class="hint" style="margin-top:11px">ยังไม่มีกระดาษคำตอบ — ' +
@@ -9971,6 +10228,8 @@ function renderMake() {
     c.kind = e.target.value; save(); renderMake();
   }));
   $('#btnGen').addEventListener('click', doGenerate);
+  const bmc = $('#btnMc');
+  if (bmc) bmc.addEventListener('click', () => mcDialog(null));
   const bp = $('#btnPaper');
   if (bp) bp.addEventListener('click', () => paperDialog(null));
   const be = $('#btnEssay');
