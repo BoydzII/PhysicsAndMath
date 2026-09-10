@@ -800,6 +800,26 @@ input.numin.bad{border-color:var(--bad);background:var(--bad-bg)}
 #focusBar button{min-height:34px;padding:4px 12px;font-size:13px}
 @media print{#focusBar{display:none!important}}
 
+/* ---------- กระดานสอน / สมุดจด ---------- */
+/* เต็มจอจริง เพราะตัวนี้ถูกฉายขึ้นจอหน้าห้อง ไม่ใช่ดูบนมือถือ
+   ตัวหนังสือบนแถบบนจึงใหญ่กว่าปกติหนึ่งขั้น ให้เด็กแถวหลังอ่านออก */
+.bdroot{position:fixed;inset:0;z-index:200;background:var(--bg);
+  display:flex;flex-direction:column;gap:9px;padding:10px 12px;overflow:auto}
+/* แถบบนกับแผงสูตรต้องกินความสูงตามเนื้อจริง ไม่ใช่ถูกบีบ
+   ในกล่องเรียงแนวตั้ง ตัวที่ไม่ระบุ flex จะถูกบีบให้เล็กลงเมื่อที่ไม่พอ
+   ซึ่งทำให้แผงสูตรเหลือแค่แถบบาง ๆ อ่านไม่ได้ */
+.bdtop{display:flex;align-items:center;gap:9px;flex-wrap:wrap;flex:0 0 auto}
+.bdtop input.t{flex:1 1 240px;min-width:160px;font-size:19px;font-weight:700;
+  padding:9px 12px;min-height:46px}
+.bdtop .pg{font-variant-numeric:tabular-nums;font-weight:700;font-size:15px;
+  padding:0 4px;white-space:nowrap}
+.bdroot .hw-canvas-wrap{flex:1 1 auto}
+.bdfx{border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;
+  background:var(--panel);max-height:38vh;overflow:auto;flex:0 0 auto}
+.bdfx .fxrow .fxe{font-size:20px}      /* บนจอฉายต้องใหญ่กว่าบนจอส่วนตัว */
+.bdfx .fxrow .fxd{font-size:15px}
+@media print{.bdroot{display:none!important}}
+
 /* ปุ่ม ! บนหัวการ์ด — เปิดคำอธิบายความหมายของสีและป้าย */
 .ibtn{width:23px;height:23px;min-height:23px;padding:0;border-radius:50%;flex:0 0 auto;
   font-weight:700;font-size:13px;line-height:1;
@@ -1198,7 +1218,7 @@ table td,table th,.num,.xpstat b,.tick,
    *** ห้ามลบบรรทัดเครื่องหมาย @@BUILTIN@@ ทั้งสองอัน ตัวสร้างไฟล์ใช้หาตำแหน่ง ***
    ========================================================================== */
 /* @@BUILTIN@@ */
-const BUILTIN = {"url":"","studentOnly":false,"lockCloud":false,"logo":"","header":null,"about":null,"build":"2026-09-10 20:57","ver":"v8.104"};
+const BUILTIN = {"url":"","studentOnly":false,"lockCloud":false,"logo":"","header":null,"about":null,"build":"2026-09-10 21:05","ver":"v8.105"};
 /* @@BUILTIN-END@@ */
 
 /* ถ่ายภาพซอร์สของหน้านี้ไว้ตั้งแต่สคริปต์เพิ่งเริ่มทำงาน
@@ -10011,6 +10031,7 @@ function presetsHTML() {
       '<span class="pgo">›</span></button>').join('') +
     '</div>' +
     '<div class="row" style="margin-top:11px"><button class="sm" id="btnAllFx">📘 ดูสรุปสูตรทุกบท</button>' +
+    (isAdmin() ? '<button class="sm" id="btnBoard">🖥️ กระดานสอน</button>' : '') +
     '<span class="hint">หรือเลื่อนลงไปตั้งค่าชุดโจทย์เองได้ด้านล่าง</span></div></div>';
 }
 
@@ -10342,6 +10363,7 @@ function focusCardHTML() {
       '<div><b>' + focusTime(s.startAt) + '</b><span>เริ่มเมื่อ</span></div></div>' +
       '<div class="row" style="margin-top:13px"><button class="primary" id="btnFocusStop">' +
       'หยุดและบันทึกช่วงเรียน</button>' +
+      '<button id="btnNote">📓 สมุดจดของฉัน</button>' +
       '<button id="btnFocusCancel" class="danger">ทิ้งช่วงนี้</button></div>';
     if (s.events.length) {
       h += '<div class="fev" id="fEv">' + s.events.slice().reverse().map(e =>
@@ -10355,7 +10377,8 @@ function focusCardHTML() {
       'ออกไปแอปอื่นหรือเปิดจอคู่ นาฬิกาจะหยุดให้เอง</div>' +
       '<div class="row" style="margin-top:12px"><label for="fTopic" class="hint">บทที่กำลังเรียน</label>' +
       '<select id="fTopic" style="min-width:210px"><option value="">ไม่ระบุ</option>' + list + '</select>' +
-      '<button class="primary" id="btnFocusStart">เริ่มช่วงเรียน</button></div>';
+      '<button class="primary" id="btnFocusStart">เริ่มช่วงเรียน</button>' +
+      '<button id="btnNote">📓 สมุดจดของฉัน</button></div>';
     if (f.log.length) {
       const today = f.log.filter(x => focusSameDay(x.startAt, Date.now()));
       const sum = today.reduce((a, x) => a + (x.focusSec || 0), 0);
@@ -10508,6 +10531,286 @@ function focusInit() {
   }
   focusPaintBar();
   focusFlush();
+}
+
+/** ผูกแถบเครื่องมือของปากกาเข้ากับผืนผ้าใบหนึ่งผืน
+    แยกออกมาจากหน้าข้อสอบอัตนัยเพื่อให้กระดานสอนใช้ตัวเดียวกันได้
+    ถ้าปล่อยให้เขียนสองชุด วันหนึ่งเพิ่มเครื่องมือแล้วจะลืมแก้อีกที่แน่นอน */
+function hwBindTools(k, pad, wrapEl) {
+      $$('[data-esk="' + k + '"][data-hwtool]').forEach(tb => {
+        tb.addEventListener('click', () => {
+          $$('[data-esk="' + k + '"][data-hwtool]').forEach(x => x.classList.remove('active'));
+          tb.classList.add('active');
+          if (pad) pad.tool = tb.dataset.hwtool;
+        });
+      });
+
+      // ขนาดเส้น — ตั้งเป็นค่ามาตรฐานสามระดับ ไม่ต้องเดาเอง
+      $$('[data-esk="' + k + '"][data-hwsize]').forEach(sb => {
+        sb.addEventListener('click', () => {
+          $$('[data-esk="' + k + '"][data-hwsize]').forEach(x => x.classList.remove('active'));
+          sb.classList.add('active');
+          if (pad) pad.size = Number(sb.dataset.hwsize) || 2.8;
+        });
+      });
+
+      /* เส้นประเป็นสวิตช์เปิดปิด ไม่ใช่เครื่องมือ กดแล้วปากกาหรือลูกศรที่ถืออยู่เปลี่ยนลักษณะเส้น */
+      const dashBtn = $('[data-esk="' + k + '"][data-hwdash]');
+      if (dashBtn) {
+        dashBtn.addEventListener('click', () => {
+          const on = !dashBtn.classList.contains('active');
+          dashBtn.classList.toggle('active', on);
+          if (pad) pad.dash = on;
+        });
+      }
+
+      // Bind color swatches
+      $$('[data-esk="' + k + '"][data-hwcolor]').forEach(sw => {
+        sw.addEventListener('click', () => {
+          $$('[data-esk="' + k + '"][data-hwcolor]').forEach(x => x.classList.remove('active'));
+          sw.classList.add('active');
+          if (pad) {
+            pad.color = sw.dataset.hwcolor;
+            if (pad.tool !== 'pen') {
+              const penBtn = $('[data-esk="' + k + '"][data-hwtool="pen"]');
+              if (penBtn) penBtn.click();
+            }
+          }
+        });
+      });
+
+      // Bind grid background
+      const selG = $('[data-hwgrid="' + k + '"]');
+      if (selG) {
+        selG.addEventListener('change', e => {
+          wrapEl.className = 'hw-canvas-wrap ' + e.target.value;
+        });
+      }
+
+      // Bind actions
+      $$('[data-esk="' + k + '"][data-hwact]').forEach(actBtn => {
+        /* กันไม่ให้ปุ่มรับโฟกัส ไม่งั้นกดย้อนกลับแล้วเบราว์เซอร์เลื่อนจอไปหาปุ่ม
+           หรือเลื่อนกลับไปช่องกรอกที่โฟกัสอยู่ก่อนหน้า */
+        actBtn.addEventListener('pointerdown', ev => ev.preventDefault());
+        actBtn.addEventListener('click', () => {
+          /* ถ้าช่องกรอกคำตอบยังถือโฟกัสอยู่ แป้นพิมพ์จะค้าง แล้วจอเลื่อนกลับไปหาช่องนั้น
+             ตอนนี้กำลังทำงานอยู่บนกระดาษ จึงปล่อยโฟกัสทิ้งเหมือนตอนเริ่มเขียน */
+          const act2 = document.activeElement;
+          if (act2 && typeof act2.blur === 'function') act2.blur();
+          const act = actBtn.dataset.hwact;
+          if (pad && pad[act]) pad[act]();
+        });
+      });
+}
+
+/* ============================================================================
+   กระดานสอน และสมุดจดของนักเรียน
+   ----------------------------------------------------------------------------
+   ครูเปิดกระดานเต็มจอ ฉายขึ้นจอหน้าห้อง แล้วเขียนอธิบายด้วยปากกาชุดเดียวกับ
+   ที่ใช้ในข้อสอบอัตนัย มีหลายหน้า และแทรกสรุปสูตรของบทที่กำลังสอนขึ้นกระดานได้
+   นักเรียนดูที่จอฉาย แล้วเขียนตามในสมุดจดของตัวเองในแอป
+
+   ทำไมไม่ส่งกระดานของครูไปขึ้นจอนักเรียนแบบสด
+   ระบบนี้ไม่มีเซิร์ฟเวอร์ของตัวเอง ทุกอย่างวิ่งผ่าน Apps Script ถ้าให้นักเรียน
+   สี่สิบเครื่องถามความเปลี่ยนแปลงทุกสี่วินาที จะเป็นหกร้อยคำขอต่อนาที
+   ชนโควตาภายในคาบเดียว การให้ "ดูที่จอฉายแล้วเขียนตามในเครื่องตัวเอง"
+   จึงไม่ใช่ข้อจำกัดที่ยอมรับไปก่อน แต่เป็นวิธีที่ตรงกับของที่มีอยู่จริง
+   ถ้าวันหนึ่งอยากได้แบบสด ต้องมีตัวกลางอีกชั้น (เช่น Firebase) ซึ่งเป็นงานอีกก้อน
+
+   ทั้งสองฝั่งใช้ตัวเดียวกัน ต่างกันแค่ที่เก็บ — ครูเก็บที่ teach นักเรียนเก็บที่ note
+   จึงไม่มีทางที่กระดานของครูกับสมุดของนักเรียนจะปนกัน
+   ========================================================================== */
+const BOARD_MAX_PAGE = 12;      /* เกินนี้เก็บในเครื่องแล้วหนักเกินจำเป็น */
+
+function boardDB(who) {
+  if (!DB.board || typeof DB.board !== 'object') DB.board = {};
+  const key = who === 'teach' ? 'teach' : 'note';
+  const b = DB.board[key] && typeof DB.board[key] === 'object'
+    ? DB.board[key] : (DB.board[key] = { title: '', cur: 0, pages: [] });
+  if (!Array.isArray(b.pages)) b.pages = [];
+  if (!b.pages.length) b.pages.push({ strokes: [] });
+  if (!(b.cur >= 0 && b.cur < b.pages.length)) b.cur = 0;
+  return b;
+}
+
+let BOARD = null;               /* กระดานที่เปิดอยู่ตอนนี้ */
+
+function boardOpen(who) {
+  if (BOARD) return;
+  const b = boardDB(who), teach = who === 'teach';
+  const root = document.createElement('div');
+  root.className = 'bdroot noprint';
+  root.id = 'bdRoot';
+  root.innerHTML =
+    '<div class="bdtop">' +
+    '<input class="t" id="bdTitle" placeholder="' +
+      (teach ? 'หัวข้อที่กำลังสอน' : 'หัวข้อที่จด') + '" value="' + esc(b.title || '') + '">' +
+    '<span class="pg" id="bdPg"></span>' +
+    '<button data-bd="prev" title="หน้าก่อน">‹</button>' +
+    '<button data-bd="next" title="หน้าถัดไป">›</button>' +
+    '<button data-bd="add">+ หน้าใหม่</button>' +
+    '<button data-bd="del" class="danger">ลบหน้านี้</button>' +
+    (typeof formulaHTML === 'function'
+      ? '<select id="bdTopic"><option value="">แทรกสรุปสูตร…</option>' +
+        TOPICS.map(t => '<option value="' + t.id + '">' + esc(chLabel(t) + ' ' + t.name) + '</option>').join('') +
+        '</select>' : '') +
+    '<button data-bd="print">พิมพ์หน้านี้</button>' +
+    '<button data-bd="close" class="primary">ปิดกระดาน</button>' +
+    '</div>' +
+    '<div class="bdfx" id="bdFx" hidden></div>' +
+    hwPadHTML('bd', false, '', '', true);
+  document.body.appendChild(root);
+
+  /* ความสูงของผืนผ้าใบต้องตั้งก่อนสร้างปากกา เพราะตัวปากกาอ่านค่านี้ไปคำนวณขนาดจริง
+     เต็มจอลบพื้นที่แถบเครื่องมือ จะได้เขียนได้เต็มพื้นที่ที่ฉายขึ้นจอ */
+  const cv = $('#hwCanvas_bd', root), wrap = $('#hwWrap_bd', root);
+  cv.style.height = Math.max(320, Math.round(window.innerHeight - 210)) + 'px';
+
+  BOARD = { who: who, root: root, wrap: wrap, cv: cv, pad: null };
+  boardLoadPage();
+
+  $$('[data-bd]', root).forEach(btn => btn.addEventListener('click', () => {
+    const act = btn.dataset.bd;
+    if (act === 'close') return boardClose();
+    if (act === 'print') return boardPrint();
+    if (act === 'prev' || act === 'next') {
+      boardSavePage();
+      const b2 = boardDB(BOARD.who);
+      b2.cur = Math.max(0, Math.min(b2.pages.length - 1, b2.cur + (act === 'next' ? 1 : -1)));
+      save(true); boardLoadPage();
+      return;
+    }
+    if (act === 'add') {
+      boardSavePage();
+      const b2 = boardDB(BOARD.who);
+      if (b2.pages.length >= BOARD_MAX_PAGE) {
+        toast('กระดานเก็บได้ไม่เกิน ' + BOARD_MAX_PAGE + ' หน้า — พิมพ์เก็บแล้วลบหน้าเก่าออกได้', 'warn');
+        return;
+      }
+      b2.pages.splice(b2.cur + 1, 0, { strokes: [] });
+      b2.cur++;
+      save(true); boardLoadPage();
+      return;
+    }
+    if (act === 'del') {
+      const b2 = boardDB(BOARD.who);
+      openModal({
+        title: 'ลบหน้านี้',
+        bodyHTML: '<div class="hint">ลายมือในหน้านี้จะหายไปเลย หน้าอื่นไม่กระทบ</div>',
+        buttons: [{ label: 'ไม่ลบ' }, { label: 'ลบหน้านี้', cls: 'danger', act: c => {
+          b2.pages.splice(b2.cur, 1);
+          if (!b2.pages.length) b2.pages.push({ strokes: [] });
+          b2.cur = Math.max(0, Math.min(b2.pages.length - 1, b2.cur));
+          save(true); c(); boardLoadPage();
+        } }]
+      });
+    }
+  }));
+
+  const ti = $('#bdTitle', root);
+  ti.addEventListener('input', () => { boardDB(BOARD.who).title = ti.value; save(); });
+
+  const sel = $('#bdTopic', root);
+  if (sel) sel.addEventListener('change', () => {
+    const fx = $('#bdFx', root);
+    if (!sel.value) { fx.hidden = true; fx.innerHTML = ''; return; }
+    fx.innerHTML = formulaHTML(Number(sel.value));
+    fx.hidden = false;
+    // ผืนผ้าใบเตี้ยลงตามพื้นที่ที่สูตรกินไป ไม่งั้นกระดานจะยาวเกินจอแล้วต้องเลื่อน
+    boardFit();
+  });
+
+  window.addEventListener('resize', boardFit);
+  document.addEventListener('keydown', boardKey);
+}
+
+/** ตั้งความสูงผืนผ้าใบให้พอดีกับที่เหลือบนจอ แล้วให้ปากกาคำนวณขนาดใหม่ */
+function boardFit() {
+  if (!BOARD) return;
+  const top = $('.bdtop', BOARD.root), fx = $('#bdFx', BOARD.root);
+  const used = (top ? top.offsetHeight : 60) + (fx && !fx.hidden ? fx.offsetHeight : 0) + 60;
+  BOARD.cv.style.height = Math.max(280, Math.round(window.innerHeight - used)) + 'px';
+  if (BOARD.pad && BOARD.pad.resize) BOARD.pad.resize();
+}
+
+function boardKey(e) {
+  if (!BOARD) return;
+  if (e.key === 'Escape') { boardClose(); return; }
+  // ลูกศรซ้ายขวาเปลี่ยนหน้าได้ ถ้าไม่ได้กำลังพิมพ์อยู่ในช่องหัวข้อ
+  const t = e.target;
+  if (t && (t.tagName === 'INPUT' || t.tagName === 'SELECT' || t.tagName === 'TEXTAREA')) return;
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+    const btn = $('[data-bd="' + (e.key === 'ArrowRight' ? 'next' : 'prev') + '"]', BOARD.root);
+    if (btn) btn.click();
+  }
+}
+
+/** สร้างปากกาใหม่ให้หน้าที่กำลังเปิด — เก็บแต่เส้น ไม่เก็บรูป เหมือนข้อสอบอัตนัย */
+function boardLoadPage() {
+  if (!BOARD) return;
+  const b = boardDB(BOARD.who), pg = b.pages[b.cur] || { strokes: [] };
+  BOARD.pad = initHandwritingPad('bd', BOARD.cv, BOARD.wrap, pg.strokes, function (strokes) {
+    const cur = boardDB(BOARD.who);
+    const p = cur.pages[cur.cur];
+    if (!p) return;
+    p.strokes = strokes.map(function (s) {
+      return { tool: s.tool, color: s.color, size: s.size, dash: s.dash || 0,
+               points: (s.points || []).map(function (q) {
+                 return { x: Math.round(q.x * 10) / 10, y: Math.round(q.y * 10) / 10 };
+               }) };
+    });
+    save();
+  });
+  hwBindTools('bd', BOARD.pad, BOARD.wrap);
+  const pgEl = $('#bdPg', BOARD.root);
+  if (pgEl) pgEl.textContent = 'หน้า ' + (b.cur + 1) + '/' + b.pages.length;
+  boardFit();
+}
+
+/** เก็บลายมือของหน้าที่กำลังเปิดก่อนสลับหน้า — ตัวปากกาบันทึกหน่วงไว้ 0.45 วินาที
+    ถ้าสลับหน้าเร็วกว่านั้น เส้นสุดท้ายจะหาย จึงต้องดึงจากตัวปากกาตรง ๆ อีกครั้ง */
+function boardSavePage() {
+  if (!BOARD || !BOARD.pad) return;
+  const b = boardDB(BOARD.who), p = b.pages[b.cur];
+  if (!p) return;
+  p.strokes = (BOARD.pad.strokes || []).map(function (s) {
+    return { tool: s.tool, color: s.color, size: s.size, dash: s.dash || 0,
+             points: (s.points || []).map(function (q) {
+               return { x: Math.round(q.x * 10) / 10, y: Math.round(q.y * 10) / 10 };
+             }) };
+  });
+  save(true);
+}
+
+function boardClose() {
+  if (!BOARD) return;
+  boardSavePage();
+  window.removeEventListener('resize', boardFit);
+  document.removeEventListener('keydown', boardKey);
+  BOARD.root.remove();
+  BOARD = null;
+  render();
+}
+
+/** พิมพ์หน้าที่กำลังเปิด — แปลงผืนผ้าใบเป็นรูปแล้วส่งเข้าพื้นที่พิมพ์ของแอป
+    หน้าอื่นไม่ได้ถูกวาดอยู่บนจอ จึงพิมพ์ได้ทีละหน้าตามที่เปิดอยู่ */
+function boardPrint() {
+  if (!BOARD) return;
+  boardSavePage();
+  const b = boardDB(BOARD.who);
+  let img = '';
+  try { img = BOARD.cv.toDataURL('image/png'); } catch (e) { img = ''; }
+  if (!img) { toast('แปลงกระดานเป็นรูปไม่สำเร็จ', 'bad'); return; }
+  const hd = DB.settings.header || {};
+  const fx = $('#bdFx', BOARD.root);
+  $('#printarea').innerHTML =
+    '<div class="phead"><div class="t1">' + esc(hd.school || '') + '</div>' +
+    '<div class="t2">' + esc(b.title || (BOARD.who === 'teach' ? 'กระดานสอน' : 'สมุดจด')) + '</div>' +
+    '<div class="t3">หน้า ' + (b.cur + 1) + '/' + b.pages.length + ' · ' + thDateTime(Date.now()) +
+    '</div></div><hr class="prule">' +
+    (fx && !fx.hidden ? '<div class="pitem">' + fx.innerHTML + '</div>' : '') +
+    '<img src="' + img + '" style="width:100%;border:1px solid #999">';
+  setTimeout(() => window.print(), 80);
 }
 
 function renderMake() {
@@ -10733,6 +11036,8 @@ function renderMake() {
 
   // --- ผูกเหตุการณ์ ---
   focusBind();
+  const bBd = $('#btnBoard'); if (bBd) bBd.addEventListener('click', () => boardOpen('teach'));
+  const bNb = $('#btnNote'); if (bNb) bNb.addEventListener('click', () => boardOpen('note'));
   $$('[data-preset]').forEach(b => b.addEventListener('click', () => runPreset(b.dataset.preset)));
   $$('[data-pg]').forEach(b => b.addEventListener('click', () => {
     DB.cur.pg = b.dataset.pg; save(); renderMake();
@@ -11580,71 +11885,7 @@ function renderDo() {
         save();
       });
 
-      // Bind tools
-      $$('[data-esk="' + k + '"][data-hwtool]').forEach(tb => {
-        tb.addEventListener('click', () => {
-          $$('[data-esk="' + k + '"][data-hwtool]').forEach(x => x.classList.remove('active'));
-          tb.classList.add('active');
-          if (pad) pad.tool = tb.dataset.hwtool;
-        });
-      });
-
-      // ขนาดเส้น — ตั้งเป็นค่ามาตรฐานสามระดับ ไม่ต้องเดาเอง
-      $$('[data-esk="' + k + '"][data-hwsize]').forEach(sb => {
-        sb.addEventListener('click', () => {
-          $$('[data-esk="' + k + '"][data-hwsize]').forEach(x => x.classList.remove('active'));
-          sb.classList.add('active');
-          if (pad) pad.size = Number(sb.dataset.hwsize) || 2.8;
-        });
-      });
-
-      /* เส้นประเป็นสวิตช์เปิดปิด ไม่ใช่เครื่องมือ กดแล้วปากกาหรือลูกศรที่ถืออยู่เปลี่ยนลักษณะเส้น */
-      const dashBtn = $('[data-esk="' + k + '"][data-hwdash]');
-      if (dashBtn) {
-        dashBtn.addEventListener('click', () => {
-          const on = !dashBtn.classList.contains('active');
-          dashBtn.classList.toggle('active', on);
-          if (pad) pad.dash = on;
-        });
-      }
-
-      // Bind color swatches
-      $$('[data-esk="' + k + '"][data-hwcolor]').forEach(sw => {
-        sw.addEventListener('click', () => {
-          $$('[data-esk="' + k + '"][data-hwcolor]').forEach(x => x.classList.remove('active'));
-          sw.classList.add('active');
-          if (pad) {
-            pad.color = sw.dataset.hwcolor;
-            if (pad.tool !== 'pen') {
-              const penBtn = $('[data-esk="' + k + '"][data-hwtool="pen"]');
-              if (penBtn) penBtn.click();
-            }
-          }
-        });
-      });
-
-      // Bind grid background
-      const selG = $('[data-hwgrid="' + k + '"]');
-      if (selG) {
-        selG.addEventListener('change', e => {
-          wrapEl.className = 'hw-canvas-wrap ' + e.target.value;
-        });
-      }
-
-      // Bind actions
-      $$('[data-esk="' + k + '"][data-hwact]').forEach(actBtn => {
-        /* กันไม่ให้ปุ่มรับโฟกัส ไม่งั้นกดย้อนกลับแล้วเบราว์เซอร์เลื่อนจอไปหาปุ่ม
-           หรือเลื่อนกลับไปช่องกรอกที่โฟกัสอยู่ก่อนหน้า */
-        actBtn.addEventListener('pointerdown', ev => ev.preventDefault());
-        actBtn.addEventListener('click', () => {
-          /* ถ้าช่องกรอกคำตอบยังถือโฟกัสอยู่ แป้นพิมพ์จะค้าง แล้วจอเลื่อนกลับไปหาช่องนั้น
-             ตอนนี้กำลังทำงานอยู่บนกระดาษ จึงปล่อยโฟกัสทิ้งเหมือนตอนเริ่มเขียน */
-          const act2 = document.activeElement;
-          if (act2 && typeof act2.blur === 'function') act2.blur();
-          const act = actBtn.dataset.hwact;
-          if (pad && pad[act]) pad[act]();
-        });
-      });
+      hwBindTools(k, pad, wrapEl);
     });
 
     $$('[data-es]').forEach(function (t) {
