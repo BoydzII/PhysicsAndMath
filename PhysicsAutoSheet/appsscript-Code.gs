@@ -20,6 +20,16 @@
  *   4) กลับมาที่แอพ → แท็บตั้งค่า → ปุ่ม "ซ่อมโครงสร้างชีต" หนึ่งครั้ง
  *      เพื่อเติมหัวตารางของคอลัมน์ใหม่ (ข้อมูลเดิมไม่หาย)
  *
+ * ── รุ่น 16 แก้อะไร (เรียนรู้ไปพร้อมกัน) ──────────────────────────────────
+ *   เพิ่มแผ่น focus เก็บช่วงเรียนของนักเรียน — นักเรียนกดเริ่มช่วงเรียนตอนครูสอน
+ *   แอปจับเวลาช่วงที่อยู่กับบทเรียนจริง ออกจากแอปหรือเปิดจอคู่นาฬิกาจะหยุด
+ *   แล้วบันทึกไว้ว่าออกไปกี่ครั้ง ครั้งละกี่วินาที
+ *   ครูดูสรุปรายห้องได้ที่แท็บสถิติชั้นเรียน
+ *   คำสั่งใหม่สามตัว: focusSave (นักเรียนบันทึก) · focusMine (นักเรียนดูของตัวเอง)
+ *   focusReport (ครูดูรายห้อง)
+ *   แผ่นใหม่ถูกสร้างให้เองตอนใช้งานครั้งแรก และปุ่ม "ซ่อมโครงสร้างชีต"
+ *   เติมหัวตารางให้ด้วย ข้อมูลเดิมไม่ต้องแก้อะไรเลย
+ *
  * ── รุ่น 15 แก้อะไร (ขอบเขตครูผู้สอน และรหัสผ่านที่มองไม่เห็น) ───────────
  *   ขอบเขตชั้นและวิชาของครูผู้สอน เปลี่ยนมาอ่านสดจากแผ่น teachers ทุกครั้ง
  *   ของเดิมฝังไว้ในโทเคนที่อยู่ได้ 12 ชั่วโมง ผู้ดูแลหลักติ๊กชั้นให้แล้ว
@@ -146,7 +156,11 @@ var SHEETS = {
   /* คลังข้ออัตนัยของครู — หนึ่งข้ออาจกินหลายแถว ดูคำอธิบายที่หัวข้อ "คลังข้ออัตนัย" ด้านล่าง
      คอลัมน์เนื้อข้อมูลต้องอยู่ท้ายสุดเสมอ จะได้อ่านสารบัญโดยไม่ต้องลากเนื้อข้อมูลมาด้วย */
   esbank:      ['id', 'subject', 'topic', 'tags', 'at', 'up', 'use', 'used', 'del',
-                'bytes', 'part', 'parts', 'data']
+                'bytes', 'part', 'parts', 'data'],
+  /* ช่วงเรียนของระบบ "เรียนรู้ไปพร้อมกัน" — หนึ่งแถวคือหนึ่งช่วงเรียนของนักเรียนคนหนึ่ง
+     บันทึกการออกเป็น JSON ก้อนเดียวไว้ท้ายสุด จะได้อ่านสารบัญโดยไม่ต้องลากก้อนนั้นมาด้วย */
+  focus:       ['id', 'sid', 'subject', 'cls', 'topic', 'title', 'startAt', 'endAt',
+                'focusSec', 'awaySec', 'nOut', 'device', 'events']
 };
 /* หัวตารางภาษาไทยที่คนอ่านเข้าใจ — เขียนไว้ที่แถว 1 ของแต่ละแผ่น */
 var HEADERS = {
@@ -165,7 +179,10 @@ var HEADERS = {
                 'ต้องเปลี่ยนรหัส', 'เปิดใช้งาน', 'เข้าใช้ล่าสุด', 'สร้างเมื่อ', 'วิชาที่สอน'],
   esbank:      ['รหัสข้อ', 'วิชา', 'บทที่', 'คำค้น', 'สร้างเมื่อ', 'แก้ล่าสุด',
                 'ถูกใช้ (ครั้ง)', 'ใช้ล่าสุด', 'ลบแล้ว', 'ขนาด (ตัวอักษร)',
-                'ท่อนที่', 'ทั้งหมดกี่ท่อน', 'เนื้อข้อสอบ']
+                'ท่อนที่', 'ทั้งหมดกี่ท่อน', 'เนื้อข้อสอบ'],
+  focus:       ['รหัสช่วงเรียน', 'เลขประจำตัว', 'วิชา', 'ชั้น', 'บทที่เรียน', 'หัวข้อที่เรียน',
+                'เริ่มเมื่อ', 'จบเมื่อ', 'เวลาที่อยู่กับบทเรียน (วินาที)',
+                'เวลาที่ออกไป (วินาที)', 'จำนวนครั้งที่ออก', 'อุปกรณ์', 'บันทึกการออก']
 };
 /* คอลัมน์ของแผ่นคลังข้ออัตนัย (นับจาก 1) */
 var C_EB_ID = 1, C_EB_SUBJ = 2, C_EB_TOPIC = 3, C_EB_TAGS = 4, C_EB_AT = 5,
@@ -729,6 +746,140 @@ function resetAdminPassword() {
     '(ถ้ายังเข้าไม่ได้ ให้กด "ทำให้ใช้งานได้ใหม่" ก่อน)');
 }
 
+/* ====== เรียนรู้ไปพร้อมกัน (ช่วงเรียนในคาบ) ==============================
+   นักเรียนกดเริ่มช่วงเรียนตอนครูสอน แอปจับเวลาช่วงที่ "อยู่กับบทเรียนจริง"
+   ออกจากแอปหรือเปิดจอคู่ นาฬิกาหยุดเดินและถูกบันทึกไว้เป็นเหตุการณ์
+   ฝั่งชีตเก็บแถวละหนึ่งช่วงเรียน แล้วครูดูสรุปรายห้องได้
+
+   สิ่งที่ระบบนี้ทำไม่ได้ (ต้องบอกครูให้ชัดเหมือนระบบคุมสอบ)
+   จับได้เฉพาะบนเครื่องเดียวกันเท่านั้น นักเรียนหยิบมือถืออีกเครื่องขึ้นมาเล่น
+   ระบบไม่มีทางรู้ ตัวเลขนี้จึงเป็นเครื่องมือให้นักเรียนเห็นตัวเอง
+   ไม่ใช่หลักฐานสำหรับลงโทษ
+   ========================================================================= */
+var FOCUS_MIN_SEC = 30;      /* สั้นกว่านี้ไม่เก็บ กันแถวขยะจากการกดเล่น */
+var FOCUS_EV_MAX = 60;       /* เก็บบันทึกการออกไม่เกินนี้ต่อหนึ่งช่วงเรียน */
+var FOCUS_ROWS_MAX = 400;    /* ครูดึงสรุปได้ไม่เกินนี้ต่อครั้ง */
+
+/** หาแถวของช่วงเรียนจากรหัส — ส่งซ้ำด้วยรหัสเดิมจะได้เขียนทับ ไม่เกิดแถวซ้ำ
+    (เน็ตหลุดตอนส่งแล้วแอปส่งใหม่ เป็นเรื่องที่เกิดขึ้นจริงบ่อย) */
+function focusRowOf_(id) {
+  var want = String(id || '');
+  if (!want) return null;
+  var rows = readAll_('focus');
+  for (var i = 0; i < rows.length; i++) if (String(rows[i].id) === want) return rows[i];
+  return null;
+}
+
+function focusStudentMap_() {
+  var m = {};
+  readAll_('students').forEach(function (st) {
+    var k = sidKey_(st.sid);
+    if (k) m[k] = st;
+  });
+  return m;
+}
+
+/** นักเรียนบันทึกช่วงเรียนหนึ่งช่วง */
+function apiFocusSave_(req) {
+  var t = needStudent_(req);
+  var subject = reqSubject_(req);
+  var s = req.session || {};
+  var id = String(s.id || '').slice(0, 40);
+  if (!id) throw new Error('ไม่มีรหัสช่วงเรียน');
+  var focusSec = Math.max(0, Math.round(Number(s.focusSec) || 0));
+  /* ช่วงสั้น ๆ ไม่ต้องเก็บ แต่ต้องตอบว่าเรียบร้อย ไม่ใช่ขว้างข้อผิดพลาด
+     ไม่งั้นแอปจะขึ้นเตือนนักเรียนทั้งที่ไม่มีอะไรผิด */
+  if (focusSec < FOCUS_MIN_SEC) return { skipped: true, minSec: FOCUS_MIN_SEC };
+  var st = focusStudentMap_()[sidKey_(t.sid)];
+  var ev = [];
+  if (Array.isArray(s.events)) {
+    ev = s.events.slice(-FOCUS_EV_MAX).map(function (e) {
+      return { at: Number(e.at) || 0, sec: Math.round(Number(e.sec) || 0),
+               why: String(e.why || '').slice(0, 20) };
+    });
+  }
+  var row = {
+    id: id, sid: String(t.sid), subject: subject,
+    cls: st ? st.cls : '',
+    topic: String(s.topic == null ? '' : s.topic).slice(0, 40),
+    title: String(s.title || '').slice(0, 120),
+    startAt: Number(s.startAt) || 0,
+    endAt: Number(s.endAt) || Date.now(),
+    focusSec: focusSec,
+    awaySec: Math.max(0, Math.round(Number(s.awaySec) || 0)),
+    nOut: Math.max(0, Math.round(Number(s.nOut) || 0)),
+    device: String(s.device || '').slice(0, 60),
+    events: JSON.stringify(ev).slice(0, 4000)
+  };
+  var lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    var old = focusRowOf_(id);
+    if (old) writeRow_('focus', old._row, row);
+    else appendRow_('focus', row);
+  } finally { lock.releaseLock(); }
+  return { saved: true, id: id, focusSec: focusSec };
+}
+
+function focusOut_(r) {
+  return { id: String(r.id), sid: String(r.sid), cls: r.cls,
+           topic: r.topic, title: r.title,
+           startAt: Number(r.startAt) || 0, endAt: Number(r.endAt) || 0,
+           focusSec: Number(r.focusSec) || 0, awaySec: Number(r.awaySec) || 0,
+           nOut: Number(r.nOut) || 0 };
+}
+
+/** นักเรียนดูช่วงเรียนของตัวเอง เรียงล่าสุดก่อน */
+function apiFocusMine_(req) {
+  var t = needStudent_(req);
+  var subject = reqSubject_(req);
+  var me = sidKey_(t.sid);
+  var out = readAll_('focus').filter(function (r) {
+    return sidKey_(r.sid) === me && normSubject_(r.subject) === subject;
+  }).map(focusOut_);
+  out.sort(function (a, b) { return b.startAt - a.startAt; });
+  return out.slice(0, Math.min(60, Math.max(1, Math.round(Number(req.limit) || 30))));
+}
+
+/** ครูดูสรุปรายห้อง — รวมเวลาต่อคน พร้อมเวลาล่าสุดที่เรียน */
+function apiFocusReport_(req) {
+  var me = needAdmin_(req), sc = scopeOf_(me);
+  var subject = needSubject_(me, reqSubject_(req));
+  var days = Math.min(120, Math.max(1, Math.round(Number(req.days) || 14)));
+  var since = Date.now() - days * 86400000;
+  var wantCls = req.cls ? normCls_(req.cls) : '';
+  /* ชั้นของนักเรียนอ่านสดจากแผ่นรายชื่อ ไม่ใช่ค่าที่ติดมากับแถวช่วงเรียน
+     เพราะเด็กย้ายห้องแล้วแถวเก่าจะยังเป็นห้องเดิม รายงานจะนับไปอยู่ห้องผิด */
+  var stu = focusStudentMap_();
+  var agg = {}, sessions = 0;
+  readAll_('focus').forEach(function (r) {
+    if (normSubject_(r.subject) !== subject) return;
+    var at = Number(r.startAt) || 0;
+    if (at < since) return;
+    var k = sidKey_(r.sid);
+    var st = k ? stu[k] : null;
+    if (!st) return;                         /* ลบชื่อออกจากรายชื่อแล้ว ไม่ต้องขึ้นรายงาน */
+    var cls = normCls_(st.cls);
+    if (!inScope_(sc, cls)) return;
+    if (wantCls && cls !== wantCls) return;
+    if (cls === normCls_(SAMPLE_CLS)) return;   /* นักเรียนตัวอย่างไม่เข้ารายงาน */
+    var a = agg[k];
+    if (!a) {
+      a = agg[k] = { sid: String(st.sid), name: st.name, cls: cls, no: st.no,
+                     sessions: 0, focusSec: 0, awaySec: 0, nOut: 0, lastAt: 0 };
+    }
+    sessions++;
+    a.sessions++;
+    a.focusSec += Number(r.focusSec) || 0;
+    a.awaySec += Number(r.awaySec) || 0;
+    a.nOut += Number(r.nOut) || 0;
+    if (at > a.lastAt) a.lastAt = at;
+  });
+  var rows = Object.keys(agg).map(function (k) { return agg[k]; });
+  rows.sort(function (a, b) { return b.focusSec - a.focusSec; });
+  return { days: days, cls: wantCls, sessions: sessions, rows: rows.slice(0, FOCUS_ROWS_MAX) };
+}
+
 /* ====== ทางเข้าเว็บแอป ================================================== */
 
 function json_(o) {
@@ -736,7 +887,7 @@ function json_(o) {
 }
 
 function doGet() {
-  return json_({ ok: true, service: 'quiz-bank', version: 15, subjects: SUBJECTS,
+  return json_({ ok: true, service: 'quiz-bank', version: 16, subjects: SUBJECTS,
                  note: 'ใช้งานผ่าน POST จากแอพเท่านั้น' });
 }
 
@@ -793,6 +944,9 @@ function route_(action, req) {
     case 'unlock':        return apiUnlock_(req);
     case 'examPing':      return apiExamPing_(req);
     case 'examMonitor':   return apiExamMonitor_(req);
+    case 'focusSave':     return apiFocusSave_(req);
+    case 'focusMine':     return apiFocusMine_(req);
+    case 'focusReport':   return apiFocusReport_(req);
     default: throw new Error('ไม่รู้จักคำสั่ง: ' + action);
   }
 }
@@ -849,7 +1003,7 @@ function apiPing_(req) {
   try { locale = String(book_().getSpreadsheetLocale() || ''); } catch (e) {}
 
   return {
-    version: 15, role: role, myClasses: myCls,
+    version: 16, role: role, myClasses: myCls,
     locale: locale, monthFirst: monthFirstSheet_(), classes: clsCount,
     teachers: Math.max(0, sheet_('teachers').getLastRow() - 1),
     needRepair: needRepair, layout: layout, subjects: SUBJECTS,
@@ -1272,6 +1426,7 @@ function apiRosterRemove_(req) {
   var rows = list.filter(function (s) { return ids[sidKey_(s.sid)] && inScope_(sc, s.cls); })
                  .map(function (s) { return s._row; }).sort(function (a, b) { return b - a; });
   rows.forEach(function (r) { sh.deleteRow(r); });
+  _sidCol = null; dropCache_('students');   /* ลบแล้วต้องไม่มีใครอ่านของเก่าต่อได้ */
   return { removed: rows.length };
 }
 
@@ -1358,6 +1513,7 @@ function apiAssignRemove_(req) {
       throw new Error('ใบงาน ' + code + ' เป็นของชั้นที่คุณไม่ได้ดูแล');
     }
     sh.deleteRow(list[i]._row);
+    dropCache_('assignments');
     return { removed: 1 };
   }
   return { removed: 0 };

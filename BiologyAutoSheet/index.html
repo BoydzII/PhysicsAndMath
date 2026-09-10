@@ -630,6 +630,31 @@ input.numin.bad{border-color:var(--bad);background:var(--bad-bg)}
 .subtog .n{margin-left:auto;font-weight:500;font-size:12.5px}
 @media (hover:hover){.subtog:hover{color:var(--brand);border-color:var(--brand)}}
 
+/* ---------- เรียนรู้ไปพร้อมกัน (ช่วงเรียนในคาบ) ---------- */
+.fclock{font-variant-numeric:tabular-nums;font-weight:700;font-size:40px;line-height:1.1;
+  letter-spacing:-0.01em}
+.fclock.away{color:var(--warn)}
+.fstat{display:flex;gap:22px;flex-wrap:wrap;margin-top:10px}
+.fstat>div{min-width:74px}
+.fstat b{display:block;font-size:19px;font-variant-numeric:tabular-nums;line-height:1.3}
+.fstat span{font-size:12.5px;color:var(--muted)}
+.fev{margin-top:11px;border-top:1px solid var(--line);max-height:190px;overflow:auto}
+.fevrow{display:flex;gap:10px;align-items:baseline;padding:6px 2px;border-bottom:1px solid var(--line2);
+  font-size:13px}
+.fevrow .w{font-weight:700;flex:0 0 auto}
+.fevrow .t{color:var(--muted);margin-left:auto;font-variant-numeric:tabular-nums}
+/* แถบลอยมุมจอ — เห็นนาฬิกาได้ทุกแท็บ ไม่ต้องกลับมาหน้าเดิมเพื่อดูว่ายังเดินอยู่ไหม */
+#focusBar{position:fixed;right:14px;bottom:calc(14px + env(safe-area-inset-bottom));z-index:70;
+  display:none;align-items:center;gap:11px;padding:9px 13px;border-radius:var(--r-pill,999px);
+  background:var(--panel);border:1px solid var(--brand);
+  box-shadow:0 4px 18px rgba(16,30,54,.18);font-size:14px}
+#focusBar.on{display:flex}
+#focusBar.paused{border-color:var(--warn)}
+#focusBar .fbt{font-weight:700;font-variant-numeric:tabular-nums;font-size:16px}
+#focusBar .fbw{color:var(--warn);font-weight:700}
+#focusBar button{min-height:34px;padding:4px 12px;font-size:13px}
+@media print{#focusBar{display:none!important}}
+
 /* ปุ่ม ! บนหัวการ์ด — เปิดคำอธิบายความหมายของสีและป้าย */
 .ibtn{width:23px;height:23px;min-height:23px;padding:0;border-radius:50%;flex:0 0 auto;
   font-weight:800;font-size:13px;line-height:1;
@@ -866,7 +891,7 @@ input.numin.bad{border-color:var(--bad);background:var(--bad-bg)}
    *** ห้ามลบบรรทัดเครื่องหมาย @@BUILTIN@@ ทั้งสองอัน ตัวสร้างไฟล์ใช้หาตำแหน่ง ***
    ========================================================================== */
 /* @@BUILTIN@@ */
-const BUILTIN = {"url":"","studentOnly":true,"lockCloud":false,"logo":"","header":null,"about":null,"build":"2026-09-10 17:01","ver":"v8.99"};
+const BUILTIN = {"url":"","studentOnly":true,"lockCloud":false,"logo":"","header":null,"about":null,"build":"2026-09-10 19:45","ver":"v8.100"};
 /* @@BUILTIN-END@@ */
 
 /* ถ่ายภาพซอร์สของหน้านี้ไว้ตั้งแต่สคริปต์เพิ่งเริ่มทำงาน
@@ -1080,7 +1105,7 @@ window.__LSKEY = LS_KEY;   // ให้ตัวดักหน้าขาว�
    ชีตเดียวเก็บได้หลายวิชา ฝั่งชีตใช้ค่านี้แยกใบงานและผลของแต่ละวิชาออกจากกัน */
 /* สคริปต์ในชีตที่แอปรุ่นนี้ต้องการ — ใช้เตือนตอนทดสอบการเชื่อมต่อ
    ขยับเลขนี้ทุกครั้งที่เพิ่มคำสั่งใหม่ในไฟล์ appsscript-Code.gs */
-const GS_VERSION = 8;
+const GS_VERSION = 16;
 const SUBJECT = 'bio';
 /* ────────────────────────────────────────────────────────────────────────────
    สารบัญเรื่อง — จุดเดียวที่ต้องแก้เมื่อจะ "เพิ่มบทใหม่"
@@ -1223,6 +1248,9 @@ function loadDB() {
   /* ข้อมูลที่บันทึกไว้ก่อนมีระบบคุมสอบจะไม่มีคีย์พวกนี้ ต้องเติมให้ก่อนใช้งาน
      ไม่งั้นค่าจะเป็น undefined แล้วช่องกรอกในกล่องสร้างแบบทดสอบจะว่างเปล่า */
   if (DB.settings.examMin == null) DB.settings.examMin = 0;
+  // ข้อมูลที่บันทึกไว้ก่อนมีระบบเรียนรู้ไปพร้อมกันจะไม่มีคีย์นี้
+  if (!DB.focus || typeof DB.focus !== 'object') DB.focus = { cur: null, log: [] };
+  if (!Array.isArray(DB.focus.log)) DB.focus.log = [];
   if (DB.settings.examMaxOut == null) DB.settings.examMaxOut = 0;
   if (DB.settings.examMaxOutSec == null) DB.settings.examMaxOutSec = 0;
   try {
@@ -5463,13 +5491,421 @@ function quizLegend() {
   });
 }
 
+/* ============================================================================
+   เรียนรู้ไปพร้อมกัน — ช่วงเรียนในคาบ
+   ----------------------------------------------------------------------------
+   นักเรียนกด "เริ่มช่วงเรียน" ตอนครูเริ่มสอน แอปจับเวลาเฉพาะช่วงที่อยู่กับ
+   บทเรียนจริง ออกไปแอปอื่นหรือเปิดจอคู่ นาฬิกาจะหยุดและบันทึกไว้ว่าออกกี่ครั้ง
+   ครั้งละกี่วินาที จบคาบกดหยุด แล้วช่วงเรียนถูกส่งขึ้นชีตให้ครูดูสรุปรายห้อง
+
+   ทำไมใช้ visibilitychange ไม่ใช่ window.blur
+   บทเรียนจากระบบคุมสอบ: บนไอแพดแค่แป้นพิมพ์เด้งขึ้นหรือเปิดกล่องโมดัลก็ยิง blur
+   ถ้าใช้ตัวนั้นจะนับเกินจนตัวเลขใช้อ้างอิงอะไรไม่ได้เลย
+
+   จอคู่ตรวจจาก "หน้าต่างแคบลงมากแต่สูงเท่าเดิม" เพราะเปิดจอคู่แล้วแอปยังไม่ถูกซ่อน
+   visibilitychange จึงไม่ยิง — หมุนจอเปลี่ยนทั้งกว้างและสูง จึงไม่ถูกนับเป็นจอคู่
+   ส่วนแป้นพิมพ์เด้งขึ้นทำให้สูงลดแต่กว้างเท่าเดิม ก็ไม่เข้าเงื่อนไขเช่นกัน
+
+   สิ่งที่ระบบนี้ทำไม่ได้ ต้องบอกให้ชัดทั้งครูและนักเรียน
+   จับได้เฉพาะบนเครื่องเดียวกัน นักเรียนหยิบมือถืออีกเครื่องขึ้นมาเล่น ระบบไม่รู้
+   ตัวเลขนี้จึงเป็นกระจกให้นักเรียนเห็นตัวเอง ไม่ใช่หลักฐานสำหรับลงโทษ
+   ========================================================================== */
+const FOCUS_MIN_SEC = 30;      // ตรงกับฝั่งชีต — สั้นกว่านี้ไม่บันทึก
+const FOCUS_OUT_MIN = 1.5;     // ออกไปสั้นกว่านี้ไม่นับ (แถบแจ้งเตือน · สลับพลาด)
+const FOCUS_EV_MAX = 60;       // เก็บบันทึกการออกต่อช่วงเรียนไม่เกินนี้
+let FTICK = null;              // ตัวเดินนาฬิกาบนหน้าจอ
+const FWIN = { w: 0, h: 0, split: false };
+
+function focusDB() {
+  if (!DB.focus || typeof DB.focus !== 'object') DB.focus = { cur: null, log: [] };
+  if (!Array.isArray(DB.focus.log)) DB.focus.log = [];
+  return DB.focus;
+}
+function focusCur() { const f = focusDB(); return f.cur && f.cur.id ? f.cur : null; }
+/** ช่วงเรียนใช้ได้กับนักเรียนที่ลงชื่อเข้าใช้ หรือคนที่ใช้แอปเดี่ยว ๆ (ไม่ต่อชีต) */
+function focusAllowed() { return isStudent() || offlineMode(); }
+function focusSendable() {
+  if (!cloudOn() || !authValid() || DB.auth.role !== 'student') return false;
+  /* บางวิชายังไม่มีโหมด "ทดลองดูแบบนักเรียน" จึงต้องถามก่อนว่าแอปนี้มีฟังก์ชันนั้นไหม
+     ถ้ามีและกำลังทดลองอยู่ ห้ามส่งขึ้นชีต เพราะจะกลายเป็นข้อมูลของนักเรียนจริง */
+  if (typeof previewOn === 'function' && previewOn()) return false;
+  return true;
+}
+/** เวลาแบบ ชม:นาที:วินาที — mmss() ให้ "95:12" ซึ่งอ่านผิดเป็น 95 นาทีได้ */
+function focusClock(sec) {
+  const s = Math.max(0, Math.round(sec)), h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60), r = s % 60;
+  return (h ? h + ':' + String(m).padStart(2, '0') : String(m)) + ':' + String(r).padStart(2, '0');
+}
+/** เวลานาฬิกาแบบ 14:05 — ในแอปมีแต่ thDateTime ที่ยาวเกินสำหรับตารางเล็ก ๆ */
+function focusTime(ts) {
+  const d = new Date(ts || 0);
+  return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+}
+function focusSameDay(a, b) {
+  const x = new Date(a || 0), y = new Date(b || 0);
+  return x.getFullYear() === y.getFullYear() && x.getMonth() === y.getMonth() &&
+         x.getDate() === y.getDate();
+}
+function focusMin(sec) {
+  const m = Math.round(Math.max(0, sec) / 60);
+  return m < 60 ? m + ' นาที' : Math.floor(m / 60) + ' ชม. ' + (m % 60) + ' นาที';
+}
+
+function focusStart(topicId) {
+  if (focusCur()) return;
+  const t = topicId == null || topicId === '' ? null : topicOf(Number(topicId));
+  focusDB().cur = {
+    id: uid(), topic: t ? t.id : '',
+    title: t ? (chLabel(t) + ' ' + t.name) : 'ไม่ได้ระบุบท',
+    startAt: Date.now(), endAt: 0, focusSec: 0, awaySec: 0, nOut: 0,
+    events: [], openAt: 0, openWhy: '', lastAt: Date.now(),
+    device: String(navigator.userAgent || '').slice(0, 60), sent: false
+  };
+  FWIN.w = window.innerWidth; FWIN.h = window.innerHeight; FWIN.split = false;
+  save(true);
+  focusTickOn();
+  renderMake();
+  toast('เริ่มจับเวลาช่วงเรียนแล้ว — นาฬิกาจะหยุดเองถ้าออกจากแอป', 'ok');
+}
+
+function focusTickOn() {
+  if (FTICK || !focusCur()) return;
+  FTICK = setInterval(focusTick, 1000);
+}
+function focusTickOff() {
+  if (FTICK) { clearInterval(FTICK); FTICK = null; }
+}
+function focusTick() {
+  const s = focusCur();
+  if (!s) { focusTickOff(); return; }
+  const now = Date.now();
+  /* นับจากเวลาจริงที่ผ่านไป ไม่ใช่นับรอบของ setInterval
+     เพราะเบราว์เซอร์หน่วงตัวจับเวลาเมื่อแอปไม่ได้อยู่หน้าสุด
+     เพดาน 5 วินาทีกันกรณีเครื่องหลับแล้วตื่นมาได้ก้อนใหญ่ทีเดียว */
+  const dt = Math.min(5, Math.max(0, (now - (s.lastAt || now)) / 1000));
+  s.lastAt = now;
+  if (!s.openAt) s.focusSec += dt;
+  focusPaintBar();
+  if (TAB === 'make') focusPaintCard();
+  // บันทึกลงเครื่องเป็นระยะ เผื่อแอปถูกปิดกลางคาบ
+  if (Math.floor(s.focusSec) % 15 === 0) save();
+}
+
+/** ออกจากบทเรียน — เปิดเหตุการณ์ค้างไว้ แล้วบันทึกทันทีเพราะเครื่องอาจดับตอนนี้ */
+function focusPause(why) {
+  const s = focusCur();
+  if (!s || s.openAt) return;
+  s.openAt = Date.now();
+  s.openWhy = why || 'ออกจากแอป';
+  save(true);
+  focusPaintBar();
+}
+function focusResume() {
+  const s = focusCur();
+  if (!s || !s.openAt) return;
+  const sec = (Date.now() - s.openAt) / 1000, why = s.openWhy || 'ออกจากแอป';
+  s.openAt = 0; s.openWhy = ''; s.lastAt = Date.now();
+  if (sec >= FOCUS_OUT_MIN) {
+    s.nOut++;
+    s.awaySec += sec;
+    if (s.events.length < FOCUS_EV_MAX) {
+      s.events.push({ at: Date.now() - sec * 1000, sec: Math.round(sec), why: why });
+    }
+  }
+  save(true);
+  focusPaintBar();
+  if (TAB === 'make') focusPaintCard();
+}
+
+/** เปิดจอคู่ — หน้าต่างแคบลงมากแต่สูงเท่าเดิม ดูคำอธิบายที่หัวข้อด้านบน */
+function focusCheckSplit() {
+  const s = focusCur();
+  if (!s) return;
+  const w = window.innerWidth, h = window.innerHeight;
+  const narrow = FWIN.w > 0 && w < FWIN.w * 0.85 && Math.abs(h - FWIN.h) < FWIN.h * 0.08;
+  if (narrow) {
+    if (!FWIN.split) { FWIN.split = true; focusPause('เปิดจอคู่'); }
+    return;
+  }
+  if (FWIN.split) { FWIN.split = false; focusResume(); }
+  // ขนาดอ้างอิงอัปเดตเฉพาะตอนไม่ได้อยู่ในจอคู่ หมุนจอแล้วจึงเทียบกับขนาดใหม่
+  FWIN.w = w; FWIN.h = h;
+}
+
+async function focusStop() {
+  const s = focusCur();
+  if (!s) return;
+  focusResume();                       // ปิดเหตุการณ์ที่ค้างอยู่ให้เรียบร้อยก่อนสรุป
+  s.endAt = Date.now();
+  s.focusSec = Math.round(s.focusSec);
+  s.awaySec = Math.round(s.awaySec);
+  const f = focusDB();
+  f.log.unshift(s);
+  f.log = f.log.slice(0, 60);          // เก็บย้อนหลังไว้พอดู ไม่ให้พื้นที่ในเครื่องบวม
+  f.cur = null;
+  save(true);
+  focusTickOff();
+  focusPaintBar();
+  renderMake();
+  if (s.focusSec < FOCUS_MIN_SEC) {
+    toast('ช่วงเรียนสั้นกว่า ' + FOCUS_MIN_SEC + ' วินาที จึงไม่ได้บันทึก', 'warn');
+    return;
+  }
+  await focusSend(s, true);
+}
+
+/** ส่งช่วงเรียนขึ้นชีต — ส่งไม่ได้ก็เก็บไว้ในเครื่องแล้วส่งใหม่รอบหน้า
+    รหัสช่วงเรียนคงเดิม ฝั่งชีตจึงเขียนทับแถวเดิม ส่งซ้ำไม่เกิดแถวซ้ำ */
+async function focusSend(s, loud) {
+  if (!focusSendable()) {
+    if (loud) toast('บันทึกช่วงเรียนไว้ในเครื่องแล้ว (ยังไม่ได้ลงชื่อเข้าใช้ จึงไม่ได้ส่งขึ้นชีต)', 'ok');
+    return false;
+  }
+  try {
+    const r = await api('focusSave', { session: {
+      id: s.id, topic: s.topic, title: s.title, startAt: s.startAt, endAt: s.endAt,
+      focusSec: s.focusSec, awaySec: s.awaySec, nOut: s.nOut,
+      device: s.device || '', events: s.events || [] } });
+    s.sent = true;
+    save(true);
+    if (loud) {
+      toast(r && r.skipped ? 'ช่วงเรียนสั้นเกินไป ไม่ได้บันทึกขึ้นชีต'
+                           : 'ส่งช่วงเรียน ' + focusMin(s.focusSec) + ' ขึ้นชีตแล้ว', 'ok');
+    }
+    return true;
+  } catch (e) {
+    if (loud) {
+      toast('เก็บไว้ในเครื่องแล้ว แต่ส่งขึ้นชีตไม่ได้ — จะส่งให้เองเมื่อต่อเน็ตได้', 'warn');
+    }
+    return false;
+  }
+}
+/** ส่งช่วงเรียนที่ค้างอยู่ให้หมด เรียกตอนเปิดแอป — เงียบ ๆ ไม่รบกวนนักเรียน */
+async function focusFlush() {
+  if (!focusSendable()) return;
+  const pend = focusDB().log.filter(x => !x.sent && x.focusSec >= FOCUS_MIN_SEC).slice(0, 5);
+  for (let i = 0; i < pend.length; i++) await focusSend(pend[i], false);
+}
+
+/* ---------- แถบลอยมุมจอ ---------- */
+function focusBarEl() {
+  let el = $('#focusBar');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'focusBar';
+    el.className = 'noprint';
+    document.body.appendChild(el);
+  }
+  return el;
+}
+function focusPaintBar() {
+  const s = focusCur(), el = focusBarEl();
+  if (!s) { el.className = 'noprint'; el.innerHTML = ''; return; }
+  const away = !!s.openAt;
+  el.className = 'noprint on' + (away ? ' paused' : '');
+  el.innerHTML = '<span class="fbt">' + focusClock(s.focusSec) + '</span>' +
+    (away ? '<span class="fbw">หยุดไว้</span>' : '<span class="hint">กำลังเรียน</span>') +
+    '<button id="fbStop">หยุด</button>';
+  const b = $('#fbStop');
+  if (b) b.addEventListener('click', focusStop);
+}
+
+/* ---------- การ์ดของนักเรียน ---------- */
+function focusCardHTML() {
+  const s = focusCur(), f = focusDB();
+  let h = '<div class="card"><h3>เรียนรู้ไปพร้อมกัน' +
+    '<span class="sub">จับเวลาช่วงที่อยู่กับบทเรียนจริง</span>' +
+    '<button class="ibtn" id="btnFocusHelp" aria-label="ระบบนี้ทำอะไรได้และทำอะไรไม่ได้" ' +
+    'title="ระบบนี้ทำอะไรได้และทำอะไรไม่ได้">!</button></h3>';
+  if (s) {
+    const away = !!s.openAt;
+    h += '<div class="fclock' + (away ? ' away' : '') + '" id="fClock">' + focusClock(s.focusSec) + '</div>' +
+      '<div class="hint" id="fState">' +
+      (away ? 'นาฬิกาหยุดอยู่ — ' + esc(s.openWhy) + ' กลับมาที่แอปแล้วเดินต่อเอง'
+            : 'กำลังเรียน ' + esc(s.title)) + '</div>' +
+      '<div class="fstat"><div><b id="fOut">' + s.nOut + '</b><span>ครั้งที่ออก</span></div>' +
+      '<div><b id="fAway">' + focusClock(s.awaySec) + '</b><span>เวลาที่ออกไป</span></div>' +
+      '<div><b>' + focusTime(s.startAt) + '</b><span>เริ่มเมื่อ</span></div></div>' +
+      '<div class="row" style="margin-top:13px"><button class="primary" id="btnFocusStop">' +
+      'หยุดและบันทึกช่วงเรียน</button>' +
+      '<button id="btnFocusCancel" class="danger">ทิ้งช่วงนี้</button></div>';
+    if (s.events.length) {
+      h += '<div class="fev" id="fEv">' + s.events.slice().reverse().map(e =>
+        '<div class="fevrow"><span class="w">' + esc(e.why) + '</span>' +
+        '<span>' + focusTime(e.at) + '</span>' +
+        '<span class="t">' + focusClock(e.sec) + '</span></div>').join('') + '</div>';
+    }
+  } else {
+    const list = TOPICS.map(t => '<option value="' + t.id + '">' + esc(chLabel(t) + ' ' + t.name) + '</option>').join('');
+    h += '<div class="hint">ครูเริ่มสอนแล้วกดเริ่มได้เลย — นาฬิกาเดินเฉพาะตอนที่แอปอยู่หน้าจอ ' +
+      'ออกไปแอปอื่นหรือเปิดจอคู่ นาฬิกาจะหยุดให้เอง</div>' +
+      '<div class="row" style="margin-top:12px"><label for="fTopic" class="hint">บทที่กำลังเรียน</label>' +
+      '<select id="fTopic" style="min-width:210px"><option value="">ไม่ระบุ</option>' + list + '</select>' +
+      '<button class="primary" id="btnFocusStart">เริ่มช่วงเรียน</button></div>';
+    if (f.log.length) {
+      const today = f.log.filter(x => focusSameDay(x.startAt, Date.now()));
+      const sum = today.reduce((a, x) => a + (x.focusSec || 0), 0);
+      h += '<div class="fstat" style="margin-top:14px">' +
+        '<div><b>' + focusMin(sum) + '</b><span>วันนี้เรียนไปแล้ว</span></div>' +
+        '<div><b>' + today.length + '</b><span>ช่วงเรียนวันนี้</span></div>' +
+        '<div><b>' + f.log.length + '</b><span>ช่วงเรียนที่บันทึกไว้</span></div></div>' +
+        '<div class="fev">' + f.log.slice(0, 8).map(x =>
+          '<div class="fevrow"><span class="w">' + focusMin(x.focusSec) + '</span>' +
+          '<span>' + esc(x.title || '') + ' · ' + thDate(x.startAt) + '</span>' +
+          '<span class="t">' + (x.nOut ? 'ออก ' + x.nOut + ' ครั้ง' : 'ไม่ออกเลย') +
+          (x.sent ? '' : ' · ยังไม่ส่ง') + '</span></div>').join('') + '</div>';
+    }
+  }
+  return h + '</div>';
+}
+/** อัปเดตเฉพาะตัวเลขที่เดิน ไม่วาดการ์ดใหม่ทั้งใบ — วาดใหม่ทุกวินาทีจะทำให้กดปุ่มไม่ทัน */
+function focusPaintCard() {
+  const s = focusCur();
+  if (!s) return;
+  const c = $('#fClock'); if (c) { c.textContent = focusClock(s.focusSec); c.classList.toggle('away', !!s.openAt); }
+  const o = $('#fOut'); if (o) o.textContent = s.nOut;
+  const a = $('#fAway'); if (a) a.textContent = focusClock(s.awaySec);
+  const st = $('#fState');
+  if (st) {
+    st.textContent = s.openAt ? ('นาฬิกาหยุดอยู่ — ' + s.openWhy + ' กลับมาที่แอปแล้วเดินต่อเอง')
+                              : ('กำลังเรียน ' + s.title);
+  }
+}
+function focusHelp() {
+  openModal({
+    title: 'เรียนรู้ไปพร้อมกัน — ระบบนี้ทำอะไรได้',
+    bodyHTML: '<div class="lgd">' +
+      '<div class="lgdh">ทำอะไรได้</div>' +
+      '<div class="hint">จับเวลาช่วงที่แอปนี้อยู่หน้าจอจริง · หยุดนาฬิกาให้เองเมื่อออกไปแอปอื่น ' +
+      'สลับแท็บ จอดับ หรือเปิดจอคู่ · บันทึกว่าออกไปกี่ครั้ง ครั้งละกี่วินาที ' +
+      'แล้วส่งขึ้นชีตให้ครูดูสรุปรายห้อง</div>' +
+      '<div class="lgdh">ทำอะไรไม่ได้</div>' +
+      '<div class="hint">จับได้เฉพาะบนเครื่องนี้เครื่องเดียว — หยิบมือถืออีกเครื่องขึ้นมาเล่น ' +
+      'หรือเปิดหนังสือคุยกับเพื่อน ระบบไม่มีทางรู้ ' +
+      'ตัวเลขนี้จึงมีไว้ให้<b>เห็นตัวเอง</b>ว่าคาบนี้อยู่กับบทเรียนจริงกี่นาที ' +
+      'ไม่ใช่หลักฐานสำหรับลงโทษ</div>' +
+      '<div class="lgdh">ถ้าลืมกดหยุด</div>' +
+      '<div class="hint">นาฬิกาหยุดเองตอนออกจากแอปอยู่แล้ว เวลาที่ออกไปจึงไม่ถูกนับเป็นเวลาเรียน ' +
+      'กลับมากดหยุดทีหลังได้ ตัวเลขไม่บวมขึ้นเอง</div></div>',
+    buttons: [{ label: 'เข้าใจแล้ว', cls: 'primary' }]
+  });
+}
+function focusBind() {
+  const b1 = $('#btnFocusStart');
+  if (b1) b1.addEventListener('click', () => { const t = $('#fTopic'); focusStart(t ? t.value : ''); });
+  const b2 = $('#btnFocusStop'); if (b2) b2.addEventListener('click', focusStop);
+  const b3 = $('#btnFocusHelp'); if (b3) b3.addEventListener('click', focusHelp);
+  const b4 = $('#btnFocusCancel');
+  if (b4) b4.addEventListener('click', () => {
+    openModal({
+      title: 'ทิ้งช่วงเรียนนี้',
+      bodyHTML: '<div class="hint">เวลาที่จับไว้จะหายไปเลย ไม่ถูกบันทึกและไม่ถูกส่งขึ้นชีต</div>',
+      buttons: [{ label: 'ไม่ทิ้ง' },
+                { label: 'ทิ้งเลย', cls: 'danger', act: c => {
+                    focusDB().cur = null; save(true); focusTickOff(); focusPaintBar(); c(); renderMake();
+                  } }]
+    });
+  });
+}
+
+/* ---------- รายงานของครู ---------- */
+let FREP = null;              // ผลที่ดึงมาล่าสุด เก็บไว้ไม่ให้ยิงซ้ำทุกครั้งที่วาดหน้า
+function focusReportCardHTML() {
+  if (!isAdmin() || !cloudOn()) return '';
+  let h = '<div class="card"><h3>เวลาที่อยู่กับบทเรียน' +
+    '<span class="sub">จากระบบเรียนรู้ไปพร้อมกัน</span></h3>' +
+    '<div class="row" style="margin-bottom:10px">' +
+    '<label class="hint" for="frDays">ย้อนหลัง</label>' +
+    '<select id="frDays"><option value="1">วันนี้</option><option value="7">7 วัน</option>' +
+    '<option value="14" selected>14 วัน</option><option value="30">30 วัน</option></select>' +
+    '<input type="text" id="frCls" placeholder="ทุกชั้น (หรือพิมพ์ ม.4/1)" style="width:190px">' +
+    '<button class="primary" id="btnFocusRep">ดึงรายงาน</button></div>';
+  if (!FREP) {
+    h += '<div class="hint">กดดึงรายงานเพื่อดูว่าคาบที่ผ่านมา ใครอยู่กับบทเรียนจริงกี่นาที ' +
+      'และออกจากแอปกี่ครั้ง — นับจากนักเรียนที่กดเริ่มช่วงเรียนในแอปเท่านั้น</div>';
+  } else if (!FREP.rows.length) {
+    h += '<div class="hint">ยังไม่มีใครบันทึกช่วงเรียนในช่วงเวลานี้</div>';
+  } else {
+    const top = FREP.rows[0].focusSec || 1;
+    h += '<div class="tablewrap"><table><thead><tr><th class="num">เลขที่</th><th>ชื่อ</th>' +
+      '<th>ชั้น</th><th class="num">ช่วงเรียน</th><th>เวลาที่อยู่กับบทเรียน</th>' +
+      '<th class="num">ออก (ครั้ง)</th><th class="num">เวลาที่ออกไป</th>' +
+      '<th>ล่าสุด</th></tr></thead><tbody>' +
+      FREP.rows.map(r => '<tr><td class="num">' + esc(r.no || '') + '</td>' +
+        '<td>' + esc(r.name || r.sid) + '</td><td>' + esc(r.cls || '') + '</td>' +
+        '<td class="num">' + r.sessions + '</td>' +
+        '<td><div class="row" style="gap:8px"><div class="bar grow" style="min-width:70px">' +
+        '<i style="width:' + Math.round(100 * (r.focusSec || 0) / top) + '%"></i></div>' +
+        '<span style="font-variant-numeric:tabular-nums">' + focusMin(r.focusSec) + '</span></div></td>' +
+        '<td class="num">' + r.nOut + '</td>' +
+        '<td class="num">' + focusMin(r.awaySec) + '</td>' +
+        '<td>' + (r.lastAt ? thDateTime(r.lastAt) : '—') + '</td></tr>').join('') +
+      '</tbody></table></div>' +
+      '<div class="hint" style="margin-top:9px">รวม ' + FREP.rows.length + ' คน · ' +
+      FREP.sessions + ' ช่วงเรียน ในช่วง ' + FREP.days + ' วันที่ผ่านมา<br>' +
+      'ตัวเลขนี้จับได้เฉพาะบนเครื่องของนักเรียนเอง เด็กที่หยิบมือถืออีกเครื่องขึ้นมาเล่น ' +
+      'ระบบไม่มีทางรู้ — ใช้เป็นข้อมูลคุยกับนักเรียน ไม่ใช่หลักฐานตัดคะแนน</div>';
+  }
+  return h + '</div>';
+}
+function bindFocusReport() {
+  const b = $('#btnFocusRep');
+  if (!b) return;
+  b.addEventListener('click', async () => {
+    const days = Number(($('#frDays') || {}).value || 14);
+    const cls = String((($('#frCls') || {}).value || '')).trim();
+    b.disabled = true; b.textContent = 'กำลังดึง…';
+    try {
+      FREP = await api('focusReport', { days: days, cls: cls });
+      renderStats();
+    } catch (e) {
+      const msg = e.message || String(e);
+      /* ชีตที่ยังไม่ได้ Deploy รุ่น 16 จะตอบว่าไม่รู้จักคำสั่ง ซึ่งครูอ่านแล้วไม่รู้ว่าต้องทำอะไร */
+      toast(/ไม่รู้จักคำสั่ง/.test(msg)
+        ? 'ชีตยังเป็นรุ่นเก่า — ต้องนำ appsscript-Code.gs รุ่น 16 ไปวางใน Apps Script แล้ว Deploy รุ่นใหม่ก่อน'
+        : msg, 'bad');
+      b.disabled = false; b.textContent = 'ดึงรายงาน';
+    }
+  });
+}
+
+/* ---------- ผูกกับเหตุการณ์ของเบราว์เซอร์ (ครั้งเดียวตอนเปิดแอป) ---------- */
+function focusInit() {
+  document.addEventListener('visibilitychange', function () {
+    if (!focusCur()) return;
+    if (document.hidden) focusPause('ออกจากแอป'); else focusResume();
+  });
+  window.addEventListener('pagehide', function () { focusPause('ปิดแอป'); });
+  window.addEventListener('resize', focusCheckSplit);
+  /* บนไอแพด การเข้า-ออกจอคู่ยิง resize อยู่แล้ว แต่บางรุ่นยิงที่ visualViewport ก่อน
+     ผูกไว้ทั้งสองที่ ตัวตรวจเป็นชุดเดียวกันและอ่านค่าจาก window.innerWidth เหมือนกัน
+     จึงยิงซ้ำได้ไม่เสียหาย (แป้นพิมพ์เด้งขึ้นก็ยิงตัวนี้ แต่กว้างไม่เปลี่ยน จึงไม่เข้าเงื่อนไข) */
+  if (window.visualViewport && window.visualViewport.addEventListener) {
+    window.visualViewport.addEventListener('resize', focusCheckSplit);
+  }
+  const s = focusCur();
+  if (s) {
+    /* เปิดแอปมาแล้วยังมีช่วงเรียนค้างอยู่ — ช่วงที่แอปปิดไปถือว่าออกจากบทเรียน
+       ถ้าไม่ปิดเหตุการณ์ให้ นาฬิกาจะเดินต่อเหมือนนั่งเรียนอยู่ทั้งที่ปิดแอปไปแล้ว */
+    if (!s.openAt) s.openAt = s.lastAt || Date.now();
+    focusResume();
+    FWIN.w = window.innerWidth; FWIN.h = window.innerHeight; FWIN.split = false;
+    focusTickOn();
+  }
+  focusPaintBar();
+  focusFlush();
+}
+
 function renderMake() {
   const c = mkCfg();
   const total = c.mode === 'mix' ? LEVELS.reduce((s, l) => s + (c.counts[l] || 0), 0) : c.n;
 
   // นักเรียนที่ลงชื่อเข้าใช้เห็นใบงานที่ครูมอบหมายก่อน แล้วค่อยเป็นตัวสร้างชุดของตัวเอง
   // การ์ดโปรไฟล์ของผู้เรียนอยู่บนสุด เห็นเลเวลกับความคืบหน้าทันทีที่เปิดแอป
-  let h = isStudent() ? (xpCardHTML() + myAssignmentsHTML()) : '';
+  // การ์ดช่วงเรียนอยู่บนสุดของหน้านักเรียน เพราะเป็นสิ่งที่กดตอนครูเริ่มสอน
+  let h = isStudent() ? (focusCardHTML() + xpCardHTML() + myAssignmentsHTML())
+                      : (focusAllowed() ? focusCardHTML() : '');
   h += presetsHTML();
   const tFold = topicFolded(c);
   h += '<div class="card' + (tFold ? ' tfold' : '') + '"><h3>' + (isStudent() ? 'ฝึกเอง — ' : '') +
@@ -5599,6 +6035,7 @@ function renderMake() {
   $('#pane-make').innerHTML = h;
 
   // --- ผูกเหตุการณ์ ---
+  focusBind();
   $$('[data-preset]').forEach(b => b.addEventListener('click', () => runPreset(b.dataset.preset)));
   $$('[data-pg]').forEach(b => b.addEventListener('click', () => {
     DB.cur.pg = b.dataset.pg; save(); renderMake();
@@ -6745,8 +7182,8 @@ function renderStats() {
     $('#pane-stats').innerHTML = '<div class="card"><h3>ยังไม่มีข้อมูลสถิติ</h3>' +
       '<div class="hint">ต้องมีผู้เรียนทำชุดโจทย์จนจบอย่างน้อยหนึ่งคนก่อน สถิติจึงจะแสดงที่นี่<br>' +
       'ในโหมดครู ให้สลับผู้เรียนที่แถบบนแล้วให้แต่ละคนทำชุดเดียวกัน ระบบจะเปรียบเทียบผลให้อัตโนมัติ</div></div>' +
-      cloudPullCardHTML() + importCardHTML();
-    bindCloudPullCard(); bindImportCard();
+      focusReportCardHTML() + cloudPullCardHTML() + importCardHTML();
+    bindFocusReport(); bindCloudPullCard(); bindImportCard();
     return;
   }
   if (!DB.cur.statQuizId || !quizzes.some(q => q.id === DB.cur.statQuizId)) DB.cur.statQuizId = quizzes[quizzes.length - 1].id;
@@ -6975,7 +7412,9 @@ function renderStats() {
 
   h += cloudPullCardHTML() + importCardHTML();
 
-  $('#pane-stats').innerHTML = h;
+  // รายงานเวลาที่อยู่กับบทเรียนต่อท้ายหน้าสถิติ ครูจะได้ดูคู่กับผลการทำในหน้าเดียว
+  $('#pane-stats').innerHTML = h + focusReportCardHTML();
+  bindFocusReport();
   $('#selQz').addEventListener('change', e => { DB.cur.statQuizId = e.target.value; save(); renderStats(); });
   const sr = $('#selStatRoom');
   if (sr) sr.addEventListener('change', e => { DB.cur.statRoom = e.target.value; save(); renderStats(); });
@@ -9844,6 +10283,7 @@ $$('#tabs button').forEach(b => b.addEventListener('click', () => {
   if (TAB === 'do') stampTime();
   setTab(b.dataset.tab);
 }));
+focusInit();          // ระบบเรียนรู้ไปพร้อมกัน — ผูกเหตุการณ์และกู้ช่วงเรียนที่ค้างอยู่
 const bVer = $('#btnAppVer');
 if (bVer) {
   bVer.textContent = APP_VERSION;          // เลขจริงของไฟล์นี้ ไม่ใช่เลขที่เขียนไว้ใน HTML
