@@ -12,220 +12,351 @@
    ----------------------------------------------------------------------------
    ไฟล์เดียวจบ ไม่มีไลบรารีภายนอก เปิดจากไฟล์ตรง ๆ ก็ทำงานได้ ไม่ต้องต่อเน็ต
    ออกแบบให้ใช้บนคอมพิวเตอร์และไอแพดเป็นหลัก (ปุ่มใหญ่ ลากด้วยนิ้วหรือ Apple Pencil ได้)
+
+   หมายเหตุเรื่องสี — ตัวแปรสี่ตัวนี้ห้ามเปลี่ยนค่าเล่น ๆ
+     --ink --muted --brand --line2
+   เพราะ col() ในสคริปต์แปลง "ชื่อบทบาทของสี" ไปเป็นตัวแปรสี่ตัวนี้ตอนวาดบนจอ
+   แต่ตอนส่งออกไฟล์จะแทนด้วยรหัสสีที่เขียนไว้ในตาราง COLORS
+   ถ้าสองฝั่งไม่ตรงกัน สีบนจอกับสีในไฟล์ที่ส่งออกจะเพี้ยนคนละอย่าง
    ========================================================================== */
 
 :root{
-  --bg:#eef1f6; --panel:#ffffff; --panel2:#f7f9fc; --line:#dde3ec; --line2:#eef2f8;
-  --ink:#1f2937; --muted:#6b7280; --brand:#2563eb; --brand2:#dbeafe;
+  color-scheme:light;
+  /* พื้นผิวและเส้นขอบของตัวแอป — ปรับได้อิสระ ไม่เกี่ยวกับสีของรูป */
+  --bg:#eff2f7; --stage:#e6eaf1; --panel:#ffffff; --panel2:#f5f7fb;
+  --line:#e3e8f0; --line3:#d3dbe7; --chip:#eef1f7;
+  --brand-soft:#e8efff; --brand-ink:#1d4ed8;
+  --shadow-1:0 1px 2px rgba(16,24,40,.05);
+  --shadow-2:0 1px 2px rgba(16,24,40,.06),0 6px 18px rgba(16,24,40,.07);
+  --shadow-3:0 18px 48px rgba(16,24,40,.18),0 2px 6px rgba(16,24,40,.08);
+  --r:12px; --r-sm:9px; --r-lg:16px;
+  /* ---- ตัวแปรที่ผูกกับสีของรูป (ดูหมายเหตุด้านบน) ---- */
+  --ink:#1f2937; --muted:#6b7280; --brand:#2563eb; --line2:#eef2f8;
+  --brand2:#dbeafe;
   --red:#dc2626; --green:#16a34a; --amber:#d97706; --purple:#7c3aed;
-  --shadow:0 1px 2px rgba(16,24,40,.06),0 8px 24px rgba(16,24,40,.08);
-  --r:12px;
-  /* สีของเส้นในรูป — ชุดเดียวกับที่แอปคลังโจทย์ใช้ ย้ายรูปข้ามแอปแล้วสีจะไม่เพี้ยน */
   --c-ink:#1f2937; --c-mut:#6b7280; --c-brand:#2563eb;
   --c-red:#dc2626; --c-green:#16a34a; --c-amber:#d97706; --c-purple:#7c3aed;
-  --paper:#ffffff; --grid:#dbe3ee; --grid2:#c6d2e2;
+  --paper:#ffffff; --grid:#dde5f0; --grid2:#c8d4e4;
 }
 html[data-theme="dark"]{
-  --bg:#0f141c; --panel:#161d28; --panel2:#1b2430; --line:#2b3644; --line2:#222c3a;
-  --ink:#e6edf7; --muted:#9aa7b8; --brand:#60a5fa; --brand2:#1e3a5f;
-  --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 28px rgba(0,0,0,.45);
+  color-scheme:dark;
+  --bg:#0e131b; --stage:#0a0e15; --panel:#161d28; --panel2:#1b2430;
+  --line:#2a3543; --line3:#3a4657; --chip:#212b39;
+  --brand-soft:#1c2f4d; --brand-ink:#93c5fd;
+  --shadow-1:0 1px 2px rgba(0,0,0,.5);
+  --shadow-2:0 1px 2px rgba(0,0,0,.45),0 8px 22px rgba(0,0,0,.4);
+  --shadow-3:0 22px 54px rgba(0,0,0,.6),0 2px 8px rgba(0,0,0,.5);
+  --ink:#e6edf7; --muted:#9aa7b8; --brand:#60a5fa; --line2:#222c3a;
+  --brand2:#1e3a5f;
+  --red:#f87171; --green:#4ade80; --amber:#fbbf24; --purple:#a78bfa;
   --c-ink:#e6edf7; --c-mut:#9aa7b8; --c-brand:#60a5fa;
   --c-red:#f87171; --c-green:#4ade80; --c-amber:#fbbf24; --c-purple:#a78bfa;
-  --paper:#111823; --grid:#243040; --grid2:#33435a;
+  --paper:#111823; --grid:#232f3f; --grid2:#334357;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%}
 body{margin:0;background:var(--bg);color:var(--ink);
-  font-family:-apple-system,BlinkMacSystemFont,"Sarabun","Noto Sans Thai","Segoe UI",Tahoma,sans-serif;
-  font-size:15px;line-height:1.6;overscroll-behavior:none}
+  /* ท้ายแถวคือฟอนต์สำรองสำหรับสัญลักษณ์วิทยาศาสตร์ — ลูกศรเวกเตอร์เหนือตัวอักษร
+     อักษรกรีก และเครื่องหมายคณิตศาสตร์ ไม่มีอยู่ในฟอนต์เนื้อความทั่วไป
+     ถ้าไม่ใส่ไว้ เบราว์เซอร์บางเครื่องจะขึ้นเป็นกล่องสี่เหลี่ยมแทนสัญลักษณ์ */
+  font-family:-apple-system,BlinkMacSystemFont,"Sarabun","IBM Plex Sans Thai","Noto Sans Thai","Segoe UI",Tahoma,
+    "Segoe UI Symbol","Noto Sans Symbols 2","Noto Sans Math","Cambria Math","DejaVu Sans",sans-serif;
+  font-size:15px;line-height:1.65;overscroll-behavior:none;
+  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
 button,input,select,textarea{font:inherit;color:inherit}
 button{cursor:pointer}
+/* วงแหวนโฟกัสชุดเดียวทั้งแอป — คนที่ใช้แป้นพิมพ์ล้วนต้องเห็นว่าตอนนี้อยู่ตรงไหน */
+:focus{outline:none}
+:focus-visible{outline:2px solid var(--brand);outline-offset:2px;border-radius:8px}
+::selection{background:var(--brand2);color:var(--ink)}
+/* แถบเลื่อนบาง ๆ ให้แผงข้าง ๆ ดูสะอาด */
+#tools::-webkit-scrollbar,#insp::-webkit-scrollbar,.box .body::-webkit-scrollbar,
+code.snip::-webkit-scrollbar{width:10px;height:10px}
+#tools::-webkit-scrollbar-thumb,#insp::-webkit-scrollbar-thumb,
+.box .body::-webkit-scrollbar-thumb,code.snip::-webkit-scrollbar-thumb{
+  background:var(--line3);border-radius:99px;border:3px solid transparent;background-clip:content-box}
+#tools::-webkit-scrollbar-track,#insp::-webkit-scrollbar-track{background:transparent}
 
 /* ---- โครงหน้าจอ --------------------------------------------------------- */
-#app{display:none;height:100dvh;grid-template-columns:96px 1fr 312px;
+#app{display:none;height:100dvh;grid-template-columns:92px 1fr 326px;
   grid-template-rows:auto 1fr auto;grid-template-areas:"top top top" "tools stage insp" "tools bar insp"}
 #app.on{display:grid}
 
-#top{grid-area:top;display:flex;align-items:center;gap:8px;padding:8px 12px;
-  background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:wrap}
-#top .brand{display:flex;align-items:center;gap:9px;margin-right:4px}
-#top .brand .lg{width:32px;height:32px;border-radius:9px;background:var(--brand);color:#fff;
-  display:grid;place-items:center;font-size:17px}
-#top .brand b{font-size:15.5px;letter-spacing:.2px}
-#top .brand span{display:block;font-size:11.5px;color:var(--muted);line-height:1.2}
+#top{grid-area:top;display:flex;align-items:center;gap:7px;padding:9px 13px;
+  background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:wrap;
+  box-shadow:var(--shadow-1);position:relative;z-index:20}
+#top .brand{display:flex;align-items:center;gap:10px;margin-right:6px}
+#top .brand .lg{width:34px;height:34px;border-radius:10px;
+  background:linear-gradient(145deg,var(--brand),#7c3aed);color:#fff;
+  display:grid;place-items:center;font-size:17px;box-shadow:var(--shadow-1)}
+#top .brand b{font-size:15.5px;font-weight:700;display:block;line-height:1.25}
+#top .brand span{display:block;font-size:11px;color:var(--muted);line-height:1.2;
+  letter-spacing:.4px;text-transform:uppercase}
 .sp{flex:1}
+.vr{width:1px;height:26px;background:var(--line);flex:none;margin:0 3px}
 
-.btn{border:1px solid var(--line);background:var(--panel2);border-radius:10px;
+.btn{border:1px solid var(--line);background:var(--panel);border-radius:10px;
   padding:9px 13px;font-size:14px;font-weight:500;min-height:42px;white-space:nowrap;
-  display:inline-flex;align-items:center;gap:6px}
-.btn:hover{border-color:var(--brand);color:var(--brand)}
+  display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  transition:background .13s,border-color .13s,color .13s,box-shadow .13s;
+  box-shadow:var(--shadow-1)}
+.btn:hover{border-color:var(--line3);background:var(--panel2)}
 .btn:active{transform:translateY(1px)}
-.btn.pri{background:var(--brand);border-color:var(--brand);color:#fff}
-.btn.pri:hover{filter:brightness(1.06);color:#fff}
-.btn.sm{padding:6px 10px;min-height:34px;font-size:13px;border-radius:8px}
-.btn[disabled]{opacity:.42;pointer-events:none}
-.btn.warn:hover{border-color:var(--red);color:var(--red)}
+.btn.pri{background:var(--brand);border-color:transparent;color:#fff;font-weight:600;
+  box-shadow:0 1px 2px rgba(37,99,235,.24),0 4px 12px rgba(37,99,235,.22)}
+.btn.pri:hover{background:var(--brand);filter:brightness(1.07);color:#fff}
+.btn.ghost{background:transparent;border-color:transparent;box-shadow:none;color:var(--muted)}
+.btn.ghost:hover{background:var(--chip);color:var(--ink);border-color:transparent}
+.btn.sm{padding:6px 10px;min-height:34px;font-size:13px;border-radius:8px;gap:5px}
+.btn.tiny{padding:3px 8px;min-height:28px;font-size:12px;border-radius:7px;gap:4px}
+.btn[disabled]{opacity:.36;pointer-events:none}
+.btn.warn:hover{border-color:var(--red);color:var(--red);background:var(--panel)}
+.btn.act{border-color:var(--brand);color:var(--brand-ink);background:var(--brand-soft)}
+html[data-theme="dark"] .btn.act{color:var(--brand)}
+
+/* ปุ่มบอกปุ่มลัด — ใช้ทั้งในคำแนะนำและบนแถบเครื่องมือ */
+.kbd{display:inline-block;min-width:19px;padding:1px 5px;border-radius:5px;
+  border:1px solid var(--line3);border-bottom-width:2px;background:var(--panel);
+  font-size:10.5px;font-weight:600;line-height:1.5;color:var(--muted);text-align:center;
+  font-family:ui-monospace,Menlo,Consolas,monospace}
 
 /* ---- แถบเครื่องมือซ้าย --------------------------------------------------- */
 #tools{grid-area:tools;background:var(--panel);border-right:1px solid var(--line);
-  overflow-y:auto;padding:8px 6px 24px;-webkit-overflow-scrolling:touch}
-#tools .tgrp{background:var(--panel2);border:1px solid var(--line);border-radius:12px;
-  padding:2px 1px 5px;margin-bottom:9px}
-#tools .grp{font-size:10px;color:var(--muted);letter-spacing:.5px;text-align:center;
-  padding:5px 0 4px;border-bottom:1px solid var(--line);margin-bottom:4px}
-.tool{width:100%;display:flex;flex-direction:column;align-items:center;gap:2px;
-  border:1px solid transparent;background:none;border-radius:10px;padding:7px 2px 6px;
-  font-size:10.5px;line-height:1.25;color:var(--muted);min-height:52px}
-.tool .ic{font-size:19px;line-height:1}
-.tool:hover{background:var(--panel2);color:var(--ink)}
-.tool.on{background:var(--brand);color:#fff;border-color:var(--brand)}
+  overflow-y:auto;padding:9px 7px 28px;-webkit-overflow-scrolling:touch}
+#tools .tgrp{margin-bottom:12px}
+#tools .grp{font-size:9.5px;color:var(--muted);text-align:center;font-weight:600;
+  padding:0 0 5px;text-transform:uppercase;letter-spacing:.6px;opacity:.8}
+.tool{width:100%;position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;
+  border:1px solid transparent;background:none;border-radius:11px;padding:8px 2px 7px;
+  font-size:10.5px;line-height:1.3;color:var(--muted);min-height:54px;margin-bottom:2px;
+  transition:background .12s,color .12s}
+.tool .ic{font-size:20px;line-height:1;color:var(--ink);opacity:.78;transition:color .12s,opacity .12s}
+.tool:hover{background:var(--chip);color:var(--ink)}
+.tool:hover .ic{opacity:1}
+.tool.on{background:var(--brand);color:#fff;border-color:transparent;font-weight:600;
+  box-shadow:0 1px 2px rgba(37,99,235,.28),0 5px 14px rgba(37,99,235,.24)}
+.tool.on .ic{color:#fff;opacity:1}
+.tool .kk{position:absolute;top:4px;right:5px;font-size:9px;font-weight:700;color:var(--muted);
+  opacity:.55;font-family:ui-monospace,Menlo,Consolas,monospace}
+.tool.on .kk{color:#fff;opacity:.75}
 
 /* ---- พื้นที่วาด ---------------------------------------------------------- */
-#stage{grid-area:stage;overflow:auto;padding:22px;display:grid;place-items:center;
-  background:var(--bg);-webkit-overflow-scrolling:touch}
-#wrap{background:var(--paper);border-radius:6px;box-shadow:var(--shadow);position:relative}
-#cv{display:block;touch-action:none;border-radius:6px}
+#stage{grid-area:stage;overflow:auto;padding:26px;display:grid;place-items:center;
+  background:var(--stage);-webkit-overflow-scrolling:touch}
+#wrap{background:var(--paper);border-radius:8px;box-shadow:var(--shadow-2);position:relative;
+  outline:1px solid var(--line)}
+#cv{display:block;touch-action:none;border-radius:8px}
 #cv text{user-select:none}
 .hit{stroke:transparent;fill:none;stroke-width:16;stroke-linecap:round;stroke-linejoin:round}
 .hnd{fill:var(--panel);stroke:var(--brand);stroke-width:2}
 .hnd.v{fill:var(--brand);stroke:var(--panel)}
+.hnd.rt{fill:var(--panel);stroke:var(--brand)}
+.rtstem{stroke:var(--brand);fill:none;opacity:.7}
 .selbox{fill:none;stroke:var(--brand);stroke-width:1.2;stroke-dasharray:5 4;opacity:.85}
 .marq{fill:var(--brand);opacity:.12;stroke:var(--brand);stroke-width:1;stroke-dasharray:4 3}
 
+/* ป้ายบอกขนาด/มุมตอนกำลังลาก — งานที่ต้องแม่นต้องเห็นตัวเลขระหว่างมือยังไม่ปล่อย */
+#hud{position:fixed;left:50%;transform:translateX(-50%);bottom:74px;z-index:45;
+  background:var(--ink);color:var(--paper);border-radius:999px;padding:6px 15px;
+  font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:.2px;
+  box-shadow:var(--shadow-2);opacity:0;transition:opacity .12s;pointer-events:none;white-space:nowrap}
+#hud.on{opacity:.94}
+
 /* ---- แถบล่าง ------------------------------------------------------------- */
-#bar{grid-area:bar;display:flex;align-items:center;gap:10px;flex-wrap:wrap;
-  padding:7px 12px;background:var(--panel);border-top:1px solid var(--line);font-size:13px}
+#bar{grid-area:bar;display:flex;align-items:center;gap:9px;flex-wrap:wrap;
+  padding:8px 13px;background:var(--panel);border-top:1px solid var(--line);font-size:13px}
 #bar .chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);
-  background:var(--panel2);border-radius:999px;padding:5px 11px;min-height:34px}
+  background:var(--panel2);border-radius:999px;padding:4px 6px 4px 12px;min-height:36px}
+#bar .chip.plain{padding:4px 12px}
 #bar label{color:var(--muted);font-size:12.5px}
-.sw{position:relative;width:36px;height:20px;border-radius:999px;background:var(--line);
-  border:none;padding:0;flex:none;transition:background .15s}
-.sw::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;
-  background:#fff;transition:transform .15s;box-shadow:0 1px 2px rgba(0,0,0,.3)}
+#bar .btn{box-shadow:none}
+.sw{position:relative;width:38px;height:21px;border-radius:999px;background:var(--line3);
+  border:none;padding:0;flex:none;transition:background .16s}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:17px;height:17px;border-radius:50%;
+  background:#fff;transition:transform .16s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
 .sw.on{background:var(--brand)}
-.sw.on::after{transform:translateX(16px)}
+.sw.on::after{transform:translateX(17px)}
 
 /* ---- แผงคุณสมบัติขวา ----------------------------------------------------- */
 #insp{grid-area:insp;background:var(--panel);border-left:1px solid var(--line);
-  overflow-y:auto;padding:12px 12px 40px;-webkit-overflow-scrolling:touch}
+  overflow-y:auto;padding:13px 13px 48px;-webkit-overflow-scrolling:touch}
 .sec{border:1px solid var(--line);border-radius:var(--r);background:var(--panel2);
-  padding:11px;margin-bottom:11px}
-.sec h3{margin:0 0 9px;font-size:12.5px;color:var(--muted);font-weight:600;letter-spacing:.3px}
+  padding:12px;margin-bottom:11px}
+.sec h3{margin:0 0 10px;font-size:11px;color:var(--muted);font-weight:700;
+  text-transform:uppercase;letter-spacing:.7px;display:flex;align-items:center;gap:7px}
+.sec h3::after{content:"";flex:1;height:1px;background:var(--line)}
 .row{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:8px}
 .row:last-child{margin-bottom:0}
 .row .lb{font-size:12.5px;color:var(--muted);min-width:56px}
-.seg{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;
+.seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;
   background:var(--panel);width:100%}
 .seg button{border:none;background:none;padding:8px 6px;font-size:12.5px;min-height:38px;
-  flex:1;color:var(--muted);border-right:1px solid var(--line)}
+  flex:1;color:var(--muted);border-right:1px solid var(--line);transition:background .12s,color .12s}
 .seg button:last-child{border-right:none}
-.seg button.on{background:var(--brand);color:#fff}
-.seg button:hover:not(.on){background:var(--brand2);color:var(--brand)}
-.dots{display:flex;gap:6px;flex-wrap:wrap}
-.dot{width:30px;height:30px;border-radius:50%;border:2px solid var(--line);padding:0;flex:none}
-.dot.on{border-color:var(--ink);box-shadow:0 0 0 2px var(--panel),0 0 0 4px var(--brand)}
-input[type=number],input[type=text],select,textarea{
-  border:1px solid var(--line);border-radius:9px;background:var(--panel);
-  padding:8px 9px;min-height:38px;width:100%;font-size:14px}
+.seg button.on{background:var(--brand);color:#fff;font-weight:600}
+.seg button:hover:not(.on){background:var(--brand-soft);color:var(--brand-ink)}
+html[data-theme="dark"] .seg button:hover:not(.on){color:var(--brand)}
+.dots{display:flex;gap:7px;flex-wrap:wrap}
+.dot{width:30px;height:30px;border-radius:50%;border:2px solid var(--line3);padding:0;flex:none;
+  transition:transform .12s,box-shadow .12s}
+.dot:hover{transform:scale(1.09)}
+.dot.on{border-color:var(--panel);box-shadow:0 0 0 2px var(--brand)}
+input[type=number],input[type=text],input[type=email],select,textarea{
+  border:1px solid var(--line3);border-radius:9px;background:var(--panel);
+  padding:8px 10px;min-height:38px;width:100%;font-size:14px;
+  transition:border-color .12s,box-shadow .12s}
+input[type=number]:focus,input[type=text]:focus,input[type=email]:focus,
+select:focus,textarea:focus{border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-soft);outline:none}
 input[type=range]{width:100%;accent-color:var(--brand);height:32px}
-textarea{resize:vertical;min-height:66px;line-height:1.5}
-.num{width:76px;flex:none;text-align:center}
-.hint{font-size:11.5px;color:var(--muted);line-height:1.5;margin-top:6px}
+textarea{resize:vertical;min-height:70px;line-height:1.55}
+/* ต้องเจาะจงกว่าเซเลกเตอร์ input[type=number] ด้านบน ไม่งั้นโดน width:100% ทับ
+   แล้วช่องตัวเลขคู่ (กว้าง/สูง) จะกินเต็มแถวจนตกบรรทัดคนละบรรทัด */
+input.num,.num{width:78px;flex:none;text-align:center;font-variant-numeric:tabular-nums}
+.hint{font-size:11.5px;color:var(--muted);line-height:1.65;margin-top:7px}
+.hint b{color:var(--ink);font-weight:600}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:7px}
-/* แถบสัญลักษณ์ในแผงข้อความ — ปุ่มเล็กเรียงต่อกัน กดง่ายบนจอสัมผัส */
-.symrow{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
-.symrow .figsym{min-width:34px;padding:4px 6px;font-size:15px;line-height:1.3}
 .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
-.empty{color:var(--muted);font-size:13px;text-align:center;padding:26px 8px;line-height:1.7}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+.empty{color:var(--muted);font-size:13px;text-align:center;padding:30px 8px;line-height:1.8}
+
+/* แถบสัญลักษณ์ — ปุ่มเล็กเรียงต่อกัน กดง่ายบนจอสัมผัส */
+.symrow{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}
+.symrow .figsym{min-width:36px;padding:4px 6px;font-size:15.5px;line-height:1.35;
+  justify-content:center;box-shadow:none}
+.symtabs{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:9px}
+.symtabs button{border:1px solid var(--line);background:var(--panel);border-radius:999px;
+  padding:4px 11px;font-size:12px;min-height:30px;color:var(--muted)}
+.symtabs button.on{background:var(--brand);border-color:transparent;color:#fff;font-weight:600}
+.symgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(52px,1fr));gap:6px}
+.symgrid .figsym{min-height:46px;font-size:18px;flex-direction:column;gap:0}
+.symnote{font-size:11.5px;color:var(--muted);margin:0 0 10px;line-height:1.7}
 
 /* ---- กล่องซ้อน ----------------------------------------------------------- */
-.modal{position:fixed;inset:0;background:rgba(10,16,26,.55);display:none;
-  align-items:center;justify-content:center;padding:18px;z-index:60}
-.modal.on{display:flex}
-.box{background:var(--panel);border-radius:16px;box-shadow:var(--shadow);width:min(940px,100%);
-  max-height:92dvh;display:flex;flex-direction:column;overflow:hidden}
-.box.sm{width:min(500px,100%)}
-.box header{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line)}
-.box header h2{margin:0;font-size:17px}
-.box .body{padding:16px;overflow:auto;-webkit-overflow-scrolling:touch}
-.box footer{display:flex;gap:8px;justify-content:flex-end;padding:12px 16px;
-  border-top:1px solid var(--line);background:var(--panel2);flex-wrap:wrap}
-.x{border:none;background:var(--panel2);border-radius:9px;width:38px;height:38px;font-size:19px;
-  display:grid;place-items:center;color:var(--muted)}
+.modal{position:fixed;inset:0;background:rgba(10,16,26,.5);display:none;
+  align-items:center;justify-content:center;padding:18px;z-index:60;
+  -webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
+.modal.on{display:flex;animation:fade .16s ease-out}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.box{background:var(--panel);border-radius:var(--r-lg);box-shadow:var(--shadow-3);
+  width:min(960px,100%);max-height:92dvh;display:flex;flex-direction:column;overflow:hidden;
+  border:1px solid var(--line)}
+.box.sm{width:min(520px,100%)}
+.box.md{width:min(700px,100%)}
+.box header{display:flex;align-items:center;gap:10px;padding:15px 17px;border-bottom:1px solid var(--line)}
+.box header h2{margin:0;font-size:17px;font-weight:700}
+.box .body{padding:17px;overflow:auto;-webkit-overflow-scrolling:touch}
+.box footer{display:flex;gap:8px;justify-content:flex-end;padding:13px 17px;
+  border-top:1px solid var(--line);background:var(--panel2);flex-wrap:wrap;align-items:center}
+.x{border:none;background:var(--chip);border-radius:9px;width:38px;height:38px;font-size:18px;
+  display:grid;place-items:center;color:var(--muted);flex:none}
 .x:hover{background:var(--red);color:#fff}
 
 /* ---- คลังรูป ------------------------------------------------------------- */
-.libtop{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
+.libtop{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:13px;align-items:center}
 .libtop input[type=text]{flex:1;min-width:180px;width:auto}
 .chips{display:flex;gap:6px;flex-wrap:wrap}
 .chips button{border:1px solid var(--line);background:var(--panel2);border-radius:999px;
-  padding:6px 12px;font-size:13px;min-height:34px;color:var(--muted)}
-.chips button.on{background:var(--brand);border-color:var(--brand);color:#fff}
-.lib{display:grid;grid-template-columns:repeat(auto-fill,minmax(184px,1fr));gap:12px}
+  padding:6px 13px;font-size:13px;min-height:34px;color:var(--muted);transition:background .12s}
+.chips button:hover{background:var(--chip);color:var(--ink)}
+.chips button.on{background:var(--brand);border-color:transparent;color:#fff;font-weight:600}
+.lib{display:grid;grid-template-columns:repeat(auto-fill,minmax(186px,1fr));gap:13px}
 .card{border:1px solid var(--line);border-radius:var(--r);background:var(--panel2);
-  overflow:hidden;display:flex;flex-direction:column}
-.card .th{background:var(--paper);height:124px;display:grid;place-items:center;
-  border-bottom:1px solid var(--line);overflow:hidden;cursor:pointer}
+  overflow:hidden;display:flex;flex-direction:column;transition:border-color .13s,box-shadow .13s,transform .13s}
+.card:hover{border-color:var(--line3);box-shadow:var(--shadow-2);transform:translateY(-1px)}
+.card .th{background:var(--paper);height:126px;display:grid;place-items:center;
+  border-bottom:1px solid var(--line);overflow:hidden;cursor:pointer;padding:6px}
 .card .th svg{max-width:96%;max-height:96%}
-.card .mt{padding:9px 10px}
-.card .mt b{display:block;font-size:13.5px;line-height:1.4;word-break:break-word}
+.card .mt{padding:9px 11px}
+.card .mt b{display:block;font-size:13.5px;line-height:1.45;word-break:break-word;font-weight:600}
 .card .mt span{font-size:11.5px;color:var(--muted)}
-.card .act{display:flex;gap:5px;padding:0 8px 8px;flex-wrap:wrap}
+.card .act{display:flex;gap:5px;padding:0 9px 9px;flex-wrap:wrap}
 .card .act button{flex:1;border:1px solid var(--line);background:var(--panel);border-radius:8px;
   padding:5px 4px;font-size:12px;min-height:32px;color:var(--muted)}
 .card .act button:hover{border-color:var(--brand);color:var(--brand)}
 .card .act button.del:hover{border-color:var(--red);color:var(--red)}
 .pgh{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--muted);
-  font-weight:600;margin:20px 0 10px}
+  font-weight:700;margin:22px 0 11px}
 .pgh:first-child{margin-top:0}
-.pgh b{font-weight:400;font-size:11.5px;background:var(--line2);border-radius:999px;padding:2px 9px}
+.pgh b{font-weight:500;font-size:11.5px;background:var(--chip);border-radius:999px;padding:2px 10px}
 .pgh::after{content:"";flex:1;height:1px;background:var(--line)}
-.tagline{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px}
-.tg{font-size:11px;background:var(--line2);border-radius:999px;padding:1px 8px;color:var(--muted)}
+.tagline{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}
+.tg{font-size:11px;background:var(--chip);border-radius:999px;padding:1px 9px;color:var(--muted)}
 
 /* ---- ประตูสำหรับครู ------------------------------------------------------ */
-#gate{min-height:100dvh;display:grid;place-items:center;padding:22px}
-#gate .box2{background:var(--panel);border:1px solid var(--line);border-radius:18px;
-  box-shadow:var(--shadow);width:min(460px,100%);padding:26px 24px;text-align:center}
-#gate .lg{width:60px;height:60px;border-radius:17px;background:var(--brand);color:#fff;
-  display:grid;place-items:center;font-size:30px;margin:0 auto 12px}
-#gate h1{margin:0 0 4px;font-size:21px}
-#gate p{margin:0 0 18px;color:var(--muted);font-size:14px}
-#gate .msg{margin-top:11px;font-size:13.5px;min-height:20px}
+#gate{min-height:100dvh;display:grid;place-items:center;padding:22px;
+  background:radial-gradient(1200px 600px at 50% -10%,var(--brand-soft),var(--bg) 60%)}
+#gate .box2{background:var(--panel);border:1px solid var(--line);border-radius:20px;
+  box-shadow:var(--shadow-3);width:min(460px,100%);padding:30px 26px;text-align:center}
+#gate .lg{width:62px;height:62px;border-radius:18px;
+  background:linear-gradient(145deg,var(--brand),#7c3aed);color:#fff;
+  display:grid;place-items:center;font-size:30px;margin:0 auto 14px;box-shadow:var(--shadow-2)}
+#gate h1{margin:0 0 6px;font-size:22px;font-weight:700}
+#gate p{margin:0 0 20px;color:var(--muted);font-size:14px}
+#gate .msg{margin-top:12px;font-size:13.5px;min-height:20px}
 .bad{color:var(--red)}
 .ok{color:var(--green)}
 
 /* ---- ข้อความแจ้งชั่วคราว -------------------------------------------------- */
 #toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);
-  background:var(--ink);color:var(--panel);padding:11px 20px;border-radius:999px;font-size:14px;
-  opacity:0;pointer-events:none;transition:.2s;z-index:90;max-width:88vw;text-align:center}
+  background:var(--ink);color:var(--paper);padding:12px 22px;border-radius:999px;font-size:14px;
+  font-weight:500;opacity:0;pointer-events:none;transition:.2s;z-index:90;max-width:88vw;
+  text-align:center;box-shadow:var(--shadow-3)}
 #toast.on{opacity:1;transform:translateX(-50%)}
 
 code.snip{display:block;background:var(--panel2);border:1px solid var(--line);border-radius:10px;
-  padding:11px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;line-height:1.55;
+  padding:12px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;line-height:1.6;
   white-space:pre-wrap;word-break:break-all;max-height:34dvh;overflow:auto}
+
+/* ---- ตารางปุ่มลัดในกล่องช่วยเหลือ ---------------------------------------- */
+.keys{display:grid;grid-template-columns:repeat(auto-fill,minmax(268px,1fr));gap:8px 20px}
+.keys div{display:flex;align-items:baseline;gap:9px;font-size:13px;padding:4px 0;
+  border-bottom:1px dashed var(--line)}
+.keys div span{flex:1;color:var(--muted)}
+.keys div i{font-style:normal;white-space:nowrap}
+.hgrp{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;
+  letter-spacing:.7px;margin:18px 0 8px}
+.hgrp:first-child{margin-top:0}
+
+/* ---- กล่องแชร์ ----------------------------------------------------------- */
+.sharewrap{display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:16px}
+.shareprev{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px;
+  display:grid;place-items:center;min-height:190px}
+.shareprev svg{max-width:100%;max-height:280px}
+.stack{display:flex;flex-direction:column;gap:8px}
+.stack .btn{width:100%;justify-content:flex-start}
+@media (max-width:720px){.sharewrap{grid-template-columns:1fr}}
 
 /* ---- ไอแพดแนวตั้งและจอแคบ ------------------------------------------------ */
 #inspToggle{display:none}
-/* ไอแพดแนวนอนกว้าง 1024 — ยังพอวางครบสามคอลัมน์ได้ (88 + ผืนวาด 624 + แผงขวา 312)
+/* ไอแพดแนวนอนกว้าง 1024 — ยังพอวางครบสามคอลัมน์ได้ (92 + ผืนวาด 606 + แผงขวา 326)
    จึงตั้งจุดตัดไว้ที่ 1000 ให้แนวนอนได้แผงคุณสมบัติเต็ม ส่วนแนวตั้ง 820 ค่อยซ่อนเป็นลิ้นชัก */
 @media (max-width:1000px){
-  #app{grid-template-columns:88px 1fr;grid-template-areas:"top top" "tools stage" "tools bar"}
-  #insp{position:fixed;right:0;top:0;bottom:0;width:min(330px,86vw);z-index:50;
-    box-shadow:var(--shadow);transform:translateX(102%);transition:transform .22s;padding-top:16px}
+  #app{grid-template-columns:86px 1fr;grid-template-areas:"top top" "tools stage" "tools bar"}
+  #insp{position:fixed;right:0;top:0;bottom:0;width:min(340px,88vw);z-index:50;
+    box-shadow:var(--shadow-3);transform:translateX(102%);transition:transform .24s ease;padding-top:16px}
   #insp.open{transform:none}
   #inspToggle{display:inline-flex}
 }
+/* ไอแพดแนวตั้ง — ชื่อแอปกินที่บนแถบบนจนปุ่มตกลงไปเป็นสองแถว เหลือไว้แค่โลโก้ */
+@media (max-width:960px){
+  #top{gap:6px;padding:8px 10px}
+  #top .brand{margin-right:2px}
+  #top .brand > div{display:none}
+  .vr{display:none}
+}
 @media (max-width:760px){
-  #app{grid-template-columns:84px 1fr}
-  #top .brand span{display:none}
+  #app{grid-template-columns:82px 1fr}
   .hideNarrow{display:none !important}
+  #stage{padding:14px}
+}
+@media (prefers-reduced-motion:reduce){
+  *{transition:none !important;animation:none !important}
 }
 @media print{
-  #top,#tools,#insp,#bar,#toast{display:none !important}
+  #top,#tools,#insp,#bar,#toast,#hud{display:none !important}
   #app{display:block !important;height:auto}
-  #stage{padding:0;overflow:visible;display:block}
-  #wrap{box-shadow:none}
+  #stage{padding:0;overflow:visible;display:block;background:#fff}
+  #wrap{box-shadow:none;outline:none}
   body{background:#fff}
 }
 </style>
@@ -259,17 +390,21 @@ code.snip{display:block;background:var(--panel2);border:1px solid var(--line);bo
   <div id="top">
     <div class="brand">
       <div class="lg">✏️</div>
-      <div><b>ห้องวาดรูปโจทย์</b><span>FigureLab · สำหรับครู</span></div>
+      <div><b>ห้องวาดรูปโจทย์</b><span>FigureLab</span></div>
     </div>
-    <button class="btn sm" id="bUndo" title="เลิกทำ (Ctrl+Z)">↶</button>
-    <button class="btn sm" id="bRedo" title="ทำซ้ำ (Ctrl+Y)">↷</button>
+    <span class="vr hideNarrow"></span>
+    <button class="btn sm ghost" id="bUndo" title="เลิกทำ (Ctrl+Z)">↶</button>
+    <button class="btn sm ghost" id="bRedo" title="ทำซ้ำ (Ctrl+Shift+Z)">↷</button>
     <span class="sp"></span>
-    <button class="btn" id="bNew">🗒️ <span class="hideNarrow">เริ่มใหม่</span></button>
-    <button class="btn" id="bLib">📚 <span class="hideNarrow">คลังรูป</span></button>
-    <button class="btn pri" id="bSave">💾 <span class="hideNarrow">บันทึกลงคลัง</span></button>
-    <button class="btn" id="bExport">⤓ <span class="hideNarrow">ส่งออก</span></button>
-    <button class="btn sm" id="bTheme" title="สลับโหมดสว่าง/มืด">🌙</button>
-    <button class="btn sm" id="inspToggle" title="แผงคุณสมบัติ">⚙︎</button>
+    <button class="btn" id="bNew" title="เริ่มผืนใหม่">🗒️ <span class="hideNarrow">เริ่มใหม่</span></button>
+    <button class="btn" id="bLib" title="คลังรูป (Ctrl+O)">📚 <span class="hideNarrow">คลังรูป</span></button>
+    <button class="btn" id="bExport" title="ส่งออกเป็นโค้ด SVG หรือไฟล์ภาพ (Ctrl+E)">⤓ <span class="hideNarrow">ส่งออก</span></button>
+    <button class="btn" id="bShare" title="แชร์รูปนี้ลงเฟซบุ๊กหรือแอปอื่น">🔗 <span class="hideNarrow">แชร์</span></button>
+    <button class="btn pri" id="bSave" title="บันทึกลงคลัง (Ctrl+S)">💾 <span class="hideNarrow">บันทึกลงคลัง</span></button>
+    <span class="vr hideNarrow"></span>
+    <button class="btn sm ghost" id="bHelp" title="ปุ่มลัดทั้งหมด (กด ?)">?</button>
+    <button class="btn sm ghost" id="bTheme" title="สลับโหมดสว่าง/มืด">🌙</button>
+    <button class="btn sm ghost" id="inspToggle" title="แผงคุณสมบัติ">⚙︎</button>
   </div>
 
   <!-- ---- เครื่องมือ ------------------------------------------------------ -->
@@ -303,6 +438,8 @@ code.snip{display:block;background:var(--panel2);border:1px solid var(--line);bo
 </div>
 
 <div id="toast"></div>
+<!-- ป้ายตัวเลขระหว่างลาก — ขนาด ระยะ และองศา จะได้วางของได้ตรงตั้งแต่ครั้งแรก -->
+<div id="hud"></div>
 
 <!-- ---- กล่องคลังรูป ------------------------------------------------------ -->
 <div class="modal" id="mLib">
@@ -331,7 +468,9 @@ code.snip{display:block;background:var(--panel2);border:1px solid var(--line);bo
     <header><h2>ชิ้นส่วนสำเร็จรูป</h2><span class="sp"></span>
       <div class="chips" id="partSub"></div>
       <button class="x" data-close>✕</button></header>
-    <div class="body"><div id="partGrid"></div></div>
+    <div class="body">
+      <div class="libtop"><input type="text" id="partQ" placeholder="ค้นหาชิ้นส่วน เช่น สปริง เลนส์ บีกเกอร์"></div>
+      <div id="partGrid"></div></div>
     <footer><span style="color:var(--muted);font-size:12.5px">
       เลือกชิ้นส่วนแล้วแตะบนผืนวาดเพื่อวาง · วางแล้วกด “แยกกลุ่ม” เพื่อแก้ทีละเส้นได้
     </span></footer>
@@ -396,6 +535,57 @@ code.snip{display:block;background:var(--panel2);border:1px solid var(--line);bo
     </div>
     <footer><button class="btn" data-close>ยกเลิก</button>
       <button class="btn pri" id="triGo">วางลงผืนวาด</button></footer>
+  </div>
+</div>
+
+<!-- ---- กล่องแชร์รูป ------------------------------------------------------
+     เฟซบุ๊กไม่รับไฟล์ภาพจากหน้าเว็บอื่นผ่านลิงก์ ต้องให้คนโพสต์เป็นคนแนบเอง
+     กล่องนี้จึงทำสองทาง: บนมือถือและไอแพดใช้ปุ่มแชร์ของเครื่อง (ส่งไฟล์เข้าแอปเฟซบุ๊กได้ตรง ๆ)
+     บนคอมพิวเตอร์ใช้ "คัดลอกรูป" แล้วเปิดหน้าเขียนโพสต์ ไปวางด้วย Ctrl+V
+     ======================================================================== -->
+<div class="modal" id="mShare">
+  <div class="box md">
+    <header><h2>แชร์รูปนี้</h2><span class="sp"></span><button class="x" data-close>✕</button></header>
+    <div class="body">
+      <div class="sharewrap">
+        <div>
+          <div class="shareprev" id="shPrev"></div>
+          <div class="row" style="margin-top:11px"><span class="lb">ข้อความโพสต์</span></div>
+          <textarea id="shText" style="min-height:96px"></textarea>
+          <div class="hint">แก้ข้อความได้ตามใจ · ปุ่ม “คัดลอกข้อความ” จะได้ข้อความก้อนนี้ทั้งก้อน</div>
+        </div>
+        <div class="stack" id="shActions"></div>
+      </div>
+      <div class="hint" id="shHow" style="margin-top:14px"></div>
+    </div>
+    <footer><span style="color:var(--muted);font-size:12.5px">รูปที่แชร์เป็น PNG พื้นขาว อ่านออกทุกที่</span>
+      <span class="sp"></span><button class="btn" data-close>ปิด</button></footer>
+  </div>
+</div>
+
+<!-- ---- กล่องสัญลักษณ์วิทยาศาสตร์ ----------------------------------------- -->
+<div class="modal" id="mSym">
+  <div class="box md">
+    <header><h2>สัญลักษณ์วิทยาศาสตร์</h2><span class="sp"></span><button class="x" data-close>✕</button></header>
+    <div class="body">
+      <p class="symnote" id="symNote"></p>
+      <input type="text" id="symQ" placeholder="ค้นหาด้วยคำไทย เช่น มุม เวกเตอร์ ประจุ ผลรวม"
+             style="margin-bottom:11px">
+      <div class="symtabs" id="symTabs"></div>
+      <div class="symgrid" id="symGrid"></div>
+    </div>
+    <footer><span style="color:var(--muted);font-size:12.5px">
+      ตัวห้อยพิมพ์ <b>H_2O</b> · ตัวยกพิมพ์ <b>v^2</b> · ยาวกว่าหนึ่งตัวใส่ปีกกา <b>x^{n+1}</b></span>
+      <span class="sp"></span><button class="btn" data-close>ปิด</button></footer>
+  </div>
+</div>
+
+<!-- ---- กล่องปุ่มลัด ------------------------------------------------------- -->
+<div class="modal" id="mHelp">
+  <div class="box">
+    <header><h2>ปุ่มลัดและวิธีทำงานให้เร็ว</h2><span class="sp"></span><button class="x" data-close>✕</button></header>
+    <div class="body" id="helpBody"></div>
+    <footer><button class="btn" data-close>ปิด</button></footer>
   </div>
 </div>
 
@@ -478,34 +668,118 @@ function clamp(v, a, b) { return v < a ? a : (v > b ? b : v); }
 /* สัญลักษณ์ที่ใช้บ่อยในรูปฟิสิกส์ — องศา เวกเตอร์ อักษรกรีก และเครื่องหมายพื้นฐาน
    เวกเตอร์กับหมวกเป็นอักขระผสม (combining) ที่ไปวางทับตัวอักษรก่อนหน้า
    จึงต้องพิมพ์ตัวอักษรก่อนแล้วค่อยกด เช่น พิมพ์ v แล้วกดปุ่มเวกเตอร์จะได้ v⃗ */
-var FIG_SYMS = [
-  { lab: '°', v: '°', t: 'องศา' },
-  { lab: 'v⃗', v: '⃗', t: 'เวกเตอร์ (วางทับตัวก่อนหน้า)' },
-  { lab: 'x̂', v: '̂', t: 'เวกเตอร์หนึ่งหน่วย (วางทับตัวก่อนหน้า)' },
-  { lab: 'x̄', v: '̄', t: 'ค่าเฉลี่ย (วางทับตัวก่อนหน้า)' },
-  { lab: 'Δ', v: 'Δ', t: 'เดลตาใหญ่ — ผลต่าง' },
-  { lab: 'δ', v: 'δ', t: 'เดลตาเล็ก' },
-  { lab: 'θ', v: 'θ', t: 'ทีตา — มุม' },
-  { lab: 'α', v: 'α', t: 'แอลฟา' },
-  { lab: 'β', v: 'β', t: 'บีตา' },
-  { lab: 'γ', v: 'γ', t: 'แกมมา' },
-  { lab: 'λ', v: 'λ', t: 'แลมบ์ดา — ความยาวคลื่น' },
-  { lab: 'μ', v: 'μ', t: 'มิว — สัมประสิทธิ์เสียดทาน' },
-  { lab: 'ω', v: 'ω', t: 'โอเมกาเล็ก — ความเร็วเชิงมุม' },
-  { lab: 'Ω', v: 'Ω', t: 'โอเมกาใหญ่ — โอห์ม' },
-  { lab: 'π', v: 'π', t: 'พาย' },
-  { lab: 'ρ', v: 'ρ', t: 'โร — ความหนาแน่น' },
-  { lab: 'Σ', v: 'Σ', t: 'ซิกมา — ผลรวม' },
-  { lab: '±', v: '±', t: 'บวกลบ' },
-  { lab: '×', v: '×', t: 'คูณ' },
-  { lab: '÷', v: '÷', t: 'หาร' },
-  { lab: '≈', v: '≈', t: 'ประมาณ' },
-  { lab: '≤', v: '≤', t: 'น้อยกว่าหรือเท่ากับ' },
-  { lab: '≥', v: '≥', t: 'มากกว่าหรือเท่ากับ' },
-  { lab: '→', v: '→', t: 'ลูกศรขวา' },
-  { lab: '↔', v: '↔', t: 'ลูกศรสองทาง' },
-  { lab: '∴', v: '∴', t: 'ดังนั้น' }
+/* ---- คลังสัญลักษณ์วิทยาศาสตร์ -------------------------------------------
+   แบ่งเป็นหมวดเพราะรวมกันแล้วมีเป็นร้อยตัว กวาดตาหาทีเดียวไม่ไหว
+   หมวดแรกคือชุดที่ใช้บ่อยที่สุด แสดงเป็นแถวเล็กอยู่ในแผงข้อความเลย
+   ที่เหลือเปิดดูในกล่อง “สัญลักษณ์วิทยาศาสตร์” ซึ่งค้นด้วยคำไทยได้
+
+   อักขระผสม (combining) เช่นลูกศรเวกเตอร์และขีดบน จะไปวางทับตัวอักษรตัวก่อนหน้า
+   จึงต้องพิมพ์ตัวอักษรก่อนแล้วค่อยกด — ช่อง lab เก็บรูปที่เห็นบนปุ่ม (เช่น v⃗)
+   ส่วนช่อง v เก็บอักขระที่แทรกจริง (เฉพาะตัวผสม ไม่มีตัว v นำหน้า) */
+function SY(v, t, lab) { return { v: v, t: t || '', lab: lab || v }; }
+
+var SYM_GROUPS = [
+  { k: 'common', n: 'ใช้บ่อย', s: [
+    SY('°', 'องศา'), SY('⃗', 'เวกเตอร์ (วางทับตัวก่อนหน้า)', 'v⃗'),
+    SY('̂', 'เวกเตอร์หนึ่งหน่วย (วางทับตัวก่อนหน้า)', 'x̂'),
+    SY('̄', 'ค่าเฉลี่ย (วางทับตัวก่อนหน้า)', 'x̄'),
+    SY('Δ', 'เดลตาใหญ่ — ผลต่าง'), SY('θ', 'ทีตา — มุม'), SY('α', 'แอลฟา'), SY('β', 'บีตา'),
+    SY('λ', 'แลมบ์ดา — ความยาวคลื่น'), SY('μ', 'มิว — สัมประสิทธิ์เสียดทาน'),
+    SY('ω', 'โอเมกาเล็ก — ความเร็วเชิงมุม'), SY('π', 'พาย'), SY('ρ', 'โร — ความหนาแน่น'),
+    SY('±', 'บวกลบ'), SY('×', 'คูณ'), SY('÷', 'หาร'), SY('≈', 'ประมาณ'),
+    SY('≤', 'น้อยกว่าหรือเท่ากับ'), SY('≥', 'มากกว่าหรือเท่ากับ'),
+    SY('→', 'ลูกศรขวา'), SY('⇌', 'ปฏิกิริยาผันกลับได้'), SY('∴', 'ดังนั้น'),
+    SY('∠', 'มุม'), SY('⊥', 'ตั้งฉาก'), SY('∥', 'ขนาน'), SY('′', 'ลิปดา / ไพรม์')] },
+
+  { k: 'greek', n: 'อักษรกรีก', s: [
+    SY('α', 'แอลฟา'), SY('β', 'บีตา'), SY('γ', 'แกมมา'), SY('δ', 'เดลตาเล็ก'),
+    SY('ε', 'เอปไซลอน — สภาพยอมทางไฟฟ้า'), SY('ζ', 'ซีตา'), SY('η', 'อีตา — ประสิทธิภาพ'),
+    SY('θ', 'ทีตา — มุม'), SY('ι', 'ไอโอตา'), SY('κ', 'แคปปา'), SY('λ', 'แลมบ์ดา'),
+    SY('μ', 'มิว'), SY('ν', 'นิว — ความถี่'), SY('ξ', 'ไซ'), SY('π', 'พาย'),
+    SY('ρ', 'โร — ความหนาแน่น'), SY('σ', 'ซิกมาเล็ก — ความเค้น'), SY('τ', 'เทา — ทอร์ก'),
+    SY('υ', 'อิปไซลอน'), SY('φ', 'ฟาย — ฟลักซ์'), SY('χ', 'ไค'), SY('ψ', 'ไซ — ฟังก์ชันคลื่น'),
+    SY('ω', 'โอเมกาเล็ก'), SY('ϑ', 'ทีตาแบบเขียนมือ'), SY('ϕ', 'ฟายแบบเขียนมือ'),
+    SY('Γ', 'แกมมาใหญ่'), SY('Δ', 'เดลตาใหญ่'), SY('Θ', 'ทีตาใหญ่'), SY('Λ', 'แลมบ์ดาใหญ่'),
+    SY('Ξ', 'ไซใหญ่'), SY('Π', 'พายใหญ่ — ผลคูณ'), SY('Σ', 'ซิกมาใหญ่ — ผลรวม'),
+    SY('Φ', 'ฟายใหญ่ — ฟลักซ์'), SY('Ψ', 'ไซใหญ่'), SY('Ω', 'โอเมกาใหญ่ — โอห์ม'),
+    SY('ℓ', 'แอลตัวเขียน — ความยาว')] },
+
+  { k: 'math', n: 'คณิตศาสตร์', s: [
+    SY('+', 'บวก'), SY('−', 'ลบ (ขีดลบจริง ยาวกว่าขีดกลาง)'), SY('×', 'คูณ'),
+    SY('÷', 'หาร'), SY('⋅', 'จุดคูณ'), SY('±', 'บวกลบ'), SY('∓', 'ลบบวก'),
+    SY('≠', 'ไม่เท่ากับ'), SY('≈', 'ประมาณ'), SY('≡', 'สมมูล / เท่ากันทุกประการ'),
+    SY('≅', 'คล้ายกันทุกประการ'), SY('∼', 'คล้าย'), SY('∝', 'แปรผันตรง'),
+    SY('≤', 'น้อยกว่าหรือเท่ากับ'), SY('≥', 'มากกว่าหรือเท่ากับ'),
+    SY('≪', 'น้อยกว่ามาก'), SY('≫', 'มากกว่ามาก'), SY('∞', 'อนันต์'),
+    SY('√', 'กรณฑ์'), SY('∛', 'รากที่สาม'), SY('∑', 'ผลรวม'), SY('∏', 'ผลคูณ'),
+    SY('∫', 'อินทิกรัล'), SY('∮', 'อินทิกรัลตามเส้นปิด'), SY('∂', 'อนุพันธ์ย่อย'),
+    SY('∇', 'เดล / นาบลา'), SY('%', 'เปอร์เซ็นต์'), SY('‰', 'ต่อพัน'),
+    SY('∠', 'มุม'), SY('∡', 'มุมที่วัดแล้ว'), SY('⊥', 'ตั้งฉาก'), SY('∥', 'ขนาน'),
+    SY('△', 'สามเหลี่ยม'), SY('□', 'สี่เหลี่ยมจัตุรัส'), SY('⊙', 'วงกลมมีจุดศูนย์กลาง'),
+    SY('′', 'ลิปดา / ไพรม์'), SY('″', 'ฟิลิปดา'),
+    SY('∈', 'เป็นสมาชิกของ'), SY('∉', 'ไม่เป็นสมาชิกของ'), SY('⊂', 'สับเซต'),
+    SY('⊆', 'สับเซตหรือเท่ากัน'), SY('∪', 'ยูเนียน'), SY('∩', 'อินเตอร์เซกชัน'),
+    SY('∅', 'เซตว่าง'), SY('∀', 'สำหรับทุก'), SY('∃', 'มีอย่างน้อยหนึ่ง'),
+    SY('∵', 'เพราะว่า'), SY('∴', 'ดังนั้น'), SY('⇒', 'ถ้า…แล้ว'), SY('⇔', 'ก็ต่อเมื่อ'),
+    SY('⌊', 'พื้นซ้าย'), SY('⌋', 'พื้นขวา'), SY('⌈', 'เพดานซ้าย'), SY('⌉', 'เพดานขวา'),
+    SY('‖', 'ขนาดของเวกเตอร์')] },
+
+  { k: 'arrow', n: 'ลูกศร', s: [
+    SY('→', 'ขวา'), SY('←', 'ซ้าย'), SY('↑', 'ขึ้น'), SY('↓', 'ลง'),
+    SY('↔', 'สองทางแนวนอน'), SY('↕', 'สองทางแนวตั้ง'),
+    SY('↗', 'ขวาบน'), SY('↖', 'ซ้ายบน'), SY('↘', 'ขวาล่าง'), SY('↙', 'ซ้ายล่าง'),
+    SY('⟶', 'ขวายาว'), SY('⟵', 'ซ้ายยาว'), SY('⟷', 'สองทางยาว'),
+    SY('⇒', 'ขวาสองเส้น'), SY('⇐', 'ซ้ายสองเส้น'), SY('⇔', 'สองทางสองเส้น'),
+    SY('⇑', 'ขึ้นสองเส้น'), SY('⇓', 'ลงสองเส้น'),
+    SY('⇌', 'สมดุลเคมี'), SY('⇋', 'สมดุลเคมีสลับข้าง'), SY('⇄', 'สลับทาง'),
+    SY('⇅', 'สลับทางแนวตั้ง'), SY('↻', 'หมุนตามเข็ม'), SY('↺', 'หมุนทวนเข็ม'),
+    SY('⇀', 'ครึ่งหัวขวา — เวกเตอร์'), SY('↼', 'ครึ่งหัวซ้าย'), SY('↦', 'ส่งไปเป็น')] },
+
+  { k: 'phys', n: 'ฟิสิกส์และหน่วย', s: [
+    SY('°', 'องศา'), SY('℃', 'องศาเซลเซียส'), SY('℉', 'องศาฟาเรนไฮต์'),
+    SY('Å', 'อังสตรอม'), SY('Ω', 'โอห์ม'), SY('μ', 'ไมโคร'), SY('ℏ', 'ค่าคงตัวพลังค์ลดรูป'),
+    SY('⊙', 'ทิศพุ่งออกจากกระดาษ'), SY('⊗', 'ทิศพุ่งเข้ากระดาษ'),
+    SY('⊕', 'ประจุบวก / รวมทิศ'), SY('⊖', 'ประจุลบ'),
+    SY('⃗', 'ลูกศรเวกเตอร์ (วางทับตัวก่อนหน้า)', 'F⃗'),
+    SY('̂', 'เวกเตอร์หนึ่งหน่วย (วางทับตัวก่อนหน้า)', 'n̂'),
+    SY('̄', 'ค่าเฉลี่ย (วางทับตัวก่อนหน้า)', 'v̄'),
+    SY('̇', 'อนุพันธ์เทียบเวลาหนึ่งครั้ง (วางทับตัวก่อนหน้า)', 'ẋ'),
+    SY('̈', 'อนุพันธ์เทียบเวลาสองครั้ง (วางทับตัวก่อนหน้า)', 'ẍ'),
+    SY('⟨', 'วงเล็บค่าเฉลี่ยซ้าย'), SY('⟩', 'วงเล็บค่าเฉลี่ยขวา'),
+    SY('‖', 'ขนาดของเวกเตอร์'), SY('⌀', 'เส้นผ่านศูนย์กลาง'),
+    SY('∇', 'เดล'), SY('∂', 'อนุพันธ์ย่อย'), SY('∮', 'อินทิกรัลตามเส้นปิด'),
+    SY('λ', 'ความยาวคลื่น'), SY('ν', 'ความถี่'), SY('ω', 'ความเร็วเชิงมุม'),
+    SY('τ', 'ทอร์ก / คาบเวลา'), SY('φ', 'เฟส'), SY('σ', 'ความเค้น'),
+    SY('ρ', 'ความหนาแน่น'), SY('η', 'ประสิทธิภาพ'), SY('γ', 'แกมมา')] },
+
+  { k: 'chem', n: 'เคมี', s: [
+    SY('⇌', 'ปฏิกิริยาผันกลับได้'), SY('⇋', 'ผันกลับได้ สลับข้าง'),
+    SY('→', 'ทิศของปฏิกิริยา'), SY('⟶', 'ลูกศรปฏิกิริยายาว'),
+    SY('↑', 'แก๊สลอยขึ้น'), SY('↓', 'ตะกอนตกลง'),
+    SY('⁺', 'ประจุบวก'), SY('⁻', 'ประจุลบ'), SY('²⁺', 'ประจุ 2+'), SY('³⁺', 'ประจุ 3+'),
+    SY('²⁻', 'ประจุ 2−'), SY('³⁻', 'ประจุ 3−'),
+    SY('·', 'จุดคั่นในสูตรไฮเดรต'), SY('•', 'อิเล็กตรอนเดี่ยว / อนุมูล'),
+    SY('≡', 'พันธะสาม'), SY('=', 'พันธะคู่'), SY('—', 'พันธะเดี่ยว'),
+    SY('Δ', 'ให้ความร้อน'), SY('⌬', 'วงเบนซีน'), SY('℃', 'องศาเซลเซียส'),
+    SY('(aq)', 'สารละลายในน้ำ'), SY('(s)', 'ของแข็ง'), SY('(l)', 'ของเหลว'),
+    SY('(g)', 'แก๊ส'), SY('⇄', 'แลกเปลี่ยน')] },
+
+  { k: 'script', n: 'ตัวยก / ตัวห้อย', s: [
+    SY('⁰', 'ยกศูนย์'), SY('¹', 'ยกหนึ่ง'), SY('²', 'ยกสอง'), SY('³', 'ยกสาม'),
+    SY('⁴', 'ยกสี่'), SY('⁵', 'ยกห้า'), SY('⁶', 'ยกหก'), SY('⁷', 'ยกเจ็ด'),
+    SY('⁸', 'ยกแปด'), SY('⁹', 'ยกเก้า'), SY('⁺', 'ยกบวก'), SY('⁻', 'ยกลบ'),
+    SY('⁼', 'ยกเท่ากับ'), SY('⁽', 'ยกวงเล็บซ้าย'), SY('⁾', 'ยกวงเล็บขวา'),
+    SY('ⁿ', 'ยก n'), SY('ⁱ', 'ยก i'),
+    SY('₀', 'ห้อยศูนย์'), SY('₁', 'ห้อยหนึ่ง'), SY('₂', 'ห้อยสอง'), SY('₃', 'ห้อยสาม'),
+    SY('₄', 'ห้อยสี่'), SY('₅', 'ห้อยห้า'), SY('₆', 'ห้อยหก'), SY('₇', 'ห้อยเจ็ด'),
+    SY('₈', 'ห้อยแปด'), SY('₉', 'ห้อยเก้า'), SY('₊', 'ห้อยบวก'), SY('₋', 'ห้อยลบ'),
+    SY('₍', 'ห้อยวงเล็บซ้าย'), SY('₎', 'ห้อยวงเล็บขวา'),
+    SY('ₐ', 'ห้อย a'), SY('ₑ', 'ห้อย e'), SY('ₒ', 'ห้อย o'), SY('ₓ', 'ห้อย x'),
+    SY('ₙ', 'ห้อย n'), SY('ₕ', 'ห้อย h'), SY('ₖ', 'ห้อย k'), SY('ₘ', 'ห้อย m'),
+    SY('ₚ', 'ห้อย p'), SY('ₛ', 'ห้อย s'), SY('ₜ', 'ห้อย t')] }
 ];
+/* แถวสัญลักษณ์ที่ฝังอยู่ในแผงข้อความ = หมวดแรกเท่านั้น ที่เหลืออยู่ในกล่องเต็ม */
+var FIG_SYMS = SYM_GROUPS[0].s;
 
 function n1(v) { return Math.round(v * 10) / 10; }
 function n2(v) { return Math.round(v * 100) / 100; }
@@ -721,7 +995,8 @@ function rotItem(it, cx, cy, a) {
       it.a0 = (it.a0 + a) % 360; it.a1 = (it.a1 + a) % 360;
     } else it.rot = ((it.rot || 0) + a) % 360;
   } else if (it.t === 'text') {
-    const c = R(it.x, it.y); it.x = c[0]; it.y = c[1]; it.rot = ((it.rot || 0) - a) % 360;
+    /* บวกเหมือนชนิดอื่น — ของเดิมลบ ทำให้หมุนกลุ่มแล้วตัวหนังสือหมุนสวนทางกับรูป */
+    const c = R(it.x, it.y); it.x = c[0]; it.y = c[1]; it.rot = ((it.rot || 0) + a) % 360;
   }
 }
 
@@ -952,15 +1227,29 @@ function itemById(id) {
   return null;
 }
 function selItems() { return sel.map(itemById).filter(Boolean); }
-/* กด Alt ค้างไว้ = ขยับละเอียด ไม่สนตารางกริด ใช้ได้ทั้งลากด้วยเมาส์และกดลูกศร
+/* กด Ctrl หรือ Alt ค้างไว้ = โหมดละเอียด ไม่สนตารางกริด ใช้ได้ทั้งลากด้วยเมาส์และกดลูกศร
    เป็นธรรมเนียมเดียวกับโปรแกรมวาดรูปทั่วไป ครูจึงเดาได้เองโดยไม่ต้องอ่านคู่มือ
-   ปล่อยหน้าต่างไปแล้วต้องล้างสถานะ ไม่งั้นค้างเป็นโหมดละเอียดตลอด */
+   อ่านจากธงบนอีเวนต์ทุกครั้ง ไม่ได้จำว่ากดปุ่มไหนไป เพราะสลับหน้าต่างกลับมาแล้วธงจะค้าง */
 let fineKey = false;
-window.addEventListener('keydown', function (e) { if (e.key === 'Alt') fineKey = true; });
-window.addEventListener('keyup', function (e) { if (e.key === 'Alt') fineKey = false; });
+function syncFine(e) { fineKey = !!(e.altKey || e.ctrlKey || e.metaKey); }
+window.addEventListener('keydown', syncFine);
+window.addEventListener('keyup', syncFine);
 window.addEventListener('blur', function () { fineKey = false; });
 function sn(v) {
   return (ui.snap && !fineKey) ? Math.round(v / ui.gsz) * ui.gsz : Math.round(v * 100) / 100;
+}
+
+/* ป้ายตัวเลขลอยเหนือแถบล่าง — ระหว่างมือยังไม่ปล่อย ครูต้องเห็นขนาด ระยะ และองศาจริง
+   ไม่ใช่มากะเอาทีหลังจากแผงคุณสมบัติ */
+let hudTimer = null;
+function hud(txt) {
+  const el = $('#hud');
+  if (!el) return;
+  clearTimeout(hudTimer);
+  if (!txt) { el.classList.remove('on'); return; }
+  el.textContent = txt;
+  el.classList.add('on');
+  hudTimer = setTimeout(function () { el.classList.remove('on'); }, 1500);
 }
 
 function gridSvg() {
@@ -1007,6 +1296,22 @@ function ownHandles(it) {
   }
   return null;
 }
+/** ปุ่มหมุนที่ลอยอยู่นอกกรอบเลือก — ลากเป็นวงเพื่อหมุนอิสระ
+    วางไว้เหนือกรอบตามธรรมเนียม แต่ถ้ากรอบชิดขอบบนจนปุ่มจะโดนขอบผืนตัดหาย ให้ย้ายลงไปอยู่ใต้กรอบแทน */
+function rotKnob(b) {
+  const cx = b.x + b.w / 2, gap = 24 / zoom, rr = 6.5 / zoom;
+  const above = (b.y - 3 - gap - rr) > 2;
+  const edge = above ? b.y - 3 : b.y + b.h + 3;
+  const cy = above ? edge - gap : edge + gap;
+  return '<line x1="' + n1(cx) + '" y1="' + n1(edge) + '" x2="' + n1(cx) +
+    '" y2="' + n1(above ? cy + rr : cy - rr) + '" class="rtstem" style="stroke-width:' +
+    n2(1.4 / zoom) + '"/>' +
+    '<circle cx="' + n1(cx) + '" cy="' + n1(cy) + '" r="' + n2(rr) +
+    '" class="hnd rt" data-h="rot" style="stroke-width:' + n2(2 / zoom) + '"/>' +
+    '<circle cx="' + n1(cx) + '" cy="' + n1(cy) + '" r="' + n2(17 / zoom) +
+    '" data-h="rot" style="fill:transparent;stroke:none;cursor:grab"/>';
+}
+
 function overlay() {
   let s = '';
   if (drag && drag.mode === 'marq') {
@@ -1022,14 +1327,15 @@ function overlay() {
       '" height="' + n1(b.h + 6) + '" style="stroke-width:' + n2(1.2 / zoom) +
       ';stroke-dasharray:' + n2(5 / zoom) + ' ' + n2(4 / zoom) + '"/>';
   });
+  const b = selBox();
+  const knob = rotKnob(b);
   if (its.length === 1) {
     const h = ownHandles(its[0]);
-    if (h) return s + h;
+    if (h) return s + knob + h;
   }
-  const b = selBox();
   s += hnd(b.x, b.y, 's0') + hnd(b.x + b.w, b.y, 's1') +
     hnd(b.x + b.w, b.y + b.h, 's2') + hnd(b.x, b.y + b.h, 's3');
-  return s;
+  return s + knob;
 }
 
 let rafPending = false;
@@ -1068,11 +1374,21 @@ function fitZoom() {
 }
 
 /* ---- เลิกทำ / ทำซ้ำ ------------------------------------------------------ */
+let lastPushTag = '', lastPushAt = 0;
 function push() {
   undoStack.push(JSON.stringify(doc));
   if (undoStack.length > 80) undoStack.shift();
   redoStack.length = 0;
+  lastPushTag = '';
   syncUndo();
+}
+/* กดลูกศรค้างเพื่อขยับทีละนิด ไม่ควรกลายเป็นประวัติเลิกทำเป็นร้อยขั้น
+   การกดรัวชนิดเดียวกันภายในไม่ถึงหนึ่งวินาทีจึงนับรวมเป็นขั้นเดียว */
+function pushTagged(tag) {
+  const t = Date.now();
+  if (tag === lastPushTag && t - lastPushAt < 900) { lastPushAt = t; return; }
+  push();
+  lastPushTag = tag; lastPushAt = t;
 }
 function syncUndo() {
   $('#bUndo').disabled = !undoStack.length;
@@ -1289,6 +1605,7 @@ function onMove(e) {
       const L = it.pts[it.pts.length - 1];
       if (dist(L[0], L[1], x, y) > 2 / zoom) it.pts.push([n1(x), n1(y)]);
     }
+    hud(hudFor(it));
     render();
     return;
   }
@@ -1307,17 +1624,65 @@ function onMove(e) {
       Object.keys(o).forEach(function (k) { it[k] = clone(o[k]); });
       moveItem(it, dx, dy);
     });
+    hud('เลื่อน Δx ' + n1(dx) + '  Δy ' + n1(dy) + (fineKey ? '  · ละเอียด' : ''));
     render();
     return;
   }
 
-  if (drag.mode === 'hnd') { moveHandle(drag.h, x, y, e); render(); return; }
+  if (drag.mode === 'hnd') {
+    moveHandle(drag.h, x, y, e);
+    if (drag.h !== 'rot') {
+      const one = sel.length === 1 ? selItems()[0] : null;
+      const b = selBox();
+      hud(one ? hudFor(one) : 'กว้าง ' + n1(b.w) + ' × สูง ' + n1(b.h));
+    }
+    render();
+    return;
+  }
+}
+
+/** ข้อความบนป้ายตัวเลข — บอกค่าที่ "ใช้ตัดสินใจ" ของรูปแต่ละชนิด ไม่ใช่กรอบสี่เหลี่ยมเสมอไป */
+function hudFor(it) {
+  if (!it) return '';
+  if (it.t === 'line') {
+    return 'ยาว ' + n1(dist(it.x1, it.y1, it.x2, it.y2)) +
+      '  ·  มุม ' + n1(deg(Math.atan2(it.y1 - it.y2, it.x2 - it.x1))) + '°';
+  }
+  if (it.t === 'rect') return 'กว้าง ' + n1(it.w) + ' × สูง ' + n1(it.h);
+  if (it.t === 'ell') {
+    return it.dot ? 'รัศมี ' + n1(it.rx) : 'รัศมี ' + n1(it.rx) + ' × ' + n1(it.ry);
+  }
+  if (it.t === 'arc') {
+    return 'รัศมี ' + n1(it.r) + (Math.abs(it.r - aryOf(it)) > 0.05 ? ' × ' + n1(aryOf(it)) : '') +
+      '  ·  ' + n1(it.a0) + '° → ' + n1(it.a1) + '°';
+  }
+  if (it.t === 'text') return 'ขนาดอักษร ' + n1(it.size);
+  const b = bbox(it);
+  return 'กว้าง ' + n1(b.w) + ' × สูง ' + n1(b.h) +
+    (it.pts ? '  ·  ' + it.pts.length + ' จุด' : '');
 }
 
 function moveHandle(h, x, y, e) {
   const orig = JSON.parse(drag.snapshot);
   const its = selItems();
   const it = its[0];
+  if (h === 'rot') {                        /* หมุนอิสระรอบจุดกึ่งกลางของที่เลือก */
+    const b = drag.box, cx = b.x + b.w / 2, cy = b.y + b.h / 2;
+    /* มุมบนจอเดินตามเข็ม แต่ rotItem นับทวนเข็มเป็นบวก จึงต้องกลับเครื่องหมายให้
+       ไม่งั้นลากไปทางขวาแล้วรูปหมุนสวนมือ */
+    const a0 = deg(Math.atan2(drag.y0 - cy, drag.x0 - cx));
+    const step = e && e.shiftKey ? 15 : (fineKey ? 0.2 : 1);
+    let d = Math.round((deg(Math.atan2(y - cy, x - cx)) - a0) / step) * step;
+    its.forEach(function (o, k) {
+      const src = orig[k]; if (!src) return;
+      Object.keys(src).forEach(function (key) { o[key] = clone(src[key]); });
+      rotItem(o, cx, cy, -d);
+    });
+    const show = ((d % 360) + 540) % 360 - 180;
+    hud((show >= 0 ? '↻ ' : '↺ ') + n1(Math.abs(show)) + '°' +
+      (e && e.shiftKey ? '  ทีละ 15°' : (fineKey ? '  ละเอียด' : '')));
+    return;
+  }
   x = sn(x); y = sn(y);
   if (h[0] === 's') {                       /* จุดจับมุมกรอบ — ย่อขยายทั้งกลุ่ม */
     const b = drag.box, i = +h[1];
@@ -1443,24 +1808,25 @@ function moveGesture() {
    ========================================================================== */
 const TOOLS = [
   { g: 'เลือก', t: [
-    { k: 'sel', ic: '⌖', n: 'เลือก' },
-    { k: 'pan', ic: '✋', n: 'เลื่อนจอ' }] },
+    { k: 'sel', ic: '⌖', n: 'เลือก', kk: 'V' },
+    { k: 'pan', ic: '✋', n: 'เลื่อนจอ', kk: 'H' }] },
   { g: 'เส้น', t: [
-    { k: 'line', ic: '╱', n: 'เส้นตรง' },
-    { k: 'arrow', ic: '⟶', n: 'ลูกศร' },
+    { k: 'line', ic: '╱', n: 'เส้นตรง', kk: 'L' },
+    { k: 'arrow', ic: '⟶', n: 'ลูกศร', kk: 'A' },
     { k: 'darrow', ic: '⟷', n: 'สองหัว' },
-    { k: 'pen', ic: '✎', n: 'ลากมือ' }] },
+    { k: 'pen', ic: '✎', n: 'ลากมือ', kk: 'P' }] },
   { g: 'รูปทรง', t: [
-    { k: 'rect', ic: '▭', n: 'สี่เหลี่ยม' },
+    { k: 'rect', ic: '▭', n: 'สี่เหลี่ยม', kk: 'R' },
     { k: 'sq', ic: '◻', n: 'จัตุรัส' },
-    { k: 'ell', ic: '⬭', n: 'วงรี' },
-    { k: 'circ', ic: '◯', n: 'วงกลม' },
-    { k: 'tri', ic: '△', n: 'สามเหลี่ยม' },
-    { k: 'poly', ic: '⬠', n: 'หลายเหลี่ยม' },
-    { k: 'arc', ic: '◟', n: 'ส่วนโค้ง' }] },
+    { k: 'ell', ic: '⬭', n: 'วงรี', kk: 'O' },
+    { k: 'circ', ic: '◯', n: 'วงกลม', kk: 'C' },
+    { k: 'tri', ic: '△', n: 'สามเหลี่ยม', kk: 'Y' },
+    { k: 'poly', ic: '⬠', n: 'หลายเหลี่ยม', kk: 'G' },
+    { k: 'arc', ic: '◟', n: 'ส่วนโค้ง', kk: 'K' }] },
   { g: 'เติม', t: [
-    { k: 'dot', ic: '⬤', n: 'จุด' },
-    { k: 'text', ic: 'T', n: 'ข้อความ' }] },
+    { k: 'dot', ic: '⬤', n: 'จุด', kk: 'D' },
+    { k: 'text', ic: 'T', n: 'ข้อความ', kk: 'T' },
+    { b: 'sym', ic: '∑', n: 'สัญลักษณ์' }] },
   { g: 'สำเร็จรูป', t: [
     { b: 'parts', ic: '🧩', n: 'ชิ้นส่วน' },
     { b: 'tri3', ic: '📐', n: 'สามเหลี่ยม\nตามตัวเลข' }] }
@@ -1470,7 +1836,9 @@ function buildTools() {
     return '<div class="tgrp"><div class="grp">' + G.g + '</div>' + G.t.map(function (t) {
       const id = t.k ? ' data-tool="' + t.k + '"' : ' data-btn="' + t.b + '"';
       return '<button class="tool"' + id + ' title="' + esc(t.n.replace(/\n/g, ' ')) +
-        '"><span class="ic">' + t.ic + '</span>' + esc(t.n).replace(/\n/g, '<br>') + '</button>';
+        (t.kk ? ' (ปุ่มลัด ' + t.kk + ')' : '') + '"><span class="ic">' + t.ic + '</span>' +
+        esc(t.n).replace(/\n/g, '<br>') +
+        (t.kk ? '<span class="kk">' + t.kk + '</span>' : '') + '</button>';
     }).join('') + '</div>';
   }).join('');
   $('#tools').addEventListener('click', function (e) {
@@ -1479,6 +1847,7 @@ function buildTools() {
     if (b.dataset.tool) setTool(b.dataset.tool);
     else if (b.dataset.btn === 'parts') openParts();
     else if (b.dataset.btn === 'tri3') openTriBuilder();
+    else if (b.dataset.btn === 'sym') openSym();
   });
 }
 function setTool(t) {
@@ -1566,7 +1935,8 @@ function typeSec(it) {
       '<div class="hint">ตัวห้อยพิมพ์ <b>H_2O</b> · ตัวยกพิมพ์ <b>v^2</b> · ยาวกว่าหนึ่งตัวใส่ปีกกา <b>x^{n+1}</b> · ขึ้นบรรทัดใหม่ได้</div>' +
       /* แถบสัญลักษณ์ที่ใช้บ่อยในฟิสิกส์ กดแล้วแทรกตรงตำแหน่งเคอร์เซอร์
          เวกเตอร์ใช้อักขระผสมที่วางทับตัวหน้า จึงต้องพิมพ์ตัวอักษรก่อนแล้วค่อยกด */
-      '<div class="hint" style="margin-top:7px">สัญลักษณ์</div>' +
+      '<div class="row" style="margin-top:8px;margin-bottom:2px"><span class="lb">สัญลักษณ์</span>' +
+      '<span class="sp"></span><button class="btn tiny" data-act="allsym">ทั้งหมด ∑</button></div>' +
       '<div class="symrow">' + FIG_SYMS.map(function (o) {
         return '<button class="btn sm figsym" data-sym="' + esc(o.v) + '" title="' + esc(o.t) + '">' +
           esc(o.lab) + '</button>';
@@ -1574,11 +1944,11 @@ function typeSec(it) {
       '<div style="height:9px"></div>' +
       '<div class="row"><span class="lb">ขนาด</span>' +
       '<input type="number" class="num" data-p="size" value="' + n1(it.size) + '" step="1" min="6" max="90">' +
-      '<button class="btn sm" data-act="italic"' + (it.italic ? ' style="border-color:var(--brand);color:var(--brand)"' : '') + '><i>เอียง</i></button>' +
-      '<button class="btn sm" data-act="bold"' + (it.bold ? ' style="border-color:var(--brand);color:var(--brand)"' : '') + '><b>หนา</b></button></div>' +
+      '<button class="btn sm' + (it.italic ? ' act' : '') + '" data-act="italic"><i>เอียง</i></button>' +
+      '<button class="btn sm' + (it.bold ? ' act' : '') + '" data-act="bold"><b>หนา</b></button></div>' +
       '<div class="row"><span class="lb">จัดชิด</span></div>' +
       segHtml('anchor', [{ v: 'start', n: 'ซ้าย' }, { v: 'middle', n: 'กลาง' }, { v: 'end', n: 'ขวา' }], it.anchor) +
-      '</div>';
+      rotRow(it) + '</div>';
   }
   if (it.t === 'line') {
     const ENDS = [{ v: 'none', n: 'ไม่มี' }, { v: 'arrow', n: 'ลูกศร' },
@@ -1607,12 +1977,13 @@ function typeSec(it) {
         '<div class="hint">ใช้แทนอนุภาค จุดตรึง หรือวัตถุขนาดเล็ก · เปลี่ยนสีและพื้นได้ที่แผงด้านบน</div></div>'
       : '<div class="sec"><h3>วงรี</h3><div class="row"><span class="lb">รัศมี</span>' +
         '<input type="number" class="num" data-p="rx" value="' + n1(it.rx) + '" step="1" min="1">' +
-        '<input type="number" class="num" data-p="ry" value="' + n1(it.ry) + '" step="1" min="1"></div></div>';
+        '<input type="number" class="num" data-p="ry" value="' + n1(it.ry) + '" step="1" min="1"></div>' +
+        rotRow(it) + '</div>';
   }
   if (it.t === 'rect') {
     s += '<div class="sec"><h3>สี่เหลี่ยม</h3><div class="row">' +
       '<span class="lb">มุมโค้ง</span><input type="number" class="num" data-p="r" value="' +
-      n1(it.r || 0) + '" step="1" min="0"></div></div>';
+      n1(it.r || 0) + '" step="1" min="0"></div>' + rotRow(it) + '</div>';
   }
   if (it.t === 'arc') {
     s += '<div class="sec"><h3>ส่วนโค้ง</h3>' +
@@ -1626,6 +1997,7 @@ function typeSec(it) {
       '<input type="number" class="num" data-p="a1" value="' + n1(it.a1) + '" step="5"></div>' +
       '<div class="row"><button class="btn sm" data-act="sector"' +
       (it.sector ? ' style="border-color:var(--brand);color:var(--brand)"' : '') + '>ปิดเป็นรูปพัด</button></div>' +
+      rotRow(it) +
       '<div class="hint">มุมนับทวนเข็ม 0 องศาชี้ไปทางขวา — ใช้ทำเครื่องหมายมุมในรูปเรขาคณิตได้<br>' +
       'ตั้งรัศมีสองแกนให้ต่างกันจะได้ส่วนโค้งของวงรี ใช้เขียนปากและฐานของทรงสามมิติ</div></div>';
   }
@@ -1649,6 +2021,15 @@ function typeSec(it) {
   }
   return s;
 }
+/** ช่องตั้ง "มุมของตัวมันเอง" เป็นค่าสัมบูรณ์ — มีเฉพาะชนิดที่เก็บมุมไว้ในตัวได้
+    (เส้น รูปหลายเหลี่ยม และเส้นลากมือ หมุนด้วยการย้ายพิกัดจุด จึงไม่มีค่ามุมให้ตั้ง) */
+function rotRow(it) {
+  if (['rect', 'ell', 'arc', 'text'].indexOf(it.t) < 0) return '';
+  return '<div class="row" style="margin-top:8px"><span class="lb">เอียง</span>' +
+    '<input type="number" class="num" data-p="rot" value="' + n1(it.rot || 0) + '" step="5">' +
+    '<span class="lb" style="min-width:0">องศา ทวนเข็ม</span></div>';
+}
+
 function geoSec() {
   const b = selBox();
   const one = sel.length === 1 ? selItems()[0] : null;
@@ -1659,15 +2040,22 @@ function geoSec() {
     '<div class="row"><span class="lb">กว้าง/สูง</span>' +
     '<input type="number" class="num" data-g="w" value="' + n1(b.w) + '" step="1" min="1">' +
     '<input type="number" class="num" data-g="h" value="' + n1(b.h) + '" step="1" min="1"></div>' +
-    '<div class="row"><span class="lb">หมุน</span>' +
-    '<input type="number" class="num" data-g="rot" value="0" step="15">' +
-    '<button class="btn sm" data-act="rotL">⟲ 90°</button>' +
-    '<button class="btn sm" data-act="rotR">⟳ 90°</button></div>' +
-    '<div class="row"><span class="lb">พลิก</span>' +
+    '<div class="row"><span class="lb">หมุนเพิ่ม</span>' +
+    '<input type="number" class="num" data-g="rot" value="0" step="5" title="พิมพ์องศาแล้วกด Enter">' +
+    '<button class="btn sm" data-act="rotby" data-v="1" title="ทวนเข็ม 1 องศา">↺ 1°</button>' +
+    '<button class="btn sm" data-act="rotby" data-v="-1" title="ตามเข็ม 1 องศา">↻ 1°</button></div>' +
+    '<div class="grid4">' +
+    '<button class="btn sm" data-act="rotby" data-v="15">↺ 15°</button>' +
+    '<button class="btn sm" data-act="rotby" data-v="-15">↻ 15°</button>' +
+    '<button class="btn sm" data-act="rotby" data-v="90">↺ 90°</button>' +
+    '<button class="btn sm" data-act="rotby" data-v="-90">↻ 90°</button></div>' +
+    '<div class="row" style="margin-top:8px"><span class="lb">พลิก</span>' +
     '<button class="btn sm" data-act="flipH">ซ้าย–ขวา</button>' +
-    '<button class="btn sm" data-act="flipV">บน–ล่าง</button></div>' +
-    (one && one.t === 'text' ? '' :
-      '<div class="hint">พิมพ์ค่าในช่องหมุนแล้วกด Enter จะหมุนรอบจุดกึ่งกลางของที่เลือก</div>') +
+    '<button class="btn sm" data-act="flipV">บน–ล่าง</button>' +
+    '<button class="btn sm" data-act="rotby" data-v="180">กลับหัว</button></div>' +
+    '<div class="hint">ลากปุ่มกลม ↻ ที่ลอยเหนือกรอบเลือกบนผืนวาด = หมุนอิสระ ' +
+    '(กด <b>Shift</b> ระหว่างลากเพื่อล็อกทีละ 15° · กด <b>Ctrl</b> เพื่อหมุนละเอียด 0.2°)<br>' +
+    'บนแป้นพิมพ์กด <b>[</b> และ <b>]</b> หมุนทีละองศา · เติม Shift เป็นทีละ 15°</div>' +
     '</div>';
 }
 function actSec() {
@@ -1708,13 +2096,14 @@ function docSec() {
     'เพราะรูปจะถูกย่อให้พอดีความกว้างของใบงานอยู่แล้ว</div></div>';
 }
 function tipsSec() {
-  return '<div class="sec"><h3>ทางลัด</h3><div class="hint" style="margin:0">' +
-    'ลากบนที่ว่าง = เลือกหลายชิ้น · Shift+คลิก = เลือกเพิ่ม<br>' +
-    'กด Shift ตอนลาก = ล็อกมุมทีละ 15° หรือบังคับให้เป็นจัตุรัส/วงกลม<br>' +
-    'ลูกศรบนแป้นพิมพ์ = ขยับทีละช่อง · Shift+ลูกศร = ขยับทีละ 10<br>' +
-    'Ctrl+D ทำสำเนา · Ctrl+G รวมกลุ่ม · Delete ลบ · Ctrl+Z เลิกทำ<br>' +
+  return '<div class="sec"><h3>ทางลัดที่ใช้บ่อย</h3><div class="hint" style="margin:0">' +
+    'ลากบนที่ว่าง = เลือกหลายชิ้น · <b>Shift</b>+คลิก = เลือกเพิ่ม<br>' +
+    '<b>Shift</b> ตอนลาก = ล็อกมุมทีละ 15° หรือบังคับให้เป็นจัตุรัส/วงกลม<br>' +
+    'ลูกศร = ขยับทีละช่องตาราง · <b>Ctrl</b>+ลูกศร = ทีละ 0.5 · <b>Ctrl+Shift</b>+ลูกศร = ทีละ 0.1<br>' +
+    '<b>[</b> <b>]</b> = หมุนทีละองศา · ลากปุ่ม ↻ เหนือกรอบเลือก = หมุนอิสระ<br>' +
     'บนไอแพด ใช้สองนิ้วเลื่อนจอและย่อขยาย' +
-    '</div></div>';
+    '</div>' +
+    '<button class="btn sm" data-act="help" style="width:100%;margin-top:9px">ดูปุ่มลัดทั้งหมด</button></div>';
 }
 function inspector() {
   const its = selItems();
@@ -1883,6 +2272,17 @@ function doAct(a, v) {
   if (a === 'group') { push(); const g = 'g' + uid();
     its.forEach(function (o) { o.g = g; }); changed(); return; }
   if (a === 'ungroup') { push(); its.forEach(function (o) { delete o.g; }); changed(); return; }
+  if (a === 'allsym') { openSym(); return; }
+  if (a === 'help') { openHelp(); return; }
+  if (a === 'rotby') {
+    const b = selBox(), d = Number(v) || 0;
+    if (!b || !d || !its.length) return;
+    push();
+    its.forEach(function (o) { rotItem(o, b.x + b.w / 2, b.y + b.h / 2, d); });
+    changed();
+    hud((d > 0 ? '↺ ทวนเข็ม ' : '↻ ตามเข็ม ') + Math.abs(d) + '°');
+    return;
+  }
   if (a === 'rotL' || a === 'rotR') {
     const b = selBox(); push();
     its.forEach(function (o) { rotItem(o, b.x + b.w / 2, b.y + b.h / 2, a === 'rotL' ? 90 : -90); });
@@ -2046,27 +2446,61 @@ function onKey(e) {
   }
   if ($('.modal.on')) { if (e.key === 'Escape') closeModals(); return; }
   const mod = e.ctrlKey || e.metaKey;
+
+  /* ---- ลูกศร: ขยับวัตถุ ----
+     กด Ctrl ค้างไว้แล้วกดลูกศร = ขยับทีละ 0.5 หน่วย ไม่สนตารางกริด
+     เติม Shift เข้าไปอีก = ทีละ 0.1 หน่วย ละเอียดที่สุดเท่าที่ผืนวาดเก็บค่าได้
+     ต้องดักไว้ก่อนปุ่มลัดที่ใช้ Ctrl ตัวอื่น เพราะด้านล่างมีบรรทัด "ถ้ากด Ctrl ให้ปล่อยผ่าน" */
+  if (e.key.indexOf('Arrow') === 0 && sel.length) {
+    e.preventDefault();
+    const fine = mod || e.altKey;
+    const d = fine ? (e.shiftKey ? 0.1 : 0.5) : (e.shiftKey ? 10 : (ui.snap ? ui.gsz : 1));
+    const dx = e.key === 'ArrowLeft' ? -d : (e.key === 'ArrowRight' ? d : 0);
+    const dy = e.key === 'ArrowUp' ? -d : (e.key === 'ArrowDown' ? d : 0);
+    pushTagged('nudge');
+    selItems().forEach(function (o) { moveItem(o, dx, dy); });
+    changed();
+    const b = selBox();
+    hud('ขยับทีละ ' + d + (fine ? ' · ละเอียด' : '') +
+      (b ? '   ซ้าย ' + n1(b.x) + '  บน ' + n1(b.y) : ''));
+    return;
+  }
+  /* ---- วงเล็บเหลี่ยม: หมุนทีละองศา ---- */
+  if ((e.key === '[' || e.key === ']') && sel.length) {
+    e.preventDefault();
+    const st = e.shiftKey ? 15 : (mod || e.altKey ? 0.5 : 1);
+    const b = selBox();
+    pushTagged('rotkey');
+    selItems().forEach(function (o) {
+      rotItem(o, b.x + b.w / 2, b.y + b.h / 2, e.key === '[' ? st : -st);
+    });
+    changed();
+    hud((e.key === '[' ? '↺ ทวนเข็ม ' : '↻ ตามเข็ม ') + st + '°');
+    return;
+  }
+
   if (mod && e.key.toLowerCase() === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
   if (mod && e.key.toLowerCase() === 'y') { e.preventDefault(); redo(); return; }
   if (mod && e.key.toLowerCase() === 'd') { e.preventDefault(); duplicate(); return; }
   if (mod && e.key.toLowerCase() === 'a') {
     e.preventDefault(); sel = doc.items.map(function (o) { return o.id; }); changed(); return;
   }
-  if (mod && e.key.toLowerCase() === 'g') { e.preventDefault(); doAct('group'); return; }
+  if (mod && e.key.toLowerCase() === 'g') {
+    e.preventDefault(); doAct(e.shiftKey ? 'ungroup' : 'group'); return;
+  }
   if (mod && e.key.toLowerCase() === 's') { e.preventDefault(); openSave(); return; }
+  if (mod && e.key.toLowerCase() === 'o') { e.preventDefault(); openLib(); return; }
+  if (mod && e.key.toLowerCase() === 'e') {
+    e.preventDefault(); expMode = 'auto'; renderExport(); $('#mExp').classList.add('on'); return;
+  }
   if (mod) return;
   if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); delSel(); return; }
   if (e.key === 'Escape') { if (polyDraft) endPoly(); else { sel = []; setTool('sel'); changed(); } return; }
   if (e.key === 'Enter' && polyDraft) { endPoly(); return; }
-  if (e.key.indexOf('Arrow') === 0 && sel.length) {
-    e.preventDefault();
-    // Alt = ละเอียดครึ่งหน่วย · Shift = ทีละสิบ · เปล่า ๆ = ตามตารางถ้าเปิดดูดไว้
-    const d = e.altKey ? 0.5 : (e.shiftKey ? 10 : (ui.snap ? ui.gsz : 1));
-    const dx = e.key === 'ArrowLeft' ? -d : (e.key === 'ArrowRight' ? d : 0);
-    const dy = e.key === 'ArrowUp' ? -d : (e.key === 'ArrowDown' ? d : 0);
-    push(); selItems().forEach(function (o) { moveItem(o, dx, dy); }); changed();
-    return;
-  }
+  if (e.key === '?') { e.preventDefault(); openHelp(); return; }
+  if (e.key === '+' || e.key === '=') { e.preventDefault(); setZoom(zoom * 1.2); return; }
+  if (e.key === '-' || e.key === '_') { e.preventDefault(); setZoom(zoom / 1.2); return; }
+  if (e.key === '0') { e.preventDefault(); fitZoom(); return; }
   const K = { v: 'sel', h: 'pan', l: 'line', a: 'arrow', r: 'rect', o: 'ell', c: 'circ',
     t: 'text', p: 'pen', g: 'poly', y: 'tri', k: 'arc', d: 'dot' };
   if (K[e.key]) setTool(K[e.key]);
@@ -2510,27 +2944,43 @@ function partPreview(p) {
     sceneInner(d, false, false) + '</svg>';
 }
 let partFilter = 'all';
+/** ค้นชิ้นส่วนจากชื่อไทยและรหัสอังกฤษพร้อมกัน ครูพิมพ์คำไหนก็เจอ */
+function partHits() {
+  const q = String(($('#partQ') || {}).value || '').trim().toLowerCase();
+  return PARTS.filter(function (p) {
+    if (partFilter !== 'all' && p.sub !== partFilter) return false;
+    if (!q) return true;
+    return (p.n + ' ' + p.k + ' ' + (SUBJECTS[p.sub] || '')).toLowerCase().indexOf(q) >= 0;
+  });
+}
 function partCard(p) {
   return '<div class="card"><div class="th" data-part="' + p.k + '">' + partPreview(p) + '</div>' +
     '<div class="mt"><b>' + esc(p.n) + '</b><span>' + SUBJECTS[p.sub] + '</span></div></div>';
 }
-function openParts() {
+function renderParts() {
   /* ดูทั้งหมดพร้อมกันให้แยกหัวข้อตามวิชา จะได้กวาดตาหาของที่ต้องการเจอเร็ว
-     เลือกวิชาเดียวแล้วไม่ต้องมีหัวข้อ เพราะรู้อยู่แล้วว่ากำลังดูวิชาอะไร */
-  if (partFilter === 'all') {
+     เลือกวิชาเดียวหรือกำลังค้นอยู่ ไม่ต้องมีหัวข้อ เพราะรู้อยู่แล้วว่ากำลังดูอะไร */
+  const hits = partHits();
+  const q = String(($('#partQ') || {}).value || '').trim();
+  if (!hits.length) {
+    $('#partGrid').innerHTML = '<div class="empty">ไม่พบชิ้นส่วนที่ตรงกับ “' + esc(q) + '”<br>' +
+      'ลองพิมพ์คำสั้นลง หรือกดปุ่ม “ทั้งหมด” ด้านบน</div>';
+  } else if (partFilter === 'all' && !q) {
     $('#partGrid').innerHTML = ['physics', 'math', 'chem'].map(function (k) {
-      const g = PARTS.filter(function (p) { return p.sub === k; });
+      const g = hits.filter(function (p) { return p.sub === k; });
       if (!g.length) return '';
       return '<div class="pgh">' + SUBJECTS[k] + ' <b>' + g.length + ' ชิ้น</b></div>' +
         '<div class="lib">' + g.map(partCard).join('') + '</div>';
     }).join('');
   } else {
-    $('#partGrid').innerHTML = '<div class="lib">' +
-      PARTS.filter(function (p) { return p.sub === partFilter; }).map(partCard).join('') + '</div>';
+    $('#partGrid').innerHTML = '<div class="lib">' + hits.map(partCard).join('') + '</div>';
   }
   $$('#partSub button').forEach(function (b) {
     b.classList.toggle('on', b.dataset.v === partFilter);
   });
+}
+function openParts() {
+  renderParts();
   $('#mParts').classList.add('on');
 }
 function placePart(p, x, y) {
@@ -2720,7 +3170,8 @@ function svgForApp() {
 function svgOfDoc(d, bg) {
   return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + d.w + ' ' + d.h +
     '" width="' + d.w + '" height="' + d.h + '">' +
-    '<style>text{font-family:"Sarabun","Noto Sans Thai","Segoe UI",sans-serif}</style>' +
+    '<style>text{font-family:"Sarabun","Noto Sans Thai","Segoe UI","Segoe UI Symbol",' +
+    '"Noto Sans Symbols 2","Noto Sans Math","Cambria Math","DejaVu Sans",sans-serif}</style>' +
     (bg ? '<rect width="' + d.w + '" height="' + d.h + '" fill="#ffffff"/>' : '') +
     sceneInner(d, true, false) + '</svg>';
 }
@@ -2786,7 +3237,11 @@ function renderExport() {
       '<button data-png="3">3 เท่า</button>' +
       '<button data-png="4">4 เท่า</button></div></div>' +
       '<div style="background:#fff;border:1px solid var(--line);border-radius:10px;' +
-      'padding:12px;text-align:center">' + thumb(doc, 320, 220) + '</div>';
+      'padding:12px;text-align:center">' +
+      /* กล่องนี้พื้นขาวตายตัว ตัวอย่างจึงต้องเรนเดอร์ด้วยรหัสสีจริง
+         ถ้าใช้ตัวแปรธีม พอเปิดโหมดมืดเส้นจะกลายเป็นสีอ่อนแล้วจมหายไปกับพื้นขาว */
+      '<svg viewBox="0 0 ' + doc.w + ' ' + doc.h + '" width="320" height="220" ' +
+      'preserveAspectRatio="xMidYMid meet">' + sceneInner(doc, true, false) + '</svg></div>';
     foot.innerHTML = '<button class="btn" data-close>ปิด</button>' +
       '<button class="btn pri" data-x="dlpng">ดาวน์โหลด .png</button>';
   }
@@ -2798,29 +3253,307 @@ function fname(ext) {
 function dlPng() {
   const btn = $('#expBody [data-png].on');
   const k = Number(btn ? btn.dataset.png : 2) || 2;
-  const svg = svgStandalone();
+  docToPng(doc, k, function (b) {
+    if (!b) { toast('สร้างไฟล์ภาพไม่สำเร็จ'); return; }
+    saveBlob(b, fname('png'));
+    toast('ดาวน์โหลดแล้ว');
+  });
+}
+
+/* ============================================================================
+   สัญลักษณ์วิทยาศาสตร์ — แทรกลงในข้อความบนผืนวาด
+   ============================================================================ */
+/** แทรกสัญลักษณ์ตรงตำแหน่งเคอร์เซอร์ในช่องข้อความ
+    ยังไม่ได้เลือกข้อความไหนอยู่ = สร้างข้อความเปล่ากลางผืนให้ก่อน ครูจะได้กดรัวต่อได้เลย
+    focusBox = ให้ช่องข้อความได้โฟกัสกลับไปด้วย (ใช้ตอนกดจากแผงขวา
+    แต่ตอนกดจากในกล่องซ้อน ห้ามโฟกัส เพราะช่องนั้นอยู่หลังฉากมืด มองไม่เห็นเคอร์เซอร์) */
+/* จำตำแหน่งเคอร์เซอร์ล่าสุดในช่องข้อความไว้
+   เพราะพอกดปุ่ม “ทั้งหมด ∑” เพื่อเปิดกล่องสัญลักษณ์ ช่องข้อความจะเสียโฟกัสไปแล้ว
+   ถ้าไม่จำไว้ สัญลักษณ์จะไปโผล่ต้นบรรทัดทุกครั้ง ไม่ใช่ตรงที่ครูวางเคอร์เซอร์ */
+let txtCaret = null, txtCaretId = null;
+document.addEventListener('selectionchange', function () {
+  const a = document.activeElement;
+  if (a && a.id === 'pTxt') { txtCaret = [a.selectionStart, a.selectionEnd]; txtCaretId = sel[0]; }
+});
+
+function insertSym(v, focusBox) {
+  let it = selItems()[0];
+  if (!it || it.t !== 'text') {
+    push();
+    it = newItem('text', { x: Math.round(doc.w / 2), y: Math.round(doc.h / 2),
+      s: '', size: 18, anchor: 'middle', rot: 0 });
+    doc.items.push(it);
+    sel = [it.id];
+    render(); inspector();
+  }
+  const box = $('#pTxt');
+  if (box) {
+    /* โฟกัสอยู่ = ใช้เคอร์เซอร์จริง · ไม่ได้โฟกัส = ใช้ตำแหน่งที่จำไว้ล่าสุดของข้อความชิ้นนี้
+       ไม่มีทั้งสองอย่าง = ต่อท้าย ซึ่งเดาง่ายกว่าการไปแทรกต้นบรรทัดเงียบ ๆ */
+    let at, to;
+    if (document.activeElement === box) { at = box.selectionStart; to = box.selectionEnd; }
+    else if (txtCaret && txtCaretId === it.id) { at = txtCaret[0]; to = txtCaret[1]; }
+    else { at = to = box.value.length; }
+    if (at == null) { at = to = box.value.length; }
+    box.value = box.value.slice(0, at) + v + box.value.slice(to);
+    it.s = box.value;
+    const pos = at + v.length;
+    txtCaret = [pos, pos]; txtCaretId = it.id;
+    if (focusBox) box.focus();
+    try { box.setSelectionRange(pos, pos); } catch (e) {}
+  } else it.s = (it.s == null ? '' : it.s) + v;
+  render(); saveDraft();
+}
+
+let symTab = 'common';
+function renderSym() {
+  const q = String(($('#symQ') || {}).value || '').trim().toLowerCase();
+  let list = [];
+  if (q) {
+    /* กำลังค้นอยู่ = กวาดทุกหมวด ไม่งั้นต้องเดาว่าของที่หาอยู่หมวดไหน */
+    const seen = {};
+    SYM_GROUPS.forEach(function (g) {
+      g.s.forEach(function (o) {
+        if (seen[o.v + o.t]) return;
+        if ((o.t + ' ' + o.lab + ' ' + o.v).toLowerCase().indexOf(q) < 0) return;
+        seen[o.v + o.t] = 1; list.push(o);
+      });
+    });
+  } else {
+    const g = SYM_GROUPS.filter(function (x) { return x.k === symTab; })[0] || SYM_GROUPS[0];
+    list = g.s;
+  }
+  $$('#symTabs button').forEach(function (b) {
+    b.classList.toggle('on', !q && b.dataset.v === symTab);
+  });
+  $('#symGrid').innerHTML = list.length
+    ? list.map(function (o) {
+        return '<button class="btn figsym" data-sym="' + esc(o.v) + '" title="' + esc(o.t) + '">' +
+          esc(o.lab) + '</button>';
+      }).join('')
+    : '<div class="empty">ไม่พบสัญลักษณ์ที่ตรงกับ “' + esc(q) + '”</div>';
+}
+function openSym() {
+  const it = selItems()[0];
+  $('#symNote').innerHTML = (it && it.t === 'text')
+    ? 'แทรกลงในข้อความ “<b>' + esc(String(it.s || '').slice(0, 24) || 'ว่าง') +
+      '</b>” ตรงตำแหน่งเคอร์เซอร์ · กดหลายตัวติดกันได้'
+    : 'ยังไม่ได้เลือกข้อความไหนไว้ — กดสัญลักษณ์แล้วจะสร้างข้อความใหม่ไว้กลางผืนให้เอง';
+  $('#symTabs').innerHTML = SYM_GROUPS.map(function (g) {
+    return '<button data-v="' + g.k + '">' + esc(g.n) + '</button>';
+  }).join('');
+  renderSym();
+  $('#mSym').classList.add('on');
+}
+
+/* ============================================================================
+   กล่องปุ่มลัด
+   ========================================================================== */
+/* แถวหนึ่ง = [ ปุ่ม, สิ่งที่เกิดขึ้น, เป็นท่าเมาส์ไม่ใช่ปุ่มกด ]
+   ท่าเมาส์เขียนเป็นประโยคธรรมดา ส่วนปุ่มกดใส่กรอบให้ดูออกว่าเป็นปุ่มบนแป้นพิมพ์ */
+const HELP = [
+  { g: 'เลือกและขยับ', k: [
+    ['ลากบนที่ว่าง', 'เลือกหลายชิ้นด้วยกรอบ', 1],
+    ['Shift + คลิก', 'เลือกเพิ่มทีละชิ้น'],
+    ['Ctrl + A', 'เลือกทั้งผืน'],
+    ['ลูกศร', 'ขยับทีละช่องตาราง'],
+    ['Shift + ลูกศร', 'ขยับทีละ 10 หน่วย'],
+    ['Ctrl + ลูกศร', 'ขยับละเอียดทีละ 0.5 หน่วย'],
+    ['Ctrl + Shift + ลูกศร', 'ขยับละเอียดที่สุด ทีละ 0.1 หน่วย'],
+    ['กด Alt หรือ Ctrl ค้างไว้ตอนลาก', 'ลากได้อิสระ ไม่ถูกตารางดูด', 1] ] },
+  { g: 'หมุนและพลิก', k: [
+    ['ลากปุ่มกลม ↻ ที่ลอยเหนือกรอบเลือก', 'หมุนอิสระรอบจุดกึ่งกลาง', 1],
+    ['Shift', 'ระหว่างลากหมุน — ล็อกทีละ 15 องศา'],
+    ['Ctrl', 'ระหว่างลากหมุน — ละเอียดทีละ 0.2 องศา'],
+    ['[', 'หมุนทวนเข็มทีละ 1 องศา'],
+    [']', 'หมุนตามเข็มทีละ 1 องศา'],
+    ['Shift + [', 'หมุนทวนเข็มทีละ 15 องศา'],
+    ['Shift + ]', 'หมุนตามเข็มทีละ 15 องศา'],
+    ['ช่อง “เอียง” ในแผงขวา', 'ตั้งมุมเป็นค่าเป๊ะ ๆ ของสี่เหลี่ยม วงรี ส่วนโค้ง และข้อความ', 1] ] },
+  { g: 'วาด', k: [
+    ['Shift', 'ตอนลาก — ล็อกมุมทีละ 15° หรือบังคับจัตุรัส/วงกลม'],
+    ['แตะสองครั้งบนเส้นของรูปหลายเหลี่ยม', 'เพิ่มจุดตรงนั้น', 1],
+    ['Enter', 'จบรูปหลายเหลี่ยมที่กำลังคลิกทีละจุด'],
+    ['Escape', 'ยกเลิกการเลือก หรือจบรูปที่ค้างอยู่'],
+    ['V H L A R O C Y G K D T P', 'สลับเครื่องมือ — ดูตัวอักษรที่มุมปุ่มในแถบซ้าย'] ] },
+  { g: 'จัดการงาน', k: [
+    ['Ctrl + Z', 'เลิกทำ'],
+    ['Ctrl + Shift + Z', 'ทำซ้ำ'],
+    ['Ctrl + D', 'ทำสำเนา'],
+    ['Ctrl + G', 'รวมกลุ่ม'],
+    ['Ctrl + Shift + G', 'แยกกลุ่ม'],
+    ['Delete', 'ลบที่เลือก'],
+    ['Ctrl + S', 'บันทึกลงคลัง'],
+    ['Ctrl + O', 'เปิดคลังรูป'],
+    ['Ctrl + E', 'ส่งออก'] ] },
+  { g: 'มุมมองและอื่น ๆ', k: [
+    ['+', 'ซูมเข้า'],
+    ['−', 'ซูมออก'],
+    ['0', 'ย่อให้พอดีจอ'],
+    ['Ctrl + ล้อเมาส์', 'ซูมตรงตำแหน่งเมาส์'],
+    ['ใช้สองนิ้วบนไอแพด', 'เลื่อนจอและย่อขยายพร้อมกัน', 1],
+    ['?', 'เปิดหน้านี้'] ] }
+];
+function keyHtml(txt) {
+  return txt.split(' + ').map(function (part) {
+    return part.split(' ').map(function (w) {
+      return w ? '<span class="kbd">' + esc(w) + '</span>' : '';
+    }).join(' ');
+  }).join(' + ');
+}
+function openHelp() {
+  $('#helpBody').innerHTML = HELP.map(function (G) {
+    return '<div class="hgrp">' + G.g + '</div><div class="keys">' + G.k.map(function (r) {
+      return '<div><i>' + (r[2] ? esc(r[0]) : keyHtml(r[0])) + '</i><span>' + esc(r[1]) + '</span></div>';
+    }).join('') + '</div>';
+  }).join('');
+  $('#mHelp').classList.add('on');
+}
+
+/* ============================================================================
+   แชร์รูป — ลงเฟซบุ๊กหรือส่งต่อทางแอปอื่น
+   ----------------------------------------------------------------------------
+   เฟซบุ๊กไม่มีทางให้เว็บอื่นแนบไฟล์ภาพเข้าโพสต์ผ่านลิงก์ได้ (ตั้งใจปิดไว้เพื่อกันสแปม)
+   ของจริงจึงมีสองทางเท่านั้น และแอปนี้ทำให้ทั้งสองทางกดครั้งเดียวจบ
+     1) เครื่องที่มีเมนูแชร์ของระบบ (ไอแพด ไอโฟน แอนดรอยด์) — ส่งไฟล์ PNG เข้าแอปเฟซบุ๊กตรง ๆ
+     2) คอมพิวเตอร์ — คัดลอกรูปใส่คลิปบอร์ดให้ แล้วเปิดหน้าเขียนโพสต์ ครูกด Ctrl+V วางได้ทันที
+   ========================================================================== */
+const APP_HOME = 'https://boydzii.github.io/PhysicsAndMath/';
+function publicUrl() {
+  const local = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+  return (/^https?:$/.test(location.protocol) && !local) ? location.href.split('#')[0] : APP_HOME;
+}
+
+/** เรนเดอร์ผืนวาดเป็นไฟล์ PNG พื้นขาว — ใช้ร่วมกันทั้งตอนดาวน์โหลดและตอนแชร์ */
+function docToPng(d, k, cb) {
+  const svg = '<?xml version="1.0" encoding="UTF-8"?>\n' + svgOfDoc(d, false) + '\n';
   const img = new Image();
   const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   img.onload = function () {
     const c = document.createElement('canvas');
-    c.width = Math.round(doc.w * k); c.height = Math.round(doc.h * k);
+    c.width = Math.max(1, Math.round(d.w * k));
+    c.height = Math.max(1, Math.round(d.h * k));
     const g = c.getContext('2d');
     g.fillStyle = '#ffffff'; g.fillRect(0, 0, c.width, c.height);
     g.drawImage(img, 0, 0, c.width, c.height);
     URL.revokeObjectURL(url);
-    c.toBlob(function (b) {
-      if (!b) { toast('สร้างไฟล์ภาพไม่สำเร็จ'); return; }
-      const u = URL.createObjectURL(b);
-      const a = document.createElement('a');
-      a.href = u; a.download = fname('png');
-      document.body.appendChild(a); a.click();
-      setTimeout(function () { URL.revokeObjectURL(u); a.remove(); }, 400);
-      toast('ดาวน์โหลดแล้ว');
-    }, 'image/png');
+    c.toBlob(function (b) { cb(b); }, 'image/png');
   };
-  img.onerror = function () { URL.revokeObjectURL(url); toast('สร้างไฟล์ภาพไม่สำเร็จ'); };
+  img.onerror = function () { URL.revokeObjectURL(url); cb(null); };
   img.src = url;
+}
+function saveBlob(b, name) {
+  const u = URL.createObjectURL(b);
+  const a = document.createElement('a');
+  a.href = u; a.download = name;
+  document.body.appendChild(a); a.click();
+  setTimeout(function () { URL.revokeObjectURL(u); a.remove(); }, 400);
+}
+
+let shareBlob = null;
+/** ข้อความตั้งต้นของโพสต์ — ประกอบจากข้อมูลที่ครูกรอกไว้ตอนบันทึกลงคลัง */
+function shareCaption() {
+  const m = curMeta;
+  let head = (m.name || 'รูปประกอบโจทย์').trim();
+  if (m.topic) head += ' — ' + m.topic;
+  const tags = ['#สื่อการสอน', '#' + String(SUBJECTS[m.subject] || 'วิทยาศาสตร์').replace(/\s+/g, '')];
+  (m.tags || []).slice(0, 5).forEach(function (t) {
+    const w = String(t).trim().replace(/\s+/g, '');
+    if (w) tags.push('#' + w);
+  });
+  return head + '\n\nวาดด้วยห้องวาดรูปโจทย์ (FigureLab)\n' + tags.join(' ');
+}
+function shareFile() {
+  if (!shareBlob || !window.File) return null;
+  try { return new File([shareBlob], fname('png'), { type: 'image/png' }); }
+  catch (e) { return null; }
+}
+function canShareFile() {
+  const f = shareFile();
+  return !!(f && navigator.canShare && navigator.share && navigator.canShare({ files: [f] }));
+}
+function shareBtn(k, label, cls, dis) {
+  return '<button class="btn ' + (cls || '') + '" data-sh="' + k + '"' +
+    (dis ? ' disabled' : '') + '>' + label + '</button>';
+}
+function renderShareActions(ready) {
+  let h = '';
+  if (ready && canShareFile()) {
+    h += shareBtn('native', '📱 แชร์ผ่านเมนูของเครื่อง', 'pri');
+  }
+  h += shareBtn('fb', '📘 เปิดเฟซบุ๊กแล้ววางรูป', ready && canShareFile() ? '' : 'pri', !ready);
+  h += shareBtn('copyimg', '🖼️ คัดลอกรูปไว้ในคลิปบอร์ด', '', !ready);
+  h += shareBtn('dl', '⤓ ดาวน์โหลดรูป PNG', '', !ready);
+  h += shareBtn('text', '📋 คัดลอกข้อความโพสต์', '');
+  h += '<div style="height:6px"></div>';
+  h += shareBtn('fblink', '🔗 แชร์ลิงก์ห้องวาดรูปให้เพื่อนครู', 'sm');
+  if (!ready) h += '<div class="hint" style="text-align:center">กำลังเตรียมรูป…</div>';
+  $('#shActions').innerHTML = h;
+  $('#shHow').innerHTML = ready && canShareFile()
+    ? '<b>บนไอแพดหรือมือถือ</b> กด “แชร์ผ่านเมนูของเครื่อง” แล้วเลือกแอป Facebook ' +
+      'รูปกับข้อความจะติดไปด้วยเลย'
+    : '<b>บนคอมพิวเตอร์</b> เฟซบุ๊กไม่ยอมให้เว็บอื่นแนบรูปให้ จึงต้องวางเอง — ' +
+      'กด “เปิดเฟซบุ๊กแล้ววางรูป” แอปจะคัดลอกรูปไว้ให้ก่อน แล้วเปิดหน้าเฟซบุ๊กในแท็บใหม่ ' +
+      'จากนั้นคลิกช่องเขียนโพสต์แล้วกด <b>Ctrl+V</b> รูปจะเด้งเข้าไปทันที ' +
+      '(ถ้าเบราว์เซอร์ไม่ยอมให้คัดลอกรูป แอปจะดาวน์โหลดไฟล์ให้แทน แล้วค่อยกดแนบไฟล์เอง)';
+}
+function openShare() {
+  if (!doc.items.length) { toast('ยังไม่มีรูปในผืน วาดก่อนแล้วค่อยแชร์'); return; }
+  shareBlob = null;
+  $('#shPrev').innerHTML = '<svg viewBox="0 0 ' + doc.w + ' ' + doc.h +
+    '" width="400" height="270" preserveAspectRatio="xMidYMid meet">' +
+    sceneInner(doc, true, false) + '</svg>';
+  $('#shText').value = shareCaption();
+  renderShareActions(false);
+  $('#mShare').classList.add('on');
+  /* เตรียมไฟล์ไว้ล่วงหน้าตั้งแต่เปิดกล่อง เพราะตอนกดปุ่มต้องเรียก share/clipboard
+     ให้ทันในจังหวะเดียวกับการคลิก ไม่งั้นเบราว์เซอร์ถือว่าไม่ได้เกิดจากการกดของผู้ใช้แล้วบล็อกทิ้ง */
+  docToPng(doc, 2, function (b) {
+    shareBlob = b;
+    if ($('#mShare').classList.contains('on')) renderShareActions(!!b);
+    if (!b) toast('เตรียมรูปไม่สำเร็จ ลองปิดแล้วเปิดกล่องแชร์ใหม่', 3200);
+  });
+}
+function copyImage(quiet) {
+  if (!shareBlob) { toast('ยังเตรียมรูปไม่เสร็จ รออีกครู่แล้วกดใหม่'); return; }
+  const fallback = function (why) {
+    saveBlob(shareBlob, fname('png'));
+    toast(why + ' — ดาวน์โหลดไฟล์ให้แทนแล้ว ใช้ปุ่มแนบรูปในโพสต์ได้เลย', 4200);
+  };
+  if (window.ClipboardItem && navigator.clipboard && navigator.clipboard.write) {
+    navigator.clipboard.write([new ClipboardItem({ 'image/png': shareBlob })]).then(function () {
+      if (!quiet) toast('คัดลอกรูปแล้ว ไปกด Ctrl+V ในช่องเขียนโพสต์ได้เลย', 3600);
+    }, function () { fallback('เบราว์เซอร์ไม่ยอมให้คัดลอกรูป'); });
+  } else fallback('เบราว์เซอร์นี้คัดลอกรูปไม่ได้');
+}
+function doShare(k) {
+  const cap = String(($('#shText') || {}).value || '');
+  if (k === 'native') {
+    const f = shareFile();
+    if (!f || !navigator.share) { toast('เครื่องนี้ไม่มีเมนูแชร์ของระบบ'); return; }
+    navigator.share({ files: [f], text: cap, title: curMeta.name || 'รูปประกอบโจทย์' })
+      .then(function () {}, function () {});
+    return;
+  }
+  if (k === 'copyimg') { copyImage(); return; }
+  if (k === 'dl') {
+    if (!shareBlob) { toast('ยังเตรียมรูปไม่เสร็จ รออีกครู่แล้วกดใหม่'); return; }
+    saveBlob(shareBlob, fname('png')); toast('ดาวน์โหลดแล้ว');
+    return;
+  }
+  if (k === 'text') { copyText(cap, 'ข้อความโพสต์'); return; }
+  if (k === 'fb') {
+    copyImage(true);
+    window.open('https://www.facebook.com/', '_blank', 'noopener');
+    toast('เปิดเฟซบุ๊กแล้ว — คลิกช่องเขียนโพสต์ แล้วกด Ctrl+V เพื่อวางรูป', 5000);
+    return;
+  }
+  if (k === 'fblink') {
+    window.open('https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(publicUrl()),
+      '_blank', 'noopener,width=660,height=680');
+    return;
+  }
 }
 
 /* ============================================================================
@@ -3003,6 +3736,8 @@ function boot() {
   $('#bLib').addEventListener('click', openLib);
   $('#bSave').addEventListener('click', openSave);
   $('#bExport').addEventListener('click', function () { expMode = 'auto'; renderExport(); $('#mExp').classList.add('on'); });
+  $('#bShare').addEventListener('click', openShare);
+  $('#bHelp').addEventListener('click', openHelp);
   $('#bTheme').addEventListener('click', function () {
     ui.theme = ui.theme === 'dark' ? 'light' : 'dark';
     applyTheme(); saveUi(); render();
@@ -3034,21 +3769,7 @@ function boot() {
   });
   $('#insp').addEventListener('click', function (e) {
     const sym = e.target.closest('[data-sym]');
-    if (sym) {
-      const box = $('#pTxt');
-      const it = selItems()[0];
-      if (!box || !it) return;
-      const v = sym.dataset.sym;
-      const at = box.selectionStart == null ? box.value.length : box.selectionStart;
-      const to = box.selectionEnd == null ? at : box.selectionEnd;
-      box.value = box.value.slice(0, at) + v + box.value.slice(to);
-      it.s = box.value;
-      const pos = at + v.length;
-      box.focus();
-      try { box.setSelectionRange(pos, pos); } catch (e2) {}
-      render(); saveDraft();
-      return;
-    }
+    if (sym) { insertSym(sym.dataset.sym, true); return; }
     const b = e.target.closest('[data-act]');
     if (b) doAct(b.dataset.act, b.dataset.v);
   });
@@ -3081,7 +3802,14 @@ function boot() {
       ssub.classList.add('on'); return;
     }
     const psub = t.closest('#partSub button');
-    if (psub) { partFilter = psub.dataset.v; openParts(); return; }
+    if (psub) { partFilter = psub.dataset.v; renderParts(); return; }
+
+    const stab = t.closest('#symTabs button');
+    if (stab) { symTab = stab.dataset.v; $('#symQ').value = ''; renderSym(); return; }
+    const sbtn = t.closest('#symGrid [data-sym]');
+    if (sbtn) { insertSym(sbtn.dataset.sym, false); return; }
+    const sh = t.closest('[data-sh]');
+    if (sh) { doShare(sh.dataset.sh); return; }
     const part = t.closest('[data-part]');
     if (part) {
       const p = PARTS.filter(function (q) { return q.k === part.dataset.part; })[0];
@@ -3116,6 +3844,12 @@ function boot() {
     }
   });
   $('#libQ').addEventListener('input', renderLib);
+  $('#partQ').addEventListener('input', renderParts);
+  $('#symQ').addEventListener('input', renderSym);
+  /* กดปุ่มสัญลักษณ์ในกล่องเต็มแล้วต้องไม่ให้ช่องค้นหาเสียโฟกัส จะได้พิมพ์ค้นต่อได้ทันที */
+  $('#mSym').addEventListener('mousedown', function (e) {
+    if (e.target.closest('[data-sym]')) e.preventDefault();
+  });
   $('#svGo').addEventListener('click', function () { doSave(false); });
   $('#svNew').addEventListener('click', function () { doSave(true); });
   $('#triGo').addEventListener('click', buildTriangle);
