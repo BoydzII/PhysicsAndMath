@@ -1193,7 +1193,7 @@ table td,table th,.num,.xpstat b,.tick,
    *** ห้ามลบบรรทัดเครื่องหมาย @@BUILTIN@@ ทั้งสองอัน ตัวสร้างไฟล์ใช้หาตำแหน่ง ***
    ========================================================================== */
 /* @@BUILTIN@@ */
-const BUILTIN = {"url":"https://script.google.com/macros/s/AKfycbxVa8BYYQeIhBDmg85w2UBwsIqt6a2YudehUfCbyMny9T-5TTh1UfFxsJjTk9HLNuFc/exec","studentOnly":false,"lockCloud":false,"logo":"","header":null,"about":null,"build":"2026-09-10 20:51","ver":"v8.103"};
+const BUILTIN = {"url":"https://script.google.com/macros/s/AKfycbxVa8BYYQeIhBDmg85w2UBwsIqt6a2YudehUfCbyMny9T-5TTh1UfFxsJjTk9HLNuFc/exec","studentOnly":false,"lockCloud":false,"logo":"","header":null,"about":null,"build":"2026-09-10 20:57","ver":"v8.104"};
 /* @@BUILTIN-END@@ */
 
 /* ถ่ายภาพซอร์สของหน้านี้ไว้ตั้งแต่สคริปต์เพิ่งเริ่มทำงาน
@@ -2100,7 +2100,9 @@ async function api(action, params, opt) {
   const timer = setTimeout(() => ctl.abort(), o.timeout || SLOW[action] || 30000);
   let res;
   try {
-    res = await fetch(DB.cloud.url, {
+    // ปกติยิงไปชีตของวิชานี้ ส่วน opt.url ใช้ตอนต้องสั่งงานชีตใบอื่น
+    // (เช่นตั้งรหัสให้ตรงกันทุกใบ) ซึ่งต้องใช้โทเคนของใบนั้นมาด้วย
+    res = await fetch(o.url || DB.cloud.url, {
       method: 'POST',
       // ต้องเป็น text/plain เท่านั้น ถ้าใช้ application/json เบราว์เซอร์จะยิง preflight
       // ซึ่ง Apps Script ตอบไม่ได้ แล้วจะเจอ CORS error ทันที
@@ -2481,8 +2483,15 @@ function forceChangePass(optional) {
           if (a !== b) { msg.innerHTML = '<div class="notice bad">รหัสสองช่องไม่ตรงกัน</div>'; return; }
           try {
             // ครูผู้สอนเปลี่ยนรหัสของตัวเองผ่านคำสั่งของฝั่งผู้ดูแล ไม่ใช่ของนักเรียน
-            await api(isSubAdmin() ? 'adminPass' : 'changePass', { newPass: a });
-            close(); toast('เปลี่ยนรหัสผ่านเรียบร้อย', 'ok');
+            const act = isSubAdmin() ? 'adminPass' : 'changePass';
+            await api(act, { newPass: a });
+            // ตั้งให้ตรงกันทุกชีตในคราวเดียว ไม่งั้นวิชาที่อยู่คนละชีตจะเข้าไม่ได้
+            const syn = await passSyncOthers(act, a);
+            close();
+            toast('เปลี่ยนรหัสผ่านเรียบร้อย' +
+              (syn.done ? ' · ตั้งให้ตรงกันอีก ' + syn.done + ' ชีต' : '') +
+              (syn.fail ? ' · อีก ' + syn.fail + ' ชีตยังไม่สำเร็จ' : ''),
+              syn.fail ? 'warn' : 'ok');
           } catch (e) {
             msg.innerHTML = '<div class="notice bad">' + esc(e.message) + '</div>';
           }
@@ -2490,6 +2499,30 @@ function forceChangePass(optional) {
     ])
   });
   if (!optional) { const x = $('.x', m.root); if (x) x.remove(); }
+}
+
+/** ตั้งรหัสใหม่ให้ตรงกันทุกชีต
+    ชีตแต่ละใบเก็บรหัสแยกกัน และก็อปแฮชข้ามใบไม่ได้เพราะกุญแจของแต่ละใบไม่เหมือนกัน
+    จึงต้องสั่งเปลี่ยนทีละใบด้วยโทเคนของใบนั้น ซึ่งพอร์ทัลเก็บไว้ให้ตอนลงชื่อเข้าใช้
+    ทำแบบ "เท่าที่ทำได้" — ใบไหนไม่มีชื่อนักเรียนคนนี้ถือว่าข้าม ไม่ใช่ล้มเหลว
+    และไม่ว่าจะพลาดใบไหน ก็ไม่ขวางการเปลี่ยนรหัสของวิชานี้ที่สำเร็จไปแล้ว */
+async function passSyncOthers(action, newPass) {
+  let s = null;
+  try { s = JSON.parse(localStorage.getItem('pcportal.v1') || 'null'); } catch (e) { s = null; }
+  const out = { done: 0, skip: 0, fail: 0 };
+  if (!s || !s.tokens || !s.exp || s.exp < Date.now()) return out;
+  const mine = DB.cloud.url;
+  const urls = Object.keys(s.tokens).filter(u => u && u !== mine && s.tokens[u]);
+  for (let i = 0; i < urls.length; i++) {
+    try {
+      await api(action, { newPass: newPass, token: s.tokens[urls[i]] },
+                { url: urls[i], noToken: true });
+      out.done++;
+    } catch (e) {
+      if (/ไม่พบ/.test(e.message || '')) out.skip++; else out.fail++;
+    }
+  }
+  return out;
 }
 
 async function doLogout() {
