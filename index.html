@@ -214,6 +214,7 @@ footer b{font-weight:700;color:var(--ink)}
   </div>
 
   <div class="lead" style="margin:0 4px 4px">เลือกวิชาที่ต้องการ — ไม่ต้องลงชื่อเข้าใช้ซ้ำอีก</div>
+  <div class="msg" id="pickMsg" style="margin-top:0"></div>
   <!-- การ์ดวิชาวาดด้วยสคริปต์จากอาเรย์ SUBJECTS จะได้ไม่ต้องแก้สองที่เวลาเพิ่มวิชา -->
   <div class="cards" id="cards"></div>
 
@@ -249,14 +250,34 @@ footer b{font-weight:700;color:var(--ink)}
 /* เลขรุ่นกับวันเวลาที่สร้างไฟล์ — tools/build-dist.mjs ประทับให้ตอนขึ้นเว็บ
    *** ห้ามลบบรรทัดเครื่องหมาย @@VER@@ ทั้งสองอัน ตัวสร้างไฟล์ใช้หาตำแหน่ง *** */
 /* @@VER@@ */
-const APP_VER = "v8.100", BUILD_AT = "2026-09-10 19:45";
+const APP_VER = "v8.102", BUILD_AT = "2026-09-10 20:03";
 /* @@VER-END@@ */
 
 /* ---- ค่าที่ต้องตั้ง ------------------------------------------------------ */
 
-/* ที่อยู่เว็บแอปของ Google Apps Script (ตัวเดียวกับที่แอพฟิสิกส์ใช้)
-   ถ้าดีพลอยใหม่แล้วที่อยู่เปลี่ยน ต้องมาแก้ตรงนี้ด้วย */
-const APPS_URL = 'https://script.google.com/macros/s/AKfycbxVa8BYYQeIhBDmg85w2UBwsIqt6a2YudehUfCbyMny9T-5TTh1UfFxsJjTk9HLNuFc/exec';
+/* ────────────────────────────────────────────────────────────────────────────
+   ที่อยู่เว็บแอปของชีตทุกใบในระบบ
+   ────────────────────────────────────────────────────────────────────────────
+   นักเรียนคนเดียวกันมีชื่ออยู่ในทุกใบ แต่ "รหัสผ่านของแต่ละใบเก็บแยกกัน"
+   และโทเคนที่ออกจากใบหนึ่งใช้กับอีกใบไม่ได้ เพราะคนละกุญแจ
+
+   ของเดิมพอร์ทัลลงชื่อกับใบเดียว จึงเกิดสองอาการ
+     1) เข้าพอร์ทัลแล้วยังต้องกรอกรหัสอีกรอบ เมื่อกดเข้าวิชาที่อยู่คนละใบ
+     2) ถ้ารหัสสองใบไม่ตรงกัน จะเข้าพอร์ทัลได้แต่เข้าวิชานั้นไม่ได้
+        และข้อความที่เห็นคือ "รหัสผิด" ซึ่งชี้ไปผิดทางทั้งครูและนักเรียน
+   ตอนนี้ลงชื่อกับทุกใบพร้อมกันในครั้งเดียว เก็บโทเคนแยกตามชีต
+   และถ้าใบไหนปฏิเสธเพราะรหัสไม่ตรง จะบอกให้รู้ทันทีว่าใบไหน
+
+   เพิ่มชีตใหม่ในอนาคต: เติมหนึ่งบรรทัดที่นี่ ที่อื่นไม่ต้องแก้
+   ──────────────────────────────────────────────────────────────────────────── */
+const BOOKS = [
+  { url: 'https://script.google.com/macros/s/AKfycbxVa8BYYQeIhBDmg85w2UBwsIqt6a2YudehUfCbyMny9T-5TTh1UfFxsJjTk9HLNuFc/exec', name: 'ชีตวิทยาศาสตร์กายภาพ' },
+  { url: 'https://script.google.com/macros/s/AKfycbzuuRbnE_oB7a9vx7zZizyPVEKao31ERDTU82DvydMuRTDqVoQvgns9EsjTIzpbBjuM/exec', name: 'ชีตฟิสิกส์' }
+];
+/* ใบหลัก = ใบแรกในรายการ ใช้กับวิชาที่ยังไม่มีชีตของตัวเอง (คณิต วิทย์ ชีวะ เคมี)
+   ห้ามสลับใบแรกโดยไม่ย้ายข้อมูล เพราะวิชากลุ่มนั้นอ่านที่อยู่จากใบหลัก
+   ถ้าใบหลักเปลี่ยน ของที่เคยเขียนไว้ในใบเดิมจะกลายเป็นมองไม่เห็นทันที */
+const APPS_URL = BOOKS[0].url;
 
 /* อีเมลของครู เก็บเป็นค่าแฮช SHA-256 ไม่ใช่อีเมลตรง ๆ
    จะได้ไม่ถูกบอตกวาดอีเมลไปจากหน้าเว็บสาธารณะ
@@ -401,12 +422,12 @@ window.hashEmail = hashEmail;         // เผื่อครูอยากห
 
 /** ยิงคำสั่งไปที่ Apps Script — ต้องส่งเป็น text/plain ไม่งั้นเบราว์เซอร์จะยิง
     preflight ก่อน ซึ่ง Apps Script ตอบไม่ได้ แล้วจะติด CORS ทันที */
-async function api(action, params) {
+async function api(action, params, url) {
   const ctl = new AbortController();
   const timer = setTimeout(() => ctl.abort(), 30000);
   let res;
   try {
-    res = await fetch(APPS_URL, {
+    res = await fetch(url || APPS_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify(Object.assign({ action: action }, params || {})),
@@ -455,8 +476,12 @@ function readSession() {
   if (!s || s.v !== 1 || !s.exp || s.exp < Date.now()) return null;
   return s;
 }
-function writeSession(role, token, profile) {
-  const s = { v: 1, url: APPS_URL, role: role, token: token, profile: profile || null,
+/** เก็บการลงชื่อเข้าใช้ไว้ให้แอปทุกวิชาอ่านต่อ
+    tokens เก็บโทเคนแยกตามชีต ส่วน url/token คีย์เดิมยังเขียนไว้ด้วย
+    เพราะเครื่องที่ยังค้างแอปไฟล์เก่าอ่านแค่สองคีย์นั้น ถ้าตัดออกจะลงชื่อซ้ำทุกครั้ง */
+function writeSession(role, token, profile, tokens, url) {
+  const s = { v: 1, url: url || APPS_URL, role: role, token: token, profile: profile || null,
+              tokens: tokens || null,
               exp: Date.now() + SESSION_HOURS * 3600 * 1000 };
   try { localStorage.setItem(SESSION_KEY, JSON.stringify(s)); } catch (e) {}
   return s;
@@ -467,6 +492,27 @@ function say(text, kind) {
   const el = $('#msg');
   el.textContent = text || '';
   el.className = 'msg' + (text ? ' ' + (kind || 'bad') : '');
+}
+
+/** ลงชื่อกับชีตทุกใบพร้อมกัน แล้วคืนผลของทุกใบให้ผู้เรียกตัดสินใจ
+    ยิงขนานกัน เวลารวมจึงเท่ากับใบที่ช้าที่สุด ไม่ใช่ผลรวมของทุกใบ */
+async function loginAll(action, params) {
+  return Promise.all(BOOKS.map(async function (bk) {
+    try { return { bk: bk, data: await api(action, params, bk.url) }; }
+    catch (e) { return { bk: bk, err: e.message || String(e) }; }
+  }));
+}
+/** ใบนี้ปฏิเสธเพราะ "รหัสไม่ตรง" หรือเพราะ "ไม่มีชื่อในใบนี้"
+    สองอย่างนี้ต้องแยกกัน — ไม่มีชื่อในใบนั้นเป็นเรื่องปกติ ไม่ต้องเตือน
+    แต่รหัสไม่ตรงคือสิ่งที่ครูต้องรู้ เพราะเด็กจะเข้าวิชานั้นไม่ได้ */
+function isPassMismatch(err) { return /รหัสผ่านไม่ถูกต้อง/.test(String(err || '')); }
+
+/** คำเตือนบนหน้าเลือกวิชา — #msg อยู่ในกล่องลงชื่อที่ถูกซ่อนไปแล้ว จึงใช้ที่นี่ */
+function sayPick(text) {
+  const el = $('#pickMsg');
+  if (!el) return;
+  el.innerHTML = text || '';
+  el.className = 'msg' + (text ? ' bad' : '');
 }
 
 /* ---- สลับหน้า ------------------------------------------------------------ */
@@ -546,21 +592,38 @@ async function submit() {
     if (mode === 'student') {
       const sid = String($('#sid').value || '').replace(/\D/g, '').slice(0, 5);
       if (!sid) throw new Error('กรอกเลขประจำตัวเป็นตัวเลข ไม่เกิน 5 หลัก');
-      const r = await api('login', { sid: sid, pass: $('#spass').value || '' });
-      if (r.profile && r.profile.cls) r.profile.cls = normCls(r.profile.cls);
-      showPicker(writeSession('student', r.token, r.profile));
+      const rs = await loginAll('login', { sid: sid, pass: $('#spass').value || '' });
+      const good = rs.filter(x => x.data);
+      if (!good.length) {
+        /* ไม่มีใบไหนผ่าน — ข้อความที่มีประโยชน์ที่สุดคือใบที่บอกว่ารหัสผิด
+           ถ้าไม่มีใบไหนบอกอย่างนั้น ค่อยใช้ข้อความของใบแรก */
+        const pw = rs.find(x => isPassMismatch(x.err));
+        throw new Error((pw || rs[0]).err);
+      }
+      const tokens = {};
+      good.forEach(x => { tokens[x.bk.url] = x.data.token; });
+      const first = good[0], prof = first.data.profile || {};
+      if (prof.cls) prof.cls = normCls(prof.cls);
+      showPicker(writeSession('student', first.data.token, prof, tokens, first.bk.url));
+      warnMismatch(rs, 'นักเรียน');
     } else {
       const u = String($('#tuser') ? $('#tuser').value : '').trim();
       const p = $('#tpass').value || '';
       if (!p) throw new Error('กรอกรหัสผ่านก่อน');
-      const r = await api('adminLogin', { user: u, pass: p });
-      const isSub = r.role === 'sub';
+      // บัญชีครูก็เก็บแยกใบเหมือนกัน จึงต้องลงชื่อกับทุกใบเช่นเดียวกับนักเรียน
+      const rs = await loginAll('adminLogin', { user: u, pass: p });
+      const good = rs.filter(x => x.data);
+      if (!good.length) throw new Error((rs.find(x => isPassMismatch(x.err)) || rs[0]).err);
+      const tokens = {};
+      good.forEach(x => { tokens[x.bk.url] = x.data.token; });
+      const first = good[0], r = first.data, isSub = r.role === 'sub';
       showPicker(writeSession('admin', r.token, {
         name: isSub ? (r.name || 'ครูผู้สอน') : 'ผู้ดูแลหลัก',
         sub: isSub ? (r.user || u) : '',
         classes: r.classes || null,
         subjects: r.subjects || null
-      }));
+      }, tokens, first.bk.url));
+      warnMismatch(rs, 'ครู');
     }
   } catch (e) {
     say(e.message || String(e), 'bad');
@@ -569,6 +632,16 @@ async function submit() {
     btn.disabled = false; btn.textContent = 'เข้าใช้งาน';
   }
 }
+/** ใบที่ปฏิเสธเพราะรหัสไม่ตรง ต้องบอกตรงนี้เลย ไม่ใช่ปล่อยให้ไปเจอตอนกดเข้าวิชา
+    เพราะตอนนั้นจะเห็นแค่ "รหัสผิด" ซึ่งชี้ไปผิดทางทั้งครูและนักเรียน */
+function warnMismatch(rs, who) {
+  const bad = rs.filter(x => isPassMismatch(x.err));
+  if (!bad.length) { sayPick(''); return; }
+  sayPick('เข้าใช้ได้แล้ว แต่รหัสนี้ใช้กับ <b>' + bad.map(x => x.bk.name).join(' และ ') +
+    '</b> ไม่ได้ — วิชาที่อยู่บนชีตนั้นจะขอรหัสอีกครั้ง<br>' +
+    'ให้แจ้งครูผู้สอนให้ตั้งรหัสของสองชีตให้ตรงกัน (รหัสของแต่ละชีตเก็บแยกกัน)');
+}
+
 $('#go').addEventListener('click', submit);
 ['sid', 'spass', 'tuser', 'tpass'].forEach(id => {
   const el = $('#' + id);
@@ -597,6 +670,7 @@ if (bv) {
 
 $('#out').addEventListener('click', () => {
   clearSession();
+  sayPick('');
   ['sid', 'spass', 'tuser', 'tpass'].forEach(id => {
     const el = $('#' + id);
     if (el) el.value = '';

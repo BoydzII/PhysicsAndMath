@@ -887,7 +887,7 @@ input.numin.bad{border-color:var(--bad);background:var(--bad-bg)}
    *** ห้ามลบบรรทัดเครื่องหมาย @@BUILTIN@@ ทั้งสองอัน ตัวสร้างไฟล์ใช้หาตำแหน่ง ***
    ========================================================================== */
 /* @@BUILTIN@@ */
-const BUILTIN = {"url":"","studentOnly":false,"lockCloud":false,"logo":"","header":null,"about":null,"build":"2026-09-10 19:45","ver":"v8.100"};
+const BUILTIN = {"url":"","studentOnly":false,"lockCloud":false,"logo":"","header":null,"about":null,"build":"2026-09-10 20:03","ver":"v8.102"};
 /* @@BUILTIN-END@@ */
 
 /* ถ่ายภาพซอร์สของหน้านี้ไว้ตั้งแต่สคริปต์เพิ่งเริ่มทำงาน
@@ -12033,7 +12033,14 @@ function xpCardHTML() {
     '</div>' +
     '<div class="hint" style="margin-top:8px">' +
       'แต้มจากงานของครู <b>' + p.fromWork + '</b> · เข้าใช้ <b>' + p.fromLogin + '</b> · ฝึกเอง <b>' + p.fromPractice + '</b>' +
+      /* แต้มจากเวลาที่อยู่กับบทเรียน โผล่เฉพาะเมื่อชีตรุ่นที่รองรับตอบค่ามาให้
+         ชีตรุ่นเก่าไม่มีคีย์นี้ ถ้าโชว์ไปด้วยจะเห็นเลขศูนย์ค้างโดยไม่มีทางได้เพิ่ม */
+      (p.fromFocus == null ? '' :
+        ' · เวลาเรียนในคาบ <b>' + p.fromFocus + '</b>' +
+        (p.focusMin ? ' (' + p.focusMin + ' นาที)' : '')) +
       '<br>ทำใบงานหรือข้อสอบที่ครูส่งให้ ได้แต้มมากที่สุด' +
+      (p.fromFocus == null ? '' :
+        ' · กด<b>เริ่มช่วงเรียน</b>ตอนครูสอน ได้ 5 แต้มทุก 10 นาทีที่อยู่กับบทเรียน') +
     '</div></div>';
 }
 
@@ -12890,6 +12897,9 @@ async function focusSend(s, loud) {
       device: s.device || '', events: s.events || [] } });
     s.sent = true;
     save(true);
+    /* แต้มจากเวลาเรียนคิดจากแผ่นช่วงเรียนที่ชีต พอส่งขึ้นไปแล้วต้องโหลดโปรไฟล์ใหม่
+       ไม่งั้นนักเรียนต้องรีเฟรชหน้าเองถึงจะเห็นแต้มที่เพิ่งได้ (และเลเวลที่เพิ่งขึ้น) */
+    if (loud) { try { await xpLoad(true); renderMake(); } catch (e) {} }
     if (loud) {
       toast(r && r.skipped ? 'ช่วงเรียนสั้นเกินไป ไม่ได้บันทึกขึ้นชีต'
                            : 'ส่งช่วงเรียน ' + focusMin(s.focusSec) + ' ขึ้นชีตแล้ว', 'ok');

@@ -27,6 +27,8 @@
  *   ครูดูสรุปรายห้องได้ที่แท็บสถิติชั้นเรียน
  *   คำสั่งใหม่สามตัว: focusSave (นักเรียนบันทึก) · focusMine (นักเรียนดูของตัวเอง)
  *   focusReport (ครูดูรายห้อง)
+ *   และเวลาที่อยู่กับบทเรียนให้แต้มเลเวลด้วย — ช่วงละสิบนาทีได้ห้าแต้ม
+ *   จำกัดสองชั่วโมงต่อวัน คิดสดจากแผ่น focus จึงไม่ต้องเพิ่มคอลัมน์ใด ๆ
  *   แผ่นใหม่ถูกสร้างให้เองตอนใช้งานครั้งแรก และปุ่ม "ซ่อมโครงสร้างชีต"
  *   เติมหัวตารางให้ด้วย ข้อมูลเดิมไม่ต้องแก้อะไรเลย
  *
@@ -287,6 +289,8 @@ function dropCache_(name) {
   delete _cacheAll[name];
   // แต้มจากงานคิดจากแผ่นส่งคำตอบล้วน ๆ พอมีการส่งเพิ่มก็ต้องคิดใหม่
   if (name === 'submissions') _xpWork = null;
+  // แต้มจากเวลาเรียนคิดจากแผ่นช่วงเรียนล้วน ๆ พอมีการบันทึกเพิ่มก็ต้องคิดใหม่
+  if (name === 'focus') _xpFocus = null;
 }
 
 /* ── อ่านเฉพาะคอลัมน์ที่ต้องใช้ ────────────────────────────────────────────
@@ -687,7 +691,7 @@ function repairSheets_() {
       r.addedHeader = !hasHeader;
       report[n] = r;
     });
-    _sheets = {}; _cacheAll = {}; _sidCol = null; _xpWork = null;
+    _sheets = {}; _cacheAll = {}; _sidCol = null; _xpWork = null; _xpFocus = null;
     return report;
   } finally { lock.releaseLock(); }
 }
@@ -1672,6 +1676,13 @@ var XP_STREAK_MAX = 20;
 var XP_PRACTICE = 20;
 var XP_PRACTICE_MIN = 5;
 var XP_ASSIGN = 100;
+/* แต้มจากเวลาที่อยู่กับบทเรียน (ระบบเรียนรู้ไปพร้อมกัน)
+   ให้เป็นช่วงละสิบนาที เศษไม่นับ เพื่อไม่ให้เปิดแอปทิ้งไว้แล้วได้แต้มทีละวินาที
+   และจำกัดต่อวัน เพราะวันหนึ่งเรียนวิชานี้ได้ไม่กี่คาบ ถ้าไม่จำกัดจะกลายเป็น
+   แข่งกันเปิดแอปทิ้งไว้ ซึ่งตรงข้ามกับสิ่งที่ระบบนี้อยากได้ */
+var XP_FOCUS_PER = 5;         /* แต้มต่อหนึ่งช่วง */
+var XP_FOCUS_STEP = 10;       /* หนึ่งช่วงคือสิบนาที */
+var XP_FOCUS_DAY_CAP = 120;   /* นับได้ไม่เกินสองชั่วโมงต่อวัน */
 var LEVEL_MAX = 99;
 
 /** แต้มสะสมที่ต้องมีเพื่ออยู่ที่เลเวลนั้น — เลเวล 99 ราวหมื่นสองพันแต้ม
@@ -1715,6 +1726,40 @@ function xpWorkAll_() {
   _xpWork = out;
   return out;
 }
+/** แต้มจากเวลาที่อยู่กับบทเรียน ของ "ทุกคน" ในรอบเดียว
+    ไล่แผ่นช่วงเรียนครั้งเดียวแล้วแจกให้ทุกคน เหมือนที่ทำกับแต้มจากงาน
+    (ถ้าไล่ทีละคนจะอ่านแผ่นเดิมซ้ำเท่าจำนวนนักเรียน ซึ่งทำให้ชีตค้าง) */
+var _xpFocus = null;
+function xpFocusAll_() {
+  if (_xpFocus) return _xpFocus;
+  var byDay = {};
+  readAll_('focus').forEach(function (r) {
+    var k = sidKey_(r.sid);
+    if (!k) return;
+    var at = Number(r.startAt) || 0, sec = Number(r.focusSec) || 0;
+    if (!at || sec <= 0) return;
+    var d = Utilities.formatDate(new Date(at), 'Asia/Bangkok', 'yyyy-MM-dd');
+    if (!byDay[k]) byDay[k] = {};
+    byDay[k][d] = (byDay[k][d] || 0) + sec / 60;
+  });
+  var out = {};
+  Object.keys(byDay).forEach(function (k) {
+    var mins = 0, days = 0, raw = 0;
+    Object.keys(byDay[k]).forEach(function (d) {
+      raw += byDay[k][d];
+      mins += Math.min(XP_FOCUS_DAY_CAP, byDay[k][d]);   /* ตัดเพดานทีละวัน */
+      days++;
+    });
+    out[k] = { xp: Math.floor(mins / XP_FOCUS_STEP) * XP_FOCUS_PER,
+               min: Math.round(raw), days: days };
+  });
+  _xpFocus = out;
+  return out;
+}
+function xpFromFocus_(sid) {
+  return xpFocusAll_()[sidKey_(sid)] || { xp: 0, min: 0, days: 0 };
+}
+
 function xpFromWork_(sid) {
   return xpWorkAll_()[sidKey_(sid)] || { xp: 0, works: 0 };
 }
@@ -1743,13 +1788,15 @@ function xpProfile_(row, giveDaily) {
   }
 
   var work = xpFromWork_(get(C_SID));
-  var xp = xpLogin + xpPrac + work.xp;
+  var foc = xpFromFocus_(get(C_SID));
+  var xp = xpLogin + xpPrac + work.xp + foc.xp;
   var lv = levelOfXp_(xp);
   return {
     xp: xp, level: lv, gained: gained, days: days, works: work.works,
     nextAt: lv >= LEVEL_MAX ? null : xpForLevel_(lv + 1),
     thisAt: xpForLevel_(lv),
     fromLogin: xpLogin, fromPractice: xpPrac, fromWork: work.xp,
+    fromFocus: foc.xp, focusMin: foc.min, focusDays: foc.days,
     alias: String(get(C_ALIAS) || ''), avatar: String(get(C_AVATAR) || ''),
     gear: String(get(C_GEAR) || ''), showName: String(get(C_SHOW)) !== 'false',
     canAlias: lv >= 5, name: String(get(C_NAME) || ''), cls: normCls_(get(C_CLS))
@@ -1820,7 +1867,7 @@ function apiXpBoard_(req) {
   // ครูผู้สอนเห็นได้เฉพาะชั้นที่ตัวเองดูแล แม้จะขอดู "ทั้งโรงเรียน"
   // นักเรียนไม่ถูกจำกัด เพราะอันดับเป็นของทั้งโรงเรียนอยู่แล้วโดยตั้งใจ
   var sc = t.role === 'student' ? null : scopeOf_(t);
-  var work = xpWorkAll_();
+  var work = xpWorkAll_(), foc = xpFocusAll_();
   /* ชั้นทดสอบต้องไม่ไปโผล่ในอันดับ ไม่งั้นบัญชีทดสอบที่ส่งงานซ้ำ ๆ
      จะขึ้นอันดับหนึ่งของโรงเรียน ซึ่งทั้งผิดและทำให้เด็กเสียกำลังใจ */
   var skipCls = normCls_(SAMPLE_CLS);
@@ -1829,9 +1876,10 @@ function apiXpBoard_(req) {
            normCls_(st.cls) !== skipCls;
   }).map(function (st) {
     var w = work[sidKey_(st.sid)] || { xp: 0, works: 0 };
-    var xp = (Number(st.xpLogin) || 0) + (Number(st.xpPrac) || 0) + w.xp;
+    var fc = foc[sidKey_(st.sid)] || { xp: 0, min: 0 };
+    var xp = (Number(st.xpLogin) || 0) + (Number(st.xpPrac) || 0) + w.xp + fc.xp;
     return { sid: sidKey_(st.sid), cls: normCls_(st.cls), xp: xp, level: levelOfXp_(xp),
-             works: w.works, days: Number(st.xpDays) || 0,
+             works: w.works, focusMin: fc.min, days: Number(st.xpDays) || 0,
              name: xpShownName_(st), avatar: String(st.avatar || ''), gear: String(st.gear || '') };
   });
 
@@ -1851,7 +1899,8 @@ function apiXpBoard_(req) {
   var top = [], meRow = null;
   list.forEach(function (r, i) {
     var row = { rank: i + 1, name: r.name, cls: r.cls, level: r.level, xp: r.xp,
-                works: r.works, days: r.days, avatar: r.avatar, gear: r.gear,
+                works: r.works, focusMin: r.focusMin, days: r.days,
+                avatar: r.avatar, gear: r.gear,
                 me: !!(meSid && r.sid === meSid) };
     if (i < 10) top.push(row);
     if (row.me) meRow = row;
