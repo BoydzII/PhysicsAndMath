@@ -707,6 +707,30 @@ input.numin.bad{border-color:var(--bad);background:var(--bad-bg)}
 .fxbtn{margin:6px 0 0 2px;font-size:12.5px;padding:3px 10px;min-height:30px;
   border-radius:7px;background:transparent;color:var(--muted)}
 @media (hover:hover){.fxbtn:hover{color:var(--brand);border-color:var(--brand)}}
+/* แถบเปิดหัวข้อย่อย — อยู่ใต้ชื่อบท กดแล้วรายการของบทนั้นค่อยกางออก
+   ด้านขวาบอกไว้ว่าเลือกไว้กี่หัวข้อ จะได้ไม่ต้องกางเพื่อดูว่าค้างอะไรไว้ */
+.subtog{display:flex;align-items:center;gap:9px;width:100%;margin:7px 0 0;
+  justify-content:flex-start;white-space:normal;text-align:left;
+  font-size:13px;font-weight:700;padding:6px 11px;border-radius:8px;
+  background:var(--panel2);color:var(--muted)}
+.subtog .n{margin-left:auto;font-weight:500;font-size:12.5px}
+@media (hover:hover){.subtog:hover{color:var(--brand);border-color:var(--brand)}}
+
+/* ปุ่ม ! บนหัวการ์ด — เปิดคำอธิบายความหมายของสีและป้าย */
+.ibtn{width:23px;height:23px;min-height:23px;padding:0;border-radius:50%;flex:0 0 auto;
+  font-weight:800;font-size:13px;line-height:1;
+  color:var(--brand);border-color:var(--brand);background:transparent}
+@media (hover:hover){.ibtn:hover{background:var(--brand);color:var(--brand-ink)}}
+/* ป้ายจำนวนข้อในคอลัมน์ระดับ — ไม่มีคำกำกับแล้ว จึงต้องกว้างเท่ากันทุกใบ
+   ไม่งั้นเลขหลักเดียวกับสองหลักทำให้แถวขยับไปมาจนอ่านยาก */
+.tag.lvn{min-width:32px;justify-content:center;padding:2px 7px;
+  font-variant-numeric:tabular-nums}
+.lgdh{font-weight:700;font-size:14.5px;margin:15px 0 6px}
+.lgd>.lgdh:first-child{margin-top:0}
+.lgdrow{display:flex;gap:10px;align-items:flex-start;padding:4px 0;font-size:13.5px;line-height:1.6}
+.lgdrow>span:last-child{flex:1 1 auto}
+.lgdbdg{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;
+  width:20px;height:20px;border-radius:50%;color:#fff;font-weight:bold;font-size:12px}
 
 /* ---------- ปุ่มชุดลัด ---------- */
 .presetbtn{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;
@@ -1027,7 +1051,7 @@ html[data-theme-style="minimal"] .btn-tool.active {
    *** ห้ามลบบรรทัดเครื่องหมาย @@BUILTIN@@ ทั้งสองอัน ตัวสร้างไฟล์ใช้หาตำแหน่ง ***
    ========================================================================== */
 /* @@BUILTIN@@ */
-const BUILTIN = {"url":"https://script.google.com/macros/s/AKfycbxVa8BYYQeIhBDmg85w2UBwsIqt6a2YudehUfCbyMny9T-5TTh1UfFxsJjTk9HLNuFc/exec","studentOnly":false,"lockCloud":true,"logo":"","header":null,"about":null,"build":"2026-09-10 14:10"};
+const BUILTIN = {"url":"https://script.google.com/macros/s/AKfycbxVa8BYYQeIhBDmg85w2UBwsIqt6a2YudehUfCbyMny9T-5TTh1UfFxsJjTk9HLNuFc/exec","studentOnly":false,"lockCloud":true,"logo":"","header":null,"about":null,"build":"2026-09-10 15:48"};
 /* @@BUILTIN-END@@ */
 
 /* ถ่ายภาพซอร์สของหน้านี้ไว้ตั้งแต่สคริปต์เพิ่งเริ่มทำงาน
@@ -2423,7 +2447,7 @@ function mInner(raw, box) {
   // แปลงรากและเศษส่วนสลับกันไปเรื่อย ๆ จนไม่มีอะไรเปลี่ยน
   // ทั้งสองแบบรับเฉพาะเนื้อในที่ไม่มีวงเล็บซ้อน การวนแบบนี้จึงแปลงชั้นในสุดก่อนเสมอ
   // ทำให้เขียนซ้อนกันได้ เช่น frac(-b ± sqrt(b^2 - 4ac),2a)
-  for (let k = 0; k < 12; k++) {
+  for (let k = 0; k < 26; k++) {
     const before = t;
     // รากที่ n เช่น sqrt3(27) และรากที่สอง sqrt(2)
     t = t.replace(/sqrt(\d*)\(([^()]*)\)/g, (m, n, a) =>
@@ -2440,7 +2464,13 @@ function mInner(raw, box) {
       stash('<span class="nuc"><span class="nnum"><span class="na">' + esc(a.trim()) +
             '</span><span class="nz">' + esc(z.trim()) + '</span></span>' +
             '<span class="nel">' + mInner(el, box) + '</span></span>'));
-    if (t === before) break;
+    /* regex ข้างบนรับเฉพาะเนื้อในที่ไม่มีวงเล็บ พอหมดทางแล้วให้ตัวอ่านแบบนับวงเล็บ
+       ลองต่ออีกชั้น จึงเขียน frac((m_1 - m_2) g, m_1 + m_2) ได้จริง */
+    if (t === before) {
+      const deep = mDeep(t, box, stash);
+      if (deep === t) break;
+      t = deep;
+    }
   }
   let h = esc(t);
   h = h.replace(/\^\{([^}]*)\}/g, (m, a) => '<sup>' + a + '</sup>')
@@ -2467,6 +2497,46 @@ function mInner(raw, box) {
   for (let k = 0; k < 20 && h.indexOf('\u0001') >= 0; k++)
     h = h.replace(/\u0001([\uE000-\uF8FF])\u0002/g, (m, c) => box[c.charCodeAt(0) - 0xE000]);
   return h;
+}
+/** ตัวสำรองอ่าน frac / sqrt / nuc ที่มีวงเล็บซ้อนอยู่ข้างใน
+    ตัวจับด้วย regex ข้างบนรับเฉพาะเนื้อในที่ไม่มีวงเล็บ สมการอย่าง
+    frac((m_1 - m_2) g, m_1 + m_2) จึงหลุดออกมาเป็นคำว่า frac ให้อ่าน
+    ที่ผ่านมาจึงต้องเลี่ยงไปเขียนด้วยเครื่องหมาย / ทั้งที่ควรเป็นเศษส่วนจริง
+    ตัวนี้หาวงเล็บปิดที่คู่กันจริงด้วยการนับความลึก แล้วตัดช่องที่จุลภาคชั้นนอกสุด
+    ถ้าจำนวนช่องไม่ตรงกับที่คำสั่งนั้นรับ ก็ปล่อยไว้เป็นข้อความเหมือนเดิม ไม่เดาแทน
+    แปลงทีละคำสั่ง แล้วให้ผู้เรียกวนซ้ำ ส่วนชั้นในลึกลงไปเรียกผ่าน mInner อยู่แล้ว */
+function mDeep(t, box, stash) {
+  const re = /(frac|sqrt\d*|nuc)\(/g;
+  let m;
+  while ((m = re.exec(t))) {
+    const open = m.index + m[0].length - 1;
+    let depth = 0, close = -1, start = open + 1;
+    const args = [];
+    for (let i = open; i < t.length; i++) {
+      const ch = t.charAt(i);
+      if (ch === '(') depth++;
+      else if (ch === ')') {
+        depth--;
+        if (!depth) { close = i; args.push(t.slice(start, i)); break; }
+      } else if (ch === ',' && depth === 1) { args.push(t.slice(start, i)); start = i + 1; }
+    }
+    if (close < 0) continue;                       // วงเล็บไม่ครบ ไม่ใช่คำสั่ง
+    const name = m[1];
+    let html = null;
+    if (name === 'frac' && args.length === 2)
+      html = '<span class="frac"><span class="fn">' + mInner(args[0], box) + '</span>' +
+             '<span class="fd">' + mInner(args[1], box) + '</span></span>';
+    else if (name.indexOf('sqrt') === 0 && args.length === 1)
+      html = '<span class="sqrt">' + (name.slice(4) ? '<span class="si">' + name.slice(4) + '</span>' : '') +
+             '<span class="sg">√</span><span class="sr">' + mInner(args[0], box) + '</span></span>';
+    else if (name === 'nuc' && args.length === 3)
+      html = '<span class="nuc"><span class="nnum"><span class="na">' + esc(args[0].trim()) +
+             '</span><span class="nz">' + esc(args[1].trim()) + '</span></span>' +
+             '<span class="nel">' + mInner(args[2], box) + '</span></span>';
+    if (html == null) continue;                    // จำนวนช่องไม่ตรง ปล่อยเป็นข้อความ
+    return t.slice(0, m.index) + stash(html) + t.slice(close + 1);
+  }
+  return t;
 }
 /** บรรทัดสมการแบบบล็อก */
 function EQ() {
@@ -8397,6 +8467,66 @@ function topicFoldSummary(c) {
          (names.length > 2 ? ' และอีก ' + (names.length - 2) : '');
 }
 
+/* หัวข้อย่อยเปิดทีละบท
+   ของเดิมกางหัวข้อย่อยของทุกบทที่ติ๊กไว้พร้อมกัน ติ๊กหลายบทแล้วรายการยาว
+   เป็นหน้าจอ กว่าจะเลื่อนไปถึงขั้นเลือกจำนวนข้อต้องผ่านหัวข้อย่อยหลายสิบบรรทัด
+   เปิดได้ครั้งละบทเดียว เพราะถ้าเปิดค้างหลายบทได้ ก็ยาวเหมือนเดิมทันที */
+const SUBOPEN_KEY = LS_KEY + '.subopen';
+function subOpenGet() {
+  try {
+    const v = localStorage.getItem(SUBOPEN_KEY);
+    return (v == null || v === '') ? null : Number(v);
+  } catch (e) { return null; }
+}
+function subOpen(id) { return subOpenGet() === Number(id); }
+function subOpenSet(id) {
+  try {
+    if (id == null) localStorage.removeItem(SUBOPEN_KEY);
+    else localStorage.setItem(SUBOPEN_KEY, String(id));
+  } catch (e) {}
+}
+
+/** ความหมายของสี ตัวเลข และป้ายในตารางชุดโจทย์
+    คอลัมน์ระดับเหลือแค่ตัวเลขกับสีเพื่อให้ตารางไม่กว้างเกินจอ
+    ความหมายจึงต้องหาได้ในที่เดียวที่แน่นอน ไม่ใช่ปล่อยให้เดาจากสี */
+const LEVEL_WHAT = {
+  'ทฤษฎี': 'ถามความเข้าใจ นิยาม และหลักการ ไม่ต้องคำนวณ',
+  'ง่าย': 'ใช้ความรู้ตรง ๆ ขั้นเดียว',
+  'ปานกลาง': 'ต้องสองขั้นตอน หรือแปลงหน่วยก่อน',
+  'ยาก': 'ผสมหลายเรื่อง ต้องวางแผนก่อนลงมือ'
+};
+function quizLegend() {
+  let h = '<div class="lgd"><div class="lgdh">คอลัมน์ระดับ — ตัวเลขคือจำนวนข้อ สีคือระดับความยาก</div>';
+  h += LEVELS.map(function (l) {
+    return '<div class="lgdrow"><span class="tag lvn ' + LEVEL_CLS[l] + '">7</span>' +
+      '<span><b>' + l + '</b> — ' + (LEVEL_WHAT[l] || '') + '</span></div>';
+  }).join('');
+  h += '<div class="hint" style="margin-top:7px">ค้างเมาส์หรือแตะค้างบนป้ายในตาราง ' +
+       'ก็บอกชื่อระดับเป็นคำเหมือนเดิม</div>';
+  h += '<div class="lgdh">ป้ายหน้าชื่อชุด — ชุดนี้มาจากไหน</div>' +
+    '<div class="lgdrow"><span class="lgdbdg" style="background:#0f8a53">T</span>' +
+    '<span><b>ชุดของครู</b> — ครูสร้างหรือมอบหมายมาให้</span></div>' +
+    '<div class="lgdrow"><span class="lgdbdg" style="background:#c62828">S</span>' +
+    '<span><b>นักเรียนสร้างเอง</b> — ฝึกเองบนเครื่องนี้ ไม่ได้มาจากรหัสใบงานของครู</span></div>';
+  h += '<div class="lgdh">ป้ายหลังชื่อชุด — ประเภทของชุด</div>' +
+    Object.keys(QUIZ_KINDS).map(function (k) {
+      return '<div class="lgdrow"><span class="tag ' + QUIZ_KINDS[k].cls + '">' +
+        QUIZ_KINDS[k].short + '</span><span><b>' + QUIZ_KINDS[k].name + '</b> — ' +
+        (k === 'test' ? 'ไม่มีเฉลยระหว่างทำ ไม่บอกถูกผิดจนกว่าจะส่ง'
+                      : 'ตรวจทีละข้อทันที เปิดดูวิธีทำได้') + '</span></div>';
+    }).join('') +
+    '<div class="lgdrow"><span class="tag t">กระดาษคำตอบ</span>' +
+    '<span>ชุดที่แอปเก็บแค่เฉลย ตัวโจทย์อยู่บนกระดาษหรือ PDF ของครู</span></div>' +
+    '<div class="lgdrow"><span><b>← ชุดปัจจุบัน</b></span>' +
+    '<span>ชุดที่กดปุ่ม<b>เริ่มทำ</b>ค้างไว้ล่าสุด แท็บทำแบบฝึกหัดจะเปิดชุดนี้</span></div>';
+  h += '</div>';
+  openModal({
+    title: 'ความหมายของสีและป้ายในตาราง',
+    bodyHTML: h,
+    buttons: [{ label: 'เข้าใจแล้ว', cls: 'primary' }]
+  });
+}
+
 function renderMake() {
   const c = mkCfg();
   const total = c.mode === 'mix' ? LEVELS.reduce((s, l) => s + (c.counts[l] || 0), 0) : c.n;
@@ -8430,12 +8560,21 @@ function renderMake() {
       '<span class="d">รวม ' + nTpl + ' แม่แบบ · ' + subs.length + ' หัวข้อย่อย</span></span></label>' +
       '<button class="fxbtn" data-fx="' + t.id + '" title="ดูสรุปสูตรของบทนี้">📘 สรุปสูตร</button>';
     if (on) {
-      h += '<div class="subgrid">' + subs.map(s => {
-        const son = c.subs.indexOf(s) >= 0;
-        return '<label class="subchk"><input type="checkbox" data-sub="' + esc(s) + '"' + (son ? ' checked' : '') +
-          '><span>' + esc(s) + '</span></label>';
-      }).join('') + '</div>' +
-        '<div class="hint" style="margin:4px 0 0 14px">ไม่ติ๊กหัวข้อย่อยเลย = ใช้ทุกหัวข้อในเรื่องนี้</div>';
+      // แถบนี้บอกไว้ด้วยว่าเลือกหัวข้อย่อยไว้กี่อัน จะได้ไม่ต้องกางเพื่อตรวจ
+      const nSel = subs.filter(s => c.subs.indexOf(s) >= 0).length;
+      const opened = subOpen(t.id);
+      h += '<button class="subtog" data-subtog="' + t.id + '">' +
+        (opened ? '▴ ซ่อนหัวข้อย่อย' : '▾ เลือกหัวข้อย่อย') +
+        '<span class="n">' + (nSel ? 'เลือกไว้ ' + nSel + '/' + subs.length
+                                   : 'ทุกหัวข้อ (' + subs.length + ')') + '</span></button>';
+      if (opened) {
+        h += '<div class="subgrid">' + subs.map(s => {
+          const son = c.subs.indexOf(s) >= 0;
+          return '<label class="subchk"><input type="checkbox" data-sub="' + esc(s) + '"' + (son ? ' checked' : '') +
+            '><span>' + esc(s) + '</span></label>';
+        }).join('') + '</div>' +
+          '<div class="hint" style="margin:4px 0 0 14px">ไม่ติ๊กหัวข้อย่อยเลย = ใช้ทุกหัวข้อในเรื่องนี้</div>';
+      }
     }
     h += '</div>';
   });
@@ -8560,7 +8699,8 @@ function renderMake() {
      แต่นักเรียนต้องเห็น เพราะการ์ดนั้นเป็นของครู นักเรียนที่รับกระดาษคำตอบมาด้วยรหัส
      จะกดเริ่มทำจากตารางนี้ที่เดียว ถ้ากรองออกด้วยจะไม่เหลือทางเข้าเลย */
   const gen = DB.quizzes.filter(q => isStudent() || !isPaper(q));
-  h += '<div class="card"><h3>ชุดโจทย์ที่สร้างไว้<span class="sub">' + gen.length + ' ชุด</span></h3>' +
+  h += '<div class="card"><h3>ชุดโจทย์ที่สร้างไว้<span class="sub">' + gen.length + ' ชุด</span>' +
+    '<button class="ibtn" id="btnQuizLegend" aria-label="ความหมายของสีและป้ายในตาราง" title="ความหมายของสี ตัวเลข และป้ายในตาราง">!</button></h3>' +
     '<div class="row" style="margin-bottom:11px"><button class="sm" id="btnPasteQuiz">รับใบงานจากรหัสที่ครูให้มา</button>' +
     '<span class="hint">ครูกด <b>แชร์</b> ที่ชุดโจทย์เพื่อคัดลอกรหัส แล้วส่งให้นักเรียนมาวางที่ปุ่มนี้</span></div>';
   if (!gen.length) {
@@ -8570,8 +8710,12 @@ function renderMake() {
       '<th>ระดับ</th><th>สร้างเมื่อ</th><th>ครั้งที่ทำ</th><th></th></tr></thead><tbody>';
     gen.slice().reverse().forEach(q => {
       const nAt = DB.attempts.filter(a => a.quizId === q.id).length;
+      /* คอลัมน์ระดับเหลือแค่สีกับจำนวน คำว่า ทฤษฎี/ง่าย/ปานกลาง/ยาก ซ้ำทุกแถว
+         จนตารางกว้างเกินจอและต้องเลื่อนข้างเพื่อดูปุ่มท้ายแถว
+         ความหมายของสีอ่านได้ที่ปุ่ม ! บนหัวการ์ด และค้างบนป้ายก็บอกเป็นคำ */
       const lv = LEVELS.filter(l => q.counts[l]).map(l =>
-        '<span class="tag ' + LEVEL_CLS[l] + '">' + l + ' ' + q.counts[l] + '</span>').join(' ');
+        '<span class="tag lvn ' + LEVEL_CLS[l] + '" title="' + l + ' ' + q.counts[l] + ' ข้อ">' +
+        q.counts[l] + '</span>').join(' ');
       
       /* ป้าย S/T บอกว่าชุดนี้มาจากไหน — มีความหมายเฉพาะบนเครื่องนักเรียน
          ของเดิมดูแค่ "เคยทำผ่านรหัสใบงานไหม" ซึ่งบนเครื่องครูไม่มีทางเป็นจริง
@@ -8603,7 +8747,15 @@ function renderMake() {
   $$('[data-preset]').forEach(b => b.addEventListener('click', () => runPreset(b.dataset.preset)));
   $$('[data-fx]').forEach(b => b.addEventListener('click', () => showFormulas(Number(b.dataset.fx))));
   $('#btnAllFx').addEventListener('click', showAllFormulas);
-  const setTopics = ids => { c.topics = ids; c.subs = []; save(); renderMake(); };
+  const bql = $('#btnQuizLegend');
+  if (bql) bql.addEventListener('click', quizLegend);
+  $$('[data-subtog]').forEach(b => b.addEventListener('click', () => {
+    const id = Number(b.dataset.subtog);
+    subOpenSet(subOpen(id) ? null : id);
+    renderMake();
+  }));
+  // เลือกทุกบท/บทเรียน/แนวข้อสอบ จะล้างหัวข้อย่อยอยู่แล้ว จึงต้องหุบรายการที่กางค้างด้วย
+  const setTopics = ids => { c.topics = ids; c.subs = []; subOpenSet(null); save(); renderMake(); };
   const bTF = $('#btnTopicFold');
   if (bTF) bTF.addEventListener('click', () => { topicFoldSet(!topicFolded(mkCfg())); renderMake(); });
   $('#btnAllTopic').addEventListener('click', () => setTopics(ALL_TOPIC_IDS.slice()));
@@ -8614,7 +8766,12 @@ function renderMake() {
     if (i >= 0) {
       c.topics.splice(i, 1);
       c.subs = c.subs.filter(s => subsOf(id).indexOf(s) < 0);   // เอาหัวข้อย่อยของเรื่องที่ปิดออกด้วย
-    } else c.topics.push(id);
+      if (subOpen(id)) subOpenSet(null);
+    } else {
+      c.topics.push(id);
+      // ติ๊กบทไหน กางหัวข้อย่อยของบทนั้นให้เลย ตรงตามที่เพิ่งกด และหุบบทอื่นไป
+      subOpenSet(id);
+    }
     save(); renderMake();
   }));
   $$('[data-sub]').forEach(cb => cb.addEventListener('change', e => {
