@@ -838,7 +838,7 @@ input.numin.bad{border-color:var(--bad);background:var(--bad-bg)}
    *** ห้ามลบบรรทัดเครื่องหมาย @@BUILTIN@@ ทั้งสองอัน ตัวสร้างไฟล์ใช้หาตำแหน่ง ***
    ========================================================================== */
 /* @@BUILTIN@@ */
-const BUILTIN = {"url":"","studentOnly":true,"lockCloud":false,"logo":"","header":null,"about":null,"build":"2026-09-10 08:50"};
+const BUILTIN = {"url":"","studentOnly":true,"lockCloud":false,"logo":"","header":null,"about":null,"build":"2026-09-10 14:10"};
 /* @@BUILTIN-END@@ */
 
 /* ถ่ายภาพซอร์สของหน้านี้ไว้ตั้งแต่สคริปต์เพิ่งเริ่มทำงาน
@@ -7939,12 +7939,56 @@ function bindUsageCard() {
   if (c) c.addEventListener('click', showClassUsage);
 }
 
+/** อธิบายว่าทำไมดึงรายชื่อมาได้ศูนย์คน แล้วขึ้นเป็นกล่องให้อ่านและลงมือแก้ได้
+    ของเดิมขึ้นแค่ "ยังไม่มีรายชื่อในชีต" ซึ่งอ่านได้ว่าชีตว่างเปล่า
+    แต่สาเหตุที่เจอจริงบ่อยกว่าคือครูผู้สอนดูแลชั้นที่ไม่ตรงกับชั้นที่ชีตมี
+    ping คืนทั้งชั้นที่เราดูแล (myClasses) และชั้นที่ชีตมีจริง (classes) อยู่แล้ว
+    จึงเทียบให้ดูได้ทันทีโดยไม่ต้องเพิ่มคำสั่งใหม่ที่ฝั่งชีต */
+async function rosterEmptyBox() {
+  let p = null;
+  try { p = await api('ping', {}); } catch (e) { p = null; }
+  const have = p ? Object.keys(p.classes || {}) : [];
+  const mine = p ? p.myClasses : undefined;
+  const sheetLine = have.length
+    ? '<div class="hint" style="margin-top:9px">ชั้นที่มีอยู่จริงในชีตนี้<br><b>' +
+      have.map(esc).join(' &nbsp;·&nbsp; ') + '</b></div>'
+    : '';
+  let head, body;
+  if (!p) {
+    head = 'ดึงรายชื่อไม่ได้';
+    body = 'ติดต่อชีตไม่ได้ในตอนนี้ ตรวจสัญญาณอินเทอร์เน็ตแล้วลองใหม่';
+  } else if (mine === null || mine === undefined) {
+    /* ผู้ดูแลหลัก — ขอบเขตเป็น null คือเห็นทุกชั้น ถ้ายังว่างก็คือชีตว่างจริง */
+    head = 'ชีตนี้ยังไม่มีรายชื่อนักเรียน';
+    body = 'ให้ไปที่แท็บตั้งค่า แล้วกด <b>"ส่งรายชื่อขึ้นชีต"</b> เพื่ออัปโหลดรายชื่อก่อน';
+  } else if (!mine.length) {
+    head = 'บัญชีของคุณยังไม่ได้กำหนดชั้นที่ดูแล';
+    body = 'ครูผู้สอนต้องได้รับมอบชั้นก่อนจึงจะเห็นรายชื่อได้ ' +
+           'ให้<b>ผู้ดูแลหลัก</b>เปิดหน้าจัดการครูผู้สอน แล้วติ๊กชั้นให้';
+  } else {
+    head = 'ไม่พบนักเรียนในชั้นที่คุณดูแล';
+    body = 'คุณดูแลชั้น <b>' + mine.map(esc).join(' &nbsp;·&nbsp; ') + '</b><br>' +
+           'แต่ในชีตนี้ไม่มีนักเรียนที่อยู่ในชั้นเหล่านั้นเลย<br><br>' +
+           'มักเกิดจากสองอย่าง — <b>ชื่อชั้นไม่ตรงกัน</b> (เทียบกับรายการด้านล่าง) ' +
+           'หรือ<b>อยู่ผิดแอป</b> เพราะแต่ละวิชาใช้สเปรดชีตคนละใบ ' +
+           'และรายชื่อครูผู้สอนก็แยกใบกันด้วย';
+  }
+  openModal({
+    title: head,
+    bodyHTML: '<div>' + body + '</div>' + sheetLine +
+      (p ? '<div class="hint" style="margin-top:11px">ชีตนี้มีนักเรียนรวม <b>' +
+           (p.students == null ? '?' : p.students) + '</b> คน · สคริปต์ชีตรุ่น <b>' +
+           (p.version == null ? '?' : p.version) + '</b></div>' : ''),
+    buttons: [{ label: 'เข้าใจแล้ว', cls: 'primary' }]
+  });
+}
+
 /** ผู้ดูแลดูว่าใครเข้าใช้ระบบแล้วบ้าง ใครยังไม่เคยเข้าเลย */
 async function showClassUsage() {
   let list;
   try { list = await api('rosterList', {}); }
   catch (e) { toast(e.message, 'bad'); return; }
-  if (!list.length) { toast('ยังไม่มีรายชื่อในชีต', 'bad'); return; }
+  if (!list.length) { await rosterEmptyBox(); return; }
   const never = list.filter(s => !s.lastLogin);
   const notChanged = list.filter(s => s.lastLogin && s.mustChange);
   const rows = list.slice().sort((a, b) =>
@@ -8388,7 +8432,7 @@ async function dedupeRoster() {
 async function pullRoster() {
   try {
     const list = await api('rosterList', {});
-    if (!list.length) { toast('ยังไม่มีรายชื่อในชีต', 'bad'); return; }
+    if (!list.length) { await rosterEmptyBox(); return; }
     const byCls = {};
     list.forEach(s => { const k = normCls(s.cls) || '(ไม่ระบุชั้น)'; byCls[k] = (byCls[k] || 0) + 1; });
     const clsSummary = Object.keys(byCls)
@@ -8483,7 +8527,7 @@ async function resetStudentPass() {
   let list;
   try { list = await api('rosterList', {}); }
   catch (e) { toast(e.message, 'bad'); return; }
-  if (!list.length) { toast('ยังไม่มีรายชื่อในชีต', 'bad'); return; }
+  if (!list.length) { await rosterEmptyBox(); return; }
   openModal({
     title: 'รีเซ็ตรหัสผ่านนักเรียน',
     wide: true,

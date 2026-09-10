@@ -20,6 +20,21 @@
  *   4) กลับมาที่แอพ → แท็บตั้งค่า → ปุ่ม "ซ่อมโครงสร้างชีต" หนึ่งครั้ง
  *      เพื่อเติมหัวตารางของคอลัมน์ใหม่ (ข้อมูลเดิมไม่หาย)
  *
+ * ── รุ่น 15 แก้อะไร (ขอบเขตครูผู้สอน และรหัสผ่านที่มองไม่เห็น) ───────────
+ *   ขอบเขตชั้นและวิชาของครูผู้สอน เปลี่ยนมาอ่านสดจากแผ่น teachers ทุกครั้ง
+ *   ของเดิมฝังไว้ในโทเคนที่อยู่ได้ 12 ชั่วโมง ผู้ดูแลหลักติ๊กชั้นให้แล้ว
+ *   ครูผู้สอนก็ยังเห็นของเก่าจนกว่าจะออกแล้วเข้าใหม่ ทำให้กดดึงรายชื่อ
+ *   แล้วขึ้นว่า "ยังไม่มีรายชื่อในชีต" ทั้งที่ชั้นนั้นมีนักเรียนหลายสิบคน
+ *   อ่านสดยังปลอดภัยกว่า เพราะถอนสิทธิ์แล้วมีผลทันที ไม่ต้องรอโทเคนหมดอายุ
+ *
+ *   ช่อง "ชั้นที่ดูแล" รับตัวคั่นได้หลายแบบ และรับค่าที่ถูกแปลงเป็นวันที่แล้ว
+ *   ตัวซ่อมโครงสร้างตั้งคอลัมน์นั้นเป็นข้อความให้ กันปัญหาเดิมไม่ให้เกิดอีก
+ *
+ *   รหัสผ่านตรวจแบบ "บวกเพิ่ม ไม่ตัดของเดิม" — ลองค่าดิบก่อน ไม่ตรงจึงลอง
+ *   ค่าที่ล้างเว้นวรรคและอักขระกว้างศูนย์แล้ว คนที่เข้าได้อยู่แล้วไม่มีใครหลุด
+ *   ส่วนคนที่คีย์บอร์ดไอแพดแถมอักขระมองไม่เห็นมาจะเข้าได้เพิ่ม
+ *   และข้อความรหัสผิดบอกชื่อไฟล์ชีตด้วย ภาพหน้าจอเดียวรู้ว่าไปโดนชีตใบไหน
+ *
  * ── รุ่น 14 เพิ่มอะไร (นักเรียนตัวอย่างสำหรับทดสอบ) ──────────────────────
  *   ชั้น ม.0 ถูกกันไว้เป็นชั้นทดสอบ นักเรียนคนแรกในชั้นนั้นคือนักเรียนตัวอย่าง
  *   ผู้ดูแลเข้าโหมดทดลองแล้วส่งงานในชื่อคนนี้ได้จริง ผลเข้าชีตตามปกติ
@@ -321,6 +336,25 @@ function sha256_(s) {
     Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, String(s), Utilities.Charset.UTF_8));
 }
 function hashPass_(pass, salt) { return sha256_(salt + '|' + pass + '|' + secret_()); }
+
+/** ล้างอักขระที่มองไม่เห็นออกจากรหัสผ่าน
+    คีย์บอร์ดและตัวเติมรหัสอัตโนมัติบนไอแพดแถมเว้นวรรคท้ายหรืออักขระกว้างศูนย์มาได้
+    ค่าแฮชจึงไม่ตรงทั้งที่ตัวเลขถูกทุกตัว เกิดอาการ "รหัสผิด" บนเครื่องเดียว */
+function normPass_(v) {
+  return String(v == null ? '' : v)
+    .replace(/[\u200B-\u200D\u2060\uFEFF]/g, '')   // อักขระกว้างศูนย์
+    .replace(/\u00A0/g, ' ')                        // เว้นวรรคไม่ตัดบรรทัด
+    .trim();
+}
+/** ตรวจรหัสผ่านแบบ "บวกเพิ่ม ไม่ตัดของเดิม"
+    ลองค่าดิบก่อน ใครที่เข้าได้อยู่แล้ววันนี้จึงเข้าได้เหมือนเดิมทุกคน
+    ไม่ตรงจึงลองค่าที่ล้างแล้ว คนที่มีอักขระมองไม่เห็นติดมาจะเข้าได้เพิ่ม
+    ไม่มีใครหลุดจากการเปลี่ยนนี้ ซึ่งสำคัญเพราะแฮชเก่าอ่านย้อนไม่ได้ */
+function passMatches_(pass, salt, hash) {
+  if (hashPass_(pass, salt) === hash) return true;
+  var np = normPass_(pass);
+  return np !== String(pass) && hashPass_(np, salt) === hash;
+}
 function newSalt_() { return Utilities.getUuid().replace(/-/g, '').slice(0, 16); }
 /** salt หลายอันจากการขอ UUID ครั้งเดียว — ใช้ตอนเพิ่มรายชื่อทีละหลายคน
     salt ต้องการแค่ความไม่ซ้ำ ส่วนความปลอดภัยมาจาก SECRET ที่เก็บแยกไว้ */
@@ -413,10 +447,27 @@ function normCls_(v) {
 function normUser_(v) { return String(v == null ? '' : v).trim().toLowerCase(); }
 /** ชื่อชั้นใช้เทียบแบบตรงตัวหลังตัดช่องว่างหัวท้าย และแปลงเป็นมาตรฐาน ม.X/Y */
 function clsKey_(v) { return normCls_(v); }
-/** แปลงข้อความ "ม.4/1, ม.4/2" เป็นอาเรย์ */
+/** แปลงข้อความ "ม.4/1, ม.4/2" เป็นอาเรย์
+    ของเดิมตัดด้วยจุลภาคอย่างเดียวและแปลง String() ก่อนเสมอ
+    ช่องที่ Google Sheets เปลี่ยนเป็นวันที่ (ปัญหาเดิมของคอลัมน์ชั้นในแผ่นนักเรียน)
+    จึงหลุดการแปลงไปทั้งค่า แล้วกลายเป็นขอบเขตที่ไม่ตรงกับใครเลยแบบเงียบ ๆ */
 function parseClasses_(v) {
-  return String(v == null ? '' : v).split(',').map(normCls_).filter(function (x) { return !!x; });
+  if (v == null) return [];
+  // ค่าเดียวที่เป็นวันที่ ต้องส่งให้ normCls_ ทั้งก้อน ห้ามแปลงเป็นข้อความก่อน
+  if (Object.prototype.toString.call(v) === '[object Date]' || (v instanceof Date)) {
+    var one = normCls_(v);
+    return one ? [one] : [];
+  }
+  // รับตัวคั่นหลายแบบ ครูอาจพิมพ์เว้นวรรค ขึ้นบรรทัดใหม่ อัฒภาค หรือขีดกลาง
+  return String(v).split(/[,;\n\r\t|]+/).map(normCls_)
+    .filter(function (x) { return !!x; });
 }
+/** ชื่อไฟล์ของสเปรดชีตใบนี้ — ใช้ในข้อความผิดพลาด เพื่อบอกว่าคุยกับชีตใบไหน
+    ระบบมีสองใบ (ฟิสิกส์ กับ วิทยาศาสตร์กายภาพ) และรหัสผ่านเก็บแยกใบกัน */
+function bookName_() {
+  try { return String(book_().getName() || '').slice(0, 60); } catch (e) { return '?'; }
+}
+
 function findTeacher_(user) {
   var u = normUser_(user), list = readAll_('teachers');
   for (var i = 0; i < list.length; i++) {
@@ -424,8 +475,29 @@ function findTeacher_(user) {
   }
   return null;
 }
-/** ขอบเขตของโทเคนนี้ — null = ผู้ดูแลหลัก เห็นทุกชั้น · อาเรย์ = ครูผู้สอน เห็นเฉพาะชั้นในนั้น */
-function scopeOf_(t) { return (t && t.sub) ? (t.cls || []) : null; }
+/** ขอบเขตของโทเคนนี้ — null = ผู้ดูแลหลัก เห็นทุกชั้น · อาเรย์ = ครูผู้สอน เห็นเฉพาะชั้นในนั้น
+
+    รุ่นนี้อ่านขอบเขตสด ๆ จากแผ่น teachers ไม่ใช่จากค่าที่ฝังไว้ในโทเคน
+    ของเดิมฝังไว้ในโทเคนซึ่งอยู่ได้สิบสองชั่วโมง ผู้ดูแลหลักติ๊กชั้นให้แล้ว
+    ครูผู้สอนก็ยังเห็นของเก่าจนกว่าจะกดออกแล้วเข้าใหม่ ซึ่งไม่มีใครเดาได้
+    อาการที่เจอจริงคือครูผู้สอนกดดึงรายชื่อแล้วขึ้นว่า "ยังไม่มีรายชื่อในชีต"
+    ทั้งที่ชั้นที่ดูแลมีนักเรียนอยู่หลายสิบคน
+
+    อ่านสดยังปลอดภัยกว่าเดิมด้วย เพราะถอนชั้นหรือปิดบัญชีแล้วมีผลทันที
+    ไม่ต้องรอโทเคนหมดอายุ ส่วนตัวตนยังมาจากโทเคนที่เซ็นไว้เหมือนเดิม
+    ชื่อผู้ใช้จึงปลอมไม่ได้ ต่อให้แก้โค้ดในเบราว์เซอร์                     */
+function scopeOf_(t) {
+  if (!t || !t.sub) return null;
+  var me = findTeacher_(t.sub);
+  if (!me) {
+    throw new Error('AUTH: ไม่พบบัญชีครูผู้สอน ' + t.sub + ' ในชีตนี้แล้ว — ' +
+                    'ให้ผู้ดูแลหลักตรวจรายชื่อครูผู้สอน หรือกดออกแล้วเข้าใหม่');
+  }
+  if (String(me.active) === 'false' || String(me.active) === '0') {
+    throw new Error('AUTH: บัญชีครูผู้สอนนี้ถูกปิดการใช้งานแล้ว');
+  }
+  return parseClasses_(me.classes);
+}
 function inScope_(sc, cls) { return !sc || sc.indexOf(clsKey_(cls)) >= 0; }
 
 /** แปลงข้อความ "physics, physci" เป็นอาเรย์ของวิชาที่รู้จัก
@@ -439,7 +511,10 @@ function parseSubjects_(v) {
 /** วิชาที่ครูคนนี้สอน — null = ทุกวิชา (ผู้ดูแลหลัก หรือครูที่ยังไม่ได้จำกัดวิชา)
     เว้นว่าง = ทุกวิชา จงใจให้เป็นแบบนี้ บัญชีที่สร้างก่อนมีคอลัมน์นี้จะได้ไม่เสียสิทธิ์ */
 function subjScopeOf_(t) {
-  var s = (t && t.sub) ? (t.sbj || []) : [];
+  // อ่านสดเหมือนขอบเขตชั้น ด้วยเหตุผลเดียวกัน — แก้แล้วต้องมีผลทันที
+  if (!t || !t.sub) return null;
+  var me = findTeacher_(t.sub);
+  var s = me ? parseSubjects_(me.subjects) : (t.sbj || []);
   return s.length ? s : null;
 }
 /** เรียกในทุกคำสั่งที่ผูกกับวิชา — ปฏิเสธถ้าครูคนนี้ไม่ได้สอนวิชานั้น */
@@ -585,6 +660,9 @@ function repairSheets_() {
           sh.getRange(2, C_CLS, body.length, 1).setNumberFormat('@');
         }
         if (n === 'submissions') sh.getRange(2, 3, body.length, 1).setNumberFormat('@');
+        /* ชั้นที่ดูแลของครูผู้สอนต้องเป็นข้อความ ไม่งั้น "ม.5/1, ม.5/2" ที่พิมพ์เอง
+           อาจถูก Google Sheets ตีความเป็นวันที่ แล้วขอบเขตจะไม่ตรงกับใครเลย */
+        if (n === 'teachers') sh.getRange(2, 5, body.length, 1).setNumberFormat('@');
         sh.getRange(2, 1, body.length, wide).setValues(body);
       }
       sh.setFrozenRows(1);
@@ -658,7 +736,7 @@ function json_(o) {
 }
 
 function doGet() {
-  return json_({ ok: true, service: 'quiz-bank', version: 14, subjects: SUBJECTS,
+  return json_({ ok: true, service: 'quiz-bank', version: 15, subjects: SUBJECTS,
                  note: 'ใช้งานผ่าน POST จากแอพเท่านั้น' });
 }
 
@@ -771,7 +849,7 @@ function apiPing_(req) {
   try { locale = String(book_().getSpreadsheetLocale() || ''); } catch (e) {}
 
   return {
-    version: 14, role: role, myClasses: myCls,
+    version: 15, role: role, myClasses: myCls,
     locale: locale, monthFirst: monthFirstSheet_(), classes: clsCount,
     teachers: Math.max(0, sheet_('teachers').getLastRow() - 1),
     needRepair: needRepair, layout: layout, subjects: SUBJECTS,
@@ -818,9 +896,12 @@ function apiLogin_(req) {
   var salt = String(me.salt || ''), hash = String(me.passHash || ''), needFix = false;
   if (!hash) { salt = newSalt_(); hash = hashPass_(DEFAULT_STUDENT_PASS, salt); needFix = true; }
 
-  if (hashPass_(pass, salt) !== hash) {
+  if (!passMatches_(pass, salt, hash)) {
     cache.put(failKey_(key), String(fails + 1), LOCK_MINUTES * 60);
-    throw new Error('รหัสผ่านไม่ถูกต้อง (ผิดได้อีก ' + (MAX_LOGIN_FAIL - fails - 1) + ' ครั้ง)');
+    /* บอกชื่อไฟล์ชีตไปด้วย เครื่องที่ค้างแอปรุ่นเก่าอาจคุยกับชีตผิดใบ
+       ซึ่งรหัสผ่านเก็บแยกใบกัน ภาพหน้าจอเดียวจะได้รู้ทันทีว่าไปโดนใบไหน */
+    throw new Error('รหัสผ่านไม่ถูกต้อง (ผิดได้อีก ' + (MAX_LOGIN_FAIL - fails - 1) + ' ครั้ง) ' +
+                    '· ชีต: ' + bookName_());
   }
   cache.remove(failKey_(key));
 
@@ -839,7 +920,9 @@ function apiLogin_(req) {
 
 function apiChangePass_(req) {
   var t = needStudent_(req);
-  var np = String(req.newPass || '');
+  /* เก็บค่าที่ล้างแล้ว ไม่ใช่ค่าดิบ ไม่งั้นเว้นวรรคที่เผลอติดมาจะฝังอยู่ในแฮชถาวร
+     แล้วเจ้าตัวพิมพ์รหัสถูกทุกตัวก็เข้าไม่ได้ตลอดไป */
+  var np = normPass_(req.newPass);
   if (np.length < 4) throw new Error('รหัสผ่านใหม่ต้องยาวอย่างน้อย 4 ตัว');
   if (np === DEFAULT_STUDENT_PASS) throw new Error('ห้ามใช้รหัสตั้งต้น กรุณาตั้งรหัสใหม่ที่ไม่ใช่ ' + DEFAULT_STUDENT_PASS);
   var list = readAll_('students');
@@ -915,7 +998,7 @@ function apiAdminLogin_(req) {
     salt = props_().getProperty('ADMIN_SALT');
     hash = props_().getProperty('ADMIN_HASH');
   }
-  if (hashPass_(String(req.pass || ''), salt) !== hash) {
+  if (!passMatches_(String(req.pass || ''), salt, hash)) {
     cache.put('fail_admin', String(fails + 1), LOCK_MINUTES * 60);
     throw new Error('รหัสผู้ดูแลไม่ถูกต้อง — ถ้าจำไม่ได้ ให้เปิดหน้า Apps Script ' +
                     'แล้วเรียกฟังก์ชัน resetAdminPassword หนึ่งครั้ง');
