@@ -19,6 +19,7 @@
 
 import fs from 'fs';
 import path from 'path';
+import { execFileSync } from 'child_process';
 import { fileURLToPath } from 'url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -28,6 +29,20 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
    เดิมเลขรุ่นแอปเขียนตายไว้ในโค้ด แก้ไปกี่รอบก็ยังเป็นเลขเดิม ดูไม่ออกว่าใหม่หรือเก่า
    บล็อกนี้ถูกตัดออกก่อนเทียบไฟล์ใน check.mjs อยู่แล้ว จึงไม่กระทบการตรวจความตรงกัน */
 const BUILD_STAMP = new Date().toLocaleString('sv-SE', { timeZone: 'Asia/Bangkok' }).slice(0, 16);
+
+/* เลขรุ่นของแอป — v8.<จำนวนคอมมิตทั้งหมด>
+   เดิมเขียน 'v8.0' ตายไว้ในไฟล์ทั้งแปดไฟล์ แก้ไปกี่รอบก็ยังเป็น v8.0
+   ครูจึงดูไม่ออกว่าเครื่องไหนโหลดของใหม่แล้ว และต้องมาไล่แก้เลขแปดที่เวลาอยากขยับรุ่น
+   ใช้จำนวนคอมมิตเพราะมันเดินขึ้นเองทุกครั้งที่มีการแก้จริง ไม่มีทางลืมขยับ
+   และย้อนดูได้ว่าเลขนั้นตรงกับโค้ดชุดไหน (git log จะเห็นลำดับตรงกัน)
+   เลขนี้คือจำนวนคอมมิตตอนสร้างไฟล์ คอมมิตที่บรรจุไฟล์นี้เองจึงเป็นลำดับถัดไปหนึ่งขั้น */
+let APP_VER = 'v8';
+try {
+  APP_VER = 'v8.' + execFileSync('git', ['rev-list', '--count', 'HEAD'],
+    { cwd: ROOT, encoding: 'utf8' }).trim();
+} catch (e) {
+  console.error('! อ่านจำนวนคอมมิตจาก git ไม่ได้ — ใช้เลข ' + APP_VER + ' ไปก่อน');
+}
 
 /* ที่อยู่เว็บแอปของ Google Apps Script — วิชาละหนึ่งชีต จึงต้องแยกที่อยู่กันคนละอัน
    เคยรวมเป็นตัวเดียวชื่อ APPS_URL แล้วมีคนแก้ให้ชี้ไปชีตวิทย์กายภาพ
@@ -128,11 +143,51 @@ for (const t of TARGETS) {
   }
 
   const eol = src.indexOf('\r\n') >= 0 ? '\r\n' : '\n';
-  const builtin = Object.assign({}, t.builtin, { build: BUILD_STAMP });
+  const builtin = Object.assign({}, t.builtin, { build: BUILD_STAMP, ver: APP_VER });
   const block = ['/* @@BUILTIN@@ */', 'const BUILTIN = ' + JSON.stringify(builtin) + ';',
                  '/* @@BUILTIN-END@@ */'].join(eol);
   fs.writeFileSync(outPath, src.replace(RE, block));
+
+  /* ประทับเลขรุ่นลงไฟล์ต้นฉบับด้วย — ไฟล์ฉบับครู (physics.html ฯลฯ) ถูกเปิดใช้จากเว็บจริง
+     ไม่ใช่แค่ไฟล์ตั้งต้นสำหรับสร้างของอื่น ถ้าไม่ประทับ ครูจะเห็นเลขรุ่นเป็น "รุ่นพัฒนา" ตลอด
+     ค่าอื่นในบล็อกของไฟล์ต้นฉบับคงไว้ตามเดิมทุกตัว แก้แต่ ver กับ build
+     (บล็อกนี้ถูกตัดออกก่อนเทียบไฟล์ใน check.mjs จึงไม่กระทบการตรวจความตรงกัน) */
+  let curObj = null;
+  try { curObj = cur ? JSON.parse(cur[1]) : null; } catch (e) { curObj = null; }
+  if (curObj) {
+    const srcBlock = ['/* @@BUILTIN@@ */',
+      'const BUILTIN = ' + JSON.stringify(
+        Object.assign({}, curObj, { build: BUILD_STAMP, ver: APP_VER })) + ';',
+      '/* @@BUILTIN-END@@ */'].join(eol);
+    const srcNew = src.replace(RE, srcBlock);
+    if (srcNew !== src) fs.writeFileSync(srcPath, srcNew);
+  }
   console.log('✓ ' + t.out + '  (' + BUILD_STAMP + ' · studentOnly=' + t.builtin.studentOnly +
     ' · lockCloud=' + t.builtin.lockCloud + ' · ' + (t.builtin.url ? 'ต่อชีต' : 'ออฟไลน์') + ')');
 }
+/* หน้าปก (index.html ที่รากเว็บ) เป็นไฟล์ที่เสิร์ฟตรง ไม่มีฉบับสร้างใหม่
+   และไม่มีบล็อก BUILTIN เพราะไม่ได้เก็บค่าต่อชีตเป็นของตัวเอง
+   จึงใช้เครื่องหมายของตัวเองสำหรับประทับเลขรุ่นอย่างเดียว */
+const COVER = path.join(ROOT, 'index.html');
+const COVER_RE = /\/\* @@VER@@ \*\/[\s\S]*?\/\* @@VER-END@@ \*\//;
+try {
+  const cv = fs.readFileSync(COVER, 'utf8');
+  if (!COVER_RE.test(cv)) {
+    console.error('✗ index.html : ไม่พบบล็อก @@VER@@ — ห้ามลบบรรทัดเครื่องหมายนั้น');
+    fail++;
+  } else {
+    const eol = cv.indexOf('\r\n') >= 0 ? '\r\n' : '\n';
+    const blk = ['/* @@VER@@ */',
+      'const APP_VER = ' + JSON.stringify(APP_VER) + ', BUILD_AT = ' + JSON.stringify(BUILD_STAMP) + ';',
+      '/* @@VER-END@@ */'].join(eol);
+    const out = cv.replace(COVER_RE, blk);
+    if (out !== cv) fs.writeFileSync(COVER, out);
+    console.log('✓ index.html  (หน้าปก · ' + APP_VER + ' · ' + BUILD_STAMP + ')');
+  }
+} catch (e) {
+  console.error('✗ index.html : อ่านไฟล์ไม่ได้ — ' + e.message);
+  fail++;
+}
+
+console.log(fail ? '\nไม่ผ่าน ' + fail + ' รายการ' : '\nเสร็จ · เลขรุ่น ' + APP_VER);
 process.exit(fail ? 1 : 0);
