@@ -20,6 +20,16 @@
  *   4) กลับมาที่แอพ → แท็บตั้งค่า → ปุ่ม "ซ่อมโครงสร้างชีต" หนึ่งครั้ง
  *      เพื่อเติมหัวตารางของคอลัมน์ใหม่ (ข้อมูลเดิมไม่หาย)
  *
+ * ── รุ่น 14 เพิ่มอะไร (นักเรียนตัวอย่างสำหรับทดสอบ) ──────────────────────
+ *   ชั้น ม.0 ถูกกันไว้เป็นชั้นทดสอบ นักเรียนคนแรกในชั้นนั้นคือนักเรียนตัวอย่าง
+ *   ผู้ดูแลเข้าโหมดทดลองแล้วส่งงานในชื่อคนนี้ได้จริง ผลเข้าชีตตามปกติ
+ *   จึงตรวจได้ทั้งวงจร ตั้งแต่ใบงานขึ้น ทำ ส่ง จนถึงครูดึงผล
+ *   แล้วกดลบผลทดสอบทิ้งได้ในปุ่มเดียว โดยลบได้เฉพาะแถวของคนนี้เท่านั้น
+ *
+ *   เลขประจำตัวที่บันทึกลงชีตมาจากชีตเอง ไม่ใช่จากที่แอปส่งมา
+ *   ผู้ดูแลจึงสวมรอยเป็นนักเรียนคนอื่นไม่ได้ แม้แก้โค้ดในเบราว์เซอร์
+ *   และชั้นทดสอบถูกตัดออกจากอันดับเลเวลแล้ว จะได้ไม่ขึ้นอันดับหนึ่งของโรงเรียน
+ *
  * ── รุ่น 13 เพิ่มอะไร (คลังข้ออัตนัยอยู่บนชีต) ───────────────────────────
  *   เดิมคลังข้ออัตนัยเก็บใน localStorage ของเบราว์เซอร์ล้วน ๆ ครูสร้างข้อบนคอมพิวเตอร์
  *   แล้วเปิดไอแพดจึงเจอคลังเปล่าคนละใบ รุ่นนี้เพิ่มแผ่น esbank ให้ชีตเป็นตัวกลาง
@@ -155,6 +165,7 @@ var C_ALIAS = 10, C_AVATAR = 11, C_GEAR = 12, C_SHOW = 13,
     C_XPLOGIN = 14, C_XPPRAC = 15, C_XPDAY = 16, C_XPDAYS = 17, C_XPPRACDAY = 18;
 /* คอลัมน์ "วิชา" ของแผ่นส่งคำตอบ (ตัวที่ 12) — ใช้ตอนอ่านแบบแคบ
    คอลัมน์คุมสอบที่เพิ่มมาใหม่อยู่ท้ายกว่านี้ ค่านี้จึงไม่ต้องแก้ */
+var C_SUB_SID = 3;             // แผ่น submissions: ts · code · sid · ...
 var C_SUB_SUBJECT = 12;
 
 /* ====== ตัวช่วยพื้นฐาน ================================================== */
@@ -647,7 +658,7 @@ function json_(o) {
 }
 
 function doGet() {
-  return json_({ ok: true, service: 'quiz-bank', version: 13, subjects: SUBJECTS,
+  return json_({ ok: true, service: 'quiz-bank', version: 14, subjects: SUBJECTS,
                  note: 'ใช้งานผ่าน POST จากแอพเท่านั้น' });
 }
 
@@ -692,6 +703,8 @@ function route_(action, req) {
     case 'resultsList':   return apiResultsList_(req);
     case 'xpMe':          return apiXpMe_(req);
     case 'xpBoard':       return apiXpBoard_(req);
+    case 'sampleInfo':    return apiSampleInfo_(req);
+    case 'sampleClear':   return apiSampleClear_(req);
     case 'esBankList':    return apiEsBankList_(req);
     case 'esBankGet':     return apiEsBankGet_(req);
     case 'esBankSave':    return apiEsBankSave_(req);
@@ -758,7 +771,7 @@ function apiPing_(req) {
   try { locale = String(book_().getSpreadsheetLocale() || ''); } catch (e) {}
 
   return {
-    version: 13, role: role, myClasses: myCls,
+    version: 14, role: role, myClasses: myCls,
     locale: locale, monthFirst: monthFirstSheet_(), classes: clsCount,
     teachers: Math.max(0, sheet_('teachers').getLastRow() - 1),
     needRepair: needRepair, layout: layout, subjects: SUBJECTS,
@@ -1343,7 +1356,18 @@ function apiMyAssignments_(req) {
 /* ====== ส่งคำตอบ ======================================================== */
 
 function apiSubmit_(req) {
-  var t = needStudent_(req);
+  /* ปกติรับแต่โทเคนนักเรียน ยกเว้นตอนผู้ดูแลทดสอบในชื่อนักเรียนตัวอย่าง
+     เลขประจำตัวที่จะบันทึกมาจากชีตเองทั้งสองทาง ไม่เคยมาจากที่แอปส่งมา
+     จึงสวมรอยเป็นนักเรียนคนอื่นไม่ได้แม้จะแก้โค้ดในเบราว์เซอร์ */
+  var sid;
+  if (req.sample) {
+    needSampleAdmin_(req);
+    var smp = sampleStudent_();
+    if (!smp) throw new Error('ยังไม่มีนักเรียนตัวอย่างในชั้น ' + SAMPLE_CLS);
+    sid = smp.sid;
+  } else {
+    sid = needStudent_(req).sid;
+  }
   var p = req.payload || {};
   var a = findAssign_(p.code);
   if (!a) throw new Error('ไม่พบใบงานรหัสนี้');
@@ -1353,7 +1377,7 @@ function apiSubmit_(req) {
   }
   if (String(p.status) === 'final') checkOpen_(a);   // ฉบับร่างยังบันทึกได้แม้เลยกำหนด
   appendRow_('submissions', {
-    ts: new Date(), code: String(p.code).toUpperCase(), sid: t.sid,
+    ts: new Date(), code: String(p.code).toUpperCase(), sid: sid,
     status: p.status === 'final' ? 'final' : 'draft',
     score: p.score, max: p.max, pct: p.pct, sec: p.sec, revealed: p.revealed || 0,
     answers: JSON.stringify(p.answers || []), device: String(p.device || '').slice(0, 40),
@@ -1369,12 +1393,21 @@ function apiSubmit_(req) {
 
 /** นักเรียนดูผลของตัวเองเท่านั้น (เฉพาะวิชาที่กำลังเปิดอยู่) */
 function apiMyResults_(req) {
-  var t = needStudent_(req);
+  // โหมดทดสอบต้องเห็นผลที่เพิ่งส่งไปด้วย ไม่งั้นตรวจไม่ได้ว่าคะแนนเข้าถูกไหม
+  var who;
+  if (req.sample) {
+    needSampleAdmin_(req);
+    var smp = sampleStudent_();
+    if (!smp) throw new Error('ยังไม่มีนักเรียนตัวอย่างในชั้น ' + SAMPLE_CLS);
+    who = smp.sid;
+  } else {
+    who = needStudent_(req).sid;
+  }
   var subject = reqSubject_(req);
   var best = {};
   readAll_('submissions').forEach(function (s) {
     if (normSubject_(s.subject) !== subject) return;
-    if (sidKey_(s.sid) !== sidKey_(t.sid)) return;
+    if (sidKey_(s.sid) !== sidKey_(who)) return;
     if (String(s.status) !== 'final') return;
     var k = String(s.code).toUpperCase();
     if (!best[k] || new Date(s.ts) > new Date(best[k].ts)) best[k] = s;
@@ -1549,8 +1582,12 @@ function apiXpBoard_(req) {
   // นักเรียนไม่ถูกจำกัด เพราะอันดับเป็นของทั้งโรงเรียนอยู่แล้วโดยตั้งใจ
   var sc = t.role === 'student' ? null : scopeOf_(t);
   var work = xpWorkAll_();
+  /* ชั้นทดสอบต้องไม่ไปโผล่ในอันดับ ไม่งั้นบัญชีทดสอบที่ส่งงานซ้ำ ๆ
+     จะขึ้นอันดับหนึ่งของโรงเรียน ซึ่งทั้งผิดและทำให้เด็กเสียกำลังใจ */
+  var skipCls = normCls_(SAMPLE_CLS);
   var all = readAll_('students').filter(function (st) {
-    return String(st.active) !== 'false' && normSid_(st.sid) && inScope_(sc, st.cls);
+    return String(st.active) !== 'false' && normSid_(st.sid) && inScope_(sc, st.cls) &&
+           normCls_(st.cls) !== skipCls;
   }).map(function (st) {
     var w = work[sidKey_(st.sid)] || { xp: 0, works: 0 };
     var xp = (Number(st.xpLogin) || 0) + (Number(st.xpPrac) || 0) + w.xp;
@@ -1582,6 +1619,82 @@ function apiXpBoard_(req) {
   });
   return { scope: scope, cls: myCls, total: list.length, top: top,
            me: meRow && meRow.rank > 10 ? meRow : null };
+}
+
+/* ====== นักเรียนตัวอย่างสำหรับทดสอบ =====================================
+   ปัญหาที่แก้: โหมดทดลองของผู้ดูแลเดิมเป็นแค่การดูหน้าจอแบบนักเรียน
+   ส่งงานไม่ได้เลย จึงตรวจได้แค่ว่าใบงานขึ้นหรือยัง แต่ตรวจไม่ได้ว่า
+   ส่งแล้วคะแนนเข้าชีตถูกช่องไหม สถานะเปลี่ยนไหม ครูดึงผลเห็นไหม
+   ซึ่งเป็นจุดที่พังบ่อยที่สุดและเป็นจุดที่ต้องทดสอบที่สุด
+
+   วิธี: กันชั้นหนึ่งชั้นไว้เป็นชั้นทดสอบ (SAMPLE_CLS) นักเรียนคนแรกในชั้นนั้น
+   คือ "นักเรียนตัวอย่าง" ผู้ดูแลส่งงานในชื่อคนนี้ได้ แล้วลบผลทิ้งได้
+
+   ความปลอดภัย: เลขประจำตัวที่บันทึกลงชีตมาจากชีตเอง ไม่ใช่จากที่แอปส่งมา
+   ผู้ดูแลจึงสวมรอยเป็นนักเรียนคนอื่นไม่ได้ แม้จะแก้โค้ดในเบราว์เซอร์
+   และครูผู้สอนจะใช้ได้เฉพาะเมื่อชั้นทดสอบอยู่ในขอบเขตที่ตัวเองดูแล      */
+
+var SAMPLE_CLS = 'ม.0';        // ชั้นที่กันไว้ทดสอบ เปลี่ยนชื่อชั้นให้แก้ที่บรรทัดนี้
+
+/** นักเรียนตัวอย่าง = คนแรกที่ยังเปิดใช้งานอยู่ในชั้นทดสอบ (ไม่มีคืน null) */
+function sampleStudent_() {
+  var want = normCls_(SAMPLE_CLS);
+  var hit = null;
+  readAll_('students').forEach(function (st) {
+    if (hit) return;
+    if (String(st.active) === 'false') return;
+    if (normCls_(st.cls) !== want) return;
+    if (!normSid_(st.sid)) return;
+    hit = { sid: normSid_(st.sid), name: String(st.name || ''), cls: normCls_(st.cls), row: st._row };
+  });
+  return hit;
+}
+
+/** ผู้ดูแลที่มีสิทธิ์ใช้นักเรียนตัวอย่าง — ครูผู้สอนต้องดูแลชั้นทดสอบด้วย */
+function needSampleAdmin_(req) {
+  var t = needAdmin_(req);
+  if (!inScope_(scopeOf_(t), SAMPLE_CLS)) {
+    throw new Error('ชั้นทดสอบ ' + SAMPLE_CLS + ' ไม่อยู่ในขอบเขตที่คุณดูแล');
+  }
+  return t;
+}
+
+/** ผู้ดูแลถามว่านักเรียนตัวอย่างคือใคร และมีผลทดสอบค้างอยู่กี่ฉบับ */
+function apiSampleInfo_(req) {
+  needSampleAdmin_(req);
+  var me = sampleStudent_();
+  if (!me) {
+    return { cls: normCls_(SAMPLE_CLS), sid: '', name: '', works: 0,
+             hint: 'ยังไม่มีนักเรียนในชั้น ' + SAMPLE_CLS +
+                   ' — เพิ่มรายชื่อสมมุติหนึ่งคนในชั้นนี้ก่อน แล้วใช้เป็นนักเรียนตัวอย่างได้' };
+  }
+  var n = 0;
+  submissionKeys_().forEach(function (r) {
+    if (sidKey_(r.sid) === sidKey_(me.sid)) n++;
+  });
+  return { cls: me.cls, sid: me.sid, name: me.name, works: n, hint: '' };
+}
+
+/** ลบผลทดสอบของนักเรียนตัวอย่างทั้งหมด
+    ลบจากล่างขึ้นบนเสมอ ถ้าลบจากบนลงล่างเลขแถวที่จำไว้จะเลื่อนจนลบผิดแถว
+    ลบได้เฉพาะแถวของนักเรียนตัวอย่างเท่านั้น จะส่งเลขประจำตัวอะไรมาก็ไม่รับ */
+function apiSampleClear_(req) {
+  needSampleAdmin_(req);
+  var me = sampleStudent_();
+  if (!me) throw new Error('ยังไม่มีนักเรียนตัวอย่างในชั้น ' + SAMPLE_CLS);
+  var lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    var sh = sheet_('submissions');
+    var sids = cols_('submissions', C_SUB_SID, 1);
+    var hits = [];
+    sids.forEach(function (r, i) {
+      if (sidKey_(r[0]) === sidKey_(me.sid)) hits.push(i + 2);
+    });
+    for (var k = hits.length - 1; k >= 0; k--) sh.deleteRow(hits[k]);
+    dropCache_('submissions');
+    return { removed: hits.length, sid: me.sid, name: me.name };
+  } finally { lock.releaseLock(); }
 }
 
 /* ====== คลังข้ออัตนัย ==================================================

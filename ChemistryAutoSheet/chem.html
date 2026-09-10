@@ -1425,13 +1425,25 @@ function save(immediate) {
 function renderPreviewBar() {
   const el = $('#previewBar');
   if (!el) return;
+  /* โหมดทดลองมีสองแบบ ต้องแยกให้ออกจากกันด้วยสีและข้อความ
+     แบบดูเฉย ๆ ไม่แตะชีตเลย · แบบนักเรียนตัวอย่างส่งผลขึ้นชีตจริง
+     ถ้าเขียนเหมือนกันครูจะเผลอส่งผลทดสอบปนกับผลจริงโดยไม่รู้ตัว */
+  const asSmp = previewSample();
   el.innerHTML = !previewOn() ? '' :
-    '<div class="notice warn" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
-    '<b>👀 กำลังดูแบบนักเรียน</b>' +
+    '<div class="notice ' + (asSmp ? 'bad' : 'warn') +
+    '" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
+    '<b>' + (asSmp ? '🧪 กำลังทดสอบในชื่อนักเรียนตัวอย่าง' : '👀 กำลังดูแบบนักเรียน') + '</b>' +
     '<span>ชั้น <b>' + esc(PREVIEW.cls || '(ไม่ระบุชั้น)') + '</b></span>' +
-    '<span class="hint grow">เห็นเหมือนที่นักเรียนห้องนี้เห็นจริง · ' +
-    'ทำข้อสอบได้ตามปกติแต่<b>จะไม่ส่งคะแนนขึ้นชีต</b></span>' +
+    (asSmp ? '<span>ชื่อ <b>' + esc(PREVIEW.smpName || PREVIEW.smpSid) + '</b></span>' : '') +
+    '<span class="hint grow">' + (asSmp
+      ? 'ส่งงานแล้ว<b>ผลขึ้นชีตจริง</b>ในชื่อนักเรียนตัวอย่าง ใช้ตรวจได้ทั้งวงจร ' +
+        'แล้วกดลบผลทดสอบทิ้งได้เมื่อเสร็จ'
+      : 'เห็นเหมือนที่นักเรียนห้องนี้เห็นจริง · ทำข้อสอบได้ตามปกติแต่<b>จะไม่ส่งคะแนนขึ้นชีต</b>') +
+    '</span>' +
+    (asSmp ? '<button class="sm" id="btnSampleClear">🗑️ ลบผลทดสอบ</button>' : '') +
     '<button class="sm primary" id="btnPreviewOff">ออกจากโหมดทดลอง</button></div>';
+  const bc = $('#btnSampleClear');
+  if (bc) bc.addEventListener('click', sampleClearBox);
   const b = $('#btnPreviewOff');
   if (b) b.addEventListener('click', function () {
     PREVIEW = null;
@@ -1458,22 +1470,46 @@ async function previewAsStudent() {
   };
   cls.sort(function (a, b) { return ord(a.name) - ord(b.name) || (a.name < b.name ? -1 : 1); });
   if (!cls.length) { toast('ยังอ่านรายชื่อห้องจากชีตไม่ได้ — ตรวจการเชื่อมต่อก่อน', 'bad'); return; }
+  // ถามชีตว่านักเรียนตัวอย่างคือใคร ชีตรุ่นเก่ายังไม่รู้จักคำสั่งนี้ ให้เงียบไว้
+  let smp = null;
+  try { smp = await api('sampleInfo', {}); } catch (e) { smp = null; }
+  const hasSmp = !!(smp && smp.sid);
   openModal({
     title: 'ทดลองดูแบบนักเรียน',
     bodyHTML:
       '<div class="hint" style="margin-bottom:11px">เลือกห้องที่จะจำลอง แล้วหน้าจอจะเปลี่ยนเป็น' +
       'แบบที่นักเรียนห้องนั้นเห็นจริง ใช้ตรวจว่า<b>ใบงานที่แจกไปขึ้นหรือยัง</b>ได้ทันที ' +
-      'โดยไม่ต้องยืมเลขประจำตัวนักเรียนมาล็อกอิน<br>' +
-      'ทำข้อสอบดูได้ด้วย แต่<b>คะแนนจะไม่ถูกส่งขึ้นชีต</b> ไม่ปนกับผลจริงของนักเรียน</div>' +
+      'โดยไม่ต้องยืมเลขประจำตัวนักเรียนมาล็อกอิน</div>' +
       '<label class="hint" for="pvCls">ห้อง</label><br>' +
       '<select id="pvCls" style="max-width:100%">' +
       cls.map(function (c) {
         return '<option value="' + esc(c.name) + '">' + esc(c.name) + ' (' + c.n + ' คน)</option>';
-      }).join('') + '</select>',
+      }).join('') + '</select>' +
+      /* สองโหมดนี้ต่างกันมากพอที่จะต้องเลือกเอง ไม่ควรเดาให้
+         ดูเฉย ๆ = ปลอดภัย ไม่แตะชีต · ทดสอบจริง = ผลขึ้นชีต ต้องลบทีหลัง */
+      '<div style="margin-top:15px;display:flex;flex-direction:column;gap:9px">' +
+      '<label style="display:flex;gap:9px;align-items:flex-start">' +
+      '<input type="radio" name="pvMode" value="look" checked style="margin-top:5px">' +
+      '<span><b>ดูเฉย ๆ</b><br><span class="hint">ทำข้อสอบได้ แต่คะแนน' +
+      '<b>ไม่ถูกส่งขึ้นชีต</b> ไม่ปนกับผลจริงของนักเรียน</span></span></label>' +
+      '<label style="display:flex;gap:9px;align-items:flex-start' +
+      (hasSmp ? '' : ';opacity:.5') + '">' +
+      '<input type="radio" name="pvMode" value="sample"' + (hasSmp ? '' : ' disabled') +
+      ' style="margin-top:5px">' +
+      '<span><b>ทดสอบจริงในชื่อนักเรียนตัวอย่าง</b><br><span class="hint">' +
+      (hasSmp
+        ? 'ส่งงานแล้ว<b>ผลขึ้นชีตจริง</b>ในชื่อ <b>' + esc(smp.name || smp.sid) + '</b> (' +
+          esc(smp.cls) + ') ตรวจได้ทั้งวงจรตั้งแต่ทำ ส่ง จนถึงดึงผล ' +
+          'แล้วกดลบผลทดสอบทิ้งได้' +
+          (smp.works ? '<br><b>ตอนนี้มีผลทดสอบค้างอยู่ ' + smp.works + ' ฉบับ</b>' : '')
+        : esc((smp && smp.hint) || 'ชีตยังไม่รองรับ — ต้องอัปเดตสคริปต์ชีตก่อน')) +
+      '</span></span></label></div>',
     buttons: [
       { label: 'ยกเลิก' },
-      { label: 'เริ่มดูแบบนักเรียน', cls: 'primary', act: function (close, root) {
-          PREVIEW = { cls: $('#pvCls', root).value || '' };
+      { label: 'เริ่มโหมดทดลอง', cls: 'primary', act: function (close, root) {
+          const mode = (root.querySelector('input[name=pvMode]:checked') || {}).value || 'look';
+          PREVIEW = { cls: $('#pvCls', root).value || '', sample: mode === 'sample' };
+          if (PREVIEW.sample && hasSmp) { PREVIEW.smpSid = smp.sid; PREVIEW.smpName = smp.name; }
           MYA = { list: null, loading: false, err: '' };
           close();
           renderPreviewBar();
@@ -1484,6 +1520,27 @@ async function previewAsStudent() {
         } }
     ]
   });
+}
+
+/** ลบผลทดสอบของนักเรียนตัวอย่างทั้งหมด — ถามยืนยันก่อนเพราะย้อนกลับไม่ได้ */
+async function sampleClearBox() {
+  let info = null;
+  try { info = await api('sampleInfo', {}); } catch (e) {
+    toast('อ่านข้อมูลนักเรียนตัวอย่างไม่ได้ — ' + ((e && e.message) || ''), 'bad'); return;
+  }
+  if (!info || !info.sid) { toast(info && info.hint ? info.hint : 'ยังไม่มีนักเรียนตัวอย่าง', 'bad'); return; }
+  if (!info.works) { toast('ยังไม่มีผลทดสอบให้ลบ', 'ok'); return; }
+  const ok = await confirmBox('ลบผลทดสอบ',
+    'ลบผลทั้งหมด <b>' + info.works + ' ฉบับ</b> ของ <b>' + esc(info.name || info.sid) + '</b> (' +
+    esc(info.cls) + ')<br><span class="hint">ลบเฉพาะแถวของนักเรียนตัวอย่างเท่านั้น ' +
+    'ผลของนักเรียนจริงไม่ถูกแตะ · ย้อนกลับไม่ได้</span>', 'ลบผลทดสอบ');
+  if (!ok) return;
+  try {
+    const r = await api('sampleClear', {});
+    toast('ลบผลทดสอบแล้ว ' + r.removed + ' ฉบับ', 'ok');
+    renderPreviewBar();
+    render();
+  } catch (e) { toast('ลบไม่สำเร็จ — ' + ((e && e.message) || ''), 'bad'); }
 }
 
 function renderStorageWarn() {
@@ -1764,6 +1821,9 @@ function isMainAdmin() { return isAdmin() && !isSubAdmin(); }
    เก็บไว้ในหน่วยความจำอย่างเดียว ปิดหน้าแล้วหาย และห้ามส่งคำตอบขึ้นชีตเด็ดขาด */
 let PREVIEW = null;
 function previewOn() { return !!PREVIEW; }
+/* กำลังทดสอบในชื่อนักเรียนตัวอย่างอยู่หรือไม่ — ต่างจากการดูเฉย ๆ ที่ไม่แตะชีต
+   ต้องมีเลขประจำตัวของนักเรียนตัวอย่างจริงถึงจะนับ ไม่ใช่แค่ติ๊กช่องไว้ */
+function previewSample() { return !!(PREVIEW && PREVIEW.sample && PREVIEW.smpSid); }
 function isStudent() {
   return previewOn() || (authValid() && DB.auth.role === 'student');
 }
@@ -12968,15 +13028,21 @@ function attemptPayload(a, status) {
 }
 
 async function sendAttempt(a, status) {
-  // โหมดทดลองของครูต้องไม่ปนกับผลจริงของนักเรียนในชีตเด็ดขาด
-  if (previewOn()) return false;
+  /* โหมดดูเฉย ๆ ต้องไม่ปนกับผลจริงของนักเรียนในชีตเด็ดขาด
+     แต่โหมดนักเรียนตัวอย่างต้องส่งจริง เพราะจุดประสงค์คือทดสอบทั้งวงจร
+     ชีตเป็นคนตัดสินว่าจะบันทึกเป็นเลขประจำตัวใคร แอปบอกได้แค่ว่านี่คือการทดสอบ */
+  const smp = previewSample();
+  if (previewOn() && !smp) return false;
   if (!isStudent() || !a || !a.assignCode) return false;
   const payload = attemptPayload(a, status);
   try {
-    await api('submit', { payload: payload });
+    await api('submit', smp ? { payload: payload, sample: true } : { payload: payload });
     if (status === 'final') { a.sentAt = Date.now(); save(true); }
     return true;
   } catch (e) {
+    /* ผลทดสอบไม่ต้องเข้าคิวส่งซ้ำ ปล่อยหายได้ ครูกดทำใหม่ได้ทันที
+       ถ้าเข้าคิวไว้ มันจะไปโผล่ส่งตอนครูออกจากโหมดทดสอบไปแล้ว ซึ่งงงกว่า */
+    if (smp) { toast('ส่งผลทดสอบไม่สำเร็จ — ' + ((e && e.message) || 'ลองใหม่'), 'bad'); return false; }
     // เก็บเข้าคิวเฉพาะฉบับจริง ฉบับร่างปล่อยหายได้ เดี๋ยวรอบหน้าส่งใหม่อยู่แล้ว
     if (status === 'final') {
       DB.outbox = DB.outbox.filter(x => !(x.code === payload.code && x.status === 'final'));
