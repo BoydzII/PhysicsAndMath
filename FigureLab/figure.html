@@ -1321,6 +1321,8 @@ function overlay() {
   }
   const its = selItems();
   if (!its.length) return s;
+  /* กำลังคลิกทีละจุดอยู่ ยังไม่ใช่ตอน "เลือกรูปแล้ว" — กรอบกับจุดจับมีแต่จะบังเส้นที่กำลังลาก */
+  if (polyDraft) return s;
   const boxes = its.length === 1 ? [bbox(its[0])] : [selBox()];
   boxes.forEach(function (b) {
     s += '<rect class="selbox" x="' + n1(b.x - 3) + '" y="' + n1(b.y - 3) + '" width="' + n1(b.w + 6) +
@@ -1483,6 +1485,7 @@ function startCreate(x, y, e) {
       const it = newItem('poly', { pts: [[sn(x), sn(y)], [sn(x), sn(y)]], closed: true });
       doc.items.push(it); sel = [it.id];
       polyDraft = it;
+      hud('คลิกเพิ่มจุดไปเรื่อย ๆ · แตะจุดแรกหรือกด Enter เพื่อปิดรูป');
     } else {
       /* แตะใกล้จุดแรก = ปิดรูป */
       const p0 = polyDraft.pts[0];
@@ -1515,12 +1518,19 @@ function onDown(e) {
 
   if (pendingPart) { placePart(pendingPart, x, y); return; }
 
-  const hEl = e.target.closest ? e.target.closest('[data-h]') : null;
-  if (hEl) {
-    push();
-    drag = { mode: 'hnd', h: hEl.getAttribute('data-h'), x0: x, y0: y,
-      snapshot: JSON.stringify(selItems()), box: selBox() };
-    return;
+  /* จุดจับกดได้เฉพาะตอนถือเครื่องมือ "เลือก" เท่านั้น
+     ถือเครื่องมือวาดอยู่แล้วคลิก = ต้องได้รูปใหม่เสมอ ไม่ใช่ไปลากจุดจับของรูปที่เลือกค้างไว้
+     เคยพลาดตรงนี้กับรูปหลายเหลี่ยม — จุดสุดท้ายของรูปที่กำลังคลิกทีละจุดวิ่งตามเมาส์อยู่
+     จุดจับของมันจึงอยู่ใต้ปลายเมาส์พอดี คลิกครั้งต่อไปเลยไปโดนจุดจับแทนที่จะเพิ่มจุดใหม่
+     ผลคือรูปค้างอยู่แค่สองจุด กลายเป็นเส้นตรงที่ต่อเป็นเหลี่ยมไม่ได้ */
+  if (tool === 'sel') {
+    const hEl = e.target.closest ? e.target.closest('[data-h]') : null;
+    if (hEl) {
+      push();
+      drag = { mode: 'hnd', h: hEl.getAttribute('data-h'), x0: x, y0: y,
+        snapshot: JSON.stringify(selItems()), box: selBox() };
+      return;
+    }
   }
   if (tool !== 'sel' && tool !== 'pan') { push(); startCreate(x, y, e); return; }
   if (tool === 'pan') {
