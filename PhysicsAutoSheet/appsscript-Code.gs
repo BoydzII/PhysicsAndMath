@@ -24,6 +24,8 @@
  *   เพิ่มแผ่น notes เก็บสมุดจดที่นักเรียนกดส่งให้ครู หนึ่งเล่มอาจกินหลายแถว
  *   (ท่อนละ 45,000 ตัวอักษร เพราะช่องหนึ่งช่องรับได้ราวห้าหมื่น) ส่งซ้ำแทนฉบับเดิม
  *   คำสั่งใหม่: noteSend (นักเรียนส่ง) · noteList (ครูดูรายการ) · noteGet (ครูเปิดเล่ม)
+ *   ครูเขียนความเห็นและประทับตราถึงเล่มนั้นได้ (noteFeedback) นักเรียนเห็นที่ชั้นสมุด (noteMine)
+ *   ส่งสมุดซ้ำแล้วความเห็นเดิมยังอยู่ นักเรียนจะได้เห็นว่าครูบอกอะไรไว้ก่อนแก้
  *   ครูผู้สอนเห็นเฉพาะสมุดของนักเรียนในชั้นที่ตัวเองดูแล อ่านชั้นสดจากรายชื่อ
  *   แผ่นใหม่ถูกสร้างให้เองตอนส่งครั้งแรก ข้อมูลเดิมไม่ต้องแก้อะไร
  *
@@ -179,7 +181,7 @@ var SHEETS = {
   /* สมุดจดที่นักเรียนส่งให้ครู — หนึ่งเล่มอาจกินหลายแถว เนื้อสมุดอยู่คอลัมน์สุดท้ายเสมอ
      จะได้อ่านรายการโดยไม่ต้องลากเนื้อสมุดทั้งก้อนมาด้วย */
   notes:       ['id', 'sid', 'subject', 'cls', 'title', 'pages', 'at', 'up',
-                'bytes', 'part', 'parts', 'data']
+                'bytes', 'part', 'parts', 'fb', 'data']
 };
 /* หัวตารางภาษาไทยที่คนอ่านเข้าใจ — เขียนไว้ที่แถว 1 ของแต่ละแผ่น */
 var HEADERS = {
@@ -203,7 +205,7 @@ var HEADERS = {
                 'เริ่มเมื่อ', 'จบเมื่อ', 'เวลาที่อยู่กับบทเรียน (วินาที)',
                 'เวลาที่ออกไป (วินาที)', 'จำนวนครั้งที่ออก', 'อุปกรณ์', 'บันทึกการออก'],
   notes:       ['รหัสสมุด', 'เลขประจำตัว', 'วิชา', 'ชั้น', 'ชื่อสมุด', 'จำนวนหน้า',
-                'ส่งครั้งแรก', 'ส่งล่าสุด', 'ขนาด (ตัวอักษร)', 'ท่อนที่', 'ทั้งหมดกี่ท่อน', 'เนื้อสมุด']
+                'ส่งครั้งแรก', 'ส่งล่าสุด', 'ขนาด (ตัวอักษร)', 'ท่อนที่', 'ทั้งหมดกี่ท่อน', 'ความเห็นครู', 'เนื้อสมุด']
 };
 /* คอลัมน์ของแผ่นคลังข้ออัตนัย (นับจาก 1) */
 var C_EB_ID = 1, C_EB_SUBJ = 2, C_EB_TOPIC = 3, C_EB_TAGS = 4, C_EB_AT = 5,
@@ -266,7 +268,7 @@ function sheet_(name) {
     if (name === 'notes') {
       sh.getRange('B:B').setNumberFormat('@');
       sh.getRange('D:D').setNumberFormat('@');
-      sh.getRange('L:L').setNumberFormat('@');
+      sh.getRange('M:M').setNumberFormat('@');
     }
   }
   _sheets[name] = sh;
@@ -947,7 +949,7 @@ var NT_CHUNK = 45000;
 var NT_ITEM_MAX = 2000000;     // เล่มเดียวใหญ่ได้ไม่เกินนี้ (ราวสามสิบหน้าที่เขียนแน่น ๆ)
 var NT_LIST_MAX = 500;
 var C_NT_ID = 1, C_NT_SID = 2, C_NT_SUBJ = 3, C_NT_CLS = 4, C_NT_TITLE = 5, C_NT_PAGES = 6,
-    C_NT_AT = 7, C_NT_UP = 8, C_NT_BYTES = 9, C_NT_PART = 10, C_NT_PARTS = 11, C_NT_DATA = 12;
+    C_NT_AT = 7, C_NT_UP = 8, C_NT_BYTES = 9, C_NT_PART = 10, C_NT_PARTS = 11, C_NT_FB = 12, C_NT_DATA = 13;
 
 function ntKey_(sid, bookId) {
   return sidKey_(sid) + '|' + String(bookId == null ? '' : bookId).trim().slice(0, 40);
@@ -983,11 +985,12 @@ function apiNoteSend_(req) {
   lock.waitLock(30000);
   try {
     // จำเวลาที่ส่งครั้งแรกไว้ แม้จะส่งซ้ำกี่รอบ ครูจะได้รู้ว่าเล่มนี้เริ่มส่งตั้งแต่เมื่อไร
-    var firstAt = now;
-    cols_('notes', 1, C_NT_AT).forEach(function (r) {
-      if (String(r[C_NT_ID - 1]) === key && Number(r[C_NT_AT - 1])) {
-        firstAt = Math.min(firstAt, Number(r[C_NT_AT - 1]));
-      }
+    // ความเห็นของครูติดไปกับฉบับใหม่ด้วย ไม่งั้นนักเรียนแก้ตามที่ครูบอกแล้วส่งใหม่ ความเห็นก็หาย
+    var firstAt = now, oldFb = '';
+    cols_('notes', 1, C_NT_FB).forEach(function (r) {
+      if (String(r[C_NT_ID - 1]) !== key) return;
+      if (Number(r[C_NT_AT - 1])) firstAt = Math.min(firstAt, Number(r[C_NT_AT - 1]));
+      if (r[C_NT_FB - 1]) oldFb = String(r[C_NT_FB - 1]);
     });
     var parts = Math.ceil(data.length / NT_CHUNK);
     var title = String(b.title == null ? '' : b.title).slice(0, 120);
@@ -995,7 +998,8 @@ function apiNoteSend_(req) {
     var rows = [];
     for (var i = 0; i < parts; i++) {
       rows.push([key, String(t.sid), subject, st ? st.cls : '', title, pages, firstAt, now,
-                 data.length, i + 1, parts, '~' + data.substr(i * NT_CHUNK, NT_CHUNK)]);
+                 data.length, i + 1, parts, i === 0 ? oldFb : '',
+                 '~' + data.substr(i * NT_CHUNK, NT_CHUNK)]);
     }
     ntReplace_(key, rows);
     return { id: bookId, up: now, parts: parts, bytes: data.length };
@@ -1010,7 +1014,7 @@ function apiNoteList_(req) {
   /* ชั้นอ่านสดจากรายชื่อ ไม่ใช่ค่าที่ติดมากับแถว — เด็กย้ายห้องแล้วต้องไปอยู่ห้องใหม่ */
   var stu = focusStudentMap_();
   var out = [];
-  cols_('notes', 1, C_NT_PARTS).forEach(function (r) {
+  cols_('notes', 1, C_NT_FB).forEach(function (r) {
     if (Number(r[C_NT_PART - 1] || 1) !== 1) return;          // เอาแถวแรกของแต่ละเล่มพอ
     if (normSubject_(r[C_NT_SUBJ - 1]) !== subject) return;
     var k = sidKey_(r[C_NT_SID - 1]);
@@ -1022,7 +1026,8 @@ function apiNoteList_(req) {
     out.push({ id: String(r[C_NT_ID - 1]), sid: String(st.sid), name: st.name, no: st.no, cls: cls,
                title: String(r[C_NT_TITLE - 1] == null ? '' : r[C_NT_TITLE - 1]),
                pages: Number(r[C_NT_PAGES - 1]) || 0, at: Number(r[C_NT_AT - 1]) || 0,
-               up: Number(r[C_NT_UP - 1]) || 0, bytes: Number(r[C_NT_BYTES - 1]) || 0 });
+               up: Number(r[C_NT_UP - 1]) || 0, bytes: Number(r[C_NT_BYTES - 1]) || 0,
+               fb: ntFb_(r[C_NT_FB - 1]) });
   });
   out.sort(function (a, b) { return b.up - a.up; });
   return out.slice(0, NT_LIST_MAX);
@@ -1035,7 +1040,7 @@ function apiNoteGet_(req) {
   var key = String(req.id == null ? '' : req.id);
   if (!key) throw new Error('ไม่ได้บอกว่าจะเปิดสมุดเล่มไหน');
   var hit = [];
-  cols_('notes', 1, C_NT_PARTS).forEach(function (r, i) {
+  cols_('notes', 1, C_NT_FB).forEach(function (r, i) {
     if (String(r[C_NT_ID - 1]) === key) hit.push({ row: i + 2, r: r });
   });
   if (!hit.length) throw new Error('ไม่พบสมุดเล่มนี้ในชีต — นักเรียนอาจยังไม่ได้ส่ง หรือส่งจากชีตอีกใบ');
@@ -1044,8 +1049,9 @@ function apiNoteGet_(req) {
   var st = focusStudentMap_()[sidKey_(first[C_NT_SID - 1])];
   var cls = st ? normCls_(st.cls) : normCls_(first[C_NT_CLS - 1]);
   if (!inScope_(sc, cls)) throw new Error('AUTH: สมุดเล่มนี้เป็นของนักเรียนนอกชั้นที่คุณดูแล');
-  var sh = sheet_('notes'), parts = [];
+  var sh = sheet_('notes'), parts = [], fbRaw = '';
   hit.forEach(function (h) {
+    if (Number(h.r[C_NT_PART - 1] || 1) === 1) fbRaw = h.r[C_NT_FB - 1];
     var raw = sh.getRange(h.row, C_NT_DATA).getValue();
     var v = String(raw == null ? '' : raw);
     if (v.charAt(0) === '~') v = v.slice(1);
@@ -1054,7 +1060,67 @@ function apiNoteGet_(req) {
   return { id: key, sid: String(first[C_NT_SID - 1]), name: st ? st.name : '', no: st ? st.no : '',
            cls: cls, title: String(first[C_NT_TITLE - 1] == null ? '' : first[C_NT_TITLE - 1]),
            pages: Number(first[C_NT_PAGES - 1]) || 0, up: Number(first[C_NT_UP - 1]) || 0,
-           data: parts.join('') };
+           fb: ntFb_(fbRaw), data: parts.join('') };
+}
+
+/* ---------- ความเห็นของครูถึงสมุดเล่มหนึ่ง ----------
+   เก็บเป็น JSON ในแถวแรกของเล่ม {stamp, text, at, by} — ว่าง = ยังไม่ได้ให้ความเห็น
+   ตราประทับรับเฉพาะชุดที่กำหนด แอปจะได้ทำสีและป้ายให้ตรงกันทุกเครื่อง */
+var NT_STAMPS = ['ดีมาก', 'ครบถ้วน', 'เรียบร้อย', 'ควรเพิ่มเติม', 'แก้แล้วส่งใหม่'];
+var NT_FB_MAX = 1000;
+function ntFb_(v) {
+  if (!v) return null;
+  try {
+    var o = JSON.parse(String(v));
+    return o && (o.stamp || o.text) ? o : null;
+  } catch (e) { return null; }
+}
+/** ครูเขียนความเห็นหรือประทับตราถึงสมุดเล่มหนึ่ง — ส่งว่างทั้งคู่ = ลบความเห็น */
+function apiNoteFeedback_(req) {
+  var me = needAdmin_(req), sc = scopeOf_(me);
+  var subject = needSubject_(me, reqSubject_(req));
+  var key = String(req.id == null ? '' : req.id);
+  var f = req.fb || {};
+  var stamp = String(f.stamp == null ? '' : f.stamp).trim();
+  if (stamp && NT_STAMPS.indexOf(stamp) < 0) throw new Error('ไม่รู้จักตราประทับ "' + stamp + '"');
+  var text = String(f.text == null ? '' : f.text).trim();
+  if (text.length > NT_FB_MAX) throw new Error('ความเห็นยาวเกิน ' + NT_FB_MAX + ' ตัวอักษร');
+  var lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    var row = 0, r1 = null;
+    cols_('notes', 1, C_NT_FB).forEach(function (r, i) {
+      if (String(r[C_NT_ID - 1]) === key && Number(r[C_NT_PART - 1] || 1) === 1) { row = i + 2; r1 = r; }
+    });
+    if (!row) throw new Error('ไม่พบสมุดเล่มนี้ในชีต — นักเรียนอาจลบหรือยังไม่ได้ส่ง');
+    if (normSubject_(r1[C_NT_SUBJ - 1]) !== subject) throw new Error('สมุดเล่มนี้เป็นของวิชาอื่น');
+    var st = focusStudentMap_()[sidKey_(r1[C_NT_SID - 1])];
+    var cls = st ? normCls_(st.cls) : normCls_(r1[C_NT_CLS - 1]);
+    if (!inScope_(sc, cls)) throw new Error('AUTH: สมุดเล่มนี้เป็นของนักเรียนนอกชั้นที่คุณดูแล');
+    var by = 'ผู้ดูแลหลัก';
+    if (me.sub) {
+      var tt = findTeacher_(me.sub);
+      by = tt && tt.name ? String(tt.name) : String(me.sub);
+    }
+    var fb = (stamp || text) ? { stamp: stamp, text: text, at: Date.now(), by: by } : null;
+    sheet_('notes').getRange(row, C_NT_FB).setValue(fb ? JSON.stringify(fb) : '');
+    dropCache_('notes');
+    return { id: key, fb: fb };
+  } finally { lock.releaseLock(); }
+}
+/** นักเรียนดูว่าสมุดเล่มไหนของตัวเองส่งถึงครูแล้ว และครูว่าอย่างไร — ไม่ส่งเนื้อสมุดกลับ */
+function apiNoteMine_(req) {
+  var t = needStudent_(req);
+  var subject = reqSubject_(req);
+  var pre = sidKey_(t.sid) + '|';
+  var out = [];
+  cols_('notes', 1, C_NT_FB).forEach(function (r) {
+    var id = String(r[C_NT_ID - 1] == null ? '' : r[C_NT_ID - 1]);
+    if (id.indexOf(pre) !== 0 || Number(r[C_NT_PART - 1] || 1) !== 1) return;
+    if (normSubject_(r[C_NT_SUBJ - 1]) !== subject) return;
+    out.push({ book: id.slice(pre.length), up: Number(r[C_NT_UP - 1]) || 0, fb: ntFb_(r[C_NT_FB - 1]) });
+  });
+  return out;
 }
 
 /* ====== ทางเข้าเว็บแอป ================================================== */
@@ -1127,6 +1193,8 @@ function route_(action, req) {
     case 'noteSend':      return apiNoteSend_(req);
     case 'noteList':      return apiNoteList_(req);
     case 'noteGet':       return apiNoteGet_(req);
+    case 'noteFeedback':  return apiNoteFeedback_(req);
+    case 'noteMine':      return apiNoteMine_(req);
     default: throw new Error('ไม่รู้จักคำสั่ง: ' + action);
   }
 }

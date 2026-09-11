@@ -890,6 +890,23 @@ input.numin.bad{border-color:var(--bad);background:var(--bad-bg)}
 .ntpages figure{margin:0}
 .ntpages figcaption{font-size:12px;color:var(--muted);margin-bottom:4px}
 .ntpages img{width:100%;border:1px solid var(--line);border-radius:6px;background:#fff}
+/* ตราประทับและความเห็นของครู */
+.ntstamp{display:inline-block;padding:1px 10px;border-radius:999px;border:1.5px solid #d97706;
+  color:#b45309;background:#fffbeb;font-weight:700;font-size:12.5px;line-height:1.6;transform:rotate(-2deg)}
+.nbfb{margin-top:8px;padding:7px 10px;border-left:3px solid #d97706;background:rgba(217,119,6,.07);
+  border-radius:0 6px 6px 0;font-size:13.5px;line-height:1.7}
+.nbfb .tx{white-space:pre-wrap;overflow-wrap:anywhere}
+.nbnew{color:#dc2626;font-size:12px}
+.ntfb{border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;margin-top:10px;background:var(--panel)}
+.ntst button.on{background:#d97706;border-color:#d97706;color:#fff}
+.bdtop button.on{border-color:#2563eb;color:#1d4ed8}
+/* ทบทวนแบบคอร์เนลล์ — ผ้าคลุมช่องจดบันทึก แตะแล้วเลื่อนลงทีละบรรทัด */
+.bdroot .hw-canvas-wrap{position:relative}
+.nbcover{position:absolute;left:28%;right:0;bottom:150px;z-index:4;cursor:pointer;
+  background:repeating-linear-gradient(135deg,#eef2f7 0 12px,#e5eaf1 12px 24px);
+  border-top:2px dashed #2563eb;display:flex;justify-content:center;align-items:flex-start}
+.nbcover span{position:sticky;top:10px;margin:12px 10px 0;padding:6px 12px;border-radius:999px;
+  background:#fff;color:#1e3a8a;font-size:13px;box-shadow:0 2px 8px rgba(15,23,42,.1)}
 
 /* ปุ่ม ! บนหัวการ์ด — เปิดคำอธิบายความหมายของสีและป้าย */
 .ibtn{width:23px;height:23px;min-height:23px;padding:0;border-radius:50%;flex:0 0 auto;
@@ -1303,7 +1320,7 @@ table td,table th,.num,.xpstat b,.tick,
    *** ห้ามลบบรรทัดเครื่องหมาย @@BUILTIN@@ ทั้งสองอัน ตัวสร้างไฟล์ใช้หาตำแหน่ง ***
    ========================================================================== */
 /* @@BUILTIN@@ */
-const BUILTIN = {"url":"https://script.google.com/macros/s/AKfycbzuuRbnE_oB7a9vx7zZizyPVEKao31ERDTU82DvydMuRTDqVoQvgns9EsjTIzpbBjuM/exec","studentOnly":false,"lockCloud":false,"logo":"","header":null,"about":null,"build":"2026-09-11 07:44","ver":"v8.112"};
+const BUILTIN = {"url":"https://script.google.com/macros/s/AKfycbzuuRbnE_oB7a9vx7zZizyPVEKao31ERDTU82DvydMuRTDqVoQvgns9EsjTIzpbBjuM/exec","studentOnly":false,"lockCloud":false,"logo":"","header":null,"about":null,"build":"2026-09-11 08:32","ver":"v8.113"};
 /* @@BUILTIN-END@@ */
 
 /* ถ่ายภาพซอร์สของหน้านี้ไว้ตั้งแต่สคริปต์เพิ่งเริ่มทำงาน
@@ -18402,6 +18419,8 @@ async function focusStop() {
     toast('ช่วงเรียนสั้นกว่า ' + FOCUS_MIN_SEC + ' วินาที จึงไม่ได้บันทึก', 'warn');
     return;
   }
+  // ชวนเขียนสรุปทันทีตอนที่ยังจำได้ แล้วค่อยส่งช่วงเรียนขึ้นชีตอยู่ข้างหลัง
+  if (typeof nbSummaryPrompt === 'function') nbSummaryPrompt(s);
   await focusSend(s, true);
 }
 
@@ -19684,6 +19703,7 @@ function nbShelf() {
         '</div>' +
         (b.sentAt ? '<div class="hint" style="margin-top:4px">ส่งให้ครูล่าสุด ' +
           thDateTime(b.sentAt) + (b.up > b.sentAt ? ' · <b>มีหน้าที่แก้หลังส่ง</b>' : '') + '</div>' : '') +
+        '<div data-nbfb="' + b.id + '">' + nbFbHTML(b) + '</div>' +
       '</div></div>';
   }).join('');
   openModal({
@@ -19704,6 +19724,7 @@ function nbShelf() {
     buttons: [{ label: 'ปิด' }],
     onMount: function (root) {
       const close = function () { const x = $('[data-close]', root.closest ? root.closest('.modal-bg') || root : root); if (x) x.click(); };
+      nbPullFb(root);
       $('#nbNew', root).addEventListener('click', function () { close(); nbBookDialog(null); });
       $$('[data-nbopen]', root).forEach(function (b) {
         b.addEventListener('click', function () {
@@ -19865,7 +19886,8 @@ async function nbPrintBook(bk, who) {
     '<div class="t3">' + esc(sub ? sub + ' · ' : '') + pages.length + ' หน้า · ' +
       thDateTime(Date.now()) + '</div></div><hr class="prule">' +
     imgs.map(function (src, i) {
-      return '<div class="pg nbpg"><div class="nbpgno">หน้า ' + (i + 1) + '/' + pages.length + '</div>' +
+      return '<div class="pg nbpg"><div class="nbpgno">หน้า ' + (i + 1) + '/' + pages.length +
+        (pages[i].tag ? ' · ' + esc(pages[i].tag) : '') + '</div>' +
         (src ? '<img src="' + src + '" alt="หน้า ' + (i + 1) + '">' : '') + '</div>';
     }).join('');
   setTimeout(function () { window.print(); }, 150);
@@ -19885,7 +19907,7 @@ function nbBookData(bk) {
   return JSON.stringify({
     v: 1, title: bk.title || '', paper: bk.paper || 'bg-lined', color: bk.color || '',
     pages: (bk.pages || []).map(function (p) {
-      return { w: p.w || 0, h: p.h || 0, strokes: p.strokes || [] };
+      return { w: p.w || 0, h: p.h || 0, strokes: p.strokes || [], tag: p.tag || '' };
     })
   });
 }
@@ -19960,12 +19982,13 @@ function nbTeacherCardHTML() {
     h += '<div class="hint">ยังไม่มีใครส่งสมุดมา</div>';
   } else {
     h += '<div class="tablewrap"><table><thead><tr><th class="num">เลขที่</th><th>ชื่อ</th>' +
-      '<th>ชั้น</th><th>ชื่อสมุด</th><th class="num">หน้า</th><th>ส่งล่าสุด</th><th></th>' +
+      '<th>ชั้น</th><th>ชื่อสมุด</th><th class="num">หน้า</th><th>ส่งล่าสุด</th><th>ความเห็น</th><th></th>' +
       '</tr></thead><tbody>' +
       NTLIST.map(function (r) {
         return '<tr><td class="num">' + esc(r.no || '') + '</td><td>' + esc(r.name || r.sid) + '</td>' +
           '<td>' + esc(r.cls || '') + '</td><td>' + esc(r.title || '—') + '</td>' +
           '<td class="num">' + (r.pages || 0) + '</td><td>' + (r.up ? thDateTime(r.up) : '—') + '</td>' +
+          '<td>' + nbFbBadge(r.fb) + (r.fb && r.up > r.fb.at ? ' <span class="hint">ส่งฉบับแก้แล้ว</span>' : '') + '</td>' +
           '<td><button class="sm primary" data-ntopen="' + esc(r.id) + '">เปิดดู</button></td></tr>';
       }).join('') + '</tbody></table></div>' +
       '<div class="hint" style="margin-top:9px">รวม ' + NTLIST.length + ' เล่ม · เรียงเล่มที่ส่งล่าสุดขึ้นก่อน</div>';
@@ -20003,21 +20026,282 @@ async function nbViewSent(id) {
   try { if (document.fonts && document.fonts.ready) await document.fonts.ready; } catch (e) {}
   const pages = book.pages || [];
   const imgs = pages.map(function (p) { return nbPageImage(p, book.paper); });
+  let stamp = (r.fb && r.fb.stamp) || '';
   openModal({
     wide: true,
     title: (book.title || r.title || 'สมุดจด') + ' — ' + (r.name || r.sid),
     bodyHTML: '<div class="hint">' + esc(who) + ' · ' + pages.length + ' หน้า · ส่งล่าสุด ' +
-      thDateTime(r.up) + '</div>' +
+      thDateTime(r.up) + '</div>' + nbFbFormHTML(r.fb) +
       '<div class="ntpages">' + imgs.map(function (src, i) {
-        return '<figure><figcaption>หน้า ' + (i + 1) + '/' + imgs.length + '</figcaption>' +
+        const tg = pages[i] && pages[i].tag;
+        return '<figure><figcaption>หน้า ' + (i + 1) + '/' + imgs.length +
+          (tg ? ' · ' + esc(tg) : '') + '</figcaption>' +
           (src ? '<img src="' + src + '" alt="หน้า ' + (i + 1) + '">' : '') + '</figure>';
       }).join('') + '</div>',
     buttons: [{ label: 'ปิด' },
-              { label: 'PDF ทั้งเล่ม', cls: 'primary', act: function (c) {
+              { label: 'PDF ทั้งเล่ม', act: function (c) {
                 c();
                 nbPrintBook({ title: book.title || r.title, paper: book.paper, pages: pages }, who);
-              } }]
+              } },
+              { label: 'บันทึกความเห็น', cls: 'primary', act: async function (c, root) {
+                const text = ($('#ntFbT', root).value || '').trim();
+                const btns = $$('footer button', root);
+                btns.forEach(function (x) { x.disabled = true; });
+                try {
+                  const res = await api('noteFeedback', { id: id, fb: { stamp: stamp, text: text } });
+                  (NTLIST || []).forEach(function (x) { if (x.id === id) x.fb = res.fb; });
+                  c();
+                  toast(res.fb ? 'บันทึกความเห็นแล้ว — นักเรียนจะเห็นที่ชั้นสมุดของตัวเอง' : 'ลบความเห็นแล้ว', 'ok');
+                  renderStats();
+                } catch (e) {
+                  const m = e.message || String(e);
+                  toast(/ไม่รู้จักคำสั่ง/.test(m)
+                    ? 'ชีตยังเป็นรุ่นเก่า — ต้อง Deploy ชีตรุ่น 17 ก่อน'
+                    : m, 'bad');
+                  btns.forEach(function (x) { x.disabled = false; });
+                }
+              } }],
+    onMount: function (root) {
+      $$('[data-ntst]', root).forEach(function (b) {
+        b.addEventListener('click', function () {
+          stamp = stamp === b.dataset.ntst ? '' : b.dataset.ntst;
+          $$('[data-ntst]', root).forEach(function (x) { x.classList.toggle('on', x.dataset.ntst === stamp); });
+        });
+      });
+    }
   });
+}
+
+/* ============================================================================
+   สมุดจดเพื่อการเรียน — ความเห็นครู · ป้ายบทต่อหน้า · ทบทวนแบบคอร์เนลล์ · สรุปท้ายช่วงเรียน
+   ========================================================================== */
+/* ตราประทับของครู — ต้องตรงกับ NT_STAMPS ในฝั่งชีต ชีตไม่รับคำอื่น */
+var NT_STAMPS = ['ดีมาก', 'ครบถ้วน', 'เรียบร้อย', 'ควรเพิ่มเติม', 'แก้แล้วส่งใหม่'];
+
+/* ---------- ความเห็นครู ---------- */
+function nbFbBadge(fb) {
+  if (!fb || (!fb.stamp && !fb.text)) return '<span class="hint">—</span>';
+  return '<span class="ntstamp">' + esc(fb.stamp || 'มีความเห็น') + '</span>';
+}
+/** กล่องความเห็นครูบนการ์ดสมุดของนักเรียน */
+function nbFbHTML(bk) {
+  const fb = bk && bk.fb;
+  if (!fb || (!fb.stamp && !fb.text)) return '';
+  const fresh = !(bk.fbSeen >= fb.at);
+  return '<div class="nbfb">' +
+    (fb.stamp ? '<span class="ntstamp">' + esc(fb.stamp) + '</span> ' : '') +
+    (fresh ? '<b class="nbnew">ใหม่</b> ' : '') +
+    (fb.text ? '<span class="tx">' + esc(fb.text) + '</span>' : '') +
+    '<div class="hint">' + esc(fb.by || 'ครู') + ' · ' + thDateTime(fb.at) +
+    (bk.sentAt > fb.at ? ' · ส่งฉบับแก้ไปแล้ว' : '') + '</div></div>';
+}
+/** ดึงความเห็นของครูมาใส่การ์ดที่เปิดอยู่ — เงียบไว้ถ้าส่งไม่ได้หรือชีตยังเป็นรุ่นเก่า */
+async function nbPullFb(root) {
+  if (!nbCanSend() || (typeof previewOn === 'function' && previewOn())) return;
+  let list;
+  try { list = await api('noteMine', {}); } catch (e) { return; }
+  if (!Array.isArray(list)) return;
+  let changed = false;
+  const books = nbBooks();
+  list.forEach(function (it) {
+    const bk = books.filter(function (b) { return b.id === it.book; })[0];
+    if (!bk) return;
+    const a = JSON.stringify(bk.fb || null), b = JSON.stringify(it.fb || null);
+    if (a !== b) { bk.fb = it.fb || null; changed = true; }
+  });
+  $$('[data-nbfb]', root).forEach(function (el) {
+    const bk = books.filter(function (b) { return b.id === el.dataset.nbfb; })[0];
+    if (!bk) return;
+    el.innerHTML = nbFbHTML(bk);
+    // เห็นแล้วครั้งหนึ่ง ครั้งหน้าไม่ต้องขึ้นว่า "ใหม่"
+    if (bk.fb && !(bk.fbSeen >= bk.fb.at)) { bk.fbSeen = bk.fb.at; changed = true; }
+  });
+  if (changed) save(true);
+}
+/** ฟอร์มความเห็นในหน้าที่ครูเปิดดูสมุด */
+function nbFbFormHTML(fb) {
+  const cur = (fb && fb.stamp) || '';
+  return '<div class="ntfb">' +
+    '<div class="hint">ความเห็นถึงนักเรียน — นักเรียนเห็นที่ชั้นสมุดของตัวเอง ส่งฉบับแก้มาแล้วความเห็นยังอยู่</div>' +
+    '<div class="row ntst" style="gap:6px;margin:8px 0">' + NT_STAMPS.map(function (x) {
+      return '<button type="button" class="sm' + (x === cur ? ' on' : '') + '" data-ntst="' + esc(x) + '">' +
+        esc(x) + '</button>';
+    }).join('') + '</div>' +
+    '<textarea id="ntFbT" rows="3" maxlength="1000" style="width:100%" ' +
+    'placeholder="เช่น สรุปดีมาก ลองเพิ่มตัวอย่างการคำนวณอีกหนึ่งข้อ">' +
+    esc((fb && fb.text) || '') + '</textarea>' +
+    (fb && fb.at ? '<div class="hint">ให้ความเห็นล่าสุด ' + thDateTime(fb.at) + ' · ' + esc(fb.by || '') + '</div>' : '') +
+    '</div>';
+}
+
+/* ---------- ป้ายบทของแต่ละหน้า ---------- */
+function nbTopicTitles() {
+  return (typeof TOPICS !== 'undefined' ? TOPICS : []).map(function (t) { return chLabel(t) + ' ' + t.name; });
+}
+/** หน้าที่เริ่มเขียนระหว่างจับเวลาช่วงเรียน ได้ป้ายบทของช่วงนั้นเอง ไม่ต้องกดเลือก */
+function nbAutoTag(p) {
+  if (!BOARD || BOARD.who === 'teach' || !p || p.tag) return;
+  const s = typeof focusCur === 'function' ? focusCur() : null;
+  if (!s || s.topic === '' || s.topic == null || !s.title) return;
+  p.tag = s.title;
+  nbBoardExtras();
+}
+function nbTagDialog() {
+  if (!BOARD) return;
+  const b = boardDB(BOARD.who), p = b.pages[b.cur];
+  if (!p) return;
+  const opts = nbTopicTitles();
+  if (p.tag && opts.indexOf(p.tag) < 0) opts.unshift(p.tag);
+  openModal({
+    title: 'ป้ายบทของหน้า ' + (b.cur + 1),
+    bodyHTML: '<select id="nbTagSel" style="width:100%"><option value="">— ไม่ระบุบท —</option>' +
+      opts.map(function (t) {
+        return '<option' + (t === p.tag ? ' selected' : '') + '>' + esc(t) + '</option>';
+      }).join('') + '</select>' +
+      '<div class="hint" style="margin-top:8px">ป้ายบทขึ้นที่มุมหน้าตอนพิมพ์ PDF และตอนครูเปิดดู ' +
+      'หน้าที่เขียนระหว่างจับเวลาช่วงเรียนจะได้ป้ายของบทนั้นให้เอง</div>',
+    buttons: [{ label: 'ยกเลิก' }, { label: 'บันทึก', cls: 'primary', act: function (c, root) {
+      p.tag = $('#nbTagSel', root).value || '';
+      b.up = Date.now();
+      save(true); c(); nbBoardExtras();
+    } }]
+  });
+}
+
+/* ---------- ทบทวนแบบคอร์เนลล์ ----------
+   ปิดช่องจดบันทึกไว้ เหลือแต่คำถามด้านซ้าย ให้นึกคำตอบก่อน แล้วแตะเพื่อเปิดทีละบรรทัด
+   เป็นวิธีทบทวนดั้งเดิมของคอร์เนลล์ — การดึงความจำออกมาเองช่วยให้จำได้นานกว่าอ่านทวน */
+function nbReviewToggle() {
+  if (!BOARD) return;
+  BOARD.review = !BOARD.review;
+  BOARD.revY = 0;
+  if (BOARD.review && BOARD.pad) { nbCloseEditor(BOARD.pad); BOARD.pad.sel = []; BOARD.pad.redraw(); }
+  nbReviewPaint();
+}
+function nbReviewPaint() {
+  if (!BOARD) return;
+  const b = boardDB(BOARD.who);
+  let cv = $('.nbcover', BOARD.wrap);
+  const btn = $('#bdReview', BOARD.root);
+  if (btn) btn.textContent = BOARD.review ? 'เลิกทบทวน' : 'ทบทวน';
+  if (!BOARD.review || b.paper !== 'bg-cornell') {
+    if (cv) cv.remove();
+    if (b.paper !== 'bg-cornell') BOARD.review = false;
+    return;
+  }
+  if (!cv) {
+    cv = document.createElement('div');
+    cv.className = 'nbcover';
+    cv.innerHTML = '<span>นึกคำตอบจากคำถามด้านซ้ายก่อน แล้วแตะเพื่อเปิดทีละบรรทัด</span>';
+    cv.addEventListener('pointerdown', function (e) { e.preventDefault(); e.stopPropagation(); });
+    cv.addEventListener('click', function (e) {
+      const r = BOARD.wrap.getBoundingClientRect();
+      // เปิดถึงเส้นบรรทัดถัดจากจุดที่แตะ (บรรทัดละ 32px ตรงกับลายกระดาษ)
+      // เผื่อ 6px ให้หางตัวอักษรที่ห้อยเลยเส้นบรรทัดลงมา ไม่ให้ผ้าคลุมตัดกลางตัวหนังสือ
+      BOARD.revY = Math.max(BOARD.revY + 32, Math.ceil((e.clientY - r.top + 1) / 32) * 32 + 6);
+      nbReviewPaint();
+    });
+    BOARD.wrap.appendChild(cv);
+  }
+  const bottom = BOARD.wrap.clientHeight - NB_CORNELL_SUM;
+  if (BOARD.revY >= bottom) {
+    cv.remove();
+    toast('เปิดครบทั้งหน้าแล้ว — กดเลิกทบทวนเพื่อกลับไปเขียนต่อ', 'ok');
+    return;
+  }
+  cv.style.top = BOARD.revY + 'px';
+}
+
+/* ---------- ปุ่มเสริมบนแถบบนของสมุด ---------- */
+function nbBoardExtras() {
+  if (!BOARD || BOARD.who === 'teach') return;
+  const b = boardDB(BOARD.who), p = b.pages[b.cur] || {};
+  const tg = $('#bdTag', BOARD.root);
+  if (tg) {
+    tg.textContent = p.tag ? '🏷 ' + p.tag : '🏷 ติดป้ายบท';
+    tg.classList.toggle('on', !!p.tag);
+  }
+  const rv = $('#bdReview', BOARD.root);
+  if (rv) rv.hidden = b.paper !== 'bg-cornell';
+  BOARD.revY = 0;
+  nbReviewPaint();
+}
+
+/* ---------- สรุปท้ายช่วงเรียน ---------- */
+/** ตัดข้อความให้พอดีความกว้าง — ภาษาไทยไม่เว้นวรรคระหว่างคำ จึงตัดตามคำด้วยตัวแบ่งคำของเบราว์เซอร์ */
+function nbWrapText(text, fs, maxW) {
+  const ctx = document.createElement('canvas').getContext('2d');
+  ctx.font = '400 ' + fs + 'px ' + NB_FONT;
+  const seg = typeof Intl !== 'undefined' && Intl.Segmenter ? new Intl.Segmenter('th', { granularity: 'word' }) : null;
+  const out = [];
+  String(text || '').split('\n').forEach(function (para) {
+    const parts = seg ? Array.from(seg.segment(para), function (x) { return x.segment; }) : para.split('');
+    let line = '';
+    parts.forEach(function (w) {
+      if (line && ctx.measureText(line + w).width > maxW) { out.push(line.replace(/\s+$/, '')); line = w.replace(/^\s+/, ''); }
+      else line += w;
+    });
+    out.push(line);
+  });
+  return out.join('\n');
+}
+function nbSummaryPrompt(s) {
+  if (!s || typeof boardOpen !== 'function') return;
+  openModal({
+    title: 'สรุปท้ายช่วงเรียน',
+    bodyHTML: '<div class="hint">' + esc(s.title || '') + ' · ' + focusMin(s.focusSec) + '</div>' +
+      '<textarea id="nbSum" rows="6" style="width:100%;margin-top:9px" maxlength="1500" placeholder="' +
+      '1) วันนี้เรียนเรื่องอะไร&#10;2) ประเด็นสำคัญที่จำได้ 1–3 ข้อ&#10;3) ยังสงสัยอะไร อยากถามครูเรื่องไหน"></textarea>' +
+      '<div class="hint" style="margin-top:6px">เขียนด้วยคำของตัวเองโดยไม่เปิดดู — ' +
+      'การดึงความจำออกมาเองทันทีหลังเรียน ช่วยให้จำได้นานกว่าการอ่านทวน</div>',
+    guard: function (root) { return !!($('#nbSum', root).value || '').trim(); },
+    buttons: [{ label: 'ข้าม' }, { label: 'บันทึกลงสมุด', cls: 'primary', act: function (c, root) {
+      const tx = ($('#nbSum', root).value || '').trim();
+      if (!tx) { toast('ยังไม่ได้เขียนสรุป', 'warn'); return; }
+      c();
+      nbSummaryToBook(s, tx);
+    } }],
+    onMount: function (root) { const t = $('#nbSum', root); if (t) t.focus(); }
+  });
+}
+/** เขียนสรุปลงหน้าใหม่ท้ายสมุดเล่มที่ใช้อยู่ แล้วเปิดให้เขียนหรือวาดเพิ่มต่อได้ */
+function nbSummaryToBook(s, text) {
+  const bk = nbCurBook() || nbNewBook('สมุดเล่มแรก');
+  const last = bk.pages[bk.pages.length - 1];
+  let idx;
+  if (last && !(last.strokes || []).length) idx = bk.pages.length - 1;
+  else {
+    if (bk.pages.length >= NB_BOOK_MAX_PAGE) {
+      toast('สมุด "' + bk.title + '" เต็ม ' + NB_BOOK_MAX_PAGE + ' หน้าแล้ว — เริ่มเล่มใหม่ก่อน แล้วค่อยเขียนสรุป', 'warn');
+      return;
+    }
+    bk.pages.push({ strokes: [] });
+    idx = bk.pages.length - 1;
+  }
+  const W = (last && last.w) || 820;
+  const corn = bk.paper === 'bg-cornell';
+  const L = corn ? Math.round(W * 0.28) + 16 : 36;
+  const maxW = W - L - 30;
+  const ctx = document.createElement('canvas').getContext('2d');
+  const head = { tool: 'text', text: 'สรุปท้ายช่วงเรียน · ' + (s.title || '') + '\n' +
+                   thDateTime(s.endAt || Date.now()) + ' · ' + focusMin(s.focusSec),
+                 fs: 16, color: '#2563eb', size: 2, dash: 0, box: 1, rot: 0, points: [] };
+  const body = { tool: 'text', text: nbWrapText(text, 22, maxW), fs: 22, color: '#1e293b',
+                 size: 2.5, dash: 0, box: 0, rot: 0, points: [] };
+  nbTextLayout(ctx, head); nbTextLayout(ctx, body);
+  head.x = L + head.w / 2; head.y = 20 + head.h / 2;
+  body.x = L + body.w / 2; body.y = head.y + head.h / 2 + 22 + body.h / 2;
+  nbId(head); nbId(body);
+  const pg = bk.pages[idx];
+  pg.strokes = nbPack([head, body]);
+  if (s.topic !== '' && s.topic != null) pg.tag = s.title;
+  pg.up = Date.now();
+  bk.cur = idx; bk.up = Date.now();
+  DB.board.curBook = bk.id;
+  save(true);
+  if (BOARD) boardClose();
+  boardOpen('note');
+  toast('บันทึกสรุปลงสมุด "' + bk.title + '" หน้า ' + (idx + 1) + ' แล้ว — วาดหรือเขียนเพิ่มได้เลย', 'ok');
 }
 
 function hwBindTools(k, pad, wrapEl) {
@@ -20139,6 +20423,7 @@ function boardOpen(who) {
     '<input class="t" id="bdTitle" placeholder="' +
       (teach ? 'หัวข้อที่กำลังสอน' : 'หัวข้อที่จด') + '" value="' + esc(b.title || '') + '">' +
     '<span class="pg" id="bdPg"></span>' +
+    (teach ? '' : '<button data-bd="tag" id="bdTag" title="ป้ายบทของหน้านี้ — ขึ้นตอนพิมพ์และตอนครูเปิดดู"></button>') +
     '<button data-bd="prev" title="หน้าก่อน">‹</button>' +
     '<button data-bd="next" title="หน้าถัดไป">›</button>' +
     '<button data-bd="add">+ หน้าใหม่</button>' +
@@ -20147,6 +20432,7 @@ function boardOpen(who) {
       ? '<select id="bdTopic"><option value="">แทรกสรุปสูตร…</option>' +
         TOPICS.map(t => '<option value="' + t.id + '">' + esc(chLabel(t) + ' ' + t.name) + '</option>').join('') +
         '</select>' : '') +
+    (teach ? '' : '<button data-bd="review" id="bdReview" hidden title="ปิดช่องจดบันทึกไว้ นึกคำตอบจากคำถามด้านซ้าย แล้วแตะเปิดทีละบรรทัด">ทบทวน</button>') +
     '<button data-bd="print">พิมพ์หน้านี้</button>' +
     '<button data-bd="pdf" title="พิมพ์ทุกหน้า หรือเลือกบันทึกเป็น PDF ในกล่องพิมพ์">PDF ทั้งเล่ม</button>' +
     (teach ? '' : '<button data-bd="shelf" title="สมุดทุกเล่ม · สร้างเล่มใหม่">สมุดทุกเล่ม</button>') +
@@ -20170,6 +20456,8 @@ function boardOpen(who) {
     if (act === 'print') return boardPrint();
     if (act === 'pdf') return nbPrintBook(boardDB(BOARD.who), BOARD.who === 'teach' ? 'กระดานสอน' : '');
     if (act === 'shelf') { boardClose(); nbShelf(); return; }
+    if (act === 'tag') return nbTagDialog();
+    if (act === 'review') return nbReviewToggle();
     if (act === 'prev' || act === 'next') {
       boardSavePage();
       const b2 = boardDB(BOARD.who);
@@ -20264,6 +20552,7 @@ function boardLoadPage() {
       const p = cur.pages[cur.cur];
       if (!p) return;
       p.strokes = nbPack(strokes);
+      nbAutoTag(p);
       nbPageSize(p);
       cur.up = Date.now();
       save();
@@ -20276,6 +20565,7 @@ function boardLoadPage() {
       const bb = boardDB(BOARD.who);
       bb.paper = selG.value; bb.up = Date.now();
       save();
+      nbBoardExtras();
     });
   }
   const pad = BOARD.pad;
@@ -20289,6 +20579,7 @@ function boardLoadPage() {
   const pgEl = $('#bdPg', BOARD.root);
   if (pgEl) pgEl.textContent = 'หน้า ' + (b.cur + 1) + '/' + b.pages.length;
   boardFit(pg.h || 0);
+  nbBoardExtras();
 }
 
 /** เก็บลายมือของหน้าที่กำลังเปิดก่อนสลับหน้า — ตัวปากกาบันทึกหน่วงไว้ 0.45 วินาที
