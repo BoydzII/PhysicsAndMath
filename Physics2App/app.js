@@ -123,11 +123,11 @@ function renderApp() {
       html += `<div class="solution-guide">${prob.guide}</div>`;
     } else if (currentLevel === 'intermediate') {
       html += `<div class="solution-guide">${prob.intermediateHtml || ''}</div>`;
-      html += `<div class="spacer-div" style="height:0px;"></div>`;
+      html += `<div class="spacer-div" style="height:250px;"></div>`;
       html += `<button class="sm expand-btn" style="position:relative; z-index:10; margin-top:16px; padding:4px 8px; border-radius:4px; border:1px solid #ccc; cursor:pointer; background:#fff;">+ เพิ่มพื้นที่ทด</button>`;
     } else {
       html += `<div class="solution-guide">${prob.advancedHtml || ''}</div>`;
-      html += `<div class="spacer-div" style="height:0px;"></div>`;
+      html += `<div class="spacer-div" style="height:250px;"></div>`;
       html += `<button class="sm expand-btn" style="position:relative; z-index:10; margin-top:16px; padding:4px 8px; border-radius:4px; border:1px solid #ccc; cursor:pointer; background:#fff;">+ เพิ่มพื้นที่ทด</button>`;
     }
     
@@ -164,9 +164,10 @@ function initWorkSimulation() {
   canvas.width = canvas.clientWidth;
   canvas.height = canvas.clientHeight;
   
-  let boxX = 20;
+  let boxX = canvas.width / 2 - 20; // start in middle
   let isDragging = false;
-  let startX = 0;
+  let pointerX = 0;
+  let pointerY = 0;
 
   function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -180,99 +181,131 @@ function initWorkSimulation() {
     ctx.fillRect(boxX, canvas.height - 70, 40, 40);
     
     if (isDragging) {
-      // Draw Force Vector F (diagonal)
-      ctx.beginPath();
-      ctx.moveTo(boxX + 20, canvas.height - 50);
-      ctx.lineTo(boxX + 70, canvas.height - 80);
-      ctx.strokeStyle = '#2563eb';
-      ctx.lineWidth = 3;
-      ctx.stroke();
+      let startX = boxX + 20;
+      let startY = canvas.height - 50; // center of box
       
-      // Arrow head F
-      ctx.beginPath();
-      ctx.moveTo(boxX + 70, canvas.height - 80);
-      ctx.lineTo(boxX + 60, canvas.height - 80);
-      ctx.lineTo(boxX + 65, canvas.height - 70);
-      ctx.fillStyle = '#2563eb';
-      ctx.fill();
-
-      ctx.fillStyle = '#2563eb';
-      ctx.font = 'bold 16px sans-serif';
-      ctx.fillText('F', boxX + 75, canvas.height - 85);
-
-      // Draw Fx
-      ctx.beginPath();
-      ctx.moveTo(boxX + 20, canvas.height - 50);
-      ctx.lineTo(boxX + 70, canvas.height - 50);
-      ctx.strokeStyle = '#ef4444'; // Red for X
-      ctx.lineWidth = 2;
-      ctx.setLineDash([5, 5]);
-      ctx.stroke();
-      ctx.setLineDash([]);
+      let dx = pointerX - startX;
+      let dy = pointerY - startY;
       
-      ctx.beginPath();
-      ctx.moveTo(boxX + 70, canvas.height - 50);
-      ctx.lineTo(boxX + 62, canvas.height - 54);
-      ctx.lineTo(boxX + 62, canvas.height - 46);
-      ctx.fillStyle = '#ef4444';
-      ctx.fill();
-      ctx.fillText('Fx', boxX + 75, canvas.height - 45);
+      // Limit pull up only (no pulling underground)
+      if (dy > 0) dy = 0;
+      
+      let dist = Math.sqrt(dx*dx + dy*dy);
+      
+      if (dist > 10) {
+        let endX = startX + dx;
+        let endY = startY + dy;
+        
+        // Draw Force Vector F (diagonal)
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+        ctx.lineTo(endX, endY);
+        ctx.strokeStyle = '#2563eb';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+        
+        // Arrow head F
+        let angle = Math.atan2(dy, dx);
+        ctx.beginPath();
+        ctx.moveTo(endX, endY);
+        ctx.lineTo(endX - 12 * Math.cos(angle - Math.PI/6), endY - 12 * Math.sin(angle - Math.PI/6));
+        ctx.lineTo(endX - 12 * Math.cos(angle + Math.PI/6), endY - 12 * Math.sin(angle + Math.PI/6));
+        ctx.fillStyle = '#2563eb';
+        ctx.fill();
 
-      // Draw Fy
-      ctx.beginPath();
-      ctx.moveTo(boxX + 20, canvas.height - 50);
-      ctx.lineTo(boxX + 20, canvas.height - 80);
-      ctx.strokeStyle = '#10b981'; // Green for Y
-      ctx.lineWidth = 2;
-      ctx.setLineDash([5, 5]);
-      ctx.stroke();
-      ctx.setLineDash([]);
+        ctx.fillStyle = '#2563eb';
+        ctx.font = 'bold 16px sans-serif';
+        ctx.fillText('F', endX + 10, endY - 10);
 
-      ctx.beginPath();
-      ctx.moveTo(boxX + 20, canvas.height - 80);
-      ctx.lineTo(boxX + 16, canvas.height - 72);
-      ctx.lineTo(boxX + 24, canvas.height - 72);
-      ctx.fillStyle = '#10b981';
-      ctx.fill();
-      ctx.fillText('Fy', boxX + 10, canvas.height - 90);
+        // Draw Fx
+        if (Math.abs(dx) > 10) {
+            ctx.beginPath();
+            ctx.moveTo(startX, startY);
+            ctx.lineTo(endX, startY);
+            ctx.strokeStyle = '#ef4444'; // Red for X
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            // Arrow head Fx
+            let signX = dx > 0 ? 1 : -1;
+            ctx.beginPath();
+            ctx.moveTo(endX, startY);
+            ctx.lineTo(endX - signX*10, startY - 5);
+            ctx.lineTo(endX - signX*10, startY + 5);
+            ctx.fillStyle = '#ef4444';
+            ctx.fill();
+            ctx.fillText('Fx', endX + signX*15, startY + 5);
+            
+            // Move box slightly towards mouse (Spring effect)
+            boxX += dx * 0.05;
+        }
+
+        // Draw Fy
+        if (Math.abs(dy) > 10) {
+            ctx.beginPath();
+            ctx.moveTo(endX, startY);
+            ctx.lineTo(endX, endY);
+            ctx.strokeStyle = '#10b981'; // Green for Y
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Arrow head Fy
+            let signY = dy > 0 ? 1 : -1;
+            ctx.beginPath();
+            ctx.moveTo(endX, endY);
+            ctx.lineTo(endX - 5, endY - signY*10);
+            ctx.lineTo(endX + 5, endY - signY*10);
+            ctx.fillStyle = '#10b981';
+            ctx.fill();
+            ctx.fillText('Fy', endX - 25, endY - signY*15);
+        }
+      }
     }
+    
+    // Bounds check for box
+    if (boxX < 0) boxX = 0;
+    if (boxX > canvas.width - 40) boxX = canvas.width - 40;
+    
+    requestAnimationFrame(draw);
   }
   
-  function getX(e) {
-    if (e.touches) return e.touches[0].clientX;
-    return e.clientX;
+  function getPos(e) {
+    const rect = canvas.getBoundingClientRect();
+    let cx, cy;
+    if (e.touches) {
+        cx = e.touches[0].clientX;
+        cy = e.touches[0].clientY;
+    } else {
+        cx = e.clientX;
+        cy = e.clientY;
+    }
+    return { x: cx - rect.left, y: cy - rect.top };
   }
 
   function handleDown(e) {
-    const rect = canvas.getBoundingClientRect();
-    const x = getX(e) - rect.left;
-    if (x >= boxX && x <= boxX + 40) {
-      isDragging = true;
-      startX = x - boxX;
-      canvas.style.cursor = 'grabbing';
-      e.preventDefault();
-      draw();
-    }
+    isDragging = true;
+    canvas.style.cursor = 'grabbing';
+    let pos = getPos(e);
+    pointerX = pos.x;
+    pointerY = pos.y;
+    e.preventDefault();
   }
 
   function handleMove(e) {
     if (!isDragging) return;
-    const rect = canvas.getBoundingClientRect();
-    const x = getX(e) - rect.left;
-    boxX = x - startX;
-    
-    // Limits
-    if (boxX < 0) boxX = 0;
-    if (boxX > canvas.width - 40) boxX = canvas.width - 40;
-    
-    draw();
+    let pos = getPos(e);
+    pointerX = pos.x;
+    pointerY = pos.y;
     e.preventDefault();
   }
 
   function handleUp() {
     isDragging = false;
     canvas.style.cursor = 'grab';
-    draw();
   }
 
   canvas.addEventListener('mousedown', handleDown);
