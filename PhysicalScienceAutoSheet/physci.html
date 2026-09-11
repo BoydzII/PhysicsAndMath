@@ -853,6 +853,39 @@ input.numin.bad{border-color:var(--bad);background:var(--bad-bg)}
   font-family:"Anuphan","Leelawadee UI",Tahoma,sans-serif;line-height:1.4;resize:none;
   outline:none;box-shadow:0 4px 14px rgba(15,23,42,.12);white-space:pre;overflow:hidden}
 
+/* แบบกระดาษคอร์เนลล์ — ช่องคำถามด้านซ้าย ช่องจดบันทึกด้านขวา และช่องสรุปด้านล่าง
+   ระยะเส้นบรรทัดและความสูงช่องสรุป (150px) ต้องตรงกับที่วาดตอนพิมพ์ใน nbPaper */
+.hw-canvas-wrap.bg-cornell{
+  background-image:
+    linear-gradient(90deg, transparent calc(28% - 1px), #fca5a5 calc(28% - 1px), #fca5a5 calc(28% + .5px), transparent calc(28% + .5px)),
+    linear-gradient(#fca5a5, #fca5a5),
+    repeating-linear-gradient(transparent, transparent 31px, #e2e8f0 31px, #e2e8f0 32px);
+  background-size: 100% calc(100% - 150px), 100% 1.5px, 100% 32px;
+  background-position: 0 0, 0 calc(100% - 150px), 0 0;
+  background-repeat: no-repeat, no-repeat, repeat}
+.hw-canvas-wrap.bg-cornell::before,.hw-canvas-wrap.bg-cornell::after{
+  position:absolute;left:8px;font-size:12px;color:#ef4444;opacity:.7;pointer-events:none;z-index:0}
+.hw-canvas-wrap.bg-cornell::before{content:'คำถาม · คำสำคัญ';top:6px}
+.hw-canvas-wrap.bg-cornell::after{content:'สรุปท้ายคาบ';bottom:128px}
+.hw-canvas-wrap.bg-cornell .hw-canvas{position:relative;z-index:1}
+
+/* ---------- ชั้นหนังสือ ---------- */
+.nbshelf{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:12px}
+.nbbook{display:flex;gap:12px;border:1px solid var(--line);border-radius:var(--r);padding:11px;
+  background:var(--panel)}
+.nbbook .cv{flex:0 0 66px;height:88px;border-radius:5px 9px 9px 5px;color:#fff;
+  display:flex;align-items:flex-end;padding:7px;font-size:11px;font-weight:700;line-height:1.3;
+  box-shadow:inset 6px 0 0 rgba(0,0,0,.18);overflow:hidden;word-break:break-word}
+.nbbook .cv span{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.nbbook .bd{flex:1 1 auto;min-width:0}
+.nbbook .tt{font-weight:700;font-size:15.5px;line-height:1.4;overflow-wrap:anywhere}
+.nbcv{width:34px;height:34px;min-height:34px;padding:0;border-radius:8px;border:2px solid transparent}
+.nbcv.on{box-shadow:0 0 0 2px var(--panel),0 0 0 4px var(--ink)}
+/* หน้าสมุดบนกระดาษพิมพ์ — หน้าละหนึ่งแผ่น ย่อให้พอดีความสูงแผ่น */
+#printarea .nbpg{text-align:center}
+#printarea .nbpgno{font-size:9pt;color:#555;text-align:right;margin-bottom:3px}
+#printarea .nbpg img{max-width:100%;max-height:250mm;object-fit:contain;border:1px solid #bbb}
+
 /* ปุ่ม ! บนหัวการ์ด — เปิดคำอธิบายความหมายของสีและป้าย */
 .ibtn{width:23px;height:23px;min-height:23px;padding:0;border-radius:50%;flex:0 0 auto;
   font-weight:700;font-size:13px;line-height:1;
@@ -1266,7 +1299,7 @@ table td,table th,.num,.xpstat b,.tick,
    *** ห้ามลบบรรทัดเครื่องหมาย @@BUILTIN@@ ทั้งสองอัน ตัวสร้างไฟล์ใช้หาตำแหน่ง ***
    ========================================================================== */
 /* @@BUILTIN@@ */
-const BUILTIN = {"url":"https://script.google.com/macros/s/AKfycbxVa8BYYQeIhBDmg85w2UBwsIqt6a2YudehUfCbyMny9T-5TTh1UfFxsJjTk9HLNuFc/exec","studentOnly":false,"lockCloud":false,"logo":"","header":null,"about":null,"build":"2026-09-11 07:25","ver":"v8.110"};
+const BUILTIN = {"url":"https://script.google.com/macros/s/AKfycbxVa8BYYQeIhBDmg85w2UBwsIqt6a2YudehUfCbyMny9T-5TTh1UfFxsJjTk9HLNuFc/exec","studentOnly":false,"lockCloud":false,"logo":"","header":null,"about":null,"build":"2026-09-11 07:33","ver":"v8.111"};
 /* @@BUILTIN-END@@ */
 
 /* ถ่ายภาพซอร์สของหน้านี้ไว้ตั้งแต่สคริปต์เพิ่งเริ่มทำงาน
@@ -9752,7 +9785,7 @@ function nbPack(strokes) {
     if (s.tool === 'link') { o.a = s.a; o.b = s.b; o.points = []; return o; }
     if (s.kind) o.kind = s.kind;
     if (s.closed) o.closed = 1;
-    o.points = (s.points || []).map(function (q) { return { x: nbR1(q.x), y: nbR1(q.y) }; });
+    o.p = nbPtsEnc(s.points || []);        // แบบย่อ — เล็กกว่าเก็บเป็นคู่ x,y ราวสามเท่า
     return o;
   });
 }
@@ -10598,6 +10631,309 @@ function nbAttach(pad) {
   pad.redraw();
 }
 
+/* ============================================================================
+   สมุดหลายเล่ม และพิมพ์/บันทึก PDF ทั้งเล่ม
+   ----------------------------------------------------------------------------
+   นักเรียนมีสมุดได้หลายเล่ม (DB.board.books) แต่ละเล่มมีชื่อ สีปก แบบกระดาษ และหน้าของตัวเอง
+   สมุดเล่มเดียวของรุ่นก่อน (DB.board.note) ถูกย้ายมาเป็นเล่มแรกให้เอง ลายมือเดิมไม่หาย
+   กระดานสอนของครูยังเป็นชุดเดียวเหมือนเดิม (DB.board.teach)
+   ========================================================================== */
+var NB_BOOK_MAX_PAGE = 30;    /* ต่อเล่ม — ที่เก็บของเบราว์เซอร์ใช้ร่วมกันทุกวิชา จึงไม่ปล่อยให้โตไม่จำกัด */
+var NB_STORE_WARN_KB = 1800;  /* สมุดทั้งหมดรวมกันเกินนี้ เตือนให้พิมพ์เก็บแล้วลบเล่มเก่า */
+var NB_COVERS = ['#2563eb', '#16a34a', '#ea580c', '#7c3aed', '#db2777', '#0891b2', '#475569'];
+var NB_PAPERS = [
+  { v: 'bg-lined', t: 'เส้นบรรทัด' }, { v: 'bg-grid', t: 'ตารางกราฟ' },
+  { v: 'bg-blank', t: 'กระดาษขาว' }, { v: 'bg-cornell', t: 'คอร์เนลล์ (คำถาม · จดบันทึก · สรุป)' }
+];
+
+/* ---------- เก็บพิกัดให้เล็กลง ----------
+   พิกัดคูณสองแล้วปัดเป็นจำนวนเต็ม (ละเอียดครึ่งพิกเซล) เก็บเป็นส่วนต่างจากจุดก่อนหน้าในฐาน 36
+   เล็กกว่าเก็บเป็น {"x":123.4,"y":56.7} ราวสามเท่า — สำคัญเพราะที่เก็บของเบราว์เซอร์
+   ใช้ร่วมกันทุกวิชาบนโดเมนเดียว และตอนส่งสมุดให้ครูก็ส่งก้อนนี้ขึ้นชีต */
+function nbPtsEnc(P) {
+  let px = 0, py = 0;
+  return (P || []).map(function (q) {
+    const x = Math.round(q.x * 2), y = Math.round(q.y * 2);
+    const t = hwNum(x - px) + '.' + hwNum(y - py);
+    px = x; py = y;
+    return t;
+  }).join(' ');
+}
+function nbPtsDec(str) {
+  let px = 0, py = 0;
+  return String(str || '').split(' ').filter(Boolean).map(function (t) {
+    const q = t.split('.');
+    px += parseInt(q[0], 36) || 0;
+    py += parseInt(q[1], 36) || 0;
+    return { x: px / 2, y: py / 2 };
+  });
+}
+/** กางหน้าที่เก็บไว้ออกเป็นรูปแบบที่ตัวปากกาใช้ — อ่านได้ทั้งแบบย่อ (p) และแบบเดิม (points) */
+function nbUnpack(strokes) {
+  return (strokes || []).map(function (s) {
+    const c = JSON.parse(JSON.stringify(s));
+    if (typeof c.p === 'string') { c.points = nbPtsDec(c.p); delete c.p; }
+    if (!Array.isArray(c.points)) c.points = [];
+    return c;
+  });
+}
+
+/* ---------- ชั้นหนังสือ ---------- */
+function nbBookId() { return 'b' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5); }
+function nbBooks() {
+  if (!DB.board || typeof DB.board !== 'object') DB.board = {};
+  const B = DB.board;
+  if (!Array.isArray(B.books)) {
+    B.books = [];
+    // ย้ายสมุดเล่มเดียวของรุ่นก่อนเข้ามาเป็นเล่มแรก ลายมือที่เขียนไว้แล้วต้องไม่หาย
+    if (B.note && Array.isArray(B.note.pages) &&
+        B.note.pages.some(function (p) { return (p.strokes || []).length; })) {
+      B.books.push({ id: nbBookId(), title: B.note.title || 'สมุดเล่มแรก', color: NB_COVERS[0],
+                     paper: 'bg-lined', pages: B.note.pages, cur: B.note.cur || 0,
+                     at: Date.now(), up: Date.now() });
+    }
+    delete B.note;
+  }
+  return B.books;
+}
+function nbCurBook() {
+  const books = nbBooks();
+  let bk = null;
+  for (let i = 0; i < books.length; i++) if (books[i].id === DB.board.curBook) bk = books[i];
+  if (!bk && books.length) { bk = books[0]; DB.board.curBook = bk.id; }
+  return bk;
+}
+function nbNewBook(title, color, paper) {
+  const bk = { id: nbBookId(), title: String(title || '').trim() || 'สมุดเล่มใหม่',
+               color: color || NB_COVERS[0], paper: paper || 'bg-lined',
+               pages: [{ strokes: [] }], cur: 0, at: Date.now(), up: Date.now() };
+  nbBooks().unshift(bk);
+  DB.board.curBook = bk.id;
+  save(true);
+  return bk;
+}
+/** ขนาดที่สมุดทั้งหมดใช้อยู่ (KB) — คิดจากความยาวข้อความ ซึ่งเป็นหน่วยที่เบราว์เซอร์ใช้นับโควตา */
+function nbStoreKB() {
+  try { return Math.round(JSON.stringify(DB.board || {}).length / 1024); } catch (e) { return 0; }
+}
+function nbWho() {
+  const p = DB.profile || {};
+  return [p.name, p.room ? 'ชั้น ' + p.room : '', p.no ? 'เลขที่ ' + p.no : ''].filter(Boolean).join(' · ');
+}
+function nbBookCount(bk) {
+  return (bk.pages || []).filter(function (p) { return (p.strokes || []).length; }).length;
+}
+
+function nbShelf() {
+  const books = nbBooks();
+  const kb = nbStoreKB();
+  const cards = books.map(function (b) {
+    const used = nbBookCount(b), n = (b.pages || []).length;
+    return '<div class="nbbook">' +
+      '<div class="cv" style="background:' + esc(b.color || NB_COVERS[0]) + '">' +
+        '<span>' + esc(b.title || 'สมุด') + '</span></div>' +
+      '<div class="bd">' +
+        '<div class="tt">' + esc(b.title || 'สมุด') + '</div>' +
+        '<div class="hint">' + n + ' หน้า' + (used < n ? ' (เขียนแล้ว ' + used + ')' : '') +
+          ' · แก้ล่าสุด ' + thDateTime(b.up || b.at || Date.now()) + '</div>' +
+        '<div class="row" style="margin-top:8px;gap:6px">' +
+          '<button class="sm primary" data-nbopen="' + b.id + '">เปิด</button>' +
+          '<button class="sm" data-nbpdf="' + b.id + '">PDF ทั้งเล่ม</button>' +
+          (typeof nbSendBook === 'function'
+            ? '<button class="sm" data-nbsend="' + b.id + '">ส่งให้ครู' +
+              (b.sentAt ? ' ✓' : '') + '</button>' : '') +
+          '<button class="sm" data-nbedit="' + b.id + '">ชื่อ · ปก</button>' +
+          '<button class="sm danger" data-nbdel="' + b.id + '">ลบ</button>' +
+        '</div>' +
+        (b.sentAt ? '<div class="hint" style="margin-top:4px">ส่งให้ครูล่าสุด ' +
+          thDateTime(b.sentAt) + (b.up > b.sentAt ? ' · <b>มีหน้าที่แก้หลังส่ง</b>' : '') + '</div>' : '') +
+      '</div></div>';
+  }).join('');
+  openModal({
+    wide: true,
+    title: 'สมุดจดของฉัน',
+    bodyHTML:
+      '<div class="row" style="margin-bottom:12px"><button class="primary" id="nbNew">+ สมุดเล่มใหม่</button>' +
+      '<span class="hint grow">แยกเล่มตามวิชา ตามบท หรือตามภาคเรียนก็ได้ · ' +
+      'ก๊อปของจากเล่มหนึ่งไปวางอีกเล่มได้</span></div>' +
+      (books.length ? '<div class="nbshelf">' + cards + '</div>'
+                    : '<div class="hint">ยังไม่มีสมุดเลย — กดสมุดเล่มใหม่เพื่อเริ่ม</div>') +
+      '<div class="hint" style="margin-top:12px">สมุดทุกเล่มใช้ที่เก็บในเครื่องนี้รวม <b>' + kb + ' KB</b>' +
+      (kb > NB_STORE_WARN_KB
+        ? ' — <b style="color:var(--bad)">ใกล้เต็มแล้ว</b> ควรกด PDF ทั้งเล่มเก็บไว้ แล้วลบเล่มที่ไม่ใช้'
+        : '') +
+      '<br>สมุดอยู่ในเครื่องนี้เครื่องเดียว ถ้าจะล้างข้อมูลเบราว์เซอร์หรือเปลี่ยนเครื่อง ' +
+      'ให้กด PDF ทั้งเล่ม หรือส่งให้ครูเก็บไว้ก่อน</div>',
+    buttons: [{ label: 'ปิด' }],
+    onMount: function (root) {
+      const close = function () { const x = $('[data-close]', root.closest ? root.closest('.modal-bg') || root : root); if (x) x.click(); };
+      $('#nbNew', root).addEventListener('click', function () { close(); nbBookDialog(null); });
+      $$('[data-nbopen]', root).forEach(function (b) {
+        b.addEventListener('click', function () {
+          DB.board.curBook = b.dataset.nbopen; save(true); close(); boardOpen('note');
+        });
+      });
+      $$('[data-nbpdf]', root).forEach(function (b) {
+        b.addEventListener('click', function () {
+          const bk = nbBooks().filter(function (x) { return x.id === b.dataset.nbpdf; })[0];
+          if (bk) nbPrintBook(bk);
+        });
+      });
+      $$('[data-nbsend]', root).forEach(function (b) {
+        b.addEventListener('click', function () {
+          const bk = nbBooks().filter(function (x) { return x.id === b.dataset.nbsend; })[0];
+          if (bk) { close(); nbSendBook(bk); }
+        });
+      });
+      $$('[data-nbedit]', root).forEach(function (b) {
+        b.addEventListener('click', function () {
+          const bk = nbBooks().filter(function (x) { return x.id === b.dataset.nbedit; })[0];
+          if (bk) { close(); nbBookDialog(bk); }
+        });
+      });
+      $$('[data-nbdel]', root).forEach(function (b) {
+        b.addEventListener('click', function () {
+          const bk = nbBooks().filter(function (x) { return x.id === b.dataset.nbdel; })[0];
+          if (!bk) return;
+          close();
+          openModal({
+            title: 'ลบสมุด "' + (bk.title || '') + '"',
+            bodyHTML: '<div class="notice warn">ลบทั้งเล่ม <b>' + (bk.pages || []).length +
+              ' หน้า</b> ออกจากเครื่องนี้ <b>กู้คืนไม่ได้</b></div>' +
+              '<div class="hint" style="margin-top:9px">ถ้ายังอยากเก็บไว้ดู กด PDF ทั้งเล่มก่อน</div>',
+            buttons: [{ label: 'ไม่ลบ', act: function (c) { c(); nbShelf(); } },
+                      { label: 'ลบทั้งเล่ม', cls: 'danger', act: function (c) {
+                        DB.board.books = nbBooks().filter(function (x) { return x !== bk; });
+                        if (DB.board.curBook === bk.id) DB.board.curBook = null;
+                        save(true); c(); nbShelf();
+                        toast('ลบสมุดแล้ว', 'ok');
+                      } }]
+          });
+        });
+      });
+    }
+  });
+}
+/** สร้างเล่มใหม่ หรือแก้ชื่อและปกของเล่มเดิม */
+function nbBookDialog(bk) {
+  let color = bk ? bk.color : NB_COVERS[nbBooks().length % NB_COVERS.length];
+  openModal({
+    title: bk ? 'ชื่อและปกของสมุด' : 'สมุดเล่มใหม่',
+    bodyHTML:
+      '<label class="hint" for="nbT">ชื่อสมุด</label>' +
+      '<input type="text" id="nbT" style="width:100%" maxlength="60" value="' +
+        esc(bk ? bk.title : '') + '" placeholder="เช่น ฟิสิกส์ บทที่ 2 การเคลื่อนที่">' +
+      '<div class="hint" style="margin:12px 0 6px">สีปก</div>' +
+      '<div class="row" style="gap:8px">' + NB_COVERS.map(function (c) {
+        return '<button type="button" class="nbcv' + (c === color ? ' on' : '') + '" data-nbcv="' + c +
+          '" style="background:' + c + '" aria-label="สีปก ' + c + '"></button>';
+      }).join('') + '</div>' +
+      (bk ? '' :
+        '<div class="hint" style="margin:12px 0 6px">แบบกระดาษ (เปลี่ยนทีหลังได้)</div>' +
+        '<select id="nbP" style="width:100%">' + NB_PAPERS.map(function (p) {
+          return '<option value="' + p.v + '">' + p.t + '</option>';
+        }).join('') + '</select>' +
+        '<div class="hint" style="margin-top:6px">แบบคอร์เนลล์ — ช่องซ้ายจดคำถามหรือคำสำคัญ ' +
+        'ช่องขวาจดบันทึก และช่องล่างเขียนสรุปท้ายคาบด้วยคำของตัวเอง</div>'),
+    buttons: [{ label: 'ยกเลิก', act: function (c) { c(); nbShelf(); } },
+              { label: bk ? 'บันทึก' : 'สร้างแล้วเปิดเลย', cls: 'primary', act: function (c, root) {
+                const t = ($('#nbT', root).value || '').trim();
+                if (bk) {
+                  bk.title = t || bk.title; bk.color = color; bk.up = Date.now();
+                  save(true); c(); nbShelf();
+                } else {
+                  nbNewBook(t, color, $('#nbP', root).value);
+                  c(); boardOpen('note');
+                }
+              } }],
+    onMount: function (root) {
+      $$('[data-nbcv]', root).forEach(function (b) {
+        b.addEventListener('click', function () {
+          $$('[data-nbcv]', root).forEach(function (x) { x.classList.remove('on'); });
+          b.classList.add('on');
+          color = b.dataset.nbcv;
+        });
+      });
+      setTimeout(function () { const t = $('#nbT', root); if (t) t.focus(); }, 30);
+    }
+  });
+}
+
+/* ---------- วาดหน้าเป็นรูป (พิมพ์ทั้งเล่ม · ครูเปิดดู) ---------- */
+/** พื้นกระดาษ — วาดให้ตรงกับที่เห็นบนจอ */
+function nbPaper(ctx, paper, w, h) {
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, w, h);
+  ctx.save();
+  ctx.lineWidth = 1;
+  if (paper === 'bg-grid') {
+    ctx.strokeStyle = '#e2e8f0';
+    for (let y = 23.5; y < h; y += 24) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
+    for (let x = 23.5; x < w; x += 24) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); }
+  } else if (paper === 'bg-lined' || paper === 'bg-cornell') {
+    ctx.strokeStyle = '#e2e8f0';
+    for (let y = 31.5; y < h; y += 32) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
+  }
+  if (paper === 'bg-cornell') {
+    const cx = Math.round(w * 0.28) + 0.5, sy = Math.max(120, h - NB_CORNELL_SUM) + 0.5;
+    ctx.strokeStyle = '#fca5a5'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(cx, 0); ctx.lineTo(cx, sy); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, sy); ctx.lineTo(w, sy); ctx.stroke();
+    ctx.fillStyle = '#ef4444'; ctx.globalAlpha = 0.7;
+    ctx.font = '12px ' + NB_FONT; ctx.textBaseline = 'top';
+    ctx.fillText('คำถาม · คำสำคัญ', 8, 6);
+    ctx.fillText('สรุปท้ายคาบ', 8, sy + 6);
+  }
+  ctx.restore();
+}
+var NB_CORNELL_SUM = 150;     /* ความสูงช่องสรุปของแบบคอร์เนลล์ ต้องตรงกับใน CSS */
+/** หน้าหนึ่งเป็นรูป PNG — ลายมือวาดบนผืนแยกก่อนแล้วค่อยวางทับพื้นกระดาษ
+    เพราะยางลบแบบเดิมลบด้วยการเจาะพิกเซล ถ้าวาดบนผืนเดียวกับพื้นกระดาษ
+    รอยยางลบจะกลายเป็นรูโปร่งทะลุพื้นขาวไปด้วย */
+function nbPageImage(pg, paper, scale) {
+  const strokes = nbUnpack((pg && pg.strokes) || []);
+  const sc = scale || 2;
+  const w = Math.max(320, (pg && pg.w) || 900);
+  const tmp = document.createElement('canvas').getContext('2d');
+  const probe = { strokes: strokes };
+  strokes.forEach(function (s) { if (s.tool === 'text') nbTextLayout(tmp, s); });
+  const h = Math.max(420, (pg && pg.h) || 0, nbContentBottom(probe));
+  const ink = document.createElement('canvas');
+  ink.width = Math.round(w * sc); ink.height = Math.round(h * sc);
+  const ic = ink.getContext('2d');
+  ic.scale(sc, sc);
+  nbRender(ic, strokes, {});
+  const cv = document.createElement('canvas');
+  cv.width = ink.width; cv.height = ink.height;
+  const ctx = cv.getContext('2d');
+  ctx.scale(sc, sc);
+  nbPaper(ctx, paper || 'bg-lined', w, h);
+  ctx.drawImage(ink, 0, 0, w, h);
+  try { return cv.toDataURL('image/png'); } catch (e) { return ''; }
+}
+/** พิมพ์ทั้งเล่ม — ใช้กล่องพิมพ์ของเครื่อง ซึ่งเลือก "บันทึกเป็น PDF" ได้ทุกเครื่อง
+    (ไอแพด: พิมพ์ → แชร์ → บันทึกไปยังไฟล์) ไม่ต้องลงแอปหรือไลบรารีเพิ่ม */
+async function nbPrintBook(bk, who) {
+  if (BOARD && BOARD.pad) boardSavePage();
+  const pages = (bk && bk.pages) || [];
+  if (!pages.length) { toast('สมุดเล่มนี้ยังไม่มีหน้า', 'warn'); return; }
+  toast('กำลังเตรียม ' + pages.length + ' หน้า…', 'ok');
+  try { if (document.fonts && document.fonts.ready) await document.fonts.ready; } catch (e) {}
+  const imgs = pages.map(function (pg) { return nbPageImage(pg, bk.paper); });
+  const hd = DB.settings.header || {};
+  const sub = who || nbWho();
+  $('#printarea').innerHTML =
+    '<div class="phead"><div class="t1">' + esc(hd.school || '') + '</div>' +
+    '<div class="t2">' + esc(bk.title || 'สมุดจด') + '</div>' +
+    '<div class="t3">' + esc(sub ? sub + ' · ' : '') + pages.length + ' หน้า · ' +
+      thDateTime(Date.now()) + '</div></div><hr class="prule">' +
+    imgs.map(function (src, i) {
+      return '<div class="pg nbpg"><div class="nbpgno">หน้า ' + (i + 1) + '/' + pages.length + '</div>' +
+        (src ? '<img src="' + src + '" alt="หน้า ' + (i + 1) + '">' : '') + '</div>';
+    }).join('');
+  setTimeout(function () { window.print(); }, 150);
+}
+
 function hwBindTools(k, pad, wrapEl) {
       $$('[data-esk="' + k + '"][data-hwtool]').forEach(tb => {
         tb.addEventListener('click', () => {
@@ -10690,9 +11026,14 @@ const BOARD_MAX_PAGE = 12;      /* เกินนี้เก็บในเค
 
 function boardDB(who) {
   if (!DB.board || typeof DB.board !== 'object') DB.board = {};
-  const key = who === 'teach' ? 'teach' : 'note';
-  const b = DB.board[key] && typeof DB.board[key] === 'object'
-    ? DB.board[key] : (DB.board[key] = { title: '', cur: 0, pages: [] });
+  let b;
+  if (who === 'teach') {
+    b = DB.board.teach && typeof DB.board.teach === 'object'
+      ? DB.board.teach : (DB.board.teach = { title: '', cur: 0, pages: [] });
+  } else {
+    // สมุดของนักเรียนมีได้หลายเล่ม — ตัวกระดานทำงานกับ "เล่มที่เปิดอยู่" เหมือนเป็นสมุดเล่มเดียว
+    b = nbCurBook() || nbNewBook('สมุดเล่มแรก');
+  }
   if (!Array.isArray(b.pages)) b.pages = [];
   if (!b.pages.length) b.pages.push({ strokes: [] });
   if (!(b.cur >= 0 && b.cur < b.pages.length)) b.cur = 0;
@@ -10721,6 +11062,8 @@ function boardOpen(who) {
         TOPICS.map(t => '<option value="' + t.id + '">' + esc(chLabel(t) + ' ' + t.name) + '</option>').join('') +
         '</select>' : '') +
     '<button data-bd="print">พิมพ์หน้านี้</button>' +
+    '<button data-bd="pdf" title="พิมพ์ทุกหน้า หรือเลือกบันทึกเป็น PDF ในกล่องพิมพ์">PDF ทั้งเล่ม</button>' +
+    (teach ? '' : '<button data-bd="shelf" title="สมุดทุกเล่ม · สร้างเล่มใหม่">สมุดทุกเล่ม</button>') +
     '<button data-bd="close" class="primary">ปิดกระดาน</button>' +
     '</div>' +
     '<div class="bdfx" id="bdFx" hidden></div>' +
@@ -10739,6 +11082,8 @@ function boardOpen(who) {
     const act = btn.dataset.bd;
     if (act === 'close') return boardClose();
     if (act === 'print') return boardPrint();
+    if (act === 'pdf') return nbPrintBook(boardDB(BOARD.who), BOARD.who === 'teach' ? 'กระดานสอน' : '');
+    if (act === 'shelf') { boardClose(); nbShelf(); return; }
     if (act === 'prev' || act === 'next') {
       boardSavePage();
       const b2 = boardDB(BOARD.who);
@@ -10749,8 +11094,10 @@ function boardOpen(who) {
     if (act === 'add') {
       boardSavePage();
       const b2 = boardDB(BOARD.who);
-      if (b2.pages.length >= BOARD_MAX_PAGE) {
-        toast('กระดานเก็บได้ไม่เกิน ' + BOARD_MAX_PAGE + ' หน้า — พิมพ์เก็บแล้วลบหน้าเก่าออกได้', 'warn');
+      // สมุดแต่ละเล่มยาวได้มากกว่ากระดานสอน เพราะเป็นของที่จดต่อกันไปทั้งภาคเรียน
+      const cap = BOARD.who === 'teach' ? BOARD_MAX_PAGE : NB_BOOK_MAX_PAGE;
+      if (b2.pages.length >= cap) {
+        toast('เล่มนี้เก็บได้ไม่เกิน ' + cap + ' หน้า — กด PDF ทั้งเล่มเก็บไว้ แล้วเริ่มเล่มใหม่ได้', 'warn');
         return;
       }
       b2.pages.splice(b2.cur + 1, 0, { strokes: [] });
@@ -10832,15 +11179,27 @@ function boardLoadPage() {
       if (!p) return;
       p.strokes = nbPack(strokes);
       nbPageSize(p);
+      cur.up = Date.now();
       save();
     });
     hwBindTools('bd', BOARD.pad, BOARD.wrap);
     nbAttach(BOARD.pad);
+    // แบบกระดาษเป็นของเล่ม ไม่ใช่ของหน้า เปลี่ยนแล้วจำไว้กับเล่มนั้น
+    const selG = $('[data-hwgrid="bd"]', BOARD.root);
+    if (selG) selG.addEventListener('change', function () {
+      const bb = boardDB(BOARD.who);
+      bb.paper = selG.value; bb.up = Date.now();
+      save();
+    });
   }
   const pad = BOARD.pad;
   nbCloseEditor(pad);
-  pad.strokes = JSON.parse(JSON.stringify(pg.strokes || []));
+  pad.strokes = nbUnpack(pg.strokes);
   pad.hist = []; pad.sel = []; pad.nb = {};
+  const paper = b.paper || 'bg-lined';
+  BOARD.wrap.className = 'hw-canvas-wrap ' + paper;
+  const selG = $('[data-hwgrid="bd"]', BOARD.root);
+  if (selG) selG.value = paper;
   const pgEl = $('#bdPg', BOARD.root);
   if (pgEl) pgEl.textContent = 'หน้า ' + (b.cur + 1) + '/' + b.pages.length;
   boardFit(pg.h || 0);
@@ -10875,8 +11234,10 @@ function boardPrint() {
   if (!BOARD) return;
   boardSavePage();
   const b = boardDB(BOARD.who);
+  /* วาดใหม่จากข้อมูลของหน้า ไม่ถ่ายจากจอ — ถ่ายจากจอจะติดกรอบเลือกกับปุ่มหมุนมาด้วย
+     และไม่มีเส้นบรรทัด เพราะเส้นบรรทัดบนจอเป็นพื้นหลังของกรอบ ไม่ได้อยู่ในผืนผ้าใบ */
   let img = '';
-  try { img = BOARD.cv.toDataURL('image/png'); } catch (e) { img = ''; }
+  try { img = nbPageImage(b.pages[b.cur], b.paper); } catch (e) { img = ''; }
   if (!img) { toast('แปลงกระดานเป็นรูปไม่สำเร็จ', 'bad'); return; }
   const hd = DB.settings.header || {};
   const fx = $('#bdFx', BOARD.root);
@@ -11112,7 +11473,7 @@ function renderMake() {
   // --- ผูกเหตุการณ์ ---
   focusBind();
   const bBd = $('#btnBoard'); if (bBd) bBd.addEventListener('click', () => boardOpen('teach'));
-  const bNb = $('#btnNote'); if (bNb) bNb.addEventListener('click', () => boardOpen('note'));
+  const bNb = $('#btnNote'); if (bNb) bNb.addEventListener('click', () => nbShelf());
   $$('[data-preset]').forEach(b => b.addEventListener('click', () => runPreset(b.dataset.preset)));
   $$('[data-fx]').forEach(b => b.addEventListener('click', () => showFormulas(Number(b.dataset.fx))));
   $('#btnAllFx').addEventListener('click', showAllFormulas);
@@ -12230,6 +12591,7 @@ function hwPadHTML(k, hidden, footer, bgImg, tall) {
     '<option value="bg-lined">เส้นบรรทัด</option>' +
     '<option value="bg-grid">ตารางกราฟ</option>' +
     '<option value="bg-blank">กระดาษขาว</option>' +
+    (k === 'bd' ? '<option value="bg-cornell">คอร์เนลล์</option>' : '') +
     '</select>' +
     '</div>' +
     '<div class="hw-actions">' +
