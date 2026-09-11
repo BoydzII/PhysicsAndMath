@@ -1334,7 +1334,7 @@ table td,table th,.num,.xpstat b,.tick,
    *** ห้ามลบบรรทัดเครื่องหมาย @@BUILTIN@@ ทั้งสองอัน ตัวสร้างไฟล์ใช้หาตำแหน่ง ***
    ========================================================================== */
 /* @@BUILTIN@@ */
-const BUILTIN = {"url":"","studentOnly":true,"lockCloud":false,"logo":"","header":null,"about":null,"build":"2026-09-11 12:24","ver":"v8.114"};
+const BUILTIN = {"url":"","studentOnly":true,"lockCloud":false,"logo":"","header":null,"about":null,"build":"2026-09-11 13:35","ver":"v8.115"};
 /* @@BUILTIN-END@@ */
 
 /* ถ่ายภาพซอร์สของหน้านี้ไว้ตั้งแต่สคริปต์เพิ่งเริ่มทำงาน
@@ -11357,21 +11357,65 @@ function nbDrawLink(ctx, s, idx) {
   const k = 0.5;
   const c1 = hor ? { x: pa.x + (pb.x - pa.x) * k, y: pa.y } : { x: pa.x, y: pa.y + (pb.y - pa.y) * k };
   const c2 = hor ? { x: pb.x - (pb.x - pa.x) * k, y: pb.y } : { x: pb.x, y: pb.y - (pb.y - pa.y) * k };
-  ctx.save();
-  ctx.lineCap = 'round';
-  ctx.strokeStyle = s.color || '#1e293b';
-  ctx.lineWidth = s.size || 2.2;
-  nbDash(ctx, s);
-  ctx.beginPath(); ctx.moveTo(pa.x, pa.y);
-  ctx.bezierCurveTo(c1.x, c1.y, c2.x, c2.y, pb.x, pb.y);
-  ctx.stroke();
-  ctx.restore();
-  // เก็บจุดตัวอย่างบนเส้นไว้ให้แตะเลือกและคำนวณกรอบได้
-  for (let i = 0; i <= 18; i++) {
-    const t = i / 18, u = 1 - t;
+  // จุดตัวอย่างบนเส้น — ใช้ทั้งวาดแบบเรียว แตะเลือก และคำนวณกรอบ
+  const N = 36;
+  for (let i = 0; i <= N; i++) {
+    const t = i / N, u = 1 - t;
     s._pts.push({ x: u * u * u * pa.x + 3 * u * u * t * c1.x + 3 * u * t * t * c2.x + t * t * t * pb.x,
                   y: u * u * u * pa.y + 3 * u * u * t * c1.y + 3 * u * t * t * c2.y + t * t * t * pb.y });
   }
+  nbRootPath(ctx, s, s._pts);
+}
+/** วาดเส้นโยงแบบรากไม้ — โคนหนาที่กล่องต้นทาง (กล่องที่ลากออกมา) แล้วเรียวลงจนปลายเล็กที่กล่องปลายทาง
+    ทำให้อ่านแผนผังความคิดได้ว่าอะไรแตกออกมาจากอะไร เหมือนรากใหญ่แตกเป็นรากฝอย
+    ความหนาอิงขนาดเส้นที่เลือกไว้ เลือกเส้นหนาแล้วรากก็อวบขึ้นตาม */
+function nbRootW(s, t) {
+  const sz = s.size || 2.2;
+  const w0 = Math.max(7, sz * 3), w1 = Math.max(1.3, sz * 0.5);
+  // ลดความหนาเร็วช่วงต้นแล้วเรียวยาวไปถึงปลาย — โคนอวบ หางยาวเหมือนรากฝอย
+  // (ถ้าลดแบบเส้นตรง เส้นโยงที่ตรง ๆ จะดูเป็นหอกแหลม ไม่ใช่ราก)
+  return w1 + (w0 - w1) * Math.pow(1 - t, 2.4);
+}
+function nbRootPath(ctx, s, P) {
+  const n = P.length - 1;
+  if (n < 1) return;
+  const col = s.color || '#1e293b';
+  ctx.save();
+  if (s.dash) {
+    // เส้นประ — วาดทีละท่อนเว้นท่อน แต่ละท่อนหนาตามตำแหน่งบนราก
+    ctx.strokeStyle = col; ctx.lineCap = 'round';
+    for (let i = 0; i < n; i++) {
+      if (Math.floor(i / 2) % 2) continue;
+      ctx.lineWidth = nbRootW(s, (i + 0.5) / n);
+      ctx.beginPath(); ctx.moveTo(P[i].x, P[i].y); ctx.lineTo(P[i + 1].x, P[i + 1].y); ctx.stroke();
+    }
+    ctx.restore();
+    return;
+  }
+  // เส้นทึบ — สร้างเป็นแถบรูปทรงเดียว ขอบสองข้างห่างจากแนวกลางครึ่งหนึ่งของความหนา ณ จุดนั้น แล้วเติมสี
+  const L = [], R = [];
+  for (let i = 0; i <= n; i++) {
+    const a = P[Math.max(0, i - 1)], b = P[Math.min(n, i + 1)];
+    let dx = b.x - a.x, dy = b.y - a.y;
+    const d = Math.hypot(dx, dy) || 1;
+    dx /= d; dy /= d;
+    const h = nbRootW(s, i / n) / 2;
+    L.push({ x: P[i].x - dy * h, y: P[i].y + dx * h });
+    R.push({ x: P[i].x + dy * h, y: P[i].y - dx * h });
+  }
+  ctx.fillStyle = col;
+  ctx.beginPath();
+  ctx.moveTo(L[0].x, L[0].y);
+  for (let i = 1; i <= n; i++) ctx.lineTo(L[i].x, L[i].y);
+  // ปลายรากมน
+  ctx.arc(P[n].x, P[n].y, nbRootW(s, 1) / 2, Math.atan2(L[n].y - P[n].y, L[n].x - P[n].x),
+          Math.atan2(R[n].y - P[n].y, R[n].x - P[n].x), true);
+  for (let i = n; i >= 0; i--) ctx.lineTo(R[i].x, R[i].y);
+  ctx.closePath();
+  ctx.fill();
+  // โคนรากมน กลืนเข้ากับขอบกล่องต้นทาง
+  ctx.beginPath(); ctx.arc(P[0].x, P[0].y, nbRootW(s, 0) / 2, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
 }
 function nbDrawSel(ctx, objs) {
   const b = nbUnion(objs);
@@ -11879,7 +11923,7 @@ function nbBarHTML(k) {
     '<div class="grp">' +
       tb('text', 'ก ข้อความ', 'ข้อความ — แตะตรงที่จะพิมพ์ แตะที่อื่นเมื่อพิมพ์เสร็จ') +
       tb('node', '▢ หัวข้อ', 'กล่องหัวข้อสำหรับทำแผนผังความคิด (mind map)') +
-      tb('link', '⤳ เส้นโยง', 'เส้นโยง — ลากจากกล่องหนึ่งไปอีกกล่อง ขยับกล่องแล้วเส้นตามไปเอง') +
+      tb('link', '⤳ เส้นโยง', 'เส้นโยงแบบรากไม้ — ลากจากกล่องหัวข้อใหญ่ไปหากล่องย่อย เส้นจะหนาที่ต้นทางแล้วเรียวไปหาปลายทาง ขยับกล่องแล้วเส้นตามไปเอง') +
     '</div><span class="sep"></span>' +
     '<div class="grp"><span class="lab">รูปทรง</span>' +
       tb('shape', '▭', 'สี่เหลี่ยม — ลากจากมุมหนึ่งไปอีกมุม', ' data-nbkind="rect"') +
