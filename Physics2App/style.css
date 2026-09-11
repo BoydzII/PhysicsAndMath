@@ -231,12 +231,13 @@ select {
   background: var(--bg);
   overflow-y: auto;
   padding: 32px;
-  display: flex;
-  justify-content: center;
+  display: block;
 }
 
 .notebook-wrapper {
   position: relative;
+  margin: 0 auto;
+  text-align: left;
   width: 100%;
   max-width: 800px;
   min-height: 1122px; /* A4 aspect ratio roughly */
@@ -345,6 +346,8 @@ select {
 /* Fix Stacking Context for Canvas and Paper */
 .notebook-wrapper {
   position: relative;
+  margin: 0 auto;
+  text-align: left;
   width: 100%;
   max-width: 800px;
   min-height: 1122px;
