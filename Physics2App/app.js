@@ -52,7 +52,6 @@ function setupListeners() {
       s.classList.add('active');
       drawingEngine.setColor(s.dataset.color);
       
-      // Auto switch back to pen visually
       document.querySelectorAll('.tool-btn[data-tool]').forEach(b => b.classList.remove('active'));
       document.querySelector('.tool-btn[data-tool="pen"]').classList.add('active');
     });
@@ -62,7 +61,6 @@ function setupListeners() {
   document.getElementById('btnClearDraw').addEventListener('click', () => {
     if(confirm('ต้องการล้างหน้ากระดาษจดโน้ตทั้งหมดหรือไม่?')) {
       drawingEngine.clear();
-      // Also clear inputs
       document.querySelectorAll('.answer-input').forEach(inp => inp.value = '');
       saveInputs();
     }
@@ -72,6 +70,32 @@ function setupListeners() {
   document.getElementById('notebookContainer').addEventListener('input', (e) => {
     if (e.target.classList.contains('answer-input')) {
       saveInputs();
+    }
+  });
+
+  // Modal actions
+  document.getElementById('btnSubmit').addEventListener('click', () => {
+    document.getElementById('submitModal').style.display = 'flex';
+  });
+  
+  document.getElementById('btnCancelSubmit').addEventListener('click', () => {
+    document.getElementById('submitModal').style.display = 'none';
+  });
+
+  document.getElementById('btnConfirmSubmit').addEventListener('click', () => {
+    document.getElementById('submitModal').style.display = 'none';
+    alert('บันทึกหน้าจอ และส่งคะแนนเข้า Google Sheets สำเร็จ! (ระบบจำลองการส่งงาน)');
+    window.print();
+  });
+
+  // Expand space delegated
+  document.getElementById('notebookContainer').addEventListener('click', (e) => {
+    if (e.target.classList.contains('expand-btn')) {
+      const block = e.target.closest('.problem-block');
+      const spacer = block.querySelector('.spacer-div');
+      const curH = parseInt(spacer.style.height || 0);
+      spacer.style.height = (curH + 150) + 'px';
+      drawingEngine.resize();
     }
   });
 }
@@ -97,8 +121,14 @@ function renderApp() {
         html += `<div class="hint-box"><b>ไกด์นำทาง:</b> ${prob.hints}</div>`;
       }
       html += `<div class="solution-guide">${prob.guide}</div>`;
+    } else if (currentLevel === 'intermediate') {
+      html += `<div class="solution-guide">${prob.intermediateHtml || ''}</div>`;
+      html += `<div class="spacer-div" style="height:0px;"></div>`;
+      html += `<button class="sm expand-btn" style="margin-top:16px; padding:4px 8px; border-radius:4px; border:1px solid #ccc; cursor:pointer; background:#fff;">+ เพิ่มพื้นที่ทด</button>`;
     } else {
-      html += `<div class="solution-guide">${prob.advancedHtml}</div>`;
+      html += `<div class="solution-guide">${prob.advancedHtml || ''}</div>`;
+      html += `<div class="spacer-div" style="height:0px;"></div>`;
+      html += `<button class="sm expand-btn" style="margin-top:16px; padding:4px 8px; border-radius:4px; border:1px solid #ccc; cursor:pointer; background:#fff;">+ เพิ่มพื้นที่ทด</button>`;
     }
     
     html += `</div>`;
@@ -122,6 +152,8 @@ function renderApp() {
 
   // Restore inputs after re-render
   restoreInputs();
+  // Ensure canvas resizes to fit new content height
+  setTimeout(() => { if (drawingEngine) drawingEngine.resize(); }, 100);
 }
 
 function initWorkSimulation() {
@@ -129,11 +161,14 @@ function initWorkSimulation() {
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
   
-  let boxX = 20;
-  let time = 0;
+  canvas.width = canvas.clientWidth;
+  canvas.height = canvas.clientHeight;
   
+  let boxX = 20;
+  let isDragging = false;
+  let startX = 0;
+
   function draw() {
-    // Clear
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
     // Draw Ground
@@ -163,19 +198,49 @@ function initWorkSimulation() {
     ctx.fillStyle = '#2563eb';
     ctx.font = '14px sans-serif';
     ctx.fillText('F', boxX + 65, canvas.height - 85);
-
-    // Animate
-    boxX += 0.5;
-    if (boxX > canvas.width - 50) {
-      boxX = 20; // reset
-    }
-    
-    requestAnimationFrame(draw);
   }
   
-  // Set internal resolution
-  canvas.width = canvas.clientWidth;
-  canvas.height = canvas.clientHeight;
+  function getX(e) {
+    if (e.touches) return e.touches[0].clientX;
+    return e.clientX;
+  }
+
+  function handleDown(e) {
+    const rect = canvas.getBoundingClientRect();
+    const x = getX(e) - rect.left;
+    if (x >= boxX && x <= boxX + 60) {
+      isDragging = true;
+      startX = x - boxX;
+      e.preventDefault();
+    }
+  }
+
+  function handleMove(e) {
+    if (!isDragging) return;
+    const rect = canvas.getBoundingClientRect();
+    const x = getX(e) - rect.left;
+    boxX = x - startX;
+    
+    // Limits
+    if (boxX < 0) boxX = 0;
+    if (boxX > canvas.width - 60) boxX = canvas.width - 60;
+    
+    draw();
+    e.preventDefault();
+  }
+
+  function handleUp() {
+    isDragging = false;
+  }
+
+  canvas.addEventListener('mousedown', handleDown);
+  canvas.addEventListener('mousemove', handleMove);
+  window.addEventListener('mouseup', handleUp);
+
+  canvas.addEventListener('touchstart', handleDown, { passive: false });
+  canvas.addEventListener('touchmove', handleMove, { passive: false });
+  window.addEventListener('touchend', handleUp);
+
   draw();
 }
 

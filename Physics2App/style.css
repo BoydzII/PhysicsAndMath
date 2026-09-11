@@ -315,7 +315,7 @@ select {
 /* Print Styles */
 @media print {
   body { height: auto; overflow: auto; background: white; }
-  .topbar, .drawing-toolbar, .content-panel { display: none !important; }
+  .topbar, .drawing-toolbar, .content-panel, .modal-overlay, .expand-btn { display: none !important; }
   .notebook-panel { width: 100%; padding: 0; background: white; }
   .notebook-wrapper { box-shadow: none; min-height: 0; }
   .problem-block { page-break-inside: avoid; }
