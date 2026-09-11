@@ -89,17 +89,17 @@ class DrawingEngine {
   }
 
   initEvents() {
-    // Automatically resize canvas when content changes height (e.g. KaTeX rendering, expanding space)
     if (!this.resizeObserver) {
       this.resizeObserver = new ResizeObserver(() => {
-         // Debounce slightly to prevent flicker
          clearTimeout(this.resizeTimer);
          this.resizeTimer = setTimeout(() => this.resize(), 50);
       });
       this.resizeObserver.observe(this.canvas.parentElement);
     }
 
-    // Use Pointer Events for Apple Pencil pressure and smooth tracking
+    let savedImageData = null;
+    let currentStrokePoints = [];
+
     const startDraw = (e) => {
       if (e.button === 2) return;
       this.isDrawing = true;
@@ -108,43 +108,51 @@ class DrawingEngine {
       this.lastX = pos.x;
       this.lastY = pos.y;
       
-      this.updateCtx();
-      this.ctx.beginPath();
-      this.ctx.moveTo(pos.x, pos.y);
-      this.ctx.lineTo(pos.x, pos.y);
-      this.ctx.stroke();
+      // Save canvas state before stroke begins
+      savedImageData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
+      currentStrokePoints = [{x: pos.x, y: pos.y, p: pos.pressure}];
       
+      this.updateCtx();
       this.canvas.setPointerCapture(e.pointerId);
     };
 
     const draw = (e) => {
       if (!this.isDrawing) return;
       const pos = this.getPointerPos(e);
-      
-      // Simulate pressure sensitivity for pen
-      if (this.currentTool === 'pen' && e.pointerType === 'pen') {
-          this.ctx.lineWidth = this.lineWidth * (pos.pressure * 2);
-      } else if (this.currentTool === 'pen') {
-          this.ctx.lineWidth = this.lineWidth;
+      currentStrokePoints.push({x: pos.x, y: pos.y, p: pos.pressure});
+
+      // Restore background
+      if (savedImageData) {
+        this.ctx.putImageData(savedImageData, 0, 0);
+      }
+
+      this.ctx.beginPath();
+      this.ctx.moveTo(currentStrokePoints[0].x, currentStrokePoints[0].y);
+
+      // Draw the entire current stroke as a single continuous path!
+      // This prevents the overlapping "circles" issue with globalAlpha.
+      for (let i = 1; i < currentStrokePoints.length; i++) {
+        const p1 = currentStrokePoints[i-1];
+        const p2 = currentStrokePoints[i];
+        
+        // Simple line drawing for the single path (we can use quadratic curve but for single path lineTo is fine)
+        this.ctx.lineTo(p2.x, p2.y);
       }
       
-      // Use quadratic curves for smoother lines
-      this.ctx.beginPath();
-      this.ctx.moveTo(this.lastX, this.lastY);
-      const midX = (this.lastX + pos.x) / 2;
-      const midY = (this.lastY + pos.y) / 2;
-      this.ctx.quadraticCurveTo(this.lastX, this.lastY, midX, midY);
-      this.ctx.lineTo(pos.x, pos.y);
-      this.ctx.stroke();
+      // Apply pressure thickness to the whole stroke (using average or max pressure, or just default)
+      if (this.currentTool === 'pen' && e.pointerType === 'pen') {
+          this.ctx.lineWidth = this.lineWidth * (pos.pressure * 2);
+      }
       
-      this.lastX = pos.x;
-      this.lastY = pos.y;
+      this.ctx.stroke();
     };
 
     const stopDraw = (e) => {
       if (!this.isDrawing) return;
       this.isDrawing = false;
       this.canvas.releasePointerCapture(e.pointerId);
+      savedImageData = null;
+      currentStrokePoints = [];
       this.saveData();
     };
 
