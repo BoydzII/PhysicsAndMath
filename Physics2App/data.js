@@ -2,9 +2,9 @@ const physicsData = {
   topics: {
     work: {
       id: "work",
-      title: "งานและพลังงาน",
+      title: "5.1 งาน",
       theory: `
-        <h2>1. งาน (Work)</h2>
+        <h2>5.1 งาน (Work)</h2>
         <p>ในทางฟิสิกส์ <b>งาน ($W$)</b> เกิดขึ้นเมื่อมีแรง ($F$) กระทำต่อวัตถุ และทำให้วัตถุเคลื่อนที่ไปตามแนวการกระจัด ($s$) โดยมีสมการดังนี้:</p>
         <div class="formula-box">
           $$ W = F s \\cos \\theta $$
@@ -314,9 +314,9 @@ const physicsData = {
 
     ,power: {
       id: "power",
-      title: "กำลัง",
+      title: "5.2 กำลัง",
       theory: `
-        <h2>2. กำลัง (Power)</h2>
+        <h2>5.2 กำลัง (Power)</h2>
         <p><b>กำลัง ($P$)</b> คือ อัตราการทำงาน หรืองานที่ทำได้ในหนึ่งหน่วยเวลา</p>
         <div class="formula-box">
           $$ P = \\frac{W}{t} $$

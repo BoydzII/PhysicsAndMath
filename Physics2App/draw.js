@@ -1,5 +1,6 @@
 class DrawingEngine {
   constructor(canvasId) {
+    this.topic = 'work'; // default topic
     this.canvas = document.getElementById(canvasId);
     this.ctx = this.canvas.getContext('2d', { willReadFrequently: true });
     
@@ -73,10 +74,10 @@ class DrawingEngine {
     this.updateCtx();
   }
 
-  clear() {
+  clear(save = true) {
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     this.paths = [];
-    this.saveData();
+    if (save) this.saveData();
   }
 
   getPointerPos(e) {
@@ -153,7 +154,7 @@ class DrawingEngine {
       this.canvas.releasePointerCapture(e.pointerId);
       savedImageData = null;
       currentStrokePoints = [];
-      this.saveData();
+      if (save) this.saveData();
     };
 
     this.canvas.addEventListener('pointerdown', startDraw);
@@ -163,11 +164,11 @@ class DrawingEngine {
   }
 
   saveData() {
-    localStorage.setItem('physics2_drawings', this.canvas.toDataURL());
+    localStorage.setItem('physics2_drawings_' + this.topic, this.canvas.toDataURL());
   }
 
   loadData() {
-    const dataURL = localStorage.getItem('physics2_drawings');
+    const dataURL = localStorage.getItem('physics2_drawings_' + this.topic);
     if (dataURL) {
       const img = new Image();
       img.onload = () => {

@@ -5,6 +5,7 @@ let drawingEngine = null;
 document.addEventListener('DOMContentLoaded', () => {
   // Init Drawing
   drawingEngine = new DrawingEngine('drawingCanvas');
+  drawingEngine.topic = currentTopic;
   
   // Try to load saved inputs
   loadInputs();
@@ -21,8 +22,19 @@ document.addEventListener('DOMContentLoaded', () => {
 function setupListeners() {
   // Topic selection
   document.getElementById('topicSelector').addEventListener('change', (e) => {
+    saveInputs(); // save old topic inputs
+    if (drawingEngine) drawingEngine.saveData(); // save old topic drawings
+    
     currentTopic = e.target.value;
+    
     renderApp();
+    
+    // The renderApp calls loadInputs(), but we need drawingEngine to load new topic
+    if (drawingEngine) {
+      drawingEngine.topic = currentTopic;
+      drawingEngine.clear(false); // clear without saving to current topic yet
+      drawingEngine.loadData();
+    }
   });
 
   // Level selection
@@ -428,7 +440,7 @@ function initWorkSimulation() {
 function saveInputs() {
   const inputs = document.querySelectorAll('.answer-input');
   const values = Array.from(inputs).map(inp => inp.value);
-  localStorage.setItem('physics2_inputs_' + currentLevel, JSON.stringify(values));
+  localStorage.setItem('physics2_inputs_' + currentTopic + '_' + currentLevel, JSON.stringify(values));
 }
 
 function loadInputs() {
@@ -436,7 +448,7 @@ function loadInputs() {
 }
 
 function restoreInputs() {
-  const saved = localStorage.getItem('physics2_inputs_' + currentLevel);
+  const saved = localStorage.getItem('physics2_inputs_' + currentTopic + '_' + currentLevel);
   if (saved) {
     const values = JSON.parse(saved);
     const inputs = document.querySelectorAll('.answer-input');
