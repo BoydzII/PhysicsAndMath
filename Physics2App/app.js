@@ -124,11 +124,11 @@ function renderApp() {
     } else if (currentLevel === 'intermediate') {
       html += `<div class="solution-guide">${prob.intermediateHtml || ''}</div>`;
       html += `<div class="spacer-div" style="height:0px;"></div>`;
-      html += `<button class="sm expand-btn" style="margin-top:16px; padding:4px 8px; border-radius:4px; border:1px solid #ccc; cursor:pointer; background:#fff;">+ เพิ่มพื้นที่ทด</button>`;
+      html += `<button class="sm expand-btn" style="position:relative; z-index:10; margin-top:16px; padding:4px 8px; border-radius:4px; border:1px solid #ccc; cursor:pointer; background:#fff;">+ เพิ่มพื้นที่ทด</button>`;
     } else {
       html += `<div class="solution-guide">${prob.advancedHtml || ''}</div>`;
       html += `<div class="spacer-div" style="height:0px;"></div>`;
-      html += `<button class="sm expand-btn" style="margin-top:16px; padding:4px 8px; border-radius:4px; border:1px solid #ccc; cursor:pointer; background:#fff;">+ เพิ่มพื้นที่ทด</button>`;
+      html += `<button class="sm expand-btn" style="position:relative; z-index:10; margin-top:16px; padding:4px 8px; border-radius:4px; border:1px solid #ccc; cursor:pointer; background:#fff;">+ เพิ่มพื้นที่ทด</button>`;
     }
     
     html += `</div>`;
@@ -179,25 +179,63 @@ function initWorkSimulation() {
     ctx.fillStyle = '#ef4444';
     ctx.fillRect(boxX, canvas.height - 70, 40, 40);
     
-    // Draw Force Vector
-    ctx.beginPath();
-    ctx.moveTo(boxX + 20, canvas.height - 50);
-    ctx.lineTo(boxX + 60, canvas.height - 80);
-    ctx.strokeStyle = '#2563eb';
-    ctx.lineWidth = 3;
-    ctx.stroke();
-    
-    // Arrow head
-    ctx.beginPath();
-    ctx.moveTo(boxX + 60, canvas.height - 80);
-    ctx.lineTo(boxX + 50, canvas.height - 80);
-    ctx.lineTo(boxX + 55, canvas.height - 70);
-    ctx.fillStyle = '#2563eb';
-    ctx.fill();
+    if (isDragging) {
+      // Draw Force Vector F (diagonal)
+      ctx.beginPath();
+      ctx.moveTo(boxX + 20, canvas.height - 50);
+      ctx.lineTo(boxX + 70, canvas.height - 80);
+      ctx.strokeStyle = '#2563eb';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+      
+      // Arrow head F
+      ctx.beginPath();
+      ctx.moveTo(boxX + 70, canvas.height - 80);
+      ctx.lineTo(boxX + 60, canvas.height - 80);
+      ctx.lineTo(boxX + 65, canvas.height - 70);
+      ctx.fillStyle = '#2563eb';
+      ctx.fill();
 
-    ctx.fillStyle = '#2563eb';
-    ctx.font = '14px sans-serif';
-    ctx.fillText('F', boxX + 65, canvas.height - 85);
+      ctx.fillStyle = '#2563eb';
+      ctx.font = 'bold 16px sans-serif';
+      ctx.fillText('F', boxX + 75, canvas.height - 85);
+
+      // Draw Fx
+      ctx.beginPath();
+      ctx.moveTo(boxX + 20, canvas.height - 50);
+      ctx.lineTo(boxX + 70, canvas.height - 50);
+      ctx.strokeStyle = '#ef4444'; // Red for X
+      ctx.lineWidth = 2;
+      ctx.setLineDash([5, 5]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      
+      ctx.beginPath();
+      ctx.moveTo(boxX + 70, canvas.height - 50);
+      ctx.lineTo(boxX + 62, canvas.height - 54);
+      ctx.lineTo(boxX + 62, canvas.height - 46);
+      ctx.fillStyle = '#ef4444';
+      ctx.fill();
+      ctx.fillText('Fx', boxX + 75, canvas.height - 45);
+
+      // Draw Fy
+      ctx.beginPath();
+      ctx.moveTo(boxX + 20, canvas.height - 50);
+      ctx.lineTo(boxX + 20, canvas.height - 80);
+      ctx.strokeStyle = '#10b981'; // Green for Y
+      ctx.lineWidth = 2;
+      ctx.setLineDash([5, 5]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.beginPath();
+      ctx.moveTo(boxX + 20, canvas.height - 80);
+      ctx.lineTo(boxX + 16, canvas.height - 72);
+      ctx.lineTo(boxX + 24, canvas.height - 72);
+      ctx.fillStyle = '#10b981';
+      ctx.fill();
+      ctx.fillText('Fy', boxX + 10, canvas.height - 90);
+    }
   }
   
   function getX(e) {
@@ -208,10 +246,12 @@ function initWorkSimulation() {
   function handleDown(e) {
     const rect = canvas.getBoundingClientRect();
     const x = getX(e) - rect.left;
-    if (x >= boxX && x <= boxX + 60) {
+    if (x >= boxX && x <= boxX + 40) {
       isDragging = true;
       startX = x - boxX;
+      canvas.style.cursor = 'grabbing';
       e.preventDefault();
+      draw();
     }
   }
 
@@ -223,7 +263,7 @@ function initWorkSimulation() {
     
     // Limits
     if (boxX < 0) boxX = 0;
-    if (boxX > canvas.width - 60) boxX = canvas.width - 60;
+    if (boxX > canvas.width - 40) boxX = canvas.width - 40;
     
     draw();
     e.preventDefault();
@@ -231,6 +271,8 @@ function initWorkSimulation() {
 
   function handleUp() {
     isDragging = false;
+    canvas.style.cursor = 'grab';
+    draw();
   }
 
   canvas.addEventListener('mousedown', handleDown);
