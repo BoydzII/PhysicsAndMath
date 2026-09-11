@@ -20,6 +20,14 @@
  *   4) กลับมาที่แอพ → แท็บตั้งค่า → ปุ่ม "ซ่อมโครงสร้างชีต" หนึ่งครั้ง
  *      เพื่อเติมหัวตารางของคอลัมน์ใหม่ (ข้อมูลเดิมไม่หาย)
  *
+ * ── รุ่น 18 แก้อะไร (รหัสเดียวทุกชีต) ────────────────────────────────────
+ *   ชีตวิทยาศาสตร์กายภาพเป็น "ศูนย์กลาง" ตรวจรหัสผ่านที่นั่นที่เดียว
+ *   ลงชื่อสำเร็จแล้วได้ "บัตรผ่าน" อายุสิบนาที เอาไปแลกเป็นการเข้าใช้ของชีตอื่นได้
+ *   (คำสั่ง hubLogin) โดยชีตนั้นไม่ตรวจรหัสของตัวเองอีก รหัสจึงเหลือชุดเดียวทุกวิชา
+ *   บัตรผ่านเซ็นด้วย "กุญแจร่วม" (HUB_KEY) ที่ต้องตั้งเหมือนกันทุกชีต — ตั้งจากหน้าปก
+ *   ครูผู้ดูแลหลักกดปุ่มเดียว (คำสั่ง hubSetup) ไม่ต้องเปิด Apps Script
+ *   ยังไม่ได้ตั้งกุญแจ = ทำงานแบบเดิมทุกอย่าง อัปเดตรุ่นนี้แล้วยังไม่มีอะไรเปลี่ยน
+ *
  * ── รุ่น 17 แก้อะไร (ส่งสมุดจดให้ครู) ────────────────────────────────────
  *   เพิ่มแผ่น notes เก็บสมุดจดที่นักเรียนกดส่งให้ครู หนึ่งเล่มอาจกินหลายแถว
  *   (ท่อนละ 45,000 ตัวอักษร เพราะช่องหนึ่งช่องรับได้ราวห้าหมื่น) ส่งซ้ำแทนฉบับเดิม
@@ -1123,6 +1131,114 @@ function apiNoteMine_(req) {
   return out;
 }
 
+/* ====== รหัสเดียวทุกชีต (รุ่น 18) ======================================
+   ปัญหาเดิม: แต่ละชีตเก็บรหัสผ่านของตัวเอง และก็อปแฮชข้ามชีตไม่ได้เพราะกุญแจลับไม่เหมือนกัน
+   นักเรียนกับครูจึงมีรหัสหลายชุดโดยไม่รู้ตัว เข้าได้บางวิชา เข้าไม่ได้บางวิชา
+
+   ทางแก้: ให้ชีตใบเดียวเป็นศูนย์กลาง (HUB_ROLE = 'hub') ตรวจรหัสที่นั่นที่เดียว
+   ลงชื่อสำเร็จ ศูนย์กลางออก "บัตรผ่าน" ที่เซ็นด้วยกุญแจร่วม (HUB_KEY) อายุสิบนาที
+   ชีตสมาชิก (HUB_ROLE = 'member') ที่ถือกุญแจเดียวกัน ตรวจลายเซ็นแล้วออกโทเคนของตัวเองให้
+   โดยไม่ถามรหัสอีก — เปลี่ยนรหัสที่ศูนย์กลางครั้งเดียวจึงมีผลทุกวิชา
+
+   ความปลอดภัย
+   - กุญแจร่วมอยู่ใน Script Properties เท่านั้น ไม่อยู่ในโค้ด ไม่ขึ้นรีโพสาธารณะ
+   - ออกบัตรได้เฉพาะชีตศูนย์กลาง รับบัตรได้เฉพาะชีตสมาชิก รหัสของชีตสมาชิกจึงไม่กลายเป็นประตูหลัง
+     เข้าชีตศูนย์กลาง
+   - บัตรผ่านใช้ได้สิบนาที พอให้แลกทันทีหลังลงชื่อ ถูกขโมยไปก็ใช้ได้ไม่นาน
+   - ชีตสมาชิกยังเช็กว่าคนนั้นมีชื่อ ยังเปิดใช้งาน และชั้นที่ครูดูแล จากแผ่นของตัวเองเสมอ */
+var HUB_TOKEN_MIN = 10;
+var HUB_KEY_MIN = 32;
+function hubKey_() { return String(props_().getProperty('HUB_KEY') || ''); }
+function hubRole_() { return String(props_().getProperty('HUB_ROLE') || ''); }
+/** ต่อท้ายข้อความ "รหัสผิด" ของชีตศูนย์กลาง — แอปใช้คำนี้ตัดสินว่าไม่ต้องลองรหัสเดียวกันกับชีตอื่นอีก */
+function hubTag_() { return hubKey_() && hubRole_() === 'hub' ? ' · ชีตศูนย์กลาง (รหัสชุดนี้ใช้กับทุกวิชา)' : ''; }
+function hubSign_(body) {
+  return Utilities.base64EncodeWebSafe(Utilities.computeHmacSha256Signature(body, 'hub|' + hubKey_()));
+}
+/** ออกบัตรผ่าน — คืนค่าว่างถ้าชีตนี้ไม่ใช่ศูนย์กลาง แอปจะรู้เองว่าต้องใช้ทางเดิม */
+function hubMake_(payload) {
+  if (!hubKey_() || hubRole_() !== 'hub') return '';
+  payload.iss = 'hub';
+  payload.exp = Date.now() + HUB_TOKEN_MIN * 60 * 1000;
+  var body = Utilities.base64EncodeWebSafe(JSON.stringify(payload));
+  return body + '.' + hubSign_(body);
+}
+/** อ่านบัตรผ่าน — ข้อความผิดพลาดขึ้นต้นด้วย HUB: แอปจะถอยไปตรวจรหัสกับชีตนี้แบบเดิม */
+function hubRead_(tok) {
+  if (!hubKey_()) throw new Error('HUB: ชีตนี้ยังไม่ได้ตั้งกุญแจร่วม');
+  if (hubRole_() !== 'member') throw new Error('HUB: ชีตนี้ไม่ได้ตั้งให้รับบัตรผ่านจากชีตศูนย์กลาง');
+  var parts = String(tok || '').split('.');
+  if (parts.length !== 2 || hubSign_(parts[0]) !== parts[1]) {
+    throw new Error('HUB: บัตรผ่านไม่ถูกต้อง — กุญแจร่วมของชีตนี้อาจไม่ตรงกับชีตศูนย์กลาง');
+  }
+  var p = null;
+  try { p = JSON.parse(Utilities.newBlob(Utilities.base64DecodeWebSafe(parts[0])).getDataAsString()); }
+  catch (e) { p = null; }
+  if (!p || p.iss !== 'hub') throw new Error('HUB: บัตรผ่านไม่ถูกต้อง');
+  if (!p.exp || p.exp < Date.now()) throw new Error('HUB: บัตรผ่านหมดอายุ — ลงชื่อเข้าใช้ใหม่อีกครั้ง');
+  return p;
+}
+/** แลกบัตรผ่านจากชีตศูนย์กลางเป็นการเข้าใช้ชีตนี้ — คืนหน้าตาเดียวกับ login / adminLogin */
+function apiHubLogin_(req) {
+  var p = hubRead_(req.hub);
+  if (p.role === 'student') {
+    var sid = normSid_(p.sid);
+    var row = findStudentRow_(sid);
+    if (row < 0) throw new Error('ไม่พบเลขประจำตัว ' + sid + ' ในชีตนี้ (' + bookName_() + ')');
+    var me = readStudentRow_(row);
+    if (String(me.active) === 'false' || String(me.active) === '0') throw new Error('บัญชีนี้ถูกระงับการใช้งาน');
+    sheet_('students').getRange(me._row, C_LOGIN).setValue(new Date());
+    return {
+      token: makeToken_({ role: 'student', sid: normSid_(me.sid) || sid }),
+      profile: { sid: normSid_(me.sid) || sid, name: me.name, no: me.no, cls: me.cls },
+      mustChange: false, via: 'hub'
+    };
+  }
+  if (p.role === 'admin' && !p.sub) {
+    return { token: makeToken_({ role: 'admin' }), role: 'main', classes: null, via: 'hub' };
+  }
+  if (p.role === 'admin') {
+    var t = findTeacher_(p.sub);
+    if (!t) throw new Error('ไม่พบชื่อผู้ใช้ ' + p.sub + ' ในชีตนี้ (' + bookName_() + ') — ให้ผู้ดูแลหลักเพิ่มบัญชีในชีตนี้ด้วย');
+    if (String(t.active) === 'false' || String(t.active) === '0') throw new Error('บัญชีนี้ถูกระงับการใช้งาน');
+    var cls = parseClasses_(t.classes);
+    if (!cls.length) throw new Error('บัญชีนี้ยังไม่ได้กำหนดชั้นที่ดูแลในชีตนี้ — แจ้งผู้ดูแลหลักให้กำหนดก่อน');
+    var sbj = parseSubjects_(t.subjects);
+    sheet_('teachers').getRange(t._row, SHEETS.teachers.indexOf('lastLogin') + 1).setValue(new Date());
+    dropCache_('teachers');
+    return {
+      token: makeToken_({ role: 'admin', sub: normUser_(t.user), cls: cls, sbj: sbj }),
+      role: 'sub', user: normUser_(t.user), name: String(t.name || ''), classes: cls,
+      subjects: sbj, mustChange: false, via: 'hub'
+    };
+  }
+  throw new Error('HUB: บัตรผ่านไม่ถูกต้อง');
+}
+/** สถานะการเชื่อม — ลายนิ้วมือของกุญแจ (8 ตัวแรกของแฮช) ไว้เทียบว่าทุกชีตถือกุญแจเดียวกัน
+    ไม่คืนตัวกุญแจเด็ดขาด */
+function apiHubStatus_(req) {
+  needAdmin_(req);
+  var k = hubKey_();
+  return { role: hubRole_(), fp: k ? sha256_('fp|' + k).slice(0, 8) : '', book: bookName_() };
+}
+/** ตั้งกุญแจร่วมและบทบาทของชีตนี้ — เฉพาะผู้ดูแลหลัก ส่งว่างทั้งคู่ = เลิกเชื่อม */
+function apiHubSetup_(req) {
+  var t = needAdmin_(req);
+  if (t.sub) throw new Error('AUTH: เฉพาะผู้ดูแลหลักเท่านั้นที่ตั้งการเชื่อมชีตได้');
+  var key = String(req.key == null ? '' : req.key);
+  var role = String(req.role == null ? '' : req.role);
+  if (!key && !role) {
+    props_().deleteProperty('HUB_KEY');
+    props_().deleteProperty('HUB_ROLE');
+    return apiHubStatus_(req);
+  }
+  if (role !== 'hub' && role !== 'member') throw new Error('บทบาทต้องเป็น hub หรือ member');
+  if (key.length < HUB_KEY_MIN) throw new Error('กุญแจร่วมต้องยาวอย่างน้อย ' + HUB_KEY_MIN + ' ตัว');
+  props_().setProperty('HUB_KEY', key);
+  props_().setProperty('HUB_ROLE', role);
+  return apiHubStatus_(req);
+}
+
 /* ====== ทางเข้าเว็บแอป ================================================== */
 
 function json_(o) {
@@ -1130,7 +1246,7 @@ function json_(o) {
 }
 
 function doGet() {
-  return json_({ ok: true, service: 'quiz-bank', version: 17, subjects: SUBJECTS,
+  return json_({ ok: true, service: 'quiz-bank', version: 18, subjects: SUBJECTS,
                  note: 'ใช้งานผ่าน POST จากแอพเท่านั้น' });
 }
 
@@ -1153,6 +1269,9 @@ function route_(action, req) {
     case 'changePass':    return apiChangePass_(req);
     case 'adminLogin':    return apiAdminLogin_(req);
     case 'adminPass':     return apiAdminPass_(req);
+    case 'hubLogin':      return apiHubLogin_(req);
+    case 'hubStatus':     return apiHubStatus_(req);
+    case 'hubSetup':      return apiHubSetup_(req);
     case 'rosterList':    return apiRosterList_(req);
     case 'rosterCheck':   return apiRosterCheck_(req);
     case 'rosterSave':    return apiRosterSave_(req);
@@ -1251,7 +1370,7 @@ function apiPing_(req) {
   try { locale = String(book_().getSpreadsheetLocale() || ''); } catch (e) {}
 
   return {
-    version: 17, role: role, myClasses: myCls,
+    version: 18, role: role, myClasses: myCls,
     locale: locale, monthFirst: monthFirstSheet_(), classes: clsCount,
     teachers: Math.max(0, sheet_('teachers').getLastRow() - 1),
     needRepair: needRepair, layout: layout, subjects: SUBJECTS,
@@ -1303,7 +1422,7 @@ function apiLogin_(req) {
     /* บอกชื่อไฟล์ชีตไปด้วย เครื่องที่ค้างแอปรุ่นเก่าอาจคุยกับชีตผิดใบ
        ซึ่งรหัสผ่านเก็บแยกใบกัน ภาพหน้าจอเดียวจะได้รู้ทันทีว่าไปโดนใบไหน */
     throw new Error('รหัสผ่านไม่ถูกต้อง (ผิดได้อีก ' + (MAX_LOGIN_FAIL - fails - 1) + ' ครั้ง) ' +
-                    '· ชีต: ' + bookName_());
+                    '· ชีต: ' + bookName_() + hubTag_());
   }
   cache.remove(failKey_(key));
 
@@ -1316,7 +1435,8 @@ function apiLogin_(req) {
   return {
     token: makeToken_({ role: 'student', sid: normSid_(me.sid) || sid }),
     profile: { sid: normSid_(me.sid) || sid, name: me.name, no: me.no, cls: me.cls },
-    mustChange: mustChange
+    mustChange: mustChange,
+    hub: hubMake_({ role: 'student', sid: normSid_(me.sid) || sid })
   };
 }
 
@@ -1365,7 +1485,7 @@ function teacherLogin_(user, pass) {
   }
   if (hashPass_(pass, salt) !== hash) {
     cache.put(key, String(fails + 1), LOCK_MINUTES * 60);
-    throw new Error('รหัสผ่านไม่ถูกต้อง (ผิดได้อีก ' + (MAX_LOGIN_FAIL - fails - 1) + ' ครั้ง)');
+    throw new Error('รหัสผ่านไม่ถูกต้อง (ผิดได้อีก ' + (MAX_LOGIN_FAIL - fails - 1) + ' ครั้ง)' + hubTag_());
   }
   cache.remove(key);
   var cls = parseClasses_(t.classes);
@@ -1381,7 +1501,8 @@ function teacherLogin_(user, pass) {
     token: makeToken_({ role: 'admin', sub: normUser_(t.user), cls: cls, sbj: sbj }),
     role: 'sub', user: normUser_(t.user), name: String(t.name || ''), classes: cls,
     subjects: sbj,
-    mustChange: String(t.mustChange) !== 'false' && String(t.mustChange) !== '0'
+    mustChange: String(t.mustChange) !== 'false' && String(t.mustChange) !== '0',
+    hub: hubMake_({ role: 'admin', sub: normUser_(t.user) })
   };
 }
 
@@ -1403,11 +1524,12 @@ function apiAdminLogin_(req) {
   if (!passMatches_(String(req.pass || ''), salt, hash)) {
     cache.put('fail_admin', String(fails + 1), LOCK_MINUTES * 60);
     throw new Error('รหัสผู้ดูแลไม่ถูกต้อง — ถ้าจำไม่ได้ ให้เปิดหน้า Apps Script ' +
-                    'แล้วเรียกฟังก์ชัน resetAdminPassword หนึ่งครั้ง');
+                    'แล้วเรียกฟังก์ชัน resetAdminPassword หนึ่งครั้ง' + hubTag_());
   }
   cache.remove('fail_admin');
   return { token: makeToken_({ role: 'admin' }), role: 'main', classes: null,
-           isDefault: hashPass_(DEFAULT_ADMIN_PASS, salt) === hash };
+           isDefault: hashPass_(DEFAULT_ADMIN_PASS, salt) === hash,
+           hub: hubMake_({ role: 'admin' }) };
 }
 
 function apiAdminPass_(req) {

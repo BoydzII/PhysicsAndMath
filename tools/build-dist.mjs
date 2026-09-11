@@ -55,6 +55,13 @@ const PSCI_APPS_URL = 'https://script.google.com/macros/s/AKfycbxVa8BYYQeIhBDmg8
 // ที่อยู่เว็บแอปของ "ห้องเรียนสมดุลกล" ซึ่งใช้ชีตคนละใบกับสี่วิชาข้างบน
 // เอามาจาก Apps Script ของชีตสมดุลกล → ทำให้ใช้งานได้ → เว็บแอป (ลงท้าย /exec)
 // ถ้าปล่อยว่าง สคริปต์จะไม่ยอมสร้างไฟล์ให้ เพราะไฟล์ที่แจกนักเรียนจะส่งคะแนนขึ้นชีตไม่ได้
+/* ชีตทุกใบที่ใช้ระบบรหัสเดียวกัน — ใบแรกคือศูนย์กลาง (ตรวจรหัสที่ใบนี้ใบเดียว)
+   ประทับลงทุกไฟล์เป็น BUILTIN.books แอปจะได้รู้ว่าต้องไปลงชื่อที่ไหนก่อน
+   ต้องตรงกับ BOOKS ในหน้าปก (index.html) — ใบแรกของทั้งสองที่ต้องเป็นใบเดียวกัน */
+const SHEET_BOOKS = [
+  { url: PSCI_APPS_URL, name: 'ชีตวิทยาศาสตร์กายภาพ' },
+  { url: PHYS_APPS_URL, name: 'ชีตฟิสิกส์' }
+];
 const EQ_APPS_URL = 'https://script.google.com/macros/s/AKfycbwiwNszVH4qwYNNr5o35r4JVWPbY66mM5XoQF-orwe-PmwvCM5wR9Gpw65nmQfPwT_W/exec';
 
 const TARGETS = [
@@ -143,7 +150,7 @@ for (const t of TARGETS) {
   }
 
   const eol = src.indexOf('\r\n') >= 0 ? '\r\n' : '\n';
-  const builtin = Object.assign({}, t.builtin, { build: BUILD_STAMP, ver: APP_VER });
+  const builtin = Object.assign({}, t.builtin, { build: BUILD_STAMP, ver: APP_VER, books: SHEET_BOOKS });
   const block = ['/* @@BUILTIN@@ */', 'const BUILTIN = ' + JSON.stringify(builtin) + ';',
                  '/* @@BUILTIN-END@@ */'].join(eol);
   fs.writeFileSync(outPath, src.replace(RE, block));
@@ -157,7 +164,7 @@ for (const t of TARGETS) {
   if (curObj) {
     const srcBlock = ['/* @@BUILTIN@@ */',
       'const BUILTIN = ' + JSON.stringify(
-        Object.assign({}, curObj, { build: BUILD_STAMP, ver: APP_VER })) + ';',
+        Object.assign({}, curObj, { build: BUILD_STAMP, ver: APP_VER, books: SHEET_BOOKS })) + ';',
       '/* @@BUILTIN-END@@ */'].join(eol);
     const srcNew = src.replace(RE, srcBlock);
     if (srcNew !== src) fs.writeFileSync(srcPath, srcNew);

@@ -1328,7 +1328,7 @@ table td,table th,.num,.xpstat b,.tick,
    *** ห้ามลบบรรทัดเครื่องหมาย @@BUILTIN@@ ทั้งสองอัน ตัวสร้างไฟล์ใช้หาตำแหน่ง ***
    ========================================================================== */
 /* @@BUILTIN@@ */
-const BUILTIN = {"url":"https://script.google.com/macros/s/AKfycbzuuRbnE_oB7a9vx7zZizyPVEKao31ERDTU82DvydMuRTDqVoQvgns9EsjTIzpbBjuM/exec","studentOnly":false,"lockCloud":false,"logo":"","header":null,"about":null,"build":"2026-09-11 13:35","ver":"v8.115"};
+const BUILTIN = {"url":"https://script.google.com/macros/s/AKfycbzuuRbnE_oB7a9vx7zZizyPVEKao31ERDTU82DvydMuRTDqVoQvgns9EsjTIzpbBjuM/exec","studentOnly":false,"lockCloud":false,"logo":"","header":null,"about":null,"build":"2026-09-11 17:16","ver":"v8.120","books":[{"url":"https://script.google.com/macros/s/AKfycbxVa8BYYQeIhBDmg85w2UBwsIqt6a2YudehUfCbyMny9T-5TTh1UfFxsJjTk9HLNuFc/exec","name":"ชีตวิทยาศาสตร์กายภาพ"},{"url":"https://script.google.com/macros/s/AKfycbzuuRbnE_oB7a9vx7zZizyPVEKao31ERDTU82DvydMuRTDqVoQvgns9EsjTIzpbBjuM/exec","name":"ชีตฟิสิกส์"}]};
 /* @@BUILTIN-END@@ */
 
 /* ถ่ายภาพซอร์สของหน้านี้ไว้ตั้งแต่สคริปต์เพิ่งเริ่มทำงาน
@@ -2532,7 +2532,7 @@ function renderGate() {
             ((devLockRead() || {}).name || '—') + ' จึงยังเข้าใช้ในชื่ออื่นไม่ได้ ' +
             'เหลืออีก ' + devLockText(lockLeft) + ' — ถ้าเป็นเครื่องที่ใช้ร่วมกัน ให้ครูปลดล็อกให้');
         }
-        const r = await api('login', { sid: sid, pass: pass }, { noToken: true });
+        const r = await hubAuth('login', { sid: sid, pass: pass });
         setAuth('student', r.token, r.profile);
         // ผูกโปรไฟล์ในเครื่องให้ตรงกับบัญชี เพื่อให้เอกสารและผลลัพธ์แสดงชื่อถูก
         DB.mode = 'solo';
@@ -2548,8 +2548,7 @@ function renderGate() {
         const userVal = ((uEl ? uEl.value : '') || '').trim();
         let r;
         try {
-          r = await api('adminLogin', { user: userVal,
-                                        pass: $('#gPass').value || '' }, { noToken: true });
+          r = await hubAuth('adminLogin', { user: userVal, pass: $('#gPass').value || '' });
         } catch (err) {
           if (userVal && (err.message || '').indexOf('รหัสผู้ดูแลไม่ถูกต้อง') >= 0) {
             throw new Error('เข้าใช้งานไม่สำเร็จ: รหัสผ่านไม่ถูกต้อง หรือ Google Apps Script บน Google Drive ยังเป็นเวอร์ชันเก่า (ยังไม่รองรับครูผู้สอน) — ให้ผู้ดูแลหลักนำ appsscript-Code.gs รุ่นล่าสุดไป Deploy เป็นเวอร์ชันใหม่ใน Apps Script');
@@ -2599,6 +2598,92 @@ function renderGate() {
   });
   const first = $('#gSid') || $('#gPass');
   if (first) first.focus();
+}
+
+/* ── รหัสเดียวทุกชีต (ชีตรุ่น 18) ──────────────────────────────────────────
+   ชีตใบแรกใน BUILTIN.books (วิทยาศาสตร์กายภาพ) เป็นศูนย์กลาง ตรวจรหัสที่นั่นที่เดียว
+   ได้ "บัตรผ่าน" อายุสิบนาที แล้วเอาไปแลกเป็นการเข้าใช้ของชีตวิชานี้ โดยชีตนี้ไม่ถามรหัสซ้ำ
+   รหัสจึงเหลือชุดเดียว เปลี่ยนที่วิชาไหนก็มีผลทุกวิชา
+
+   ถอยกลับไปตรวจรหัสกับชีตวิชานี้แบบเดิม เมื่อ
+     - ชีตยังไม่ได้ตั้งกุญแจร่วม หรือยังเป็นรุ่นเก่า (ไม่รู้จักคำสั่ง)
+     - คนนี้ไม่มีชื่อในชีตศูนย์กลาง (เช่นเรียนแค่วิชาเดียว)
+     - ต่อชีตศูนย์กลางไม่ได้ชั่วคราว
+   แต่ถ้าชีตศูนย์กลางบอกว่า "รหัสผิด" คือจบ ไม่เอารหัสเดียวกันไปลองกับชีตอื่นอีก
+
+   ลงชื่อสำเร็จแล้วเก็บโทเคนของทุกชีตลงก้อนเดียวกับหน้าปก (pcportal.v1)
+   เปิดวิชาอื่นต่อจึงไม่ต้องลงชื่อซ้ำ และการเปลี่ยนรหัสตามไปถึงชีตศูนย์กลางได้ */
+function hubBooks() { return ((typeof BUILTIN !== 'undefined' && BUILTIN.books) || []).filter(b => b && b.url); }
+function hubUrl() { const b = hubBooks(); return b.length ? b[0].url : ''; }
+/** ข้อผิดพลาดที่แปลว่า "ทางศูนย์กลางใช้ไม่ได้ ให้กลับไปทางเดิม" */
+function hubSoft(e) {
+  return /^HUB:|ไม่รู้จักคำสั่ง|ไม่พบเลขประจำตัว|ไม่พบชื่อผู้ใช้|เชื่อมต่อ|อินเทอร์เน็ต|ไม่ถูกรูปแบบ/
+    .test(String((e && e.message) || e || ''));
+}
+async function hubAuth(action, params) {
+  const own = DB.cloud.url, hub = hubUrl();
+  let h = null;
+  if (hub) {
+    try { h = await api(action, params, { url: hub, noToken: true }); }
+    catch (e) {
+      /* ศูนย์กลางที่เชื่อมแล้วบอกว่ารหัสผิด (ข้อความติดคำว่า "ชีตศูนย์กลาง") คือจบ ไม่ลองซ้ำกับชีตอื่น
+         ถ้ายังไม่ได้เชื่อม รหัสของชีตวิชานี้อาจเป็นคนละชุด จึงยังต้องลองกับชีตวิชานี้ตามเดิม */
+      if (hub === own || /ชีตศูนย์กลาง/.test(e.message || '')) throw e;
+      h = null;
+    }
+  }
+  let r = null;
+  if (h && hub === own) r = h;
+  else if (h && h.hub) {
+    try {
+      r = await api('hubLogin', { hub: h.hub }, { noToken: true });
+      r.mustChange = !!h.mustChange;      // ต้องตั้งรหัสใหม่หรือไม่ ศูนย์กลางเป็นคนรู้
+    } catch (e) {
+      if (!hubSoft(e)) throw e;
+      r = null;
+    }
+  }
+  if (!r) r = await api(action, params, { noToken: true });
+  hubRemember(action === 'login' ? 'student' : 'admin', r, h, own, hub);
+  return r;
+}
+/** รวมโทเคนลงก้อนเดียวกับหน้าปก — ถ้าในเครื่องมีคนอื่นลงชื่อค้างอยู่ เริ่มก้อนใหม่ ไม่ปนกัน */
+function hubPortalPut(role, prof, tokens) {
+  try {
+    let s = null;
+    try { s = JSON.parse(localStorage.getItem('pcportal.v1') || 'null'); } catch (e) { s = null; }
+    const sp = (s && s.profile) || {};
+    const same = s && s.v === 1 && s.exp > Date.now() && s.role === role &&
+      String(sp.sid || '') === String(prof.sid || '') && String(sp.sub || '') === String(prof.sub || '');
+    const n = same ? s : { v: 1, role: role, profile: prof, tokens: {} };
+    n.tokens = Object.assign({}, n.tokens || {}, tokens);
+    const hub = hubUrl();
+    // คีย์เดิม (url · token) ที่แอปรุ่นเก่าอ่าน — ชี้ไปที่ชีตศูนย์กลางถ้ามีโทเคนของใบนั้น
+    n.url = hub && n.tokens[hub] ? hub : Object.keys(n.tokens)[0];
+    n.token = n.tokens[n.url];
+    n.profile = n.profile || prof;
+    n.exp = Date.now() + 11.5 * 3600 * 1000;
+    localStorage.setItem('pcportal.v1', JSON.stringify(n));
+  } catch (e) {}
+}
+function hubRemember(role, r, h, own, hub) {
+  const prof = role === 'student' ? Object.assign({}, r.profile || {}) : {
+    name: r.role === 'sub' ? (r.name || 'ครูผู้สอน') : 'ผู้ดูแลหลัก',
+    sub: r.role === 'sub' ? (r.user || '') : '', classes: r.classes || null, subjects: r.subjects || null
+  };
+  const tk = {};
+  if (r && r.token && own) tk[own] = r.token;
+  if (h && h.token && hub) tk[hub] = h.token;
+  hubPortalPut(role, prof, tk);
+  // แลกบัตรกับชีตสมาชิกที่เหลือไว้ล่วงหน้า เปิดวิชาอื่นต่อจะได้เข้าได้ทันที — ไม่รอ ไม่เตือนถ้าพลาด
+  if (h && h.hub) {
+    hubBooks().forEach(function (b) {
+      if (b.url === own || b.url === hub) return;
+      api('hubLogin', { hub: h.hub }, { url: b.url, noToken: true })
+        .then(function (x) { if (x && x.token) { const o = {}; o[b.url] = x.token; hubPortalPut(role, prof, o); } })
+        .catch(function () {});
+    });
+  }
 }
 
 /** บังคับตั้งรหัสใหม่ตอนเข้าใช้ครั้งแรก — ปิดหน้าต่างนี้ไม่ได้จนกว่าจะตั้งเสร็จ */
@@ -2669,7 +2754,11 @@ async function doLogout() {
   if (!await confirmBox('ออกจากระบบ', 'ออกจากระบบตอนนี้?' +
     (DB.outbox.length ? '<br><b>ยังมีผลค้างส่ง ' + DB.outbox.length + ' รายการ</b> ควรส่งให้เสร็จก่อน' : ''),
     'ออกจากระบบ')) return;
-  clearAuth(); renderGate(); render();
+  clearAuth();
+  /* ลงชื่อครั้งเดียวใช้ได้ทุกวิชา ออกก็ต้องออกทุกวิชาด้วย
+     ไม่งั้นเปิดแอปใหม่ ระบบจะหยิบการลงชื่อที่ค้างอยู่ในก้อนของหน้าปกกลับมาให้เอง */
+  try { localStorage.removeItem('pcportal.v1'); } catch (e) {}
+  renderGate(); render();
 }
 
 /* ============================================================================

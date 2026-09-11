@@ -235,6 +235,15 @@ footer b{font-weight:700;color:var(--ink)}
     <div class="msg" id="spMsg"></div>
   </div>
 
+  <!-- เชื่อมชีต — ขึ้นเฉพาะผู้ดูแลหลัก ทำครั้งเดียว -->
+  <div class="panel hide" id="hubBox" style="margin-bottom:26px">
+    <div class="tt">รหัสเดียวทุกวิชา — ใช้ชีตวิทยาศาสตร์กายภาพเป็นศูนย์กลาง</div>
+    <p class="lead" style="margin:6px 0 0">เชื่อมแล้ว ครูและนักเรียนใช้<b>รหัสของชีตวิทยาศาสตร์กายภาพ</b>ชุดเดียว
+      เข้าได้ทุกวิชา เปลี่ยนรหัสที่วิชาไหนก็มีผลทุกวิชา — ชีตอื่นจะไม่ถามรหัสของตัวเองอีก
+      (นักเรียนที่ไม่มีชื่อในชีตวิทย์กายภาพ ยังใช้รหัสของชีตวิชาตัวเองเหมือนเดิม)</p>
+    <div class="msg" id="hubMsg"></div>
+  </div>
+
   <div class="lead" style="margin:0 4px 4px">เลือกวิชาที่ต้องการ — ไม่ต้องลงชื่อเข้าใช้ซ้ำอีก</div>
   <div class="msg" id="pickMsg" style="margin-top:0"></div>
   <!-- การ์ดวิชาวาดด้วยสคริปต์จากอาเรย์ SUBJECTS จะได้ไม่ต้องแก้สองที่เวลาเพิ่มวิชา -->
@@ -272,7 +281,7 @@ footer b{font-weight:700;color:var(--ink)}
 /* เลขรุ่นกับวันเวลาที่สร้างไฟล์ — tools/build-dist.mjs ประทับให้ตอนขึ้นเว็บ
    *** ห้ามลบบรรทัดเครื่องหมาย @@VER@@ ทั้งสองอัน ตัวสร้างไฟล์ใช้หาตำแหน่ง *** */
 /* @@VER@@ */
-const APP_VER = "v8.115", BUILD_AT = "2026-09-11 13:35";
+const APP_VER = "v8.120", BUILD_AT = "2026-09-11 17:16";
 /* @@VER-END@@ */
 
 /* ---- ค่าที่ต้องตั้ง ------------------------------------------------------ */
@@ -594,6 +603,8 @@ function showPicker(s) {
       '<span class="go">' + icon('next', 18) + '</span></a>').join('');
   // เครื่องมือของครูขึ้นเฉพาะตอนครูลงชื่อเข้าใช้ นักเรียนไม่ต้องเห็น
   $('#teaBox').classList.toggle('hide', !teacher);
+  $('#hubBox').classList.toggle('hide', !(teacher && !isSub));
+  if (teacher && !isSub) hubPaint();
   $('#loginBox').classList.add('hide');
   $('#pickBox').classList.remove('hide');
 }
@@ -691,6 +702,114 @@ async function spRun() {
   window.__spTargets = [];
 }
 
+/* ────────────────────────────────────────────────────────────────────────────
+   รหัสเดียวทุกวิชา (ชีตรุ่น 18)
+   ────────────────────────────────────────────────────────────────────────────
+   ใบแรกใน BOOKS (วิทยาศาสตร์กายภาพ) เป็นศูนย์กลาง ตรวจรหัสที่นั่นที่เดียว
+   ลงชื่อสำเร็จได้ "บัตรผ่าน" แล้วเอาไปแลกกับชีตใบอื่น ชีตใบอื่นไม่ถามรหัสของตัวเองอีก
+   ชีตยังไม่ได้เชื่อม / เป็นรุ่นเก่า / คนนี้ไม่มีชื่อในศูนย์กลาง → ลงชื่อกับใบนั้นตรง ๆ แบบเดิม
+   ถ้าศูนย์กลางบอกว่ารหัสผิด ("ชีตศูนย์กลาง" ติดมาในข้อความ) คือจบ ไม่ลองรหัสเดียวกันกับใบอื่น
+   ──────────────────────────────────────────────────────────────────────────── */
+function hubSoft(err) {
+  return /^HUB:|ไม่รู้จักคำสั่ง|ไม่พบเลขประจำตัว|ไม่พบชื่อผู้ใช้/.test(String(err || ''));
+}
+async function hubLoginAll(action, params) {
+  const hub = BOOKS[0];
+  let h;
+  try { h = { bk: hub, data: await api(action, params, hub.url) }; }
+  catch (e) { h = { bk: hub, err: e.message || String(e) }; }
+  if (h.err && /ชีตศูนย์กลาง/.test(h.err)) return [h];
+  const rest = await Promise.all(BOOKS.slice(1).map(async function (bk) {
+    if (h.data && h.data.hub) {
+      try { return { bk: bk, data: await api('hubLogin', { hub: h.data.hub }, bk.url), via: 'hub' }; }
+      catch (e) { if (!hubSoft(e.message)) return { bk: bk, err: e.message || String(e) }; }
+    }
+    try { return { bk: bk, data: await api(action, params, bk.url) }; }
+    catch (e) { return { bk: bk, err: e.message || String(e) }; }
+  }));
+  // ศูนย์กลางให้ต้องตั้งรหัสใหม่ ใบที่แลกบัตรมาต้องรู้ด้วย
+  if (h.data && h.data.mustChange) rest.forEach(function (x) { if (x.data && x.via) x.data.mustChange = true; });
+  return [h].concat(rest);
+}
+
+/* ---- เครื่องมือเชื่อมชีต (ผู้ดูแลหลัก) ---------------------------------- */
+function hubWant(i) { return i === 0 ? 'hub' : 'member'; }
+function hubNewKey() {
+  const a = new Uint8Array(36);
+  crypto.getRandomValues(a);
+  return btoa(String.fromCharCode.apply(null, Array.from(a))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+function hubSay(html, kind) {
+  const el = $('#hubMsg');
+  el.innerHTML = html || '';
+  el.className = 'msg' + (html ? ' ' + (kind || 'bad') : '');
+}
+let HUBROWS = [];
+async function hubPaint() {
+  hubSay('กำลังตรวจการเชื่อมของทุกชีต…', 'ok');
+  HUBROWS = await Promise.all(BOOKS.map(async function (bk) {
+    const tok = tokenOf(bk.url);
+    if (!tok) return { bk: bk, need: true, err: 'ยังไม่ได้ลงชื่อผู้ดูแลหลักกับชีตนี้ (รหัสผู้ดูแลของชีตนี้ไม่ตรงกับที่กรอก)' };
+    try { return { bk: bk, st: await api('hubStatus', { token: tok }, bk.url) }; }
+    catch (e) {
+      const m = e.message || String(e);
+      return { bk: bk, err: /ไม่รู้จักคำสั่ง/.test(m) ? 'ชีตนี้ยังเป็นรุ่นเก่า — Deploy appsscript-Code.gs รุ่น 18 ก่อน' : m,
+               need: /AUTH/.test(m) };
+    }
+  }));
+  const fp0 = HUBROWS[0].st && HUBROWS[0].st.fp;
+  const linked = HUBROWS.every(function (r, i) { return r.st && r.st.role === hubWant(i) && r.st.fp && r.st.fp === fp0; });
+  const line = function (r, i) {
+    const tag = i === 0 ? 'ศูนย์กลาง' : 'สมาชิก';
+    if (r.err) return '· <b>' + r.bk.name + '</b> (' + tag + ') — ' + r.err +
+      (r.need ? '<div class="trow" style="margin-top:6px"><input type="password" data-hubpw="' + i +
+        '" placeholder="รหัสผู้ดูแลหลักของ' + r.bk.name + '"><button class="ghost" data-hubin="' + i +
+        '">ลงชื่อชีตนี้</button></div>' : '');
+    const ok = r.st.role === hubWant(i) && r.st.fp && r.st.fp === fp0;
+    return '· <b>' + r.bk.name + '</b> (' + tag + ') — ' +
+      (ok ? 'เชื่อมแล้ว ✓' : r.st.role ? 'ตั้งไว้ไม่ตรง (' + r.st.role + ')' : 'ยังไม่ได้เชื่อม');
+  };
+  const lines = HUBROWS.map(line).join('<br>');
+  if (linked) {
+    hubSay('เชื่อมครบทุกชีตแล้ว — รหัสของชีตวิทยาศาสตร์กายภาพใช้ได้ทุกวิชา<br>' + lines, 'ok');
+    return;
+  }
+  const ready = HUBROWS.every(function (r) { return r.st; });
+  hubSay(lines + '<div class="go">' + (ready
+    ? '<button class="ghost" id="hubGo" style="margin-top:9px">เชื่อมทุกชีตเข้ากับชีตวิทยาศาสตร์กายภาพ</button>' +
+      '<div class="hint" style="margin-top:6px">ทำครั้งเดียว ระบบสร้างกุญแจร่วมแล้วเก็บไว้ในทุกชีตให้เอง ' +
+      'หลังเชื่อมแล้ว ใครที่มีชื่อในชีตวิทย์กายภาพ ใช้รหัสของชีตนั้นเข้าทุกวิชา</div>'
+    : 'ลงชื่อผู้ดูแลหลักให้ครบทุกชีตก่อน แล้วปุ่มเชื่อมจะขึ้นมา') + '</div>', ready ? 'ok' : 'bad');
+  const go = $('#hubGo');
+  if (go) go.addEventListener('click', hubRun);
+  document.querySelectorAll('[data-hubin]').forEach(function (b) {
+    b.addEventListener('click', async function () {
+      const i = Number(b.dataset.hubin), bk = BOOKS[i];
+      const pw = document.querySelector('[data-hubpw="' + i + '"]').value || '';
+      b.disabled = true;
+      try {
+        const r = await api('adminLogin', { user: '', pass: pw }, bk.url);
+        const s = readSession();
+        if (s) { s.tokens = s.tokens || {}; s.tokens[bk.url] = r.token; localStorage.setItem(SESSION_KEY, JSON.stringify(s)); }
+        hubPaint();
+      } catch (e) { hubSay(e.message || String(e)); }
+    });
+  });
+}
+async function hubRun() {
+  const go = $('#hubGo');
+  if (go) { go.disabled = true; go.textContent = 'กำลังเชื่อม…'; }
+  const key = hubNewKey();
+  const bad = [];
+  // ตั้งสมาชิกก่อน ศูนย์กลางทีหลัง — ถ้าพลาดกลางทาง ศูนย์กลางยังไม่ออกบัตร ทุกคนยังเข้าได้แบบเดิม
+  for (let i = BOOKS.length - 1; i >= 0; i--) {
+    try { await api('hubSetup', { token: tokenOf(BOOKS[i].url), key: key, role: hubWant(i) }, BOOKS[i].url); }
+    catch (e) { bad.push(BOOKS[i].name + ': ' + (e.message || e)); if (i > 0) break; }
+  }
+  if (bad.length) { hubSay('เชื่อมไม่สำเร็จ — ' + bad.join(' · ')); return; }
+  await hubPaint();
+}
+
 /* ---- เหตุการณ์ ----------------------------------------------------------- */
 $('#tabStu').addEventListener('click', () => {
   mode = 'student'; say('');
@@ -714,7 +833,7 @@ async function submit() {
     if (mode === 'student') {
       const sid = String($('#sid').value || '').replace(/\D/g, '').slice(0, 5);
       if (!sid) throw new Error('กรอกเลขประจำตัวเป็นตัวเลข ไม่เกิน 5 หลัก');
-      const rs = await loginAll('login', { sid: sid, pass: $('#spass').value || '' });
+      const rs = await hubLoginAll('login', { sid: sid, pass: $('#spass').value || '' });
       const good = rs.filter(x => x.data);
       if (!good.length) {
         /* ไม่มีใบไหนผ่าน — ข้อความที่มีประโยชน์ที่สุดคือใบที่บอกว่ารหัสผิด
@@ -733,7 +852,7 @@ async function submit() {
       const p = $('#tpass').value || '';
       if (!p) throw new Error('กรอกรหัสผ่านก่อน');
       // บัญชีครูก็เก็บแยกใบเหมือนกัน จึงต้องลงชื่อกับทุกใบเช่นเดียวกับนักเรียน
-      const rs = await loginAll('adminLogin', { user: u, pass: p });
+      const rs = await hubLoginAll('adminLogin', { user: u, pass: p });
       const good = rs.filter(x => x.data);
       if (!good.length) throw new Error((rs.find(x => isPassMismatch(x.err)) || rs[0]).err);
       const tokens = {};
