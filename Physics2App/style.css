@@ -322,3 +322,48 @@ select {
   .notebook-wrapper { box-shadow: none; min-height: 0; }
   .problem-block { page-break-inside: avoid; }
 }
+
+
+.content-panel { transition: width 0.3s ease, padding 0.3s ease; }
+.content-panel.collapsed { width: 0; padding: 0; overflow: hidden; border: none; }
+.notebook-panel { transition: width 0.3s ease; }
+.notebook-panel.expanded { width: 100%; }
+
+/* Fix Stacking Context for Canvas and Paper */
+.notebook-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 800px;
+  min-height: 1122px;
+  background-color: var(--paper);
+  background-image: linear-gradient(var(--paper-line) 1px, transparent 1px);
+  background-size: 100% 32px;
+  background-repeat: repeat;
+  background-attachment: local; /* ensures lines scroll with content if needed */
+  border-radius: var(--radius);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+  line-height: 32px;
+}
+.notebook-paper {
+  position: relative;
+  z-index: 3; /* ABOVE canvas */
+  pointer-events: none; /* Let draw events pass to canvas */
+}
+.problem-block {
+  pointer-events: none; /* Crucial: allow drawing in the empty space */
+}
+.answer-input, .expand-btn, .hint-box {
+  pointer-events: auto; /* Clickable elements */
+  position: relative;
+  z-index: 10;
+}
+#drawingCanvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2; /* BELOW notebook-paper text, but ABOVE background */
+  cursor: crosshair;
+  touch-action: none;
+}

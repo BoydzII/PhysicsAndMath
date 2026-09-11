@@ -73,6 +73,23 @@ function setupListeners() {
     }
   });
 
+  
+  document.getElementById('btnTogglePanel')?.addEventListener('click', (e) => {
+    const leftPanel = document.querySelector('.content-panel');
+    const rightPanel = document.querySelector('.notebook-panel');
+    leftPanel.classList.toggle('collapsed');
+    rightPanel.classList.toggle('expanded');
+    
+    const btn = e.currentTarget;
+    if (leftPanel.classList.contains('collapsed')) {
+        btn.innerHTML = '<i class="ph ph-arrows-in-line-horizontal" style="font-size:16px;"></i> แสดงเนื้อหา';
+    } else {
+        btn.innerHTML = '<i class="ph ph-arrows-out-line-horizontal" style="font-size:16px;"></i> ซ่อนเนื้อหา';
+    }
+    // Resize canvas after transition
+    setTimeout(() => { if(drawingEngine) drawingEngine.resize(); }, 350);
+  });
+
   // Modal actions
   document.getElementById('btnSubmit').addEventListener('click', () => {
     document.getElementById('submitModal').style.display = 'flex';
@@ -239,7 +256,7 @@ function initWorkSimulation() {
             ctx.fillText('Fx', endX + signX*15, startY + 5);
             
             // Move box slightly towards mouse (Spring effect)
-            boxX += dx * 0.05;
+            boxX += dx * 0.005; // Added strong friction to slow down dragging
         }
 
         // Draw Fy

@@ -4,38 +4,39 @@ class DrawingEngine {
     this.ctx = this.canvas.getContext('2d', { willReadFrequently: true });
     
     this.isDrawing = false;
-    this.currentTool = 'pen'; // 'pen' or 'eraser'
+    this.currentTool = 'pen'; // 'pen', 'eraser', 'highlight'
     this.currentColor = '#000000';
     this.lineWidth = 2;
-    this.eraserWidth = 20;
+    this.eraserWidth = 30;
+    this.highlightWidth = 16;
 
-    // Paths storage for potential undo or redrawing on resize
     this.paths = [];
     this.currentPath = null;
+    this.lastX = 0;
+    this.lastY = 0;
 
     this.initEvents();
     this.resize();
-    
     window.addEventListener('resize', () => this.resize());
   }
 
   resize() {
     const parent = this.canvas.parentElement;
-    // Save current canvas content
     let data;
     if (this.canvas.width > 0 && this.canvas.height > 0) {
       data = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
     }
     
+    // Set actual size in memory (scaled for retina display if needed, but keeping 1:1 for simplicity)
     this.canvas.width = parent.clientWidth;
     this.canvas.height = parent.clientHeight;
     
-    // Restore styling properties that reset on resize
     this.updateCtx();
     
-    // Restore content
     if (data) {
       this.ctx.putImageData(data, 0, 0);
+    } else {
+      this.loadData();
     }
   }
 
@@ -45,10 +46,17 @@ class DrawingEngine {
     if (this.currentTool === 'eraser') {
       this.ctx.globalCompositeOperation = 'destination-out';
       this.ctx.lineWidth = this.eraserWidth;
+      this.ctx.globalAlpha = 1.0;
+    } else if (this.currentTool === 'highlight') {
+      this.ctx.globalCompositeOperation = 'multiply'; // GoodNotes style highlighter
+      this.ctx.strokeStyle = this.currentColor;
+      this.ctx.lineWidth = this.highlightWidth;
+      this.ctx.globalAlpha = 0.3;
     } else {
       this.ctx.globalCompositeOperation = 'source-over';
       this.ctx.strokeStyle = this.currentColor;
       this.ctx.lineWidth = this.lineWidth;
+      this.ctx.globalAlpha = 1.0;
     }
   }
 
@@ -59,10 +67,10 @@ class DrawingEngine {
 
   setColor(color) {
     this.currentColor = color;
-    if (this.currentTool !== 'eraser') {
+    if (this.currentTool === 'eraser') {
       this.currentTool = 'pen';
-      this.updateCtx();
     }
+    this.updateCtx();
   }
 
   clear() {
@@ -73,73 +81,67 @@ class DrawingEngine {
 
   getPointerPos(e) {
     const rect = this.canvas.getBoundingClientRect();
-    let clientX, clientY;
-    
-    if (e.touches && e.touches.length > 0) {
-      clientX = e.touches[0].clientX;
-      clientY = e.touches[0].clientY;
-    } else {
-      clientX = e.clientX;
-      clientY = e.clientY;
-    }
-    
     return {
-      x: clientX - rect.left,
-      y: clientY - rect.top
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+      pressure: e.pressure || 0.5
     };
   }
 
   initEvents() {
+    // Use Pointer Events for Apple Pencil pressure and smooth tracking
     const startDraw = (e) => {
-      // Ignore right clicks
       if (e.button === 2) return;
-      // Prevent scrolling while drawing on touch devices
-      if (e.type === 'touchstart') e.preventDefault();
-
       this.isDrawing = true;
       const pos = this.getPointerPos(e);
+      
+      this.lastX = pos.x;
+      this.lastY = pos.y;
+      
       this.updateCtx();
       this.ctx.beginPath();
       this.ctx.moveTo(pos.x, pos.y);
+      this.ctx.lineTo(pos.x, pos.y);
+      this.ctx.stroke();
       
-      this.currentPath = {
-        tool: this.currentTool,
-        color: this.currentColor,
-        points: [{x: pos.x, y: pos.y}]
-      };
+      this.canvas.setPointerCapture(e.pointerId);
     };
 
     const draw = (e) => {
       if (!this.isDrawing) return;
-      if (e.type === 'touchmove') e.preventDefault();
-
       const pos = this.getPointerPos(e);
+      
+      // Simulate pressure sensitivity for pen
+      if (this.currentTool === 'pen' && e.pointerType === 'pen') {
+          this.ctx.lineWidth = this.lineWidth * (pos.pressure * 2);
+      } else if (this.currentTool === 'pen') {
+          this.ctx.lineWidth = this.lineWidth;
+      }
+      
+      // Use quadratic curves for smoother lines
+      this.ctx.beginPath();
+      this.ctx.moveTo(this.lastX, this.lastY);
+      const midX = (this.lastX + pos.x) / 2;
+      const midY = (this.lastY + pos.y) / 2;
+      this.ctx.quadraticCurveTo(this.lastX, this.lastY, midX, midY);
       this.ctx.lineTo(pos.x, pos.y);
       this.ctx.stroke();
       
-      if (this.currentPath) {
-        this.currentPath.points.push({x: pos.x, y: pos.y});
-      }
+      this.lastX = pos.x;
+      this.lastY = pos.y;
     };
 
     const stopDraw = (e) => {
       if (!this.isDrawing) return;
       this.isDrawing = false;
-      
-      if (this.currentPath) {
-        this.paths.push(this.currentPath);
-        this.currentPath = null;
-        this.saveData();
-      }
+      this.canvas.releasePointerCapture(e.pointerId);
+      this.saveData();
     };
 
-    this.canvas.addEventListener('mousedown', startDraw);
-    this.canvas.addEventListener('mousemove', draw);
-    window.addEventListener('mouseup', stopDraw);
-
-    this.canvas.addEventListener('touchstart', startDraw, { passive: false });
-    this.canvas.addEventListener('touchmove', draw, { passive: false });
-    window.addEventListener('touchend', stopDraw);
+    this.canvas.addEventListener('pointerdown', startDraw);
+    this.canvas.addEventListener('pointermove', draw);
+    this.canvas.addEventListener('pointerup', stopDraw);
+    this.canvas.addEventListener('pointercancel', stopDraw);
   }
 
   saveData() {
@@ -151,6 +153,7 @@ class DrawingEngine {
     if (dataURL) {
       const img = new Image();
       img.onload = () => {
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         this.ctx.drawImage(img, 0, 0);
       };
       img.src = dataURL;
