@@ -846,6 +846,19 @@ input.numin.bad{border-color:var(--bad);background:var(--bad-bg)}
 .bdfx .fxrow .fxd{font-size:15px}
 @media print{.bdroot{display:none!important}}
 
+/* ---------- แถบเครื่องมือแถวที่สองของสมุดจด ---------- */
+.nbbar{display:flex;flex-wrap:wrap;gap:6px 4px;align-items:center;margin:0 0 10px;
+  padding:7px 12px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r)}
+.nbbar .grp{display:flex;gap:4px;align-items:center;flex-wrap:wrap}
+.nbbar .lab{font-size:12px;color:var(--muted);margin:0 3px 0 2px;white-space:nowrap}
+.nbbar .sep{width:1px;align-self:stretch;background:var(--line);margin:2px 5px}
+.nbbar .btn-tool{padding:5px 10px}
+/* ช่องพิมพ์ข้อความลอยอยู่บนกระดาษ ตรงตำแหน่งที่แตะ — พิมพ์เสร็จแตะที่อื่นก็เก็บเอง */
+.nbtxt{position:absolute;z-index:3;min-width:140px;padding:3px 6px;margin:0;
+  border:1.5px dashed #2563eb;border-radius:6px;background:rgba(255,255,255,.97);color:#1e293b;
+  font-family:"Anuphan","Leelawadee UI",Tahoma,sans-serif;line-height:1.4;resize:none;
+  outline:none;box-shadow:0 4px 14px rgba(15,23,42,.12);white-space:pre;overflow:hidden}
+
 /* ปุ่ม ! บนหัวการ์ด — เปิดคำอธิบายความหมายของสีและป้าย */
 .ibtn{width:23px;height:23px;min-height:23px;padding:0;border-radius:50%;flex:0 0 auto;
   font-weight:700;font-size:13px;line-height:1;
@@ -1258,7 +1271,7 @@ table td,table th,.num,.xpstat b,.tick,
    *** ห้ามลบบรรทัดเครื่องหมาย @@BUILTIN@@ ทั้งสองอัน ตัวสร้างไฟล์ใช้หาตำแหน่ง ***
    ========================================================================== */
 /* @@BUILTIN@@ */
-const BUILTIN = {"url":"","studentOnly":false,"lockCloud":false,"logo":"","header":null,"about":null,"build":"2026-09-10 22:26","ver":"v8.109"};
+const BUILTIN = {"url":"","studentOnly":false,"lockCloud":false,"logo":"","header":null,"about":null,"build":"2026-09-11 07:25","ver":"v8.110"};
 /* @@BUILTIN-END@@ */
 
 /* ถ่ายภาพซอร์สของหน้านี้ไว้ตั้งแต่สคริปต์เพิ่งเริ่มทำงาน
@@ -8827,6 +8840,12 @@ function initHandwritingPad(k, canvasEl, wrapEl, initialStrokes, onSave) {
   function redraw() {
     const rect = canvasEl.getBoundingClientRect();
     ctx.clearRect(0, 0, rect.width, rect.height);
+    /* สมุดจดวาดด้วยตัววาดของสมุด เพราะมีข้อความ รูปทรง เส้นโยง และกรอบเลือก
+       ข้อสอบอัตนัยไม่ได้ตั้ง rich จึงวาดด้วยโค้ดเดิมทุกบรรทัด */
+    if (pad.rich && typeof nbRender === 'function') {
+      nbRender(ctx, pad.strokes, { sel: pad.sel, nb: pad.nb });
+      return;
+    }
     pad.strokes.forEach(s => drawStroke(s));
   }
 
@@ -8921,6 +8940,8 @@ function initHandwritingPad(k, canvasEl, wrapEl, initialStrokes, onSave) {
     const act = document.activeElement;
     if (act && act !== canvasEl && typeof act.blur === 'function') act.blur();
     try { canvasEl.setPointerCapture(e.pointerId); } catch (err) {}
+    // เครื่องมือของสมุด (เลือก รูปทรง ข้อความ เส้นโยง ลบทั้งชิ้น) จัดการเองแล้วจบตรงนี้
+    if (pad.rich && typeof nbDown === 'function' && nbDown(pad, e, getPos(e))) return;
     pad.isDrawing = true;
     const p = getPos(e);
     const freeHand = pad.tool === 'pen' || pad.tool === 'arrow';
@@ -8953,6 +8974,7 @@ function initHandwritingPad(k, canvasEl, wrapEl, initialStrokes, onSave) {
   }
 
   canvasEl.addEventListener('pointermove', e => {
+    if (pad.rich && typeof nbMove === 'function' && nbMove(pad, e, getPos(e))) return;
     if (!pad.isDrawing || !pad.curStroke) return;
     e.preventDefault();
     const p = getPos(e);
@@ -8999,6 +9021,7 @@ function initHandwritingPad(k, canvasEl, wrapEl, initialStrokes, onSave) {
   });
 
   const endDraw = e => {
+    if (pad.rich && typeof nbUp === 'function' && nbUp(pad, e)) return;
     if (!pad.isDrawing) return;
     clearTimeout(pad.holdTimer);
     pad.straight = false;
@@ -9013,6 +9036,7 @@ function initHandwritingPad(k, canvasEl, wrapEl, initialStrokes, onSave) {
 
   pad.resize = resize;
   pad.redraw = redraw;
+  pad.save = scheduleSave;     // สมุดจดสั่งบันทึกเองหลังขยับ หมุน ก๊อป หรือลบ
   pad.undo = function () {
     if (pad.strokes.length) {
       pad.strokes.pop();
@@ -10969,6 +10993,900 @@ function focusInit() {
 /** ผูกแถบเครื่องมือของปากกาเข้ากับผืนผ้าใบหนึ่งผืน
     แยกออกมาจากหน้าข้อสอบอัตนัยเพื่อให้กระดานสอนใช้ตัวเดียวกันได้
     ถ้าปล่อยให้เขียนสองชุด วันหนึ่งเพิ่มเครื่องมือแล้วจะลืมแก้อีกที่แน่นอน */
+/* ============================================================================
+   สมุดจดแบบเต็ม — เลือก ขยับ ก๊อป หมุน รูปทรง ข้อความ และเส้นโยงแบบ mind map
+   ----------------------------------------------------------------------------
+   ทุกอย่างในหน้าเป็น "ชิ้น" หนึ่งชิ้นในรายการเดียวกัน (pad.strokes)
+     ลายมือ ไฮไลต์ ลูกศร   → มีจุด (points) เหมือนเดิมทุกอย่าง
+     รูปทรง  tool:'shape'  → คำนวณจุดไว้ล่วงหน้า จึงขยับ หมุน ลบ ได้เหมือนลายมือ
+     ข้อความ tool:'text'   → มีจุดศูนย์กลาง x,y และมุม rot · box:1 คือกล่องหัวข้อของ mind map
+     เส้นโยง tool:'link'   → จำแค่ว่าเชื่อมชิ้นไหนกับชิ้นไหน (a, b) ไม่เก็บพิกัด
+                             ขยับกล่องไปไหน เส้นก็วาดตามไปเอง ไม่ต้องมาต่อใหม่
+   เปิดใช้เฉพาะเมื่อ pad.rich เป็นจริง ซึ่งตั้งโดยสมุดจดและกระดานสอนเท่านั้น
+   ข้อสอบอัตนัยใช้ตัวปากกาเดียวกันแต่ไม่ได้ตั้ง rich จึงไม่ถูกแตะเลย
+   ========================================================================== */
+var NB_FONT = '"Anuphan","Leelawadee UI","Segoe UI",Tahoma,sans-serif';
+var NB_HIST_MAX = 40;         /* ย้อนได้กี่ขั้น — เก็บแค่รายการอ้างอิง ไม่ได้ก๊อปทั้งหน้า จึงเบา */
+var NB_CLIP = null;           /* ของที่ก๊อปไว้ อยู่ในหน่วยความจำ ใช้วางข้ามหน้าและข้ามเล่มได้ */
+var NB_COLORS = [
+  { c: '#16a34a', t: 'เขียว' }, { c: '#ea580c', t: 'ส้ม' }, { c: '#7c3aed', t: 'ม่วง' },
+  { c: '#db2777', t: 'ชมพู' }, { c: '#0891b2', t: 'ฟ้า' }, { c: '#78350f', t: 'น้ำตาล' }
+];
+var NB_FS = [{ v: 16, t: 'ตัวอักษรเล็ก' }, { v: 22, t: 'ตัวอักษรกลาง' }, { v: 32, t: 'ตัวอักษรใหญ่' }];
+var NB_ACT_T = {
+  copy: 'ก๊อปชิ้นที่เลือก (Ctrl+C) — ไปหน้าอื่นหรือเล่มอื่นแล้ววางได้',
+  paste: 'วางของที่ก๊อปไว้ (Ctrl+V)', dup: 'ทำซ้ำชิ้นที่เลือก (Ctrl+D)',
+  rotl: 'หมุนทวนเข็ม 15°', rotr: 'หมุนตามเข็ม 15°',
+  front: 'ยกชิ้นที่เลือกขึ้นไว้บนสุด', del: 'ลบชิ้นที่เลือก (Delete)'
+};
+
+function nbId(s) {
+  if (!s.id) s.id = 'o' + Date.now().toString(36).slice(-4) + Math.random().toString(36).slice(2, 7);
+  return s.id;
+}
+function nbR1(v) { return Math.round((Number(v) || 0) * 10) / 10; }
+
+/** เก็บเฉพาะสิ่งที่ต้องใช้วาดกลับ — ตัดค่าที่คำนวณระหว่างใช้งาน (w h _pts _hide) ทิ้ง */
+function nbPack(strokes) {
+  return (strokes || []).map(function (s) {
+    const o = { tool: s.tool, color: s.color, size: s.size, dash: s.dash || 0 };
+    if (s.id) o.id = s.id;
+    if (s.tool === 'text') {
+      o.text = String(s.text || ''); o.x = nbR1(s.x); o.y = nbR1(s.y); o.fs = s.fs || 22;
+      if (s.rot) o.rot = Math.round(s.rot * 1000) / 1000;
+      if (s.box) o.box = 1;
+      o.points = [];
+      return o;
+    }
+    if (s.tool === 'link') { o.a = s.a; o.b = s.b; o.points = []; return o; }
+    if (s.kind) o.kind = s.kind;
+    if (s.closed) o.closed = 1;
+    o.points = (s.points || []).map(function (q) { return { x: nbR1(q.x), y: nbR1(q.y) }; });
+    return o;
+  });
+}
+/** จำขนาดหน้ากระดาษไว้กับหน้า — ใช้ตอนพิมพ์ทั้งเล่มและตอนครูเปิดดู
+    พิกัดของลายมือเป็นพิกเซลของจอที่เขียน ถ้าไม่รู้ขนาดเดิมจะย่อขยายไม่ตรง */
+function nbPageSize(p) {
+  if (!p || !BOARD || !BOARD.cv) return;
+  p.w = Math.round(BOARD.cv.getBoundingClientRect().width) || p.w || 0;
+  p.h = parseInt(BOARD.cv.style.height, 10) || p.h || 0;
+  p.up = Date.now();
+}
+
+/* ---------- เรขาคณิต ---------- */
+function nbTextLayout(ctx, s) {
+  const fs = s.fs || 22;
+  const lines = String(s.text || '').split('\n');
+  ctx.save();
+  ctx.font = (s.box ? '700 ' : '400 ') + fs + 'px ' + NB_FONT;
+  let w = 0;
+  lines.forEach(function (l) { w = Math.max(w, ctx.measureText(l).width); });
+  ctx.restore();
+  const padX = s.box ? 14 : 3, padY = s.box ? 9 : 3;
+  s.w = Math.ceil(w + padX * 2);
+  s.h = Math.ceil(lines.length * fs * 1.4 + padY * 2);
+  return { lines: lines, fs: fs, padX: padX, padY: padY };
+}
+function nbCorners(s) {
+  const w = s.w || Math.max(40, String(s.text || '').length * (s.fs || 22) * 0.55);
+  const h = s.h || (s.fs || 22) * 1.6;
+  const c = Math.cos(s.rot || 0), n = Math.sin(s.rot || 0);
+  return [[-w / 2, -h / 2], [w / 2, -h / 2], [w / 2, h / 2], [-w / 2, h / 2]].map(function (q) {
+    return { x: s.x + q[0] * c - q[1] * n, y: s.y + q[0] * n + q[1] * c };
+  });
+}
+/** กรอบล้อมของชิ้นหนึ่ง (x0 y0 x1 y1) — null ถ้ายังไม่มีอะไรให้ล้อม */
+function nbBox(s) {
+  let P;
+  if (s.tool === 'text') P = nbCorners(s);
+  else if (s.tool === 'link') P = s._pts || [];
+  else P = s.points || [];
+  if (!P.length) return null;
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  P.forEach(function (q) {
+    if (q.x < x0) x0 = q.x; if (q.x > x1) x1 = q.x;
+    if (q.y < y0) y0 = q.y; if (q.y > y1) y1 = q.y;
+  });
+  const m = s.tool === 'highlighter' ? 8 : (s.tool === 'text' || s.tool === 'link' ? 0 : (s.size || 2.5) / 2);
+  return { x0: x0 - m, y0: y0 - m, x1: x1 + m, y1: y1 + m };
+}
+function nbUnion(objs) {
+  let b = null;
+  objs.forEach(function (s) {
+    const q = nbBox(s);
+    if (!q) return;
+    if (!b) b = { x0: q.x0, y0: q.y0, x1: q.x1, y1: q.y1 };
+    else { b.x0 = Math.min(b.x0, q.x0); b.y0 = Math.min(b.y0, q.y0);
+           b.x1 = Math.max(b.x1, q.x1); b.y1 = Math.max(b.y1, q.y1); }
+  });
+  return b;
+}
+/** ปุ่มหมุนอยู่เหนือกรอบเลือก — ถ้าชิดขอบบนจนไม่มีที่ ย้ายไปไว้ใต้กรอบ */
+function nbHandle(b) {
+  const x = (b.x0 + b.x1) / 2;
+  return b.y0 - 34 < 12 ? { x: x, y: b.y1 + 34, below: true } : { x: x, y: b.y0 - 34, below: false };
+}
+function nbSegDist(p, a, b) {
+  const dx = b.x - a.x, dy = b.y - a.y, L = dx * dx + dy * dy;
+  let t = L ? ((p.x - a.x) * dx + (p.y - a.y) * dy) / L : 0;
+  t = Math.max(0, Math.min(1, t));
+  return Math.hypot(p.x - (a.x + t * dx), p.y - (a.y + t * dy));
+}
+function nbInPoly(P, p) {
+  let inside = false;
+  for (let i = 0, j = P.length - 1; i < P.length; j = i++) {
+    const a = P[i], b = P[j];
+    if (((a.y > p.y) !== (b.y > p.y)) &&
+        (p.x < (b.x - a.x) * (p.y - a.y) / ((b.y - a.y) || 1e-9) + a.x)) inside = !inside;
+  }
+  return inside;
+}
+function nbInText(s, p) {
+  const c = Math.cos(-(s.rot || 0)), n = Math.sin(-(s.rot || 0));
+  const dx = p.x - s.x, dy = p.y - s.y;
+  const lx = dx * c - dy * n, ly = dx * n + dy * c;
+  return Math.abs(lx) <= (s.w || 40) / 2 + 4 && Math.abs(ly) <= (s.h || 30) / 2 + 4;
+}
+/** ชิ้นบนสุดที่อยู่ใต้ปลายนิ้ว — ยางลบแบบเดิม (ลบเป็นพิกเซล) ไม่นับเป็นชิ้น */
+function nbHit(pad, p, tol) {
+  for (let i = pad.strokes.length - 1; i >= 0; i--) {
+    const s = pad.strokes[i];
+    if (!s || s.tool === 'eraser' || s._hide) continue;
+    const b = nbBox(s);
+    if (!b) continue;
+    if (p.x < b.x0 - tol || p.x > b.x1 + tol || p.y < b.y0 - tol || p.y > b.y1 + tol) continue;
+    if (s.tool === 'text') { if (nbInText(s, p)) return s; continue; }
+    if (s.tool === 'shape' && s.closed && nbInPoly(s.points, p)) return s;
+    const P = s.tool === 'link' ? (s._pts || []) : (s.points || []);
+    const half = (s.tool === 'highlighter' ? 8 : (s.size || 2.5) / 2);
+    if (P.length === 1) { if (Math.hypot(p.x - P[0].x, p.y - P[0].y) <= tol + half) return s; continue; }
+    const pts = s.tool === 'arrow' ? [P[0], P[P.length - 1]] : P;
+    for (let j = 1; j < pts.length; j++) if (nbSegDist(p, pts[j - 1], pts[j]) <= tol + half) return s;
+  }
+  return null;
+}
+function nbSelObjs(pad) {
+  if (!pad.sel || !pad.sel.length) return [];
+  const want = {};
+  pad.sel.forEach(function (id) { want[id] = 1; });
+  return pad.strokes.filter(function (s) { return s.id && want[s.id]; });
+}
+/** ขอบล่างสุดของเนื้อหา — กระดาษต้องสูงพอให้เห็นทุกชิ้นเสมอ */
+function nbContentBottom(pad) {
+  const b = nbUnion((pad.strokes || []).filter(function (s) { return s.tool !== 'eraser'; }));
+  return b ? Math.ceil(b.y1 + 40) : 0;
+}
+
+/* ---------- วาด ---------- */
+function nbRoundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+/** สีของไฮไลต์ — สีหมึกปกติ (เข้ม) ให้เป็นเหลืองแบบเดิม สีอื่นใช้สีนั้นแบบโปร่ง */
+function nbHl(c) {
+  const m = /^#([0-9a-f]{6})$/i.exec(String(c || ''));
+  if (!m || c === '#1e293b') return 'rgba(250, 204, 21, 0.45)';
+  const n = parseInt(m[1], 16);
+  return 'rgba(' + (n >> 16 & 255) + ',' + (n >> 8 & 255) + ',' + (n & 255) + ',0.32)';
+}
+function nbDash(ctx, s) {
+  if (s.dash || s.tool === 'dash') {
+    ctx.setLineDash([Math.max(6, (s.size || 2.5) * 3), Math.max(5, (s.size || 2.5) * 2.4)]);
+  }
+}
+/** ลายมือ ไฮไลต์ ยางลบ ลูกศร และรูปทรง — ลายมือแบบเดิมวาดเหมือนตัวปากกาเดิมทุกประการ */
+function nbDrawInk(ctx, s) {
+  const P = s.points || [];
+  if (!P.length) return;
+  ctx.save();
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  if (s.tool === 'highlighter') {
+    ctx.strokeStyle = nbHl(s.color);
+    ctx.lineWidth = 16;
+    ctx.globalCompositeOperation = 'multiply';
+  } else if (s.tool === 'eraser') {
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 22;
+    ctx.globalCompositeOperation = 'destination-out';
+  } else {
+    ctx.strokeStyle = s.color || '#1e293b';
+    ctx.fillStyle = s.color || '#1e293b';
+    ctx.lineWidth = s.size || 2.5;
+    nbDash(ctx, s);
+  }
+  if (s.tool === 'arrow') {
+    const a = P[0], b = P[P.length - 1];
+    const len = Math.hypot(b.x - a.x, b.y - a.y);
+    ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+    if (len >= 6) {
+      ctx.setLineDash([]);
+      const ang = Math.atan2(b.y - a.y, b.x - a.x);
+      const hl = Math.min(len * 0.4, Math.max(11, (s.size || 2.5) * 4.5));
+      ctx.beginPath();
+      ctx.moveTo(b.x - hl * Math.cos(ang - 0.42), b.y - hl * Math.sin(ang - 0.42));
+      ctx.lineTo(b.x, b.y);
+      ctx.lineTo(b.x - hl * Math.cos(ang + 0.42), b.y - hl * Math.sin(ang + 0.42));
+      ctx.stroke();
+    }
+  } else if (s.tool === 'shape') {
+    // รูปทรงเป็นเส้นตรงต่อกัน ห้ามทำให้โค้งมนแบบลายมือ ไม่งั้นสี่เหลี่ยมจะกลายเป็นมุมมน
+    ctx.beginPath();
+    P.forEach(function (q, i) { i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y); });
+    if (s.closed) ctx.closePath();
+    ctx.stroke();
+  } else if (P.length === 1) {
+    ctx.beginPath();
+    ctx.arc(P[0].x, P[0].y, (s.size || 2.5) / 2, 0, Math.PI * 2);
+    ctx.fill();
+  } else {
+    ctx.beginPath();
+    ctx.moveTo(P[0].x, P[0].y);
+    for (let i = 1; i < P.length - 1; i++) {
+      const xc = (P[i].x + P[i + 1].x) / 2, yc = (P[i].y + P[i + 1].y) / 2;
+      ctx.quadraticCurveTo(P[i].x, P[i].y, xc, yc);
+    }
+    ctx.lineTo(P[P.length - 1].x, P[P.length - 1].y);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+function nbDrawText(ctx, s) {
+  const m = nbTextLayout(ctx, s);
+  const w = s.w, h = s.h, col = s.color || '#1e293b';
+  ctx.save();
+  ctx.translate(s.x, s.y);
+  if (s.rot) ctx.rotate(s.rot);
+  if (s.box) {
+    // กล่องหัวข้อ — พื้นขาวทึบกันเส้นบรรทัดทะลุ แล้วแต้มสีของกรอบจาง ๆ ให้แยกหัวข้อด้วยสีได้
+    nbRoundRect(ctx, -w / 2, -h / 2, w, h, 10);
+    ctx.fillStyle = '#ffffff'; ctx.fill();
+    ctx.globalAlpha = 0.1; ctx.fillStyle = col; ctx.fill(); ctx.globalAlpha = 1;
+    ctx.lineWidth = Math.max(1.6, s.size || 2); ctx.strokeStyle = col;
+    nbDash(ctx, s); ctx.stroke(); ctx.setLineDash([]);
+  }
+  ctx.fillStyle = col;
+  ctx.font = (s.box ? '700 ' : '400 ') + m.fs + 'px ' + NB_FONT;
+  ctx.textAlign = s.box ? 'center' : 'left';
+  ctx.textBaseline = 'middle';
+  const lh = m.fs * 1.4, y0 = -h / 2 + m.padY + lh / 2;
+  m.lines.forEach(function (l, i) { ctx.fillText(l, s.box ? 0 : -w / 2 + m.padX, y0 + i * lh); });
+  ctx.restore();
+}
+/** จุดบนขอบกรอบ ในแนวจากศูนย์กลางไปหาอีกจุด — เส้นโยงจะเริ่มจากขอบกล่อง ไม่ใช่ทะลุเข้าไปกลางกล่อง */
+function nbEdge(b, from, to) {
+  const dx = to.x - from.x, dy = to.y - from.y;
+  const hw = (b.x1 - b.x0) / 2 + 3, hh = (b.y1 - b.y0) / 2 + 3;
+  if (!dx && !dy) return from;
+  const t = Math.min(dx ? hw / Math.abs(dx) : Infinity, dy ? hh / Math.abs(dy) : Infinity);
+  return { x: from.x + dx * Math.min(1, t), y: from.y + dy * Math.min(1, t) };
+}
+function nbDrawLink(ctx, s, idx) {
+  const A = idx[s.a], B = idx[s.b];
+  s._pts = [];
+  if (!A || !B || A._hide || B._hide) return;
+  const ba = nbBox(A), bb = nbBox(B);
+  if (!ba || !bb) return;
+  const ca = { x: (ba.x0 + ba.x1) / 2, y: (ba.y0 + ba.y1) / 2 };
+  const cb = { x: (bb.x0 + bb.x1) / 2, y: (bb.y0 + bb.y1) / 2 };
+  const pa = nbEdge(ba, ca, cb), pb = nbEdge(bb, cb, ca);
+  /* โค้งแบบ mind map — ดึงหูโค้งไปตามแกนที่ห่างกันมากกว่า
+     กล่องเรียงแนวนอนได้โค้งแนวนอน กล่องเรียงแนวตั้งได้โค้งแนวตั้ง ดูเป็นกิ่งไม่ใช่เส้นขีด */
+  const hor = Math.abs(pb.x - pa.x) >= Math.abs(pb.y - pa.y);
+  const k = 0.5;
+  const c1 = hor ? { x: pa.x + (pb.x - pa.x) * k, y: pa.y } : { x: pa.x, y: pa.y + (pb.y - pa.y) * k };
+  const c2 = hor ? { x: pb.x - (pb.x - pa.x) * k, y: pb.y } : { x: pb.x, y: pb.y - (pb.y - pa.y) * k };
+  ctx.save();
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = s.color || '#1e293b';
+  ctx.lineWidth = s.size || 2.2;
+  nbDash(ctx, s);
+  ctx.beginPath(); ctx.moveTo(pa.x, pa.y);
+  ctx.bezierCurveTo(c1.x, c1.y, c2.x, c2.y, pb.x, pb.y);
+  ctx.stroke();
+  ctx.restore();
+  // เก็บจุดตัวอย่างบนเส้นไว้ให้แตะเลือกและคำนวณกรอบได้
+  for (let i = 0; i <= 18; i++) {
+    const t = i / 18, u = 1 - t;
+    s._pts.push({ x: u * u * u * pa.x + 3 * u * u * t * c1.x + 3 * u * t * t * c2.x + t * t * t * pb.x,
+                  y: u * u * u * pa.y + 3 * u * u * t * c1.y + 3 * u * t * t * c2.y + t * t * t * pb.y });
+  }
+}
+function nbDrawSel(ctx, objs) {
+  const b = nbUnion(objs);
+  if (!b) return;
+  const h = nbHandle(b);
+  ctx.save();
+  ctx.strokeStyle = '#2563eb'; ctx.lineWidth = 1.4; ctx.setLineDash([6, 4]);
+  ctx.strokeRect(b.x0 - 6, b.y0 - 6, b.x1 - b.x0 + 12, b.y1 - b.y0 + 12);
+  ctx.setLineDash([]);
+  ctx.beginPath();
+  ctx.moveTo(h.x, h.below ? b.y1 + 6 : b.y0 - 6);
+  ctx.lineTo(h.x, h.below ? h.y - 10 : h.y + 10);
+  ctx.stroke();
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath(); ctx.arc(h.x, h.y, 10, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.arc(h.x, h.y, 4.8, -0.3 * Math.PI, 1.25 * Math.PI); ctx.stroke();
+  ctx.restore();
+}
+/** วาดทั้งหน้า — ใช้ทั้งบนจอ ตอนพิมพ์ทั้งเล่ม และตอนครูเปิดดูสมุดที่นักเรียนส่ง */
+function nbRender(ctx, strokes, opt) {
+  opt = opt || {};
+  const idx = {};
+  strokes.forEach(function (s) {
+    if (s.id) idx[s.id] = s;
+    if (s.tool === 'text') nbTextLayout(ctx, s);          // วัดก่อน เส้นโยงต้องรู้ขนาดกล่อง
+  });
+  // เส้นโยงอยู่ชั้นล่างสุด กล่องหัวข้อจะได้ทับปลายเส้นพอดี ไม่มีเส้นพาดข้ามตัวหนังสือ
+  strokes.forEach(function (s) { if (s.tool === 'link') nbDrawLink(ctx, s, idx); });
+  strokes.forEach(function (s) {
+    if (s.tool === 'link' || s._hide) return;
+    if (s.tool === 'text') nbDrawText(ctx, s); else nbDrawInk(ctx, s);
+  });
+  const g = opt.nb || {};
+  if (g.linkPrev) {
+    ctx.save(); ctx.strokeStyle = '#2563eb'; ctx.lineWidth = 2; ctx.setLineDash([6, 5]);
+    ctx.beginPath(); ctx.moveTo(g.linkPrev.x0, g.linkPrev.y0); ctx.lineTo(g.linkPrev.x1, g.linkPrev.y1);
+    ctx.stroke(); ctx.restore();
+  }
+  if (g.lasso) {
+    const L = g.lasso;
+    ctx.save(); ctx.strokeStyle = '#2563eb'; ctx.fillStyle = 'rgba(37,99,235,0.07)';
+    ctx.lineWidth = 1.2; ctx.setLineDash([5, 4]);
+    const x = Math.min(L.x0, L.x1), y = Math.min(L.y0, L.y1);
+    ctx.fillRect(x, y, Math.abs(L.x1 - L.x0), Math.abs(L.y1 - L.y0));
+    ctx.strokeRect(x, y, Math.abs(L.x1 - L.x0), Math.abs(L.y1 - L.y0));
+    ctx.restore();
+  }
+  if (opt.sel && opt.sel.length) nbDrawSel(ctx, strokes.filter(function (s) {
+    return s.id && opt.sel.indexOf(s.id) >= 0;
+  }));
+}
+
+/* ---------- ประวัติสำหรับปุ่มย้อน ----------
+   เก็บแค่รายการอ้างอิงของชิ้นในหน้า ไม่ได้ก๊อปทั้งหน้าทุกครั้ง
+   และทุกการแก้ชิ้นเดิม (ขยับ หมุน เปลี่ยนสี) จะแก้บนสำเนา ไม่แก้ตัวจริง
+   รายการเก่าในประวัติจึงยังชี้ไปที่ชิ้นหน้าตาเดิมอยู่ ย้อนแล้วได้ของเดิมกลับมาครบ */
+function nbPushHist(pad) {
+  pad.hist = pad.hist || [];
+  pad.hist.push(pad.strokes.slice());
+  if (pad.hist.length > NB_HIST_MAX) pad.hist.shift();
+}
+function nbClone(s) { return JSON.parse(JSON.stringify(s, function (k, v) { return k === '_pts' ? undefined : v; })); }
+/** แทนชิ้นที่เลือกด้วยสำเนา แล้วคืนสำเนาเหล่านั้น — ใช้ก่อนแก้ชิ้นเดิมทุกครั้ง */
+function nbCow(pad, ids) {
+  const want = {};
+  ids.forEach(function (id) { want[id] = 1; });
+  const out = [];
+  pad.strokes = pad.strokes.map(function (s) {
+    if (!s.id || !want[s.id]) return s;
+    const c = nbClone(s);
+    out.push(c);
+    return c;
+  });
+  return out;
+}
+function nbRemoveIds(pad, ids) {
+  const gone = {};
+  ids.forEach(function (id) { gone[id] = 1; });
+  // ลบกล่องแล้วเส้นโยงที่เกาะกล่องนั้นต้องหายไปด้วย ไม่งั้นเหลือเส้นค้างที่ชี้ไปหาอะไรไม่ได้
+  pad.strokes = pad.strokes.filter(function (s) {
+    if (s.id && gone[s.id]) return false;
+    if (s.tool === 'link' && (gone[s.a] || gone[s.b])) return false;
+    return true;
+  });
+}
+
+/* ---------- แปลงชิ้น ---------- */
+function nbShift(s, dx, dy) {
+  if (s.tool === 'text') { s.x += dx; s.y += dy; return; }
+  (s.points || []).forEach(function (q) { q.x += dx; q.y += dy; });
+}
+function nbSpin(s, cx, cy, a) {
+  const c = Math.cos(a), n = Math.sin(a);
+  const r = function (x, y) { return { x: cx + (x - cx) * c - (y - cy) * n, y: cy + (x - cx) * n + (y - cy) * c }; };
+  if (s.tool === 'text') { const q = r(s.x, s.y); s.x = q.x; s.y = q.y; s.rot = (s.rot || 0) + a; return; }
+  if (s.points) s.points = s.points.map(function (q) { return r(q.x, q.y); });
+}
+function nbShapePts(kind, a, b) {
+  const x0 = Math.min(a.x, b.x), x1 = Math.max(a.x, b.x);
+  const y0 = Math.min(a.y, b.y), y1 = Math.max(a.y, b.y);
+  if (kind === 'line') return [{ x: a.x, y: a.y }, { x: b.x, y: b.y }];
+  if (kind === 'tri') return [{ x: (x0 + x1) / 2, y: y0 }, { x: x1, y: y1 }, { x: x0, y: y1 }];
+  if (kind === 'ellipse') {
+    const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, rx = (x1 - x0) / 2, ry = (y1 - y0) / 2;
+    const P = [];
+    for (let i = 0; i < 48; i++) {
+      const t = i / 48 * Math.PI * 2;
+      P.push({ x: cx + rx * Math.cos(t), y: cy + ry * Math.sin(t) });
+    }
+    return P;
+  }
+  return [{ x: x0, y: y0 }, { x: x1, y: y0 }, { x: x1, y: y1 }, { x: x0, y: y1 }];
+}
+
+/* ---------- ช่องพิมพ์ข้อความ ---------- */
+function nbCloseEditor(pad) {
+  /* เรียกตัวเก็บข้อความตรง ๆ ไม่อาศัยเหตุการณ์ blur อย่างเดียว
+     ช่องที่ยังไม่ได้รับโฟกัสจริง (บางจังหวะบนไอแพด) สั่ง blur แล้วไม่มีอะไรเกิดขึ้น
+     ข้อความที่พิมพ์ไว้จะค้างเป็นกล่องลอยอยู่บนกระดาษโดยไม่ถูกเก็บ */
+  if (pad && pad.nbCommit) pad.nbCommit();
+}
+function nbEditText(pad, obj, p, box) {
+  nbCloseEditor(pad);
+  const isBox = obj ? !!obj.box : !!box;
+  const fs = obj ? (obj.fs || 22) : (pad.fs || 22);
+  const ta = document.createElement('textarea');
+  ta.className = 'nbtxt';
+  ta.style.fontSize = fs + 'px';
+  ta.style.fontWeight = isBox ? '700' : '400';
+  ta.style.color = obj ? (obj.color || '#1e293b') : (pad.color || '#1e293b');
+  ta.setAttribute('aria-label', isBox ? 'พิมพ์หัวข้อ' : 'พิมพ์ข้อความ');
+  let left, top;
+  if (obj) {
+    ta.value = obj.text || '';
+    left = obj.x - (obj.w || 140) / 2; top = obj.y - (obj.h || 40) / 2;
+  } else {
+    left = p.x - 6; top = p.y - fs * 0.9;
+  }
+  const fit = function () {
+    const lines = ta.value.split('\n');
+    ta.rows = Math.max(1, lines.length);
+    const longest = lines.reduce(function (m, l) { return Math.max(m, l.length); }, 0);
+    ta.style.width = Math.max(140, Math.min(pad.wrap.clientWidth - 8, longest * fs * 0.62 + 28)) + 'px';
+  };
+  ta.style.left = Math.max(2, left) + 'px';
+  ta.style.top = Math.max(2, top) + 'px';
+  pad.wrap.appendChild(ta);
+  fit();
+  if (obj) { obj._hide = 1; pad.redraw(); }       // ซ่อนตัวจริงระหว่างแก้ จะได้ไม่เห็นซ้อนสองชั้น
+  let done = false;
+  const commit = function () {
+    if (done) return;
+    done = true;
+    pad.nbCommit = null;
+    const txt = ta.value.replace(/\s+$/, '');
+    const L = parseFloat(ta.style.left), T = parseFloat(ta.style.top);
+    ta.remove();
+    pad.nbEditor = null;
+    if (obj) {
+      delete obj._hide;
+      if (txt !== (obj.text || '')) {
+        nbPushHist(pad);
+        if (!txt) nbRemoveIds(pad, [obj.id]);
+        else { const c = nbCow(pad, [obj.id])[0]; if (c) c.text = txt; }
+        pad.save();
+      }
+    } else if (txt) {
+      nbPushHist(pad);
+      const o = { tool: 'text', text: txt, fs: fs, color: pad.color || '#1e293b',
+                  size: pad.size || 2.5, dash: pad.dash ? 1 : 0, box: isBox ? 1 : 0, points: [] };
+      nbTextLayout(pad.ctx, o);
+      o.x = L + o.w / 2; o.y = T + o.h / 2;
+      nbId(o);
+      pad.strokes.push(o);
+      pad.save();
+    }
+    pad.redraw();
+  };
+  ta.addEventListener('input', fit);
+  ta.addEventListener('blur', commit);
+  ta.addEventListener('keydown', function (ev) {
+    ev.stopPropagation();                         // Esc/ลูกศร ต้องไม่ไปปิดกระดานหรือพลิกหน้า
+    if (ev.key === 'Escape') { ta.value = obj ? (obj.text || '') : ''; ta.blur(); }
+    else if ((ev.ctrlKey || ev.metaKey) && ev.key === 'Enter') ta.blur();
+  });
+  pad.nbEditor = ta;
+  pad.nbCommit = commit;
+  setTimeout(function () { try { ta.focus(); } catch (e) {} }, 0);
+}
+
+/* ---------- การแตะและลาก ---------- */
+function nbTol(e) { return e && e.pointerType === 'touch' ? 16 : 10; }
+function nbDoubleTap(pad, objs) {
+  const g = pad.nb, now = Date.now();
+  const one = objs.length === 1 ? objs[0] : null;
+  const dbl = !!(one && one.tool === 'text' && g.tapId === one.id && now - (g.tapAt || 0) < 400);
+  g.tapId = one ? one.id : null;
+  g.tapAt = now;
+  if (dbl) { g.mode = null; nbEditText(pad, one); return true; }
+  return false;
+}
+function nbBeginXform(pad, mode, p, box) {
+  const g = pad.nb;
+  g.mode = mode; g.p0 = p; g.started = false;
+  g.cx = (box.x0 + box.x1) / 2; g.cy = (box.y0 + box.y1) / 2;
+  g.a0 = Math.atan2(p.y - g.cy, p.x - g.cx);
+}
+/** คืน true เมื่อเครื่องมือของสมุดจัดการการแตะนี้เองแล้ว — ปากกาเดิมจะไม่ทำงานต่อ */
+function nbDown(pad, e, p) {
+  const g = pad.nb = pad.nb || {};
+  const tool = pad.tool;
+  nbCloseEditor(pad);                // แตะที่ไหนก็ตามบนกระดาษ ข้อความที่พิมพ์ค้างถูกเก็บก่อนเสมอ
+  if (tool === 'pen' || tool === 'highlighter' || tool === 'arrow' || tool === 'eraser') {
+    if (pad.sel && pad.sel.length) pad.sel = [];
+    nbPushHist(pad);                 // เส้นใหม่ของปากกาเดิมย้อนได้ด้วยประวัติชุดเดียวกัน
+    return false;
+  }
+  const tol = nbTol(e);
+  if (tool === 'select') {
+    const cur = nbSelObjs(pad);
+    if (cur.length) {
+      const bx = nbUnion(cur);
+      if (bx) {
+        const hd = nbHandle(bx);
+        if (Math.hypot(p.x - hd.x, p.y - hd.y) <= tol + 8) { nbBeginXform(pad, 'rotate', p, bx); return true; }
+        if (p.x >= bx.x0 - 6 && p.x <= bx.x1 + 6 && p.y >= bx.y0 - 6 && p.y <= bx.y1 + 6) {
+          if (nbDoubleTap(pad, cur)) return true;
+          nbBeginXform(pad, 'move', p, bx); return true;
+        }
+      }
+    }
+    const hit = nbHit(pad, p, tol);
+    if (hit) {
+      pad.sel = [nbId(hit)];
+      if (nbDoubleTap(pad, [hit])) return true;
+      nbBeginXform(pad, 'move', p, nbBox(hit) || { x0: p.x, y0: p.y, x1: p.x, y1: p.y });
+      pad.redraw();
+      return true;
+    }
+    pad.sel = [];
+    g.mode = 'lasso'; g.lasso = { x0: p.x, y0: p.y, x1: p.x, y1: p.y };
+    pad.redraw();
+    return true;
+  }
+  if (tool === 'objerase') {
+    g.mode = 'erase'; g.erased = false;
+    nbEraseAt(pad, p, tol);
+    return true;
+  }
+  if (tool === 'text' || tool === 'node') {
+    const hit = nbHit(pad, p, tol);
+    if (hit && hit.tool === 'text') nbEditText(pad, hit);
+    else nbEditText(pad, null, p, tool === 'node');
+    return true;
+  }
+  if (tool === 'link') {
+    const hit = nbHit(pad, p, tol);
+    if (!hit || hit.tool === 'link') {
+      toast('แตะที่กล่องหัวข้อ ข้อความ หรือรูปทรงก่อน แล้วลากไปหาอีกชิ้น', 'warn');
+      g.mode = null;
+      return true;
+    }
+    const b = nbBox(hit);
+    g.mode = 'link'; g.from = hit;
+    g.linkPrev = { x0: (b.x0 + b.x1) / 2, y0: (b.y0 + b.y1) / 2, x1: p.x, y1: p.y };
+    pad.redraw();
+    return true;
+  }
+  if (tool === 'shape') {
+    nbPushHist(pad);
+    const kind = pad.shapeKind || 'rect';
+    const s = { tool: 'shape', kind: kind, color: pad.color || '#1e293b', size: pad.size || 2.5,
+                dash: pad.dash ? 1 : 0, closed: kind === 'line' ? 0 : 1,
+                points: nbShapePts(kind, p, p) };
+    pad.strokes.push(s);
+    g.mode = 'shape'; g.p0 = p; g.shape = s;
+    return true;
+  }
+  return false;
+}
+function nbEraseAt(pad, p, tol) {
+  const g = pad.nb;
+  const hit = nbHit(pad, p, tol);
+  if (!hit) return;
+  if (!g.erased) { nbPushHist(pad); g.erased = true; }   // ลากผ่านหลายชิ้น ย้อนทีเดียวได้คืนครบ
+  nbRemoveIds(pad, [nbId(hit)]);
+  pad.redraw();
+}
+function nbMove(pad, e, p) {
+  const g = pad.nb || {};
+  // ไฮไลต์สีต่าง ๆ ต้องวาดใหม่ทั้งหน้า ตัววาดทีละท่อนของปากกาเดิมรู้จักแต่สีเหลือง
+  if (!g.mode && pad.isDrawing && pad.curStroke && pad.curStroke.tool === 'highlighter') {
+    e.preventDefault();
+    pad.curStroke.points.push(p);
+    pad.redraw();
+    return true;
+  }
+  if (!g.mode) return false;
+  e.preventDefault();
+  if (g.mode === 'lasso') { g.lasso.x1 = p.x; g.lasso.y1 = p.y; pad.redraw(); return true; }
+  if (g.mode === 'erase') { nbEraseAt(pad, p, nbTol(e)); return true; }
+  if (g.mode === 'link') { g.linkPrev.x1 = p.x; g.linkPrev.y1 = p.y; pad.redraw(); return true; }
+  if (g.mode === 'shape') { g.shape.points = nbShapePts(g.shape.kind, g.p0, p); pad.redraw(); return true; }
+  if (g.mode === 'move' || g.mode === 'rotate') {
+    if (!g.started) {
+      if (Math.hypot(p.x - g.p0.x, p.y - g.p0.y) < 3) return true;   // แตะเฉย ๆ ไม่ใช่การขยับ
+      nbPushHist(pad);
+      const copies = nbCow(pad, pad.sel);
+      g.snap = {};
+      copies.forEach(function (c) { g.snap[c.id] = nbClone(c); });
+      g.started = true;
+    }
+    const objs = nbSelObjs(pad);
+    if (g.mode === 'move') {
+      const dx = p.x - g.p0.x, dy = p.y - g.p0.y;
+      objs.forEach(function (s) { nbRestore(s, g.snap[s.id]); nbShift(s, dx, dy); });
+    } else {
+      let a = Math.atan2(p.y - g.cy, p.x - g.cx) - g.a0;
+      if (e.shiftKey) a = Math.round(a / (Math.PI / 12)) * (Math.PI / 12);   // Shift = ทีละ 15°
+      objs.forEach(function (s) { nbRestore(s, g.snap[s.id]); nbSpin(s, g.cx, g.cy, a); });
+    }
+    pad.redraw();
+    return true;
+  }
+  return true;
+}
+/** คืนรูปทรงของชิ้นกลับเป็นตอนเริ่มลาก แล้วค่อยใส่การขยับทั้งหมดในครั้งเดียว
+    ถ้าขยับต่อจากตำแหน่งเมื่อกี้ทีละนิด เลขทศนิยมจะเพี้ยนสะสม ลากนาน ๆ รูปจะบิดเบี้ยว */
+function nbRestore(s, snap) {
+  if (!snap) return;
+  if (s.tool === 'text') { s.x = snap.x; s.y = snap.y; s.rot = snap.rot || 0; return; }
+  if (snap.points) s.points = snap.points.map(function (q) { return { x: q.x, y: q.y }; });
+}
+function nbUp(pad, e) {
+  const g = pad.nb || {};
+  if (!g.mode) return false;
+  const mode = g.mode;
+  g.mode = null;
+  if (mode === 'lasso') {
+    const L = g.lasso;
+    g.lasso = null;
+    const x0 = Math.min(L.x0, L.x1), x1 = Math.max(L.x0, L.x1);
+    const y0 = Math.min(L.y0, L.y1), y1 = Math.max(L.y0, L.y1);
+    if (x1 - x0 > 4 || y1 - y0 > 4) {
+      pad.sel = pad.strokes.filter(function (s) {
+        if (s.tool === 'eraser' || s._hide) return false;
+        const b = nbBox(s);
+        return b && b.x1 >= x0 && b.x0 <= x1 && b.y1 >= y0 && b.y0 <= y1;
+      }).map(nbId);
+    }
+    pad.redraw();
+    return true;
+  }
+  if (mode === 'erase') { if (g.erased) pad.save(); return true; }
+  if (mode === 'link') {
+    const p = pad.getPos ? pad.getPos(e) : null;
+    const lp = g.linkPrev;
+    g.linkPrev = null;
+    const to = nbHit(pad, p || { x: lp.x1, y: lp.y1 }, nbTol(e));
+    if (to && to !== g.from && to.tool !== 'link') {
+      nbPushHist(pad);
+      pad.strokes.push({ tool: 'link', id: null, a: nbId(g.from), b: nbId(to),
+                         color: pad.color || '#1e293b', size: Math.max(1.6, pad.size || 2.2),
+                         dash: pad.dash ? 1 : 0, points: [] });
+      nbId(pad.strokes[pad.strokes.length - 1]);
+      pad.save();
+    }
+    g.from = null;
+    pad.redraw();
+    return true;
+  }
+  if (mode === 'shape') {
+    const s = g.shape;
+    g.shape = null;
+    const b = nbBox(s);
+    // แตะเฉย ๆ ไม่ได้ลาก ได้รูปขนาดศูนย์ ทิ้งไปแทนที่จะเก็บจุดเล็ก ๆ ไว้ในหน้า
+    if (!b || (b.x1 - b.x0 < 6 && b.y1 - b.y0 < 6)) {
+      pad.strokes = pad.strokes.filter(function (x) { return x !== s; });
+      if (pad.hist && pad.hist.length) pad.hist.pop();
+    } else { nbId(s); pad.save(); }
+    pad.redraw();
+    return true;
+  }
+  if (mode === 'move' || mode === 'rotate') {
+    if (g.started) pad.save();
+    g.snap = null;
+    pad.redraw();
+    return true;
+  }
+  return true;
+}
+
+/* ---------- ปุ่มของที่เลือก ---------- */
+function nbClipOf(pad, objs) {
+  const ids = {};
+  objs.forEach(function (s) { ids[s.id] = 1; });
+  // เส้นโยงที่ปลายทั้งสองอยู่ในของที่เลือก ก๊อปไปด้วย จะได้วางแล้วเป็น mind map ชุดเดิม
+  const links = pad.strokes.filter(function (s) { return s.tool === 'link' && ids[s.a] && ids[s.b] && !ids[s.id]; });
+  return { items: objs.concat(links).map(nbClone), n: 0 };
+}
+function nbPaste(pad) {
+  if (!NB_CLIP || !NB_CLIP.items.length) { toast('ยังไม่ได้ก๊อปอะไรไว้', 'warn'); return; }
+  nbPushHist(pad);
+  NB_CLIP.n++;
+  const off = 24 * NB_CLIP.n;         // วางซ้ำหลายครั้งจะเหลื่อมกันเป็นขั้นบันได ไม่ทับกันจนมองไม่เห็น
+  const map = {}, out = [];
+  NB_CLIP.items.forEach(function (s) {
+    const c = nbClone(s), old = c.id;
+    delete c.id; nbId(c);
+    if (old) map[old] = c.id;
+    if (c.tool !== 'link') nbShift(c, off, off);
+    out.push(c);
+  });
+  out.forEach(function (c) { if (c.tool === 'link') { c.a = map[c.a] || c.a; c.b = map[c.b] || c.b; } });
+  pad.strokes = pad.strokes.concat(out);
+  pad.sel = out.map(function (c) { return c.id; });
+  if (pad.tool !== 'select') nbPickTool(pad, 'select');
+  pad.redraw(); pad.save();
+}
+function nbPickTool(pad, tool) {
+  const b = document.querySelector('[data-esk="' + pad.k + '"][data-hwtool="' + tool + '"]');
+  if (b) b.click(); else pad.tool = tool;
+}
+function nbAct(pad, act) {
+  nbCloseEditor(pad);
+  if (act === 'paste') return nbPaste(pad);
+  const objs = nbSelObjs(pad);
+  if (!objs.length) {
+    toast('เลือกชิ้นที่ต้องการก่อน — กดเครื่องมือ "เลือก" แล้วแตะชิ้นนั้น หรือลากกรอบรอบหลายชิ้น', 'warn');
+    return;
+  }
+  if (act === 'copy') {
+    NB_CLIP = nbClipOf(pad, objs);
+    toast('ก๊อปแล้ว ' + objs.length + ' ชิ้น — กดวางได้ทั้งหน้านี้ หน้าอื่น หรือเล่มอื่น', 'ok');
+    return;
+  }
+  if (act === 'dup') { NB_CLIP = nbClipOf(pad, objs); NB_CLIP.n = 0; nbPaste(pad); return; }
+  nbPushHist(pad);
+  if (act === 'del') { nbRemoveIds(pad, pad.sel.slice()); pad.sel = []; }
+  else if (act === 'front') {
+    const want = {};
+    pad.sel.forEach(function (id) { want[id] = 1; });
+    pad.strokes = pad.strokes.filter(function (s) { return !want[s.id]; })
+      .concat(pad.strokes.filter(function (s) { return want[s.id]; }));
+  } else if (act === 'rotl' || act === 'rotr') {
+    const b = nbUnion(objs);
+    const a = (act === 'rotr' ? 1 : -1) * Math.PI / 12;
+    nbCow(pad, pad.sel).forEach(function (s) { nbSpin(s, (b.x0 + b.x1) / 2, (b.y0 + b.y1) / 2, a); });
+  }
+  pad.redraw(); pad.save();
+}
+/** สีหรือขนาดที่เพิ่งเลือก — มีของเลือกไว้ก็เปลี่ยนให้ของชิ้นนั้น
+    คืน true เมื่อเครื่องมือที่ถืออยู่ใช้สีได้เอง (ไม่ต้องสลับกลับไปปากกา) */
+function nbStylePicked(pad, st) {
+  const objs = nbSelObjs(pad);
+  if (objs.length) {
+    nbPushHist(pad);
+    nbCow(pad, pad.sel).forEach(function (s) {
+      if (st.color) s.color = st.color;
+      if (st.size && s.tool !== 'text' && s.tool !== 'highlighter' && s.tool !== 'eraser') s.size = st.size;
+      if (st.fs && s.tool === 'text') s.fs = st.fs;
+    });
+    pad.redraw(); pad.save();
+  }
+  return ['select', 'text', 'node', 'shape', 'link', 'highlighter'].indexOf(pad.tool) >= 0;
+}
+/** แป้นลัด — คืน true เมื่อจัดการแล้ว */
+function nbKey(pad, e) {
+  const t = e.target;
+  if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT')) return false;
+  const mod = e.ctrlKey || e.metaKey, has = !!(pad.sel && pad.sel.length), k = e.key;
+  if (k === 'Escape' && has) { pad.sel = []; pad.redraw(); return true; }
+  if ((k === 'Delete' || k === 'Backspace') && has) { e.preventDefault(); nbAct(pad, 'del'); return true; }
+  if (mod && (k === 'c' || k === 'C') && has) { e.preventDefault(); nbAct(pad, 'copy'); return true; }
+  if (mod && (k === 'v' || k === 'V') && NB_CLIP) { e.preventDefault(); nbAct(pad, 'paste'); return true; }
+  if (mod && (k === 'd' || k === 'D') && has) { e.preventDefault(); nbAct(pad, 'dup'); return true; }
+  if (mod && (k === 'z' || k === 'Z')) { e.preventDefault(); pad.undo(); return true; }
+  if (has && k.indexOf('Arrow') === 0) {
+    e.preventDefault();
+    const st = e.shiftKey ? 10 : 1;
+    const dx = k === 'ArrowLeft' ? -st : k === 'ArrowRight' ? st : 0;
+    const dy = k === 'ArrowUp' ? -st : k === 'ArrowDown' ? st : 0;
+    // กดลูกศรติดกันหลายครั้ง นับเป็นการขยับครั้งเดียวในประวัติ
+    if (!pad.nb.nudging) { nbPushHist(pad); pad.nb.nudging = true; }
+    clearTimeout(pad.nb.nudgeT);
+    pad.nb.nudgeT = setTimeout(function () { pad.nb.nudging = false; pad.save(); }, 500);
+    nbCow(pad, pad.sel).forEach(function (s) { nbShift(s, dx, dy); });
+    pad.redraw();
+    return true;
+  }
+  return false;
+}
+
+/* ---------- แถบเครื่องมือแถวที่สอง ---------- */
+function nbBarHTML(k) {
+  const tb = function (tool, lab, t, extra) {
+    return '<button class="btn-tool" data-hwtool="' + tool + '" data-esk="' + k + '"' +
+      (extra || '') + ' title="' + esc(t) + '" aria-label="' + esc(t) + '">' + lab + '</button>';
+  };
+  return '<div class="nbbar" data-nbbar="' + k + '">' +
+    '<div class="grp">' +
+      tb('select', '⬚ เลือก', 'เลือก — แตะชิ้นหรือลากกรอบรอบหลายชิ้น ลากเพื่อขยับ จับวงกลมด้านบนเพื่อหมุน แตะข้อความสองครั้งเพื่อแก้') +
+      tb('objerase', '⌫ ลบทั้งชิ้น', 'ลบทั้งชิ้น — แตะหรือลากผ่านชิ้นไหน ชิ้นนั้นหายทั้งชิ้น') +
+    '</div><span class="sep"></span>' +
+    '<div class="grp">' +
+      tb('text', 'ก ข้อความ', 'ข้อความ — แตะตรงที่จะพิมพ์ แตะที่อื่นเมื่อพิมพ์เสร็จ') +
+      tb('node', '▢ หัวข้อ', 'กล่องหัวข้อสำหรับทำแผนผังความคิด (mind map)') +
+      tb('link', '⤳ เส้นโยง', 'เส้นโยง — ลากจากกล่องหนึ่งไปอีกกล่อง ขยับกล่องแล้วเส้นตามไปเอง') +
+    '</div><span class="sep"></span>' +
+    '<div class="grp"><span class="lab">รูปทรง</span>' +
+      tb('shape', '▭', 'สี่เหลี่ยม — ลากจากมุมหนึ่งไปอีกมุม', ' data-nbkind="rect"') +
+      tb('shape', '◯', 'วงรีและวงกลม', ' data-nbkind="ellipse"') +
+      tb('shape', '△', 'สามเหลี่ยม', ' data-nbkind="tri"') +
+      tb('shape', '╱', 'เส้นตรง', ' data-nbkind="line"') +
+    '</div><span class="sep"></span>' +
+    '<div class="grp"><span class="lab">สีเพิ่ม</span>' +
+      NB_COLORS.map(function (x) {
+        return '<div class="color-swatch" data-hwcolor="' + x.c + '" data-esk="' + k + '" title="' + x.t +
+          '" role="button" aria-label="สี' + x.t + '" style="background:' + x.c + '"></div>';
+      }).join('') +
+    '</div><span class="sep"></span>' +
+    '<div class="grp"><span class="lab">ตัวอักษร</span>' +
+      NB_FS.map(function (f, i) {
+        return '<button class="btn-tool' + (i === 1 ? ' active' : '') + '" data-nbfs="' + f.v + '" title="' + f.t +
+          '" aria-label="' + f.t + '" style="font-size:' + (11 + i * 4) + 'px">ก</button>';
+      }).join('') +
+    '</div><span class="sep"></span>' +
+    '<div class="grp"><span class="lab">ที่เลือก</span>' +
+      [['copy', 'ก๊อป'], ['paste', 'วาง'], ['dup', 'ทำซ้ำ'], ['rotl', '⟲'], ['rotr', '⟳'],
+       ['front', 'ไว้บนสุด'], ['del', 'ลบ']].map(function (a) {
+        return '<button class="btn-tool" type="button" data-nbact="' + a[0] + '" title="' + esc(NB_ACT_T[a[0]]) +
+          '" aria-label="' + esc(NB_ACT_T[a[0]]) + '">' + a[1] + '</button>';
+      }).join('') +
+    '</div></div>';
+}
+/** ต่อสมุดเข้ากับปากกาหนึ่งตัว — เรียกครั้งเดียวต่อการเปิดกระดาน */
+function nbAttach(pad) {
+  if (!pad) return;
+  pad.rich = true;
+  pad.sel = []; pad.hist = []; pad.nb = {};
+  pad.fs = pad.fs || 22;
+  pad.shapeKind = pad.shapeKind || 'rect';
+  // จุดพิกัดของปากกาอยู่ในตัวปากกาเอง ใช้ซ้ำตอนปล่อยนิ้วของเส้นโยง
+  pad.getPos = function (e) {
+    const r = pad.canvas.getBoundingClientRect();
+    return { x: e.clientX - r.left, y: e.clientY - r.top };
+  };
+  pad.undo = function () {
+    nbCloseEditor(pad);
+    if (!pad.hist.length) { toast('ย้อนต่อไม่ได้แล้ว', 'warn'); return; }
+    pad.strokes = pad.hist.pop();
+    pad.sel = [];
+    pad.redraw(); pad.save();
+  };
+  pad.clear = function () {
+    if (!pad.strokes.length) return;
+    if (!confirm('ล้างทุกอย่างในหน้านี้? (กดย้อนเพื่อเอากลับได้)')) return;
+    nbPushHist(pad);
+    pad.strokes = []; pad.sel = [];
+    pad.redraw(); pad.save();
+  };
+  const k = pad.k;
+  $$('[data-nbkind]').forEach(function (b) {
+    b.addEventListener('click', function () { pad.shapeKind = b.dataset.nbkind; });
+  });
+  $$('[data-nbfs]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      $$('[data-nbfs]').forEach(function (x) { x.classList.remove('active'); });
+      b.classList.add('active');
+      pad.fs = Number(b.dataset.nbfs) || 22;
+      nbStylePicked(pad, { fs: pad.fs });
+    });
+  });
+  $$('[data-nbact]').forEach(function (b) {
+    b.addEventListener('pointerdown', function (ev) { ev.preventDefault(); });
+    b.addEventListener('click', function () { nbAct(pad, b.dataset.nbact); });
+  });
+  // เปลี่ยนเครื่องมือแล้วเก็บข้อความที่พิมพ์ค้าง ยกเลิกการเลือก และเปลี่ยนรูปเคอร์เซอร์ให้ตรงงาน
+  $$('[data-esk="' + k + '"][data-hwtool]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      nbCloseEditor(pad);
+      if (pad.tool !== 'select' && pad.sel.length) { pad.sel = []; pad.redraw(); }
+      pad.canvas.style.cursor = pad.tool === 'select' ? 'default'
+        : (pad.tool === 'text' || pad.tool === 'node') ? 'text'
+        : pad.tool === 'objerase' ? 'cell' : 'crosshair';
+    });
+  });
+  pad.redraw();
+}
+
 function hwBindTools(k, pad, wrapEl) {
       $$('[data-esk="' + k + '"][data-hwtool]').forEach(tb => {
         tb.addEventListener('click', () => {
@@ -10984,6 +11902,7 @@ function hwBindTools(k, pad, wrapEl) {
           $$('[data-esk="' + k + '"][data-hwsize]').forEach(x => x.classList.remove('active'));
           sb.classList.add('active');
           if (pad) pad.size = Number(sb.dataset.hwsize) || 2.8;
+          if (pad && pad.rich) nbStylePicked(pad, { size: pad.size });
         });
       });
 
@@ -11004,6 +11923,9 @@ function hwBindTools(k, pad, wrapEl) {
           sw.classList.add('active');
           if (pad) {
             pad.color = sw.dataset.hwcolor;
+            /* สมุดจด: มีของเลือกไว้ก็เปลี่ยนสีของชิ้นนั้น และเครื่องมือที่ถืออยู่ใช้สีได้เอง
+               (ข้อความ รูปทรง ไฮไลต์) จึงไม่ต้องสลับกลับไปปากกาเหมือนในข้อสอบอัตนัย */
+            if (pad.rich && nbStylePicked(pad, { color: pad.color })) return;
             if (pad.tool !== 'pen') {
               const penBtn = $('[data-esk="' + k + '"][data-hwtool="pen"]');
               if (penBtn) penBtn.click();
@@ -11157,17 +12079,24 @@ function boardOpen(who) {
   document.addEventListener('keydown', boardKey);
 }
 
-/** ตั้งความสูงผืนผ้าใบให้พอดีกับที่เหลือบนจอ แล้วให้ปากกาคำนวณขนาดใหม่ */
-function boardFit() {
+/** ตั้งความสูงผืนผ้าใบให้พอดีกับที่เหลือบนจอ แล้วให้ปากกาคำนวณขนาดใหม่
+    วัดจากตำแหน่งจริงของกรอบเขียน ไม่ใช่เดาจากความสูงของแถบบน
+    เพราะแถบเครื่องมือมีสองแถวและพับบรรทัดไม่เท่ากันในแต่ละจอ
+    minH — หน้าที่เคยกดเพิ่มที่เขียนไว้ ต้องสูงอย่างน้อยเท่าเดิม ไม่งั้นลายมือด้านล่างถูกตัด */
+function boardFit(minH) {
   if (!BOARD) return;
-  const top = $('.bdtop', BOARD.root), fx = $('#bdFx', BOARD.root);
-  const used = (top ? top.offsetHeight : 60) + (fx && !fx.hidden ? fx.offsetHeight : 0) + 60;
-  BOARD.cv.style.height = Math.max(280, Math.round(window.innerHeight - used)) + 'px';
+  const rootTop = BOARD.root.getBoundingClientRect().top;
+  const used = Math.max(120, BOARD.wrap.getBoundingClientRect().top - rootTop) + 22;
+  const fit = Math.max(280, Math.round(window.innerHeight - used));
+  const need = BOARD.pad ? nbContentBottom(BOARD.pad) : 0;
+  BOARD.cv.style.height = Math.max(fit, Number(minH) || 0, need) + 'px';
   if (BOARD.pad && BOARD.pad.resize) BOARD.pad.resize();
 }
 
 function boardKey(e) {
   if (!BOARD) return;
+  // มีของเลือกไว้ แป้นลัดของสมุด (ลบ ก๊อป วาง ย้อน ขยับด้วยลูกศร) มาก่อนการพลิกหน้า
+  if (BOARD.pad && BOARD.pad.rich && nbKey(BOARD.pad, e)) return;
   if (e.key === 'Escape') { boardClose(); return; }
   // ลูกศรซ้ายขวาเปลี่ยนหน้าได้ ถ้าไม่ได้กำลังพิมพ์อยู่ในช่องหัวข้อ
   const t = e.target;
@@ -11178,26 +12107,32 @@ function boardKey(e) {
   }
 }
 
-/** สร้างปากกาใหม่ให้หน้าที่กำลังเปิด — เก็บแต่เส้น ไม่เก็บรูป เหมือนข้อสอบอัตนัย */
+/** เปิดหน้าที่กำลังเลือก — ใช้ปากกาตัวเดียวตลอดการเปิดกระดาน สลับหน้าแค่เปลี่ยนเนื้อ
+    ของเดิมสร้างปากกาใหม่ทุกครั้งที่เปลี่ยนหน้า แล้วผูกแถบเครื่องมือซ้ำทุกครั้ง
+    ปุ่มแต่ละปุ่มจึงมีตัวฟังซ้อนกันเพิ่มขึ้นเรื่อย ๆ และเครื่องมือที่เลือกไว้หายทุกครั้งที่พลิกหน้า
+    ตอนนี้เลือกปากกาสีแดงไว้ พลิกไปหน้าไหนก็ยังเป็นปากกาสีแดง */
 function boardLoadPage() {
   if (!BOARD) return;
   const b = boardDB(BOARD.who), pg = b.pages[b.cur] || { strokes: [] };
-  BOARD.pad = initHandwritingPad('bd', BOARD.cv, BOARD.wrap, pg.strokes, function (strokes) {
-    const cur = boardDB(BOARD.who);
-    const p = cur.pages[cur.cur];
-    if (!p) return;
-    p.strokes = strokes.map(function (s) {
-      return { tool: s.tool, color: s.color, size: s.size, dash: s.dash || 0,
-               points: (s.points || []).map(function (q) {
-                 return { x: Math.round(q.x * 10) / 10, y: Math.round(q.y * 10) / 10 };
-               }) };
+  if (!BOARD.pad) {
+    BOARD.pad = initHandwritingPad('bd', BOARD.cv, BOARD.wrap, [], function (strokes) {
+      const cur = boardDB(BOARD.who);
+      const p = cur.pages[cur.cur];
+      if (!p) return;
+      p.strokes = nbPack(strokes);
+      nbPageSize(p);
+      save();
     });
-    save();
-  });
-  hwBindTools('bd', BOARD.pad, BOARD.wrap);
+    hwBindTools('bd', BOARD.pad, BOARD.wrap);
+    nbAttach(BOARD.pad);
+  }
+  const pad = BOARD.pad;
+  nbCloseEditor(pad);
+  pad.strokes = JSON.parse(JSON.stringify(pg.strokes || []));
+  pad.hist = []; pad.sel = []; pad.nb = {};
   const pgEl = $('#bdPg', BOARD.root);
   if (pgEl) pgEl.textContent = 'หน้า ' + (b.cur + 1) + '/' + b.pages.length;
-  boardFit();
+  boardFit(pg.h || 0);
 }
 
 /** เก็บลายมือของหน้าที่กำลังเปิดก่อนสลับหน้า — ตัวปากกาบันทึกหน่วงไว้ 0.45 วินาที
@@ -11206,18 +12141,16 @@ function boardSavePage() {
   if (!BOARD || !BOARD.pad) return;
   const b = boardDB(BOARD.who), p = b.pages[b.cur];
   if (!p) return;
-  p.strokes = (BOARD.pad.strokes || []).map(function (s) {
-    return { tool: s.tool, color: s.color, size: s.size, dash: s.dash || 0,
-             points: (s.points || []).map(function (q) {
-               return { x: Math.round(q.x * 10) / 10, y: Math.round(q.y * 10) / 10 };
-             }) };
-  });
+  nbCloseEditor(BOARD.pad);           // ข้อความที่พิมพ์ค้างอยู่ต้องถูกเก็บก่อนพลิกหน้า
+  p.strokes = nbPack(BOARD.pad.strokes);
+  nbPageSize(p);
   save(true);
 }
 
 function boardClose() {
   if (!BOARD) return;
   boardSavePage();
+  if (BOARD.pad) { BOARD.pad.sel = []; BOARD.pad.rich = false; }
   window.removeEventListener('resize', boardFit);
   document.removeEventListener('keydown', boardKey);
   BOARD.root.remove();
@@ -12477,6 +13410,8 @@ function hwPadHTML(k, hidden, footer, bgImg, tall) {
     '<button class="btn-tool" data-hwact="clear" data-esk="' + k + '">🗑️ ล้าง</button>' +
     '<button class="btn-tool" data-hwact="expand" data-esk="' + k + '">➕ เพิ่มที่เขียน</button>' +
     '</div></div>' +
+    // แถวที่สองมีเฉพาะสมุดจด/กระดานสอน ข้อสอบอัตนัยไม่ต้องใช้เครื่องมือพวกนี้
+    (k === 'bd' && typeof nbBarHTML === 'function' ? nbBarHTML(k) : '') +
     '<div class="hw-canvas-wrap ' + wrapCls + '" id="hwWrap_' + k + '"' + wrapSty + '>' +
     '<canvas class="hw-canvas" id="hwCanvas_' + k + '" data-esk="' + k + '"' + cvSty + '></canvas>' +
     '</div>' + (footer || '') + '</div>';
