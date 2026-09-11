@@ -541,6 +541,14 @@ hl{background:var(--warn-bg);border-radius:4px;padding:0 3px}
       margin:0 2px;font-style:normal;font-size:.9em;line-height:1.1}
 .frac .fn{padding:0 4px 1px}
 .frac .fd{padding:1px 4px 0;border-top:1.4px solid currentColor}
+/* เวกเตอร์ vec(F) — ลูกศรเหนือตัวแปร ยาวตามเนื้อใน
+   วาดด้วยเส้นขอบ ไม่ใช่ตัวอักษร → จึงยืดได้ตามความยาว พิมพ์ติดทุกเครื่อง และเปลี่ยนสีตามตัวอักษร
+   ขยับลูกศรไปทางขวาเล็กน้อยให้ตรงกับตัวเอียงที่เอนไปทางขวา */
+.vec{position:relative;display:inline-block;padding-top:.34em;margin-right:.1em;line-height:1.05;white-space:nowrap}
+/* ลูกศรยื่นเลยขวาของตัวอักษรเล็กน้อย ตัวแปรตัวเดียวอย่าง F จะได้เห็นเป็นเส้นมีหัว ไม่ใช่เห็นแต่หัวลูกศร */
+.vec::before{content:'';position:absolute;left:.04em;right:0;top:.12em;border-top:.075em solid currentColor}
+.vec::after{content:'';position:absolute;right:-.16em;top:.015em;
+  border-left:.3em solid currentColor;border-top:.14em solid transparent;border-bottom:.14em solid transparent}
 /* ── การ์ดโปรไฟล์และเลเวลของผู้เรียน ─────────────────────────────────── */
 .xpcard{background:linear-gradient(135deg,var(--panel2),var(--panel));border:1px solid var(--line)}
 .xprow{display:flex;align-items:center;gap:13px}
@@ -1033,7 +1041,7 @@ table td,table th,.num,.xpstat b,.tick,
    *** ห้ามลบบรรทัดเครื่องหมาย @@BUILTIN@@ ทั้งสองอัน ตัวสร้างไฟล์ใช้หาตำแหน่ง ***
    ========================================================================== */
 /* @@BUILTIN@@ */
-const BUILTIN = {"url":"","studentOnly":false,"lockCloud":false,"logo":"","header":null,"about":null,"build":"2026-09-11 08:32","ver":"v8.113"};
+const BUILTIN = {"url":"","studentOnly":false,"lockCloud":false,"logo":"","header":null,"about":null,"build":"2026-09-11 12:24","ver":"v8.114"};
 /* @@BUILTIN-END@@ */
 
 /* ถ่ายภาพซอร์สของหน้านี้ไว้ตั้งแต่สคริปต์เพิ่งเริ่มทำงาน
@@ -2271,7 +2279,7 @@ function M(s) {
   return '<span class="eq">' + mInner(String(s)) + '</span>';
 }
 /** แปลงข้อความสมการหนึ่งชิ้น (ยังไม่ห่อ .eq) — เรียกซ้อนตัวเองได้ จึงใส่เศษส่วนในรากได้
-    เขียนได้ว่า  frac(3,4)  ·  sqrt(2)  ·  sqrt3(27) รากที่สาม  ·  pi
+    เขียนได้ว่า  frac(3,4)  ·  sqrt(2)  ·  sqrt3(27) รากที่สาม  ·  pi  ·  vec(F) เวกเตอร์
     วิธีทำงาน: แปลงเศษส่วน/รากบนข้อความ "ดิบ" ก่อน แล้วพักผลลัพธ์ HTML ไว้ในกล่อง
     โดยทิ้งโทเคนตัวอักษรพิเศษไว้แทน จากนั้นค่อย esc() และจัดรูปตัวห้อย-ตัวยกตามเดิม
     แล้วเอา HTML ในกล่องแทนกลับตอนท้าย — HTML ที่สร้างไว้จึงไม่ถูก esc() ทำลาย */
@@ -2299,6 +2307,9 @@ function mInner(raw, box) {
     t = t.replace(/frac\(([^(),]*),([^(),]*)\)/g, (m, a, b) =>
       stash('<span class="frac"><span class="fn">' + mInner(a, box) + '</span>' +
             '<span class="fd">' + mInner(b, box) + '</span></span>'));
+    /* เวกเตอร์ vec(F) — ลูกศรเหนือตัวแปร ยาวตามเนื้อใน จึงเขียน vec(AB) หรือ vec(F_net) ได้
+       ไม่บังคับให้มีช่องว่างหน้า vec ครูเลือก a ใน "ma" แล้วกดปุ่มจะได้ "mvec(a)" ซึ่งต้องใช้ได้ */
+    t = t.replace(/vec\(([^()]*)\)/g, (m, a) => stash(mVec(mInner(a, box))));
     /* regex ข้างบนรับเฉพาะเนื้อในที่ไม่มีวงเล็บ พอหมดทางแล้วให้ตัวอ่านแบบนับวงเล็บ
        ลองต่ออีกชั้น จึงเขียน frac((m_1 - m_2) g, m_1 + m_2) ได้จริง */
     if (t === before) {
@@ -2339,7 +2350,7 @@ function mInner(raw, box) {
     ถ้าจำนวนช่องไม่ตรงกับที่คำสั่งนั้นรับ ก็ปล่อยไว้เป็นข้อความเหมือนเดิม ไม่เดาแทน
     แปลงทีละคำสั่ง แล้วให้ผู้เรียกวนซ้ำ ส่วนชั้นในลึกลงไปเรียกผ่าน mInner อยู่แล้ว */
 function mDeep(t, box, stash) {
-  const re = /(frac|sqrt\d*|nuc)\(/g;
+  const re = /(frac|sqrt\d*|nuc|vec)\(/g;
   let m;
   while ((m = re.exec(t))) {
     const open = m.index + m[0].length - 1;
@@ -2366,11 +2377,15 @@ function mDeep(t, box, stash) {
       html = '<span class="nuc"><span class="nnum"><span class="na">' + esc(args[0].trim()) +
              '</span><span class="nz">' + esc(args[1].trim()) + '</span></span>' +
              '<span class="nel">' + mInner(args[2], box) + '</span></span>';
+    else if (name === 'vec' && args.length === 1)
+      html = mVec(mInner(args[0], box));
     if (html == null) continue;                    // จำนวนช่องไม่ตรง ปล่อยเป็นข้อความ
     return t.slice(0, m.index) + stash(html) + t.slice(close + 1);
   }
   return t;
 }
+/** ครอบเนื้อในด้วยลูกศรเวกเตอร์ — ตัวลูกศรวาดด้วย CSS ดูที่ .vec */
+function mVec(inner) { return '<span class="vec">' + inner + '</span>'; }
 /** บรรทัดสมการแบบบล็อก */
 function EQ() {
   return Array.from(arguments).filter(Boolean).map(s => '<div class="eqblk">' + M(s) + '</div>').join('');
