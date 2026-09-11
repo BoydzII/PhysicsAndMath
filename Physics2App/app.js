@@ -266,6 +266,8 @@ function renderApp() {
   // 4. Initialize Simulation if available
   if (currentTopic === 'work') {
     initWorkSimulation();
+  } else if (currentTopic === 'power') {
+    initPowerSimulation();
   }
 
   // Restore inputs after re-render
@@ -430,6 +432,173 @@ function initWorkSimulation() {
   canvas.addEventListener('mousemove', handleMove);
   window.addEventListener('mouseup', handleUp);
 
+  canvas.addEventListener('touchstart', handleDown, { passive: false });
+  canvas.addEventListener('touchmove', handleMove, { passive: false });
+  window.addEventListener('touchend', handleUp);
+
+  draw();
+}
+
+
+function initPowerSimulation() {
+  const canvas = document.getElementById('simPower');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+
+  canvas.width = canvas.clientWidth;
+  canvas.height = canvas.clientHeight;
+
+  const W = canvas.width;
+  const H = canvas.height;
+
+  // Crane simulation: drag weight up/down, see Power change in real-time
+  const ropeX = W * 0.5;        // center of pulley
+  const pulleyY = 30;
+  const weightSize = 40;
+  let weightY = H - 80;         // current Y of weight (top-left corner)
+  let isDragging = false;
+  let lastY = 0;
+  let lastTime = 0;
+  let speed = 0;                // pixels per second
+  let prevWeightY = weightY;
+
+  const mass = 100;   // kg
+  const g = 10;
+  const mg = mass * g; // N
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+
+    // Sky gradient
+    const grad = ctx.createLinearGradient(0, 0, 0, H);
+    grad.addColorStop(0, '#e0f2fe');
+    grad.addColorStop(1, '#f0f9ff');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, W, H);
+
+    // Ground
+    ctx.fillStyle = '#a3be8c';
+    ctx.fillRect(0, H - 30, W, 30);
+    ctx.fillStyle = '#8faa7b';
+    ctx.fillRect(0, H - 30, W, 2);
+
+    // Crane tower
+    ctx.fillStyle = '#f59e0b';
+    ctx.fillRect(ropeX - 8, pulleyY, 16, H - 30 - pulleyY);
+    // Crane arm
+    ctx.fillStyle = '#f59e0b';
+    ctx.fillRect(ropeX - 60, pulleyY - 5, 120, 10);
+
+    // Pulley circle
+    ctx.beginPath();
+    ctx.arc(ropeX, pulleyY, 12, 0, Math.PI * 2);
+    ctx.fillStyle = '#374151';
+    ctx.fill();
+    ctx.strokeStyle = '#1f2937';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Rope
+    ctx.beginPath();
+    ctx.moveTo(ropeX, pulleyY + 12);
+    ctx.lineTo(ropeX, weightY);
+    ctx.strokeStyle = '#6b7280';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Weight box
+    ctx.fillStyle = '#ef4444';
+    ctx.fillRect(ropeX - weightSize/2, weightY, weightSize, weightSize);
+    // Weight label
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 11px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(mass + ' kg', ropeX, weightY + weightSize/2 + 4);
+
+    // Height indicator
+    const heightM = ((H - 80 - weightY) / (H - 80 - pulleyY - 30) * 15).toFixed(1);
+    ctx.fillStyle = '#374151';
+    ctx.font = '13px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('h = ' + heightM + ' m', 10, H - 40);
+
+    // Speed & Power display
+    const speedMS = Math.abs(speed / (H - 80 - pulleyY - 30) * 15).toFixed(1);
+    const powerVal = (mg * parseFloat(speedMS)).toFixed(0);
+
+    ctx.font = 'bold 14px sans-serif';
+    ctx.fillStyle = '#2563eb';
+    ctx.textAlign = 'right';
+    ctx.fillText('v = ' + speedMS + ' m/s', W - 10, 60);
+    ctx.fillStyle = '#dc2626';
+    ctx.fillText('P = Fv = ' + powerVal + ' W', W - 10, 80);
+    ctx.fillStyle = '#374151';
+    ctx.fillText('F = mg = ' + mg + ' N', W - 10, 100);
+
+    // Direction arrow on weight
+    if (Math.abs(speed) > 5) {
+      const dir = speed < 0 ? -1 : 1; // negative = going up
+      ctx.beginPath();
+      ctx.moveTo(ropeX + weightSize/2 + 10, weightY + weightSize/2);
+      ctx.lineTo(ropeX + weightSize/2 + 10, weightY + weightSize/2 + dir * 20);
+      ctx.strokeStyle = '#2563eb';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+      // arrowhead
+      ctx.beginPath();
+      ctx.moveTo(ropeX + weightSize/2 + 10, weightY + weightSize/2 + dir * 20);
+      ctx.lineTo(ropeX + weightSize/2 + 5, weightY + weightSize/2 + dir * 12);
+      ctx.lineTo(ropeX + weightSize/2 + 15, weightY + weightSize/2 + dir * 12);
+      ctx.fillStyle = '#2563eb';
+      ctx.fill();
+    }
+
+    ctx.textAlign = 'start'; // reset
+
+    requestAnimationFrame(draw);
+  }
+
+  // Speed calculation
+  setInterval(() => {
+    speed = (weightY - prevWeightY) / 0.05; // 50ms interval
+    prevWeightY = weightY;
+  }, 50);
+
+  function getY(e) {
+    const rect = canvas.getBoundingClientRect();
+    if (e.touches) return e.touches[0].clientY - rect.top;
+    return e.clientY - rect.top;
+  }
+
+  function handleDown(e) {
+    const y = getY(e);
+    if (y >= weightY && y <= weightY + weightSize) {
+      isDragging = true;
+      lastY = y;
+      canvas.style.cursor = 'grabbing';
+      e.preventDefault();
+    }
+  }
+
+  function handleMove(e) {
+    if (!isDragging) return;
+    const y = getY(e);
+    weightY += (y - lastY);
+    lastY = y;
+    // Clamp
+    if (weightY < pulleyY + 30) weightY = pulleyY + 30;
+    if (weightY > H - 80) weightY = H - 80;
+    e.preventDefault();
+  }
+
+  function handleUp() {
+    isDragging = false;
+    canvas.style.cursor = 'pointer';
+  }
+
+  canvas.addEventListener('mousedown', handleDown);
+  canvas.addEventListener('mousemove', handleMove);
+  window.addEventListener('mouseup', handleUp);
   canvas.addEventListener('touchstart', handleDown, { passive: false });
   canvas.addEventListener('touchmove', handleMove, { passive: false });
   window.addEventListener('touchend', handleUp);
