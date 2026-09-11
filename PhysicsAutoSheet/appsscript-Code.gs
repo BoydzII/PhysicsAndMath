@@ -20,6 +20,13 @@
  *   4) กลับมาที่แอพ → แท็บตั้งค่า → ปุ่ม "ซ่อมโครงสร้างชีต" หนึ่งครั้ง
  *      เพื่อเติมหัวตารางของคอลัมน์ใหม่ (ข้อมูลเดิมไม่หาย)
  *
+ * ── รุ่น 17 แก้อะไร (ส่งสมุดจดให้ครู) ────────────────────────────────────
+ *   เพิ่มแผ่น notes เก็บสมุดจดที่นักเรียนกดส่งให้ครู หนึ่งเล่มอาจกินหลายแถว
+ *   (ท่อนละ 45,000 ตัวอักษร เพราะช่องหนึ่งช่องรับได้ราวห้าหมื่น) ส่งซ้ำแทนฉบับเดิม
+ *   คำสั่งใหม่: noteSend (นักเรียนส่ง) · noteList (ครูดูรายการ) · noteGet (ครูเปิดเล่ม)
+ *   ครูผู้สอนเห็นเฉพาะสมุดของนักเรียนในชั้นที่ตัวเองดูแล อ่านชั้นสดจากรายชื่อ
+ *   แผ่นใหม่ถูกสร้างให้เองตอนส่งครั้งแรก ข้อมูลเดิมไม่ต้องแก้อะไร
+ *
  * ── รุ่น 16 แก้อะไร (เรียนรู้ไปพร้อมกัน) ──────────────────────────────────
  *   เพิ่มแผ่น focus เก็บช่วงเรียนของนักเรียน — นักเรียนกดเริ่มช่วงเรียนตอนครูสอน
  *   แอปจับเวลาช่วงที่อยู่กับบทเรียนจริง ออกจากแอปหรือเปิดจอคู่นาฬิกาจะหยุด
@@ -168,7 +175,11 @@ var SHEETS = {
   /* ช่วงเรียนของระบบ "เรียนรู้ไปพร้อมกัน" — หนึ่งแถวคือหนึ่งช่วงเรียนของนักเรียนคนหนึ่ง
      บันทึกการออกเป็น JSON ก้อนเดียวไว้ท้ายสุด จะได้อ่านสารบัญโดยไม่ต้องลากก้อนนั้นมาด้วย */
   focus:       ['id', 'sid', 'subject', 'cls', 'topic', 'title', 'startAt', 'endAt',
-                'focusSec', 'awaySec', 'nOut', 'device', 'events']
+                'focusSec', 'awaySec', 'nOut', 'device', 'events'],
+  /* สมุดจดที่นักเรียนส่งให้ครู — หนึ่งเล่มอาจกินหลายแถว เนื้อสมุดอยู่คอลัมน์สุดท้ายเสมอ
+     จะได้อ่านรายการโดยไม่ต้องลากเนื้อสมุดทั้งก้อนมาด้วย */
+  notes:       ['id', 'sid', 'subject', 'cls', 'title', 'pages', 'at', 'up',
+                'bytes', 'part', 'parts', 'data']
 };
 /* หัวตารางภาษาไทยที่คนอ่านเข้าใจ — เขียนไว้ที่แถว 1 ของแต่ละแผ่น */
 var HEADERS = {
@@ -190,7 +201,9 @@ var HEADERS = {
                 'ท่อนที่', 'ทั้งหมดกี่ท่อน', 'เนื้อข้อสอบ'],
   focus:       ['รหัสช่วงเรียน', 'เลขประจำตัว', 'วิชา', 'ชั้น', 'บทที่เรียน', 'หัวข้อที่เรียน',
                 'เริ่มเมื่อ', 'จบเมื่อ', 'เวลาที่อยู่กับบทเรียน (วินาที)',
-                'เวลาที่ออกไป (วินาที)', 'จำนวนครั้งที่ออก', 'อุปกรณ์', 'บันทึกการออก']
+                'เวลาที่ออกไป (วินาที)', 'จำนวนครั้งที่ออก', 'อุปกรณ์', 'บันทึกการออก'],
+  notes:       ['รหัสสมุด', 'เลขประจำตัว', 'วิชา', 'ชั้น', 'ชื่อสมุด', 'จำนวนหน้า',
+                'ส่งครั้งแรก', 'ส่งล่าสุด', 'ขนาด (ตัวอักษร)', 'ท่อนที่', 'ทั้งหมดกี่ท่อน', 'เนื้อสมุด']
 };
 /* คอลัมน์ของแผ่นคลังข้ออัตนัย (นับจาก 1) */
 var C_EB_ID = 1, C_EB_SUBJ = 2, C_EB_TOPIC = 3, C_EB_TAGS = 4, C_EB_AT = 5,
@@ -248,6 +261,13 @@ function sheet_(name) {
       sh.getRange('D:D').setNumberFormat('@');
     }
     if (name === 'submissions') sh.getRange('C:C').setNumberFormat('@');
+    /* สมุดจด: เลขประจำตัว ชั้น และเนื้อสมุดต้องเป็นข้อความ
+       ชั้นอย่าง 4/1 จะถูกแปลงเป็นวันที่ และท่อนเนื้อสมุดที่บังเอิญขึ้นต้นด้วย = จะกลายเป็นสูตร */
+    if (name === 'notes') {
+      sh.getRange('B:B').setNumberFormat('@');
+      sh.getRange('D:D').setNumberFormat('@');
+      sh.getRange('L:L').setNumberFormat('@');
+    }
   }
   _sheets[name] = sh;
   return sh;
@@ -912,6 +932,131 @@ function apiFocusReport_(req) {
   return { days: days, cls: wantCls, sessions: sessions, rows: rows.slice(0, FOCUS_ROWS_MAX) };
 }
 
+/* ====== สมุดจดที่นักเรียนส่งให้ครู (รุ่น 17) ============================
+   นักเรียนจดในแอปแล้วกดส่งทั้งเล่ม ครูเปิดดูทุกหน้าได้จากแท็บสถิติชั้นเรียน
+   สมุดเล่มหนึ่งใหญ่ได้หลายร้อยกิโลไบต์ จึงแบ่งเป็นท่อน ท่อนละหนึ่งแถว (เหมือนคลังข้ออัตนัย)
+   ส่งซ้ำ = ลบแถวทั้งหมดของเล่มนั้นแล้วเขียนชุดใหม่ ครูเห็นฉบับล่าสุดเสมอ
+
+   รหัสแถวคือ เลขประจำตัว|รหัสเล่ม — รหัสเล่มสุ่มจากเครื่องของนักเรียน
+   ถ้าใช้รหัสเล่มอย่างเดียว วันหนึ่งสองคนสุ่มได้รหัสซ้ำ เล่มของคนหนึ่งจะไปทับอีกคน
+
+   ทุกท่อนมี ~ นำหน้าเสมอ แล้วตัดทิ้งตอนอ่าน — กันท่อนที่บังเอิญขึ้นต้นด้วย = + -
+   ไม่ให้ชีตตีความเป็นสูตรหรือตัวเลข (ตั้งคอลัมน์เป็นข้อความไว้แล้ว นี่คือชั้นที่สอง
+   เผื่อแผ่นที่มีคนสร้างเองก่อนจะมีการตั้งรูปแบบคอลัมน์) */
+var NT_CHUNK = 45000;
+var NT_ITEM_MAX = 2000000;     // เล่มเดียวใหญ่ได้ไม่เกินนี้ (ราวสามสิบหน้าที่เขียนแน่น ๆ)
+var NT_LIST_MAX = 500;
+var C_NT_ID = 1, C_NT_SID = 2, C_NT_SUBJ = 3, C_NT_CLS = 4, C_NT_TITLE = 5, C_NT_PAGES = 6,
+    C_NT_AT = 7, C_NT_UP = 8, C_NT_BYTES = 9, C_NT_PART = 10, C_NT_PARTS = 11, C_NT_DATA = 12;
+
+function ntKey_(sid, bookId) {
+  return sidKey_(sid) + '|' + String(bookId == null ? '' : bookId).trim().slice(0, 40);
+}
+/** ลบแถวทั้งหมดของเล่มหนึ่ง แล้วเขียนชุดใหม่ — ลบจากล่างขึ้นบน เลขแถวจะได้ไม่เลื่อนจนลบผิดแถว */
+function ntReplace_(key, rows) {
+  var sh = sheet_('notes');
+  var ids = cols_('notes', C_NT_ID, 1);
+  var hits = [];
+  ids.forEach(function (r, i) { if (String(r[0] == null ? '' : r[0]) === key) hits.push(i + 2); });
+  for (var k = hits.length - 1; k >= 0; k--) sh.deleteRow(hits[k]);
+  if (rows.length) sh.getRange(sh.getLastRow() + 1, 1, rows.length, SHEETS.notes.length).setValues(rows);
+  dropCache_('notes');
+}
+
+/** นักเรียนส่งสมุดทั้งเล่ม */
+function apiNoteSend_(req) {
+  var t = needStudent_(req);
+  var subject = reqSubject_(req);
+  var b = req.book || {};
+  var bookId = String(b.id == null ? '' : b.id).trim();
+  if (!bookId) throw new Error('สมุดเล่มนี้ไม่มีรหัสประจำเล่ม');
+  var data = String(b.data == null ? '' : b.data);
+  if (!data) throw new Error('สมุดเล่มนี้ยังว่างอยู่');
+  if (data.length > NT_ITEM_MAX) {
+    throw new Error('สมุดเล่มนี้ใหญ่เกินกว่าจะส่งขึ้นชีตได้ (' + Math.round(data.length / 1024) +
+      ' KB จากเพดาน ' + Math.round(NT_ITEM_MAX / 1024) + ' KB) — แยกเป็นเล่มเล็กลงแล้วส่งทีละเล่ม');
+  }
+  var st = focusStudentMap_()[sidKey_(t.sid)];
+  var key = ntKey_(t.sid, bookId);
+  var now = Date.now();
+  var lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    // จำเวลาที่ส่งครั้งแรกไว้ แม้จะส่งซ้ำกี่รอบ ครูจะได้รู้ว่าเล่มนี้เริ่มส่งตั้งแต่เมื่อไร
+    var firstAt = now;
+    cols_('notes', 1, C_NT_AT).forEach(function (r) {
+      if (String(r[C_NT_ID - 1]) === key && Number(r[C_NT_AT - 1])) {
+        firstAt = Math.min(firstAt, Number(r[C_NT_AT - 1]));
+      }
+    });
+    var parts = Math.ceil(data.length / NT_CHUNK);
+    var title = String(b.title == null ? '' : b.title).slice(0, 120);
+    var pages = Math.max(0, Math.round(Number(b.pages) || 0));
+    var rows = [];
+    for (var i = 0; i < parts; i++) {
+      rows.push([key, String(t.sid), subject, st ? st.cls : '', title, pages, firstAt, now,
+                 data.length, i + 1, parts, '~' + data.substr(i * NT_CHUNK, NT_CHUNK)]);
+    }
+    ntReplace_(key, rows);
+    return { id: bookId, up: now, parts: parts, bytes: data.length };
+  } finally { lock.releaseLock(); }
+}
+
+/** ครูดูรายการสมุดที่นักเรียนส่ง — ไม่ลากเนื้อสมุดมาด้วย จึงเบาพอจะกดดึงบ่อย ๆ */
+function apiNoteList_(req) {
+  var me = needAdmin_(req), sc = scopeOf_(me);
+  var subject = needSubject_(me, reqSubject_(req));
+  var wantCls = req.cls ? normCls_(req.cls) : '';
+  /* ชั้นอ่านสดจากรายชื่อ ไม่ใช่ค่าที่ติดมากับแถว — เด็กย้ายห้องแล้วต้องไปอยู่ห้องใหม่ */
+  var stu = focusStudentMap_();
+  var out = [];
+  cols_('notes', 1, C_NT_PARTS).forEach(function (r) {
+    if (Number(r[C_NT_PART - 1] || 1) !== 1) return;          // เอาแถวแรกของแต่ละเล่มพอ
+    if (normSubject_(r[C_NT_SUBJ - 1]) !== subject) return;
+    var k = sidKey_(r[C_NT_SID - 1]);
+    var st = k ? stu[k] : null;
+    if (!st) return;                                          // ลบชื่อออกจากรายชื่อแล้ว ไม่ต้องขึ้น
+    var cls = normCls_(st.cls);
+    if (!inScope_(sc, cls)) return;
+    if (wantCls && cls !== wantCls) return;
+    out.push({ id: String(r[C_NT_ID - 1]), sid: String(st.sid), name: st.name, no: st.no, cls: cls,
+               title: String(r[C_NT_TITLE - 1] == null ? '' : r[C_NT_TITLE - 1]),
+               pages: Number(r[C_NT_PAGES - 1]) || 0, at: Number(r[C_NT_AT - 1]) || 0,
+               up: Number(r[C_NT_UP - 1]) || 0, bytes: Number(r[C_NT_BYTES - 1]) || 0 });
+  });
+  out.sort(function (a, b) { return b.up - a.up; });
+  return out.slice(0, NT_LIST_MAX);
+}
+
+/** ครูเปิดสมุดเล่มหนึ่ง — อ่านเฉพาะแถวของเล่มนั้น ไม่อ่านเนื้อสมุดทุกเล่มทั้งแผ่น */
+function apiNoteGet_(req) {
+  var me = needAdmin_(req), sc = scopeOf_(me);
+  var subject = needSubject_(me, reqSubject_(req));
+  var key = String(req.id == null ? '' : req.id);
+  if (!key) throw new Error('ไม่ได้บอกว่าจะเปิดสมุดเล่มไหน');
+  var hit = [];
+  cols_('notes', 1, C_NT_PARTS).forEach(function (r, i) {
+    if (String(r[C_NT_ID - 1]) === key) hit.push({ row: i + 2, r: r });
+  });
+  if (!hit.length) throw new Error('ไม่พบสมุดเล่มนี้ในชีต — นักเรียนอาจยังไม่ได้ส่ง หรือส่งจากชีตอีกใบ');
+  var first = hit[0].r;
+  if (normSubject_(first[C_NT_SUBJ - 1]) !== subject) throw new Error('สมุดเล่มนี้เป็นของวิชาอื่น');
+  var st = focusStudentMap_()[sidKey_(first[C_NT_SID - 1])];
+  var cls = st ? normCls_(st.cls) : normCls_(first[C_NT_CLS - 1]);
+  if (!inScope_(sc, cls)) throw new Error('AUTH: สมุดเล่มนี้เป็นของนักเรียนนอกชั้นที่คุณดูแล');
+  var sh = sheet_('notes'), parts = [];
+  hit.forEach(function (h) {
+    var raw = sh.getRange(h.row, C_NT_DATA).getValue();
+    var v = String(raw == null ? '' : raw);
+    if (v.charAt(0) === '~') v = v.slice(1);
+    parts[Math.max(1, Number(h.r[C_NT_PART - 1]) || 1) - 1] = v;
+  });
+  return { id: key, sid: String(first[C_NT_SID - 1]), name: st ? st.name : '', no: st ? st.no : '',
+           cls: cls, title: String(first[C_NT_TITLE - 1] == null ? '' : first[C_NT_TITLE - 1]),
+           pages: Number(first[C_NT_PAGES - 1]) || 0, up: Number(first[C_NT_UP - 1]) || 0,
+           data: parts.join('') };
+}
+
 /* ====== ทางเข้าเว็บแอป ================================================== */
 
 function json_(o) {
@@ -919,7 +1064,7 @@ function json_(o) {
 }
 
 function doGet() {
-  return json_({ ok: true, service: 'quiz-bank', version: 16, subjects: SUBJECTS,
+  return json_({ ok: true, service: 'quiz-bank', version: 17, subjects: SUBJECTS,
                  note: 'ใช้งานผ่าน POST จากแอพเท่านั้น' });
 }
 
@@ -979,6 +1124,9 @@ function route_(action, req) {
     case 'focusSave':     return apiFocusSave_(req);
     case 'focusMine':     return apiFocusMine_(req);
     case 'focusReport':   return apiFocusReport_(req);
+    case 'noteSend':      return apiNoteSend_(req);
+    case 'noteList':      return apiNoteList_(req);
+    case 'noteGet':       return apiNoteGet_(req);
     default: throw new Error('ไม่รู้จักคำสั่ง: ' + action);
   }
 }
@@ -1035,7 +1183,7 @@ function apiPing_(req) {
   try { locale = String(book_().getSpreadsheetLocale() || ''); } catch (e) {}
 
   return {
-    version: 16, role: role, myClasses: myCls,
+    version: 17, role: role, myClasses: myCls,
     locale: locale, monthFirst: monthFirstSheet_(), classes: clsCount,
     teachers: Math.max(0, sheet_('teachers').getLastRow() - 1),
     needRepair: needRepair, layout: layout, subjects: SUBJECTS,

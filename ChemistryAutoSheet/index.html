@@ -891,6 +891,11 @@ input.numin.bad{border-color:var(--bad);background:var(--bad-bg)}
 #printarea .nbpg{text-align:center}
 #printarea .nbpgno{font-size:9pt;color:#555;text-align:right;margin-bottom:3px}
 #printarea .nbpg img{max-width:100%;max-height:250mm;object-fit:contain;border:1px solid #bbb}
+/* หน้าสมุดที่ครูเปิดดู — เรียงลงมาทีละหน้า */
+.ntpages{display:grid;gap:14px;margin-top:10px}
+.ntpages figure{margin:0}
+.ntpages figcaption{font-size:12px;color:var(--muted);margin-bottom:4px}
+.ntpages img{width:100%;border:1px solid var(--line);border-radius:6px;background:#fff}
 
 /* ปุ่ม ! บนหัวการ์ด — เปิดคำอธิบายความหมายของสีและป้าย */
 .ibtn{width:23px;height:23px;min-height:23px;padding:0;border-radius:50%;flex:0 0 auto;
@@ -1304,7 +1309,7 @@ table td,table th,.num,.xpstat b,.tick,
    *** ห้ามลบบรรทัดเครื่องหมาย @@BUILTIN@@ ทั้งสองอัน ตัวสร้างไฟล์ใช้หาตำแหน่ง ***
    ========================================================================== */
 /* @@BUILTIN@@ */
-const BUILTIN = {"url":"","studentOnly":true,"lockCloud":false,"logo":"","header":null,"about":null,"build":"2026-09-11 07:33","ver":"v8.111"};
+const BUILTIN = {"url":"","studentOnly":true,"lockCloud":false,"logo":"","header":null,"about":null,"build":"2026-09-11 07:44","ver":"v8.112"};
 /* @@BUILTIN-END@@ */
 
 /* ถ่ายภาพซอร์สของหน้านี้ไว้ตั้งแต่สคริปต์เพิ่งเริ่มทำงาน
@@ -1518,7 +1523,7 @@ window.__LSKEY = LS_KEY;   // ให้ตัวดักหน้าขาว�
    ชีตเดียวเก็บได้หลายวิชา ฝั่งชีตใช้ค่านี้แยกใบงานและผลของแต่ละวิชาออกจากกัน */
 /* สคริปต์ในชีตที่แอปรุ่นนี้ต้องการ — ใช้เตือนตอนทดสอบการเชื่อมต่อ
    ขยับเลขนี้ทุกครั้งที่เพิ่มคำสั่งใหม่ในไฟล์ appsscript-Code.gs */
-const GS_VERSION = 16;
+const GS_VERSION = 17;
 const SUBJECT = 'chem';
 /* ────────────────────────────────────────────────────────────────────────────
    สารบัญเรื่อง — จุดเดียวที่ต้องแก้เมื่อจะ "เพิ่มบทใหม่"
@@ -12028,7 +12033,7 @@ function nbShelf() {
         '<div class="row" style="margin-top:8px;gap:6px">' +
           '<button class="sm primary" data-nbopen="' + b.id + '">เปิด</button>' +
           '<button class="sm" data-nbpdf="' + b.id + '">PDF ทั้งเล่ม</button>' +
-          (typeof nbSendBook === 'function'
+          (typeof nbSendBook === 'function' && nbCanSend()
             ? '<button class="sm" data-nbsend="' + b.id + '">ส่งให้ครู' +
               (b.sentAt ? ' ✓' : '') + '</button>' : '') +
           '<button class="sm" data-nbedit="' + b.id + '">ชื่อ · ปก</button>' +
@@ -12221,6 +12226,155 @@ async function nbPrintBook(bk, who) {
         (src ? '<img src="' + src + '" alt="หน้า ' + (i + 1) + '">' : '') + '</div>';
     }).join('');
   setTimeout(function () { window.print(); }, 150);
+}
+
+/* ============================================================================
+   ส่งสมุดจดให้ครู และให้ครูเปิดดูทุกหน้า (ชีตรุ่น 17)
+   ----------------------------------------------------------------------------
+   นักเรียนกดส่งทั้งเล่มจากชั้นหนังสือ ส่งซ้ำได้ ครูเห็นฉบับล่าสุดเสมอ
+   ครูดึงรายการที่แท็บสถิติชั้นเรียน กดเปิดดูได้ทุกหน้า และพิมพ์/PDF ทั้งเล่มได้
+   ส่งเฉพาะวิชาที่ต่อชีต (ฟิสิกส์ วิทยาศาสตร์กายภาพ) — วิชาที่ใช้ในเครื่องอย่างเดียวไม่มีที่ส่ง
+   ========================================================================== */
+var NT_MAX = 1900000;         /* เพดานของชีตคือ 2,000,000 ตัวอักษร เผื่อหัวข้อมูลไว้ */
+let NTLIST = null;            /* รายการที่ครูดึงมาล่าสุด */
+
+function nbBookData(bk) {
+  return JSON.stringify({
+    v: 1, title: bk.title || '', paper: bk.paper || 'bg-lined', color: bk.color || '',
+    pages: (bk.pages || []).map(function (p) {
+      return { w: p.w || 0, h: p.h || 0, strokes: p.strokes || [] };
+    })
+  });
+}
+function nbCanSend() {
+  return typeof cloudOn === 'function' && cloudOn() && typeof isStudent === 'function' && isStudent();
+}
+async function nbSendBook(bk) {
+  if (!nbCanSend()) {
+    toast('ส่งสมุดให้ครูได้เมื่อลงชื่อเข้าใช้ในฐานะนักเรียนของวิชาที่ต่อชีต', 'warn');
+    return;
+  }
+  // ครูที่กำลังดูแบบนักเรียน ต้องไม่เผลอส่งสมุดทดลองขึ้นชีตปนกับของจริง
+  if (typeof previewOn === 'function' && previewOn()) {
+    toast('กำลังดูแบบนักเรียนอยู่ — โหมดนี้ไม่ส่งสมุดขึ้นชีต', 'warn');
+    return;
+  }
+  if (BOARD && BOARD.pad) boardSavePage();
+  const n = (bk.pages || []).length, used = nbBookCount(bk);
+  if (!used) { toast('สมุดเล่มนี้ยังไม่ได้เขียนอะไรเลย', 'warn'); nbShelf(); return; }
+  const data = nbBookData(bk);
+  if (data.length > NT_MAX) {
+    toast('สมุดเล่มนี้ใหญ่เกินกว่าจะส่งได้ (' + Math.round(data.length / 1024) +
+          ' KB) — แยกเป็นเล่มเล็กลงแล้วส่งทีละเล่ม', 'bad');
+    nbShelf();
+    return;
+  }
+  openModal({
+    title: 'ส่งสมุด "' + (bk.title || '') + '" ให้ครู',
+    bodyHTML: '<div class="hint">ครูจะเห็นทุกหน้าเหมือนที่เห็นในเครื่องนี้ · ' + n + ' หน้า · ' +
+      Math.max(1, Math.round(data.length / 1024)) + ' KB</div>' +
+      '<div class="hint" style="margin-top:8px">' + (bk.sentAt
+        ? 'ส่งไปแล้วเมื่อ ' + thDateTime(bk.sentAt) + ' — ส่งอีกครั้งจะแทนฉบับเดิม ครูเห็นฉบับล่าสุด'
+        : 'ส่งซ้ำได้ทุกเมื่อ ครูเห็นฉบับล่าสุดเสมอ') + '</div>' +
+      '<div class="hint" style="margin-top:8px">สมุดยังอยู่ในเครื่องนี้ครบเหมือนเดิม ส่งแล้วจดต่อได้</div>',
+    buttons: [
+      { label: 'ยกเลิก', act: function (c) { c(); nbShelf(); } },
+      { label: 'ส่งให้ครู', cls: 'primary', act: async function (c, root) {
+          const btns = $$('footer button', root);
+          btns.forEach(function (x) { x.disabled = true; });
+          try {
+            await api('noteSend', { book: { id: bk.id, title: bk.title || '', pages: n, data: data } },
+                      { timeout: 120000 });
+            bk.sentAt = Date.now();
+            save(true);
+            c();
+            toast('ส่งสมุดให้ครูแล้ว', 'ok');
+            nbShelf();
+          } catch (e) {
+            const m = e.message || String(e);
+            toast(/ไม่รู้จักคำสั่ง/.test(m)
+              ? 'ชีตยังเป็นรุ่นเก่า — ครูต้อง Deploy ชีตรุ่น 17 ก่อน สมุดยังอยู่ในเครื่องครบ'
+              : m, 'bad');
+            btns.forEach(function (x) { x.disabled = false; });
+          }
+        } }
+    ]
+  });
+}
+
+/* ---------- ฝั่งครู ---------- */
+function nbTeacherCardHTML() {
+  if (!isAdmin() || !cloudOn()) return '';
+  let h = '<div class="card"><h3>สมุดจดที่นักเรียนส่ง' +
+    '<span class="sub">เปิดดูทุกหน้า และพิมพ์หรือบันทึก PDF ได้</span></h3>' +
+    '<div class="row" style="margin-bottom:10px">' +
+    '<input type="text" id="ntCls" placeholder="ทุกชั้น (หรือพิมพ์ ม.4/1)" style="width:190px">' +
+    '<button class="primary" id="btnNtList">ดึงรายการ</button></div>';
+  if (!NTLIST) {
+    h += '<div class="hint">นักเรียนกด <b>ส่งให้ครู</b> ที่ชั้นหนังสือในสมุดจดของตัวเอง ' +
+      'แล้วสมุดจะมาขึ้นที่นี่ — ส่งซ้ำได้ ครูเห็นฉบับล่าสุดเสมอ</div>';
+  } else if (!NTLIST.length) {
+    h += '<div class="hint">ยังไม่มีใครส่งสมุดมา</div>';
+  } else {
+    h += '<div class="tablewrap"><table><thead><tr><th class="num">เลขที่</th><th>ชื่อ</th>' +
+      '<th>ชั้น</th><th>ชื่อสมุด</th><th class="num">หน้า</th><th>ส่งล่าสุด</th><th></th>' +
+      '</tr></thead><tbody>' +
+      NTLIST.map(function (r) {
+        return '<tr><td class="num">' + esc(r.no || '') + '</td><td>' + esc(r.name || r.sid) + '</td>' +
+          '<td>' + esc(r.cls || '') + '</td><td>' + esc(r.title || '—') + '</td>' +
+          '<td class="num">' + (r.pages || 0) + '</td><td>' + (r.up ? thDateTime(r.up) : '—') + '</td>' +
+          '<td><button class="sm primary" data-ntopen="' + esc(r.id) + '">เปิดดู</button></td></tr>';
+      }).join('') + '</tbody></table></div>' +
+      '<div class="hint" style="margin-top:9px">รวม ' + NTLIST.length + ' เล่ม · เรียงเล่มที่ส่งล่าสุดขึ้นก่อน</div>';
+  }
+  return h + '</div>';
+}
+function bindNbTeacher() {
+  const b = $('#btnNtList');
+  if (b) b.addEventListener('click', async function () {
+    const cls = String(($('#ntCls') || {}).value || '').trim();
+    b.disabled = true; b.textContent = 'กำลังดึง…';
+    try {
+      NTLIST = await api('noteList', { cls: cls });
+      renderStats();
+    } catch (e) {
+      const m = e.message || String(e);
+      toast(/ไม่รู้จักคำสั่ง/.test(m)
+        ? 'ชีตยังเป็นรุ่นเก่า — ต้องนำ appsscript-Code.gs รุ่น 17 ไปวางใน Apps Script แล้ว Deploy รุ่นใหม่ก่อน'
+        : m, 'bad');
+      b.disabled = false; b.textContent = 'ดึงรายการ';
+    }
+  });
+  $$('[data-ntopen]').forEach(function (x) {
+    x.addEventListener('click', function () { nbViewSent(x.dataset.ntopen); });
+  });
+}
+async function nbViewSent(id) {
+  toast('กำลังเปิดสมุด…', 'ok');
+  let r;
+  try { r = await api('noteGet', { id: id }, { timeout: 120000 }); }
+  catch (e) { toast(e.message || String(e), 'bad'); return; }
+  let book;
+  try { book = JSON.parse(r.data); } catch (e) { toast('อ่านสมุดเล่มนี้ไม่ได้ — ข้อมูลที่ส่งมาไม่ครบ', 'bad'); return; }
+  const who = [r.name, r.cls ? 'ชั้น ' + r.cls : '', r.no ? 'เลขที่ ' + r.no : ''].filter(Boolean).join(' · ');
+  try { if (document.fonts && document.fonts.ready) await document.fonts.ready; } catch (e) {}
+  const pages = book.pages || [];
+  const imgs = pages.map(function (p) { return nbPageImage(p, book.paper); });
+  openModal({
+    wide: true,
+    title: (book.title || r.title || 'สมุดจด') + ' — ' + (r.name || r.sid),
+    bodyHTML: '<div class="hint">' + esc(who) + ' · ' + pages.length + ' หน้า · ส่งล่าสุด ' +
+      thDateTime(r.up) + '</div>' +
+      '<div class="ntpages">' + imgs.map(function (src, i) {
+        return '<figure><figcaption>หน้า ' + (i + 1) + '/' + imgs.length + '</figcaption>' +
+          (src ? '<img src="' + src + '" alt="หน้า ' + (i + 1) + '">' : '') + '</figure>';
+      }).join('') + '</div>',
+    buttons: [{ label: 'ปิด' },
+              { label: 'PDF ทั้งเล่ม', cls: 'primary', act: function (c) {
+                c();
+                nbPrintBook({ title: book.title || r.title, paper: book.paper, pages: pages }, who);
+              } }]
+  });
 }
 
 function hwBindTools(k, pad, wrapEl) {
@@ -14573,8 +14727,8 @@ function renderStats() {
     $('#pane-stats').innerHTML = '<div class="card"><h3>ยังไม่มีข้อมูลสถิติ</h3>' +
       '<div class="hint">ต้องมีผู้เรียนทำชุดโจทย์จนจบอย่างน้อยหนึ่งคนก่อน สถิติจึงจะแสดงที่นี่<br>' +
       'ในโหมดครู ให้สลับผู้เรียนที่แถบบนแล้วให้แต่ละคนทำชุดเดียวกัน ระบบจะเปรียบเทียบผลให้อัตโนมัติ</div></div>' +
-      focusReportCardHTML() + cloudPullCardHTML() + importCardHTML();
-    bindFocusReport(); bindCloudPullCard(); bindImportCard();
+      focusReportCardHTML() + nbTeacherCardHTML() + cloudPullCardHTML() + importCardHTML();
+    bindFocusReport(); bindNbTeacher(); bindCloudPullCard(); bindImportCard();
     return;
   }
   if (!DB.cur.statQuizId || !quizzes.some(q => q.id === DB.cur.statQuizId)) DB.cur.statQuizId = quizzes[quizzes.length - 1].id;
@@ -14804,8 +14958,8 @@ function renderStats() {
   h += cloudPullCardHTML() + importCardHTML();
 
   // รายงานเวลาที่อยู่กับบทเรียนต่อท้ายหน้าสถิติ ครูจะได้ดูคู่กับผลการทำในหน้าเดียว
-  $('#pane-stats').innerHTML = h + focusReportCardHTML();
-  bindFocusReport();
+  $('#pane-stats').innerHTML = h + focusReportCardHTML() + nbTeacherCardHTML();
+  bindFocusReport(); bindNbTeacher();
   $('#selQz').addEventListener('change', e => { DB.cur.statQuizId = e.target.value; save(); renderStats(); });
   const sr = $('#selStatRoom');
   if (sr) sr.addEventListener('change', e => { DB.cur.statRoom = e.target.value; save(); renderStats(); });
