@@ -200,7 +200,7 @@ function setupListeners() {
       const block = e.target.closest('.problem-block');
       const spacer = block.querySelector('.spacer-div');
       const curH = parseInt(spacer.style.height || 0);
-      spacer.style.height = (curH + 150) + 'px';
+      spacer.style.height = (curH + 160) + 'px';
       drawingEngine.resize();
     }
   });
@@ -229,11 +229,11 @@ function renderApp() {
       html += `<div class="solution-guide">${prob.guide}</div>`;
     } else if (currentLevel === 'intermediate') {
       html += `<div class="solution-guide">${prob.intermediateHtml || ''}</div>`;
-      html += `<div class="spacer-div" style="height:250px;"></div>`;
+      html += `<div class="spacer-div" style="height:256px;"></div>`;
       html += `<button class="sm expand-btn" style="position:relative; z-index:10; margin-top:16px; padding:4px 8px; border-radius:4px; border:1px solid #ccc; cursor:pointer; background:#fff;">+ เพิ่มพื้นที่ทด</button>`;
     } else {
       html += `<div class="solution-guide">${prob.advancedHtml || ''}</div>`;
-      html += `<div class="spacer-div" style="height:250px;"></div>`;
+      html += `<div class="spacer-div" style="height:256px;"></div>`;
       html += `<button class="sm expand-btn" style="position:relative; z-index:10; margin-top:16px; padding:4px 8px; border-radius:4px; border:1px solid #ccc; cursor:pointer; background:#fff;">+ เพิ่มพื้นที่ทด</button>`;
     }
     

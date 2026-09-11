@@ -89,6 +89,16 @@ class DrawingEngine {
   }
 
   initEvents() {
+    // Automatically resize canvas when content changes height (e.g. KaTeX rendering, expanding space)
+    if (!this.resizeObserver) {
+      this.resizeObserver = new ResizeObserver(() => {
+         // Debounce slightly to prevent flicker
+         clearTimeout(this.resizeTimer);
+         this.resizeTimer = setTimeout(() => this.resize(), 50);
+      });
+      this.resizeObserver.observe(this.canvas.parentElement);
+    }
+
     // Use Pointer Events for Apple Pencil pressure and smooth tracking
     const startDraw = (e) => {
       if (e.button === 2) return;
