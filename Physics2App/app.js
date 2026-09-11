@@ -34,6 +34,95 @@ function setupListeners() {
     });
   });
 
+  
+  // Toolbar Dragging Logic
+  const toolbar = document.getElementById('drawingToolbar');
+  const dragHandle = toolbar.querySelector('.drag-handle');
+  
+  let isDraggingToolbar = false;
+  let startX, startY, initialLeft, initialTop;
+
+  function onDragStart(e) {
+    if (e.target.closest('.tool-btn') || e.target.closest('.color-swatch')) return;
+    isDraggingToolbar = true;
+    toolbar.style.transition = 'none'; // Disable transition during drag
+    
+    let clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    let clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    
+    startX = clientX;
+    startY = clientY;
+    
+    const rect = toolbar.getBoundingClientRect();
+    initialLeft = rect.left;
+    initialTop = rect.top;
+    
+    // Clear transform to use raw left/top
+    toolbar.style.transform = 'none';
+    toolbar.style.left = initialLeft + 'px';
+    toolbar.style.top = initialTop + 'px';
+    toolbar.style.bottom = 'auto';
+    toolbar.style.right = 'auto';
+    
+    e.preventDefault();
+  }
+
+  function onDragMove(e) {
+    if (!isDraggingToolbar) return;
+    let clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    let clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    
+    let dx = clientX - startX;
+    let dy = clientY - startY;
+    
+    let newLeft = initialLeft + dx;
+    let newTop = initialTop + dy;
+    
+    toolbar.style.left = newLeft + 'px';
+    toolbar.style.top = newTop + 'px';
+  }
+
+  function onDragEnd(e) {
+    if (!isDraggingToolbar) return;
+    isDraggingToolbar = false;
+    toolbar.style.transition = 'flex-direction 0.2s ease, border-radius 0.2s ease, left 0.3s ease, top 0.3s ease, transform 0.3s ease';
+    
+    const rect = toolbar.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const screenW = window.innerWidth;
+    const screenH = window.innerHeight;
+    
+    // Snap Logic
+    if (centerX < screenW * 0.2) {
+      // Snap to Left
+      toolbar.classList.add('vertical');
+      toolbar.style.left = '24px';
+      toolbar.style.top = '50%';
+      toolbar.style.transform = 'translateY(-50%)';
+    } else if (centerX > screenW * 0.8) {
+      // Snap to Right
+      toolbar.classList.add('vertical');
+      toolbar.style.left = (screenW - rect.width - 24) + 'px';
+      toolbar.style.top = '50%';
+      toolbar.style.transform = 'translateY(-50%)';
+    } else {
+      // Snap to Bottom Center
+      toolbar.classList.remove('vertical');
+      toolbar.style.left = '50%';
+      toolbar.style.top = (screenH - rect.height - 24) + 'px';
+      toolbar.style.transform = 'translateX(-50%)';
+    }
+  }
+
+  dragHandle.addEventListener('mousedown', onDragStart);
+  window.addEventListener('mousemove', onDragMove);
+  window.addEventListener('mouseup', onDragEnd);
+  
+  dragHandle.addEventListener('touchstart', onDragStart, {passive: false});
+  window.addEventListener('touchmove', onDragMove, {passive: false});
+  window.addEventListener('touchend', onDragEnd);
+
+
   // Drawing Tools
   document.querySelectorAll('.tool-btn[data-tool]').forEach(btn => {
     btn.addEventListener('click', (e) => {

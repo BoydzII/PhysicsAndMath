@@ -50,9 +50,11 @@
     </div>
   </header>
 
-  <div class="drawing-toolbar">
+  <div class="drawing-toolbar" id="drawingToolbar">
+    <div class="drag-handle" title="ลากเพื่อย้าย"><i class="ph ph-dots-six-vertical"></i></div>
     <div class="tool-group">
       <button class="tool-btn active" data-tool="pen" title="ปากกา"><i class="ph ph-pen"></i></button>
+      <button class="tool-btn" data-tool="highlight" title="ปากกาเน้นข้อความ"><i class="ph ph-highlighter-circle"></i></button>
       <button class="tool-btn" data-tool="eraser" title="ยางลบ"><i class="ph ph-eraser"></i></button>
     </div>
     <div class="tool-group colors">
@@ -60,8 +62,11 @@
       <div class="color-swatch" data-color="#2563eb" style="background:#2563eb"></div>
       <div class="color-swatch" data-color="#dc2626" style="background:#dc2626"></div>
       <div class="color-swatch" data-color="#16a34a" style="background:#16a34a"></div>
+      <div class="color-swatch" data-color="#eab308" style="background:#eab308"></div>
     </div>
-    <button class="tool-btn danger" id="btnClearDraw" title="ล้างหน้า"><i class="ph ph-trash"></i></button>
+    <div class="tool-group" style="border-left: 1px solid var(--border); padding-left: 16px;">
+      <button class="tool-btn danger" id="btnClearDraw" title="ล้างหน้า"><i class="ph ph-trash"></i></button>
+    </div>
   </div>
 
   <main class="workspace">
