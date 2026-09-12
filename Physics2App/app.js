@@ -3,6 +3,31 @@ window.currentTopic = currentTopic;
 if (typeof physicsData !== 'undefined') window.physicsData = physicsData;
 let currentLevel = 'beginner';
 let drawingEngine = null;
+let currentPaperZoom = 1.0;
+
+function setPaperZoom(zoomLevel) {
+  currentPaperZoom = Math.min(Math.max(Number(zoomLevel.toFixed(2)), 0.7), 2.5);
+  const wrapper = document.querySelector('.notebook-wrapper');
+  const panel = document.querySelector('.notebook-panel');
+  if (!wrapper || !panel) return;
+
+  const baseW = wrapper.offsetWidth;
+  const scaledW = baseW * currentPaperZoom;
+  const shiftX = Math.max(0, (scaledW - baseW) / 2);
+  const shiftY = Math.max(0, (wrapper.offsetHeight * currentPaperZoom - wrapper.offsetHeight) / 2);
+
+  wrapper.style.transformOrigin = 'top center';
+  wrapper.style.transform = `scale(${currentPaperZoom})`;
+  wrapper.style.marginLeft = shiftX > 0 ? `${shiftX}px` : 'auto';
+  wrapper.style.marginRight = shiftX > 0 ? `${shiftX}px` : 'auto';
+  wrapper.style.marginBottom = shiftY > 0 ? `${shiftY * 2}px` : '0px';
+
+  const zoomText = document.getElementById('zoomLevelText');
+  if (zoomText) {
+    zoomText.textContent = `${Math.round(currentPaperZoom * 100)}%`;
+  }
+}
+window.setPaperZoom = setPaperZoom;
 
 document.addEventListener('DOMContentLoaded', () => {
   // Init Drawing
@@ -19,6 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Initial Render
   renderApp();
+  setPaperZoom(1.0);
 });
 
 function setupListeners() {
@@ -170,6 +196,64 @@ function setupListeners() {
   document.getElementById('btnRedo')?.addEventListener('click', () => {
     if (drawingEngine) drawingEngine.redo();
   });
+
+  // Sheet-Only Zoom Controls
+  document.getElementById('btnZoomIn')?.addEventListener('click', () => {
+    setPaperZoom(currentPaperZoom + 0.15);
+  });
+  document.getElementById('btnZoomOut')?.addEventListener('click', () => {
+    setPaperZoom(currentPaperZoom - 0.15);
+  });
+  document.getElementById('zoomLevelText')?.addEventListener('click', () => {
+    setPaperZoom(1.0);
+    showToast('🔍 รีเซ็ตขนาดหน้ากระดาษเป็น 100%', 'info');
+  });
+
+  // Trackpad pinch or Ctrl + Wheel zoom on Notebook Panel
+  const notebookPanel = document.querySelector('.notebook-panel');
+  if (notebookPanel) {
+    notebookPanel.addEventListener('wheel', (e) => {
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        const delta = e.deltaY * -0.003;
+        setPaperZoom(currentPaperZoom + delta);
+      }
+    }, { passive: false });
+
+    // Multi-Touch Pinch-to-Zoom (for iPad / Touch Screens)
+    let initialPinchDist = null;
+    let initialZoomOnPinch = 1.0;
+
+    notebookPanel.addEventListener('touchstart', (e) => {
+      if (e.touches && e.touches.length === 2) {
+        initialPinchDist = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+        initialZoomOnPinch = currentPaperZoom;
+      }
+    }, { passive: true });
+
+    notebookPanel.addEventListener('touchmove', (e) => {
+      if (e.touches && e.touches.length === 2 && initialPinchDist) {
+        e.preventDefault();
+        const currentDist = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+        const factor = currentDist / initialPinchDist;
+        setPaperZoom(initialZoomOnPinch * factor);
+      }
+    }, { passive: false });
+
+    const endPinch = (e) => {
+      if (!e.touches || e.touches.length < 2) {
+        initialPinchDist = null;
+      }
+    };
+    notebookPanel.addEventListener('touchend', endPinch);
+    notebookPanel.addEventListener('touchcancel', endPinch);
+  }
 
   // Colors
   document.querySelectorAll('.color-swatch').forEach(swatch => {
@@ -356,9 +440,12 @@ function renderApp() {
 
   // Restore inputs after re-render
   try { restoreInputs(); } catch(e) {}
-  // Ensure canvas resizes to fit new content height
+  // Ensure canvas resizes to fit new content height and apply current zoom
   setTimeout(() => {
-    try { if (drawingEngine) drawingEngine.resize(); } catch(e) {}
+    try {
+      if (drawingEngine) drawingEngine.resize();
+      setPaperZoom(currentPaperZoom);
+    } catch(e) {}
   }, 100);
 }
 

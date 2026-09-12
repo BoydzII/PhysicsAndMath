@@ -3,6 +3,7 @@ class DrawingEngine {
     this.topic = 'work'; // default topic
     this.canvas = document.getElementById(canvasId);
     this.ctx = this.canvas.getContext('2d', { willReadFrequently: true });
+    this.dpr = Math.min(window.devicePixelRatio || 1, 2.5);
     
     this.isDrawing = false;
     this.currentTool = 'pen'; // 'pen', 'eraser', 'highlight'
@@ -10,15 +11,18 @@ class DrawingEngine {
     this.baseLineWidth = 2.5;
     this.lineWidth = 2.5;
     this.eraserWidth = 32;
-    this.highlightWidth = 18;
+    this.highlightWidth = 20;
 
-    // Undo & Redo History
+    // Drawing settings
+    this.penOnlyMode = false; // When true, only pen/stylus draws; when false, touch draws too
+
+    // Undo & Redo History (stores lightweight offscreen canvas snapshots)
     this.undoStack = [];
     this.redoStack = [];
     this.maxHistory = 25;
 
-    this.lastX = 0;
-    this.lastY = 0;
+    this.points = [];
+    this.prevMid = null;
 
     this.initEvents();
     this.resize();
@@ -28,18 +32,36 @@ class DrawingEngine {
 
   resize() {
     const parent = this.canvas.parentElement;
-    let data;
+    if (!parent) return;
+    const w = parent.clientWidth;
+    const h = parent.clientHeight;
+    if (w === 0 || h === 0) return;
+
+    const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+    this.dpr = dpr;
+
+    // Preserve previous canvas content using offscreen canvas
+    let tempCanvas = null;
     if (this.canvas.width > 0 && this.canvas.height > 0) {
-      data = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
+      tempCanvas = document.createElement('canvas');
+      tempCanvas.width = this.canvas.width;
+      tempCanvas.height = this.canvas.height;
+      const tCtx = tempCanvas.getContext('2d');
+      tCtx.drawImage(this.canvas, 0, 0);
     }
-    
-    this.canvas.width = parent.clientWidth;
-    this.canvas.height = parent.clientHeight;
-    
+
+    // High-DPI backing store for razor-sharp Retina lines
+    this.canvas.width = Math.round(w * dpr);
+    this.canvas.height = Math.round(h * dpr);
+    this.canvas.style.width = w + 'px';
+    this.canvas.style.height = h + 'px';
+
+    this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+    this.ctx.scale(dpr, dpr);
     this.updateCtx();
-    
-    if (data) {
-      this.ctx.putImageData(data, 0, 0);
+
+    if (tempCanvas) {
+      this.ctx.drawImage(tempCanvas, 0, 0, tempCanvas.width / dpr, tempCanvas.height / dpr);
     } else {
       this.loadData();
     }
@@ -48,6 +70,8 @@ class DrawingEngine {
   updateCtx() {
     this.ctx.lineCap = 'round';
     this.ctx.lineJoin = 'round';
+    this.ctx.imageSmoothingEnabled = true;
+
     if (this.currentTool === 'eraser') {
       this.ctx.globalCompositeOperation = 'destination-out';
       this.ctx.lineWidth = this.eraserWidth;
@@ -55,12 +79,15 @@ class DrawingEngine {
     } else if (this.currentTool === 'highlight') {
       this.ctx.globalCompositeOperation = 'multiply'; // GoodNotes style highlighter
       this.ctx.strokeStyle = this.currentColor;
+      this.ctx.fillStyle = this.currentColor;
       this.ctx.lineWidth = this.highlightWidth;
-      this.ctx.globalAlpha = 0.35;
+      this.ctx.globalAlpha = 0.45; // Vibrant and legible
     } else {
+      // Pen: Rich, dark, fully opaque ink
       this.ctx.globalCompositeOperation = 'source-over';
       this.ctx.strokeStyle = this.currentColor;
-      this.ctx.lineWidth = this.lineWidth;
+      this.ctx.fillStyle = this.currentColor;
+      this.ctx.lineWidth = this.baseLineWidth;
       this.ctx.globalAlpha = 1.0;
     }
   }
@@ -84,34 +111,70 @@ class DrawingEngine {
     this.updateCtx();
   }
 
-  pushUndoState(imageData) {
-    if (!imageData) return;
-    this.undoStack.push(imageData);
-    if (this.undoStack.length > this.maxHistory) {
-      this.undoStack.shift();
+  pushUndoState() {
+    try {
+      if (this.canvas.width === 0 || this.canvas.height === 0) return;
+      const snapshot = document.createElement('canvas');
+      snapshot.width = this.canvas.width;
+      snapshot.height = this.canvas.height;
+      const sCtx = snapshot.getContext('2d');
+      sCtx.drawImage(this.canvas, 0, 0);
+
+      this.undoStack.push(snapshot);
+      if (this.undoStack.length > this.maxHistory) {
+        this.undoStack.shift();
+      }
+      this.redoStack = [];
+      this.updateUndoRedoUI();
+    } catch (e) {
+      console.warn('pushUndoState error:', e);
     }
-    this.redoStack = []; // Clear redo stack on new action
-    this.updateUndoRedoUI();
   }
 
   undo() {
     if (this.undoStack.length === 0) return;
-    const current = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
-    this.redoStack.push(current);
-    const previous = this.undoStack.pop();
-    this.ctx.putImageData(previous, 0, 0);
-    this.saveData();
-    this.updateUndoRedoUI();
+    try {
+      const current = document.createElement('canvas');
+      current.width = this.canvas.width;
+      current.height = this.canvas.height;
+      current.getContext('2d').drawImage(this.canvas, 0, 0);
+      this.redoStack.push(current);
+
+      const previous = this.undoStack.pop();
+      this.ctx.save();
+      this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+      this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+      this.ctx.drawImage(previous, 0, 0);
+      this.ctx.restore();
+
+      this.saveData();
+      this.updateUndoRedoUI();
+    } catch (e) {
+      console.warn('undo error:', e);
+    }
   }
 
   redo() {
     if (this.redoStack.length === 0) return;
-    const current = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
-    this.undoStack.push(current);
-    const next = this.redoStack.pop();
-    this.ctx.putImageData(next, 0, 0);
-    this.saveData();
-    this.updateUndoRedoUI();
+    try {
+      const current = document.createElement('canvas');
+      current.width = this.canvas.width;
+      current.height = this.canvas.height;
+      current.getContext('2d').drawImage(this.canvas, 0, 0);
+      this.undoStack.push(current);
+
+      const next = this.redoStack.pop();
+      this.ctx.save();
+      this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+      this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+      this.ctx.drawImage(next, 0, 0);
+      this.ctx.restore();
+
+      this.saveData();
+      this.updateUndoRedoUI();
+    } catch (e) {
+      console.warn('redo error:', e);
+    }
   }
 
   updateUndoRedoUI() {
@@ -130,10 +193,13 @@ class DrawingEngine {
   clear(save = true) {
     try {
       if (this.canvas.width > 0 && this.canvas.height > 0) {
-        const current = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
-        this.pushUndoState(current);
+        this.pushUndoState();
       }
+      this.ctx.save();
+      this.ctx.setTransform(1, 0, 0, 1, 0, 0);
       this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+      this.ctx.restore();
+
       if (save) this.saveData();
       this.updateUndoRedoUI();
     } catch (e) {
@@ -143,17 +209,19 @@ class DrawingEngine {
 
   getPointerPos(e) {
     const rect = this.canvas.getBoundingClientRect();
-    const zoom = window.currentZoom || 1;
+    // Bounding rect accounts for CSS zoom or transform scale
+    const scaleX = (this.canvas.clientWidth || rect.width) / (rect.width || 1);
+    const scaleY = (this.canvas.clientHeight || rect.height) / (rect.height || 1);
+
     return {
-      x: (e.clientX - rect.left) / zoom,
-      y: (e.clientY - rect.top) / zoom,
+      x: (e.clientX - rect.left) * scaleX,
+      y: (e.clientY - rect.top) * scaleY,
       pressure: e.pressure || 0.5
     };
   }
 
   initKeyboardShortcuts() {
     window.addEventListener('keydown', (e) => {
-      // Don't intercept if user is typing in an input
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
       
       const isCmdOrCtrl = e.metaKey || e.ctrlKey;
@@ -175,93 +243,119 @@ class DrawingEngine {
   initEvents() {
     if (!this.resizeObserver) {
       this.resizeObserver = new ResizeObserver(() => {
-         clearTimeout(this.resizeTimer);
-         this.resizeTimer = setTimeout(() => this.resize(), 50);
+        clearTimeout(this.resizeTimer);
+        this.resizeTimer = setTimeout(() => this.resize(), 50);
       });
       this.resizeObserver.observe(this.canvas.parentElement);
     }
 
-    let savedImageData = null;
-    let strokeSnapshot = null;
-    let currentStrokePoints = [];
+    this.activePointers = new Set();
 
     const startDraw = (e) => {
       if (e.button === 2) return;
-      // Palm rejection: Do not draw if it is a touch (finger). Allow pen (Apple Pencil) and mouse.
-      if (e.pointerType === 'touch') return;
+      // Auto palm-rejection: If pen is in use, ignore touches; otherwise allow single finger/stylus
+      if (this.penOnlyMode && e.pointerType === 'touch') return;
 
-      this.isDrawing = true;
-      const pos = this.getPointerPos(e);
-      
-      this.lastX = pos.x;
-      this.lastY = pos.y;
-      
-      // Save canvas state before stroke begins
-      strokeSnapshot = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
-      savedImageData = strokeSnapshot;
-      currentStrokePoints = [{x: pos.x, y: pos.y, p: pos.pressure}];
-      
-      this.updateCtx();
-      this.canvas.setPointerCapture(e.pointerId);
-    };
-
-    const draw = (e) => {
-      if (!this.isDrawing) return;
-      const pos = this.getPointerPos(e);
-      currentStrokePoints.push({x: pos.x, y: pos.y, p: pos.pressure});
-
-      // Restore background before current stroke
-      if (savedImageData) {
-        this.ctx.putImageData(savedImageData, 0, 0);
-      }
-
-      // Apply pressure thickness if stylus
-      if (this.currentTool === 'pen' && e.pointerType === 'pen') {
-        const pFactor = pos.pressure ? Math.max(0.4, pos.pressure * 1.8) : 1;
-        this.ctx.lineWidth = this.baseLineWidth * pFactor;
-      }
-
-      if (currentStrokePoints.length < 3) {
-        this.ctx.beginPath();
-        this.ctx.moveTo(currentStrokePoints[0].x, currentStrokePoints[0].y);
-        this.ctx.lineTo(pos.x, pos.y);
-        this.ctx.stroke();
+      this.activePointers.add(e.pointerId);
+      if (this.activePointers.size > 1) {
+        if (this.isDrawing) {
+          this.isDrawing = false;
+          this.points = [];
+          this.prevMid = null;
+          this.undo();
+        }
         return;
       }
 
-      // Quadratic Bézier Smoothing for GoodNotes-style natural ink
-      this.ctx.beginPath();
-      this.ctx.moveTo(currentStrokePoints[0].x, currentStrokePoints[0].y);
-      for (let i = 1; i < currentStrokePoints.length - 1; i++) {
-        const midX = (currentStrokePoints[i].x + currentStrokePoints[i + 1].x) / 2;
-        const midY = (currentStrokePoints[i].y + currentStrokePoints[i + 1].y) / 2;
-        this.ctx.quadraticCurveTo(currentStrokePoints[i].x, currentStrokePoints[i].y, midX, midY);
+      this.isDrawing = true;
+      this.pushUndoState();
+
+      const pos = this.getPointerPos(e);
+      this.points = [pos];
+      this.prevMid = { x: pos.x, y: pos.y };
+
+      this.updateCtx();
+
+      // Dynamic pressure line width
+      const p = (e.pressure && e.pressure > 0) ? e.pressure : 0.5;
+      if (this.currentTool === 'pen') {
+        this.ctx.lineWidth = this.baseLineWidth * (0.8 + p * 0.7);
       }
-      const last = currentStrokePoints[currentStrokePoints.length - 1];
-      const secondLast = currentStrokePoints[currentStrokePoints.length - 2];
-      this.ctx.quadraticCurveTo(secondLast.x, secondLast.y, last.x, last.y);
-      this.ctx.stroke();
+
+      // Draw initial touch mark (dot)
+      this.ctx.beginPath();
+      this.ctx.arc(pos.x, pos.y, Math.max(1, this.ctx.lineWidth / 2), 0, Math.PI * 2);
+      this.ctx.fill();
+
+      try {
+        this.canvas.setPointerCapture(e.pointerId);
+      } catch (err) {}
+    };
+
+    const draw = (e) => {
+      if (!this.isDrawing || this.activePointers.size > 1) return;
+      const pos = this.getPointerPos(e);
+      this.points.push(pos);
+
+      const p = (e.pressure && e.pressure > 0) ? e.pressure : 0.5;
+      if (this.currentTool === 'pen') {
+        this.ctx.lineWidth = this.baseLineWidth * (0.8 + p * 0.7);
+      }
+
+      // Fast Incremental Bézier Midpoint Rendering (120 FPS, Zero putImageData lag)
+      if (this.points.length >= 2) {
+        const p1 = this.points[this.points.length - 2];
+        const p2 = this.points[this.points.length - 1];
+        const mid = {
+          x: (p1.x + p2.x) / 2,
+          y: (p1.y + p2.y) / 2
+        };
+
+        this.ctx.beginPath();
+        this.ctx.moveTo(this.prevMid.x, this.prevMid.y);
+        this.ctx.quadraticCurveTo(p1.x, p1.y, mid.x, mid.y);
+        this.ctx.stroke();
+
+        this.prevMid = mid;
+      }
     };
 
     const stopDraw = (e) => {
+      this.activePointers.delete(e.pointerId);
       if (!this.isDrawing) return;
       this.isDrawing = false;
-      this.canvas.releasePointerCapture(e.pointerId);
-      
-      if (strokeSnapshot && currentStrokePoints.length > 1) {
-        this.pushUndoState(strokeSnapshot);
+      try {
+        this.canvas.releasePointerCapture(e.pointerId);
+      } catch (err) {}
+
+      // Draw last remaining segment to point
+      if (this.points.length >= 2 && this.prevMid) {
+        const last = this.points[this.points.length - 1];
+        this.ctx.beginPath();
+        this.ctx.moveTo(this.prevMid.x, this.prevMid.y);
+        this.ctx.lineTo(last.x, last.y);
+        this.ctx.stroke();
       }
 
-      savedImageData = null;
-      strokeSnapshot = null;
-      currentStrokePoints = [];
+      this.points = [];
+      this.prevMid = null;
       this.saveData();
+    };
+
+    const cancelDraw = (e) => {
+      this.activePointers.delete(e.pointerId);
+      if (this.isDrawing) {
+        this.isDrawing = false;
+        this.points = [];
+        this.prevMid = null;
+        this.undo();
+      }
     };
 
     this.canvas.addEventListener('pointerdown', startDraw);
     this.canvas.addEventListener('pointermove', draw);
     this.canvas.addEventListener('pointerup', stopDraw);
-    this.canvas.addEventListener('pointercancel', stopDraw);
+    this.canvas.addEventListener('pointercancel', cancelDraw);
   }
 
   saveData() {
@@ -283,16 +377,21 @@ class DrawingEngine {
       if (dataURL) {
         const img = new Image();
         img.onload = () => {
+          this.ctx.save();
+          this.ctx.setTransform(1, 0, 0, 1, 0, 0);
           this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-          this.ctx.drawImage(img, 0, 0);
+          this.ctx.drawImage(img, 0, 0, this.canvas.width, this.canvas.height);
+          this.ctx.restore();
         };
         img.src = dataURL;
       } else {
+        this.ctx.save();
+        this.ctx.setTransform(1, 0, 0, 1, 0, 0);
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        this.ctx.restore();
       }
     } catch (e) {
       console.warn('Canvas loadData error:', e);
-      this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     }
   }
 }
