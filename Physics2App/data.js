@@ -92,9 +92,17 @@ const physicsData = {
           text: "วัตถุมวล 4 kg ไถลลงมาตามพื้นเอียงจากจุดที่มีความสูง 3 m จงหางานของแรงโน้มถ่วง ($g = 10$ m/s²)",
           hints: "งานของแรงโน้มถ่วงคิดจาก $mgh$ ได้โดยตรง",
           guide: `
-            <div class="step">1. $F = mg = 4 \\times 10 = 40$ N</div>
-            <div class="step">2. การกระจัดแนวดิ่ง $h = 3$ m</div>
-            <div class="step">3. $W = mgh = 40 \\times 3 =$ <input type="text" class="answer-input" placeholder="120"> J</div>
+            <div class="calc-steps">
+              <div>1. $F$</div><div>$=$</div><div>$mg$</div>
+              <div></div><div>$=$</div><div>$4 \\times 10$</div>
+              <div></div><div>$=$</div><div>$40\\text{ N}$</div>
+            </div>
+            <div class="step">2. การกระจัดแนวดิ่ง $h = 3\\text{ m}$</div>
+            <div class="calc-steps">
+              <div>3. $W$</div><div>$=$</div><div>$mgh$</div>
+              <div></div><div>$=$</div><div>$40 \\times 3$</div>
+              <div></div><div>$=$</div><div><input type="text" class="answer-input" placeholder="120">&nbsp;J</div>
+            </div>
           `,
           intermediateHtml: `<div class="step" style="color:var(--text-light);font-size:0.95rem;"><b>โจทย์กำหนด:</b> $m = 4$ kg, $h = 3$ m</div><div style="margin-top:20px;font-weight:bold;">ตอบ: $W =$ <input type="text" class="answer-input" style="width:120px"> J</div>`,
           advancedHtml: `<div style="margin-top:20px;font-weight:bold;">ตอบ: $W =$ <input type="text" class="answer-input" style="width:120px"> J</div>`
@@ -115,8 +123,16 @@ const physicsData = {
           text: "เครื่องยนต์ของรถเครนยกของมวล 500 kg ขึ้นในแนวดิ่งด้วยความเร็วคงที่เป็นระยะทาง 10 m งานที่เครื่องยนต์ทำเป็นเท่าใด ($g = 10$ m/s²)",
           hints: "ดึงขึ้นด้วยความเร็วคงที่ แปลว่า $F = mg$",
           guide: `
-            <div class="step">1. $F = mg = 500 \\times 10 = 5000$ N</div>
-            <div class="step">2. $W = Fs = 5000 \\times 10 =$ <input type="text" class="answer-input" placeholder="50000"> J</div>
+            <div class="calc-steps">
+              <div>1. $F$</div><div>$=$</div><div>$mg$</div>
+              <div></div><div>$=$</div><div>$500 \\times 10$</div>
+              <div></div><div>$=$</div><div>$5{,}000\\text{ N}$</div>
+            </div>
+            <div class="calc-steps">
+              <div>2. $W$</div><div>$=$</div><div>$Fs$</div>
+              <div></div><div>$=$</div><div>$5{,}000 \\times 10$</div>
+              <div></div><div>$=$</div><div><input type="text" class="answer-input" placeholder="50000">&nbsp;J</div>
+            </div>
           `,
           intermediateHtml: `<div class="step" style="color:var(--text-light);font-size:0.95rem;"><b>โจทย์กำหนด:</b> $m = 500$ kg, $s = 10$ m, $F = mg$</div><div style="margin-top:20px;font-weight:bold;">ตอบ: $W =$ <input type="text" class="answer-input" style="width:120px"> J</div>`,
           advancedHtml: `<div style="margin-top:20px;font-weight:bold;">ตอบ: $W =$ <input type="text" class="answer-input" style="width:120px"> J</div>`
@@ -175,8 +191,14 @@ const physicsData = {
           text: "ชายคนหนึ่งออกแรง 150 N ผลักรถให้เคลื่อนที่ไปได้ระยะทาง 20 m ในเวลา 5 วินาที ชายคนนี้ใช้กำลังเท่าใด",
           hints: "หางาน $W$ ก่อน จากนั้นนำมาหารด้วยเวลา $t$",
           guide: `
-            <div class="step">1. $W = Fs = 150 \\times 20 = 3000$ J</div>
-            <div class="step">2. $P = \\frac{3000}{5} =$ <input type="text" class="answer-input" placeholder="600"> W</div>
+            <div class="calc-steps">
+              <div>1. $W$</div><div>$=$</div><div>$Fs$</div>
+              <div></div><div>$=$</div><div>$150 \\times 20$</div>
+              <div></div><div>$=$</div><div>$3{,}000\\text{ J}$</div>
+              <div>2. $P$</div><div>$=$</div><div>$\\frac{W}{t}$</div>
+              <div></div><div>$=$</div><div>$\\frac{3{,}000}{5}$</div>
+              <div></div><div>$=$</div><div><input type="text" class="answer-input" placeholder="600">&nbsp;W</div>
+            </div>
           `,
           intermediateHtml: `<div class="step" style="color:var(--text-light);font-size:0.95rem;"><b>โจทย์กำหนด:</b> $F = 150$ N, $s = 20$ m, $t = 5$ s</div><div style="margin-top:20px;font-weight:bold;">ตอบ: $P =$ <input type="text" class="answer-input" style="width:120px"> W</div>`,
           advancedHtml: `<div style="margin-top:20px;font-weight:bold;">ตอบ: $P =$ <input type="text" class="answer-input" style="width:120px"> W</div>`
@@ -186,9 +208,15 @@ const physicsData = {
           text: "มอเตอร์เครื่องหนึ่งดึงลิฟต์มวล 1,000 kg ขึ้นไปสูง 15 m ในเวลา 10 วินาที ด้วยความเร็วคงที่ มอเตอร์นี้มีกำลังเท่าใด ($g = 10$ m/s²)",
           hints: "ลิฟต์ขึ้นความเร็วคงที่ $F = mg$ จากนั้นใช้ $P = Fs/t$",
           guide: `
-            <div class="step">1. $F = mg = 1000 \\times 10 = 10000$ N</div>
-            <div class="step">2. $W = 10000 \\times 15 = 150000$ J</div>
-            <div class="step">3. $P = \\frac{150000}{10} =$ <input type="text" class="answer-input" placeholder="15000"> W</div>
+            <div class="calc-steps">
+              <div>1. $F$</div><div>$=$</div><div>$mg$</div>
+              <div></div><div>$=$</div><div>$1{,}000 \\times 10$</div>
+              <div></div><div>$=$</div><div>$10{,}000\\text{ N}$</div>
+              <div>2. $W$</div><div>$=$</div><div>$10{,}000 \\times 15$</div>
+              <div></div><div>$=$</div><div>$150{,}000\\text{ J}$</div>
+              <div>3. $P$</div><div>$=$</div><div>$\\frac{150{,}000}{10}$</div>
+              <div></div><div>$=$</div><div><input type="text" class="answer-input" placeholder="15000">&nbsp;W</div>
+            </div>
           `,
           intermediateHtml: `<div class="step" style="color:var(--text-light);font-size:0.95rem;"><b>โจทย์กำหนด:</b> $m = 1000$ kg, $s = 15$ m, $t = 10$ s</div><div style="margin-top:20px;font-weight:bold;">ตอบ: $P =$ <input type="text" class="answer-input" style="width:120px"> W</div>`,
           advancedHtml: `<div style="margin-top:20px;font-weight:bold;">ตอบ: $P =$ <input type="text" class="answer-input" style="width:120px"> W</div>`
@@ -334,8 +362,12 @@ const physicsData = {
           hints: "ย้ายข้างสมการ $v = \\sqrt{\\frac{2KE}{m}}$",
           guide: `
             <div class="step">1. $50 = \\frac{1}{2} \\times 4 \\times v^2$</div>
-            <div class="step">2. $v^2 = \\frac{50 \\times 2}{4} = 25$</div>
-            <div class="step">3. $v = \\sqrt{25} =$ <input type="text" class="answer-input" placeholder="5"> m/s</div>
+            <div class="calc-steps">
+              <div>2. $v^2$</div><div>$=$</div><div>$\\frac{50 \\times 2}{4}$</div>
+              <div></div><div>$=$</div><div>$25$</div>
+              <div>3. $v$</div><div>$=$</div><div>$\\sqrt{25}$</div>
+              <div></div><div>$=$</div><div><input type="text" class="answer-input" placeholder="5">&nbsp;m/s</div>
+            </div>
           `,
           intermediateHtml: `<div class="step" style="color:var(--text-light);font-size:0.95rem;"><b>โจทย์กำหนด:</b> $KE = 50$ J, $m = 4$ kg</div><div style="margin-top:20px;font-weight:bold;">ตอบ: $v =$ <input type="text" class="answer-input" style="width:120px"> m/s</div>`,
           advancedHtml: `<div style="margin-top:20px;font-weight:bold;">ตอบ: $v =$ <input type="text" class="answer-input" style="width:120px"> m/s</div>`
@@ -568,8 +600,12 @@ const physicsData = {
           hints: "พลังงานศักย์ตอนเริ่ม = พลังงานจลน์ตอนกระทบพื้น",
           guide: `
             <div class="step">1. $mgh = \\frac{1}{2}mv^2$ (มวลตัดกัน)</div>
-            <div class="step">2. $v = \\sqrt{2gh} = \\sqrt{2 \\times 10 \\times 5}$</div>
-            <div class="step">3. $v = \\sqrt{100} =$ <input type="text" class="answer-input" placeholder="10"> m/s</div>
+            <div class="calc-steps">
+              <div>2. $v$</div><div>$=$</div><div>$\\sqrt{2gh}$</div>
+              <div></div><div>$=$</div><div>$\\sqrt{2 \\times 10 \\times 5}$</div>
+              <div></div><div>$=$</div><div>$\\sqrt{100}$</div>
+              <div></div><div>$=$</div><div><input type="text" class="answer-input" placeholder="10">&nbsp;m/s</div>
+            </div>
           `,
           intermediateHtml: `<div class="step" style="color:var(--text-light);font-size:0.95rem;"><b>โจทย์กำหนด:</b> $h = 5$ m, $v_1 = 0$</div><div style="margin-top:20px;font-weight:bold;">ตอบ: $v_2 =$ <input type="text" class="answer-input" style="width:120px"> m/s</div>`,
           advancedHtml: `<div style="margin-top:20px;font-weight:bold;">ตอบ: $v_2 =$ <input type="text" class="answer-input" style="width:120px"> m/s</div>`
@@ -580,8 +616,12 @@ const physicsData = {
           hints: "พลังงานจลน์ตอนเริ่ม = พลังงานศักย์ที่จุดสูงสุด",
           guide: `
             <div class="step">1. $\\frac{1}{2}mv^2 = mgh$</div>
-            <div class="step">2. $h = \\frac{v^2}{2g} = \\frac{20^2}{2 \\times 10}$</div>
-            <div class="step">3. $h = \\frac{400}{20} =$ <input type="text" class="answer-input" placeholder="20"> m</div>
+            <div class="calc-steps">
+              <div>2. $h$</div><div>$=$</div><div>$\\frac{v^2}{2g}$</div>
+              <div></div><div>$=$</div><div>$\\frac{20^2}{2 \\times 10}$</div>
+              <div></div><div>$=$</div><div>$\\frac{400}{20}$</div>
+              <div></div><div>$=$</div><div><input type="text" class="answer-input" placeholder="20">&nbsp;m</div>
+            </div>
           `,
           intermediateHtml: `<div class="step" style="color:var(--text-light);font-size:0.95rem;"><b>โจทย์กำหนด:</b> $v_1 = 20$ m/s, ที่จุดสูงสุด $v_2 = 0$</div><div style="margin-top:20px;font-weight:bold;">ตอบ: $h_{max} =$ <input type="text" class="answer-input" style="width:120px"> m</div>`,
           advancedHtml: `<div style="margin-top:20px;font-weight:bold;">ตอบ: $h_{max} =$ <input type="text" class="answer-input" style="width:120px"> m</div>`
@@ -591,9 +631,12 @@ const physicsData = {
           text: "วัตถุมวล 2 kg ไถลลงมาจากเนินสูง 10 m โดยไม่มีแรงเสียดทาน ความเร็วที่เชิงเนินเป็นเท่าใด ($g = 10$ m/s²)",
           hints: "ความเร็วเชิงเนินขึ้นกับความสูงเริ่มต้นเท่านั้น",
           guide: `
-            <div class="step">1. $v = \\sqrt{2gh}$</div>
-            <div class="step">2. $v = \\sqrt{2 \\times 10 \\times 10} = \\sqrt{200}$</div>
-            <div class="step">3. $v \\approx$ <input type="text" class="answer-input" placeholder="14.14"> m/s</div>
+            <div class="calc-steps">
+              <div>1. $v$</div><div>$=$</div><div>$\\sqrt{2gh}$</div>
+              <div></div><div>$=$</div><div>$\\sqrt{2 \\times 10 \\times 10}$</div>
+              <div></div><div>$=$</div><div>$\\sqrt{200}$</div>
+              <div></div><div>$\\approx$</div><div><input type="text" class="answer-input" placeholder="14.14">&nbsp;m/s</div>
+            </div>
           `,
           intermediateHtml: `<div class="step" style="color:var(--text-light);font-size:0.95rem;"><b>โจทย์กำหนด:</b> $h = 10$ m, ไถลจากหยุดนิ่ง</div><div style="margin-top:20px;font-weight:bold;">ตอบ: $v =$ <input type="text" class="answer-input" style="width:120px"> m/s</div>`,
           advancedHtml: `<div style="margin-top:20px;font-weight:bold;">ตอบ: $v =$ <input type="text" class="answer-input" style="width:120px"> m/s</div>`
@@ -603,9 +646,13 @@ const physicsData = {
           text: "ลูกตุ้มยาว 1 m ถูกดึงให้เบนไปจนมีความสูง 0.5 m แล้วปล่อย ความเร็วที่จุดต่ำสุดเป็นเท่าใด ($g = 10$ m/s²)",
           hints: "ความยาวเชือกไม่เกี่ยว คิดแค่ความสูงที่เปลี่ยนไป",
           guide: `
-            <div class="step">1. $mgh = \\frac{1}{2}mv^2 \\rightarrow v = \\sqrt{2gh}$</div>
-            <div class="step">2. $v = \\sqrt{2 \\times 10 \\times 0.5} = \\sqrt{10}$</div>
-            <div class="step">3. $v \\approx$ <input type="text" class="answer-input" placeholder="3.16"> m/s</div>
+            <div class="step">1. $mgh = \\frac{1}{2}mv^2$</div>
+            <div class="calc-steps">
+              <div>2. $v$</div><div>$=$</div><div>$\\sqrt{2gh}$</div>
+              <div></div><div>$=$</div><div>$\\sqrt{2 \\times 10 \\times 0.5}$</div>
+              <div></div><div>$=$</div><div>$\\sqrt{10}$</div>
+              <div></div><div>$\\approx$</div><div><input type="text" class="answer-input" placeholder="3.16">&nbsp;m/s</div>
+            </div>
           `,
           intermediateHtml: `<div class="step" style="color:var(--text-light);font-size:0.95rem;"><b>โจทย์กำหนด:</b> $h = 0.5$ m, ปล่อยจากหยุดนิ่ง</div><div style="margin-top:20px;font-weight:bold;">ตอบ: $v =$ <input type="text" class="answer-input" style="width:120px"> m/s</div>`,
           advancedHtml: `<div style="margin-top:20px;font-weight:bold;">ตอบ: $v =$ <input type="text" class="answer-input" style="width:120px"> m/s</div>`
@@ -615,9 +662,12 @@ const physicsData = {
           text: "รถไฟเหาะปล่อยจากจุดหยุดนิ่งที่ความสูง 30 m ความเร็วของรถไฟเหาะที่จุดต่ำสุดเป็นเท่าใด ($g = 10$ m/s²)",
           hints: "ใช้ $v = \\sqrt{2gh}$ ได้เลย",
           guide: `
-            <div class="step">1. $v = \\sqrt{2gh}$</div>
-            <div class="step">2. $v = \\sqrt{2 \\times 10 \\times 30} = \\sqrt{600}$</div>
-            <div class="step">3. $v \\approx$ <input type="text" class="answer-input" placeholder="24.5"> m/s</div>
+            <div class="calc-steps">
+              <div>1. $v$</div><div>$=$</div><div>$\\sqrt{2gh}$</div>
+              <div></div><div>$=$</div><div>$\\sqrt{2 \\times 10 \\times 30}$</div>
+              <div></div><div>$=$</div><div>$\\sqrt{600}$</div>
+              <div></div><div>$\\approx$</div><div><input type="text" class="answer-input" placeholder="24.5">&nbsp;m/s</div>
+            </div>
           `,
           intermediateHtml: `<div class="step" style="color:var(--text-light);font-size:0.95rem;"><b>โจทย์กำหนด:</b> $h = 30$ m</div><div style="margin-top:20px;font-weight:bold;">ตอบ: $v =$ <input type="text" class="answer-input" style="width:120px"> m/s</div>`,
           advancedHtml: `<div style="margin-top:20px;font-weight:bold;">ตอบ: $v =$ <input type="text" class="answer-input" style="width:120px"> m/s</div>`
@@ -627,9 +677,13 @@ const physicsData = {
           text: "ให้วัตถุไถลขึ้นพื้นเอียงลื่นด้วยความเร็วต้น 6 m/s วัตถุจะขึ้นไปได้สูงสุดเท่าใดในแนวดิ่ง ($g = 10$ m/s²)",
           hints: "พลังงานจลน์เปลี่ยนเป็นพลังงานศักย์",
           guide: `
-            <div class="step">1. $\\frac{1}{2}mv^2 = mgh \\rightarrow h = \\frac{v^2}{2g}$</div>
-            <div class="step">2. $h = \\frac{6^2}{20} = \\frac{36}{20}$</div>
-            <div class="step">3. $h =$ <input type="text" class="answer-input" placeholder="1.8"> m</div>
+            <div class="step">1. $\\frac{1}{2}mv^2 = mgh$</div>
+            <div class="calc-steps">
+              <div>2. $h$</div><div>$=$</div><div>$\\frac{v^2}{2g}$</div>
+              <div></div><div>$=$</div><div>$\\frac{6^2}{2 \\times 10}$</div>
+              <div></div><div>$=$</div><div>$\\frac{36}{20}$</div>
+              <div></div><div>$=$</div><div><input type="text" class="answer-input" placeholder="1.8">&nbsp;m</div>
+            </div>
           `,
           intermediateHtml: `<div class="step" style="color:var(--text-light);font-size:0.95rem;"><b>โจทย์กำหนด:</b> $v = 6$ m/s, ที่จุดสูงสุด $v=0$</div><div style="margin-top:20px;font-weight:bold;">ตอบ: $h =$ <input type="text" class="answer-input" style="width:120px"> m</div>`,
           advancedHtml: `<div style="margin-top:20px;font-weight:bold;">ตอบ: $h =$ <input type="text" class="answer-input" style="width:120px"> m</div>`
@@ -651,9 +705,12 @@ const physicsData = {
           text: "น้ำตกสูง 45 m ถ้าน้ำตกลงมาโดยไม่มีแรงเสียดทาน ความเร็วของน้ำที่กระทบผิวน้ำด้านล่างเป็นเท่าใด ($g = 10$ m/s²)",
           hints: "$v = \\sqrt{2gh}$",
           guide: `
-            <div class="step">1. $v = \\sqrt{2gh}$</div>
-            <div class="step">2. $v = \\sqrt{2 \\times 10 \\times 45} = \\sqrt{900}$</div>
-            <div class="step">3. $v =$ <input type="text" class="answer-input" placeholder="30"> m/s</div>
+            <div class="calc-steps">
+              <div>1. $v$</div><div>$=$</div><div>$\\sqrt{2gh}$</div>
+              <div></div><div>$=$</div><div>$\\sqrt{2 \\times 10 \\times 45}$</div>
+              <div></div><div>$=$</div><div>$\\sqrt{900}$</div>
+              <div></div><div>$=$</div><div><input type="text" class="answer-input" placeholder="30">&nbsp;m/s</div>
+            </div>
           `,
           intermediateHtml: `<div class="step" style="color:var(--text-light);font-size:0.95rem;"><b>โจทย์กำหนด:</b> $h = 45$ m</div><div style="margin-top:20px;font-weight:bold;">ตอบ: $v =$ <input type="text" class="answer-input" style="width:120px"> m/s</div>`,
           advancedHtml: `<div style="margin-top:20px;font-weight:bold;">ตอบ: $v =$ <input type="text" class="answer-input" style="width:120px"> m/s</div>`

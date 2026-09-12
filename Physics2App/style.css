@@ -289,6 +289,20 @@ select {
   margin-bottom: 16px;
 }
 
+.calc-steps {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  row-gap: 4px;
+  column-gap: 8px;
+  align-items: center;
+  margin: 6px 0 16px 0;
+}
+.calc-steps > div {
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+}
+
 .answer-input {
   position: relative;
   z-index: 10;
