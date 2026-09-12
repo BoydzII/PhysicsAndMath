@@ -4,17 +4,28 @@ class DrawingEngine {
     this.canvas = document.getElementById(canvasId);
     this.ctx = this.canvas.getContext('2d', { willReadFrequently: true });
     this.dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+
+    // Presentation Canvas (Laser Pointer & Pointing Finger)
+    this.presCanvas = document.getElementById('presentationCanvas');
+    this.presCtx = this.presCanvas ? this.presCanvas.getContext('2d') : null;
+    this.laserPoints = [];
+    this.laserAnimRunning = false;
+    this.currentLaserPos = null;
+    this.currentFingerPos = null;
+    this.laserBaseRadius = 9;
+    this.fingerSize = 40;
     
     this.isDrawing = false;
-    this.currentTool = 'pen'; // 'pen', 'eraser', 'highlight'
+    this.currentTool = 'pen'; // 'pen', 'eraser', 'highlight', 'laser', 'finger'
     this.currentColor = '#000000';
     this.baseLineWidth = 2.5;
     this.lineWidth = 2.5;
     this.eraserWidth = 32;
-    this.highlightWidth = 20;
+    this.highlightWidth = 22;
 
     // Drawing settings
-    this.penOnlyMode = false; // When true, only pen/stylus draws; when false, touch draws too
+    this.penOnlyMode = false; // When true: touch scrolls/pinches, ONLY stylus/pen draws
+    this.highlightOnTop = true; // When true: ink & highlighter layer on top of problem text
 
     // Undo & Redo History (stores lightweight offscreen canvas snapshots)
     this.undoStack = [];
@@ -23,6 +34,8 @@ class DrawingEngine {
 
     this.points = [];
     this.prevMid = null;
+    this.cachedRect = null;
+    this.activePointers = new Set();
 
     this.initEvents();
     this.resize();
@@ -60,6 +73,18 @@ class DrawingEngine {
     this.ctx.scale(dpr, dpr);
     this.updateCtx();
 
+    // Resize Presentation Canvas synchronously
+    if (this.presCanvas) {
+      this.presCanvas.width = Math.round(w * dpr);
+      this.presCanvas.height = Math.round(h * dpr);
+      this.presCanvas.style.width = '100%';
+      this.presCanvas.style.height = '100%';
+      if (this.presCtx) {
+        this.presCtx.setTransform(1, 0, 0, 1, 0, 0);
+        this.presCtx.scale(dpr, dpr);
+      }
+    }
+
     if (tempCanvas) {
       this.ctx.drawImage(tempCanvas, 0, 0, tempCanvas.width / dpr, tempCanvas.height / dpr);
     } else {
@@ -77,11 +102,11 @@ class DrawingEngine {
       this.ctx.lineWidth = this.eraserWidth;
       this.ctx.globalAlpha = 1.0;
     } else if (this.currentTool === 'highlight') {
-      this.ctx.globalCompositeOperation = 'multiply'; // GoodNotes style highlighter
+      this.ctx.globalCompositeOperation = 'multiply';
       this.ctx.strokeStyle = this.currentColor;
       this.ctx.fillStyle = this.currentColor;
       this.ctx.lineWidth = this.highlightWidth;
-      this.ctx.globalAlpha = 0.45; // Vibrant and legible
+      this.ctx.globalAlpha = 0.5;
     } else {
       // Pen: Rich, dark, fully opaque ink
       this.ctx.globalCompositeOperation = 'source-over';
@@ -94,21 +119,194 @@ class DrawingEngine {
 
   setTool(tool) {
     this.currentTool = tool;
+    if (tool === 'highlight') {
+      this.setHighlightOnTop(true);
+    }
+    if (tool !== 'laser' && tool !== 'finger') {
+      this.clearPresentation();
+    }
     this.updateCtx();
   }
 
   setColor(color) {
     this.currentColor = color;
-    if (this.currentTool === 'eraser') {
+    if (this.currentTool === 'eraser' || this.currentTool === 'laser' || this.currentTool === 'finger') {
       this.currentTool = 'pen';
     }
     this.updateCtx();
   }
 
   setSize(size) {
-    this.baseLineWidth = Number(size);
-    this.lineWidth = Number(size);
+    const n = Number(size);
+    this.baseLineWidth = n;
+    this.lineWidth = n;
+
+    // Adjust laser, finger, and highlighter proportionally
+    if (n <= 1.8) {
+      // Small
+      this.laserBaseRadius = 5;
+      this.fingerSize = 28;
+      this.highlightWidth = 14;
+      this.eraserWidth = 20;
+    } else if (n <= 4) {
+      // Medium
+      this.laserBaseRadius = 9;
+      this.fingerSize = 40;
+      this.highlightWidth = 22;
+      this.eraserWidth = 32;
+    } else {
+      // Large
+      this.laserBaseRadius = 16;
+      this.fingerSize = 58;
+      this.highlightWidth = 34;
+      this.eraserWidth = 48;
+    }
     this.updateCtx();
+  }
+
+  setPenOnlyMode(enabled) {
+    this.penOnlyMode = Boolean(enabled);
+    if (this.canvas) {
+      this.canvas.style.touchAction = this.penOnlyMode ? 'pan-x pan-y pinch-zoom' : 'none';
+    }
+  }
+
+  setHighlightOnTop(onTop) {
+    this.highlightOnTop = Boolean(onTop);
+    const wrapper = this.canvas ? this.canvas.parentElement : null;
+    if (wrapper) {
+      if (this.highlightOnTop) {
+        wrapper.classList.add('canvas-on-top');
+      } else {
+        wrapper.classList.remove('canvas-on-top');
+      }
+    }
+  }
+
+  clearPresentation() {
+    this.laserPoints = [];
+    this.currentLaserPos = null;
+    this.currentFingerPos = null;
+    this.laserAnimRunning = false;
+    if (this.presCtx && this.canvas) {
+      this.presCtx.clearRect(0, 0, this.canvas.width / this.dpr, this.canvas.height / this.dpr);
+    }
+  }
+
+  addLaserPoint(pos) {
+    const now = Date.now();
+    this.laserPoints.push({ x: pos.x, y: pos.y, time: now });
+    if (!this.laserAnimRunning) {
+      this.laserAnimRunning = true;
+      this.animatePresentation();
+    }
+  }
+
+  animatePresentation() {
+    if (!this.presCtx || !this.canvas) return;
+    const now = Date.now();
+    const cw = this.canvas.width / this.dpr;
+    const ch = this.canvas.height / this.dpr;
+    this.presCtx.clearRect(0, 0, cw, ch);
+
+    // 1. Render Laser Beam & Trail
+    if (this.currentTool === 'laser' || this.laserPoints.length > 0) {
+      this.laserPoints = this.laserPoints.filter(p => now - p.time < 1000);
+
+      if (this.laserPoints.length > 1) {
+        for (let i = 1; i < this.laserPoints.length; i++) {
+          const p0 = this.laserPoints[i - 1];
+          const p1 = this.laserPoints[i];
+          const age = now - p1.time;
+          const alpha = Math.max(0, 1 - age / 1000);
+
+          // Outer glowing trail
+          this.presCtx.beginPath();
+          this.presCtx.moveTo(p0.x, p0.y);
+          this.presCtx.lineTo(p1.x, p1.y);
+          this.presCtx.strokeStyle = `rgba(239, 68, 68, ${alpha * 0.45})`;
+          this.presCtx.lineWidth = this.laserBaseRadius * 2.2;
+          this.presCtx.lineCap = 'round';
+          this.presCtx.lineJoin = 'round';
+          this.presCtx.stroke();
+
+          // Hot inner line
+          this.presCtx.beginPath();
+          this.presCtx.moveTo(p0.x, p0.y);
+          this.presCtx.lineTo(p1.x, p1.y);
+          this.presCtx.strokeStyle = `rgba(255, 255, 255, ${alpha * 0.9})`;
+          this.presCtx.lineWidth = this.laserBaseRadius * 0.75;
+          this.presCtx.stroke();
+        }
+      }
+
+      // Glowing tip at current laser position
+      if (this.currentLaserPos) {
+        const x = this.currentLaserPos.x;
+        const y = this.currentLaserPos.y;
+        const r = this.laserBaseRadius;
+
+        // Outer glow
+        this.presCtx.beginPath();
+        this.presCtx.arc(x, y, r * 2.4, 0, Math.PI * 2);
+        this.presCtx.fillStyle = 'rgba(239, 68, 68, 0.35)';
+        this.presCtx.fill();
+
+        // Red Core
+        this.presCtx.beginPath();
+        this.presCtx.arc(x, y, r, 0, Math.PI * 2);
+        this.presCtx.fillStyle = '#ef4444';
+        this.presCtx.shadowColor = '#ef4444';
+        this.presCtx.shadowBlur = 12;
+        this.presCtx.fill();
+
+        // White Center
+        this.presCtx.beginPath();
+        this.presCtx.arc(x, y, r * 0.4, 0, Math.PI * 2);
+        this.presCtx.fillStyle = '#ffffff';
+        this.presCtx.fill();
+        this.presCtx.shadowBlur = 0;
+      }
+    }
+
+    // 2. Render Pointing Finger
+    if (this.currentTool === 'finger' && this.currentFingerPos) {
+      const x = this.currentFingerPos.x;
+      const y = this.currentFingerPos.y;
+      const s = this.fingerSize;
+
+      // Target ring
+      this.presCtx.beginPath();
+      this.presCtx.arc(x, y, s * 0.35, 0, Math.PI * 2);
+      this.presCtx.fillStyle = 'rgba(37, 99, 235, 0.18)';
+      this.presCtx.fill();
+      this.presCtx.strokeStyle = 'rgba(37, 99, 235, 0.8)';
+      this.presCtx.lineWidth = 2.5;
+      this.presCtx.stroke();
+
+      // Center dot
+      this.presCtx.beginPath();
+      this.presCtx.arc(x, y, 3.5, 0, Math.PI * 2);
+      this.presCtx.fillStyle = '#1d4ed8';
+      this.presCtx.fill();
+
+      // Pointing hand 👉
+      this.presCtx.font = `${s}px "Apple Color Emoji", "Segoe UI Emoji", sans-serif`;
+      this.presCtx.textBaseline = 'middle';
+      this.presCtx.shadowColor = 'rgba(0, 0, 0, 0.35)';
+      this.presCtx.shadowBlur = 10;
+      this.presCtx.shadowOffsetX = 2;
+      this.presCtx.shadowOffsetY = 4;
+      this.presCtx.fillText('👉', x - s * 0.95, y - s * 0.05);
+      this.presCtx.shadowBlur = 0;
+    }
+
+    if (this.laserPoints.length > 0 || (this.currentTool === 'laser' && this.currentLaserPos) || (this.currentTool === 'finger' && this.currentFingerPos)) {
+      requestAnimationFrame(() => this.animatePresentation());
+    } else {
+      this.laserAnimRunning = false;
+      this.presCtx.clearRect(0, 0, cw, ch);
+    }
   }
 
   pushUndoState() {
@@ -246,12 +444,13 @@ class DrawingEngine {
       this.resizeObserver.observe(this.canvas.parentElement);
     }
 
-    this.activePointers = new Set();
-
     const startDraw = (e) => {
       if (e.button === 2) return;
-      // Auto palm-rejection: If pen is in use, ignore touches; otherwise allow single finger/stylus
-      if (this.penOnlyMode && e.pointerType === 'touch') return;
+      
+      // Palm Rejection / Pen-Only Mode: When enabled, ignore touch events so finger can scroll & pinch!
+      if (this.penOnlyMode && e.pointerType === 'touch') {
+        return;
+      }
 
       this.activePointers.add(e.pointerId);
       if (this.activePointers.size > 1) {
@@ -259,19 +458,39 @@ class DrawingEngine {
           this.isDrawing = false;
           this.points = [];
           this.prevMid = null;
-          this.undo();
+          if (this.currentTool !== 'laser' && this.currentTool !== 'finger') {
+            this.undo();
+          }
         }
         return;
       }
 
       this.isDrawing = true;
-      this.pushUndoState();
       this.cachedRect = this.canvas.getBoundingClientRect();
-
       const pos = this.getPointerPos(e);
+
+      // Handle Presentation Tools (Laser & Finger)
+      if (this.currentTool === 'laser') {
+        this.currentLaserPos = pos;
+        this.addLaserPoint(pos);
+        try { this.canvas.setPointerCapture(e.pointerId); } catch (err) {}
+        return;
+      }
+
+      if (this.currentTool === 'finger') {
+        this.currentFingerPos = pos;
+        if (!this.laserAnimRunning) {
+          this.laserAnimRunning = true;
+          this.animatePresentation();
+        }
+        try { this.canvas.setPointerCapture(e.pointerId); } catch (err) {}
+        return;
+      }
+
+      // Normal Ink Drawing
+      this.pushUndoState();
       this.points = [pos];
       this.prevMid = { x: pos.x, y: pos.y };
-
       this.updateCtx();
 
       // Dynamic pressure line width
@@ -291,8 +510,27 @@ class DrawingEngine {
     };
 
     const draw = (e) => {
-      if (!this.isDrawing || this.activePointers.size > 1) return;
+      const isPresTool = (this.currentTool === 'laser' || this.currentTool === 'finger');
+      if (!this.isDrawing && !isPresTool) return;
+      if (this.activePointers.size > 1) return;
       const pos = this.getPointerPos(e);
+
+      // Presentation Tools
+      if (this.currentTool === 'laser') {
+        this.currentLaserPos = pos;
+        this.addLaserPoint(pos);
+        return;
+      }
+
+      if (this.currentTool === 'finger') {
+        this.currentFingerPos = pos;
+        if (!this.laserAnimRunning) {
+          this.laserAnimRunning = true;
+          this.animatePresentation();
+        }
+        return;
+      }
+
       this.points.push(pos);
 
       const p = (e.pressure && e.pressure > 0) ? e.pressure : 0.5;
@@ -300,7 +538,7 @@ class DrawingEngine {
         this.ctx.lineWidth = this.baseLineWidth * (0.8 + p * 0.7);
       }
 
-      // Fast Incremental Bézier Midpoint Rendering (120 FPS, Zero putImageData lag)
+      // Fast Incremental Bézier Midpoint Rendering (120 FPS, Zero lag)
       if (this.points.length >= 2) {
         const p1 = this.points[this.points.length - 2];
         const p2 = this.points[this.points.length - 1];
@@ -326,6 +564,23 @@ class DrawingEngine {
         this.canvas.releasePointerCapture(e.pointerId);
       } catch (err) {}
 
+      // Handle Presentation Tools Stop
+      if (this.currentTool === 'laser') {
+        this.currentLaserPos = null;
+        this.cachedRect = null;
+        return;
+      }
+
+      if (this.currentTool === 'finger') {
+        setTimeout(() => {
+          if (!this.isDrawing) {
+            this.currentFingerPos = null;
+          }
+        }, 700);
+        this.cachedRect = null;
+        return;
+      }
+
       // Draw last remaining segment to point
       if (this.points.length >= 2 && this.prevMid) {
         const last = this.points[this.points.length - 1];
@@ -348,7 +603,11 @@ class DrawingEngine {
         this.isDrawing = false;
         this.points = [];
         this.prevMid = null;
-        this.undo();
+        if (this.currentTool === 'laser' || this.currentTool === 'finger') {
+          this.clearPresentation();
+        } else {
+          this.undo();
+        }
       }
     };
 
@@ -356,6 +615,17 @@ class DrawingEngine {
     this.canvas.addEventListener('pointermove', draw);
     this.canvas.addEventListener('pointerup', stopDraw);
     this.canvas.addEventListener('pointercancel', cancelDraw);
+    window.addEventListener('pointerup', stopDraw);
+    window.addEventListener('pointercancel', cancelDraw);
+    this.canvas.addEventListener('pointerleave', () => {
+      if (this.currentTool === 'laser' || this.currentTool === 'finger') {
+        if (!this.isDrawing) {
+          this.currentLaserPos = null;
+          this.currentFingerPos = null;
+          this.clearPresentation();
+        }
+      }
+    });
   }
 
   saveData() {
@@ -394,4 +664,4 @@ class DrawingEngine {
       console.warn('Canvas loadData error:', e);
     }
   }
-}
+}

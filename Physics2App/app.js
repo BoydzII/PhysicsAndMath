@@ -324,6 +324,44 @@ function setupListeners() {
   // Toggle Inputs Lock
   document.getElementById('btnToggleInputsLock')?.addEventListener('click', toggleInputsLock);
 
+  // Pen-Only Mode (Palm Rejection)
+  const btnPenOnlyMode = document.getElementById('btnPenOnlyMode');
+  if (btnPenOnlyMode) {
+    btnPenOnlyMode.addEventListener('click', () => {
+      if (!drawingEngine) return;
+      const nextState = !drawingEngine.penOnlyMode;
+      drawingEngine.setPenOnlyMode(nextState);
+      if (nextState) {
+        btnPenOnlyMode.classList.add('active');
+        btnPenOnlyMode.title = 'โหมดปากกาเท่านั้น: เปิดอยู่ (ใช้นิ้วเลื่อน/ซูม ป้องกันมือเขียน)';
+        showToast('✋ เปิดโหมดปากกาเท่านั้น: ใช้นิ้วเลื่อน/ซูม ป้องกันมือเขียนโดนกระดาษ', 'info');
+      } else {
+        btnPenOnlyMode.classList.remove('active');
+        btnPenOnlyMode.title = 'โหมดปากกาเท่านั้น: ปิดอยู่ (เขียนด้วยนิ้วหรือปากกาก็ได้)';
+        showToast('✏️ โหมดวาดทั่วไป: เขียนได้ทั้งนิ้วและปากกา', 'info');
+      }
+    });
+  }
+
+  // Highlight & Ink On-Top Layer (Mix-blend-mode multiply over problem text)
+  const btnHighlightLayer = document.getElementById('btnHighlightLayer');
+  if (btnHighlightLayer) {
+    btnHighlightLayer.addEventListener('click', () => {
+      if (!drawingEngine) return;
+      const nextState = !drawingEngine.highlightOnTop;
+      drawingEngine.setHighlightOnTop(nextState);
+      if (nextState) {
+        btnHighlightLayer.classList.add('active');
+        btnHighlightLayer.title = 'ลำดับชั้น: ปากกาและไฮไลต์อยู่บนสุดทับโจทย์ (เปิดอยู่)';
+        showToast('📑 ปากกาและไฮไลต์อยู่บนสุดทับโจทย์ (เปิด Blend Multiply)', 'info');
+      } else {
+        btnHighlightLayer.classList.remove('active');
+        btnHighlightLayer.title = 'ลำดับชั้น: ลายเส้นอยู่ด้านล่างข้อความโจทย์';
+        showToast('📄 ลายเส้นอยู่ใต้ตัวหนังสือโจทย์', 'info');
+      }
+    });
+  }
+
   // Modal Actions
   document.getElementById('btnSubmit')?.addEventListener('click', () => {
     updateModalGradingSummary();

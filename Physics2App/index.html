@@ -9,7 +9,7 @@
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js?v=1789223339"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js?v=1789223339"></script>
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
-  <link rel="stylesheet" href="style.css?v=1789223339">
+  <link rel="stylesheet" href="style.css?v=1789223500">
 </head>
 <body>
 
@@ -74,13 +74,15 @@
     <div class="drag-handle" title="ลากเพื่อย้าย"><i class="ph ph-dots-six-vertical"></i></div>
     <div class="tool-group">
       <button class="tool-btn active" data-tool="pen" title="ปากกา"><i class="ph ph-pen"></i></button>
-      <button class="tool-btn" data-tool="highlight" title="ปากกาเน้นข้อความ"><i class="ph ph-highlighter-circle"></i></button>
+      <button class="tool-btn" data-tool="highlight" title="ปากกาเน้นข้อความ (เขียนทับโจทย์)"><i class="ph ph-highlighter-circle"></i></button>
       <button class="tool-btn" data-tool="eraser" title="ยางลบ"><i class="ph ph-eraser"></i></button>
+      <button class="tool-btn" data-tool="laser" title="เลเซอร์พอยน์เตอร์ (ชี้อธิบาย ไม่ทิ้งรอย)"><i class="ph ph-lightning"></i></button>
+      <button class="tool-btn" data-tool="finger" title="นิ้วชี้อธิบาย (ชี้เน้นข้อความ)"><i class="ph ph-hand-pointing"></i></button>
     </div>
-    <div class="tool-group sizes" title="ขนาดหัวปากกา">
-      <button class="size-btn" data-size="1.5" title="เส้นบาง (1.5px)">S</button>
-      <button class="size-btn active" data-size="2.5" title="เส้นกลาง (2.5px)">M</button>
-      <button class="size-btn" data-size="6" title="เส้นหนา (6px)">L</button>
+    <div class="tool-group sizes" title="ขนาดหัวปากกา / พอยน์เตอร์">
+      <button class="size-btn" data-size="1.5" title="ขนาดเล็ก (S)">S</button>
+      <button class="size-btn active" data-size="2.5" title="ขนาดกลาง (M)">M</button>
+      <button class="size-btn" data-size="6" title="ขนาดใหญ่ (L)">L</button>
     </div>
     <div class="tool-group colors">
       <div class="color-swatch active" data-color="#000000" style="background:#000000" title="ดำ"></div>
@@ -99,7 +101,9 @@
       <span id="zoomLevelText" title="คลิกเพื่อรีเซ็ตเป็น 100%" class="zoom-text">100%</span>
       <button class="tool-btn" id="btnZoomIn" title="ขยายหน้ากระดาษ (Zoom In)"><i class="ph ph-magnifying-glass-plus"></i></button>
     </div>
-    <div class="tool-group lock-group" style="border-left: 1px solid var(--border); padding-left: 8px;" title="สถานะล็อกช่องคำตอบ (ป้องกันปากกาเขียนโดน)">
+    <div class="tool-group modes-group" style="border-left: 1px solid var(--border); padding-left: 8px; display:flex; gap:4px;">
+      <button class="tool-btn" id="btnPenOnlyMode" title="โหมดปากกาเท่านั้น (ใช้นิ้วเลื่อน/ซูม ป้องกันมือเขียน)"><i class="ph ph-hand-palm"></i></button>
+      <button class="tool-btn active" id="btnHighlightLayer" title="ลำดับชั้น: ปากกา/ไฮไลต์อยู่บนสุดทับโจทย์ (คลิกเพื่อสลับ)"><i class="ph ph-stack"></i></button>
       <button class="tool-btn active" id="btnToggleInputsLock" title="ช่องคำตอบถูกป้องกันอยู่ (แตะช่องเพื่อพิมพ์ตอบ)"><i class="ph ph-lock-key"></i></button>
     </div>
   </div>
@@ -110,9 +114,10 @@
     </section>
 
     <section class="notebook-panel">
-      <div class="notebook-wrapper">
+      <div class="notebook-wrapper canvas-on-top">
         <div class="notebook-paper" id="notebookContainer"></div>
         <canvas id="drawingCanvas"></canvas>
+        <canvas id="presentationCanvas"></canvas>
       </div>
     </section>
   </main>
@@ -180,17 +185,17 @@
   <!-- Toast Notification Container -->
   <div id="toastNotification" class="toast-notification"></div>
 
-  <script src="data.js?v=1789223339"></script>
-    <script src="data_ch6.js?v=1789223339"></script>
-    <script src="data_ch7.js?v=1789223339"></script>
-    <script src="data_ch5_challenge.js?v=1789223339"></script>
-    <script src="data_ch6_challenge.js?v=1789223339"></script>
-    <script src="data_ch7_challenge.js?v=1789223339"></script>
-  <script src="draw.js?v=1789223339"></script>
-  <script src="simulations/sim_core.js?v=1789223339"></script>
-  <script src="simulations/sim_ch5.js?v=1789223339"></script>
-  <script src="simulations/sim_ch6.js?v=1789223339"></script>
-  <script src="simulations/sim_ch7.js?v=1789223339"></script>
-  <script src="app.js?v=1789223339"></script>
+  <script src="data.js?v=1789223500"></script>
+  <script src="data_ch6.js?v=1789223500"></script>
+  <script src="data_ch7.js?v=1789223500"></script>
+  <script src="data_ch5_challenge.js?v=1789223500"></script>
+  <script src="data_ch6_challenge.js?v=1789223500"></script>
+  <script src="data_ch7_challenge.js?v=1789223500"></script>
+  <script src="draw.js?v=1789223500"></script>
+  <script src="simulations/sim_core.js?v=1789223500"></script>
+  <script src="simulations/sim_ch5.js?v=1789223500"></script>
+  <script src="simulations/sim_ch6.js?v=1789223500"></script>
+  <script src="simulations/sim_ch7.js?v=1789223500"></script>
+  <script src="app.js?v=1789223500"></script>
 </body>
 </html>
