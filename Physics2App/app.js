@@ -274,6 +274,18 @@ function renderApp() {
     initPotentialSimulation();
   } else if (currentTopic === 'conservation') {
     initConservationSimulation();
+  } else if (currentTopic === 'momentum') {
+    initMomentumSim();
+  } else if (currentTopic === 'impulse') {
+    initImpulseSim();
+  } else if (currentTopic === 'collision') {
+    initCollisionSim();
+  } else if (currentTopic === 'projectile') {
+    initProjectileSim();
+  } else if (currentTopic === 'circular') {
+    initCircularSim();
+  } else if (currentTopic === 'shm') {
+    initSHMSim();
   }
 
   // Restore inputs after re-render
@@ -963,6 +975,505 @@ function initConservationSimulation() {
   window.addEventListener('touchend', handleUp);
 
   requestAnimationFrame(draw);
+}
+
+function initMomentumSim() {
+  const canvas = document.getElementById('simMomentum');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  canvas.width = canvas.clientWidth;
+  canvas.height = canvas.clientHeight;
+
+  let carX = 50;
+  let v = 2;
+  const mass = 1500;
+  let isDragging = false;
+  
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // ground
+    ctx.fillStyle = '#a3be8c';
+    ctx.fillRect(0, canvas.height - 30, canvas.width, 30);
+
+    // car
+    ctx.fillStyle = '#3b82f6';
+    ctx.fillRect(carX - 30, canvas.height - 60, 60, 30);
+
+    // text
+    ctx.fillStyle = '#374151';
+    ctx.font = '14px sans-serif';
+    ctx.fillText(`v = ${v.toFixed(1)} m/s`, 10, 20);
+    ctx.fillText(`m = ${mass} kg`, 10, 40);
+    ctx.fillStyle = '#ef4444';
+    ctx.fillText(`p = mv = ${(mass * v).toFixed(0)} kg.m/s`, 10, 60);
+
+    ctx.fillStyle = '#374151';
+    ctx.fillText(`Drag car or click to change speed`, 10, 80);
+
+    if (!isDragging) {
+      carX += v;
+      if (carX > canvas.width + 30) carX = -30;
+    }
+
+    requestAnimationFrame(draw);
+  }
+
+  function getX(e) {
+    const rect = canvas.getBoundingClientRect();
+    return e.touches ? e.touches[0].clientX - rect.left : e.clientX - rect.left;
+  }
+
+  canvas.addEventListener('mousedown', (e) => {
+    let x = getX(e);
+    if (Math.abs(x - carX) < 40) isDragging = true;
+    else v = v === 2 ? 5 : (v === 5 ? 0 : 2);
+  });
+  canvas.addEventListener('mousemove', (e) => {
+    if (isDragging) {
+      let oldX = carX;
+      carX = getX(e);
+      v = (carX - oldX) / 0.5; // fake speed from drag
+    }
+  });
+  window.addEventListener('mouseup', () => isDragging = false);
+  
+  canvas.addEventListener('touchstart', (e) => {
+    let x = getX(e);
+    if (Math.abs(x - carX) < 40) { isDragging = true; e.preventDefault(); }
+    else v = v === 2 ? 5 : (v === 5 ? 0 : 2);
+  }, {passive: false});
+  canvas.addEventListener('touchmove', (e) => {
+    if (isDragging) {
+      let oldX = carX;
+      carX = getX(e);
+      v = (carX - oldX) / 0.5;
+      e.preventDefault();
+    }
+  }, {passive: false});
+  window.addEventListener('touchend', () => isDragging = false);
+
+  draw();
+}
+
+function initImpulseSim() {
+  const canvas = document.getElementById('simImpulse');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  canvas.width = canvas.clientWidth;
+  canvas.height = canvas.clientHeight;
+
+  let ballX = 50;
+  let v = 5;
+  const m = 0.5;
+  let state = 'moving'; // moving, hit
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // wall
+    ctx.fillStyle = '#9ca3af';
+    ctx.fillRect(canvas.width - 40, 0, 40, canvas.height);
+    
+    // ground
+    ctx.fillStyle = '#a3be8c';
+    ctx.fillRect(0, canvas.height - 30, canvas.width, 30);
+
+    // ball
+    ctx.beginPath();
+    ctx.arc(ballX, canvas.height - 50, 20, 0, Math.PI * 2);
+    ctx.fillStyle = '#ef4444';
+    ctx.fill();
+
+    ctx.fillStyle = '#374151';
+    ctx.font = '14px sans-serif';
+    ctx.fillText(`Click to reset`, 10, 20);
+    
+    if (state === 'moving') {
+        ballX += v;
+        if (ballX >= canvas.width - 60) {
+            v = -4; // bounce back with less speed
+            state = 'hit';
+        }
+    } else if (state === 'hit') {
+        ballX += v;
+        ctx.fillStyle = '#ef4444';
+        ctx.fillText(`Impulse (I) = Δp = m(v - u)`, 10, 40);
+        ctx.fillText(`= 0.5(-4 - 5) = -4.5 N.s`, 10, 60);
+    }
+
+    requestAnimationFrame(draw);
+  }
+
+  canvas.addEventListener('click', () => {
+    ballX = 50;
+    v = 5;
+    state = 'moving';
+  });
+
+  draw();
+}
+
+function initCollisionSim() {
+  const canvas = document.getElementById('simCollision');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  canvas.width = canvas.clientWidth;
+  canvas.height = canvas.clientHeight;
+
+  let x1 = 50, v1 = 3, m1 = 2;
+  let x2 = canvas.width - 100, v2 = -2, m2 = 3;
+  let collided = false;
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // ground
+    ctx.fillStyle = '#a3be8c';
+    ctx.fillRect(0, canvas.height - 30, canvas.width, 30);
+
+    // obj1
+    ctx.fillStyle = '#3b82f6';
+    ctx.beginPath(); ctx.arc(x1, canvas.height - 50, 20, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.fillText('1', x1 - 4, canvas.height - 45);
+
+    // obj2
+    ctx.fillStyle = '#ef4444';
+    ctx.beginPath(); ctx.arc(x2, canvas.height - 60, 30, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.fillText('2', x2 - 4, canvas.height - 55);
+
+    ctx.fillStyle = '#374151';
+    ctx.font = '14px sans-serif';
+    ctx.fillText(`Click to reset`, 10, 20);
+
+    if (!collided) {
+        x1 += v1;
+        x2 += v2;
+        if (x1 + 20 >= x2 - 30) {
+            collided = true;
+            let vFinal = (m1*v1 + m2*v2) / (m1+m2);
+            v1 = vFinal;
+            v2 = vFinal;
+        }
+    } else {
+        x1 += v1;
+        x2 += v2;
+        ctx.fillText(`Inelastic Collision: v = ${v1.toFixed(2)} m/s`, 10, 40);
+    }
+
+    requestAnimationFrame(draw);
+  }
+
+  canvas.addEventListener('click', () => {
+    x1 = 50; v1 = 3;
+    x2 = canvas.width - 100; v2 = -2;
+    collided = false;
+  });
+
+  draw();
+}
+
+function initProjectileSim() {
+  const canvas = document.getElementById('simProjectile');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  canvas.width = canvas.clientWidth;
+  canvas.height = canvas.clientHeight;
+
+  let x = 30, y = canvas.height - 30;
+  let vx = 0, vy = 0;
+  let isFlying = false;
+  let angle = Math.PI / 4;
+  const speed = 15;
+  let traj = [];
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // ground
+    ctx.fillStyle = '#a3be8c';
+    ctx.fillRect(0, canvas.height - 30, canvas.width, 30);
+
+    // cannon
+    ctx.save();
+    ctx.translate(30, canvas.height - 30);
+    ctx.rotate(-angle);
+    ctx.fillStyle = '#374151';
+    ctx.fillRect(0, -10, 40, 20);
+    ctx.restore();
+
+    // trajectory
+    ctx.beginPath();
+    for (let p of traj) {
+      ctx.lineTo(p.x, p.y);
+    }
+    ctx.strokeStyle = '#9ca3af';
+    ctx.stroke();
+
+    // ball
+    if (isFlying) {
+      x += vx;
+      vy += 0.5; // gravity
+      y += vy;
+      traj.push({x, y});
+      if (y >= canvas.height - 30) {
+        y = canvas.height - 30;
+        isFlying = false;
+      }
+    }
+
+    ctx.beginPath();
+    ctx.arc(x, y, 8, 0, Math.PI * 2);
+    ctx.fillStyle = '#ef4444';
+    ctx.fill();
+
+    ctx.fillStyle = '#374151';
+    ctx.font = '14px sans-serif';
+    ctx.fillText(`Click to launch! Drag up/down to change angle.`, 10, 20);
+
+    requestAnimationFrame(draw);
+  }
+
+  let isDragging = false;
+  function getPos(e) {
+    const rect = canvas.getBoundingClientRect();
+    return e.touches ? {x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top} : {x: e.clientX - rect.left, y: e.clientY - rect.top};
+  }
+  
+  canvas.addEventListener('mousedown', (e) => {
+    const pos = getPos(e);
+    if (pos.x < 100 && pos.y > canvas.height - 100) isDragging = true;
+    else if (!isFlying) {
+      x = 30; y = canvas.height - 30;
+      vx = Math.cos(angle) * speed; vy = -Math.sin(angle) * speed;
+      isFlying = true; traj = [];
+    }
+  });
+  canvas.addEventListener('mousemove', (e) => {
+    if (isDragging) {
+      const pos = getPos(e);
+      let dy = (canvas.height - 30) - pos.y;
+      let dx = pos.x - 30;
+      angle = Math.atan2(dy, dx);
+      if (angle < 0) angle = 0;
+      if (angle > Math.PI/2) angle = Math.PI/2;
+    }
+  });
+  window.addEventListener('mouseup', () => isDragging = false);
+
+  canvas.addEventListener('touchstart', (e) => {
+    const pos = getPos(e);
+    if (pos.x < 100 && pos.y > canvas.height - 100) { isDragging = true; e.preventDefault(); }
+    else if (!isFlying) {
+      x = 30; y = canvas.height - 30;
+      vx = Math.cos(angle) * speed; vy = -Math.sin(angle) * speed;
+      isFlying = true; traj = [];
+    }
+  }, {passive: false});
+  canvas.addEventListener('touchmove', (e) => {
+    if (isDragging) {
+      const pos = getPos(e);
+      let dy = (canvas.height - 30) - pos.y;
+      let dx = pos.x - 30;
+      angle = Math.atan2(dy, dx);
+      if (angle < 0) angle = 0;
+      if (angle > Math.PI/2) angle = Math.PI/2;
+      e.preventDefault();
+    }
+  }, {passive: false});
+  window.addEventListener('touchend', () => isDragging = false);
+
+  draw();
+}
+
+function initCircularSim() {
+  const canvas = document.getElementById('simCircular');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  canvas.width = canvas.clientWidth;
+  canvas.height = canvas.clientHeight;
+
+  let angle = 0;
+  const cx = canvas.width / 2;
+  const cy = canvas.height / 2;
+  let r = 80;
+  let isDragging = false;
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    if (!isDragging) angle += 0.05;
+
+    let x = cx + r * Math.cos(angle);
+    let y = cy + r * Math.sin(angle);
+
+    // string
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(x, y);
+    ctx.strokeStyle = '#6b7280';
+    ctx.stroke();
+
+    // center
+    ctx.beginPath();
+    ctx.arc(cx, cy, 5, 0, Math.PI * 2);
+    ctx.fillStyle = '#374151';
+    ctx.fill();
+
+    // mass
+    ctx.beginPath();
+    ctx.arc(x, y, 15, 0, Math.PI * 2);
+    ctx.fillStyle = '#3b82f6';
+    ctx.fill();
+
+    // vectors
+    if (!isDragging) {
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x - 40 * Math.sin(angle), y + 40 * Math.cos(angle));
+        ctx.strokeStyle = '#ef4444';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x - 40 * Math.cos(angle), y - 40 * Math.sin(angle));
+        ctx.strokeStyle = '#10b981';
+        ctx.stroke();
+    }
+
+    ctx.fillStyle = '#374151';
+    ctx.font = '14px sans-serif';
+    ctx.fillText(`Red: Velocity (v), Green: Centripetal Force (Fc)`, 10, 20);
+    ctx.fillText(`Drag mass to change radius`, 10, 40);
+
+    requestAnimationFrame(draw);
+  }
+
+  function getPos(e) {
+    const rect = canvas.getBoundingClientRect();
+    return e.touches ? {x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top} : {x: e.clientX - rect.left, y: e.clientY - rect.top};
+  }
+
+  canvas.addEventListener('mousedown', (e) => {
+    let pos = getPos(e);
+    let x = cx + r * Math.cos(angle);
+    let y = cy + r * Math.sin(angle);
+    if (Math.hypot(pos.x - x, pos.y - y) < 30) isDragging = true;
+  });
+  canvas.addEventListener('mousemove', (e) => {
+    if (isDragging) {
+      let pos = getPos(e);
+      r = Math.hypot(pos.x - cx, pos.y - cy);
+      angle = Math.atan2(pos.y - cy, pos.x - cx);
+    }
+  });
+  window.addEventListener('mouseup', () => isDragging = false);
+  
+  canvas.addEventListener('touchstart', (e) => {
+    let pos = getPos(e);
+    let x = cx + r * Math.cos(angle);
+    let y = cy + r * Math.sin(angle);
+    if (Math.hypot(pos.x - x, pos.y - y) < 30) { isDragging = true; e.preventDefault(); }
+  }, {passive: false});
+  canvas.addEventListener('touchmove', (e) => {
+    if (isDragging) {
+      let pos = getPos(e);
+      r = Math.hypot(pos.x - cx, pos.y - cy);
+      angle = Math.atan2(pos.y - cy, pos.x - cx);
+      e.preventDefault();
+    }
+  }, {passive: false});
+  window.addEventListener('touchend', () => isDragging = false);
+
+  draw();
+}
+
+function initSHMSim() {
+  const canvas = document.getElementById('simSHM');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  canvas.width = canvas.clientWidth;
+  canvas.height = canvas.clientHeight;
+
+  let t = 0;
+  const cx = canvas.width / 2;
+  const cy = canvas.height / 2;
+  let A = 100;
+  let isDragging = false;
+  let x = cx + A;
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    if (!isDragging) {
+        t += 0.05;
+        x = cx + A * Math.cos(t);
+    }
+
+    // wall
+    ctx.fillStyle = '#9ca3af';
+    ctx.fillRect(0, cy - 30, 20, 60);
+
+    // spring
+    ctx.beginPath();
+    ctx.moveTo(20, cy);
+    let segments = 20;
+    let dx = (x - 20) / segments;
+    for (let i = 1; i < segments; i++) {
+        ctx.lineTo(20 + i*dx, cy + (i%2===0 ? 15 : -15));
+    }
+    ctx.lineTo(x, cy);
+    ctx.strokeStyle = '#6b7280';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // mass
+    ctx.fillStyle = '#f59e0b';
+    ctx.fillRect(x, cy - 20, 40, 40);
+
+    ctx.fillStyle = '#374151';
+    ctx.font = '14px sans-serif';
+    ctx.fillText(`x = A cos(ωt)`, 10, 20);
+    ctx.fillText(`Displacement: ${(x - cx).toFixed(1)}`, 10, 40);
+    ctx.fillText(`Drag mass to change amplitude`, 10, 60);
+
+    requestAnimationFrame(draw);
+  }
+
+  function getX(e) {
+    const rect = canvas.getBoundingClientRect();
+    return e.touches ? e.touches[0].clientX - rect.left : e.clientX - rect.left;
+  }
+
+  canvas.addEventListener('mousedown', (e) => {
+    let px = getX(e);
+    if (Math.abs(px - (x + 20)) < 40) isDragging = true;
+  });
+  canvas.addEventListener('mousemove', (e) => {
+    if (isDragging) {
+      x = getX(e) - 20;
+      A = Math.abs(x - cx);
+      t = x >= cx ? 0 : Math.PI; // reset phase
+    }
+  });
+  window.addEventListener('mouseup', () => isDragging = false);
+
+  canvas.addEventListener('touchstart', (e) => {
+    let px = getX(e);
+    if (Math.abs(px - (x + 20)) < 40) { isDragging = true; e.preventDefault(); }
+  }, {passive: false});
+  canvas.addEventListener('touchmove', (e) => {
+    if (isDragging) {
+      x = getX(e) - 20;
+      A = Math.abs(x - cx);
+      t = x >= cx ? 0 : Math.PI; // reset phase
+      e.preventDefault();
+    }
+  }, {passive: false});
+  window.addEventListener('touchend', () => isDragging = false);
+
+  draw();
 }
 
 function saveInputs() {

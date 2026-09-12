@@ -9,7 +9,7 @@
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
-  <link rel="stylesheet" href="style.css?v=1789176713">
+  <link rel="stylesheet" href="style.css?v=1789180741">
 </head>
 <body>
 
@@ -23,12 +23,24 @@
         <button id="btnTogglePanel" class="secondary" style="padding:8px; border-radius:8px; border:1px solid var(--border); cursor:pointer; background:#fff;" title="ซ่อน/แสดง ทฤษฎี">
           <i class="ph ph-arrows-out-line-horizontal" style="font-size:16px;"></i> ซ่อนเนื้อหา
         </button>
-      <select id="topicSelector">
-        <option value="work">5.1 งาน (Work)</option>
-        <option value="power">5.2 กำลัง (Power)</option>
-        <option value="kinetic">5.3 พลังงานจลน์ (Kinetic Energy)</option>
-        <option value="potential">5.4 พลังงานศักย์ (Potential Energy)</option>
-        <option value="conservation">5.5 การอนุรักษ์พลังงานกล (Conservation)</option>
+            <select id="topicSelector">
+        <optgroup label="บทที่ 5: งานและพลังงาน">
+          <option value="work">5.1 งาน (Work)</option>
+          <option value="power">5.2 กำลัง (Power)</option>
+          <option value="kinetic">5.3 พลังงานจลน์ (Kinetic Energy)</option>
+          <option value="potential">5.4 พลังงานศักย์ (Potential Energy)</option>
+          <option value="conservation">5.5 การอนุรักษ์พลังงานกล (Conservation)</option>
+        </optgroup>
+        <optgroup label="บทที่ 6: โมเมนตัมและการชน">
+          <option value="momentum">6.1 โมเมนตัม (Momentum)</option>
+          <option value="impulse">6.2 แรงและการดล (Impulse)</option>
+          <option value="collision">6.3 การชน (Collisions)</option>
+        </optgroup>
+        <optgroup label="บทที่ 7: การเคลื่อนที่แบบต่างๆ">
+          <option value="projectile">7.1 โพรเจกไทล์ (Projectile)</option>
+          <option value="circular">7.2 แบบวงกลม (Circular Motion)</option>
+          <option value="shm">7.3 ฮาร์มอนิกอย่างง่าย (SHM)</option>
+        </optgroup>
       </select>
 
       <div class="level-switch">
@@ -102,8 +114,10 @@
     </div>
   </div>
 
-  <script src="data.js?v=1789176713"></script>
-  <script src="draw.js?v=1789176713"></script>
-  <script src="app.js?v=1789176713"></script>
+  <script src="data.js?v=1789180741"></script>
+    <script src="data_ch6.js"></script>
+    <script src="data_ch7.js"></script>
+  <script src="draw.js?v=1789180741"></script>
+  <script src="app.js?v=1789180741"></script>
 </body>
 </html>
