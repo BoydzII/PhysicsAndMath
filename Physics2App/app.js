@@ -4,9 +4,11 @@ if (typeof physicsData !== 'undefined') window.physicsData = physicsData;
 let currentLevel = 'beginner';
 let drawingEngine = null;
 let currentPaperZoom = 1.0;
+window.currentPaperZoom = currentPaperZoom;
 
 function setPaperZoom(zoomLevel) {
   currentPaperZoom = Math.min(Math.max(Number(zoomLevel.toFixed(2)), 0.7), 2.5);
+  window.currentPaperZoom = currentPaperZoom;
   const wrapper = document.querySelector('.notebook-wrapper');
   const panel = document.querySelector('.notebook-panel');
   if (!wrapper || !panel) return;
@@ -316,6 +318,12 @@ function setupListeners() {
     setTimeout(() => { if (drawingEngine) drawingEngine.resize(); }, 350);
   });
 
+  // Fullscreen Mode
+  document.getElementById('btnFullscreen')?.addEventListener('click', toggleFullscreen);
+
+  // Toggle Inputs Lock
+  document.getElementById('btnToggleInputsLock')?.addEventListener('click', toggleInputsLock);
+
   // Modal Actions
   document.getElementById('btnSubmit')?.addEventListener('click', () => {
     updateModalGradingSummary();
@@ -440,6 +448,8 @@ function renderApp() {
 
   // Restore inputs after re-render
   try { restoreInputs(); } catch(e) {}
+  // Set up answer inputs protection
+  try { setupAnswerInputProtection(); } catch(e) {}
   // Ensure canvas resizes to fit new content height and apply current zoom
   setTimeout(() => {
     try {
@@ -475,38 +485,155 @@ function restoreInputs() {
 }
 
 
-// --- Custom Pinch Zoom for Paper Only ---
-window.currentZoom = 1;
-let initialZoom = 1;
+// --- Safari iOS Gesture Pinch Zoom for Paper Only ---
+let initialZoomOnGesture = 1.0;
 
 document.addEventListener('gesturestart', function(e) {
-    e.preventDefault();
-    initialZoom = currentZoom;
+  e.preventDefault();
+  initialZoomOnGesture = currentPaperZoom;
 });
 
 document.addEventListener('gesturechange', function(e) {
-    e.preventDefault();
-    const wrapper = document.querySelector('.notebook-wrapper');
-    if (!wrapper) return;
-    
-    let newZoom = initialZoom * e.scale;
-    newZoom = Math.max(1, Math.min(newZoom, 5)); // min 1x, max 5x
-    window.currentZoom = newZoom;
-    
-    // Use CSS zoom (works well in Safari for scaling while updating layout size)
-    wrapper.style.zoom = currentZoom;
+  e.preventDefault();
+  const newZoom = initialZoomOnGesture * e.scale;
+  setPaperZoom(newZoom);
 });
 
 document.addEventListener('gestureend', function(e) {
-    e.preventDefault();
+  e.preventDefault();
 });
 
-// Prevent multi-touch scrolling which might trigger native zoom in some cases
-document.addEventListener('touchmove', function(e) {
-    if (e.touches.length > 1) {
-        e.preventDefault();
+// --- Fullscreen Mode Logic ---
+function toggleFullscreen() {
+  const isFull = !!(document.fullscreenElement || document.webkitFullscreenElement);
+  if (!isFull) {
+    const docEl = document.documentElement;
+    if (docEl.requestFullscreen) {
+      docEl.requestFullscreen().catch(err => console.warn('Fullscreen error:', err));
+    } else if (docEl.webkitRequestFullscreen) {
+      docEl.webkitRequestFullscreen();
     }
-}, { passive: false });
+  } else {
+    if (document.exitFullscreen) {
+      document.exitFullscreen().catch(err => console.warn('Exit fullscreen error:', err));
+    } else if (document.webkitExitFullscreen) {
+      document.webkitExitFullscreen();
+    }
+  }
+}
+
+function updateFullscreenUI() {
+  const isFull = !!(document.fullscreenElement || document.webkitFullscreenElement);
+  const btn = document.getElementById('btnFullscreen');
+  if (btn) {
+    btn.innerHTML = isFull 
+      ? '<i class="ph ph-corners-in"></i> ออกจากเต็มจอ' 
+      : '<i class="ph ph-corners-out"></i> เต็มจอ';
+    btn.title = isFull ? 'ออกจากโหมดเต็มจอ' : 'เปิดโหมดเต็มจอ';
+  }
+  setTimeout(() => {
+    try {
+      if (drawingEngine) drawingEngine.resize();
+      setPaperZoom(currentPaperZoom);
+    } catch(e) {}
+  }, 100);
+}
+
+document.addEventListener('fullscreenchange', updateFullscreenUI);
+document.addEventListener('webkitfullscreenchange', updateFullscreenUI);
+
+// --- Answer Inputs Protection System ---
+let inputsProtected = true;
+
+function setupAnswerInputProtection() {
+  const container = document.getElementById('notebookContainer');
+  if (!container) return;
+
+  const inputs = container.querySelectorAll('.answer-input');
+  inputs.forEach(input => {
+    if (inputsProtected) {
+      input.readOnly = true;
+      input.classList.add('input-protected');
+      input.title = 'ช่องคำตอบถูกล็อกอยู่ — แตะเพื่อปลดล็อกและพิมพ์ตอบ';
+    } else {
+      input.readOnly = false;
+      input.classList.remove('input-protected');
+      input.title = 'พิมพ์คำตอบ';
+    }
+
+    if (!input.dataset.protectedBound) {
+      input.dataset.protectedBound = 'true';
+
+      input.addEventListener('click', (e) => {
+        if (input.classList.contains('input-protected')) {
+          e.preventDefault();
+          e.stopPropagation();
+          input.readOnly = false;
+          input.classList.remove('input-protected');
+          showToast('🔓 ปลดล็อกช่องตอบแล้ว: พร้อมพิมพ์ตัวเลขคำตอบ', 'info');
+          input.focus();
+          input.select();
+        }
+      });
+
+      input.addEventListener('blur', () => {
+        if (inputsProtected) {
+          input.readOnly = true;
+          input.classList.add('input-protected');
+        }
+        saveInputs();
+      });
+
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          input.blur();
+        }
+      });
+    }
+  });
+
+  updateInputsLockUI();
+}
+
+function updateInputsLockUI() {
+  const btn = document.getElementById('btnToggleInputsLock');
+  if (btn) {
+    if (inputsProtected) {
+      btn.classList.add('active');
+      btn.innerHTML = '<i class="ph ph-lock-key"></i>';
+      btn.title = 'ช่องคำตอบถูกล็อกอยู่ (แตะช่องเพื่อพิมพ์ตอบ)';
+    } else {
+      btn.classList.remove('active');
+      btn.innerHTML = '<i class="ph ph-lock-key-open"></i>';
+      btn.title = 'ช่องคำตอบปลดล็อกแล้ว (พร้อมพิมพ์)';
+    }
+  }
+}
+
+function toggleInputsLock() {
+  inputsProtected = !inputsProtected;
+  const container = document.getElementById('notebookContainer');
+  if (container) {
+    const inputs = container.querySelectorAll('.answer-input');
+    inputs.forEach(input => {
+      if (inputsProtected) {
+        input.readOnly = true;
+        input.classList.add('input-protected');
+        input.title = 'ช่องคำตอบถูกล็อกอยู่ — แตะเพื่อปลดล็อกและพิมพ์ตอบ';
+      } else {
+        input.readOnly = false;
+        input.classList.remove('input-protected');
+        input.title = 'พิมพ์คำตอบ';
+      }
+    });
+  }
+  updateInputsLockUI();
+  if (inputsProtected) {
+    showToast('🔒 ล็อกช่องคำตอบทั้งหมดแล้ว ป้องกันปากกาเขียนโดน', 'info');
+  } else {
+    showToast('🔓 ปลดล็อกช่องคำตอบทั้งหมดแล้ว พร้อมพิมพ์คำตอบ', 'info');
+  }
+}
 
 
 // ==========================================

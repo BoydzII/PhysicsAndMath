@@ -5,11 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>ฟิสิกส์ 2 - Interactive Notebook</title>
   
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css?v=1789222623">
-  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js?v=1789222623"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js?v=1789222623"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css?v=1789223339">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js?v=1789223339"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js?v=1789223339"></script>
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
-  <link rel="stylesheet" href="style.css?v=1789222623">
+  <link rel="stylesheet" href="style.css?v=1789223339">
 </head>
 <body>
 
@@ -64,6 +64,7 @@
     </div>
 
     <div class="actions">
+      <button id="btnFullscreen" class="secondary" title="เปิด/ปิด โหมดเต็มจอ (Fullscreen)"><i class="ph ph-corners-out"></i> เต็มจอ</button>
       <button id="btnCheckAnswers" class="secondary" title="ตรวจคำตอบที่กรอกทั้งหมด"><i class="ph ph-check-circle"></i> ตรวจคำตอบ</button>
       <button id="btnSubmit" class="primary" title="ส่งงานและบันทึกคะแนน"><i class="ph ph-paper-plane-right"></i> ส่งงาน</button>
     </div>
@@ -97,6 +98,9 @@
       <button class="tool-btn" id="btnZoomOut" title="ย่อหน้ากระดาษ (Zoom Out)"><i class="ph ph-magnifying-glass-minus"></i></button>
       <span id="zoomLevelText" title="คลิกเพื่อรีเซ็ตเป็น 100%" class="zoom-text">100%</span>
       <button class="tool-btn" id="btnZoomIn" title="ขยายหน้ากระดาษ (Zoom In)"><i class="ph ph-magnifying-glass-plus"></i></button>
+    </div>
+    <div class="tool-group lock-group" style="border-left: 1px solid var(--border); padding-left: 8px;" title="สถานะล็อกช่องคำตอบ (ป้องกันปากกาเขียนโดน)">
+      <button class="tool-btn active" id="btnToggleInputsLock" title="ช่องคำตอบถูกป้องกันอยู่ (แตะช่องเพื่อพิมพ์ตอบ)"><i class="ph ph-lock-key"></i></button>
     </div>
   </div>
 
@@ -176,17 +180,17 @@
   <!-- Toast Notification Container -->
   <div id="toastNotification" class="toast-notification"></div>
 
-  <script src="data.js?v=1789222623"></script>
-    <script src="data_ch6.js?v=1789222623"></script>
-    <script src="data_ch7.js?v=1789222623"></script>
-    <script src="data_ch5_challenge.js?v=1789222623"></script>
-    <script src="data_ch6_challenge.js?v=1789222623"></script>
-    <script src="data_ch7_challenge.js?v=1789222623"></script>
-  <script src="draw.js?v=1789222623"></script>
-  <script src="simulations/sim_core.js?v=1789222623"></script>
-  <script src="simulations/sim_ch5.js?v=1789222623"></script>
-  <script src="simulations/sim_ch6.js?v=1789222623"></script>
-  <script src="simulations/sim_ch7.js?v=1789222623"></script>
-  <script src="app.js?v=1789222623"></script>
+  <script src="data.js?v=1789223339"></script>
+    <script src="data_ch6.js?v=1789223339"></script>
+    <script src="data_ch7.js?v=1789223339"></script>
+    <script src="data_ch5_challenge.js?v=1789223339"></script>
+    <script src="data_ch6_challenge.js?v=1789223339"></script>
+    <script src="data_ch7_challenge.js?v=1789223339"></script>
+  <script src="draw.js?v=1789223339"></script>
+  <script src="simulations/sim_core.js?v=1789223339"></script>
+  <script src="simulations/sim_ch5.js?v=1789223339"></script>
+  <script src="simulations/sim_ch6.js?v=1789223339"></script>
+  <script src="simulations/sim_ch7.js?v=1789223339"></script>
+  <script src="app.js?v=1789223339"></script>
 </body>
 </html>

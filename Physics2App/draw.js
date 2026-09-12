@@ -53,8 +53,8 @@ class DrawingEngine {
     // High-DPI backing store for razor-sharp Retina lines
     this.canvas.width = Math.round(w * dpr);
     this.canvas.height = Math.round(h * dpr);
-    this.canvas.style.width = w + 'px';
-    this.canvas.style.height = h + 'px';
+    this.canvas.style.width = '100%';
+    this.canvas.style.height = '100%';
 
     this.ctx.setTransform(1, 0, 0, 1, 0, 0);
     this.ctx.scale(dpr, dpr);
@@ -208,14 +208,11 @@ class DrawingEngine {
   }
 
   getPointerPos(e) {
-    const rect = this.canvas.getBoundingClientRect();
-    // Bounding rect accounts for CSS zoom or transform scale
-    const scaleX = (this.canvas.clientWidth || rect.width) / (rect.width || 1);
-    const scaleY = (this.canvas.clientHeight || rect.height) / (rect.height || 1);
-
+    const rect = this.cachedRect || this.canvas.getBoundingClientRect();
+    const zoom = (typeof window !== 'undefined' && window.currentPaperZoom) ? window.currentPaperZoom : 1;
     return {
-      x: (e.clientX - rect.left) * scaleX,
-      y: (e.clientY - rect.top) * scaleY,
+      x: (e.clientX - rect.left) / zoom,
+      y: (e.clientY - rect.top) / zoom,
       pressure: e.pressure || 0.5
     };
   }
@@ -269,6 +266,7 @@ class DrawingEngine {
 
       this.isDrawing = true;
       this.pushUndoState();
+      this.cachedRect = this.canvas.getBoundingClientRect();
 
       const pos = this.getPointerPos(e);
       this.points = [pos];
@@ -339,11 +337,13 @@ class DrawingEngine {
 
       this.points = [];
       this.prevMid = null;
+      this.cachedRect = null;
       this.saveData();
     };
 
     const cancelDraw = (e) => {
       this.activePointers.delete(e.pointerId);
+      this.cachedRect = null;
       if (this.isDrawing) {
         this.isDrawing = false;
         this.points = [];

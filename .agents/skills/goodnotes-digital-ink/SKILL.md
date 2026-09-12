@@ -71,20 +71,30 @@ description: >-
        wrapper.style.marginBottom = shiftY > 0 ? `${shiftY * 2}px` : '0px';
      }
      ```
-  2. การแปลงพิกัด Pointer ไม่แปรผันตามระดับการซูม (Zoom-Invariant Coordinate Mapping):
+  2. การแปลงพิกัด Pointer ไม่แปรผันตามระดับการซูม (Zero-Drift Coordinate Mapping):
+     - **ห้ามใส่ CSS `transition` บน `transform` หรือ `margin` ของกระดาษ** เพราะการเปลี่ยนรูปอย่างต่อเนื่องใน 120ms จะทำให้ค่า `getBoundingClientRect()` คลาดเคลื่อนระหว่างเขียน
+     - ผูก `window.currentPaperZoom` ในตัวแปร Global เสมอ
+     - แคชค่า `this.cachedRect` ที่จังหวะ `pointerdown` เพื่อป้องกัน Layout Thrashing 120 ครั้ง/วินาที:
      ```javascript
      getPointerPos(e) {
-       const rect = this.canvas.getBoundingClientRect();
-       const scaleX = (this.canvas.clientWidth || rect.width) / (rect.width || 1);
-       const scaleY = (this.canvas.clientHeight || rect.height) / (rect.height || 1);
+       const rect = this.cachedRect || this.canvas.getBoundingClientRect();
+       const zoom = (typeof window !== 'undefined' && window.currentPaperZoom) ? window.currentPaperZoom : 1;
        return {
-         x: (e.clientX - rect.left) * scaleX,
-         y: (e.clientY - rect.top) * scaleY,
+         x: (e.clientX - rect.left) / zoom,
+         y: (e.clientY - rect.top) / zoom,
          pressure: e.pressure || 0.5
        };
      }
      ```
   3. Multi-Touch Isolation: เมื่อมี 2 นิ้วแตะหน้าจอ ระบบจะยกเลิกการวาดทันที และส่งสัญญาณให้ `.notebook-panel` ทำหน้าที่ Pinch-to-Zoom ได้อย่างราบรื่น
+
+### ง) การป้องกันช่องคำตอบจากการขัดจังหวะลายมือ (Answer Inputs Protection)
+- **ปัญหา:** เมื่อเขียนด้วย Apple Pencil หรือข้อมือวางพาดลงบนช่อง `<input class="answer-input">` เบราว์เซอร์จะเปิดคีย์บอร์ดเสมือนขึ้นมาแย่งโฟกัส และขัดจังหวะการวาดเส้นลายมือ
+- **โซลูชัน:**
+  1. ล็อกช่องคำตอบไว้ก่อนเป็นค่าเริ่มต้น (`readOnly = true` และคลาส `.input-protected`)
+  2. เมื่อนักเรียนตั้งใจแตะช่องเพื่อพิมพ์ตอบ ให้แสดงข้อความแจ้งเตือน `showToast` และปลดล็อกช่องให้พิมพ์ได้ทันที
+  3. เมื่อพิมพ์เสร็จและแตะพื้นที่อื่น (`blur`) ให้ล็อกกลับอัตโนมัติ เพื่อให้นักเรียนเขียนปากกาต่อได้อย่างราบรื่น
+  4. มีปุ่มสลับล็อก/ปลดล็อกทั้งหมดบนแถบเครื่องมือ (`#btnToggleInputsLock`) เพื่อความสะดวกรวดเร็ว
 
 ---
 
