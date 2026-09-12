@@ -24,16 +24,24 @@ Object.assign(physicsData.topics, {
         hints: ["เวลาอยู่ในอากาศ $t = \\frac{2u \\sin \\theta}{g}$"],
         guide: `
           <div class="step">
-            <p>1. หาความเร็วต้นในแนวดิ่ง: $u_y = u \\sin \\theta$</p>
-            <p>$u_y = 20 \\sin 30^\\circ = 10 \\text{ m/s}$</p>
+            <p><strong>ขั้นที่ 1:</strong> หาความเร็วต้นในแนวดิ่ง ($u_y$)</p>
+            <p>$$\\begin{aligned}
+              u_y &= u \\sin \\theta \\\\
+              &= 20 \\sin 30^\\circ \\\\
+              &= 10\\text{ m/s}
+            \\end{aligned}$$</p>
           </div>
           <div class="step">
-            <p>2. หาเวลาทั้งหมด: $t = \\frac{2u_y}{g}$</p>
-            <p>$t = \\frac{2(10)}{10} = 2 \\text{ s}$</p>
+            <p><strong>ขั้นที่ 2:</strong> หาเวลาที่ลูกบอลอยู่ในอากาศทั้งหมด ($t$)</p>
+            <p>$$\\begin{aligned}
+              t &= \\frac{2u_y}{g} \\\\
+              &= \\frac{2(10)}{10} \\\\
+              &= 2\\text{ s}
+            \\end{aligned}$$</p>
           </div>
         `,
         intermediateHtml: `
-          <p>$u = 20 \\text{ m/s}$, $\\theta = 30^\\circ$, $g = 10 \\text{ m/s}^2$</p>
+          <p>$u = 20\\text{ m/s}$, $\\theta = 30^\\circ$, $g = 10\\text{ m/s}^2$</p>
           <p>เวลา $t = $ <input type="text" class="answer-input" placeholder="2"> $\\text{s}$</p>
         `,
         advancedHtml: `
@@ -46,15 +54,21 @@ Object.assign(physicsData.topics, {
         hints: ["ใช้สูตรลัด $S_x = \\frac{u^2 \\sin 2\\theta}{g}$"],
         guide: `
           <div class="step">
-            <p>1. หาระยะไกลสุดจากสูตร $S_x = \\frac{u^2 \\sin 2\\theta}{g}$</p>
+            <p><strong>ขั้นที่ 1:</strong> ใช้สูตรระยะตกไกลสุดในแนวระดับ</p>
+            <p>$$S_x = \\frac{u^2 \\sin 2\\theta}{g}$$</p>
           </div>
           <div class="step">
-            <p>2. แทนค่า: $S_x = \\frac{50^2 \\sin(2 \\times 45^\\circ)}{10}$</p>
-            <p>$S_x = \\frac{2500 \\times 1}{10} = 250 \\text{ m}$</p>
+            <p><strong>ขั้นที่ 2:</strong> แทนค่าและคำนวณ</p>
+            <p>$$\\begin{aligned}
+              S_x &= \\frac{50^2 \\sin(2 \\times 45^\\circ)}{10} \\\\
+              &= \\frac{2{,}500 \\sin 90^\\circ}{10} \\\\
+              &= \\frac{2{,}500(1)}{10} \\\\
+              &= 250\\text{ m}
+            \\end{aligned}$$</p>
           </div>
         `,
         intermediateHtml: `
-          <p>$u = 50 \\text{ m/s}$, $\\theta = 45^\\circ$, $g = 10 \\text{ m/s}^2$</p>
+          <p>$u = 50\\text{ m/s}$, $\\theta = 45^\\circ$, $g = 10\\text{ m/s}^2$</p>
           <p>ระยะ $S_x = $ <input type="text" class="answer-input" placeholder="250"> $\\text{m}$</p>
         `,
         advancedHtml: `
@@ -67,17 +81,26 @@ Object.assign(physicsData.topics, {
         hints: ["จุดสูงสุดความเร็วในแนวดิ่ง $v_y = 0$", "หาระยะสูงสุดจาก $S_y = \\frac{u_y^2}{2g}$"],
         guide: `
           <div class="step">
-            <p>1. หาความเร็วต้นในแนวดิ่ง: $u_y = u \\sin 60^\\circ$</p>
-            <p>$u_y = 30 \\times \\frac{\\sqrt{3}}{2} = 15\\sqrt{3} \\text{ m/s}$</p>
+            <p><strong>ขั้นที่ 1:</strong> หาความเร็วต้นแนวดิ่ง ($u_y$)</p>
+            <p>$$\\begin{aligned}
+              u_y &= u \\sin 60^\\circ \\\\
+              &= 30 \\left(\\frac{\\sqrt{3}}{2}\\right) \\\\
+              &= 15\\sqrt{3}\\text{ m/s}
+            \\end{aligned}$$</p>
           </div>
           <div class="step">
-            <p>2. ที่จุดสูงสุด $v_y = 0$, หา $S_y$ จาก $v_y^2 = u_y^2 - 2gS_y$</p>
-            <p>$0 = (15\\sqrt{3})^2 - 2(10)S_y$</p>
-            <p>$20S_y = 225 \\times 3 = 675 \\Rightarrow S_y = 33.75 \\text{ m}$</p>
+            <p><strong>ขั้นที่ 2:</strong> ที่จุดสูงสุด $v_y = 0$ หาระยะแนวดิ่ง $S_y$</p>
+            <p>$$\\begin{aligned}
+              v_y^2 &= u_y^2 - 2gS_y \\\\
+              0 &= (15\\sqrt{3})^2 - 2(10)S_y \\\\
+              20S_y &= 675 \\\\
+              S_y &= \\frac{675}{20} \\\\
+              S_y &= 33.75\\text{ m}
+            \\end{aligned}$$</p>
           </div>
         `,
         intermediateHtml: `
-          <p>$u_y = 15\\sqrt{3} \\text{ m/s}$, $g = 10 \\text{ m/s}^2$</p>
+          <p>$u_y = 15\\sqrt{3}\\text{ m/s}$, $g = 10\\text{ m/s}^2$</p>
           <p>ความสูง $S_y = $ <input type="text" class="answer-input" placeholder="33.75"> $\\text{m}$</p>
         `,
         advancedHtml: `
@@ -90,81 +113,114 @@ Object.assign(physicsData.topics, {
         hints: ["เวลาในการตกหาจากแนวดิ่ง $S_y = \\frac{1}{2}gt^2$ เพราะ $u_y = 0$", "ระยะทางแนวระดับ $S_x = u_x t$"],
         guide: `
           <div class="step">
-            <p>1. หาเวลาในการตกจากสมการแนวดิ่ง ($u_y = 0$):</p>
-            <p>$20 = \\frac{1}{2}(10)t^2 \\Rightarrow t^2 = 4 \\Rightarrow t = 2 \\text{ s}$</p>
+            <p><strong>ขั้นที่ 1:</strong> หาเวลาตกจากแนวดิ่ง ($u_y = 0$)</p>
+            <p>$$\\begin{aligned}
+              S_y &= \\frac{1}{2}gt^2 \\\\
+              20 &= \\frac{1}{2}(10)t^2 \\\\
+              5t^2 &= 20 \\\\
+              t^2 &= 4 \\\\
+              t &= 2\\text{ s}
+            \\end{aligned}$$</p>
           </div>
           <div class="step">
-            <p>2. หาระยะห่างในแนวระดับ:</p>
-            <p>$S_x = u_x t = 10 \\times 2 = 20 \\text{ m}$</p>
+            <p><strong>ขั้นที่ 2:</strong> หาระยะในแนวระดับ ($S_x$)</p>
+            <p>$$\\begin{aligned}
+              S_x &= u_x t \\\\
+              &= (10)(2) \\\\
+              &= 20\\text{ m}
+            \\end{aligned}$$</p>
           </div>
         `,
         intermediateHtml: `
-          <p>$u_x = 10 \\text{ m/s}$, $u_y = 0 \\text{ m/s}$, $S_y = 20 \\text{ m}$</p>
-          <p>ระยะห่าง $S_x = $ <input type="text" class="answer-input" placeholder="20"> $\\text{m}$</p>
+          <p>$u_x = 10\\text{ m/s}$, $h = 20\\text{ m}$</p>
+          <p>ระยะตก $S_x = $ <input type="text" class="answer-input" placeholder="20"> $\\text{m}$</p>
         `,
         advancedHtml: `
-          <p>ระยะห่าง $S_x = $ <input type="text" class="answer-input" placeholder="20"> $\\text{m}$</p>
+          <p>ระยะตก $S_x = $ <input type="text" class="answer-input" placeholder="20"> $\\text{m}$</p>
         `
       },
       {
         id: "proj_5",
-        text: "เครื่องบินบินในระดับราบด้วยความเร็ว $100 \\text{ m/s}$ ที่ความสูง $500 \\text{ m}$ ปล่อยถุงเสบียงลงมา ถุงจะตกไกลจากจุดปล่อยในแนวระดับเท่าใด ($g = 10 \\text{ m/s}^2$)",
-        hints: ["ถุงเสบียงมีความเร็วต้นในแนวระดับเท่ากับเครื่องบิน", "$u_y = 0$"],
+        text: "เครื่องบินบินในแนวระดับด้วยความเร็ว $100 \\text{ m/s}$ สูงจากพื้นดิน $500 \\text{ m}$ ปล่อยสัมภาระลงมา สัมภาระจะตกห่างจากจุดปล่อยในแนวระดับเท่าใด ($g = 10 \\text{ m/s}^2$)",
+        hints: ["หาเวลาจากแนวดิ่ง $S_y = \\frac{1}{2}gt^2$", "หา $S_x = u_x t$"],
         guide: `
           <div class="step">
-            <p>1. หาเวลาที่ใช้ในการตก: $S_y = \\frac{1}{2}gt^2$</p>
-            <p>$500 = 5t^2 \\Rightarrow t^2 = 100 \\Rightarrow t = 10 \\text{ s}$</p>
+            <p><strong>ขั้นที่ 1:</strong> หาเวลาตก ($t$)</p>
+            <p>$$\\begin{aligned}
+              S_y &= \\frac{1}{2}gt^2 \\\\
+              500 &= \\frac{1}{2}(10)t^2 \\\\
+              5t^2 &= 500 \\\\
+              t^2 &= 100 \\\\
+              t &= 10\\text{ s}
+            \\end{aligned}$$</p>
           </div>
           <div class="step">
-            <p>2. หาระยะในแนวระดับ: $S_x = u_x t$</p>
-            <p>$S_x = 100 \\times 10 = 1000 \\text{ m}$</p>
+            <p><strong>ขั้นที่ 2:</strong> หาระยะห่างในแนวระดับ ($S_x$)</p>
+            <p>$$\\begin{aligned}
+              S_x &= u_x t \\\\
+              &= (100)(10) \\\\
+              &= 1{,}000\\text{ m}
+            \\end{aligned}$$</p>
           </div>
         `,
         intermediateHtml: `
-          <p>$u_x = 100 \\text{ m/s}$, $S_y = 500 \\text{ m}$, $g = 10 \\text{ m/s}^2$</p>
-          <p>ระยะทาง $S_x = $ <input type="text" class="answer-input" placeholder="1000"> $\\text{m}$</p>
+          <p>$u_x = 100\\text{ m/s}$, $S_y = 500\\text{ m}$</p>
+          <p>ระยะตก $S_x = $ <input type="text" class="answer-input" placeholder="1000"> $\\text{m}$</p>
         `,
         advancedHtml: `
-          <p>ระยะทาง $S_x = $ <input type="text" class="answer-input" placeholder="1000"> $\\text{m}$</p>
+          <p>ระยะตก $S_x = $ <input type="text" class="answer-input" placeholder="1000"> $\\text{m}$</p>
         `
       },
       {
         id: "proj_6",
-        text: "ขว้างลูกบอลขึ้นไปด้วยความเร็ว $40 \\text{ m/s}$ ทำมุม $30^\\circ$ กับแนวระดับ จงหาความเร็วของลูกบอลที่จุดสูงสุด",
-        hints: ["ที่จุดสูงสุด ความเร็วในแนวดิ่งเป็นศูนย์ ($v_y = 0$)", "ความเร็วในแนวระดับคงที่ตลอดการเคลื่อนที่ ($v_x = u_x$)"],
+        text: "ยิงจรวดขวดน้ำด้วยมุม $30^\\circ$ ความเร็วต้น $40 \\text{ m/s}$ จงหาอัตราเร็วของจรวดที่จุดสูงสุด",
+        hints: ["ที่จุดสูงสุด $v_y = 0$ ดังนั้น $v = v_x = u \\cos \\theta$"],
         guide: `
           <div class="step">
-            <p>1. ที่จุดสูงสุด $v_y = 0$ ดังนั้นความเร็วรวมจะเท่ากับ $v_x$</p>
-          </div>
-          <div class="step">
-            <p>2. คำนวณ $v_x = u \\cos \\theta$</p>
-            <p>$v_x = 40 \\cos 30^\\circ = 40(\\frac{\\sqrt{3}}{2}) = 20\\sqrt{3} \\approx 34.64 \\text{ m/s}$</p>
+            <p>ที่จุดสูงสุด ความเร็วในแนวดิ่งเป็นศูนย์ ($v_y = 0$) ความเร็วของจรวดจึงเท่ากับความเร็วแนวระดับ ($v_x$):</p>
+            <p>$$\\begin{aligned}
+              v &= v_x \\\\
+              &= u \\cos \\theta \\\\
+              &= 40 \\cos 30^\\circ \\\\
+              &= 40 \\left(\\frac{\\sqrt{3}}{2}\\right) \\\\
+              &= 20\\sqrt{3} \\\\
+              &\\approx 34.64\\text{ m/s}
+            \\end{aligned}$$</p>
           </div>
         `,
         intermediateHtml: `
-          <p>$u = 40 \\text{ m/s}$, $\\theta = 30^\\circ$</p>
-          <p>ความเร็ว $v = $ <input type="text" class="answer-input" placeholder="34.64"> $\\text{m/s}$ (ตอบทศนิยม 2 ตำแหน่ง หรือ $20\\sqrt{3}$)</p>
+          <p>$u = 40\\text{ m/s}$, $\\theta = 30^\\circ$</p>
+          <p>อัตราเร็วที่จุดสูงสุด $v = $ <input type="text" class="answer-input" placeholder="34.64"> $\\text{m/s}$</p>
         `,
         advancedHtml: `
-          <p>ความเร็ว $v = $ <input type="text" class="answer-input" placeholder="34.64"> $\\text{m/s}$</p>
+          <p>อัตราเร็วที่จุดสูงสุด $v = $ <input type="text" class="answer-input" placeholder="34.64"> $\\text{m/s}$</p>
         `
       },
       {
         id: "proj_7",
-        text: "เตะลูกบอลด้วยความเร็ว $25 \\text{ m/s}$ ทำมุม $53^\\circ$ กับพื้นสนาม เมื่อเวลาผ่านไป $1 \\text{ s}$ ลูกบอลอยู่สูงจากพื้นเท่าใด ($\\sin 53^\\circ = 0.8$, $g = 10 \\text{ m/s}^2$)",
-        hints: ["พิจารณาการเคลื่อนที่ในแนวดิ่ง หา $u_y$", "ใช้สมการ $S_y = u_y t - \\frac{1}{2}gt^2$"],
+        text: "ขว้างลูกเทนนิสด้วยความเร็ว $25 \\text{ m/s}$ มุม $53^\\circ$ กับแนวระดับ เมื่อเวลาผ่านไป $1 \\text{ s}$ ลูกเทนนิสจะอยู่สูงจากระดับที่ขว้างเท่าใด ($g = 10 \\text{ m/s}^2$)",
+        hints: ["หา $u_y = u \\sin 53^\\circ$", "ใช้สูตร $S_y = u_y t - \\frac{1}{2}gt^2$"],
         guide: `
           <div class="step">
-            <p>1. หา $u_y = u \\sin 53^\\circ = 25(0.8) = 20 \\text{ m/s}$</p>
+            <p><strong>ขั้นที่ 1:</strong> หาความเร็วต้นในแนวดิ่ง ($u_y$)</p>
+            <p>$$\\begin{aligned}
+              u_y &= u \\sin 53^\\circ \\\\
+              &= 25(0.8) \\\\
+              &= 20\\text{ m/s}
+            \\end{aligned}$$</p>
           </div>
           <div class="step">
-            <p>2. หาระยะแนวดิ่งที่เวลา $t = 1 \\text{ s}$:</p>
-            <p>$S_y = u_y t - \\frac{1}{2}gt^2 = 20(1) - \\frac{1}{2}(10)(1)^2$</p>
-            <p>$S_y = 20 - 5 = 15 \\text{ m}$</p>
+            <p><strong>ขั้นที่ 2:</strong> หาระยะความสูงที่เวลา $t = 1\\text{ s}$</p>
+            <p>$$\\begin{aligned}
+              S_y &= u_y t - \\frac{1}{2}gt^2 \\\\
+              &= 20(1) - \\frac{1}{2}(10)(1)^2 \\\\
+              &= 20 - 5 \\\\
+              &= 15\\text{ m}
+            \\end{aligned}$$</p>
           </div>
         `,
         intermediateHtml: `
-          <p>$u_y = 20 \\text{ m/s}$, $t = 1 \\text{ s}$, $g = 10 \\text{ m/s}^2$</p>
+          <p>$u_y = 20\\text{ m/s}$, $t = 1\\text{ s}$</p>
           <p>ความสูง $S_y = $ <input type="text" class="answer-input" placeholder="15"> $\\text{m}$</p>
         `,
         advancedHtml: `
@@ -173,71 +229,97 @@ Object.assign(physicsData.topics, {
       },
       {
         id: "proj_8",
-        text: "โยนวัตถุทำมุม $45^\\circ$ ปรากฏว่าวัตถุตกไกล $40 \\text{ m}$ ความเร็วต้นในการโยนมีค่าเท่าใด ($g = 10 \\text{ m/s}^2$)",
-        hints: ["ใช้สมการระยะตกไกลสุด $S_x = \\frac{u^2 \\sin 2\\theta}{g}$"],
+        text: "นักกระโดดไกลกระโดดทำมุม $45^\\circ$ ได้ระยะทางไกลสุด $40 \\text{ m}$ จงหาความเร็วต้นในการกระโดด ($g = 10 \\text{ m/s}^2$)",
+        hints: ["ใช้สูตร $S_x = \\frac{u^2 \\sin 2\\theta}{g}$"],
         guide: `
           <div class="step">
-            <p>1. จัดรูปสมการหา $u^2$:</p>
-            <p>$u^2 = \\frac{S_x \\cdot g}{\\sin 2\\theta}$</p>
+            <p><strong>ขั้นที่ 1:</strong> ตั้งสมการหาระยะไกลสุด</p>
+            <p>$$S_x = \\frac{u^2 \\sin 2\\theta}{g}$$</p>
           </div>
           <div class="step">
-            <p>2. แทนค่า:</p>
-            <p>$u^2 = \\frac{40 \\times 10}{\\sin 90^\\circ} = \\frac{400}{1} = 400$</p>
-            <p>$u = 20 \\text{ m/s}$</p>
+            <p><strong>ขั้นที่ 2:</strong> แทนค่าและแก้สมการหา $u$</p>
+            <p>$$\\begin{aligned}
+              40 &= \\frac{u^2 \\sin(90^\\circ)}{10} \\\\
+              40 &= \\frac{u^2 (1)}{10} \\\\
+              u^2 &= 400 \\\\
+              u &= 20\\text{ m/s}
+            \\end{aligned}$$</p>
           </div>
         `,
         intermediateHtml: `
-          <p>$S_x = 40 \\text{ m}$, $\\theta = 45^\\circ$, $g = 10 \\text{ m/s}^2$</p>
-          <p>ความเร็ว $u = $ <input type="text" class="answer-input" placeholder="20"> $\\text{m/s}$</p>
+          <p>$S_x = 40\\text{ m}$, $\\theta = 45^\\circ$, $g = 10\\text{ m/s}^2$</p>
+          <p>ความเร็วต้น $u = $ <input type="text" class="answer-input" placeholder="20"> $\\text{m/s}$</p>
         `,
         advancedHtml: `
-          <p>ความเร็ว $u = $ <input type="text" class="answer-input" placeholder="20"> $\\text{m/s}$</p>
+          <p>ความเร็วต้น $u = $ <input type="text" class="answer-input" placeholder="20"> $\\text{m/s}$</p>
         `
       },
       {
         id: "proj_9",
-        text: "ลูกปืนถูกยิงออกไปทำมุม $30^\\circ$ กับแนวระดับ หากลูกปืนขึ้นไปได้สูงสุด $45 \\text{ m}$ เวลาทั้งหมดที่ลูกปืนอยู่ในอากาศคือเท่าใด ($g = 10 \\text{ m/s}^2$)",
-        hints: ["หาระยะเวลาที่ใช้ไปถึงจุดสูงสุดจาก $S_y = \\frac{1}{2}gt^2$ หรือเทียบ $u_y$", "เวลาทั้งหมดคือ $2 \\times$ เวลาขาขึ้น"],
+        text: "ขว้างลูกบอลขึ้นไปทำมุมค่าหนึ่ง พบว่าลูกบอลขึ้นไปได้สูงสุด $45 \\text{ m}$ จงหาเวลาทั้งหมดที่ลูกบอลลอยอยู่ในอากาศ ($g = 10 \\text{ m/s}^2$)",
+        hints: ["หาเวลาขาขึ้น $t_{\\text{up}}$ จาก $S_y = \\frac{1}{2}gt^2$", "เวลาทั้งหมด $t = 2 t_{\\text{up}}$"],
         guide: `
           <div class="step">
-            <p>1. หาเวลาขาขึ้น จาก $S_y$ สูงสุด คิดกลับเหมือนปล่อยตกอิสระ $S = \\frac{1}{2}gt_{up}^2$</p>
-            <p>$45 = 5t_{up}^2 \\Rightarrow t_{up}^2 = 9 \\Rightarrow t_{up} = 3 \\text{ s}$</p>
+            <p><strong>ขั้นที่ 1:</strong> หาเวลาขาขึ้น ($t_{\\text{up}}$) จากจุดสูงสุด</p>
+            <p>$$\\begin{aligned}
+              S_y &= \\frac{1}{2}g t_{\\text{up}}^2 \\\\
+              45 &= \\frac{1}{2}(10) t_{\\text{up}}^2 \\\\
+              5 t_{\\text{up}}^2 &= 45 \\\\
+              t_{\\text{up}}^2 &= 9 \\\\
+              t_{\\text{up}} &= 3\\text{ s}
+            \\end{aligned}$$</p>
           </div>
           <div class="step">
-            <p>2. เวลาทั้งหมด $t = 2 \\times t_{up}$</p>
-            <p>$t = 2 \\times 3 = 6 \\text{ s}$</p>
+            <p><strong>ขั้นที่ 2:</strong> เวลาทั้งหมดที่ลอยในอากาศ</p>
+            <p>$$\\begin{aligned}
+              t &= 2 t_{\\text{up}} \\\\
+              &= 2(3) \\\\
+              &= 6\\text{ s}
+            \\end{aligned}$$</p>
           </div>
         `,
         intermediateHtml: `
-          <p>$S_{ymax} = 45 \\text{ m}$, $g = 10 \\text{ m/s}^2$</p>
-          <p>เวลา $t = $ <input type="text" class="answer-input" placeholder="6"> $\\text{s}$</p>
+          <p>$h_{\\max} = 45\\text{ m}$, $g = 10\\text{ m/s}^2$</p>
+          <p>เวลาลอยในอากาศ $t = $ <input type="text" class="answer-input" placeholder="6"> $\\text{s}$</p>
         `,
         advancedHtml: `
-          <p>เวลา $t = $ <input type="text" class="answer-input" placeholder="6"> $\\text{s}$</p>
+          <p>เวลาลอยในอากาศ $t = $ <input type="text" class="answer-input" placeholder="6"> $\\text{s}$</p>
         `
       },
       {
         id: "proj_10",
-        text: "วัตถุเคลื่อนที่แบบโพรเจกไทล์ มีความเร็วต้น $20 \\text{ m/s}$ ทำมุม $53^\\circ$ กับแนวระดับ จงหาอัตราเร็วของวัตถุเมื่อเวลาผ่านไป $2 \\text{ s}$ ($\\sin 53^\\circ = 0.8, \\cos 53^\\circ = 0.6$)",
-        hints: ["หา $v_x$ และ $v_y$ ที่ $t=2$", "อัตราเร็ว $v = \\sqrt{v_x^2 + v_y^2}$"],
+        text: "ขว้างวัตถุด้วยความเร็ว $20 \\text{ m/s}$ ทำมุม $53^\\circ$ กับแนวระดับ จงหาขนาดของความเร็วที่เวลา $t = 2 \\text{ s}$ ($g = 10 \\text{ m/s}^2$)",
+        hints: ["หา $v_x = u \\cos 53^\\circ$", "หา $v_y = u_y - gt$", "รวมความเร็ว $v = \\sqrt{v_x^2 + v_y^2}$"],
         guide: `
           <div class="step">
-            <p>1. หา $v_x$ และ $u_y$:</p>
-            <p>$v_x = 20(0.6) = 12 \\text{ m/s}$ (คงที่)</p>
-            <p>$u_y = 20(0.8) = 16 \\text{ m/s}$</p>
+            <p><strong>ขั้นที่ 1:</strong> หาองค์ประกอบความเร็วเริ่มต้น</p>
+            <p>$$\\begin{aligned}
+              v_x &= u \\cos 53^\\circ = 20(0.6) = 12\\text{ m/s} \\\\
+              u_y &= u \\sin 53^\\circ = 20(0.8) = 16\\text{ m/s}
+            \\end{aligned}$$</p>
           </div>
           <div class="step">
-            <p>2. หา $v_y$ ที่ $t=2$:</p>
-            <p>$v_y = u_y - gt = 16 - (10)(2) = -4 \\text{ m/s}$ (ทิศลง)</p>
+            <p><strong>ขั้นที่ 2:</strong> หาความเร็วแนวดิ่งที่เวลา $t = 2\\text{ s}$</p>
+            <p>$$\\begin{aligned}
+              v_y &= u_y - gt \\\\
+              &= 16 - 10(2) \\\\
+              &= -4\\text{ m/s}
+            \\end{aligned}$$</p>
           </div>
           <div class="step">
-            <p>3. หาอัตราเร็ว $v$:</p>
-            <p>$v = \\sqrt{12^2 + (-4)^2} = \\sqrt{144 + 16} = \\sqrt{160} = 4\\sqrt{10} \\approx 12.65 \\text{ m/s}$</p>
+            <p><strong>ขั้นที่ 3:</strong> หาขนาดของความเร็วรวม ($v$)</p>
+            <p>$$\\begin{aligned}
+              v &= \\sqrt{v_x^2 + v_y^2} \\\\
+              &= \\sqrt{12^2 + (-4)^2} \\\\
+              &= \\sqrt{144 + 16} \\\\
+              &= \\sqrt{160} \\\\
+              &\\approx 12.65\\text{ m/s}
+            \\end{aligned}$$</p>
           </div>
         `,
         intermediateHtml: `
-          <p>$v_x = 12 \\text{ m/s}$, $v_y = -4 \\text{ m/s}$</p>
-          <p>อัตราเร็ว $v = $ <input type="text" class="answer-input" placeholder="12.65"> $\\text{m/s}$ (ตอบทศนิยม 2 ตำแหน่ง)</p>
+          <p>$v_x = 12\\text{ m/s}$, $v_y = -4\\text{ m/s}$</p>
+          <p>อัตราเร็ว $v = $ <input type="text" class="answer-input" placeholder="12.65"> $\\text{m/s}$</p>
         `,
         advancedHtml: `
           <p>อัตราเร็ว $v = $ <input type="text" class="answer-input" placeholder="12.65"> $\\text{m/s}$</p>
@@ -245,7 +327,6 @@ Object.assign(physicsData.topics, {
       }
     ]
   },
-
   circular: {
     id: "circular",
     title: "7.2 แบบวงกลม",
@@ -256,7 +337,7 @@ Object.assign(physicsData.topics, {
           <li><strong>ความเร็วเชิงเส้นและเชิงมุม:</strong> $v = \\omega r$, $\\omega = \\frac{\\Delta \\theta}{\\Delta t} = 2\\pi f = \\frac{2\\pi}{T}$</li>
           <li><strong>ความเร่งเข้าสู่ศูนย์กลาง:</strong> $a_c = \\frac{v^2}{r} = \\omega^2 r$</li>
           <li><strong>แรงสู่ศูนย์กลาง:</strong> $F_c = m a_c = m \\frac{v^2}{r} = m \\omega^2 r$</li>
-          <li>รถเลี้ยวโค้งบนถนนราบ: $\\mu_s N = m \\frac{v^2}{r} \\Rightarrow v_{max} = \\sqrt{\\mu_s r g}$</li>
+          <li>รถเลี้ยวโค้งบนถนนราบ: $\\mu_s N = m \\frac{v^2}{r} \\Rightarrow v_{\\max} = \\sqrt{\\mu_s r g}$</li>
           <li>รถเลี้ยวโค้งบนถนนเอียงมุม $\\theta$: $\\tan \\theta = \\frac{v^2}{rg}$</li>
       </ul>
       <canvas id="simCircular" class="sim-canvas" style="position:relative; z-index:10; cursor:pointer;"></canvas>
@@ -269,162 +350,189 @@ Object.assign(physicsData.topics, {
         hints: ["แรงดึงเส้นเชือกคือแรงสู่ศูนย์กลาง $T = F_c = \\frac{mv^2}{r}$"],
         guide: `
           <div class="step">
-            <p>1. แทนค่าในสูตร $F_c = \\frac{mv^2}{r}$</p>
-            <p>$T = \\frac{(2)(4^2)}{0.5} = \\frac{32}{0.5} = 64 \\text{ N}$</p>
+            <p><strong>ขั้นที่ 1:</strong> ใช้สูตรแรงสู่ศูนย์กลาง</p>
+            <p>$$\\begin{aligned}
+              T &= \\frac{mv^2}{r} \\\\
+              &= \\frac{(2)(4^2)}{0.5} \\\\
+              &= \\frac{32}{0.5} \\\\
+              &= 64\\text{ N}
+            \\end{aligned}$$</p>
           </div>
         `,
         intermediateHtml: `
-          <p>$m = 2 \\text{ kg}$, $v = 4 \\text{ m/s}$, $r = 0.5 \\text{ m}$</p>
-          <p>แรงดึง $T = $ <input type="text" class="answer-input" placeholder="64"> $\\text{N}$</p>
+          <p>$m = 2\\text{ kg}$, $v = 4\\text{ m/s}$, $r = 0.5\\text{ m}$</p>
+          <p>แรงดึงเชือก $T = $ <input type="text" class="answer-input" placeholder="64"> $\\text{N}$</p>
         `,
         advancedHtml: `
-          <p>แรงดึง $T = $ <input type="text" class="answer-input" placeholder="64"> $\\text{N}$</p>
+          <p>แรงดึงเชือก $T = $ <input type="text" class="answer-input" placeholder="64"> $\\text{N}$</p>
         `
       },
       {
         id: "circ_2",
-        text: "รถยนต์เลี้ยวโค้งบนถนนราบที่มีรัศมีความโค้ง $40 \\text{ m}$ สัมประสิทธิ์ความเสียดทานสถิตระหว่างยางกับถนนคือ $0.4$ จงหาความเร็วสูงสุดที่รถสามารถเลี้ยวโค้งได้โดยไม่ไถล ($g = 10 \\text{ m/s}^2$)",
-        hints: ["$v_{max} = \\sqrt{\\mu_s r g}$"],
+        text: "รถยนต์มวล $1{,}000 \\text{ kg}$ วิ่งเลี้ยวโค้งบนถนนราบรัศมี $40 \\text{ m}$ ถ้าสัมประสิทธิ์ความเสียดทานระหว่างยางกับถนนคือ $0.4$ รถจะเลี้ยวโค้งได้ด้วยความเร็วสูงสุดเท่าใด ($g = 10 \\text{ m/s}^2$)",
+        hints: ["ใช้สูตร $v_{\\max} = \\sqrt{\\mu_s r g}$"],
         guide: `
           <div class="step">
-            <p>1. แรงเสียดทานสถิตสูงสุดทำหน้าที่เป็นแรงสู่ศูนย์กลาง:</p>
-            <p>$\\mu_s mg = \\frac{mv^2}{r} \\Rightarrow v = \\sqrt{\\mu_s rg}$</p>
-          </div>
-          <div class="step">
-            <p>2. แทนค่า:</p>
-            <p>$v = \\sqrt{(0.4)(40)(10)} = \\sqrt{160} = 4\\sqrt{10} \\approx 12.65 \\text{ m/s}$</p>
+            <p>แรงเสียดทานสถิตทำหน้าที่เป็นแรงสู่ศูนย์กลาง:</p>
+            <p>$$\\begin{aligned}
+              v_{\\max} &= \\sqrt{\\mu_s r g} \\\\
+              &= \\sqrt{(0.4)(40)(10)} \\\\
+              &= \\sqrt{160} \\\\
+              &= 4\\sqrt{10} \\\\
+              &\\approx 12.65\\text{ m/s}
+            \\end{aligned}$$</p>
           </div>
         `,
         intermediateHtml: `
-          <p>$r = 40 \\text{ m}$, $\\mu_s = 0.4$, $g = 10 \\text{ m/s}^2$</p>
-          <p>ความเร็ว $v = $ <input type="text" class="answer-input" placeholder="12.65"> $\\text{m/s}$ (ตอบทศนิยม 2 ตำแหน่ง หรือ $4\\sqrt{10}$)</p>
+          <p>$\\mu_s = 0.4$, $r = 40\\text{ m}$, $g = 10\\text{ m/s}^2$</p>
+          <p>ความเร็วสูงสุด $v = $ <input type="text" class="answer-input" placeholder="12.65"> $\\text{m/s}$</p>
         `,
         advancedHtml: `
-          <p>ความเร็ว $v = $ <input type="text" class="answer-input" placeholder="12.65"> $\\text{m/s}$</p>
+          <p>ความเร็วสูงสุด $v = $ <input type="text" class="answer-input" placeholder="12.65"> $\\text{m/s}$</p>
         `
       },
       {
         id: "circ_3",
-        text: "วัตถุเคลื่อนที่เป็นวงกลมรัศมี $2 \\text{ m}$ ด้วยความถี่ $5 \\text{ Hz}$ จงหาความเร่งสู่ศูนย์กลาง",
-        hints: ["หา $\\omega = 2\\pi f$", "$a_c = \\omega^2 r$"],
+        text: "วัตถุเคลื่อนที่รอบวงกลมรัศมี $2 \\text{ m}$ ด้วยความถี่ $5 \\text{ Hz}$ จงหาความเร่งสู่ศูนย์กลาง (กำหนดให้ $\\pi^2 \\approx 9.87$)",
+        hints: ["หา $\\omega = 2\\pi f$", "หา $a_c = \\omega^2 r$"],
         guide: `
           <div class="step">
-            <p>1. หาอัตราเร็วเชิงมุม $\\omega = 2\\pi(5) = 10\\pi \\text{ rad/s}$</p>
+            <p><strong>ขั้นที่ 1:</strong> หาความเร็วเชิงมุม ($\\omega$)</p>
+            <p>$$\\begin{aligned}
+              \\omega &= 2\\pi f \\\\
+              &= 2\\pi(5) \\\\
+              &= 10\\pi\\text{ rad/s}
+            \\end{aligned}$$</p>
           </div>
           <div class="step">
-            <p>2. หาความเร่งสู่ศูนย์กลาง $a_c = \\omega^2 r$</p>
-            <p>$a_c = (10\\pi)^2(2) = 200\\pi^2 \\approx 1973.92 \\text{ m/s}^2$ (ใช้ $\\pi^2 \\approx 9.87$)</p>
+            <p><strong>ขั้นที่ 2:</strong> หาความเร่งสู่ศูนย์กลาง ($a_c$)</p>
+            <p>$$\\begin{aligned}
+              a_c &= \\omega^2 r \\\\
+              &= (10\\pi)^2(2) \\\\
+              &= 200\\pi^2 \\\\
+              &= 200(9.87) \\\\
+              &\\approx 1{,}974\\text{ m/s}^2
+            \\end{aligned}$$</p>
           </div>
         `,
         intermediateHtml: `
-          <p>$r = 2 \\text{ m}$, $f = 5 \\text{ Hz}$</p>
-          <p>ความเร่ง $a_c = $ <input type="text" class="answer-input" placeholder="1973.92"> $\\text{m/s}^2$ (อนุโลมตอบ $200\\pi^2$ ในรูป 200pi^2)</p>
+          <p>$r = 2\\text{ m}$, $f = 5\\text{ Hz}$</p>
+          <p>ความเร่งสู่ศูนย์กลาง $a_c = $ <input type="text" class="answer-input" placeholder="1974"> $\\text{m/s}^2$</p>
         `,
         advancedHtml: `
-          <p>ความเร่ง $a_c = $ <input type="text" class="answer-input" placeholder="1973.92"> $\\text{m/s}^2$</p>
+          <p>ความเร่งสู่ศูนย์กลาง $a_c = $ <input type="text" class="answer-input" placeholder="1974"> $\\text{m/s}^2$</p>
         `
       },
       {
         id: "circ_4",
-        text: "มอเตอร์ไซค์ไต่ถังทรงกระบอกรัศมี $5 \\text{ m}$ สัมประสิทธิ์ความเสียดทานระหว่างยางกับผนังถังคือ $0.5$ จงหาความเร็วขั้นต่ำที่จะไม่ตกลงมา ($g = 10 \\text{ m/s}^2$)",
-        hints: ["แรงเสียดทานต้องรับน้ำหนักมอเตอร์ไซค์ $f_s = mg$", "$f_s = \\mu N$ และ $N = F_c = \\frac{mv^2}{r}$"],
+        text: "เครื่องเล่นหมุนเป็นวงกลมในแนวดิ่ง รัศมี $5 \\text{ m}$ มวลชนในกระเช้าจะต้องมีความเร็วอย่างน้อยเท่าใด จึงจะไม่ตกที่จุดสูงสุด ($g = 10 \\text{ m/s}^2$)",
+        hints: ["ที่จุดสูงสุด $N = 0 \\Rightarrow mg = \\frac{mv^2}{r} \\Rightarrow v = \\sqrt{rg}$"],
         guide: `
           <div class="step">
-            <p>1. ตั้งสมการ: $\\mu \\frac{mv^2}{r} = mg$</p>
-            <p>$v = \\sqrt{\\frac{rg}{\\mu}}$</p>
-          </div>
-          <div class="step">
-            <p>2. แทนค่า:</p>
-            <p>$v = \\sqrt{\\frac{(5)(10)}{0.5}} = \\sqrt{100} = 10 \\text{ m/s}$</p>
+            <p>ที่จุดสูงสุด เพื่อไม่ให้ตก ($N \\ge 0$):</p>
+            <p>$$\\begin{aligned}
+              v_{\\min} &= \\sqrt{rg} \\\\
+              &= \\sqrt{(5)(10)} \\\\
+              &= \\sqrt{50} \\\\
+              &\\approx 7.07\\text{ m/s}
+            \\end{aligned}$$</p>
           </div>
         `,
         intermediateHtml: `
-          <p>$r = 5 \\text{ m}$, $\\mu = 0.5$, $g = 10 \\text{ m/s}^2$</p>
-          <p>ความเร็ว $v = $ <input type="text" class="answer-input" placeholder="10"> $\\text{m/s}$</p>
+          <p>$r = 5\\text{ m}$, $g = 10\\text{ m/s}^2$</p>
+          <p>ความเร็วอย่างน้อย $v = $ <input type="text" class="answer-input" placeholder="7.07"> $\\text{m/s}$</p>
         `,
         advancedHtml: `
-          <p>ความเร็ว $v = $ <input type="text" class="answer-input" placeholder="10"> $\\text{m/s}$</p>
+          <p>ความเร็วอย่างน้อย $v = $ <input type="text" class="answer-input" placeholder="7.07"> $\\text{m/s}$</p>
         `
       },
       {
         id: "circ_5",
-        text: "แกว่งวัตถุมวล $1 \\text{ kg}$ ในแนวดิ่งด้วยเชือกยาว $1 \\text{ m}$ เมื่อถึงจุดต่ำสุดมีความเร็ว $5 \\text{ m/s}$ แรงดึงเส้นเชือกที่จุดต่ำสุดเป็นเท่าใด ($g = 10 \\text{ m/s}^2$)",
-        hints: ["ที่จุดต่ำสุด $T - mg = F_c$"],
+        text: "วัตถุมวล $1 \\text{ kg}$ ผูกติดเชือกยาว $1 \\text{ m}$ แกว่งเป็นวงกลมในแนวดิ่ง ที่จุดต่ำสุดมีความเร็ว $5 \\text{ m/s}$ แรงตึงเชือกที่จุดต่ำสุดเป็นเท่าใด ($g = 10 \\text{ m/s}^2$)",
+        hints: ["ตั้งสมการ $T - mg = \\frac{mv^2}{r}$"],
         guide: `
           <div class="step">
-            <p>1. สมการแรงที่จุดต่ำสุด: $T - mg = \\frac{mv^2}{r}$</p>
-            <p>$T = mg + \\frac{mv^2}{r}$</p>
-          </div>
-          <div class="step">
-            <p>2. แทนค่า:</p>
-            <p>$T = (1)(10) + \\frac{(1)(5^2)}{1} = 10 + 25 = 35 \\text{ N}$</p>
+            <p>สมการแรงที่จุดต่ำสุดของการแกว่งแนวดิ่ง:</p>
+            <p>$$\\begin{aligned}
+              T - mg &= \\frac{mv^2}{r} \\\\
+              T &= mg + \\frac{mv^2}{r} \\\\
+              &= (1)(10) + \\frac{(1)(5^2)}{1} \\\\
+              &= 10 + 25 \\\\
+              &= 35\\text{ N}
+            \\end{aligned}$$</p>
           </div>
         `,
         intermediateHtml: `
-          <p>$m = 1 \\text{ kg}$, $v = 5 \\text{ m/s}$, $r = 1 \\text{ m}$</p>
-          <p>แรงดึง $T = $ <input type="text" class="answer-input" placeholder="35"> $\\text{N}$</p>
+          <p>$m = 1\\text{ kg}$, $r = 1\\text{ m}$, $v = 5\\text{ m/s}$</p>
+          <p>แรงตึงเชือก $T = $ <input type="text" class="answer-input" placeholder="35"> $\\text{N}$</p>
         `,
         advancedHtml: `
-          <p>แรงดึง $T = $ <input type="text" class="answer-input" placeholder="35"> $\\text{N}$</p>
+          <p>แรงตึงเชือก $T = $ <input type="text" class="answer-input" placeholder="35"> $\\text{N}$</p>
         `
       },
       {
         id: "circ_6",
-        text: "ถนนโค้งเอียงมุม $45^\\circ$ กับแนวระดับ รัศมีความโค้ง $100 \\text{ m}$ หากไม่มีความเสียดทาน รถจะต้องขับด้วยความเร็วเท่าใดจึงจะเลี้ยวโค้งได้อย่างปลอดภัย ($g = 10 \\text{ m/s}^2$)",
-        hints: ["ใช้สมการเลี้ยวโค้งบนถนนเอียง $\\tan \\theta = \\frac{v^2}{rg}$"],
+        text: "ถนนยกระดับโค้งรัศมี $100 \\text{ m}$ ทำมุมเอียงกับแนวระดับ $45^\\circ$ รถควรวิ่งด้วยความเร็วเท่าใดจึงจะไม่ต้องพึ่งพาแรงเสียดทาน ($g = 10 \\text{ m/s}^2$)",
+        hints: ["ใช้สูตร $\\tan \\theta = \\frac{v^2}{rg}$"],
         guide: `
           <div class="step">
-            <p>1. จัดรูปหา $v$:</p>
-            <p>$v = \\sqrt{rg \\tan \\theta}$</p>
-          </div>
-          <div class="step">
-            <p>2. แทนค่า:</p>
-            <p>$v = \\sqrt{(100)(10) \\tan 45^\\circ} = \\sqrt{1000(1)} = 10\\sqrt{10} \\approx 31.62 \\text{ m/s}$</p>
+            <p>$$\\begin{aligned}
+              \\tan \\theta &= \\frac{v^2}{rg} \\\\
+              v &= \\sqrt{rg \\tan \\theta} \\\\
+              &= \\sqrt{(100)(10) \\tan 45^\\circ} \\\\
+              &= \\sqrt{1{,}000(1)} \\\\
+              &= 10\\sqrt{10} \\\\
+              &\\approx 31.62\\text{ m/s}
+            \\end{aligned}$$</p>
           </div>
         `,
         intermediateHtml: `
-          <p>$r = 100 \\text{ m}$, $\\theta = 45^\\circ$, $g = 10 \\text{ m/s}^2$</p>
-          <p>ความเร็ว $v = $ <input type="text" class="answer-input" placeholder="31.62"> $\\text{m/s}$ (ตอบทศนิยม 2 ตำแหน่ง)</p>
+          <p>$r = 100\\text{ m}$, $\\theta = 45^\\circ$, $g = 10\\text{ m/s}^2$</p>
+          <p>ความเร็วที่เหมาะสม $v = $ <input type="text" class="answer-input" placeholder="31.62"> $\\text{m/s}$</p>
         `,
         advancedHtml: `
-          <p>ความเร็ว $v = $ <input type="text" class="answer-input" placeholder="31.62"> $\\text{m/s}$</p>
+          <p>ความเร็วที่เหมาะสม $v = $ <input type="text" class="answer-input" placeholder="31.62"> $\\text{m/s}$</p>
         `
       },
       {
         id: "circ_7",
-        text: "ดาวเทียมโคจรรอบโลกที่ระยะห่างจากจุดศูนย์กลางโลก $R$ ด้วยอัตราเร็ว $v$ หากดาวเทียมย้ายไปโคจรที่ระยะ $4R$ อัตราเร็วในการโคจรจะเป็นเท่าใด",
-        hints: ["แรงดึงดูดระหว่างมวลเป็นแรงสู่ศูนย์กลาง $\\frac{GMm}{r^2} = \\frac{mv^2}{r}$", "$v \\propto \\frac{1}{\\sqrt{r}}$"],
+        text: "ดาวเทียมโคจรรอบโลกที่ระดับรัศมี $r$ ด้วยความเร็ว $v$ หากย้ายวงโคจรไปที่รัศมี $4r$ ความเร็วโคจรใหม่จะเป็นกี่เท่าของเดิม",
+        hints: ["$v \\propto \\frac{1}{\\sqrt{r}}$"],
         guide: `
           <div class="step">
-            <p>1. ความสัมพันธ์ระหว่าง $v$ และ $r$ คือ $v = \\sqrt{\\frac{GM}{r}}$</p>
-          </div>
-          <div class="step">
-            <p>2. เมื่อรัศมีเพิ่มเป็น 4 เท่า: $v' = \\sqrt{\\frac{GM}{4r}} = \\frac{1}{2}\\sqrt{\\frac{GM}{r}} = 0.5v$</p>
+            <p>จากความเร็วโคจรดาวเทียม $v = \\sqrt{\\frac{GM}{r}}$:</p>
+            <p>$$\\begin{aligned}
+              v' &= \\sqrt{\\frac{GM}{4r}} \\\\
+              &= \\frac{1}{2}\\sqrt{\\frac{GM}{r}} \\\\
+              &= 0.5v
+            \\end{aligned}$$</p>
+            <p>ดังนั้น ความเร็วโคจรใหม่จะเป็น $0.5$ เท่าของเดิม</p>
           </div>
         `,
         intermediateHtml: `
-          <p>รัศมีใหม่ $r' = 4R$</p>
-          <p>อัตราเร็วใหม่ $v' = $ <input type="text" class="answer-input" placeholder="0.5"> เท่าของ $v$</p>
+          <p>ความเร็วใหม่ $v' = $ <input type="text" class="answer-input" placeholder="0.5"> เท่าของเดิม</p>
         `,
         advancedHtml: `
-          <p>อัตราเร็วใหม่ $v' = $ <input type="text" class="answer-input" placeholder="0.5"> เท่าของ $v$</p>
+          <p>ความเร็วใหม่ $v' = $ <input type="text" class="answer-input" placeholder="0.5"> เท่าของเดิม</p>
         `
       },
       {
         id: "circ_8",
-        text: "ลูกตุ้มกรวยทำด้วยเชือกยาว $1 \\text{ m}$ ปลายแขวนมวล $0.5 \\text{ kg}$ แกว่งให้ทำมุม $60^\\circ$ กับแนวดิ่ง จงหาแรงตึงในเส้นเชือก ($g = 10 \\text{ m/s}^2$)",
-        hints: ["พิจารณาแรงในแนวดิ่ง $T \\cos \\theta = mg$"],
+        text: "ลูกตุ้มมวล $0.5 \\text{ kg}$ แกว่งเป็นรูปกรวยทำมุม $60^\\circ$ กับแนวดิ่ง แรงตึงเชือกมีค่าเท่าใด ($g = 10 \\text{ m/s}^2$)",
+        hints: ["พิจารณาแนวดิ่ง: $T \\cos \\theta = mg$"],
         guide: `
           <div class="step">
-            <p>1. สมดุลในแนวดิ่ง: $T \\cos 60^\\circ = mg$</p>
-          </div>
-          <div class="step">
-            <p>2. หา $T$:</p>
-            <p>$T = \\frac{mg}{\\cos 60^\\circ} = \\frac{0.5 \\times 10}{0.5} = 10 \\text{ N}$</p>
+            <p>พิจารณาสมดุลแรงในแนวดิ่ง:</p>
+            <p>$$\\begin{aligned}
+              T \\cos 60^\\circ &= mg \\\\
+              T &= \\frac{mg}{\\cos 60^\\circ} \\\\
+              &= \\frac{(0.5)(10)}{0.5} \\\\
+              &= 10\\text{ N}
+            \\end{aligned}$$</p>
           </div>
         `,
         intermediateHtml: `
-          <p>$m = 0.5 \\text{ kg}$, $\\theta = 60^\\circ$, $g = 10 \\text{ m/s}^2$</p>
+          <p>$m = 0.5\\text{ kg}$, $\\theta = 60^\\circ$</p>
           <p>แรงตึงเชือก $T = $ <input type="text" class="answer-input" placeholder="10"> $\\text{N}$</p>
         `,
         advancedHtml: `
@@ -433,50 +541,57 @@ Object.assign(physicsData.topics, {
       },
       {
         id: "circ_9",
-        text: "เครื่องเล่นหมุนในสวนสนุกมีรัศมี $4 \\text{ m}$ หมุนด้วยอัตราเร็วคงที่ 15 รอบต่อนาที จงหาความเร็วเชิงเส้นของผู้เล่นที่อยู่ขอบนอก",
-        hints: ["แปลงรอบต่อนาที (rpm) เป็น rad/s: $\\omega = \\frac{2\\pi \\times 15}{60}$", "$v = \\omega r$"],
+        text: "ม้าหมุนมีรัศมี $4 \\text{ m}$ หมุนด้วยอัตรา $15 \\text{ รอบต่อนาที (rpm)}$ จงหาอัตราเร็วเชิงเส้นของเด็กที่นั่งขอบม้าหมุน",
+        hints: ["แปลงความถี่เป็น rad/s: $\\omega = \\frac{15 \\times 2\\pi}{60}$", "หา $v = \\omega r$"],
         guide: `
           <div class="step">
-            <p>1. หา $\\omega$:</p>
-            <p>$\\omega = 15 \\text{ rpm} = \\frac{15 \\times 2\\pi}{60} = 0.5\\pi \\text{ rad/s}$</p>
+            <p><strong>ขั้นที่ 1:</strong> หาความเร็วเชิงมุม ($\\omega$)</p>
+            <p>$$\\begin{aligned}
+              \\omega &= \\frac{15 \\times 2\\pi}{60} \\\\
+              &= 0.5\\pi\\text{ rad/s}
+            \\end{aligned}$$</p>
           </div>
           <div class="step">
-            <p>2. หา $v$:</p>
-            <p>$v = \\omega r = 0.5\\pi \\times 4 = 2\\pi \\approx 6.28 \\text{ m/s}$</p>
+            <p><strong>ขั้นที่ 2:</strong> หาอัตราเร็วเชิงเส้น ($v$)</p>
+            <p>$$\\begin{aligned}
+              v &= \\omega r \\\\
+              &= (0.5\\pi)(4) \\\\
+              &= 2\\pi \\\\
+              &\\approx 6.28\\text{ m/s}
+            \\end{aligned}$$</p>
           </div>
         `,
         intermediateHtml: `
-          <p>$r = 4 \\text{ m}$, ความถี่ $= 15 \\text{ rpm}$</p>
-          <p>ความเร็ว $v = $ <input type="text" class="answer-input" placeholder="6.28"> $\\text{m/s}$ (ตอบทศนิยม 2 ตำแหน่ง หรือ $2\\pi$)</p>
+          <p>$r = 4\\text{ m}$, อัตราหมุน $15\\text{ rpm}$</p>
+          <p>อัตราเร็ว $v = $ <input type="text" class="answer-input" placeholder="6.28"> $\\text{m/s}$</p>
         `,
         advancedHtml: `
-          <p>ความเร็ว $v = $ <input type="text" class="answer-input" placeholder="6.28"> $\\text{m/s}$</p>
+          <p>อัตราเร็ว $v = $ <input type="text" class="answer-input" placeholder="6.28"> $\\text{m/s}$</p>
         `
       },
       {
         id: "circ_10",
-        text: "ลูกปัดไถลไปตามรางวงกลมในระนาบดิ่งรัศมี $R$ หากต้องการให้ลูกปัดไถลผ่านจุดสูงสุดได้พอดี ลูกปัดต้องมีความเร็วที่จุดสูงสุดเท่าใด",
-        hints: ["ที่จุดสูงสุดผ่านได้พอดี แปลว่าแรงปฏิกิริยาตั้งฉาก $N = 0$", "$mg = \\frac{mv^2}{R}$"],
+        text: "รถไฟเหาะตีลังการัศมี $R = 10 \\text{ m}$ ความเร็วต่ำสุดที่จุดสูงสุดเพื่อไม่ให้ตกรางเป็นเท่าใด ($g = 10 \\text{ m/s}^2$)",
+        hints: ["$v = \\sqrt{Rg}$"],
         guide: `
           <div class="step">
-            <p>1. ตั้งสมการที่จุดสูงสุด: $N + mg = \\frac{mv^2}{R}$</p>
-          </div>
-          <div class="step">
-            <p>2. เมื่อพอดีผ่านได้ $N = 0$:</p>
-            <p>$mg = \\frac{mv^2}{R} \\Rightarrow v = \\sqrt{Rg}$</p>
+            <p>$$\\begin{aligned}
+              v_{\\min} &= \\sqrt{Rg} \\\\
+              &= \\sqrt{(10)(10)} \\\\
+              &= 10\\text{ m/s}
+            \\end{aligned}$$</p>
           </div>
         `,
         intermediateHtml: `
-          <p>รัศมี $R$, แรงโน้มถ่วง $g$</p>
-          <p>ความเร็ว $v = \\sqrt{\\text{?}}$ <input type="text" class="answer-input" placeholder="Rg"> (พิมพ์ Rg)</p>
+          <p>$R = 10\\text{ m}$, $g = 10\\text{ m/s}^2$</p>
+          <p>ความเร็วต่ำสุด $v = $ <input type="text" class="answer-input" placeholder="10"> $\\text{m/s}$</p>
         `,
         advancedHtml: `
-          <p>ความเร็ว $v = \\sqrt{\\text{?}}$ <input type="text" class="answer-input" placeholder="Rg"> (พิมพ์ Rg)</p>
+          <p>ความเร็วต่ำสุด $v = $ <input type="text" class="answer-input" placeholder="10"> $\\text{m/s}$</p>
         `
       }
     ]
   },
-
   shm: {
     id: "shm",
     title: "7.3 ฮาร์มอนิกอย่างง่าย",
@@ -484,9 +599,9 @@ Object.assign(physicsData.topics, {
       <h3>การเคลื่อนที่แบบฮาร์มอนิกอย่างง่าย (SHM)</h3>
       <p>การเคลื่อนที่กลับไปกลับมาซ้ำรอยเดิม โดยมีความเร่งแปรผันตรงกับการกระจัด และมีทิศตรงข้ามกับการกระจัดเสมอ ($a = -\\omega^2 x$)</p>
       <ul>
-          <li><strong>สมการการเคลื่อนที่ (เมื่อเริ่มต้นที่สมดุล):</strong> $x(t) = A \\sin(\\omega t)$</li>
-          <li><strong>ความเร็ว:</strong> $v = \\omega \\sqrt{A^2 - x^2}$, $v_{max} = \\omega A$ (ที่สมดุล $x=0$)</li>
-          <li><strong>ความเร่ง:</strong> $a = -\\omega^2 x$, $a_{max} = \\omega^2 A$ (ที่จุดปลาย $x = \\pm A$)</li>
+          <li><strong>สมการการเคลื่อนที่:</strong> $x(t) = A \\sin(\\omega t)$</li>
+          <li><strong>ความเร็ว:</strong> $v = \\omega \\sqrt{A^2 - x^2}$, $v_{\\max} = \\omega A$ (ที่สมดุล $x=0$)</li>
+          <li><strong>ความเร่ง:</strong> $a = -\\omega^2 x$, $a_{\\max} = \\omega^2 A$ (ที่จุดปลาย $x = \\pm A$)</li>
           <li><strong>ระบบมวล-สปริง:</strong> $T = 2\\pi \\sqrt{\\frac{m}{k}}$, $\\omega = \\sqrt{\\frac{k}{m}}$</li>
           <li><strong>ลูกตุ้มอย่างง่าย (Simple Pendulum):</strong> $T = 2\\pi \\sqrt{\\frac{L}{g}}$, $\\omega = \\sqrt{\\frac{g}{L}}$</li>
       </ul>
@@ -500,103 +615,111 @@ Object.assign(physicsData.topics, {
         hints: ["$T = 2\\pi \\sqrt{\\frac{m}{k}}$"],
         guide: `
           <div class="step">
-            <p>1. แทนค่าในสูตร:</p>
-            <p>$T = 2\\pi \\sqrt{\\frac{0.5}{50}} = 2\\pi \\sqrt{0.01}$</p>
-          </div>
-          <div class="step">
-            <p>2. คำนวณ:</p>
-            <p>$T = 2\\pi (0.1) = 0.2\\pi \\approx 0.628 \\text{ s}$</p>
+            <p>$$\\begin{aligned}
+              T &= 2\\pi \\sqrt{\\frac{m}{k}} \\\\
+              &= 2\\pi \\sqrt{\\frac{0.5}{50}} \\\\
+              &= 2\\pi \\sqrt{0.01} \\\\
+              &= 2\\pi(0.1) \\\\
+              &= 0.2\\pi \\\\
+              &\\approx 0.628\\text{ s}
+            \\end{aligned}$$</p>
           </div>
         `,
         intermediateHtml: `
-          <p>$m = 0.5 \\text{ kg}$, $k = 50 \\text{ N/m}$</p>
-          <p>คาบ $T = $ <input type="text" class="answer-input" placeholder="0.628"> $\\text{s}$ (ตอบทศนิยม 3 ตำแหน่ง หรือ $0.2\\pi$)</p>
+          <p>$m = 0.5\\text{ kg}$, $k = 50\\text{ N/m}$</p>
+          <p>คาบของการสั่น $T = $ <input type="text" class="answer-input" placeholder="0.63"> $\\text{s}$</p>
         `,
         advancedHtml: `
-          <p>คาบ $T = $ <input type="text" class="answer-input" placeholder="0.628"> $\\text{s}$</p>
+          <p>คาบของการสั่น $T = $ <input type="text" class="answer-input" placeholder="0.63"> $\\text{s}$</p>
         `
       },
       {
         id: "shm_2",
-        text: "ลูกตุ้มนาฬิกายาว $2.5 \\text{ m}$ แกว่งบนโลก ($g = 10 \\text{ m/s}^2$) จะมีคาบการแกว่งเป็นเท่าใด",
+        text: "ลูกตุ้มนาฬิกายาว $2.5 \\text{ m}$ มีคาบการแกว่งเท่าใด ($g = 10 \\text{ m/s}^2$)",
         hints: ["$T = 2\\pi \\sqrt{\\frac{L}{g}}$"],
         guide: `
           <div class="step">
-            <p>1. แทนค่าในสูตร:</p>
-            <p>$T = 2\\pi \\sqrt{\\frac{2.5}{10}} = 2\\pi \\sqrt{0.25}$</p>
-          </div>
-          <div class="step">
-            <p>2. คำนวณ:</p>
-            <p>$T = 2\\pi (0.5) = \\pi \\approx 3.14 \\text{ s}$</p>
+            <p>$$\\begin{aligned}
+              T &= 2\\pi \\sqrt{\\frac{L}{g}} \\\\
+              &= 2\\pi \\sqrt{\\frac{2.5}{10}} \\\\
+              &= 2\\pi \\sqrt{0.25} \\\\
+              &= 2\\pi(0.5) \\\\
+              &= \\pi \\\\
+              &\\approx 3.14\\text{ s}
+            \\end{aligned}$$</p>
           </div>
         `,
         intermediateHtml: `
-          <p>$L = 2.5 \\text{ m}$, $g = 10 \\text{ m/s}^2$</p>
-          <p>คาบ $T = $ <input type="text" class="answer-input" placeholder="3.14"> $\\text{s}$ (หรือ $\\pi$)</p>
+          <p>$L = 2.5\\text{ m}$, $g = 10\\text{ m/s}^2$</p>
+          <p>คาบการแกว่ง $T = $ <input type="text" class="answer-input" placeholder="3.14"> $\\text{s}$</p>
         `,
         advancedHtml: `
-          <p>คาบ $T = $ <input type="text" class="answer-input" placeholder="3.14"> $\\text{s}$</p>
+          <p>คาบการแกว่ง $T = $ <input type="text" class="answer-input" placeholder="3.14"> $\\text{s}$</p>
         `
       },
       {
         id: "shm_3",
-        text: "วัตถุสั่นแบบ SHM มีแอมพลิจูด $10 \\text{ cm}$ และความถี่ $2 \\text{ Hz}$ จงหาอัตราเร็วสูงสุดของวัตถุนี้",
-        hints: ["$v_{max} = \\omega A$", "$\\omega = 2\\pi f$"],
+        text: "อนุภาคหนึ่งเคลื่อนที่แบบ SHM ด้วยความถี่ $2 \\text{ Hz}$ แอมพลิจูด $10 \\text{ cm}$ จงหาอัตราเร็วสูงสุดของการเคลื่อนที่",
+        hints: ["$v_{\\max} = \\omega A$", "$\\omega = 2\\pi f$"],
         guide: `
           <div class="step">
-            <p>1. หา $\\omega$:</p>
-            <p>$\\omega = 2\\pi(2) = 4\\pi \\text{ rad/s}$</p>
-          </div>
-          <div class="step">
-            <p>2. หา $v_{max}$ (แปลง $A$ เป็นเมตร):</p>
-            <p>$v_{max} = (4\\pi)(0.1) = 0.4\\pi \\approx 1.26 \\text{ m/s}$</p>
+            <p>$$\\begin{aligned}
+              v_{\\max} &= \\omega A \\\\
+              &= (2\\pi f) A \\\\
+              &= (2\\pi \\times 2)(0.1) \\\\
+              &= 0.4\\pi \\\\
+              &\\approx 1.26\\text{ m/s}
+            \\end{aligned}$$</p>
           </div>
         `,
         intermediateHtml: `
-          <p>$A = 0.1 \\text{ m}$, $f = 2 \\text{ Hz}$</p>
-          <p>ความเร็ว $v_{max} = $ <input type="text" class="answer-input" placeholder="1.26"> $\\text{m/s}$ (ตอบทศนิยม 2 ตำแหน่ง หรือ $0.4\\pi$)</p>
+          <p>$f = 2\\text{ Hz}$, $A = 0.1\\text{ m}$</p>
+          <p>อัตราเร็วสูงสุด $v_{\\max} = $ <input type="text" class="answer-input" placeholder="1.26"> $\\text{m/s}$</p>
         `,
         advancedHtml: `
-          <p>ความเร็ว $v_{max} = $ <input type="text" class="answer-input" placeholder="1.26"> $\\text{m/s}$</p>
+          <p>อัตราเร็วสูงสุด $v_{\\max} = $ <input type="text" class="answer-input" placeholder="1.26"> $\\text{m/s}$</p>
         `
       },
       {
         id: "shm_4",
-        text: "วัตถุสั่นแบบ SHM มีแอมพลิจูด $5 \\text{ cm}$ และอัตราเร็วเชิงมุม $10 \\text{ rad/s}$ จงหาขนาดความเร่งสูงสุด",
-        hints: ["$a_{max} = \\omega^2 A$"],
+        text: "วัตถุสั่นด้วยความถี่เชิงมุม $10 \\text{ rad/s}$ มีแอมพลิจูด $5 \\text{ cm}$ ความเร่งสูงสุดเป็นเท่าใด",
+        hints: ["$a_{\\max} = \\omega^2 A$"],
         guide: `
           <div class="step">
-            <p>1. แปลง $A$ เป็นเมตร: $A = 0.05 \\text{ m}$</p>
-          </div>
-          <div class="step">
-            <p>2. แทนค่าหาความเร่งสูงสุด:</p>
-            <p>$a_{max} = (10)^2(0.05) = 100 \\times 0.05 = 5 \\text{ m/s}^2$</p>
+            <p>$$\\begin{aligned}
+              a_{\\max} &= \\omega^2 A \\\\
+              &= (10)^2(0.05) \\\\
+              &= 100 \\times 0.05 \\\\
+              &= 5\\text{ m/s}^2
+            \\end{aligned}$$</p>
           </div>
         `,
         intermediateHtml: `
-          <p>$A = 0.05 \\text{ m}$, $\\omega = 10 \\text{ rad/s}$</p>
-          <p>ความเร่ง $a_{max} = $ <input type="text" class="answer-input" placeholder="5"> $\\text{m/s}^2$</p>
+          <p>$\\omega = 10\\text{ rad/s}$, $A = 0.05\\text{ m}$</p>
+          <p>ความเร่งสูงสุด $a_{\\max} = $ <input type="text" class="answer-input" placeholder="5"> $\\text{m/s}^2$</p>
         `,
         advancedHtml: `
-          <p>ความเร่ง $a_{max} = $ <input type="text" class="answer-input" placeholder="5"> $\\text{m/s}^2$</p>
+          <p>ความเร่งสูงสุด $a_{\\max} = $ <input type="text" class="answer-input" placeholder="5"> $\\text{m/s}^2$</p>
         `
       },
       {
         id: "shm_5",
-        text: "ระบบมวล-สปริง มีมวล $2 \\text{ kg}$ แกว่งด้วยคาบ $4 \\text{ s}$ ค่านิจสปริงมีค่าเท่าใด",
-        hints: ["จัดรูป $T = 2\\pi \\sqrt{\\frac{m}{k}}$ หา $k$"],
+        text: "มวล $2 \\text{ kg}$ สั่นบนสปริงด้วยคาบ $4 \\text{ s}$ จงหาค่านิจของสปริง (กำหนดให้ $\\pi^2 \\approx 10$)",
+        hints: ["$T^2 = 4\\pi^2 \\frac{m}{k} \\Rightarrow k = \\frac{4\\pi^2 m}{T^2}$"],
         guide: `
           <div class="step">
-            <p>1. ยกกำลังสองทั้งสองข้าง:</p>
-            <p>$T^2 = 4\\pi^2 \\frac{m}{k} \\Rightarrow k = \\frac{4\\pi^2 m}{T^2}$</p>
-          </div>
-          <div class="step">
-            <p>2. แทนค่า (ให้ $\\pi^2 \\approx 10$):</p>
-            <p>$k = \\frac{4(10)(2)}{4^2} = \\frac{80}{16} = 5 \\text{ N/m}$</p>
+            <p>$$\\begin{aligned}
+              T &= 2\\pi \\sqrt{\\frac{m}{k}} \\\\
+              T^2 &= \\frac{4\\pi^2 m}{k} \\\\
+              k &= \\frac{4\\pi^2 m}{T^2} \\\\
+              &= \\frac{4(10)(2)}{4^2} \\\\
+              &= \\frac{80}{16} \\\\
+              &= 5\\text{ N/m}
+            \\end{aligned}$$</p>
           </div>
         `,
         intermediateHtml: `
-          <p>$m = 2 \\text{ kg}$, $T = 4 \\text{ s}$, ให้ $\\pi^2 \\approx 10$</p>
+          <p>$m = 2\\text{ kg}$, $T = 4\\text{ s}$</p>
           <p>ค่านิจสปริง $k = $ <input type="text" class="answer-input" placeholder="5"> $\\text{N/m}$</p>
         `,
         advancedHtml: `
@@ -605,64 +728,83 @@ Object.assign(physicsData.topics, {
       },
       {
         id: "shm_6",
-        text: "วัตถุเคลื่อนที่แบบ SHM ด้วยสมการ $x = 0.5 \\sin(2\\pi t)$ เมตร จงหาอัตราเร็วของวัตถุที่เวลา $t = 0.25 \\text{ s}$",
-        hints: ["สมการความเร็ว $v = \\frac{dx}{dt} = A\\omega \\cos(\\omega t)$"],
+        text: "สมการการเคลื่อนที่คือ $x(t) = 0.5 \\sin(2\\pi t)$ เมตร อัตราเร็วที่เวลา $t = 0.25 \\text{ s}$ เป็นเท่าใด",
+        hints: ["$v(t) = A\\omega \\cos(\\omega t)$"],
         guide: `
           <div class="step">
-            <p>1. หา $v(t)$ จากสมการ $x(t)$:</p>
-            <p>$v = (0.5)(2\\pi) \\cos(2\\pi t) = \\pi \\cos(2\\pi t)$</p>
-          </div>
-          <div class="step">
-            <p>2. แทน $t = 0.25$:</p>
-            <p>$v = \\pi \\cos(2\\pi(0.25)) = \\pi \\cos(\\frac{\\pi}{2}) = \\pi(0) = 0 \\text{ m/s}$</p>
+            <p>$$\\begin{aligned}
+              v(t) &= A\\omega \\cos(\\omega t) \\\\
+              &= (0.5)(2\\pi) \\cos(2\\pi t) \\\\
+              &= \\pi \\cos(2\\pi t)
+            \\end{aligned}$$</p>
+            <p>แทนค่า $t = 0.25\\text{ s}$:</p>
+            <p>$$\\begin{aligned}
+              v(0.25) &= \\pi \\cos\\left(2\\pi \\times 0.25\\right) \\\\
+              &= \\pi \\cos\\left(\\frac{\\pi}{2}\\right) \\\\
+              &= \\pi(0) \\\\
+              &= 0\\text{ m/s}
+            \\end{aligned}$$</p>
           </div>
         `,
         intermediateHtml: `
-          <p>$v(t) = \\pi \\cos(2\\pi t)$, $t = 0.25 \\text{ s}$</p>
-          <p>ความเร็ว $v = $ <input type="text" class="answer-input" placeholder="0"> $\\text{m/s}$</p>
+          <p>$x(t) = 0.5 \\sin(2\\pi t)$</p>
+          <p>อัตราเร็วที่ $t=0.25\\text{ s}$: $v = $ <input type="text" class="answer-input" placeholder="0"> $\\text{m/s}$</p>
         `,
         advancedHtml: `
-          <p>ความเร็ว $v = $ <input type="text" class="answer-input" placeholder="0"> $\\text{m/s}$</p>
+          <p>อัตราเร็วที่ $t=0.25\\text{ s}$: $v = $ <input type="text" class="answer-input" placeholder="0"> $\\text{m/s}$</p>
         `
       },
       {
         id: "shm_7",
-        text: "สปริงมีค่านิจ $200 \\text{ N/m}$ แขวนมวล $M$ ทำให้สปริงยืดออก $10 \\text{ cm}$ ถ้านำไปแกว่งเป็น SHM จะมีอัตราเร็วเชิงมุมเท่าใด",
-        hints: ["หา $M$ จากสมดุล $Mg = kx$ ก่อน แล้วใช้ $\\omega = \\sqrt{\\frac{k}{m}}$", "หรือ $\\omega = \\sqrt{\\frac{g}{x}}$ โดยตรง (จาก $k/M = g/x$)"],
+        text: "แขวนมวลกับสปริงเบาทำให้สปริงยืดออก $10 \\text{ cm}$ ในแนวดิ่ง เมื่อดึงมวลลงอีกเล็กน้อยแล้วปล่อย ความถี่เชิงมุมของการสั่นจะเป็นเท่าใด ($g = 10 \\text{ m/s}^2$)",
+        hints: ["$\\omega = \\sqrt{\\frac{g}{x_0}}$"],
         guide: `
           <div class="step">
-            <p>1. ใช้ความสัมพันธ์ $\\frac{k}{m} = \\frac{g}{x}$:</p>
-            <p>$\\omega = \\sqrt{\\frac{g}{x}}$</p>
-          </div>
-          <div class="step">
-            <p>2. แทนค่า ($x = 0.1 \\text{ m}$):</p>
-            <p>$\\omega = \\sqrt{\\frac{10}{0.1}} = \\sqrt{100} = 10 \\text{ rad/s}$</p>
+            <p>จากเงื่อนไขสมดุล $mg = kx_0 \\Rightarrow \\frac{k}{m} = \\frac{g}{x_0}$:</p>
+            <p>$$\\begin{aligned}
+              \\omega &= \\sqrt{\\frac{g}{x_0}} \\\\
+              &= \\sqrt{\\frac{10}{0.1}} \\\\
+              &= \\sqrt{100} \\\\
+              &= 10\\text{ rad/s}
+            \\end{aligned}$$</p>
           </div>
         `,
         intermediateHtml: `
-          <p>$x = 0.1 \\text{ m}$, $g = 10 \\text{ m/s}^2$</p>
-          <p>อัตราเร็วเชิงมุม $\\omega = $ <input type="text" class="answer-input" placeholder="10"> $\\text{rad/s}$</p>
+          <p>$x_0 = 0.1\\text{ m}$, $g = 10\\text{ m/s}^2$</p>
+          <p>ความถี่เชิงมุม $\\omega = $ <input type="text" class="answer-input" placeholder="10"> $\\text{rad/s}$</p>
         `,
         advancedHtml: `
-          <p>อัตราเร็วเชิงมุม $\\omega = $ <input type="text" class="answer-input" placeholder="10"> $\\text{rad/s}$</p>
+          <p>ความถี่เชิงมุม $\\omega = $ <input type="text" class="answer-input" placeholder="10"> $\\text{rad/s}$</p>
         `
       },
       {
         id: "shm_8",
-        text: "อนุภาคหนึ่งสั่นแบบ SHM มีแอมพลิจูด $13 \\text{ cm}$ และคาบ $2 \\text{ s}$ จงหาอัตราเร็วเมื่ออนุภาคอยู่ห่างจากจุดสมดุล $5 \\text{ cm}$",
-        hints: ["ใช้สูตร $v = \\omega \\sqrt{A^2 - x^2}$", "$\\omega = \\frac{2\\pi}{T}$"],
+        text: "อนุภาคเคลื่อนที่แบบ SHM คาบ $2 \\text{ s}$ แอมพลิจูด $13 \\text{ cm}$ ขณะที่การกระจัดเป็น $5 \\text{ cm}$ อัตราเร็วของอนุภาคเป็นเท่าใด",
+        hints: ["$\\omega = \\frac{2\\pi}{T}$", "$v = \\omega \\sqrt{A^2 - x^2}$"],
         guide: `
           <div class="step">
-            <p>1. หา $\\omega = \\frac{2\\pi}{2} = \\pi \\text{ rad/s}$</p>
+            <p><strong>ขั้นที่ 1:</strong> หาความถี่เชิงมุม ($\\omega$)</p>
+            <p>$$\\begin{aligned}
+              \\omega &= \\frac{2\\pi}{T} \\\\
+              &= \\frac{2\\pi}{2} \\\\
+              &= \\pi\\text{ rad/s}
+            \\end{aligned}$$</p>
           </div>
           <div class="step">
-            <p>2. ใช้สูตร $v = \\omega \\sqrt{A^2 - x^2}$:</p>
-            <p>$v = \\pi \\sqrt{13^2 - 5^2} = \\pi \\sqrt{169 - 25} = \\pi \\sqrt{144} = 12\\pi \\approx 37.7 \\text{ cm/s}$</p>
+            <p><strong>ขั้นที่ 2:</strong> หาอัตราเร็วที่การกระจัด $x = 5\\text{ cm}$</p>
+            <p>$$\\begin{aligned}
+              v &= \\omega \\sqrt{A^2 - x^2} \\\\
+              &= \\pi \\sqrt{13^2 - 5^2} \\\\
+              &= \\pi \\sqrt{169 - 25} \\\\
+              &= \\pi \\sqrt{144} \\\\
+              &= 12\\pi \\\\
+              &\\approx 37.7\\text{ cm/s}
+            \\end{aligned}$$</p>
           </div>
         `,
         intermediateHtml: `
-          <p>$A = 13 \\text{ cm}$, $x = 5 \\text{ cm}$, $\\omega = \\pi \\text{ rad/s}$</p>
-          <p>อัตราเร็ว $v = $ <input type="text" class="answer-input" placeholder="37.7"> $\\text{cm/s}$ (ตอบทศนิยม 1 ตำแหน่ง หรือ $12\\pi$)</p>
+          <p>$T = 2\\text{ s}$, $A = 13\\text{ cm}$, $x = 5\\text{ cm}$</p>
+          <p>อัตราเร็ว $v = $ <input type="text" class="answer-input" placeholder="37.7"> $\\text{cm/s}$</p>
         `,
         advancedHtml: `
           <p>อัตราเร็ว $v = $ <input type="text" class="answer-input" placeholder="37.7"> $\\text{cm/s}$</p>
@@ -670,43 +812,47 @@ Object.assign(physicsData.topics, {
       },
       {
         id: "shm_9",
-        text: "ลูกตุ้มนาฬิกาแกว่งบนโลกด้วยคาบ $T$ ถ้านำไปแกว่งบนดวงจันทร์ซึ่งมีค่า $g$ เป็น $\\frac{1}{6}$ ของโลก คาบการแกว่งจะเป็นเท่าใด",
+        text: "ลูกตุ้มนาฬิกามีคาบการแกว่ง $T$ บนโลก ถ้านำไปแกว่งบนดวงจันทร์ซึ่งมีความเร่งโน้มถ่วง $g_{\\text{moon}} = \\frac{1}{6}g_{\\text{earth}}$ คาบจะเป็นกี่เท่าของเดิม",
         hints: ["$T \\propto \\frac{1}{\\sqrt{g}}$"],
         guide: `
           <div class="step">
-            <p>1. คาบแปรผกผันกับรากที่สองของ $g$: $\\frac{T_{moon}}{T_{earth}} = \\sqrt{\\frac{g_{earth}}{g_{moon}}}$</p>
-          </div>
-          <div class="step">
-            <p>2. แทน $g_{moon} = \\frac{g_{earth}}{6}$:</p>
-            <p>$\\frac{T_{moon}}{T} = \\sqrt{6} \\Rightarrow T_{moon} = \\sqrt{6} T$</p>
+            <p>จากสูตร $T = 2\\pi \\sqrt{\\frac{L}{g}}$:</p>
+            <p>$$\\begin{aligned}
+              \\frac{T_{\\text{moon}}}{T_{\\text{earth}}} &= \\sqrt{\\frac{g_{\\text{earth}}}{g_{\\text{moon}}}} \\\\
+              &= \\sqrt{\\frac{g_{\\text{earth}}}{\\frac{1}{6}g_{\\text{earth}}}} \\\\
+              &= \\sqrt{6} \\\\
+              &\\approx 2.45
+            \\end{aligned}$$</p>
+            <p>ดังนั้น คาบจะเพิ่มขึ้นเป็น $\\sqrt{6} \\approx 2.45$ เท่าของเดิม</p>
           </div>
         `,
         intermediateHtml: `
-          <p>$g_{moon} = \\frac{1}{6} g_{earth}$</p>
-          <p>คาบใหม่ $= $ <input type="text" class="answer-input" placeholder="\\sqrt{6}"> $T$ (พิมพ์ \\sqrt{6} หรือ sqrt(6))</p>
+          <p>คาบบนดวงจันทร์เป็นกี่เท่าของเดิม: <input type="text" class="answer-input" placeholder="2.45"> เท่า</p>
         `,
         advancedHtml: `
-          <p>คาบใหม่ $= $ <input type="text" class="answer-input" placeholder="\\sqrt{6}"> $T$ (พิมพ์ \\sqrt{6} หรือ sqrt(6))</p>
+          <p>คาบบนดวงจันทร์เป็นกี่เท่าของเดิม: <input type="text" class="answer-input" placeholder="2.45"> เท่า</p>
         `
       },
       {
         id: "shm_10",
-        text: "กราฟความเร่งของการเคลื่อนที่แบบ SHM สัมพันธ์กับการกระจัดอย่างไร",
-        hints: ["พิจารณาสมการ $a = -\\omega^2 x$"],
+        text: "กราฟระหว่างความเร่ง ($a$) กับการกระจัด ($x$) ของการเคลื่อนที่แบบฮาร์มอนิกอย่างง่ายมีลักษณะเป็นอย่างไร",
+        hints: ["จากสมการ $a = -\\omega^2 x$ เทียบกับสมการเส้นตรง $y = mx$"],
         guide: `
           <div class="step">
-            <p>1. จากสมการ $a = -\\omega^2 x$ พบว่าเป็นสมการเส้นตรง ($y = mx$) ที่มีความชันเป็นลบ</p>
-          </div>
-          <div class="step">
-            <p>2. ดังนั้น กราฟเป็นเส้นตรงผ่านจุดกำเนิด และมีความชันติดลบ</p>
+            <p>จากนิยามของ SHM:</p>
+            <p>$$a = -\\omega^2 x$$</p>
+            <p>เมื่อเทียบกับสมการเส้นตรง $y = mx$:</p>
+            <ul>
+              <li>เป็นกราฟเส้นตรงผ่านจุดกำเนิด $(0, 0)$</li>
+              <li>มีความชันเท่ากับ $-\\omega^2$ (ความชันเป็นลบ)</li>
+            </ul>
           </div>
         `,
         intermediateHtml: `
-          <p>สมการ $a = -\\omega^2 x$</p>
-          <p>กราฟเป็นเส้น <input type="text" class="answer-input" placeholder="ตรง"> ความชันเป็น <input type="text" class="answer-input" placeholder="ลบ"></p>
+          <p>กราฟเป็นเส้นตรงผ่านจุดกำเนิดและมีความชัน: <input type="text" class="answer-input" placeholder="เป็นลบ" data-answer="เป็นลบ"></p>
         `,
         advancedHtml: `
-          <p>กราฟเป็นเส้น <input type="text" class="answer-input" placeholder="ตรง"> ความชันเป็น <input type="text" class="answer-input" placeholder="ลบ"></p>
+          <p>ลักษณะกราฟ: <input type="text" class="answer-input" placeholder="เป็นลบ" data-answer="เป็นลบ"></p>
         `
       }
     ]
