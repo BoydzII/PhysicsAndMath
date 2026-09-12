@@ -103,3 +103,5 @@ Physics2App/*
 !Physics2App/app.js
 !Physics2App/draw.js
 !Physics2App/data.js
+
+!Physics2App/data_ch*.js
