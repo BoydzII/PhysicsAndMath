@@ -268,6 +268,12 @@ function renderApp() {
     initWorkSimulation();
   } else if (currentTopic === 'power') {
     initPowerSimulation();
+  } else if (currentTopic === 'kinetic') {
+    initKineticSimulation();
+  } else if (currentTopic === 'potential') {
+    initPotentialSimulation();
+  } else if (currentTopic === 'conservation') {
+    initConservationSimulation();
   }
 
   // Restore inputs after re-render
@@ -604,6 +610,359 @@ function initPowerSimulation() {
   window.addEventListener('touchend', handleUp);
 
   draw();
+}
+
+function initKineticSimulation() {
+  const canvas = document.getElementById('simKinetic');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  canvas.width = canvas.clientWidth;
+  canvas.height = canvas.clientHeight;
+
+  let carX = canvas.width / 2;
+  const carWidth = 60;
+  const carHeight = 30;
+  const m = 2;
+  let isDragging = false;
+  let lastX = carX;
+  let v = 0;
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Ground
+    ctx.fillStyle = '#a3be8c';
+    ctx.fillRect(0, canvas.height - 40, canvas.width, 40);
+
+    // Car
+    ctx.fillStyle = '#ef4444';
+    ctx.fillRect(carX - carWidth/2, canvas.height - 40 - carHeight, carWidth, carHeight);
+
+    // Speed display
+    ctx.fillStyle = '#374151';
+    ctx.font = '14px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(`v = ${Math.abs(v).toFixed(1)} m/s`, 10, 20);
+    ctx.fillText(`m = ${m} kg`, 10, 40);
+
+    // KE Bar Graph
+    const ke = 0.5 * m * v * v;
+    ctx.fillText(`KE = ½mv² = ${ke.toFixed(1)} J`, 10, 60);
+    
+    const maxBarHeight = canvas.height - 100;
+    const barHeight = Math.min(ke, maxBarHeight);
+    
+    ctx.fillStyle = '#3b82f6';
+    ctx.fillRect(canvas.width - 60, canvas.height - 40 - barHeight, 40, barHeight);
+    
+    // Axis / Labels
+    ctx.fillStyle = '#374151';
+    ctx.fillText('KE', canvas.width - 50, canvas.height - 20);
+    
+    ctx.beginPath();
+    ctx.moveTo(canvas.width - 70, canvas.height - 40);
+    ctx.lineTo(canvas.width - 10, canvas.height - 40);
+    ctx.stroke();
+
+    requestAnimationFrame(draw);
+  }
+
+  setInterval(() => {
+    v = (carX - lastX) / 0.05; // 50ms interval
+    lastX = carX;
+  }, 50);
+
+  function getX(e) {
+    const rect = canvas.getBoundingClientRect();
+    if (e.touches) return e.touches[0].clientX - rect.left;
+    return e.clientX - rect.left;
+  }
+
+  function handleDown(e) {
+    const x = getX(e);
+    if (Math.abs(x - carX) < 60) {
+      isDragging = true;
+      e.preventDefault();
+    }
+  }
+
+  function handleMove(e) {
+    if (!isDragging) return;
+    carX = getX(e);
+    if (carX < carWidth/2) carX = carWidth/2;
+    if (carX > canvas.width - carWidth/2) carX = canvas.width - carWidth/2;
+    e.preventDefault();
+  }
+
+  function handleUp() {
+    isDragging = false;
+  }
+
+  canvas.addEventListener('mousedown', handleDown);
+  canvas.addEventListener('mousemove', handleMove);
+  window.addEventListener('mouseup', handleUp);
+  canvas.addEventListener('touchstart', handleDown, { passive: false });
+  canvas.addEventListener('touchmove', handleMove, { passive: false });
+  window.addEventListener('touchend', handleUp);
+
+  draw();
+}
+
+function initPotentialSimulation() {
+  const canvas = document.getElementById('simPotential');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  canvas.width = canvas.clientWidth;
+  canvas.height = canvas.clientHeight;
+
+  // Left Side (Gravitational)
+  let ballY = canvas.height - 50;
+  const ballRadius = 20;
+  const m = 2;
+  const g = 10;
+  let isDraggingBall = false;
+
+  // Right Side (Elastic)
+  let springX = canvas.width - 40;
+  const k = 200;
+  let isDraggingSpring = false;
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const midX = canvas.width / 2;
+
+    // Divider
+    ctx.beginPath();
+    ctx.moveTo(midX, 0);
+    ctx.lineTo(midX, canvas.height);
+    ctx.strokeStyle = '#ccc';
+    ctx.stroke();
+
+    // ---------------- Left: Gravitational ----------------
+    // Ground
+    ctx.fillStyle = '#a3be8c';
+    ctx.fillRect(0, canvas.height - 30, midX, 30);
+
+    // Ball
+    ctx.beginPath();
+    ctx.arc(midX / 2, ballY, ballRadius, 0, Math.PI * 2);
+    ctx.fillStyle = '#ef4444';
+    ctx.fill();
+
+    const maxH = canvas.height - 30 - ballRadius;
+    let h_ratio = (canvas.height - 30 - ballY) / maxH;
+    if (h_ratio < 0) h_ratio = 0;
+    const h = (h_ratio * 10).toFixed(1); 
+    const peG = m * g * h;
+
+    ctx.fillStyle = '#374151';
+    ctx.font = '12px sans-serif';
+    ctx.fillText(`h = ${h} m`, 10, 20);
+    ctx.fillText(`PE = mgh = ${peG.toFixed(1)} J`, 10, 40);
+
+    const barGHeight = Math.min(peG, canvas.height - 100);
+    ctx.fillStyle = '#3b82f6';
+    ctx.fillRect(midX - 50, canvas.height - 30 - barGHeight, 30, barGHeight);
+    ctx.fillStyle = '#374151';
+    ctx.fillText('PE', midX - 45, canvas.height - 10);
+
+    // ---------------- Right: Elastic ----------------
+    // Wall
+    ctx.fillStyle = '#9ca3af';
+    ctx.fillRect(canvas.width - 20, 0, 20, canvas.height);
+    
+    // Spring
+    ctx.beginPath();
+    ctx.moveTo(canvas.width - 20, canvas.height / 2);
+    ctx.lineTo(springX, canvas.height / 2);
+    ctx.strokeStyle = '#10b981';
+    ctx.lineWidth = 5;
+    ctx.stroke();
+    // Block on spring
+    ctx.fillStyle = '#ef4444';
+    ctx.fillRect(springX - 20, canvas.height / 2 - 20, 20, 40);
+
+    const naturalX = canvas.width - 120;
+    const x = ((springX - naturalX) / 100).toFixed(2);
+    const peE = 0.5 * k * x * x;
+
+    ctx.fillStyle = '#374151';
+    ctx.fillText(`x = ${Math.abs(x).toFixed(2)} m`, midX + 10, 20);
+    ctx.fillText(`PE = ½kx² = ${peE.toFixed(1)} J`, midX + 10, 40);
+
+    const barEHeight = Math.min(peE, canvas.height - 100);
+    ctx.fillStyle = '#10b981';
+    ctx.fillRect(canvas.width - 70, canvas.height - 30 - barEHeight, 30, barEHeight);
+    ctx.fillStyle = '#374151';
+    ctx.fillText('PE', canvas.width - 65, canvas.height - 10);
+
+    requestAnimationFrame(draw);
+  }
+
+  function getPos(e) {
+    const rect = canvas.getBoundingClientRect();
+    if (e.touches) return { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top };
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+  }
+
+  function handleDown(e) {
+    const pos = getPos(e);
+    const midX = canvas.width / 2;
+    if (pos.x < midX) {
+      if (Math.abs(pos.y - ballY) < 40) isDraggingBall = true;
+    } else {
+      if (Math.abs(pos.x - springX) < 40 && Math.abs(pos.y - canvas.height/2) < 40) isDraggingSpring = true;
+    }
+    e.preventDefault();
+  }
+
+  function handleMove(e) {
+    const pos = getPos(e);
+    if (isDraggingBall) {
+      ballY = pos.y;
+      if (ballY < ballRadius) ballY = ballRadius;
+      if (ballY > canvas.height - 30 - ballRadius) ballY = canvas.height - 30 - ballRadius;
+    }
+    if (isDraggingSpring) {
+      springX = pos.x;
+      if (springX < canvas.width / 2 + 20) springX = canvas.width / 2 + 20;
+      if (springX > canvas.width - 20) springX = canvas.width - 20;
+    }
+    if (isDraggingBall || isDraggingSpring) e.preventDefault();
+  }
+
+  function handleUp() {
+    isDraggingBall = false;
+    isDraggingSpring = false;
+  }
+
+  canvas.addEventListener('mousedown', handleDown);
+  canvas.addEventListener('mousemove', handleMove);
+  window.addEventListener('mouseup', handleUp);
+  canvas.addEventListener('touchstart', handleDown, { passive: false });
+  canvas.addEventListener('touchmove', handleMove, { passive: false });
+  window.addEventListener('touchend', handleUp);
+
+  draw();
+}
+
+function initConservationSimulation() {
+  const canvas = document.getElementById('simConservation');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  canvas.width = canvas.clientWidth;
+  canvas.height = canvas.clientHeight;
+
+  const L = 150; 
+  const pivotX = canvas.width / 2;
+  const pivotY = 20;
+  const m = 2; 
+  const g = 10;
+  
+  let theta = Math.PI / 4;
+  let omega = 0;
+  let isDragging = false;
+  let lastTime = performance.now();
+
+  function draw(time) {
+    const dt = (time - lastTime) / 1000 || 0;
+    lastTime = time;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    if (!isDragging) {
+      const alpha = - (g / 1.5) * Math.sin(theta);
+      omega += alpha * dt;
+      omega *= 0.999; // damping
+      theta += omega * dt;
+    }
+
+    const bobX = pivotX + L * Math.sin(theta);
+    const bobY = pivotY + L * Math.cos(theta);
+
+    // Draw rope
+    ctx.beginPath();
+    ctx.moveTo(pivotX, pivotY);
+    ctx.lineTo(bobX, bobY);
+    ctx.strokeStyle = '#6b7280';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Draw bob
+    ctx.beginPath();
+    ctx.arc(bobX, bobY, 15, 0, Math.PI * 2);
+    ctx.fillStyle = '#ef4444';
+    ctx.fill();
+
+    // Energy calculation
+    const h = 1.5 * (1 - Math.cos(theta));
+    const pe = m * g * h;
+    const v = Math.abs(omega * 1.5);
+    const ke = 0.5 * m * v * v;
+    const total = pe + ke;
+
+    // Draw Energy Bars
+    const barScale = 1.5; 
+    const barW = 20;
+    const startX = 20;
+    const startY = canvas.height - 30;
+
+    // KE Bar
+    ctx.fillStyle = '#ef4444';
+    ctx.fillRect(startX, startY - ke * barScale, barW, ke * barScale);
+    ctx.fillStyle = '#374151';
+    ctx.font = '10px sans-serif';
+    ctx.fillText('KE', startX, startY + 15);
+
+    // PE Bar
+    ctx.fillStyle = '#3b82f6';
+    ctx.fillRect(startX + 30, startY - pe * barScale, barW, pe * barScale);
+    ctx.fillText('PE', startX + 30, startY + 15);
+
+    // Total Bar
+    ctx.fillStyle = '#10b981';
+    ctx.fillRect(startX + 60, startY - total * barScale, barW, total * barScale);
+    ctx.fillText('Total', startX + 60, startY + 15);
+
+    requestAnimationFrame(draw);
+  }
+
+  function getPos(e) {
+    const rect = canvas.getBoundingClientRect();
+    if (e.touches) return { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top };
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+  }
+
+  function handleDown(e) {
+    const pos = getPos(e);
+    const bobX = pivotX + L * Math.sin(theta);
+    const bobY = pivotY + L * Math.cos(theta);
+    if (Math.hypot(pos.x - bobX, pos.y - bobY) < 30) {
+      isDragging = true;
+      omega = 0;
+      e.preventDefault();
+    }
+  }
+
+  function handleMove(e) {
+    if (!isDragging) return;
+    const pos = getPos(e);
+    theta = Math.atan2(pos.x - pivotX, pos.y - pivotY);
+    e.preventDefault();
+  }
+
+  function handleUp() {
+    isDragging = false;
+  }
+
+  canvas.addEventListener('mousedown', handleDown);
+  canvas.addEventListener('mousemove', handleMove);
+  window.addEventListener('mouseup', handleUp);
+  canvas.addEventListener('touchstart', handleDown, { passive: false });
+  canvas.addEventListener('touchmove', handleMove, { passive: false });
+  window.addEventListener('touchend', handleUp);
+
+  requestAnimationFrame(draw);
 }
 
 function saveInputs() {
