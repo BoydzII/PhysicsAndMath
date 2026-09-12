@@ -11,9 +11,9 @@ Object.assign(physicsData.topics, {
         hints: `ใช้สูตร $S_x = \\frac{u^2 \\sin(2\\theta)}{g}$`,
         guide: `<div class='step'>$$\begin{aligned}
     S_x &= \\frac{(10)^2 \\sin(90)}{10}\\\\
-    &= 100$ m
+    &= 100\text{ m}
   \end{aligned}$$</div>`,
-        intermediateHtml: `$u = 10$ m/s <input type='text' class='answer-input' placeholder='...'>`,
+        intermediateHtml: `$u = 10\text{ m/s} <input type='text' class='answer-input' placeholder='...'>`,
         advancedHtml: `<input type='text' class='answer-input' placeholder='...'>`
       },
       {
@@ -22,9 +22,9 @@ Object.assign(physicsData.topics, {
         hints: `ใช้สูตร $S_x = \\frac{u^2 \\sin(2\\theta)}{g}$`,
         guide: `<div class='step'>$$\begin{aligned}
     S_x &= \\frac{(20)^2 \\sin(90)}{10}\\\\
-    &= 400$ m
+    &= 400\text{ m}
   \end{aligned}$$</div>`,
-        intermediateHtml: `$u = 20$ m/s <input type='text' class='answer-input' placeholder='...'>`,
+        intermediateHtml: `$u = 20\text{ m/s} <input type='text' class='answer-input' placeholder='...'>`,
         advancedHtml: `<input type='text' class='answer-input' placeholder='...'>`
       },
       {
@@ -33,9 +33,9 @@ Object.assign(physicsData.topics, {
         hints: `ใช้สูตร $S_x = \\frac{u^2 \\sin(2\\theta)}{g}$`,
         guide: `<div class='step'>$$\begin{aligned}
     S_x &= \\frac{(30)^2 \\sin(90)}{10}\\\\
-    &= 900$ m
+    &= 900\text{ m}
   \end{aligned}$$</div>`,
-        intermediateHtml: `$u = 30$ m/s <input type='text' class='answer-input' placeholder='...'>`,
+        intermediateHtml: `$u = 30\text{ m/s} <input type='text' class='answer-input' placeholder='...'>`,
         advancedHtml: `<input type='text' class='answer-input' placeholder='...'>`
       },
       {
@@ -44,9 +44,9 @@ Object.assign(physicsData.topics, {
         hints: `ใช้สูตร $S_x = \\frac{u^2 \\sin(2\\theta)}{g}$`,
         guide: `<div class='step'>$$\begin{aligned}
     S_x &= \\frac{(40)^2 \\sin(90)}{10}\\\\
-    &= 1600$ m
+    &= 1600\text{ m}
   \end{aligned}$$</div>`,
-        intermediateHtml: `$u = 40$ m/s <input type='text' class='answer-input' placeholder='...'>`,
+        intermediateHtml: `$u = 40\text{ m/s} <input type='text' class='answer-input' placeholder='...'>`,
         advancedHtml: `<input type='text' class='answer-input' placeholder='...'>`
       },
       {
@@ -55,9 +55,9 @@ Object.assign(physicsData.topics, {
         hints: `ใช้สูตร $S_x = \\frac{u^2 \\sin(2\\theta)}{g}$`,
         guide: `<div class='step'>$$\begin{aligned}
     S_x &= \\frac{(50)^2 \\sin(90)}{10}\\\\
-    &= 2500$ m
+    &= 2500\text{ m}
   \end{aligned}$$</div>`,
-        intermediateHtml: `$u = 50$ m/s <input type='text' class='answer-input' placeholder='...'>`,
+        intermediateHtml: `$u = 50\text{ m/s} <input type='text' class='answer-input' placeholder='...'>`,
         advancedHtml: `<input type='text' class='answer-input' placeholder='...'>`
       },
       {
@@ -66,7 +66,7 @@ Object.assign(physicsData.topics, {
         hints: `ใช้สูตร $a_c = \\frac{v^2}{r}$`,
         guide: `<div class='step'>$$\begin{aligned}
     a_c &= \\frac{(2)^2}{1}\\\\
-    &= 4$ m/s$^2
+    &= 4\text{ m/s}^2
   \end{aligned}$$</div>`,
         intermediateHtml: `$v = 2, r = 1$ <input type='text' class='answer-input' placeholder='...'>`,
         advancedHtml: `<input type='text' class='answer-input' placeholder='...'>`
@@ -77,7 +77,7 @@ Object.assign(physicsData.topics, {
         hints: `ใช้สูตร $a_c = \\frac{v^2}{r}$`,
         guide: `<div class='step'>$$\begin{aligned}
     a_c &= \\frac{(4)^2}{2}\\\\
-    &= 8$ m/s$^2
+    &= 8\text{ m/s}^2
   \end{aligned}$$</div>`,
         intermediateHtml: `$v = 4, r = 2$ <input type='text' class='answer-input' placeholder='...'>`,
         advancedHtml: `<input type='text' class='answer-input' placeholder='...'>`
@@ -88,7 +88,7 @@ Object.assign(physicsData.topics, {
         hints: `ใช้สูตร $a_c = \\frac{v^2}{r}$`,
         guide: `<div class='step'>$$\begin{aligned}
     a_c &= \\frac{(6)^2}{3}\\\\
-    &= 12$ m/s$^2
+    &= 12\text{ m/s}^2
   \end{aligned}$$</div>`,
         intermediateHtml: `$v = 6, r = 3$ <input type='text' class='answer-input' placeholder='...'>`,
         advancedHtml: `<input type='text' class='answer-input' placeholder='...'>`
@@ -99,7 +99,7 @@ Object.assign(physicsData.topics, {
         hints: `ใช้สูตร $a_c = \\frac{v^2}{r}$`,
         guide: `<div class='step'>$$\begin{aligned}
     a_c &= \\frac{(8)^2}{4}\\\\
-    &= 16$ m/s$^2
+    &= 16\text{ m/s}^2
   \end{aligned}$$</div>`,
         intermediateHtml: `$v = 8, r = 4$ <input type='text' class='answer-input' placeholder='...'>`,
         advancedHtml: `<input type='text' class='answer-input' placeholder='...'>`
@@ -110,7 +110,7 @@ Object.assign(physicsData.topics, {
         hints: `ใช้สูตร $a_c = \\frac{v^2}{r}$`,
         guide: `<div class='step'>$$\begin{aligned}
     a_c &= \\frac{(10)^2}{5}\\\\
-    &= 20$ m/s$^2
+    &= 20\text{ m/s}^2
   \end{aligned}$$</div>`,
         intermediateHtml: `$v = 10, r = 5$ <input type='text' class='answer-input' placeholder='...'>`,
         advancedHtml: `<input type='text' class='answer-input' placeholder='...'>`
@@ -121,7 +121,7 @@ Object.assign(physicsData.topics, {
         hints: `ใช้สูตร $T = 2\\pi\\sqrt{\\frac{m}{k}}$`,
         guide: `<div class='step'>$$\begin{aligned}
     T &= 2\\pi\\sqrt{\\frac{1}{100}}\\\\
-    &= 0.2\\pi$ s
+    &= 0.2\\pi\text{ s}
   \end{aligned}$$</div>`,
         intermediateHtml: `$k = 100, m = 1$ <input type='text' class='answer-input' placeholder='...'>`,
         advancedHtml: `<input type='text' class='answer-input' placeholder='...'>`
@@ -132,7 +132,7 @@ Object.assign(physicsData.topics, {
         hints: `ใช้สูตร $T = 2\\pi\\sqrt{\\frac{m}{k}}$`,
         guide: `<div class='step'>$$\begin{aligned}
     T &= 2\\pi\\sqrt{\\frac{2}{200}}\\\\
-    &= 0.2\\pi$ s
+    &= 0.2\\pi\text{ s}
   \end{aligned}$$</div>`,
         intermediateHtml: `$k = 200, m = 2$ <input type='text' class='answer-input' placeholder='...'>`,
         advancedHtml: `<input type='text' class='answer-input' placeholder='...'>`
@@ -143,7 +143,7 @@ Object.assign(physicsData.topics, {
         hints: `ใช้สูตร $T = 2\\pi\\sqrt{\\frac{m}{k}}$`,
         guide: `<div class='step'>$$\begin{aligned}
     T &= 2\\pi\\sqrt{\\frac{3}{300}}\\\\
-    &= 0.2\\pi$ s
+    &= 0.2\\pi\text{ s}
   \end{aligned}$$</div>`,
         intermediateHtml: `$k = 300, m = 3$ <input type='text' class='answer-input' placeholder='...'>`,
         advancedHtml: `<input type='text' class='answer-input' placeholder='...'>`
@@ -154,7 +154,7 @@ Object.assign(physicsData.topics, {
         hints: `ใช้สูตร $T = 2\\pi\\sqrt{\\frac{m}{k}}$`,
         guide: `<div class='step'>$$\begin{aligned}
     T &= 2\\pi\\sqrt{\\frac{4}{400}}\\\\
-    &= 0.2\\pi$ s
+    &= 0.2\\pi\text{ s}
   \end{aligned}$$</div>`,
         intermediateHtml: `$k = 400, m = 4$ <input type='text' class='answer-input' placeholder='...'>`,
         advancedHtml: `<input type='text' class='answer-input' placeholder='...'>`
@@ -165,7 +165,7 @@ Object.assign(physicsData.topics, {
         hints: `ใช้สูตร $T = 2\\pi\\sqrt{\\frac{m}{k}}$`,
         guide: `<div class='step'>$$\begin{aligned}
     T &= 2\\pi\\sqrt{\\frac{5}{500}}\\\\
-    &= 0.2\\pi$ s
+    &= 0.2\\pi\text{ s}
   \end{aligned}$$</div>`,
         intermediateHtml: `$k = 500, m = 5$ <input type='text' class='answer-input' placeholder='...'>`,
         advancedHtml: `<input type='text' class='answer-input' placeholder='...'>`
@@ -176,9 +176,9 @@ Object.assign(physicsData.topics, {
         hints: `หา $t$ จากแนวดิ่ง แล้วไปหา $S_x$ ในแนวราบ`,
         guide: `<div class='step'>$$\begin{aligned}
     t &= \\sqrt{\\frac{2h}{g}}\\\\
-    &= 2$ s, $S_x\\\\
+    &= 2\text{ s}, S_x\\\\
     &= ut\\\\
-    &= 10$ m
+    &= 10\text{ m}
   \end{aligned}$$</div>`,
         intermediateHtml: `$h = 20, u_x = 5$ <input type='text' class='answer-input' placeholder='...'>`,
         advancedHtml: `<input type='text' class='answer-input' placeholder='...'>`
@@ -189,9 +189,9 @@ Object.assign(physicsData.topics, {
         hints: `หา $t$ จากแนวดิ่ง แล้วไปหา $S_x$ ในแนวราบ`,
         guide: `<div class='step'>$$\begin{aligned}
     t &= \\sqrt{\\frac{2h}{g}}\\\\
-    &= 2.82$ s, $S_x\\\\
+    &= 2.82\text{ s}, S_x\\\\
     &= ut\\\\
-    &= 28.2$ m
+    &= 28.2\text{ m}
   \end{aligned}$$</div>`,
         intermediateHtml: `$h = 40, u_x = 10$ <input type='text' class='answer-input' placeholder='...'>`,
         advancedHtml: `<input type='text' class='answer-input' placeholder='...'>`
@@ -202,9 +202,9 @@ Object.assign(physicsData.topics, {
         hints: `หา $t$ จากแนวดิ่ง แล้วไปหา $S_x$ ในแนวราบ`,
         guide: `<div class='step'>$$\begin{aligned}
     t &= \\sqrt{\\frac{2h}{g}}\\\\
-    &= 3.46$ s, $S_x\\\\
+    &= 3.46\text{ s}, S_x\\\\
     &= ut\\\\
-    &= 51.9$ m
+    &= 51.9\text{ m}
   \end{aligned}$$</div>`,
         intermediateHtml: `$h = 60, u_x = 15$ <input type='text' class='answer-input' placeholder='...'>`,
         advancedHtml: `<input type='text' class='answer-input' placeholder='...'>`
@@ -215,9 +215,9 @@ Object.assign(physicsData.topics, {
         hints: `หา $t$ จากแนวดิ่ง แล้วไปหา $S_x$ ในแนวราบ`,
         guide: `<div class='step'>$$\begin{aligned}
     t &= \\sqrt{\\frac{2h}{g}}\\\\
-    &= 4$ s, $S_x\\\\
+    &= 4\text{ s}, S_x\\\\
     &= ut\\\\
-    &= 80$ m
+    &= 80\text{ m}
   \end{aligned}$$</div>`,
         intermediateHtml: `$h = 80, u_x = 20$ <input type='text' class='answer-input' placeholder='...'>`,
         advancedHtml: `<input type='text' class='answer-input' placeholder='...'>`
@@ -228,9 +228,9 @@ Object.assign(physicsData.topics, {
         hints: `หา $t$ จากแนวดิ่ง แล้วไปหา $S_x$ ในแนวราบ`,
         guide: `<div class='step'>$$\begin{aligned}
     t &= \\sqrt{\\frac{2h}{g}}\\\\
-    &= 4.48$ s, $S_x\\\\
+    &= 4.48\text{ s}, S_x\\\\
     &= ut\\\\
-    &= 112.00000000000001$ m
+    &= 112.00000000000001\text{ m}
   \end{aligned}$$</div>`,
         intermediateHtml: `$h = 100, u_x = 25$ <input type='text' class='answer-input' placeholder='...'>`,
         advancedHtml: `<input type='text' class='answer-input' placeholder='...'>`
@@ -241,7 +241,7 @@ Object.assign(physicsData.topics, {
         hints: `พิจารณาแรง $T\\cos\\theta = mg$`,
         guide: `<div class='step'>$$\begin{aligned}
     T &= \\frac{mg}{\\cos 30^\\circ}\\\\
-    &= \\frac{10}{\\frac{\\sqrt{3}}{2}}$ N
+    &= \\frac{10}{\\frac{\\sqrt{3}}{2}}\text{ N}
   \end{aligned}$$</div>`,
         intermediateHtml: `$m = 1, \\theta = 30^\\circ$ <input type='text' class='answer-input' placeholder='...'>`,
         advancedHtml: `<input type='text' class='answer-input' placeholder='...'>`
@@ -252,7 +252,7 @@ Object.assign(physicsData.topics, {
         hints: `พิจารณาแรง $T\\cos\\theta = mg$`,
         guide: `<div class='step'>$$\begin{aligned}
     T &= \\frac{mg}{\\cos 30^\\circ}\\\\
-    &= \\frac{20}{\\frac{\\sqrt{3}}{2}}$ N
+    &= \\frac{20}{\\frac{\\sqrt{3}}{2}}\text{ N}
   \end{aligned}$$</div>`,
         intermediateHtml: `$m = 2, \\theta = 30^\\circ$ <input type='text' class='answer-input' placeholder='...'>`,
         advancedHtml: `<input type='text' class='answer-input' placeholder='...'>`
@@ -263,7 +263,7 @@ Object.assign(physicsData.topics, {
         hints: `พิจารณาแรง $T\\cos\\theta = mg$`,
         guide: `<div class='step'>$$\begin{aligned}
     T &= \\frac{mg}{\\cos 30^\\circ}\\\\
-    &= \\frac{30}{\\frac{\\sqrt{3}}{2}}$ N
+    &= \\frac{30}{\\frac{\\sqrt{3}}{2}}\text{ N}
   \end{aligned}$$</div>`,
         intermediateHtml: `$m = 3, \\theta = 30^\\circ$ <input type='text' class='answer-input' placeholder='...'>`,
         advancedHtml: `<input type='text' class='answer-input' placeholder='...'>`
@@ -274,7 +274,7 @@ Object.assign(physicsData.topics, {
         hints: `พิจารณาแรง $T\\cos\\theta = mg$`,
         guide: `<div class='step'>$$\begin{aligned}
     T &= \\frac{mg}{\\cos 30^\\circ}\\\\
-    &= \\frac{40}{\\frac{\\sqrt{3}}{2}}$ N
+    &= \\frac{40}{\\frac{\\sqrt{3}}{2}}\text{ N}
   \end{aligned}$$</div>`,
         intermediateHtml: `$m = 4, \\theta = 30^\\circ$ <input type='text' class='answer-input' placeholder='...'>`,
         advancedHtml: `<input type='text' class='answer-input' placeholder='...'>`
@@ -285,7 +285,7 @@ Object.assign(physicsData.topics, {
         hints: `พิจารณาแรง $T\\cos\\theta = mg$`,
         guide: `<div class='step'>$$\begin{aligned}
     T &= \\frac{mg}{\\cos 30^\\circ}\\\\
-    &= \\frac{50}{\\frac{\\sqrt{3}}{2}}$ N
+    &= \\frac{50}{\\frac{\\sqrt{3}}{2}}\text{ N}
   \end{aligned}$$</div>`,
         intermediateHtml: `$m = 5, \\theta = 30^\\circ$ <input type='text' class='answer-input' placeholder='...'>`,
         advancedHtml: `<input type='text' class='answer-input' placeholder='...'>`
@@ -296,7 +296,7 @@ Object.assign(physicsData.topics, {
         hints: `ที่จุดสูงสุด $mg = m\\frac{v^2}{R}$`,
         guide: `<div class='step'>$$\begin{aligned}
     v &= \\sqrt{gR}\\\\
-    &= \\sqrt{10 \\times 5}$ m/s
+    &= \\sqrt{10 \\times 5}\text{ m/s}
   \end{aligned}$$</div>`,
         intermediateHtml: `$R = 5$ <input type='text' class='answer-input' placeholder='...'>`,
         advancedHtml: `<input type='text' class='answer-input' placeholder='...'>`
@@ -307,7 +307,7 @@ Object.assign(physicsData.topics, {
         hints: `ที่จุดสูงสุด $mg = m\\frac{v^2}{R}$`,
         guide: `<div class='step'>$$\begin{aligned}
     v &= \\sqrt{gR}\\\\
-    &= \\sqrt{10 \\times 10}$ m/s
+    &= \\sqrt{10 \\times 10}\text{ m/s}
   \end{aligned}$$</div>`,
         intermediateHtml: `$R = 10$ <input type='text' class='answer-input' placeholder='...'>`,
         advancedHtml: `<input type='text' class='answer-input' placeholder='...'>`
@@ -318,7 +318,7 @@ Object.assign(physicsData.topics, {
         hints: `ที่จุดสูงสุด $mg = m\\frac{v^2}{R}$`,
         guide: `<div class='step'>$$\begin{aligned}
     v &= \\sqrt{gR}\\\\
-    &= \\sqrt{10 \\times 15}$ m/s
+    &= \\sqrt{10 \\times 15}\text{ m/s}
   \end{aligned}$$</div>`,
         intermediateHtml: `$R = 15$ <input type='text' class='answer-input' placeholder='...'>`,
         advancedHtml: `<input type='text' class='answer-input' placeholder='...'>`
@@ -329,7 +329,7 @@ Object.assign(physicsData.topics, {
         hints: `ที่จุดสูงสุด $mg = m\\frac{v^2}{R}$`,
         guide: `<div class='step'>$$\begin{aligned}
     v &= \\sqrt{gR}\\\\
-    &= \\sqrt{10 \\times 20}$ m/s
+    &= \\sqrt{10 \\times 20}\text{ m/s}
   \end{aligned}$$</div>`,
         intermediateHtml: `$R = 20$ <input type='text' class='answer-input' placeholder='...'>`,
         advancedHtml: `<input type='text' class='answer-input' placeholder='...'>`
@@ -340,7 +340,7 @@ Object.assign(physicsData.topics, {
         hints: `ที่จุดสูงสุด $mg = m\\frac{v^2}{R}$`,
         guide: `<div class='step'>$$\begin{aligned}
     v &= \\sqrt{gR}\\\\
-    &= \\sqrt{10 \\times 25}$ m/s
+    &= \\sqrt{10 \\times 25}\text{ m/s}
   \end{aligned}$$</div>`,
         intermediateHtml: `$R = 25$ <input type='text' class='answer-input' placeholder='...'>`,
         advancedHtml: `<input type='text' class='answer-input' placeholder='...'>`

@@ -12,7 +12,7 @@ Object.assign(physicsData.topics, {
         hints: `ใช้สูตร $p = mv$`,
         guide: `<div class="step">$$\begin{aligned}
     p &= 2 \\times 5\\\\
-    &= 10$ \text{ kg}\cdot\text{m/s}
+    &= 10\text{ kg}\cdot\text{m/s}
   \end{aligned}$$</div>`,
         intermediateHtml: `p = <input type="text" class="answer-input" placeholder="10">`,
         advancedHtml: `<input type="text" class="answer-input" placeholder="10">`
@@ -23,7 +23,7 @@ Object.assign(physicsData.topics, {
         hints: `แทนค่าใน $p = mv$`,
         guide: `<div class="step">$$\begin{aligned}
     p &= 1200 \\times 20\\\\
-    &= 24000$ \text{ kg}\cdot\text{m/s}
+    &= 24000\text{ kg}\cdot\text{m/s}
   \end{aligned}$$</div>`,
         intermediateHtml: `p = <input type="text" class="answer-input">`,
         advancedHtml: `<input type="text" class="answer-input">`
@@ -34,7 +34,7 @@ Object.assign(physicsData.topics, {
         hints: `$v = \\frac{p}{m}$`,
         guide: `<div class="step">$$\begin{aligned}
     v &= \\frac{15}{0.5}\\\\
-    &= 30$ m/s
+    &= 30\text{ m/s}
   \end{aligned}$$</div>`,
         intermediateHtml: `v = <input type="text" class="answer-input">`,
         advancedHtml: `<input type="text" class="answer-input">`
@@ -45,7 +45,7 @@ Object.assign(physicsData.topics, {
         hints: `$m = \\frac{p}{v}$`,
         guide: `<div class="step">$$\begin{aligned}
     m &= \\frac{50}{10}\\\\
-    &= 5$ kg
+    &= 5\text{ kg}
   \end{aligned}$$</div>`,
         intermediateHtml: `m = <input type="text" class="answer-input">`,
         advancedHtml: `<input type="text" class="answer-input">`
@@ -56,7 +56,7 @@ Object.assign(physicsData.topics, {
         hints: `$I = F \\times \\Delta t$`,
         guide: `<div class="step">$$\begin{aligned}
     I &= 50 \\times 2\\\\
-    &= 100$ \text{ N}\cdot\text{s}
+    &= 100\text{ N}\cdot\text{s}
   \end{aligned}$$</div>`,
         intermediateHtml: `I = <input type="text" class="answer-input">`,
         advancedHtml: `<input type="text" class="answer-input">`
@@ -67,7 +67,7 @@ Object.assign(physicsData.topics, {
         hints: `$F = \\frac{I}{\\Delta t}$`,
         guide: `<div class="step">$$\begin{aligned}
     F &= \\frac{120}{3}\\\\
-    &= 40$ N
+    &= 40\text{ N}
   \end{aligned}$$</div>`,
         intermediateHtml: `F = <input type="text" class="answer-input">`,
         advancedHtml: `<input type="text" class="answer-input">`
@@ -78,7 +78,7 @@ Object.assign(physicsData.topics, {
         hints: `$I = \\Delta p = m(v - u)$`,
         guide: `<div class="step">$$\begin{aligned}
     I &= 0.1(40 - 0)\\\\
-    &= 4$ \text{ N}\cdot\text{s}
+    &= 4\text{ N}\cdot\text{s}
   \end{aligned}$$</div>`,
         intermediateHtml: `I = <input type="text" class="answer-input">`,
         advancedHtml: `<input type="text" class="answer-input">`
@@ -89,7 +89,7 @@ Object.assign(physicsData.topics, {
         hints: `$\\Delta p = m(v - u)$`,
         guide: `<div class="step">$$\begin{aligned}
     \\Delta p &= 2(2 - 10)\\\\
-    &= -16$ ขนาด\\\\
+    &= -16\text{ kg}\cdot\text{m/s}\\\\
     &= 16 \text{ kg}\cdot\text{m/s}
   \end{aligned}$$</div>`,
         intermediateHtml: `|\\Delta p| = <input type="text" class="answer-input">`,
@@ -101,7 +101,7 @@ Object.assign(physicsData.topics, {
         hints: `$F = \\frac{m(v - u)}{t}$`,
         guide: `<div class="step">$$\begin{aligned}
     F &= \\frac{5(0 - 8)}{0.2}\\\\
-    &= -200$ N (ขนาด 200 N)
+    &= -200\text{ N} (ขนาด 200 N)
   \end{aligned}$$</div>`,
         intermediateHtml: `F = <input type="text" class="answer-input">`,
         advancedHtml: `<input type="text" class="answer-input">`
@@ -112,7 +112,7 @@ Object.assign(physicsData.topics, {
         hints: `$F\\Delta t = m\\Delta v$`,
         guide: `<div class="step">$$\begin{aligned}
     \\Delta v &= \\frac{15 \\times 4}{3}\\\\
-    &= 20$ m/s
+    &= 20\text{ m/s}
   \end{aligned}$$</div>`,
         intermediateHtml: `\\Delta v = <input type="text" class="answer-input">`,
         advancedHtml: `<input type="text" class="answer-input">`
@@ -131,7 +131,7 @@ Object.assign(physicsData.topics, {
         hints: `พื้นที่ใต้กราฟ F-t`,
         guide: `<div class="step">$$\begin{aligned}
     I &= \\frac{1}{2} \\times 4 \\times 10\\\\
-    &= 20$ \text{ N}\cdot\text{s}
+    &= 20\text{ N}\cdot\text{s}
   \end{aligned}$$</div>`,
         intermediateHtml: `I = <input type="text" class="answer-input">`,
         advancedHtml: `<input type="text" class="answer-input">`
@@ -142,7 +142,7 @@ Object.assign(physicsData.topics, {
         hints: `$m_1v_1 + m_2v_2 = 0$`,
         guide: `<div class="step">$$\begin{aligned}
     v_2 &= -\\frac{0.05 \\times 400}{5}\\\\
-    &= -4$ m/s
+    &= -4\text{ m/s}
   \end{aligned}$$</div>`,
         intermediateHtml: `v = <input type="text" class="answer-input">`,
         advancedHtml: `<input type="text" class="answer-input">`
@@ -153,7 +153,7 @@ Object.assign(physicsData.topics, {
         hints: `ทิศตรงข้ามให้เป็นลบ`,
         guide: `<div class="step">$$\begin{aligned}
     \\Delta p &= 0.2(-4 - 10)\\\\
-    &= -2.8$ \text{ N}\cdot\text{s}
+    &= -2.8\text{ N}\cdot\text{s}
   \end{aligned}$$</div>`,
         intermediateHtml: `|\\Delta p| = <input type="text" class="answer-input">`,
         advancedHtml: `<input type="text" class="answer-input">`
@@ -164,7 +164,7 @@ Object.assign(physicsData.topics, {
         hints: `$m_1u_1 = (m_1+m_2)v$`,
         guide: `<div class="step">$$\begin{aligned}
     10(2) &= (10+40)v \\\\\
-    v &= 0.4$ m/s
+    v &= 0.4\text{ m/s}
   \end{aligned}$$</div>`,
         intermediateHtml: `v = <input type="text" class="answer-input">`,
         advancedHtml: `<input type="text" class="answer-input">`
@@ -177,7 +177,7 @@ Object.assign(physicsData.topics, {
         hints: `ชนแบบไม่ยืดหยุ่นสมบูรณ์ (ติดกัน)`,
         guide: `<div class="step">$$\begin{aligned}
     1000(20) + 1500(10) &= 2500v \\\\\
-    v &= 14$ m/s
+    v &= 14\text{ m/s}
   \end{aligned}$$</div>`,
         intermediateHtml: `v = <input type="text" class="answer-input">`,
         advancedHtml: `<input type="text" class="answer-input">`
@@ -188,7 +188,7 @@ Object.assign(physicsData.topics, {
         hints: `อนุรักษ์โมเมนตัม`,
         guide: `<div class="step">$$\begin{aligned}
     500(15) + 500(-5) &= 500(0) + 500(v_B) \\\\\
-    v_B &= 10$ m/s
+    v_B &= 10\text{ m/s}
   \end{aligned}$$</div>`,
         intermediateHtml: `v_B = <input type="text" class="answer-input">`,
         advancedHtml: `<input type="text" class="answer-input">`
@@ -199,7 +199,7 @@ Object.assign(physicsData.topics, {
         hints: `โมเมนตัมเริ่มต้นเป็น 0`,
         guide: `<div class="step">$$\begin{aligned}
     0 &= 2(-10) + 4v \\\\\
-    v &= 5$ m/s
+    v &= 5\text{ m/s}
   \end{aligned}$$</div>`,
         intermediateHtml: `v = <input type="text" class="answer-input">`,
         advancedHtml: `<input type="text" class="answer-input">`
@@ -219,7 +219,7 @@ Object.assign(physicsData.topics, {
         guide: `<div class="step">$$\begin{aligned}
     v_2 &= \\frac{2m_1}{m_1+m_2}u_1\\\\
     &= \\frac{2(3)}{5}4\\\\
-    &= 4.8$ m/s
+    &= 4.8\text{ m/s}
   \end{aligned}$$</div>`,
         intermediateHtml: `v = <input type="text" class="answer-input">`,
         advancedHtml: `<input type="text" class="answer-input">`
@@ -230,7 +230,7 @@ Object.assign(physicsData.topics, {
         hints: `ทิศสวนทางกัน v ต้องติดลบ`,
         guide: `<div class="step">$$\begin{aligned}
     5000(10) + 1000(-20) &= 6000v \\\\\
-    v &= 5$ m/s
+    v &= 5\text{ m/s}
   \end{aligned}$$</div>`,
         intermediateHtml: `v = <input type="text" class="answer-input">`,
         advancedHtml: `<input type="text" class="answer-input">`
@@ -241,8 +241,8 @@ Object.assign(physicsData.topics, {
         hints: `รวมแบบเวกเตอร์ $p_x$ และ $p_y$`,
         guide: `<div class="step">$$\begin{aligned}
     p_3 &= \\sqrt{3^2 + 4^2}\\\\
-    &= 5$ ดังนั้น $v\\\\
-    &= 5$ m/s
+    &= 5\text{ kg}\cdot\text{m/s}\\\\
+    &= 5\text{ m/s}
   \end{aligned}$$</div>`,
         intermediateHtml: `v = <input type="text" class="answer-input">`,
         advancedHtml: `<input type="text" class="answer-input">`
@@ -261,7 +261,7 @@ Object.assign(physicsData.topics, {
         hints: `อนุรักษ์โมเมนตัมแนวนอน`,
         guide: `<div class="step">$$\begin{aligned}
     0.01(300) &= 0.01(100) + 2v \\\\\
-    v &= 1$ m/s
+    v &= 1\text{ m/s}
   \end{aligned}$$</div>`,
         intermediateHtml: `v = <input type="text" class="answer-input">`,
         advancedHtml: `<input type="text" class="answer-input">`
@@ -272,7 +272,7 @@ Object.assign(physicsData.topics, {
         hints: `$F = \\frac{m(v-u)}{t}$`,
         guide: `<div class="step">$$\begin{aligned}
     F &= \\frac{2000(-5 - 15)}{0.1}\\\\
-    &= -400000$ N
+    &= -400000\text{ N}
   \end{aligned}$$</div>`,
         intermediateHtml: `|F| = <input type="text" class="answer-input">`,
         advancedHtml: `<input type="text" class="answer-input">`
@@ -283,7 +283,7 @@ Object.assign(physicsData.topics, {
         hints: `โมเมนตัมรวม = 0`,
         guide: `<div class="step">$$\begin{aligned}
     0 &= 80v + 2(10) \\\\\
-    v &= -0.25$ m/s
+    v &= -0.25\text{ m/s}
   \end{aligned}$$</div>`,
         intermediateHtml: `|v| = <input type="text" class="answer-input">`,
         advancedHtml: `<input type="text" class="answer-input">`
@@ -294,7 +294,7 @@ Object.assign(physicsData.topics, {
         hints: `$v = \\sqrt{2gh}$, ขาลงบวก ขาขึ้นลบ`,
         guide: `<div class="step">$$\begin{aligned}
     u &= 10, v=-8 \\\\\
-    I &= 0.2(-8 - 10) = -3.6$ \text{ N}\cdot\text{s}
+    I &= 0.2(-8 - 10) = -3.6\text{ N}\cdot\text{s}
   \end{aligned}$$</div>`,
         intermediateHtml: `|I| = <input type="text" class="answer-input">`,
         advancedHtml: `<input type="text" class="answer-input">`
@@ -304,9 +304,9 @@ Object.assign(physicsData.topics, {
         text: `ปืนใหญ่ 1000 kg ยิงลูกปืน 10 kg ด้วยความเร็ว 200\text{ m/s} ถ้าระยะถอย 1 m หาแรงเสียดทาน`,
         hints: `หา $v$ ปืน แล้วใช้ พลังงาน $\\frac{1}{2}mv^2 = f s$`,
         guide: `<div class="step">$$\begin{aligned}
-    v_p &= 2$ m/s $\\\\\
+    v_p &= 2\text{ m/s} \\\\\
     \\frac{1}{2}(1000)(2^2) &= f(1) \\\\\
-    f &= 2000$ N
+    f &= 2000\text{ N}
   \end{aligned}$$</div>`,
         intermediateHtml: `f = <input type="text" class="answer-input">`,
         advancedHtml: `<input type="text" class="answer-input">`
@@ -318,7 +318,7 @@ Object.assign(physicsData.topics, {
         guide: `<div class="step">$$\begin{aligned}
     4(5) &= 4(-1) + 6v \\\\\
     20 &= -4 + 6v \\\\\
-    v &= 4$ m/s
+    v &= 4\text{ m/s}
   \end{aligned}$$</div>`,
         intermediateHtml: `v = <input type="text" class="answer-input">`,
         advancedHtml: `<input type="text" class="answer-input">`
@@ -338,8 +338,8 @@ Object.assign(physicsData.topics, {
         text: `ลูกปืน 20 g ยิงฝังในเป้า 1.98 kg ที่ห้อยแขวน เป้าแกว่งขึ้นสูง 5 cm หาความเร็วลูกปืน <br><svg width="150" height="100"><line x1="75" y1="10" x2="75" y2="70" stroke="black"/><rect x="65" y="70" width="20" height="20" fill="brown"/></svg>`,
         hints: `ใช้พลังงานหา $V$ ก่อน แล้วใช้โมเมนตัมหา $u$`,
         guide: `<div class="step">$$\begin{aligned}
-    V &= \\sqrt{2(10)(0.05)} = 1$ m/s, $0.02u = 2(1) \\\\\
-    u &= 100$ m/s
+    V &= \\sqrt{2(10)(0.05)} = 1\text{ m/s}, 0.02u = 2(1) \\\\\
+    u &= 100\text{ m/s}
   \end{aligned}$$</div>`,
         intermediateHtml: `u = <input type="text" class="answer-input">`,
         advancedHtml: `<input type="text" class="answer-input">`
@@ -351,7 +351,7 @@ Object.assign(physicsData.topics, {
         guide: `<div class="step">$$\begin{aligned}
     p_x &= 15000, p_y = 20000 \\\\\
     p_{tot} &= 25000 \\\\\
-    v &= \\frac{25000}{3000} = 8.33$ m/s
+    v &= \\frac{25000}{3000} = 8.33\text{ m/s}
   \end{aligned}$$</div>`,
         intermediateHtml: `v = <input type="text" class="answer-input">`,
         advancedHtml: `<input type="text" class="answer-input">`
@@ -362,7 +362,7 @@ Object.assign(physicsData.topics, {
         hints: `$p$ เท่ากัน $E_k = \\frac{p^2}{2m}$`,
         guide: `<div class="step">$$\begin{aligned}
     p^2 &= 2(2)(18) = 72 \\\\\
-    E_{k2} &= \\frac{72}{2(3)} = 12$ J
+    E_{k2} &= \\frac{72}{2(3)} = 12\text{ J}
   \end{aligned}$$</div>`,
         intermediateHtml: `E_k = <input type="text" class="answer-input">`,
         advancedHtml: `<input type="text" class="answer-input">`
@@ -373,7 +373,7 @@ Object.assign(physicsData.topics, {
         hints: `$F = \\frac{nm\\Delta v}{t}$`,
         guide: `<div class="step">$$\begin{aligned}
     F &= 1000 \\times (0.05 \\times 10^{-3}) \\times 10\\\\
-    &= 0.5$ N
+    &= 0.5\text{ N}
   \end{aligned}$$</div>`,
         intermediateHtml: `F = <input type="text" class="answer-input">`,
         advancedHtml: `<input type="text" class="answer-input">`
@@ -409,7 +409,7 @@ Object.assign(physicsData.topics, {
         guide: `<div class="step">$$\begin{aligned}
     0 &= 50(1.2 - v) - 10v \\\\\
     60 &= 60v \\\\\
-    v &= 1$ m/s
+    v &= 1\text{ m/s}
   \end{aligned}$$</div>`,
         intermediateHtml: `v = <input type="text" class="answer-input">`,
         advancedHtml: `<input type="text" class="answer-input">`
@@ -419,8 +419,8 @@ Object.assign(physicsData.topics, {
         text: `การดลของแรงกระทำต่อมวล 2 kg เป็น $I = 4t^2$ ในช่วง 0 ถึง 3 s หา $\\Delta v$`,
         hints: `$I = m\\Delta v$`,
         guide: `<div class="step">$$\begin{aligned}
-    ที่ t &= 3, $I = 36$ \text{ N}\cdot\text{s} $\\\\\
-    \\Delta v &= 36/2 = 18$ m/s
+    ที่ t &= 3, I = 36\text{ N}\cdot\text{s} \\\\\
+    \\Delta v &= 36/2 = 18\text{ m/s}
   \end{aligned}$$</div>`,
         intermediateHtml: `\\Delta v = <input type="text" class="answer-input">`,
         advancedHtml: `<input type="text" class="answer-input">`
