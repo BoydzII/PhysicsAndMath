@@ -97,14 +97,14 @@ Object.assign(physicsData.topics, {
       },
       {
         id: "ch6_c9",
-        text: `ถุงทรายมวล 5 kg ตกกระทบพื้นด้วยความเร็ว 8\text{ m/s} และหยุดนิ่งใน 0.2 s จงหาแรงกระแทกเฉลี่ย`,
+        text: `ถุงทรายมวล 5 kg ตกกระทบพื้นด้วยความเร็ว 8\text{ m/s} และหยุดนิ่งใน 0.2 s จงหาขนาดแรงกระแทกเฉลี่ย`,
         hints: `$F = \\frac{m(v - u)}{t}$`,
-        guide: `<div class="step">$$\begin{aligned}
+        guide: `<div class="step">$$\\begin{aligned}
     F &= \\frac{5(0 - 8)}{0.2}\\\\
-    &= -200\text{ N} (ขนาด 200 N)
-  \end{aligned}$$</div>`,
-        intermediateHtml: `F = <input type="text" class="answer-input">`,
-        advancedHtml: `<input type="text" class="answer-input">`
+    &= 200\text{ N}
+  \\end{aligned}$$</div>`,
+        intermediateHtml: `F = <input type="text" class="answer-input" placeholder="200">`,
+        advancedHtml: `<input type="text" class="answer-input" placeholder="200">`
       },
       {
         id: "ch6_c10",
@@ -119,11 +119,14 @@ Object.assign(physicsData.topics, {
       },
       {
         id: "ch6_c11",
-        text: `รถยนต์ A ชนรถยนต์ B ที่อยู่นิ่ง <br><svg width="200" height="60"><rect x="20" y="20" width="40" height="20" fill="red"/><rect x="120" y="20" width="40" height="20" fill="blue"/><line x1="65" y1="30" x2="110" y2="30" stroke="black"/></svg>`,
+        text: `รถยนต์ A (1000 kg) ความเร็ว 15\text{ m/s} ชนรถยนต์ B (1000 kg) ที่อยู่นิ่ง แล้วชนติดกันไป ความเร็วหลังชนเป็นเท่าใด <br><svg width="200" height="60"><rect x="20" y="20" width="40" height="20" fill="red"/><rect x="120" y="20" width="40" height="20" fill="blue"/><line x1="65" y1="30" x2="110" y2="30" stroke="black"/></svg>`,
         hints: `กฎอนุรักษ์โมเมนตัม`,
-        guide: `<div class="step">ผลรวมโมเมนตัมก่อน = หลัง</div>`,
-        intermediateHtml: `p = <input type="text" class="answer-input">`,
-        advancedHtml: `<input type="text" class="answer-input">`
+        guide: `<div class="step">$$\\begin{aligned}
+    1000(15) &= (1000+1000)v \\\\
+    v &= 7.5\text{ m/s}
+  \\end{aligned}$$</div>`,
+        intermediateHtml: `v = <input type="text" class="answer-input" placeholder="7.5">`,
+        advancedHtml: `<input type="text" class="answer-input" placeholder="7.5">`
       },
       {
         id: "ch6_c12",
@@ -138,25 +141,25 @@ Object.assign(physicsData.topics, {
       },
       {
         id: "ch6_c13",
-        text: `กระสุนปืน 0.05 kg ยิงออกจากปืน 5 kg ด้วยความเร็ว 400\text{ m/s} ความเร็วถอยหลังของปืนคือ?`,
+        text: `กระสุนปืน 0.05 kg ยิงออกจากปืน 5 kg ด้วยความเร็ว 400\text{ m/s} จงหาขนาดความเร็วถอยหลังของปืน`,
         hints: `$m_1v_1 + m_2v_2 = 0$`,
-        guide: `<div class="step">$$\begin{aligned}
-    v_2 &= -\\frac{0.05 \\times 400}{5}\\\\
-    &= -4\text{ m/s}
-  \end{aligned}$$</div>`,
-        intermediateHtml: `v = <input type="text" class="answer-input">`,
-        advancedHtml: `<input type="text" class="answer-input">`
+        guide: `<div class="step">$$\\begin{aligned}
+    v_2 &= \\frac{0.05 \\times 400}{5}\\\\
+    &= 4\text{ m/s}
+  \\end{aligned}$$</div>`,
+        intermediateHtml: `|v| = <input type="text" class="answer-input" placeholder="4">`,
+        advancedHtml: `<input type="text" class="answer-input" placeholder="4">`
       },
       {
         id: "ch6_c14",
-        text: `นก 0.2 kg บินด้วยความเร็ว 10\text{ m/s} ชนกระจกและกระดอนกลับด้วยความเร็ว 4\text{ m/s} หา $\\Delta p$`,
+        text: `นก 0.2 kg บินด้วยความเร็ว 10\text{ m/s} ชนกระจกและกระดอนกลับด้วยความเร็ว 4\text{ m/s} จงหาขนาดการเปลี่ยนแปลงโมเมนตัม`,
         hints: `ทิศตรงข้ามให้เป็นลบ`,
-        guide: `<div class="step">$$\begin{aligned}
-    \\Delta p &= 0.2(-4 - 10)\\\\
-    &= -2.8\text{ N}\cdot\text{s}
-  \end{aligned}$$</div>`,
-        intermediateHtml: `|\\Delta p| = <input type="text" class="answer-input">`,
-        advancedHtml: `<input type="text" class="answer-input">`
+        guide: `<div class="step">$$\\begin{aligned}
+    |\\Delta p| &= 0.2(4 - (-10))\\\\
+    &= 2.8\text{ N}\\cdot\\text{s}
+  \\end{aligned}$$</div>`,
+        intermediateHtml: `|\\Delta p| = <input type="text" class="answer-input" placeholder="2.8">`,
+        advancedHtml: `<input type="text" class="answer-input" placeholder="2.8">`
       },
       {
         id: "ch6_c15",
@@ -206,11 +209,13 @@ Object.assign(physicsData.topics, {
       },
       {
         id: "ch6_c19",
-        text: `ลูกสนุ้ก A ชน B ที่อยู่นิ่งแบบยืดหยุ่นสมบูรณ์ มวลเท่ากัน หลังชน A จะเป็นอย่างไร <br><svg width="150" height="60"><circle cx="40" cy="30" r="10" fill="white" stroke="black"/><circle cx="100" cy="30" r="10" fill="red"/></svg>`,
+        text: `ลูกสนุ้ก A ชน B ที่อยู่นิ่งแบบยืดหยุ่นสมบูรณ์ มวลเท่ากัน หลังชนความเร็วของลูก A มีค่าเท่าใด (m/s) <br><svg width="150" height="60"><circle cx="40" cy="30" r="10" fill="white" stroke="black"/><circle cx="100" cy="30" r="10" fill="red"/></svg>`,
         hints: `มวลเท่า ชนยืดหยุ่น แลกเปลี่ยนความเร็ว`,
-        guide: `<div class="step">A หยุดนิ่ง (v=0), B เคลื่อนที่ด้วยความเร็ว A</div>`,
-        intermediateHtml: `v_A = <input type="text" class="answer-input">`,
-        advancedHtml: `<input type="text" class="answer-input">`
+        guide: `<div class="step">$$\\begin{aligned}
+    v_A &= 0\text{ m/s}
+  \\end{aligned}$$</div>`,
+        intermediateHtml: `v_A = <input type="text" class="answer-input" placeholder="0">`,
+        advancedHtml: `<input type="text" class="answer-input" placeholder="0">`
       },
       {
         id: "ch6_c20",
@@ -249,11 +254,14 @@ Object.assign(physicsData.topics, {
       },
       {
         id: "ch6_c23",
-        text: `ลูกบิลเลียด 2 ลูก ชนกัน 2 มิติ ลูกแรกเบี่ยงมุม 30 องศา ลูกที่สองเบี่ยง 60 องศา (ชนยืดหยุ่น) มุมรวมคือ 90 องศาใช่หรือไม่ (ตอบ 1=ใช่ 0=ไม่ใช่) <br><svg width="150" height="80"><circle cx="40" cy="40" r="8" fill="white" stroke="black"/><circle cx="80" cy="40" r="8" fill="red"/><path d="M80 40 L120 20 M80 40 L120 60" stroke="black" stroke-dasharray="2,2"/></svg>`,
+        text: `ลูกบิลเลียด 2 ลูก ชนกัน 2 มิติ ลูกแรกเบี่ยงมุม 30 องศา ลูกที่สองเบี่ยง 60 องศา (ชนยืดหยุ่น) มุมรวมระหว่างความเร็วหลังชนมีค่ากี่องศา <br><svg width="150" height="80"><circle cx="40" cy="40" r="8" fill="white" stroke="black"/><circle cx="80" cy="40" r="8" fill="red"/><path d="M80 40 L120 20 M80 40 L120 60" stroke="black" stroke-dasharray="2,2"/></svg>`,
         hints: `การชนยืดหยุ่นมวลเท่ากัน 2 มิติ`,
-        guide: `<div class="step">ใช่ มุมระหว่างความเร็วหลังชนคือ $90^\\circ$</div>`,
-        intermediateHtml: `ตอบ = <input type="text" class="answer-input">`,
-        advancedHtml: `<input type="text" class="answer-input">`
+        guide: `<div class="step">$$\\begin{aligned}
+    \\theta &= 30^\\circ + 60^\\circ\\\\
+    &= 90^\\circ
+  \\end{aligned}$$</div>`,
+        intermediateHtml: `\\theta = <input type="text" class="answer-input" placeholder="90">`,
+        advancedHtml: `<input type="text" class="answer-input" placeholder="90">`
       },
       {
         id: "ch6_c24",
@@ -268,25 +276,25 @@ Object.assign(physicsData.topics, {
       },
       {
         id: "ch6_c25",
-        text: `รถ 2000 kg ชนกำแพงด้วยความเร็ว 15\text{ m/s} และเด้งกลับด้วยความเร็ว 5\text{ m/s} ใน 0.1 s แรงเฉลี่ยคือ? <br><svg width="150" height="60"><rect x="30" y="20" width="40" height="20" fill="red"/><rect x="100" y="10" width="10" height="40" fill="gray"/></svg>`,
+        text: `รถ 2000 kg ชนกำแพงด้วยความเร็ว 15\text{ m/s} และเด้งกลับด้วยความเร็ว 5\text{ m/s} ใน 0.1 s จงหาขนาดแรงเฉลี่ย <br><svg width="150" height="60"><rect x="30" y="20" width="40" height="20" fill="red"/><rect x="100" y="10" width="10" height="40" fill="gray"/></svg>`,
         hints: `$F = \\frac{m(v-u)}{t}$`,
-        guide: `<div class="step">$$\begin{aligned}
-    F &= \\frac{2000(-5 - 15)}{0.1}\\\\
-    &= -400000\text{ N}
-  \end{aligned}$$</div>`,
-        intermediateHtml: `|F| = <input type="text" class="answer-input">`,
-        advancedHtml: `<input type="text" class="answer-input">`
+        guide: `<div class="step">$$\\begin{aligned}
+    |F| &= \\frac{2000(5 - (-15))}{0.1}\\\\
+    &= 400000\text{ N}
+  \\end{aligned}$$</div>`,
+        intermediateHtml: `|F| = <input type="text" class="answer-input" placeholder="400000">`,
+        advancedHtml: `<input type="text" class="answer-input" placeholder="400000">`
       },
       {
         id: "ch6_c26",
-        text: `นักบินอวกาศ 80 kg ขว้างประแจ 2 kg ด้วยความเร็ว 10\text{ m/s} นักบินจะถอยหลังด้วยความเร็วเท่าใด`,
+        text: `นักบินอวกาศ 80 kg ขว้างประแจ 2 kg ด้วยความเร็ว 10\text{ m/s} นักบินจะถอยหลังด้วยอัตราเร็วเท่าใด`,
         hints: `โมเมนตัมรวม = 0`,
-        guide: `<div class="step">$$\begin{aligned}
-    0 &= 80v + 2(10) \\\\\
-    v &= -0.25\text{ m/s}
-  \end{aligned}$$</div>`,
-        intermediateHtml: `|v| = <input type="text" class="answer-input">`,
-        advancedHtml: `<input type="text" class="answer-input">`
+        guide: `<div class="step">$$\\begin{aligned}
+    |v| &= \\frac{2(10)}{80}\\\\
+    &= 0.25\text{ m/s}
+  \\end{aligned}$$</div>`,
+        intermediateHtml: `|v| = <input type="text" class="answer-input" placeholder="0.25">`,
+        advancedHtml: `<input type="text" class="answer-input" placeholder="0.25">`
       },
       {
         id: "ch6_c27",
@@ -325,11 +333,14 @@ Object.assign(physicsData.topics, {
       },
       {
         id: "ch6_c30",
-        text: `จรวดมวล M พ่นแก๊สมวล m ด้วยความเร็ว v สัมพัทธ์จรวด หาความเร็วจรวดที่เพิ่มขึ้น`,
+        text: `จรวดมวล 1000 kg พ่นแก๊สมวล 50 kg ด้วยความเร็ว 200\text{ m/s} สัมพัทธ์จรวด จงหาความเร็วจรวดที่เพิ่มขึ้น`,
         hints: `$M\\Delta V = m v$`,
-        guide: `<div class="step">$\\Delta V = \\frac{m}{M}v$ (ตอบเป็นสูตร)</div>`,
-        intermediateHtml: `\\Delta V = <input type="text" class="answer-input">`,
-        advancedHtml: `<input type="text" class="answer-input">`
+        guide: `<div class="step">$$\\begin{aligned}
+    \\Delta V &= \\frac{50 \\times 200}{1000}\\\\
+    &= 10\text{ m/s}
+  \\end{aligned}$$</div>`,
+        intermediateHtml: `\\Delta V = <input type="text" class="answer-input" placeholder="10">`,
+        advancedHtml: `<input type="text" class="answer-input" placeholder="10">`
       },
 
       // Hard: 31-40 (Applied, Mixed Concepts)
@@ -360,12 +371,13 @@ Object.assign(physicsData.topics, {
         id: "ch6_c33",
         text: `สปริงอัดระหว่างมวล 2 kg และ 3 kg เมื่อปล่อย มวล 2 kg มีพลังงานจลน์ 18 J มวล 3 kg มีพลังงานจลน์เท่าใด`,
         hints: `$p$ เท่ากัน $E_k = \\frac{p^2}{2m}$`,
-        guide: `<div class="step">$$\begin{aligned}
-    p^2 &= 2(2)(18) = 72 \\\\\
-    E_{k2} &= \\frac{72}{2(3)} = 12\text{ J}
-  \end{aligned}$$</div>`,
-        intermediateHtml: `E_k = <input type="text" class="answer-input">`,
-        advancedHtml: `<input type="text" class="answer-input">`
+        guide: `<div class="step">$$\\begin{aligned}
+    p^2 &= 2(2)(18) = 72\\\\
+    E_{k2} &= \\frac{72}{2(3)}\\\\
+    &= 12\text{ J}
+  \\end{aligned}$$</div>`,
+        intermediateHtml: `E_k = <input type="text" class="answer-input" placeholder="12">`,
+        advancedHtml: `<input type="text" class="answer-input" placeholder="12">`
       },
       {
         id: "ch6_c34",
@@ -392,15 +404,15 @@ Object.assign(physicsData.topics, {
       },
       {
         id: "ch6_c36",
-        text: `มวล m ลื่นไถลจากเนินสูง h ชนติดกับมวล 2m ที่ฐานเนิน ความสูงที่แกว่งขึ้นไปได้คือเท่าใด`,
+        text: `มวล m ลื่นไถลจากเนินสูง 18 m ชนติดกับมวล 2m ที่ฐานเนิน ความสูงที่แกว่งขึ้นไปได้คือเท่าใด (m)`,
         hints: `ความเร็วหลังชน $V = \\frac{u}{3}$`,
-        guide: `<div class="step">$$\begin{aligned}
-    H &= \\frac{V^2}{2g}\\\\
-    &= \\frac{(u/3)^2}{2g}\\\\
-    &= \\frac{h}{9}
-  \end{aligned}$$</div>`,
-        intermediateHtml: `H = <input type="text" class="answer-input">`,
-        advancedHtml: `<input type="text" class="answer-input">`
+        guide: `<div class="step">$$\\begin{aligned}
+    H &= \\frac{h}{9}\\\\
+    &= \\frac{18}{9}\\\\
+    &= 2\text{ m}
+  \\end{aligned}$$</div>`,
+        intermediateHtml: `H = <input type="text" class="answer-input" placeholder="2">`,
+        advancedHtml: `<input type="text" class="answer-input" placeholder="2">`
       },
       {
         id: "ch6_c37",
@@ -427,19 +439,26 @@ Object.assign(physicsData.topics, {
       },
       {
         id: "ch6_c39",
-        text: `ระเบิดมวล 5m กำลังตกด้วยความเร็ว v แตกเป็น 2 ส่วน ส่วน 2m หยุดนิ่ง ส่วน 3m จะมีความเร็วเท่าใด`,
+        text: `ระเบิดมวล 5 kg กำลังตกด้วยความเร็ว 12\text{ m/s} แตกเป็น 2 ส่วน ส่วน 2 kg หยุดนิ่ง ส่วน 3 kg จะมีความเร็วเท่าใด`,
         hints: `$5mv = 2m(0) + 3mv'$`,
-        guide: `<div class="step">$v' = \\frac{5}{3}v$</div>`,
-        intermediateHtml: `v' = <input type="text" class="answer-input">`,
-        advancedHtml: `<input type="text" class="answer-input">`
+        guide: `<div class="step">$$\\begin{aligned}
+    5(12) &= 2(0) + 3v\\\\
+    v &= 20\text{ m/s}
+  \\end{aligned}$$</div>`,
+        intermediateHtml: `v' = <input type="text" class="answer-input" placeholder="20">`,
+        advancedHtml: `<input type="text" class="answer-input" placeholder="20">`
       },
       {
         id: "ch6_c40",
-        text: `ลูกบอลมวล m วิ่งชนกำแพงทำมุม $\\theta$ กับเส้นตั้งฉาก สะท้อนกลับมุมเดิม อัตราเร็วเท่าเดิม จงหาการดล <br><svg width="150" height="150"><rect x="100" y="20" width="10" height="100" fill="gray"/><line x1="30" y1="40" x2="90" y2="70" stroke="black"/><line x1="90" y1="70" x2="30" y2="100" stroke="black"/></svg>`,
+        text: `ลูกบอลมวล 0.5 kg วิ่งชนกำแพงทำมุม $60^\circ$ กับเส้นตั้งฉาก สะท้อนกลับมุมเดิม อัตราเร็ว 10\text{ m/s} จงหาขนาดการดล (กำหนด $\\cos 60^\circ = 0.5$) <br><svg width="150" height="150"><rect x="100" y="20" width="10" height="100" fill="gray"/><line x1="30" y1="40" x2="90" y2="70" stroke="black"/><line x1="90" y1="70" x2="30" y2="100" stroke="black"/></svg>`,
         hints: `โมเมนตัมเปลี่ยนเฉพาะแนวตั้งฉากกำแพง`,
-        guide: `<div class="step">$\\Delta p = 2mv \\cos\\theta$ (หรือ $\\sin$ ขึ้นกับมุมที่กำหนด)</div>`,
-        intermediateHtml: `\\Delta p = <input type="text" class="answer-input">`,
-        advancedHtml: `<input type="text" class="answer-input">`
+        guide: `<div class="step">$$\\begin{aligned}
+    \\Delta p &= 2mv \\cos 60^\\circ\\\\
+    &= 2(0.5)(10)(0.5)\\\\
+    &= 5\text{ N}\\cdot\\text{s}
+  \\end{aligned}$$</div>`,
+        intermediateHtml: `|\\Delta p| = <input type="text" class="answer-input" placeholder="5">`,
+        advancedHtml: `<input type="text" class="answer-input" placeholder="5">`
       }
     ]
   }

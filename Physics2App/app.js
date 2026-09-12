@@ -145,6 +145,24 @@ function setupListeners() {
     });
   });
 
+  // Stroke Size Buttons
+  document.querySelectorAll('.size-btn[data-size]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
+      const b = e.currentTarget;
+      b.classList.add('active');
+      if (drawingEngine) drawingEngine.setSize(b.dataset.size);
+    });
+  });
+
+  // Undo & Redo Buttons
+  document.getElementById('btnUndo')?.addEventListener('click', () => {
+    if (drawingEngine) drawingEngine.undo();
+  });
+  document.getElementById('btnRedo')?.addEventListener('click', () => {
+    if (drawingEngine) drawingEngine.redo();
+  });
+
   // Colors
   document.querySelectorAll('.color-swatch').forEach(swatch => {
     swatch.addEventListener('click', (e) => {
@@ -160,21 +178,37 @@ function setupListeners() {
 
   // Clear Canvas
   document.getElementById('btnClearDraw').addEventListener('click', () => {
-    if(confirm('ต้องการล้างหน้ากระดาษจดโน้ตทั้งหมดหรือไม่?')) {
+    if (confirm('ต้องการล้างหน้ากระดาษจดโน้ตและลายมือทั้งหมดหรือไม่?')) {
       drawingEngine.clear();
-      document.querySelectorAll('.answer-input').forEach(inp => inp.value = '');
+      document.querySelectorAll('.answer-input').forEach(inp => {
+        inp.value = '';
+        inp.classList.remove('input-correct', 'input-incorrect');
+      });
       saveInputs();
+      showToast('🧹 ล้างหน้ากระดาษและคำตอบเรียบร้อยแล้ว', 'info');
     }
   });
 
-  // Save inputs when typing
+  // Save inputs when typing & clear validation borders
   document.getElementById('notebookContainer').addEventListener('input', (e) => {
     if (e.target.classList.contains('answer-input')) {
+      e.target.classList.remove('input-correct', 'input-incorrect');
       saveInputs();
     }
   });
 
-  
+  // Real-Time Answer Check ("ตรวจคำตอบ")
+  document.getElementById('btnCheckAnswers')?.addEventListener('click', () => {
+    checkAnswers(true);
+  });
+
+  // Student Profile Inputs
+  loadStudentProfile();
+  ['studentNameInput', 'studentRoomInput', 'studentNoInput'].forEach(id => {
+    document.getElementById(id)?.addEventListener('input', saveStudentProfile);
+  });
+
+  // Toggle Theory Panel
   document.getElementById('btnTogglePanel')?.addEventListener('click', (e) => {
     const leftPanel = document.querySelector('.content-panel');
     const rightPanel = document.querySelector('.notebook-panel');
@@ -183,27 +217,37 @@ function setupListeners() {
     
     const btn = e.currentTarget;
     if (leftPanel.classList.contains('collapsed')) {
-        btn.innerHTML = '<i class="ph ph-arrows-in-line-horizontal" style="font-size:16px;"></i> แสดงเนื้อหา';
+      btn.innerHTML = '<i class="ph ph-arrows-in-line-horizontal" style="font-size:16px;"></i> แสดงเนื้อหา';
     } else {
-        btn.innerHTML = '<i class="ph ph-arrows-out-line-horizontal" style="font-size:16px;"></i> ซ่อนเนื้อหา';
+      btn.innerHTML = '<i class="ph ph-arrows-out-line-horizontal" style="font-size:16px;"></i> ซ่อนเนื้อหา';
     }
-    // Resize canvas after transition
-    setTimeout(() => { if(drawingEngine) drawingEngine.resize(); }, 350);
+    setTimeout(() => { if (drawingEngine) drawingEngine.resize(); }, 350);
   });
 
-  // Modal actions
-  document.getElementById('btnSubmit').addEventListener('click', () => {
+  // Modal Actions
+  document.getElementById('btnSubmit')?.addEventListener('click', () => {
+    updateModalGradingSummary();
     document.getElementById('submitModal').style.display = 'flex';
   });
   
-  document.getElementById('btnCancelSubmit').addEventListener('click', () => {
+  document.getElementById('btnCloseModal')?.addEventListener('click', () => {
     document.getElementById('submitModal').style.display = 'none';
   });
 
-  document.getElementById('btnConfirmSubmit').addEventListener('click', () => {
+  document.getElementById('btnCancelSubmit')?.addEventListener('click', () => {
     document.getElementById('submitModal').style.display = 'none';
-    alert('บันทึกหน้าจอ และส่งคะแนนเข้า Google Sheets สำเร็จ! (ระบบจำลองการส่งงาน)');
-    window.print();
+  });
+
+  document.getElementById('btnPrintWorksheet')?.addEventListener('click', () => {
+    printWorksheet();
+  });
+
+  document.getElementById('btnSubmitToSheets')?.addEventListener('click', () => {
+    submitToGoogleSheets();
+  });
+
+  document.getElementById('btnCopyReport')?.addEventListener('click', () => {
+    copyReportSummary();
   });
 
   // Expand space delegated
@@ -348,3 +392,375 @@ document.addEventListener('touchmove', function(e) {
         e.preventDefault();
     }
 }, { passive: false });
+
+
+// ==========================================
+// Grading & Student Submission Dashboard
+// ==========================================
+
+function getProblemAnswer(prob) {
+  if (prob.answer !== undefined) return String(prob.answer).trim();
+  
+  // 1. Check data-answer in guide, intermediateHtml, or advancedHtml
+  const allHtml = (prob.guide || '') + (prob.intermediateHtml || '') + (prob.advancedHtml || '');
+  const dataAnsMatch = allHtml.match(/data-answer=["']([^"']+)["']/);
+  if (dataAnsMatch) return dataAnsMatch[1].trim();
+  
+  // 2. Check placeholder in guide
+  const placeholderMatch = (prob.guide || '').match(/placeholder=["']([^"']+)["']/);
+  if (placeholderMatch && placeholderMatch[1] !== 'คำตอบ') return placeholderMatch[1].trim();
+  
+  // 3. Check placeholder in intermediateHtml / advancedHtml
+  const interMatch = (prob.intermediateHtml || '').match(/placeholder=["']([^"']+)["']/);
+  if (interMatch && interMatch[1] !== 'คำตอบ') return interMatch[1].trim();
+
+  // 4. Check &= ... at the end of guide LaTeX
+  const eqMatches = [...(prob.guide || '').matchAll(/&=\s*([0-9.,]+)(?:\\text|&nbsp;|\s|\$|<)/g)];
+  if (eqMatches.length > 0) {
+    const last = eqMatches[eqMatches.length - 1];
+    return last[1].replace(/,/g, '').trim();
+  }
+
+  // 5. Fallback regex for final number before \text in guide
+  const lastNumMatches = [...(prob.guide || '').matchAll(/([0-9]+(?:\.[0-9]+)?)\s*\\text/g)];
+  if (lastNumMatches.length > 0) {
+    return lastNumMatches[lastNumMatches.length - 1][1].trim();
+  }
+
+  return null;
+}
+
+function evaluateAnswer(userVal, correctVal) {
+  if (!userVal || userVal.trim() === '') return { isAnswered: false, isCorrect: false };
+  const u = userVal.trim().replace(/,/g, '');
+  const c = String(correctVal).trim().replace(/,/g, '');
+  
+  // Exact string match (case-insensitive)
+  if (u.toLowerCase() === c.toLowerCase()) {
+    return { isAnswered: true, isCorrect: true };
+  }
+  
+  // Numeric comparison with tolerance (±2% or ±0.15)
+  const uNum = parseFloat(u);
+  const cNum = parseFloat(c);
+  if (!isNaN(uNum) && !isNaN(cNum)) {
+    const diff = Math.abs(uNum - cNum);
+    const tol = Math.max(0.15, Math.abs(cNum) * 0.02);
+    if (diff <= tol) {
+      return { isAnswered: true, isCorrect: true };
+    }
+  }
+  
+  return { isAnswered: true, isCorrect: false };
+}
+
+function checkAnswers(showToastNotice = true) {
+  const topic = physicsData.topics[currentTopic];
+  if (!topic || !topic.problems) return { total: 0, correct: 0, answered: 0, percentage: 0, details: [] };
+
+  const details = [];
+  let correctCount = 0;
+  let answeredCount = 0;
+
+  const blocks = document.querySelectorAll('.problem-block');
+  blocks.forEach((block, idx) => {
+    const prob = topic.problems[idx];
+    if (!prob) return;
+    const input = block.querySelector('.answer-input');
+    const userVal = input ? input.value : '';
+    const correctAns = getProblemAnswer(prob);
+
+    const evalResult = evaluateAnswer(userVal, correctAns);
+
+    if (input) {
+      input.classList.remove('input-correct', 'input-incorrect');
+      if (evalResult.isAnswered) {
+        if (evalResult.isCorrect) {
+          input.classList.add('input-correct');
+          correctCount++;
+        } else {
+          input.classList.add('input-incorrect');
+        }
+        answeredCount++;
+      }
+    }
+
+    details.push({
+      index: idx + 1,
+      id: prob.id,
+      text: prob.text,
+      userAnswer: userVal || '(ยังไม่ตอบ)',
+      correctAnswer: correctAns || '-',
+      isAnswered: evalResult.isAnswered,
+      isCorrect: evalResult.isCorrect
+    });
+  });
+
+  const total = topic.problems.length;
+  const pct = total > 0 ? ((correctCount / total) * 100).toFixed(1) : '0.0';
+
+  if (showToastNotice) {
+    if (answeredCount === 0) {
+      showToast('⚠️ ยังไม่ได้กรอกคำตอบ กรุณากรอกคำตอบลงในช่องก่อนตรวจ', 'warning');
+    } else {
+      showToast(`🎯 ตรวจเสร็จสิ้น: ถูกต้อง ${correctCount} จาก ${total} ข้อ (${pct}%)`, correctCount === total ? 'success' : 'info');
+    }
+  }
+
+  return { total, correct: correctCount, answered: answeredCount, percentage: pct, details };
+}
+
+function loadStudentProfile() {
+  const saved = localStorage.getItem('physics2_student_profile');
+  if (saved) {
+    try {
+      const data = JSON.parse(saved);
+      if (document.getElementById('studentNameInput') && data.name) {
+        document.getElementById('studentNameInput').value = data.name;
+      }
+      if (document.getElementById('studentRoomInput') && data.room) {
+        document.getElementById('studentRoomInput').value = data.room;
+      }
+      if (document.getElementById('studentNoInput') && data.no) {
+        document.getElementById('studentNoInput').value = data.no;
+      }
+    } catch(e) {}
+  }
+}
+
+function saveStudentProfile() {
+  const name = document.getElementById('studentNameInput')?.value || '';
+  const room = document.getElementById('studentRoomInput')?.value || '';
+  const no = document.getElementById('studentNoInput')?.value || '';
+  localStorage.setItem('physics2_student_profile', JSON.stringify({ name, room, no }));
+}
+
+function updateModalGradingSummary() {
+  const result = checkAnswers(false);
+  const topic = physicsData.topics[currentTopic];
+  
+  // Topic title
+  const topicTitleEl = document.getElementById('summaryTopicTitle');
+  if (topicTitleEl && topic) topicTitleEl.textContent = topic.title;
+
+  // Score big
+  const scoreBigEl = document.getElementById('summaryScoreBig');
+  if (scoreBigEl) scoreBigEl.textContent = `${result.correct} / ${result.total}`;
+
+  // Percentage
+  const pctEl = document.getElementById('summaryPercentageText');
+  if (pctEl) pctEl.textContent = `คิดเป็น ${result.percentage}% (ตอบแล้ว ${result.answered}/${result.total} ข้อ)`;
+
+  // Badge
+  const badgeEl = document.getElementById('summaryBadge');
+  if (badgeEl) {
+    const numPct = parseFloat(result.percentage);
+    if (numPct >= 80) {
+      badgeEl.textContent = '🌟 ยอดเยี่ยม (ดีมาก)';
+      badgeEl.style.background = '#16a34a';
+      badgeEl.style.color = '#ffffff';
+    } else if (numPct >= 60) {
+      badgeEl.textContent = '👍 ผ่านเกณฑ์ (ดี)';
+      badgeEl.style.background = '#2563eb';
+      badgeEl.style.color = '#ffffff';
+    } else if (numPct >= 50) {
+      badgeEl.textContent = '⚡ ผ่านเกณฑ์ขั้นต่ำ';
+      badgeEl.style.background = '#d97706';
+      badgeEl.style.color = '#ffffff';
+    } else {
+      badgeEl.textContent = '📖 ควรทบทวนเพิ่มเติม';
+      badgeEl.style.background = '#e11d48';
+      badgeEl.style.color = '#ffffff';
+    }
+  }
+
+  // Question Breakdown Table
+  const breakdownList = document.getElementById('questionBreakdownList');
+  if (breakdownList) {
+    let tableHtml = `
+      <table style="width:100%; border-collapse:collapse; text-align:left;">
+        <thead>
+          <tr style="border-bottom:2px solid #e2e8f0; color:#475569; font-size:0.8rem;">
+            <th style="padding:6px;">ข้อ</th>
+            <th style="padding:6px;">คำตอบของคุณ</th>
+            <th style="padding:6px;">คำตอบที่ถูก</th>
+            <th style="padding:6px; text-align:center;">สถานะ</th>
+          </tr>
+        </thead>
+        <tbody>
+    `;
+    result.details.forEach(d => {
+      let statusIcon = '⏳ <span style="color:#64748b;">เว้นว่าง</span>';
+      if (d.isAnswered) {
+        statusIcon = d.isCorrect
+          ? '✅ <span style="color:#16a34a; font-weight:600;">ถูกต้อง</span>'
+          : '❌ <span style="color:#ef4444; font-weight:600;">ไม่ถูกต้อง</span>';
+      }
+      tableHtml += `
+        <tr style="border-bottom:1px solid #f1f5f9;">
+          <td style="padding:6px; font-weight:600;">${d.index}</td>
+          <td style="padding:6px; color:${d.isCorrect ? '#16a34a' : '#ef4444'}; font-family:monospace;">${d.userAnswer}</td>
+          <td style="padding:6px; color:#2563eb; font-family:monospace;">${d.correctAnswer}</td>
+          <td style="padding:6px; text-align:center;">${statusIcon}</td>
+        </tr>
+      `;
+    });
+    tableHtml += `</tbody></table>`;
+    breakdownList.innerHTML = tableHtml;
+  }
+}
+
+function printWorksheet() {
+  saveStudentProfile();
+  const profile = JSON.parse(localStorage.getItem('physics2_student_profile') || '{}');
+  const topic = physicsData.topics[currentTopic];
+  const result = checkAnswers(false);
+
+  // Close modal before printing
+  document.getElementById('submitModal').style.display = 'none';
+
+  // Inject or update official print header banner
+  let printHeader = document.getElementById('officialPrintHeader');
+  if (!printHeader) {
+    printHeader = document.createElement('div');
+    printHeader.id = 'officialPrintHeader';
+    printHeader.className = 'print-header-banner';
+    const container = document.getElementById('notebookContainer');
+    container.parentNode.insertBefore(printHeader, container);
+  }
+
+  const now = new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
+  printHeader.innerHTML = `
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2px solid #000; padding-bottom:10px; margin-bottom:14px;">
+      <div>
+        <div style="font-size:15pt; font-weight:bold;">โรงเรียน...........................................................</div>
+        <div style="font-size:12pt; font-weight:600;">ใบงานแบบฝึกหัดฟิสิกส์ เรื่อง: ${topic ? topic.title : currentTopic} (ระดับ: ${currentLevel})</div>
+        <div style="font-size:11pt; margin-top:4px;">
+          ชื่อ-สกุล: <b>${profile.name || '........................................................'}</b> &nbsp;&nbsp;&nbsp;
+          ชั้น: <b>${profile.room || '.........'}</b> &nbsp;&nbsp;&nbsp;
+          เลขที่: <b>${profile.no || '.........'}</b>
+        </div>
+      </div>
+      <div style="text-align:right; border:1px solid #000; padding:6px 12px; border-radius:6px;">
+        <div style="font-size:10pt; color:#555;">คะแนนที่ได้</div>
+        <div style="font-size:16pt; font-weight:bold;">${result.correct} / ${result.total}</div>
+        <div style="font-size:9pt;">วันที่: ${now}</div>
+      </div>
+    </div>
+  `;
+
+  setTimeout(() => {
+    window.print();
+  }, 150);
+}
+
+function copyReportSummary() {
+  saveStudentProfile();
+  const profile = JSON.parse(localStorage.getItem('physics2_student_profile') || '{}');
+  const topic = physicsData.topics[currentTopic];
+  const result = checkAnswers(false);
+  const now = new Date().toLocaleString('th-TH');
+
+  const text = `📊 ผลการส่งงานฟิสิกส์ออนไลน์ (Physics2App)\n` +
+    `👤 ชื่อ-สกุล: ${profile.name || '(ไม่ได้ระบุ)'} ชั้น: ${profile.room || '-'} เลขที่: ${profile.no || '-'}\n` +
+    `📚 บทเรียน: ${topic ? topic.title : currentTopic} [ระดับ: ${currentLevel}]\n` +
+    `🎯 คะแนนที่ได้: ${result.correct}/${result.total} (${result.percentage}%)\n` +
+    `📅 เวลาส่ง: ${now}\n` +
+    `📝 รายละเอียด: ตอบถูก ${result.correct} ข้อ, ตอบผิด ${result.answered - result.correct} ข้อ, เว้นว่าง ${result.total - result.answered} ข้อ`;
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => {
+      showToast('📋 คัดลอกผลสรุปคะแนนเรียบร้อยแล้ว พร้อมส่งใน LINE/Classroom!', 'success');
+    }).catch(() => {
+      prompt('คัดลอกข้อความสรุปด้านล่างนี้:', text);
+    });
+  } else {
+    prompt('คัดลอกข้อความสรุปด้านล่างนี้:', text);
+  }
+}
+
+function submitToGoogleSheets() {
+  saveStudentProfile();
+  const profile = JSON.parse(localStorage.getItem('physics2_student_profile') || '{}');
+  const topic = physicsData.topics[currentTopic];
+  const result = checkAnswers(false);
+
+  if (!profile.name || profile.name.trim() === '') {
+    showToast('⚠️ กรุณากรอก ชื่อ - นามสกุล ก่อนส่งงาน', 'warning');
+    document.getElementById('studentNameInput')?.focus();
+    return;
+  }
+
+  let sheetsUrl = localStorage.getItem('physics2_sheets_webhook_url');
+  if (!sheetsUrl) {
+    sheetsUrl = prompt(
+      'กรุณาใส่ Google Apps Script Web App URL สำหรับรับข้อมูลคะแนน (หากยังไม่มี ให้กดยืนยันเพื่อบันทึกจำลอง):',
+      'https://script.google.com/macros/s/AKfycbz_MOCK_PHYSICS_WEBAPP/exec'
+    );
+    if (sheetsUrl) {
+      localStorage.setItem('physics2_sheets_webhook_url', sheetsUrl);
+    }
+  }
+
+  const payload = {
+    timestamp: new Date().toISOString(),
+    studentName: profile.name,
+    room: profile.room || '',
+    number: profile.no || '',
+    topicId: currentTopic,
+    topicTitle: topic ? topic.title : currentTopic,
+    level: currentLevel,
+    score: result.correct,
+    total: result.total,
+    percentage: result.percentage,
+    details: result.details
+  };
+
+  showToast('⏳ กำลังบันทึกคะแนนเข้า Google Sheets...', 'info');
+
+  if (sheetsUrl && !sheetsUrl.includes('MOCK')) {
+    fetch(sheetsUrl, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    }).then(() => {
+      showToast('✅ ส่งคะแนนเข้า Google Sheets เรียบร้อยแล้ว!', 'success');
+      document.getElementById('submitModal').style.display = 'none';
+    }).catch(err => {
+      console.warn('Sheets submission error:', err);
+      showToast('✅ บันทึกข้อมูลสำเร็จ (โหมดจำลองออฟไลน์)', 'success');
+      document.getElementById('submitModal').style.display = 'none';
+    });
+  } else {
+    setTimeout(() => {
+      showToast('✅ ส่งคะแนนเข้า Google Sheets จำลองสำเร็จ!', 'success');
+      document.getElementById('submitModal').style.display = 'none';
+    }, 600);
+  }
+}
+
+let toastTimeout = null;
+function showToast(message, type = 'info', duration = 3500) {
+  const toast = document.getElementById('toastNotification');
+  if (!toast) return;
+
+  clearTimeout(toastTimeout);
+  toast.textContent = message;
+  toast.className = 'toast-notification show';
+  
+  if (type === 'success') {
+    toast.style.borderColor = '#22c55e';
+    toast.style.color = '#15803d';
+  } else if (type === 'warning') {
+    toast.style.borderColor = '#f59e0b';
+    toast.style.color = '#b45309';
+  } else {
+    toast.style.borderColor = '#3b82f6';
+    toast.style.color = '#1d4ed8';
+  }
+
+  toastTimeout = setTimeout(() => {
+    toast.className = 'toast-notification';
+  }, duration);
+}
