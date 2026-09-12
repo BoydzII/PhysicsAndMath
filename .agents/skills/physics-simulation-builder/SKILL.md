@@ -2,57 +2,42 @@
 name: physics-simulation-builder
 description: >-
   Standard guide for developing pedagogical HTML5 Canvas simulations for physics education
-  (Work, Energy, Momentum, Projectile, Circular, SHM). Use when creating or fixing physics sims.
+  (Work, Energy, Momentum, Collisions, Projectile, Circular, SHM). Covers touch/mouse interaction,
+  canvas coordinate transformations, physics numerical integration, and SimEngine patterns.
 ---
 
-# Physics Simulation Builder Skill
+# สกิลการพัฒนาแบบจำลองเชิงฟิสิกส์ (Physics Simulation Builder Skill)
 
-Use this skill when building or refining interactive simulations in `Physics2App/simulations/` or `app.js`.
+เอกสารนี้กำหนดมาตรฐานการสร้างและการดูแลระบบจำลองฟิสิกส์แบบ Interactive บน HTML5 Canvas (`Physics2App/simulations/` และ `app.js`)
 
-## Core Philosophy
-- **Clear Pedagogical Visuals > Hyper-realistic Clutter:**
-  Show the concept clearly (e.g., vectors, components, friction contact surfaces, energy trade-off bars).
-- **Dual Input Handling:** Every simulation MUST handle both Pointer/Mouse and Touch events seamlessly (iPad & mobile friendly).
+---
 
-## Boilerplate Pattern
-```javascript
-function initSimulation(canvasId) {
-  const canvas = document.getElementById(canvasId);
-  if (!canvas) return;
-  const ctx = canvas.getContext('2d');
-  
-  function resize() {
-    canvas.width = canvas.clientWidth || 600;
-    canvas.height = canvas.clientHeight || 300;
-  }
-  resize();
-  
-  // State
-  let isDragging = false;
-  let animId = null;
-  
-  // Touch & Mouse coordinates
-  function getPos(e) {
-    const rect = canvas.getBoundingClientRect();
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-    return { x: clientX - rect.left, y: clientY - rect.top };
-  }
-  
-  // Events
-  canvas.addEventListener('mousedown', onDown);
-  canvas.addEventListener('mousemove', onMove);
-  window.addEventListener('mouseup', onUp);
-  canvas.addEventListener('touchstart', onDown, { passive: false });
-  canvas.addEventListener('touchmove', onMove, { passive: false });
-  window.addEventListener('touchend', onUp);
-  
-  // Animation Loop
-  function loop() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    // Draw elements
-    animId = requestAnimationFrame(loop);
-  }
-  loop();
-}
-```
+## 1. ปรัชญาการออกแบบจำลองเชิงการสอน (Pedagogical Philosophy)
+
+1. **เน้นความชัดเจนเชิงมโนทัศน์ มากกว่าความสมจริงเกินความจำเป็น:**
+   - วัตถุประสงค์คือให้นักเรียน "ลากหรือปรับค่าแล้วเห็นความสัมพันธ์ทางฟิสิกส์ชัดเจน"
+   - ต้องเน้นแสดง: เวกเตอร์แรง ($F, f$), เวกเตอร์ความเร็ว ($v$), เส้นวิถี (trajectory), และกราฟแท่งพลังงาน (Bar Charts)
+2. **Dual-Input Responsive:**
+   - ใช้งานได้อย่างเป็นธรรมชาติทั้งการสัมผัสบน iPad (Touch) และการคลิกลากด้วยเมาส์ (Mouse/Desktop)
+   - ใช้ `getBoundingClientRect()` ในการคำนวณตำแหน่งพิกัดเสมอ
+
+---
+
+## 2. สถาปัตยกรรมระบบจำลอง (Simulation Architecture)
+
+### วงรอบการทำงานมาตรฐาน (Standard Lifecycle)
+1. **Initialize Canvas:** กำหนดความกว้างและความสูงตาม clientWidth/clientHeight
+2. **Setup Event Listeners:**
+   - Mouse: `mousedown`, `mousemove`, `mouseup`
+   - Touch: `touchstart`, `touchmove`, `touchend` (ต้องมี `{ passive: false }` และ `e.preventDefault()`)
+3. **State Management:** เก็บค่าตัวแปรฟิสิกส์ (มวล $m$, ความเร็ว $v$, ตำแหน่ง $x, y$, มุม $	heta$, เวลา $t$)
+4. **Physics Update:** คำนวณการเปลี่ยนแปลงค่าตามเวลา $\Delta t$ (Euler หรือ Semi-implicit Euler)
+5. **Render Loop:** ล้าง Canvas (`clearRect`) $ightarrow$ วาดพื้นหลัง/สเกล $ightarrow$ วาดวัตถุ $ightarrow$ วาดเวกเตอร์ $ightarrow$ วาดแผงค่าพลังงาน $ightarrow$ เรียก `requestAnimationFrame`
+
+---
+
+## 3. เอกสารอ้างอิงและเครื่องมือเฉพาะทาง
+
+- [แบบจำลองคณิตศาสตร์ฟิสิกส์ในซิมมูเลชั่น (Physics Models & Formulas)](./references/simulation-physics-models.md)
+- [ฟังก์ชันวาดกราฟิกฟิสิกส์ (Canvas Drawing Helpers)](./references/canvas-drawing-helpers.md)
+- [ตัวอย่างโค้ดแบบจำลองสมบูรณ์ (Sample Simulation Template)](./examples/sample-simulation.js)

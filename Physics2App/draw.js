@@ -158,7 +158,7 @@ class DrawingEngine {
       this.canvas.releasePointerCapture(e.pointerId);
       savedImageData = null;
       currentStrokePoints = [];
-      if (save) this.saveData();
+      this.saveData();
     };
 
     this.canvas.addEventListener('pointerdown', startDraw);
