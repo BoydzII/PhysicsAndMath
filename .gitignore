@@ -6,6 +6,9 @@
 # ---- ไฟล์ระดับบนสุด ----
 !.gitignore
 !README.md
+!GEMINI.md
+!.agents/
+!.agents/**
 !index.html
 !tools/
 tools/*
