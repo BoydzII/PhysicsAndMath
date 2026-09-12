@@ -25,11 +25,11 @@ const physicsData = {
           text: "กล่องมวล 5 kg ถูกลากด้วยแรง 20 N ทำมุม $37^\\circ$ กับแนวระดับ ให้เคลื่อนที่ไปบนพื้นราบได้ระยะทาง 4 m จงหางานที่เกิดขึ้น (กำหนด $\\cos 37^\\circ = 0.8$)",
           hints: "แตกแรง 20 N ให้อยู่ในแนวขนานกับการกระจัด (แนวราบ) จะได้ $F \\cos 37^\\circ$",
           guide: `
-            <div class="step">1. จากสมการของงาน: $W = F s \cos \theta$</div>
+            <div class="step">1. จากสมการของงาน: $W = F s \\cos \\theta$</div>
             <div class="calc-steps">
-              <div>2. $W$</div><div>$=$</div><div>$20 \times 4 \times \cos 37^\circ$</div>
-              <div></div><div>$=$</div><div>$20 \times 4 \times 0.8$</div>
-              <div></div><div>$=$</div><div>$80 \times 0.8$</div>
+              <div>2. $W$</div><div>$=$</div><div>$20 \\times 4 \\times \\cos 37^\\circ$</div>
+              <div></div><div>$=$</div><div>$20 \\times 4 \\times 0.8$</div>
+              <div></div><div>$=$</div><div>$80 \\times 0.8$</div>
               <div></div><div>$=$</div><div><input type="text" class="answer-input" placeholder="64">&nbsp;J</div>
             </div>
           `,
@@ -41,18 +41,18 @@ const physicsData = {
           text: "ชายคนหนึ่งแบกของมวล 10 kg เดินไปข้างหน้าในแนวระดับเป็นระยะทาง 5 m จากนั้นเดินขึ้นบันไดสูง 3 m งานที่ชายคนนี้ทำทั้งหมดมีค่าเท่าใด ($g = 10$ m/s²)",
           hints: "งานในการเดินแนวราบเป็นศูนย์ เพราะแรงแบกชี้ขึ้นตั้งฉากกับการกระจัด",
           guide: `
-            <div class="step">1. งานตอนเดินพื้นราบ แรงตั้งฉากกับการกระจัด ($\theta = 90^\circ$): $W_1 = 0\text{ J}$</div>
+            <div class="step">1. งานตอนเดินพื้นราบ แรงตั้งฉากกับการกระจัด ($\\theta = 90^\\circ$): $W_1 = 0\\text{ J}$</div>
             <div class="calc-steps">
               <div>2. $F$</div><div>$=$</div><div>$mg$</div>
-              <div></div><div>$=$</div><div>$10 \times 10$</div>
-              <div></div><div>$=$</div><div>$100\text{ N}$</div>
+              <div></div><div>$=$</div><div>$10 \\times 10$</div>
+              <div></div><div>$=$</div><div>$100\\text{ N}$</div>
               <div>3. $W_2$</div><div>$=$</div><div>$Fs$</div>
-              <div></div><div>$=$</div><div>$100 \times 3$</div>
+              <div></div><div>$=$</div><div>$100 \\times 3$</div>
               <div></div><div>$=$</div><div><input type="text" class="answer-input" placeholder="300">&nbsp;J</div>
             </div>
           `,
-          intermediateHtml: `<div class="step" style="color:var(--text-light);font-size:0.95rem;"><b>โจทย์กำหนด:</b> $m = 10$ kg, $s_1 = 5$ m (แนวราบ), $s_2 = 3$ m (แนวดิ่ง)</div><div style="margin-top:20px;font-weight:bold;">ตอบ: $W_{รวม} =$ <input type="text" class="answer-input" style="width:120px"> J</div>`,
-          advancedHtml: `<div style="margin-top:20px;font-weight:bold;">ตอบ: $W_{รวม} =$ <input type="text" class="answer-input" style="width:120px"> J</div>`
+          intermediateHtml: `<div class="step" style="color:var(--text-light);font-size:0.95rem;"><b>โจทย์กำหนด:</b> $m = 10$ kg, $s_1 = 5$ m (แนวราบ), $s_2 = 3$ m (แนวดิ่ง)</div><div style="margin-top:20px;font-weight:bold;">ตอบ: $W_\\text{รวม} =$ <input type="text" class="answer-input" style="width:120px"> J</div>`,
+          advancedHtml: `<div style="margin-top:20px;font-weight:bold;">ตอบ: $W_\\text{รวม} =$ <input type="text" class="answer-input" style="width:120px"> J</div>`
         },
         {
           id: "w3",
@@ -61,10 +61,10 @@ const physicsData = {
           guide: `
             <div class="calc-steps">
               <div>1. $F$</div><div>$=$</div><div>$mg$</div>
-              <div></div><div>$=$</div><div>$2 \times 10$</div>
-              <div></div><div>$=$</div><div>$20\text{ N}$</div>
+              <div></div><div>$=$</div><div>$2 \\times 10$</div>
+              <div></div><div>$=$</div><div>$20\\text{ N}$</div>
               <div>2. $W$</div><div>$=$</div><div>$Fs$</div>
-              <div></div><div>$=$</div><div>$20 \times 5$</div>
+              <div></div><div>$=$</div><div>$20 \\times 5$</div>
               <div></div><div>$=$</div><div><input type="text" class="answer-input" placeholder="100">&nbsp;J</div>
             </div>
           `,
@@ -78,7 +78,7 @@ const physicsData = {
           guide: `
             <div class="calc-steps">
               <div>1. $W$</div><div>$=$</div><div>$Fs$</div>
-              <div></div><div>$=$</div><div>$500 \times 10$</div>
+              <div></div><div>$=$</div><div>$500 \\times 10$</div>
               <div></div><div>$=$</div><div><input type="text" class="answer-input" placeholder="5000">&nbsp;J</div>
             </div>
           `,
@@ -90,10 +90,10 @@ const physicsData = {
           text: "ชายคนหนึ่งหิ้วกระเป๋าหนัก 40 N เดินไปข้างหน้าบนพื้นราบระยะทาง 10 m งานที่ชายคนนี้ทำมีค่าเท่าใด",
           hints: "แรงที่หิ้วกระเป๋ามีทิศขึ้นบน แต่ทิศการเคลื่อนที่ไปข้างหน้า มุม $90^\\circ$",
           guide: `
-            <div class="step">1. แรงหิ้วชี้ขึ้นตั้งฉากกับทิศการกระจัดในแนวราบ ($\theta = 90^\circ$)</div>
+            <div class="step">1. แรงหิ้วชี้ขึ้นตั้งฉากกับทิศการกระจัดในแนวราบ ($\\theta = 90^\\circ$)</div>
             <div class="calc-steps">
-              <div>2. $W$</div><div>$=$</div><div>$Fs \cos 90^\circ$</div>
-              <div></div><div>$=$</div><div>$40 \times 10 \times 0$</div>
+              <div>2. $W$</div><div>$=$</div><div>$Fs \\cos 90^\\circ$</div>
+              <div></div><div>$=$</div><div>$40 \\times 10 \\times 0$</div>
               <div></div><div>$=$</div><div><input type="text" class="answer-input" placeholder="0">&nbsp;J</div>
             </div>
           `,
@@ -106,9 +106,9 @@ const physicsData = {
           hints: "แตกแรง 50 N เข้าสู่แนวราบ ($F \\cos 60^\\circ$) แล้วคูณระยะทาง",
           guide: `
             <div class="calc-steps">
-              <div>1. $W$</div><div>$=$</div><div>$Fs \cos 60^\circ$</div>
-              <div></div><div>$=$</div><div>$50 \times 8 \times 0.5$</div>
-              <div></div><div>$=$</div><div>$400 \times 0.5$</div>
+              <div>1. $W$</div><div>$=$</div><div>$Fs \\cos 60^\\circ$</div>
+              <div></div><div>$=$</div><div>$50 \\times 8 \\times 0.5$</div>
+              <div></div><div>$=$</div><div>$400 \\times 0.5$</div>
               <div></div><div>$=$</div><div><input type="text" class="answer-input" placeholder="200">&nbsp;J</div>
             </div>
           `,
@@ -140,10 +140,10 @@ const physicsData = {
           text: "ชายคนหนึ่งออกแรงผลักตู้ด้วยแรง 100 N แต่ตู้ไม่ขยับเลย เป็นเวลา 10 วินาที งานที่ทำเป็นเท่าใด",
           hints: "งานเกิดจากการกระจัด ถ้าระยะทางเป็นศูนย์ งานจะเป็นศูนย์เสมอ",
           guide: `
-            <div class="step">1. ตู้ไม่ขยับ การกระจัด $s = 0\text{ m}$</div>
+            <div class="step">1. ตู้ไม่ขยับ การกระจัด $s = 0\\text{ m}$</div>
             <div class="calc-steps">
               <div>2. $W$</div><div>$=$</div><div>$Fs$</div>
-              <div></div><div>$=$</div><div>$100 \times 0$</div>
+              <div></div><div>$=$</div><div>$100 \\times 0$</div>
               <div></div><div>$=$</div><div><input type="text" class="answer-input" placeholder="0">&nbsp;J</div>
             </div>
           `,
@@ -175,10 +175,10 @@ const physicsData = {
           hints: "แตกแรงเข้าสู่แนวราบ ($F \\cos 45^\\circ$)",
           guide: `
             <div class="calc-steps">
-              <div>1. $W$</div><div>$=$</div><div>$Fs \cos 45^\circ$</div>
-              <div></div><div>$=$</div><div>$30 \times 10 \times 0.707$</div>
-              <div></div><div>$=$</div><div>$300 \times 0.707$</div>
-              <div></div><div>$\approx$</div><div><input type="text" class="answer-input" placeholder="212.1">&nbsp;J</div>
+              <div>1. $W$</div><div>$=$</div><div>$Fs \\cos 45^\\circ$</div>
+              <div></div><div>$=$</div><div>$30 \\times 10 \\times 0.707$</div>
+              <div></div><div>$=$</div><div>$300 \\times 0.707$</div>
+              <div></div><div>$\\approx$</div><div><input type="text" class="answer-input" placeholder="212.1">&nbsp;J</div>
             </div>
           `,
           intermediateHtml: `<div class="step" style="color:var(--text-light);font-size:0.95rem;"><b>โจทย์กำหนด:</b> $F = 30$ N, $s = 10$ m, $\\theta = 45^\\circ$</div><div style="margin-top:20px;font-weight:bold;">ตอบ: $W =$ <input type="text" class="answer-input" style="width:120px"> J</div>`,
@@ -216,8 +216,8 @@ const physicsData = {
           hints: "ใช้สมการ $P = W/t$ แทนค่าโดยตรง",
           guide: `
             <div class="calc-steps">
-              <div>1. $P$</div><div>$=$</div><div>$\frac{W}{t}$</div>
-              <div></div><div>$=$</div><div>$\frac{3000}{10}$</div>
+              <div>1. $P$</div><div>$=$</div><div>$\\frac{W}{t}$</div>
+              <div></div><div>$=$</div><div>$\\frac{3000}{10}$</div>
               <div></div><div>$=$</div><div><input type="text" class="answer-input" placeholder="300">&nbsp;W</div>
             </div>
           `,
@@ -264,9 +264,9 @@ const physicsData = {
           text: "รถยนต์คันหนึ่งมีกำลัง 50,000 W กำลังแล่นด้วยความเร็วคงที่ 20 m/s แรงขับเคลื่อนของเครื่องยนต์มีค่าเท่าใด",
           hints: "ใช้สมการ $P = Fv$ ย้ายข้างหา $F$",
           guide: `
-            <div class="step">1. จากความสัมพันธ์ $P = Fv \rightarrow F = \frac{P}{v}$</div>
+            <div class="step">1. จากความสัมพันธ์ $P = Fv \\rightarrow F = \\frac{P}{v}$</div>
             <div class="calc-steps">
-              <div>2. $F$</div><div>$=$</div><div>$\frac{50000}{20}$</div>
+              <div>2. $F$</div><div>$=$</div><div>$\\frac{50000}{20}$</div>
               <div></div><div>$=$</div><div><input type="text" class="answer-input" placeholder="2500">&nbsp;N</div>
             </div>
           `,
@@ -279,12 +279,12 @@ const physicsData = {
           hints: "หากำลังจากกรณีแรกก่อน แล้วนำกำลังนั้นไปคิดหาเวลาในกรณีที่สอง",
           guide: `
             <div class="calc-steps">
-              <div>1. $P$</div><div>$=$</div><div>$\frac{W_1}{t_1}$</div>
-              <div></div><div>$=$</div><div>$\frac{2000 \times 5}{4}$</div>
-              <div></div><div>$=$</div><div>$2{,}500\text{ W}$</div>
-              <div>2. $t_2$</div><div>$=$</div><div>$\frac{W_2}{P}$</div>
-              <div></div><div>$=$</div><div>$\frac{4000 \times 5}{2500}$</div>
-              <div></div><div>$=$</div><div>$\frac{20000}{2500}$</div>
+              <div>1. $P$</div><div>$=$</div><div>$\\frac{W_1}{t_1}$</div>
+              <div></div><div>$=$</div><div>$\\frac{2000 \\times 5}{4}$</div>
+              <div></div><div>$=$</div><div>$2{,}500\\text{ W}$</div>
+              <div>2. $t_2$</div><div>$=$</div><div>$\\frac{W_2}{P}$</div>
+              <div></div><div>$=$</div><div>$\\frac{4000 \\times 5}{2500}$</div>
+              <div></div><div>$=$</div><div>$\\frac{20000}{2500}$</div>
               <div></div><div>$=$</div><div><input type="text" class="answer-input" placeholder="8">&nbsp;s</div>
             </div>
           `,
@@ -296,10 +296,10 @@ const physicsData = {
           text: "หลอดไฟดวงหนึ่งมีกำลัง 100 W ถ้าเปิดทิ้งไว้ 2 ชั่วโมง จะใช้พลังงานไฟฟ้าไปกี่จูล",
           hints: "งาน $W = P \\times t$ แต่ต้องเปลี่ยนเวลาเป็นวินาทีก่อน",
           guide: `
-            <div class="step">1. แปลงเวลาเป็นวินาที: $t = 2 \times 3600 = 7{,}200\text{ s}$</div>
+            <div class="step">1. แปลงเวลาเป็นวินาที: $t = 2 \\times 3600 = 7{,}200\\text{ s}$</div>
             <div class="calc-steps">
               <div>2. $W$</div><div>$=$</div><div>$Pt$</div>
-              <div></div><div>$=$</div><div>$100 \times 7{,}200$</div>
+              <div></div><div>$=$</div><div>$100 \\times 7{,}200$</div>
               <div></div><div>$=$</div><div><input type="text" class="answer-input" placeholder="720000">&nbsp;J</div>
             </div>
           `,
@@ -313,10 +313,10 @@ const physicsData = {
           guide: `
             <div class="calc-steps">
               <div>1. $W$</div><div>$=$</div><div>$Fh$</div>
-              <div></div><div>$=$</div><div>$400 \times 4$</div>
-              <div></div><div>$=$</div><div>$1{,}600\text{ J}$</div>
-              <div>2. $P$</div><div>$=$</div><div>$\frac{W}{t}$</div>
-              <div></div><div>$=$</div><div>$\frac{1{,}600}{5}$</div>
+              <div></div><div>$=$</div><div>$400 \\times 4$</div>
+              <div></div><div>$=$</div><div>$1{,}600\\text{ J}$</div>
+              <div>2. $P$</div><div>$=$</div><div>$\\frac{W}{t}$</div>
+              <div></div><div>$=$</div><div>$\\frac{1{,}600}{5}$</div>
               <div></div><div>$=$</div><div><input type="text" class="answer-input" placeholder="320">&nbsp;W</div>
             </div>
           `,
@@ -329,15 +329,15 @@ const physicsData = {
           hints: "แรงรวม $F = 500 \\times 2 = 1000$ N แล้วใช้ $P = Fv$ อย่าลืมแปลง kW",
           guide: `
             <div class="calc-steps">
-              <div>1. $F_{รวม}$</div><div>$=$</div><div>$500 + 500$</div>
-              <div></div><div>$=$</div><div>$1{,}000\text{ N}$</div>
+              <div>1. $F_\\text{รวม}$</div><div>$=$</div><div>$500 + 500$</div>
+              <div></div><div>$=$</div><div>$1{,}000\\text{ N}$</div>
               <div>2. $P$</div><div>$=$</div><div>$Fv$</div>
-              <div></div><div>$=$</div><div>$1{,}000 \times 10$</div>
-              <div></div><div>$=$</div><div>$10{,}000\text{ W}$</div>
+              <div></div><div>$=$</div><div>$1{,}000 \\times 10$</div>
+              <div></div><div>$=$</div><div>$10{,}000\\text{ W}$</div>
               <div></div><div>$=$</div><div><input type="text" class="answer-input" placeholder="10">&nbsp;kW</div>
             </div>
           `,
-          intermediateHtml: `<div class="step" style="color:var(--text-light);font-size:0.95rem;"><b>โจทย์กำหนด:</b> $F_{รวม} = 1000$ N, $v = 10$ m/s (ถาม kW)</div><div style="margin-top:20px;font-weight:bold;">ตอบ: $P =$ <input type="text" class="answer-input" style="width:120px"> kW</div>`,
+          intermediateHtml: `<div class="step" style="color:var(--text-light);font-size:0.95rem;"><b>โจทย์กำหนด:</b> $F_\\text{รวม} = 1000$ N, $v = 10$ m/s (ถาม kW)</div><div style="margin-top:20px;font-weight:bold;">ตอบ: $P =$ <input type="text" class="answer-input" style="width:120px"> kW</div>`,
           advancedHtml: `<div style="margin-top:20px;font-weight:bold;">ตอบ: $P =$ <input type="text" class="answer-input" style="width:120px"> kW</div>`
         },
         {
@@ -345,11 +345,11 @@ const physicsData = {
           text: "เครื่องยนต์ 10 kW สามารถยกของมวล 500 kg ขึ้นไปได้สูงเท่าใดในเวลา 20 วินาที ($g = 10$ m/s²)",
           hints: "แปลง 10 kW = 10,000 W แล้วใช้ $P = \\frac{mgh}{t}$ หา h",
           guide: `
-            <div class="step">1. แรงยก $F = mg = 500 \times 10 = 5{,}000\text{ N}$</div>
+            <div class="step">1. แรงยก $F = mg = 500 \\times 10 = 5{,}000\\text{ N}$</div>
             <div class="calc-steps">
-              <div>2. $h$</div><div>$=$</div><div>$\frac{Pt}{F}$</div>
-              <div></div><div>$=$</div><div>$\frac{10000 \times 20}{5000}$</div>
-              <div></div><div>$=$</div><div>$\frac{200000}{5000}$</div>
+              <div>2. $h$</div><div>$=$</div><div>$\\frac{Pt}{F}$</div>
+              <div></div><div>$=$</div><div>$\\frac{10000 \\times 20}{5000}$</div>
+              <div></div><div>$=$</div><div>$\\frac{200000}{5000}$</div>
               <div></div><div>$=$</div><div><input type="text" class="answer-input" placeholder="40">&nbsp;m</div>
             </div>
           `,
@@ -358,15 +358,15 @@ const physicsData = {
         },
         {
           id: "p10",
-          text: "น้ำตกแห่งหนึ่งมีน้ำไหลตกลงมาด้วยอัตรา 2,000 kg/s จากความสูง 50 m ถ้านำพลังงานน้ำมาผลิตไฟฟ้าได้ 80% จะมีกำลังการผลิตเท่าใด ($g = 10$ m/s²)",
+          text: "น้ำตกแห่งหนึ่งมีน้ำไหลตกลงมาด้วยอัตรา 2,000 kg/s จากความสูง 50 m ถ้านำพลังงานน้ำมาผลิตไฟฟ้าได้ 80\% จะมีกำลังการผลิตเท่าใด ($g = 10$ m/s²)",
           hints: "กำลังทั้งหมด $P = (\\frac{m}{t})gh$ จากนั้นคิดเพียง 80%",
           guide: `
             <div class="calc-steps">
-              <div>1. $P_{รวม}$</div><div>$=$</div><div>$\left(\frac{m}{t}\right)gh$</div>
-              <div></div><div>$=$</div><div>$2000 \times 10 \times 50$</div>
-              <div></div><div>$=$</div><div>$1{,}000{,}000\text{ W}$</div>
-              <div>2. $P_{ผลิต}$</div><div>$=$</div><div>$1{,}000{,}000 \times 80\%$</div>
-              <div></div><div>$=$</div><div>$1{,}000{,}000 \times 0.8$</div>
+              <div>1. $P_\\text{รวม}$</div><div>$=$</div><div>$\\left(\\frac{m}{t}\\right)gh$</div>
+              <div></div><div>$=$</div><div>$2000 \\times 10 \\times 50$</div>
+              <div></div><div>$=$</div><div>$1{,}000{,}000\\text{ W}$</div>
+              <div>2. $P_\\text{ผลิต}$</div><div>$=$</div><div>$1{,}000{,}000 \\times 80\%$</div>
+              <div></div><div>$=$</div><div>$1{,}000{,}000 \\times 0.8$</div>
               <div></div><div>$=$</div><div><input type="text" class="answer-input" placeholder="800000">&nbsp;W</div>
             </div>
           `,
@@ -400,9 +400,9 @@ const physicsData = {
           hints: "ใช้สมการ $KE = \\frac{1}{2}mv^2$ แทนค่าโดยตรง",
           guide: `
             <div class="calc-steps">
-              <div>1. $KE$</div><div>$=$</div><div>$\frac{1}{2}mv^2$</div>
-              <div></div><div>$=$</div><div>$\frac{1}{2} \times 2 \times 3^2$</div>
-              <div></div><div>$=$</div><div>$\frac{1}{2} \times 2 \times 9$</div>
+              <div>1. $KE$</div><div>$=$</div><div>$\\frac{1}{2}mv^2$</div>
+              <div></div><div>$=$</div><div>$\\frac{1}{2} \\times 2 \\times 3^2$</div>
+              <div></div><div>$=$</div><div>$\\frac{1}{2} \\times 2 \\times 9$</div>
               <div></div><div>$=$</div><div><input type="text" class="answer-input" placeholder="9">&nbsp;J</div>
             </div>
           `,
@@ -415,9 +415,9 @@ const physicsData = {
           hints: "แทนค่าในสูตรพลังงานจลน์",
           guide: `
             <div class="calc-steps">
-              <div>1. $KE$</div><div>$=$</div><div>$\frac{1}{2}mv^2$</div>
-              <div></div><div>$=$</div><div>$\frac{1}{2} \times 1000 \times 20^2$</div>
-              <div></div><div>$=$</div><div>$500 \times 400$</div>
+              <div>1. $KE$</div><div>$=$</div><div>$\\frac{1}{2}mv^2$</div>
+              <div></div><div>$=$</div><div>$\\frac{1}{2} \\times 1000 \\times 20^2$</div>
+              <div></div><div>$=$</div><div>$500 \\times 400$</div>
               <div></div><div>$=$</div><div><input type="text" class="answer-input" placeholder="200000">&nbsp;J</div>
             </div>
           `,
@@ -430,9 +430,9 @@ const physicsData = {
           hints: "ระวังการคิดเลขยกกำลังของ 10",
           guide: `
             <div class="calc-steps">
-              <div>1. $KE$</div><div>$=$</div><div>$\frac{1}{2}mv^2$</div>
-              <div></div><div>$=$</div><div>$\frac{1}{2} \times 0.5 \times 10^2$</div>
-              <div></div><div>$=$</div><div>$0.25 \times 100$</div>
+              <div>1. $KE$</div><div>$=$</div><div>$\\frac{1}{2}mv^2$</div>
+              <div></div><div>$=$</div><div>$\\frac{1}{2} \\times 0.5 \\times 10^2$</div>
+              <div></div><div>$=$</div><div>$0.25 \\times 100$</div>
               <div></div><div>$=$</div><div><input type="text" class="answer-input" placeholder="25">&nbsp;J</div>
             </div>
           `,
@@ -461,10 +461,10 @@ const physicsData = {
           hints: "ใช้ทฤษฎีบทงาน-พลังงานจลน์ $W = \\Delta KE = KE_f - KE_i$",
           guide: `
             <div class="calc-steps">
-              <div>1. $KE_i$</div><div>$=$</div><div>$\frac{1}{2}mv^2$</div>
-              <div></div><div>$=$</div><div>$\frac{1}{2} \times 800 \times 10^2$</div>
-              <div></div><div>$=$</div><div>$40{,}000\text{ J}$</div>
-              <div>2. $W$</div><div>$=$</div><div>$\Delta KE = 0 - KE_i$</div>
+              <div>1. $KE_i$</div><div>$=$</div><div>$\\frac{1}{2}mv^2$</div>
+              <div></div><div>$=$</div><div>$\\frac{1}{2} \\times 800 \\times 10^2$</div>
+              <div></div><div>$=$</div><div>$40{,}000\\text{ J}$</div>
+              <div>2. $W$</div><div>$=$</div><div>$\\Delta KE = 0 - KE_i$</div>
               <div></div><div>$=$</div><div>$0 - 40{,}000$</div>
               <div></div><div>$=$</div><div><input type="text" class="answer-input" placeholder="-40000">&nbsp;J</div>
             </div>
@@ -477,11 +477,11 @@ const physicsData = {
           text: "ลูกปืนมวล 10 กรัม เคลื่อนที่ด้วยความเร็ว 400 m/s พลังงานจลน์ของลูกปืนเป็นเท่าใด",
           hints: "เปลี่ยนมวลเป็นกิโลกรัมก่อน $10$ g $= 0.01$ kg",
           guide: `
-            <div class="step">1. แปลงหน่วยมวล: $m = 10\text{ g} \rightarrow 0.01\text{ kg}$</div>
+            <div class="step">1. แปลงหน่วยมวล: $m = 10\\text{ g} \\rightarrow 0.01\\text{ kg}$</div>
             <div class="calc-steps">
-              <div>2. $KE$</div><div>$=$</div><div>$\frac{1}{2}mv^2$</div>
-              <div></div><div>$=$</div><div>$\frac{1}{2} \times 0.01 \times 400^2$</div>
-              <div></div><div>$=$</div><div>$0.005 \times 160{,}000$</div>
+              <div>2. $KE$</div><div>$=$</div><div>$\\frac{1}{2}mv^2$</div>
+              <div></div><div>$=$</div><div>$\\frac{1}{2} \\times 0.01 \\times 400^2$</div>
+              <div></div><div>$=$</div><div>$0.005 \\times 160{,}000$</div>
               <div></div><div>$=$</div><div><input type="text" class="answer-input" placeholder="800">&nbsp;J</div>
             </div>
           `,
@@ -494,9 +494,9 @@ const physicsData = {
           hints: "$W_{net} = \\Delta KE = \\frac{1}{2}mv_f^2 - \\frac{1}{2}mv_i^2$",
           guide: `
             <div class="calc-steps">
-              <div>1. $KE_i$</div><div>$=$</div><div>$\frac{1}{2}(5)(2^2) = 10\text{ J}$</div>
-              <div>2. $KE_f$</div><div>$=$</div><div>$\frac{1}{2}(5)(6^2) = 90\text{ J}$</div>
-              <div>3. $W$</div><div>$=$</div><div>$\Delta KE = KE_f - KE_i$</div>
+              <div>1. $KE_i$</div><div>$=$</div><div>$\\frac{1}{2}(5)(2^2) = 10\\text{ J}$</div>
+              <div>2. $KE_f$</div><div>$=$</div><div>$\\frac{1}{2}(5)(6^2) = 90\\text{ J}$</div>
+              <div>3. $W$</div><div>$=$</div><div>$\\Delta KE = KE_f - KE_i$</div>
               <div></div><div>$=$</div><div>$90 - 10$</div>
               <div></div><div>$=$</div><div><input type="text" class="answer-input" placeholder="80">&nbsp;J</div>
             </div>
@@ -510,9 +510,9 @@ const physicsData = {
           hints: "คิดพลังงานจลน์ของแต่ละก้อน",
           guide: `
             <div class="calc-steps">
-              <div>1. $KE_A$</div><div>$=$</div><div>$\frac{1}{2}(2)(4^2) = 16\text{ J}$</div>
-              <div>2. $KE_B$</div><div>$=$</div><div>$\frac{1}{2}(4)(2^2) = 8\text{ J}$</div>
-              <div>3. $\Delta KE$</div><div>$=$</div><div>$KE_A - KE_B$</div>
+              <div>1. $KE_A$</div><div>$=$</div><div>$\\frac{1}{2}(2)(4^2) = 16\\text{ J}$</div>
+              <div>2. $KE_B$</div><div>$=$</div><div>$\\frac{1}{2}(4)(2^2) = 8\\text{ J}$</div>
+              <div>3. $\\Delta KE$</div><div>$=$</div><div>$KE_A - KE_B$</div>
               <div></div><div>$=$</div><div>$16 - 8$</div>
               <div></div><div>$=$</div><div><input type="text" class="answer-input" placeholder="8">&nbsp;J</div>
             </div>
@@ -527,12 +527,12 @@ const physicsData = {
           guide: `
             <div class="calc-steps">
               <div>1. $W$</div><div>$=$</div><div>$Fs$</div>
-              <div></div><div>$=$</div><div>$50 \times 4$</div>
-              <div></div><div>$=$</div><div>$200\text{ J}$</div>
-              <div>2. $v$</div><div>$=$</div><div>$\sqrt{\frac{2W}{m}}$</div>
-              <div></div><div>$=$</div><div>$\sqrt{\frac{2 \times 200}{10}}$</div>
-              <div></div><div>$=$</div><div>$\sqrt{40}$</div>
-              <div></div><div>$\approx$</div><div><input type="text" class="answer-input" placeholder="6.32">&nbsp;m/s</div>
+              <div></div><div>$=$</div><div>$50 \\times 4$</div>
+              <div></div><div>$=$</div><div>$200\\text{ J}$</div>
+              <div>2. $v$</div><div>$=$</div><div>$\\sqrt{\\frac{2W}{m}}$</div>
+              <div></div><div>$=$</div><div>$\\sqrt{\\frac{2 \\times 200}{10}}$</div>
+              <div></div><div>$=$</div><div>$\\sqrt{40}$</div>
+              <div></div><div>$\\approx$</div><div><input type="text" class="answer-input" placeholder="6.32">&nbsp;m/s</div>
             </div>
           `,
           intermediateHtml: `<div class="step" style="color:var(--text-light);font-size:0.95rem;"><b>โจทย์กำหนด:</b> $F = 50$ N, $m = 10$ kg, $s = 4$ m, $v_i = 0$</div><div style="margin-top:20px;font-weight:bold;">ตอบ: $v =$ <input type="text" class="answer-input" style="width:120px"> m/s</div>`,
@@ -544,9 +544,9 @@ const physicsData = {
           hints: "แทนค่าสูตร $KE = \\frac{1}{2}mv^2$ โดยตรง",
           guide: `
             <div class="calc-steps">
-              <div>1. $KE$</div><div>$=$</div><div>$\frac{1}{2}mv^2$</div>
-              <div></div><div>$=$</div><div>$\frac{1}{2} \times 60 \times 8^2$</div>
-              <div></div><div>$=$</div><div>$30 \times 64$</div>
+              <div>1. $KE$</div><div>$=$</div><div>$\\frac{1}{2}mv^2$</div>
+              <div></div><div>$=$</div><div>$\\frac{1}{2} \\times 60 \\times 8^2$</div>
+              <div></div><div>$=$</div><div>$30 \\times 64$</div>
               <div></div><div>$=$</div><div><input type="text" class="answer-input" placeholder="1920">&nbsp;J</div>
             </div>
           `,
@@ -581,7 +581,7 @@ const physicsData = {
           guide: `
             <div class="calc-steps">
               <div>1. $PE$</div><div>$=$</div><div>$mgh$</div>
-              <div></div><div>$=$</div><div>$5 \times 10 \times 10$</div>
+              <div></div><div>$=$</div><div>$5 \\times 10 \\times 10$</div>
               <div></div><div>$=$</div><div><input type="text" class="answer-input" placeholder="500">&nbsp;J</div>
             </div>
           `,
@@ -595,7 +595,7 @@ const physicsData = {
           guide: `
             <div class="calc-steps">
               <div>1. $PE$</div><div>$=$</div><div>$mgh$</div>
-              <div></div><div>$=$</div><div>$0.2 \times 10 \times 1.5$</div>
+              <div></div><div>$=$</div><div>$0.2 \\times 10 \\times 1.5$</div>
               <div></div><div>$=$</div><div><input type="text" class="answer-input" placeholder="3">&nbsp;J</div>
             </div>
           `,
@@ -608,9 +608,9 @@ const physicsData = {
           hints: "ใช้สูตร $PE = \\frac{1}{2}kx^2$",
           guide: `
             <div class="calc-steps">
-              <div>1. $PE$</div><div>$=$</div><div>$\frac{1}{2}kx^2$</div>
-              <div></div><div>$=$</div><div>$\frac{1}{2} \times 200 \times (0.1)^2$</div>
-              <div></div><div>$=$</div><div>$100 \times 0.01$</div>
+              <div>1. $PE$</div><div>$=$</div><div>$\\frac{1}{2}kx^2$</div>
+              <div></div><div>$=$</div><div>$\\frac{1}{2} \\times 200 \\times (0.1)^2$</div>
+              <div></div><div>$=$</div><div>$100 \\times 0.01$</div>
               <div></div><div>$=$</div><div><input type="text" class="answer-input" placeholder="1">&nbsp;J</div>
             </div>
           `,
@@ -623,9 +623,9 @@ const physicsData = {
           hints: "ความสูงลดลง พลังงานศักย์ต้องติดลบ $\\Delta PE = mgh_f - mgh_i$",
           guide: `
             <div class="calc-steps">
-              <div>1. $PE_i$</div><div>$=$</div><div>$mgh = 2 \times 10 \times 5 = 100\text{ J}$</div>
-              <div>2. $PE_f$</div><div>$=$</div><div>$0\text{ J}$</div>
-              <div>3. $\Delta PE$</div><div>$=$</div><div>$PE_f - PE_i$</div>
+              <div>1. $PE_i$</div><div>$=$</div><div>$mgh = 2 \\times 10 \\times 5 = 100\\text{ J}$</div>
+              <div>2. $PE_f$</div><div>$=$</div><div>$0\\text{ J}$</div>
+              <div>3. $\\Delta PE$</div><div>$=$</div><div>$PE_f - PE_i$</div>
               <div></div><div>$=$</div><div>$0 - 100$</div>
               <div></div><div>$=$</div><div><input type="text" class="answer-input" placeholder="-100">&nbsp;J</div>
             </div>
@@ -639,8 +639,8 @@ const physicsData = {
           hints: "ใช้ $\\Delta PE = mg\\Delta h$",
           guide: `
             <div class="calc-steps">
-              <div>1. $\Delta PE$</div><div>$=$</div><div>$mg\Delta h$</div>
-              <div></div><div>$=$</div><div>$40 \times 10 \times 3$</div>
+              <div>1. $\\Delta PE$</div><div>$=$</div><div>$mg\\Delta h$</div>
+              <div></div><div>$=$</div><div>$40 \\times 10 \\times 3$</div>
               <div></div><div>$=$</div><div><input type="text" class="answer-input" placeholder="1200">&nbsp;J</div>
             </div>
           `,
@@ -653,9 +653,9 @@ const physicsData = {
           hints: "พลังงานศักย์ยืดหยุ่นคิดเหมือนการดึงยืด",
           guide: `
             <div class="calc-steps">
-              <div>1. $PE$</div><div>$=$</div><div>$\frac{1}{2}kx^2$</div>
-              <div></div><div>$=$</div><div>$\frac{1}{2} \times 500 \times (0.2)^2$</div>
-              <div></div><div>$=$</div><div>$250 \times 0.04$</div>
+              <div>1. $PE$</div><div>$=$</div><div>$\\frac{1}{2}kx^2$</div>
+              <div></div><div>$=$</div><div>$\\frac{1}{2} \\times 500 \\times (0.2)^2$</div>
+              <div></div><div>$=$</div><div>$250 \\times 0.04$</div>
               <div></div><div>$=$</div><div><input type="text" class="answer-input" placeholder="10">&nbsp;J</div>
             </div>
           `,
@@ -667,10 +667,10 @@ const physicsData = {
           text: "วัตถุมวล 3 kg วางอยู่บนหลังคาตึกสูง 10 m โดยหลังคาตึกมีแท่นสูง 2 m วัตถุวางบนแท่นนี้ จงหาพลังงานศักย์ของวัตถุเทียบกับพื้นดิน ($g = 10$ m/s²)",
           hints: "ความสูงรวม = $10 + 2 = 12$ m",
           guide: `
-            <div class="step">1. ความสูงจากพื้นดิน: $h = 10 + 2 \rightarrow h = 12\text{ m}$</div>
+            <div class="step">1. ความสูงจากพื้นดิน: $h = 10 + 2 \\rightarrow h = 12\\text{ m}$</div>
             <div class="calc-steps">
               <div>2. $PE$</div><div>$=$</div><div>$mgh$</div>
-              <div></div><div>$=$</div><div>$3 \times 10 \times 12$</div>
+              <div></div><div>$=$</div><div>$3 \\times 10 \\times 12$</div>
               <div></div><div>$=$</div><div><input type="text" class="answer-input" placeholder="360">&nbsp;J</div>
             </div>
           `,
@@ -683,8 +683,8 @@ const physicsData = {
           hints: "จุดต่ำสุดเป็นจุดอ้างอิง $\\Delta h = 0.8$ m",
           guide: `
             <div class="calc-steps">
-              <div>1. $\Delta PE$</div><div>$=$</div><div>$mg\Delta h$</div>
-              <div></div><div>$=$</div><div>$0.5 \times 10 \times 0.8$</div>
+              <div>1. $\\Delta PE$</div><div>$=$</div><div>$mg\\Delta h$</div>
+              <div></div><div>$=$</div><div>$0.5 \\times 10 \\times 0.8$</div>
               <div></div><div>$=$</div><div><input type="text" class="answer-input" placeholder="4">&nbsp;J</div>
             </div>
           `,
@@ -697,9 +697,9 @@ const physicsData = {
           hints: "แทนค่าสูตรพลังงานศักย์ยืดหยุ่น",
           guide: `
             <div class="calc-steps">
-              <div>1. $PE$</div><div>$=$</div><div>$\frac{1}{2}kx^2$</div>
-              <div></div><div>$=$</div><div>$\frac{1}{2} \times 100 \times (0.3)^2$</div>
-              <div></div><div>$=$</div><div>$50 \times 0.09$</div>
+              <div>1. $PE$</div><div>$=$</div><div>$\\frac{1}{2}kx^2$</div>
+              <div></div><div>$=$</div><div>$\\frac{1}{2} \\times 100 \\times (0.3)^2$</div>
+              <div></div><div>$=$</div><div>$50 \\times 0.09$</div>
               <div></div><div>$=$</div><div><input type="text" class="answer-input" placeholder="4.5">&nbsp;J</div>
             </div>
           `,
@@ -713,7 +713,7 @@ const physicsData = {
           guide: `
             <div class="calc-steps">
               <div>1. $PE$</div><div>$=$</div><div>$mgh$</div>
-              <div></div><div>$=$</div><div>$500 \times 10 \times 20$</div>
+              <div></div><div>$=$</div><div>$500 \\times 10 \\times 20$</div>
               <div></div><div>$=$</div><div><input type="text" class="answer-input" placeholder="100000">&nbsp;J</div>
             </div>
           `,
@@ -839,12 +839,12 @@ const physicsData = {
           text: "อัดสปริงแนวดิ่ง (k=200 N/m) เป็นระยะ 0.1 m แล้ววางวัตถุ 0.1 kg ไว้ข้างบน เมื่อปล่อยสปริง วัตถุจะพุ่งขึ้นสูงสุดกี่เมตรจากจุดที่ปล่อย ($g = 10$ m/s²)",
           hints: "พลังงานศักย์สปริง = พลังงานศักย์โน้มถ่วง $\\frac{1}{2}kx^2 = mgh$",
           guide: `
-            <div class="step">1. กฎการอนุรักษ์พลังงาน: $\frac{1}{2}kx^2 = mgh$</div>
+            <div class="step">1. กฎการอนุรักษ์พลังงาน: $\\frac{1}{2}kx^2 = mgh$</div>
             <div class="calc-steps">
-              <div>2. $h$</div><div>$=$</div><div>$\frac{\frac{1}{2}kx^2}{mg}$</div>
-              <div></div><div>$=$</div><div>$\frac{\frac{1}{2}(200)(0.1)^2}{(0.1)(10)}$</div>
-              <div></div><div>$=$</div><div>$\frac{100 \times 0.01}{1}$</div>
-              <div></div><div>$=$</div><div>$\frac{1}{1}$</div>
+              <div>2. $h$</div><div>$=$</div><div>$\\frac{\\frac{1}{2}kx^2}{mg}$</div>
+              <div></div><div>$=$</div><div>$\\frac{\\frac{1}{2}(200)(0.1)^2}{(0.1)(10)}$</div>
+              <div></div><div>$=$</div><div>$\\frac{100 \\times 0.01}{1}$</div>
+              <div></div><div>$=$</div><div>$\\frac{1}{1}$</div>
               <div></div><div>$=$</div><div><input type="text" class="answer-input" placeholder="1">&nbsp;m</div>
             </div>
           `,
@@ -871,14 +871,14 @@ const physicsData = {
           text: "โยนลูกบอล 0.5 kg ขึ้นด้วยความเร็ว 10 m/s จากพื้นดิน ที่ความสูง 3 m ลูกบอลมีความเร็วเท่าใด ($g = 10$ m/s²)",
           hints: "พลังงานรวมเริ่มต้น = พลังงานรวมที่ความสูง 3 m",
           guide: `
-            <div class="step">1. กฎการอนุรักษ์พลังงานกล: $\frac{1}{2}mv_1^2 = \frac{1}{2}mv_2^2 + mgh$ (มวล $m$ ตัดกัน)</div>
+            <div class="step">1. กฎการอนุรักษ์พลังงานกล: $\\frac{1}{2}mv_1^2 = \\frac{1}{2}mv_2^2 + mgh$ (มวล $m$ ตัดกัน)</div>
             <div class="calc-steps">
-              <div>2. $\frac{1}{2}v_2^2$</div><div>$=$</div><div>$\frac{1}{2}v_1^2 - gh$</div>
-              <div></div><div>$=$</div><div>$\frac{1}{2}(10^2) - 10(3)$</div>
+              <div>2. $\\frac{1}{2}v_2^2$</div><div>$=$</div><div>$\\frac{1}{2}v_1^2 - gh$</div>
+              <div></div><div>$=$</div><div>$\\frac{1}{2}(10^2) - 10(3)$</div>
               <div></div><div>$=$</div><div>$50 - 30$</div>
               <div></div><div>$=$</div><div>$20$</div>
-              <div>3. $v_2$</div><div>$=$</div><div>$\sqrt{40}$</div>
-              <div></div><div>$\approx$</div><div><input type="text" class="answer-input" placeholder="6.32">&nbsp;m/s</div>
+              <div>3. $v_2$</div><div>$=$</div><div>$\\sqrt{40}$</div>
+              <div></div><div>$\\approx$</div><div><input type="text" class="answer-input" placeholder="6.32">&nbsp;m/s</div>
             </div>
           `,
           intermediateHtml: `<div class="step" style="color:var(--text-light);font-size:0.95rem;"><b>โจทย์กำหนด:</b> $v_1 = 10$ m/s, $h_1 = 0$, $h_2 = 3$ m</div><div style="margin-top:20px;font-weight:bold;">ตอบ: $v_2 =$ <input type="text" class="answer-input" style="width:120px"> m/s</div>`,
@@ -889,14 +889,14 @@ const physicsData = {
           text: "กดสปริงแนวราบ (k=500 N/m) เข้าไป 0.2 m โดยมีก้อนมวล 1 kg อยู่ด้านหน้า เมื่อปล่อยสปริง ก้อนมวลจะหลุดออกไปด้วยความเร็วเท่าใด",
           hints: "พลังงานศักย์ยืดหยุ่นเปลี่ยนเป็นพลังงานจลน์",
           guide: `
-            <div class="step">1. $\frac{1}{2}kx^2 = \frac{1}{2}mv^2$</div>
+            <div class="step">1. $\\frac{1}{2}kx^2 = \\frac{1}{2}mv^2$</div>
             <div class="calc-steps">
-              <div>2. $v^2$</div><div>$=$</div><div>$\frac{kx^2}{m}$</div>
-              <div></div><div>$=$</div><div>$\frac{500 \times (0.2)^2}{1}$</div>
-              <div></div><div>$=$</div><div>$500 \times 0.04$</div>
+              <div>2. $v^2$</div><div>$=$</div><div>$\\frac{kx^2}{m}$</div>
+              <div></div><div>$=$</div><div>$\\frac{500 \\times (0.2)^2}{1}$</div>
+              <div></div><div>$=$</div><div>$500 \\times 0.04$</div>
               <div></div><div>$=$</div><div>$20$</div>
-              <div>3. $v$</div><div>$=$</div><div>$\sqrt{20}$</div>
-              <div></div><div>$\approx$</div><div><input type="text" class="answer-input" placeholder="4.47">&nbsp;m/s</div>
+              <div>3. $v$</div><div>$=$</div><div>$\\sqrt{20}$</div>
+              <div></div><div>$\\approx$</div><div><input type="text" class="answer-input" placeholder="4.47">&nbsp;m/s</div>
             </div>
           `,
           intermediateHtml: `<div class="step" style="color:var(--text-light);font-size:0.95rem;"><b>โจทย์กำหนด:</b> $k = 500$ N/m, $x = 0.2$ m, $m = 1$ kg</div><div style="margin-top:20px;font-weight:bold;">ตอบ: $v =$ <input type="text" class="answer-input" style="width:120px"> m/s</div>`,

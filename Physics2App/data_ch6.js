@@ -13,7 +13,7 @@ Object.assign(physicsData.topics, {
         <li>$m$ คือ มวลของวัตถุ หน่วยเป็น $\\text{kg}$</li>
         <li>$v$ คือ ความเร็วของวัตถุ หน่วยเป็น $\\text{m/s}$</li>
       </ul>
-      <p>การเปลี่ยนแปลงโมเมนตัม: $$\Delta p = p_f - p_i = m(v - u)$$</p>
+      <p>การเปลี่ยนแปลงโมเมนตัม: $$\\Delta p = p_f - p_i = m(v - u)$$</p>
     `,
     problems: [
       {
@@ -133,7 +133,7 @@ Object.assign(physicsData.topics, {
       {
         id: "ch6-1-7",
         text: "รถมวล 2,000 kg มีความเร็วเริ่มต้น 10 m/s และเร่งจนมีความเร็ว 20 m/s จงหาการเปลี่ยนแปลงโมเมนตัม",
-        hints: ["\Delta p = m(v - u)"],
+        hints: ["$\\Delta p = m(v - u)$"],
         guide: `
           <div class="step">
             <p>$$\\begin{aligned}
@@ -216,7 +216,7 @@ Object.assign(physicsData.topics, {
       {
         id: "ch6-2-1",
         text: "ลูกบอลมวล 0.5 kg เคลื่อนที่เข้าชนกำแพงด้วยความเร็ว 10 m/s และสะท้อนกลับด้วยความเร็ว 10 m/s การดลมีขนาดเท่าใด",
-        hints: ["ทิศตรงข้าม กำหนด u = 10, v = -10", "I = \Delta p = m(v - u)"],
+        hints: ["ทิศตรงข้าม กำหนด u = 10, v = -10", "$I = \\Delta p = m(v - u)$"],
         guide: `
           <div class="step">
             <p><strong>ขั้นที่ 1:</strong> กำหนดทิศทางและสิ่งที่โจทย์กำหนด</p>
@@ -247,7 +247,7 @@ Object.assign(physicsData.topics, {
       {
         id: "ch6-2-2",
         text: "นักเตะเตะลูกบอลด้วยแรง 200 N เป็นเวลา 0.1 s การดลที่ลูกบอลได้รับเป็นเท่าใด",
-        hints: ["I = F \Delta t"],
+        hints: ["$I = F \\Delta t$"],
         guide: `
           <div class="step">
             <p>$$\\begin{aligned}
@@ -263,7 +263,7 @@ Object.assign(physicsData.topics, {
       {
         id: "ch6-2-3",
         text: "ไม้เทนนิสกระทบลูกด้วยแรงเฉลี่ย 500 N เกิดการดล 20 N·s เวลาที่กระทบเป็นเท่าใด",
-        hints: ["\Delta t = I / F"],
+        hints: ["$\\Delta t = I / F$"],
         guide: `
           <div class="step">
             <p>$$\\begin{aligned}
@@ -296,7 +296,7 @@ Object.assign(physicsData.topics, {
       {
         id: "ch6-2-5",
         text: "จากข้อ 4 ถ้าไม้เบสบอลสัมผัสลูกนาน 0.02 s แรงเฉลี่ยที่กระทำต่อลูกเป็นเท่าใด",
-        hints: ["F = I / \Delta t"],
+        hints: ["$F = I / \\Delta t$"],
         guide: `
           <div class="step">
             <p>$$\\begin{aligned}
@@ -312,7 +312,7 @@ Object.assign(physicsData.topics, {
       {
         id: "ch6-2-6",
         text: "รถมวล 1000 kg เบรกจากความเร็ว 20 m/s จนหยุดนิ่งในเวลา 5 s แรงเบรกเฉลี่ยมีขนาดเท่าใด",
-        hints: ["หา \Delta p ก่อน แล้วใช้ F = \Delta p / \Delta t"],
+        hints: ["หา $\\Delta p$ ก่อน แล้วใช้ $F = \\Delta p / \\Delta t$"],
         guide: `
           <div class="step">
             <p>$$\\begin{aligned}
@@ -364,7 +364,7 @@ Object.assign(physicsData.topics, {
       {
         id: "ch6-2-9",
         text: "แรงดล 50 N กระทำต่อวัตถุเป็นเวลา 2 วินาที ทำให้โมเมนตัมเปลี่ยนไปเท่าใด",
-        hints: ["\Delta p = F \Delta t"],
+        hints: ["$\\Delta p = F \\Delta t$"],
         guide: `
           <div class="step">
             <p>$$\\begin{aligned}
@@ -380,7 +380,7 @@ Object.assign(physicsData.topics, {
       {
         id: "ch6-2-10",
         text: "วัตถุตกจากที่สูงกระทบพื้นดินด้วยความเร็ว 15 m/s และจมลงในดินก่อนหยุดนิ่งในเวลา 0.1 s หามวลวัตถุถ้าแรงต้านดินเฉลี่ยคือ 300 N",
-        hints: ["F \Delta t = m(v-u) -> -300(0.1) = m(0 - (-15)) หรือดูเฉพาะขนาด"],
+        hints: ["$F \\Delta t = m(v-u) \\rightarrow -300(0.1) = m(0 - (-15))$ หรือดูเฉพาะขนาด"],
         guide: `
           <div class="step">
             <p>$$\\begin{aligned}

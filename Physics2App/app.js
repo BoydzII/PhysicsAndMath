@@ -1,4 +1,6 @@
 let currentTopic = 'work';
+window.currentTopic = currentTopic;
+if (typeof physicsData !== 'undefined') window.physicsData = physicsData;
 let currentLevel = 'beginner';
 let drawingEngine = null;
 
@@ -20,22 +22,28 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function setupListeners() {
-  // Topic selection
-  document.getElementById('topicSelector').addEventListener('change', (e) => {
-    saveInputs(); // save old topic inputs
-    if (drawingEngine) drawingEngine.saveData(); // save old topic drawings
-    
-    currentTopic = e.target.value;
-    
-    renderApp();
-    
-    // The renderApp calls loadInputs(), but we need drawingEngine to load new topic
-    if (drawingEngine) {
-      drawingEngine.topic = currentTopic;
-      drawingEngine.clear(false); // clear without saving to current topic yet
-      drawingEngine.loadData();
-    }
-  });
+  // Topic selection (Safe with error boundaries)
+  const topicSelector = document.getElementById('topicSelector');
+  if (topicSelector) {
+    topicSelector.addEventListener('change', (e) => {
+      const newTopic = e.target.value;
+      try { saveInputs(); } catch (err) { console.warn(err); }
+      try { if (drawingEngine) drawingEngine.saveData(); } catch (err) { console.warn(err); }
+      
+      currentTopic = newTopic;
+      window.currentTopic = newTopic;
+      
+      renderApp();
+      
+      if (drawingEngine) {
+        try {
+          drawingEngine.topic = currentTopic;
+          drawingEngine.clear(false);
+          drawingEngine.loadData();
+        } catch (err) { console.warn(err); }
+      }
+    });
+  }
 
   // Level selection
   const levelRadios = document.querySelectorAll('input[name="level"]');
@@ -268,80 +276,100 @@ function renderApp() {
 
   // 1. Render Left Panel (Theory)
   const theoryContainer = document.getElementById('theoryContainer');
-  theoryContainer.innerHTML = data.theory;
+  if (theoryContainer) theoryContainer.innerHTML = data.theory || '';
 
   // 2. Render Right Panel (Problems)
   const notebookContainer = document.getElementById('notebookContainer');
   let html = '';
   
-  data.problems.forEach((prob, idx) => {
-    html += `<div class="problem-block" data-id="${prob.id}">`;
-    html += `<div class="problem-text">ข้อ ${idx + 1}. ${prob.text}</div>`;
-    
-    if (currentLevel === 'beginner') {
-      if (prob.hints) {
-        html += `<div class="hint-box"><b>ไกด์นำทาง:</b> ${prob.hints}</div>`;
+  if (data.problems) {
+    data.problems.forEach((prob, idx) => {
+      html += `<div class="problem-block" data-id="${prob.id}">`;
+      html += `<div class="problem-text">ข้อ ${idx + 1}. ${prob.text}</div>`;
+      
+      if (currentLevel === 'beginner') {
+        if (prob.hints) {
+          const hintText = Array.isArray(prob.hints) ? prob.hints.join(' | ') : prob.hints;
+          html += `<div class="hint-box"><b>ไกด์นำทาง:</b> ${hintText}</div>`;
+        }
+        html += `<div class="solution-guide">${prob.guide}</div>`;
+      } else if (currentLevel === 'intermediate') {
+        html += `<div class="solution-guide">${prob.intermediateHtml || ''}</div>`;
+        html += `<div class="spacer-div" style="height:256px;"></div>`;
+        html += `<button class="sm expand-btn" style="position:relative; z-index:10; margin-top:16px; padding:4px 8px; border-radius:4px; border:1px solid #ccc; cursor:pointer; background:#fff;">+ เพิ่มพื้นที่ทด</button>`;
+      } else {
+        html += `<div class="solution-guide">${prob.advancedHtml || ''}</div>`;
+        html += `<div class="spacer-div" style="height:256px;"></div>`;
+        html += `<button class="sm expand-btn" style="position:relative; z-index:10; margin-top:16px; padding:4px 8px; border-radius:4px; border:1px solid #ccc; cursor:pointer; background:#fff;">+ เพิ่มพื้นที่ทด</button>`;
       }
-      html += `<div class="solution-guide">${prob.guide}</div>`;
-    } else if (currentLevel === 'intermediate') {
-      html += `<div class="solution-guide">${prob.intermediateHtml || ''}</div>`;
-      html += `<div class="spacer-div" style="height:256px;"></div>`;
-      html += `<button class="sm expand-btn" style="position:relative; z-index:10; margin-top:16px; padding:4px 8px; border-radius:4px; border:1px solid #ccc; cursor:pointer; background:#fff;">+ เพิ่มพื้นที่ทด</button>`;
-    } else {
-      html += `<div class="solution-guide">${prob.advancedHtml || ''}</div>`;
-      html += `<div class="spacer-div" style="height:256px;"></div>`;
-      html += `<button class="sm expand-btn" style="position:relative; z-index:10; margin-top:16px; padding:4px 8px; border-radius:4px; border:1px solid #ccc; cursor:pointer; background:#fff;">+ เพิ่มพื้นที่ทด</button>`;
+      
+      html += `</div>`;
+    });
+  }
+
+  if (notebookContainer) notebookContainer.innerHTML = html;
+
+  // 3. Render Math using KaTeX safely
+  try {
+    if (typeof renderMathInElement === 'function') {
+      renderMathInElement(document.body, {
+        delimiters: [
+          {left: '$$', right: '$$', display: true},
+          {left: '$', right: '$', display: false}
+        ],
+        throwOnError: false,
+        strict: false
+      });
     }
-    
-    html += `</div>`;
-  });
-
-  notebookContainer.innerHTML = html;
-
-  // 3. Render Math using KaTeX
-  renderMathInElement(document.body, {
-    delimiters: [
-      {left: '$$', right: '$$', display: true},
-      {left: '$', right: '$', display: false}
-    ],
-    throwOnError: false
-  });
+  } catch (mathErr) {
+    console.warn('KaTeX rendering error:', mathErr);
+  }
 
   // 4. Initialize Simulation if available
-  if (currentTopic === 'work') {
-    initWorkSimulation();
-  } else if (currentTopic === 'power') {
-    initPowerSimulation();
-  } else if (currentTopic === 'kinetic') {
-    initKineticSimulation();
-  } else if (currentTopic === 'potential') {
-    initPotentialSimulation();
-  } else if (currentTopic === 'conservation') {
-    initConservationSimulation();
-  } else if (currentTopic === 'momentum') {
-    initMomentumSim();
-  } else if (currentTopic === 'impulse') {
-    initImpulseSim();
-  } else if (currentTopic === 'collision') {
-    initCollisionSim();
-  } else if (currentTopic === 'projectile') {
-    initProjectileSim();
-  } else if (currentTopic === 'circular') {
-    initCircularSim();
-  } else if (currentTopic === 'shm') {
-    initSHMSim();
+  try {
+    if (currentTopic === 'work' && typeof initWorkSimulation === 'function') {
+      initWorkSimulation();
+    } else if (currentTopic === 'power' && typeof initPowerSimulation === 'function') {
+      initPowerSimulation();
+    } else if (currentTopic === 'kinetic' && typeof initKineticSimulation === 'function') {
+      initKineticSimulation();
+    } else if (currentTopic === 'potential' && typeof initPotentialSimulation === 'function') {
+      initPotentialSimulation();
+    } else if (currentTopic === 'conservation' && typeof initConservationSimulation === 'function') {
+      initConservationSimulation();
+    } else if (currentTopic === 'momentum' && typeof initMomentumSim === 'function') {
+      initMomentumSim();
+    } else if (currentTopic === 'impulse' && typeof initImpulseSim === 'function') {
+      initImpulseSim();
+    } else if (currentTopic === 'collision' && typeof initCollisionSim === 'function') {
+      initCollisionSim();
+    } else if (currentTopic === 'projectile' && typeof initProjectileSim === 'function') {
+      initProjectileSim();
+    } else if (currentTopic === 'circular' && typeof initCircularSim === 'function') {
+      initCircularSim();
+    } else if (currentTopic === 'shm' && typeof initSHMSim === 'function') {
+      initSHMSim();
+    }
+  } catch (simErr) {
+    console.warn('Simulation init error:', simErr);
   }
 
   // Restore inputs after re-render
-  restoreInputs();
+  try { restoreInputs(); } catch(e) {}
   // Ensure canvas resizes to fit new content height
-  setTimeout(() => { if (drawingEngine) drawingEngine.resize(); }, 100);
+  setTimeout(() => {
+    try { if (drawingEngine) drawingEngine.resize(); } catch(e) {}
+  }, 100);
 }
 
 function saveInputs() {
-  const inputs = document.querySelectorAll('.answer-input');
-  const values = Array.from(inputs).map(inp => inp.value);
-  localStorage.setItem('physics2_inputs_' + currentTopic + '_' + currentLevel, JSON.stringify(values));
+  try {
+    const inputs = document.querySelectorAll('.answer-input');
+    const values = Array.from(inputs).map(inp => inp.value);
+    localStorage.setItem('physics2_inputs_' + currentTopic + '_' + currentLevel, JSON.stringify(values));
+  } catch(e) {
+    console.warn('saveInputs error:', e);
+  }
 }
 
 function loadInputs() {

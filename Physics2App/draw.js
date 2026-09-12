@@ -128,13 +128,17 @@ class DrawingEngine {
   }
 
   clear(save = true) {
-    if (this.canvas.width > 0 && this.canvas.height > 0) {
-      const current = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
-      this.pushUndoState(current);
+    try {
+      if (this.canvas.width > 0 && this.canvas.height > 0) {
+        const current = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
+        this.pushUndoState(current);
+      }
+      this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+      if (save) this.saveData();
+      this.updateUndoRedoUI();
+    } catch (e) {
+      console.warn('Canvas clear error:', e);
     }
-    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    if (save) this.saveData();
-    this.updateUndoRedoUI();
   }
 
   getPointerPos(e) {
@@ -261,22 +265,33 @@ class DrawingEngine {
   }
 
   saveData() {
-    localStorage.setItem('physics2_drawings_' + this.topic, this.canvas.toDataURL());
+    try {
+      if (!this.canvas || this.canvas.width === 0 || this.canvas.height === 0) return;
+      const dataURL = this.canvas.toDataURL('image/png');
+      localStorage.setItem('physics2_drawings_' + this.topic, dataURL);
+    } catch (e) {
+      console.warn('Canvas saveData skipped (quota exceeded):', e);
+    }
   }
 
   loadData() {
     this.undoStack = [];
     this.redoStack = [];
     this.updateUndoRedoUI();
-    const dataURL = localStorage.getItem('physics2_drawings_' + this.topic);
-    if (dataURL) {
-      const img = new Image();
-      img.onload = () => {
+    try {
+      const dataURL = localStorage.getItem('physics2_drawings_' + this.topic);
+      if (dataURL) {
+        const img = new Image();
+        img.onload = () => {
+          this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+          this.ctx.drawImage(img, 0, 0);
+        };
+        img.src = dataURL;
+      } else {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-        this.ctx.drawImage(img, 0, 0);
-      };
-      img.src = dataURL;
-    } else {
+      }
+    } catch (e) {
+      console.warn('Canvas loadData error:', e);
       this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     }
   }

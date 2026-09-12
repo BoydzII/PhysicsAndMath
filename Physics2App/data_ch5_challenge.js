@@ -19,7 +19,7 @@ const generateProblems = () => {
       hints: `ใช้สมการ $W = F s \\cos 0^\\circ$`,
       guide: `<div class="calc-steps">
         <div>1. $W$</div><div>$=$</div><div>$F s \\cos 0^\\circ$</div>
-        <div></div><div>$=$</div><div>${F} \\times ${s} \\times 1$</div>
+        <div></div><div>$=$</div><div>$${F} \\times ${s} \\times 1$</div>
         <div></div><div>$=$</div><div><input type="text" class="answer-input" placeholder="${ans}">&nbsp;J</div>
       </div>`,
       intermediateHtml: `W = <input type="text" class="answer-input" placeholder="${ans}">&nbsp;J`,
