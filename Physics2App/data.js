@@ -477,7 +477,7 @@ const physicsData = {
           text: "ลูกปืนมวล 10 กรัม เคลื่อนที่ด้วยความเร็ว 400 m/s พลังงานจลน์ของลูกปืนเป็นเท่าใด",
           hints: "เปลี่ยนมวลเป็นกิโลกรัมก่อน $10$ g $= 0.01$ kg",
           guide: `
-            <div class="step">1. แปลงหน่วยมวล: $m = 10\text{ g} = 0.01\text{ kg}$</div>
+            <div class="step">1. แปลงหน่วยมวล: $m = 10\text{ g} \rightarrow 0.01\text{ kg}$</div>
             <div class="calc-steps">
               <div>2. $KE$</div><div>$=$</div><div>$\frac{1}{2}mv^2$</div>
               <div></div><div>$=$</div><div>$\frac{1}{2} \times 0.01 \times 400^2$</div>
@@ -667,14 +667,14 @@ const physicsData = {
           text: "วัตถุมวล 3 kg วางอยู่บนหลังคาตึกสูง 10 m โดยหลังคาตึกมีแท่นสูง 2 m วัตถุวางบนแท่นนี้ จงหาพลังงานศักย์ของวัตถุเทียบกับพื้นดิน ($g = 10$ m/s²)",
           hints: "ความสูงรวม = $10 + 2 = 12$ m",
           guide: `
-            <div class="step">1. ความสูงจากพื้นดิน: $h = 10 + 2 = 12\text{ m}$</div>
+            <div class="step">1. ความสูงจากพื้นดิน: $h = 10 + 2 \rightarrow h = 12\text{ m}$</div>
             <div class="calc-steps">
               <div>2. $PE$</div><div>$=$</div><div>$mgh$</div>
               <div></div><div>$=$</div><div>$3 \times 10 \times 12$</div>
               <div></div><div>$=$</div><div><input type="text" class="answer-input" placeholder="360">&nbsp;J</div>
             </div>
           `,
-          intermediateHtml: `<div class="step" style="color:var(--text-light);font-size:0.95rem;"><b>โจทย์กำหนด:</b> $m = 3$ kg, $h = 10 + 2 = 12$ m</div><div style="margin-top:20px;font-weight:bold;">ตอบ: $PE =$ <input type="text" class="answer-input" style="width:120px"> J</div>`,
+          intermediateHtml: `<div class="step" style="color:var(--text-light);font-size:0.95rem;"><b>โจทย์กำหนด:</b> $m = 3$ kg, $h = 12$ m</div><div style="margin-top:20px;font-weight:bold;">ตอบ: $PE =$ <input type="text" class="answer-input" style="width:120px"> J</div>`,
           advancedHtml: `<div style="margin-top:20px;font-weight:bold;">ตอบ: $PE =$ <input type="text" class="answer-input" style="width:120px"> J</div>`
         },
         {

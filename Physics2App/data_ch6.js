@@ -40,7 +40,7 @@ Object.assign(physicsData.topics, {
         intermediateHtml: `
           <div class="problem-data">
             <p>มวล $m = 1{,}500\\text{ kg}$, ความเร็ว $v = 20\\text{ m/s}$</p>
-            <p>$p = mv =$ <input type="text" class="answer-input" placeholder="30000" data-answer="30000"> $\\text{kg}\\cdot\\text{m/s}$</p>
+            <p>$p =$ <input type="text" class="answer-input" placeholder="30000" data-answer="30000"> $\\text{kg}\\cdot\\text{m/s}$</p>
           </div>
         `,
         advancedHtml: `

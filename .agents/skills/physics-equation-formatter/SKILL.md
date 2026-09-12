@@ -1,47 +1,72 @@
 ---
 name: physics-equation-formatter
 description: >-
-  Standardized procedure and reference guide for formatting multi-line physics equations,
-  KaTeX alignment, and interactive answer inputs (.calc-steps) in Physics2App. Use whenever
-  editing, adding, or refactoring physics problems and guides.
+  Comprehensive standard and operational runbook for creating, formatting, and validating
+  Physics and Mathematics equations following international typographical standards (ISO 80000-2,
+  KaTeX, LaTeX) and pedagogical multi-line alignment (.calc-steps). Use whenever writing, editing,
+  or refactoring physics and math equations, formulas, problem guides, or calculation steps.
 ---
 
-# Physics Equation Formatter Skill
+# มาตรฐานการสร้างสมการทางฟิสิกส์และคณิตศาสตร์ (STEM Equation Standard)
 
-Use this skill when modifying or creating problem solutions and guides in `Physics2App`.
+เอกสารนี้กำหนดมาตรฐานสากลและแนวทางปฏิบัติระดับมืออาชีพในการเขียนสมการฟิสิกส์และคณิตศาสตร์ ทั้งในรูปแบบ **KaTeX / LaTeX** และระบบแสดงวิธีทำแบบ Interactive **(.calc-steps)** สำหรับโปรเจกต์ `Physics2App`, `MathAutoSheet`, และ AutoSheets อื่นๆ
 
-## 1. CSS Grid Alignment Structure (`.calc-steps`)
+---
 
-Always structure multi-line equations into 3-column rows:
+## 1. กฎเหล็ก 5 ข้อของการจัดรูปสมการ (The 5 Golden Rules)
+
+1. **ห้ามเขียนเครื่องหมายเท่ากับต่อกันในแนวนอนเด็ดขาด (Strict No Horizontal Chaining):**
+   - ❌ **ห้าม:** `$W = Fs = 500 \times 10 = 5000\text{ J}$`
+   - ✅ **ถูกต้อง:** ต้องขึ้นบรรทัดใหม่ทุกครั้งที่มีเครื่องหมาย $=$ หรือ $\approx$
+2. **เครื่องหมายเท่ากับ ($=$) ต้องตรงกันในแนวดิ่งเสมอ (Strict Vertical Alignment):**
+   - จัดตำแหน่งเครื่องหมายความสัมพันธ์ ($=, \approx, \le, \ge, \rightarrow$) ให้อยู่ในคอลัมน์กึ่งกลางตรงกันทุกบรรทัด
+3. **โครงสร้างการแสดงวิธีทำ 4–5 บรรทัดตามหลักการสอน (Pedagogical 5-Line Flow):**
+   - **บรรทัดที่ 1 (Principle / Law):** แสดงสูตรแม่บทหรือทฤษฎีบทหลัก (เช่น $W = Fs \cos \theta$ หรือ $\Sigma E_1 = \Sigma E_2$)
+   - **บรรทัดที่ 2 (Substitution):** แทนค่าตัวแปรที่โจทย์กำหนดลงในสูตรอย่างชัดเจน
+   - **บรรทัดที่ 3 (Reduction / Algebra):** ขั้นตอนการจัดรูปทางพีชคณิต หรือคิดเลขขั้นกลาง
+   - **บรรทัดที่ 4 (Final Evaluation):** คิดคำนวณขั้นสุดท้าย
+   - **บรรทัดที่ 5 (Final Answer):** คำตอบสุดท้าย พร้อมช่องกรอก `<input>` และหน่วยฟิสิกส์ที่ถูกต้อง
+4. **การแยกตัวแปรและหน่วยตามมาตรฐานสากล (ISO 80000-2 Typography):**
+   - **ตัวแปร (Variables):** ตัวเอียง (Italic) เช่น $m, v, t, F, a, x, y, \theta$
+   - **หน่วย (Units):** ตัวตรงเสมอ (Upright Roman) โดยใช้ `\text{...}` และเว้นวรรคจากตัวเลข เช่น `10\text{ m/s}`, `500\text{ J}`
+   - **ฟังก์ชันคณิตศาสตร์ (Operators):** ตัวตรงเสมอ เช่น `\sin`, `\cos`, `\tan`, `\ln`, `\log`, `\lim`, `\Delta`
+5. **การป้องกันข้อผิดพลาดทางเทคนิค (Zero-Tolerance Technical Errors):**
+   - **ห้ามใส่ `<input>` เข้าไปใน `$ ... $` หรือ `$$ ... $$`:** KaTeX จะตัด tag หรือเกิด parsing error
+   - **ห้ามมี Stray `$` ใน Display Math:** ในบล็อก `$$\begin{aligned} ... \end{aligned}$$` ต้องไม่มี `$` อยู่ข้างใน
+   - **Double-Escape ใน JS Template String:** ใช้ `\\frac`, `\\times`, `\\sqrt`, `\\cos`, `\\theta`, `\\Delta`
+
+---
+
+## 2. รูปแบบโครงสร้างโค้ดตามสภาพแวดล้อม
+
+### A. รูปแบบสำหรับ Interactive Web App มีช่องกรอกคำตอบ (`.calc-steps`)
+ใช้ CSS Grid 3 คอลัมน์ (`auto auto 1fr`):
 ```html
-<div class="step">1. [ข้อความอธิบาย หรือ สูตรหลัก]: $W = F s \cos \theta$</div>
+<div class="step">1. จากกฎการอนุรักษ์พลังงานกล: $mgh = \frac{1}{2}mv^2$ (มวลตัดกัน)</div>
 <div class="calc-steps">
-  <div>2. $W$</div><div>$=$</div><div>$20 \times 4 \times \cos 37^\circ$</div>
-  <div></div><div>$=$</div><div>$20 \times 4 \times 0.8$</div>
-  <div></div><div>$=$</div><div>$80 \times 0.8$</div>
-  <div></div><div>$=$</div><div><input type="text" class="answer-input" placeholder="64">&nbsp;J</div>
+  <div>2. $v$</div><div>$=$</div><div>$\sqrt{2gh}$</div>
+  <div></div><div>$=$</div><div>$\sqrt{2 \times 10 \times 5}$</div>
+  <div></div><div>$=$</div><div>$\sqrt{100}$</div>
+  <div></div><div>$=$</div><div><input type="text" class="answer-input" placeholder="10">&nbsp;m/s</div>
 </div>
 ```
 
-### Key Formatting Rules:
-1. **Never chain equals horizontally:** No `$A = B = C = [ans]$`.
-2. **Column 1:** Step number and variable name (e.g., `2. $v$`), followed by empty `<div></div>` for subsequent lines.
-3. **Column 2:** Operator only (e.g. `<div>$=$</div>` or `<div>$\approx$</div>`).
-4. **Column 3:** Mathematical expression or answer input.
-5. **Inputs:** `<input type="text" class="answer-input" placeholder="...">` followed by `&nbsp;[Unit]`.
-   - NEVER put `<input>` inside `$ ... $` or `$$ ... $$` delimiters (KaTeX will escape it).
+### B. รูปแบบสำหรับ Display Math ล้วน (Pure KaTeX)
+ใช้บล็อก `aligned` พร้อมตัวจัดตำแหน่ง `&=`:
+```latex
+$$\begin{aligned}
+  v &= \sqrt{2gh} \\
+  &= \sqrt{2 \times 10 \times 5} \\
+  &= \sqrt{100} \\
+  &= 10\text{ m/s}
+\end{aligned}$$
+```
 
-## 2. KaTeX Units Reference
+---
 
-Always use clean KaTeX notation:
-- Momentum: `\text{kg}\cdot\text{m/s}`
-- Impulse / Force: `\text{N}\cdot\text{s}`, `\text{N}`
-- Work / Energy: `\text{J}`, `\text{kJ}`
-- Power: `\text{W}`, `\text{kW}`
-- Speed / Acceleration: `\text{m/s}`, `\text{m/s}^2`
-- Angle: `37^\circ`, `60^\circ`
+## 3. เอกสารอ้างอิงและคู่มือเฉพาะทางในสกิลนี้
 
-## 3. Automated Verification Checklist
-1. Scan for horizontal chained equals: `=[^<]*=[^<]*<input`
-2. Check stray `$` in display math: scan `\$\$(.*?)\$\$` for any inner `$`
-3. Verify JS syntax: `node -c <file.js>`
+- [มาตรฐานตัวอักษรและสัญลักษณ์ทางคณิตศาสตร์และฟิสิกส์ (Typographical Reference)](./references/math-typographical-rules.md)
+- [คลังสูตรและหน่วยทางฟิสิกส์ที่พบบ่อย (Physics Formulas & Units Cheat Sheet)](./references/physics-formulas-cheat-sheet.md)
+- [ตัวอย่างเปรียบเทียบ Good vs. Bad Examples](./examples/good_vs_bad_examples.md)
+- [สคริปต์ตรวจสอบสมการอัตโนมัติ (Python Validator Script)](./scripts/validate_equations.py)

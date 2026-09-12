@@ -13,7 +13,7 @@ Object.assign(physicsData.topics, {
     S_x &= \\frac{(10)^2 \\sin(90)}{10}\\\\
     &= 100\text{ m}
   \end{aligned}$$</div>`,
-        intermediateHtml: `$u = 10\text{ m/s} <input type='text' class='answer-input' placeholder='...'>`,
+        intermediateHtml: `$u = 10\text{ m/s}$ <input type='text' class='answer-input' placeholder='...'>`,
         advancedHtml: `<input type='text' class='answer-input' placeholder='...'>`
       },
       {
@@ -24,7 +24,7 @@ Object.assign(physicsData.topics, {
     S_x &= \\frac{(20)^2 \\sin(90)}{10}\\\\
     &= 400\text{ m}
   \end{aligned}$$</div>`,
-        intermediateHtml: `$u = 20\text{ m/s} <input type='text' class='answer-input' placeholder='...'>`,
+        intermediateHtml: `$u = 20\text{ m/s}$ <input type='text' class='answer-input' placeholder='...'>`,
         advancedHtml: `<input type='text' class='answer-input' placeholder='...'>`
       },
       {
@@ -35,7 +35,7 @@ Object.assign(physicsData.topics, {
     S_x &= \\frac{(30)^2 \\sin(90)}{10}\\\\
     &= 900\text{ m}
   \end{aligned}$$</div>`,
-        intermediateHtml: `$u = 30\text{ m/s} <input type='text' class='answer-input' placeholder='...'>`,
+        intermediateHtml: `$u = 30\text{ m/s}$ <input type='text' class='answer-input' placeholder='...'>`,
         advancedHtml: `<input type='text' class='answer-input' placeholder='...'>`
       },
       {
@@ -46,7 +46,7 @@ Object.assign(physicsData.topics, {
     S_x &= \\frac{(40)^2 \\sin(90)}{10}\\\\
     &= 1600\text{ m}
   \end{aligned}$$</div>`,
-        intermediateHtml: `$u = 40\text{ m/s} <input type='text' class='answer-input' placeholder='...'>`,
+        intermediateHtml: `$u = 40\text{ m/s}$ <input type='text' class='answer-input' placeholder='...'>`,
         advancedHtml: `<input type='text' class='answer-input' placeholder='...'>`
       },
       {
@@ -57,7 +57,7 @@ Object.assign(physicsData.topics, {
     S_x &= \\frac{(50)^2 \\sin(90)}{10}\\\\
     &= 2500\text{ m}
   \end{aligned}$$</div>`,
-        intermediateHtml: `$u = 50\text{ m/s} <input type='text' class='answer-input' placeholder='...'>`,
+        intermediateHtml: `$u = 50\text{ m/s}$ <input type='text' class='answer-input' placeholder='...'>`,
         advancedHtml: `<input type='text' class='answer-input' placeholder='...'>`
       },
       {
