@@ -383,3 +383,39 @@ select {
   cursor: crosshair;
   touch-action: none;
 }
+
+/* --- Interactive Simulation Styles --- */
+.sim-canvas {
+  display: block;
+  width: 100%;
+  height: 300px;
+  border-radius: 8px;
+  touch-action: none;
+  background: #f8fafc;
+}
+.sim-wrapper {
+  position: relative;
+  width: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  margin: 12px 0;
+}
+.sim-wrapper:fullscreen,
+.sim-wrapper:-webkit-full-screen {
+  background: #f0f4f8 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+.sim-wrapper:fullscreen .sim-canvas,
+.sim-wrapper:-webkit-full-screen .sim-canvas {
+  width: 90vmin !important;
+  height: 60vmin !important;
+  border-radius: 12px;
+}
+.fs-btn:hover {
+  background: #f1f5f9 !important;
+  border-color: #94a3b8 !important;
+}

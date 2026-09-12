@@ -14,6 +14,8 @@ Object.assign(physicsData.topics, {
           <li>เวลาที่ลอยในอากาศ (ตกกลับมาที่ระดับเดิม): $t = \\frac{2u \\sin \\theta}{g}$</li>
           <li>ระยะทางไกลสุดในแนวระดับ: $S_x = \\frac{u^2 \\sin 2\\theta}{g}$</li>
       </ul>
+      <canvas id="simProjectile" class="sim-canvas" style="position:relative; z-index:10; cursor:crosshair;"></canvas>
+      <p class="sim-tip" style="text-align:center; color:#6b7280; font-size:13px; margin-top:4px;">🎯 คลิกที่จอเพื่อยิงกระสุน (คลิกสูง = มุมมาก)</p>
     `,
     problems: [
       {
@@ -257,6 +259,8 @@ Object.assign(physicsData.topics, {
           <li>รถเลี้ยวโค้งบนถนนราบ: $\\mu_s N = m \\frac{v^2}{r} \\Rightarrow v_{max} = \\sqrt{\\mu_s r g}$</li>
           <li>รถเลี้ยวโค้งบนถนนเอียงมุม $\\theta$: $\\tan \\theta = \\frac{v^2}{rg}$</li>
       </ul>
+      <canvas id="simCircular" class="sim-canvas" style="position:relative; z-index:10; cursor:pointer;"></canvas>
+      <p class="sim-tip" style="text-align:center; color:#6b7280; font-size:13px; margin-top:4px;">🔄 สังเกตเวกเตอร์ความเร็ว (v) และแรงสู่ศูนย์กลาง (Fc)</p>
     `,
     problems: [
       {
@@ -486,6 +490,8 @@ Object.assign(physicsData.topics, {
           <li><strong>ระบบมวล-สปริง:</strong> $T = 2\\pi \\sqrt{\\frac{m}{k}}$, $\\omega = \\sqrt{\\frac{k}{m}}$</li>
           <li><strong>ลูกตุ้มอย่างง่าย (Simple Pendulum):</strong> $T = 2\\pi \\sqrt{\\frac{L}{g}}$, $\\omega = \\sqrt{\\frac{g}{L}}$</li>
       </ul>
+      <canvas id="simSHM" class="sim-canvas" style="position:relative; z-index:10; cursor:pointer;"></canvas>
+      <p class="sim-tip" style="text-align:center; color:#6b7280; font-size:13px; margin-top:4px;">〰️ สังเกตมวลสั่นและกราฟการกระจัดเทียบเวลา</p>
     `,
     problems: [
       {
