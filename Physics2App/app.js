@@ -1496,3 +1496,37 @@ function restoreInputs() {
     });
   }
 }
+
+
+// --- Custom Pinch Zoom for Paper Only ---
+window.currentZoom = 1;
+let initialZoom = 1;
+
+document.addEventListener('gesturestart', function(e) {
+    e.preventDefault();
+    initialZoom = currentZoom;
+});
+
+document.addEventListener('gesturechange', function(e) {
+    e.preventDefault();
+    const wrapper = document.querySelector('.notebook-wrapper');
+    if (!wrapper) return;
+    
+    let newZoom = initialZoom * e.scale;
+    newZoom = Math.max(1, Math.min(newZoom, 5)); // min 1x, max 5x
+    window.currentZoom = newZoom;
+    
+    // Use CSS zoom (works well in Safari for scaling while updating layout size)
+    wrapper.style.zoom = currentZoom;
+});
+
+document.addEventListener('gestureend', function(e) {
+    e.preventDefault();
+});
+
+// Prevent multi-touch scrolling which might trigger native zoom in some cases
+document.addEventListener('touchmove', function(e) {
+    if (e.touches.length > 1) {
+        e.preventDefault();
+    }
+}, { passive: false });

@@ -82,9 +82,10 @@ class DrawingEngine {
 
   getPointerPos(e) {
     const rect = this.canvas.getBoundingClientRect();
+    const zoom = window.currentZoom || 1;
     return {
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
+      x: (e.clientX - rect.left) / zoom,
+      y: (e.clientY - rect.top) / zoom,
       pressure: e.pressure || 0.5
     };
   }
@@ -103,6 +104,9 @@ class DrawingEngine {
 
     const startDraw = (e) => {
       if (e.button === 2) return;
+      // Palm rejection: Do not draw if it is a touch (finger). Allow pen (Apple Pencil) and mouse.
+      if (e.pointerType === 'touch') return;
+
       this.isDrawing = true;
       const pos = this.getPointerPos(e);
       
