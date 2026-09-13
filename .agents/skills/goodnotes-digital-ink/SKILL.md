@@ -98,13 +98,18 @@ description: >-
 
 ### จ) โหมดป้องกันการเขียนด้วยมือ (Palm Rejection / Pen-Only Mode)
 - **โจทย์ของผู้ใช้:** ต้องการให้ใช้นิ้วเลื่อน ย่อ ขยายหน้ากระดาษได้อย่างอิสระ โดยไม่ทิ้งรอยขีดเขียนเลอะเทอะ และให้เฉพาะสไตลัส/Apple Pencil เท่านั้นที่เขียนติด
-- **สถาปัตยกรรม:**
-  1. เมื่อเปิดใช้งาน `penOnlyMode = true`:
-     - ปรับ `canvas.style.touchAction = 'pan-x pan-y pinch-zoom'` เพื่อส่งผ่าน Touch Gesture ให้นิ้ว 1 นิ้วเลื่อนหน้ากระดาษ (Scroll/Pan) และ 2 นิ้วถ่างซูม (Pinch-to-Zoom)
-     - กรอง Event ใน `pointerdown`: หาก `e.pointerType === 'touch'` ให้ `return` ยกเลิกการวาดทันที
-     - หาก `e.pointerType === 'pen'` ให้ทำการวาดหมึกดิจิทัลตามปกติ
-  2. เมื่อปิดใช้งาน `penOnlyMode = false`:
-     - ปรับ `canvas.style.touchAction = 'none'` เพื่อให้นักเรียนหรือผู้ใช้ที่ไม่มีปากกาสไตลัส สามารถใช้นิ้วเขียนบนหน้าจอได้ตามปกติ
+- **สถาปัตยกรรมระดับโปร (Hand Document Scrolling & Pen Priority):**
+  1. **ห้ามเปลี่ยน `touch-action` เป็น `pan`:** ต้องคงค่า `canvas.style.touchAction = 'none'` ไว้เสมอ เพราะหากตั้งเป็น `pan-x pan-y` เบราว์เซอร์ WebKit/iOS Safari จะตัดจบการลากเส้นของ Apple Pencil ด้วย Event `pointercancel` ทำให้ปากกาเขียนไม่ติด
+  2. **การทำงานของปากกาสไตลัส (Pen Drawing at 120 FPS):**
+     - ตรวจสอบ `e.pointerType === 'pen'`
+     - สไตลัสมีลำดับความสำคัญสูงสุด (Absolute Priority): เริ่มต้นวาดเส้นหมึกทันที วาดวงกลมจุดแรก และเชื่อมต่อเส้นโค้ง Bézier 120 FPS
+     - เรียก `e.preventDefault()` ป้องกันเบราว์เซอร์แย่งโฟกัส
+  3. **การทำงานของนิ้วมือ (Hand Document Scrolling):**
+     - ตรวจสอบ `e.pointerType === 'touch'`
+     - **Palm Rejection:** หากมีปากกาแตะอยู่บนหน้าจอหรือกำลังวาดอยู่ (`this.penActive || this.isDrawing`) สัมผัสจากฝ่ามือจะถูกปฏิเสธ 100% ไม่เลื่อนหน้าจอและไม่วาดเส้น
+     - **1 นิ้วลากเลื่อนเอกสาร (Kinetic Hand Scrolling):** คำนวณระยะการลาก `deltaY, deltaX` และปรับค่า `panel.scrollTop, panel.scrollLeft` โดยตรงอย่างลื่นไหล พร้อมระบบแรงเฉื่อย (Inertia Momentum) เมื่อปล่อยนิ้ว
+     - **2 นิ้วถ่างซูม (Pinch-to-Zoom):** คำนวณระยะห่างระหว่างจุดสัมผัส 2 จุด และปรับระดับการซูมกระดาษ `window.setPaperZoom()` ทันที
+  4. เมื่อปิดใช้งาน `penOnlyMode = false`: นิ้วมือจะสามารถเขียนหมึกได้ตามปกติสำหรับผู้ใช้ที่ไม่มีปากกาสไตลัส
 
 ### ฉ) เครื่องมือการสอนและอธิบาย (Laser Pointer & Pointing Finger Presentation Layer)
 - **โจทย์ของผู้ใช้:** ต้องการเลเซอร์พอยน์เตอร์ที่ปรับขนาดได้ และนิ้วชี้ที่ปรับขนาดได้ สำหรับครูใช้อธิบายนักเรียน โดยไม่ทิ้งรอยหมึกถาวรลงบนกระดาษ

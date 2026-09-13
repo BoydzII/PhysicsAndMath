@@ -333,11 +333,11 @@ function setupListeners() {
       drawingEngine.setPenOnlyMode(nextState);
       if (nextState) {
         btnPenOnlyMode.classList.add('active');
-        btnPenOnlyMode.title = 'โหมดปากกาเท่านั้น: เปิดอยู่ (ใช้นิ้วเลื่อน/ซูม ป้องกันมือเขียน)';
-        showToast('✋ เปิดโหมดปากกาเท่านั้น: ใช้นิ้วเลื่อน/ซูม ป้องกันมือเขียนโดนกระดาษ', 'info');
+        btnPenOnlyMode.title = 'โหมดห้ามมือเขียน: ใช้นิ้วเลื่อนเอกสาร และใช้ปากกาเขียน';
+        showToast('✋ เปิดโหมดห้ามมือเขียน: ใช้นิ้วเลื่อนเอกสารได้ และใช้ปากกาเขียน', 'info');
       } else {
         btnPenOnlyMode.classList.remove('active');
-        btnPenOnlyMode.title = 'โหมดปากกาเท่านั้น: ปิดอยู่ (เขียนด้วยนิ้วหรือปากกาก็ได้)';
+        btnPenOnlyMode.title = 'โหมดวาดทั่วไป: เขียนได้ทั้งนิ้วและปากกา';
         showToast('✏️ โหมดวาดทั่วไป: เขียนได้ทั้งนิ้วและปากกา', 'info');
       }
     });

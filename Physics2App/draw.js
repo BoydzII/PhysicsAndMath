@@ -35,7 +35,19 @@ class DrawingEngine {
     this.points = [];
     this.prevMid = null;
     this.cachedRect = null;
-    this.activePointers = new Set();
+    this.activePointers = new Map();
+    this.penActive = false;
+    this.isHandScrolling = false;
+    this.handScrollPointerId = null;
+    this.handStartY = 0;
+    this.handStartX = 0;
+    this.handLastY = 0;
+    this.handLastX = 0;
+    this.handLastTime = 0;
+    this.handVelocityY = 0;
+    this.handVelocityX = 0;
+    this.initialPinchDist = null;
+    this.initialZoomOnPinch = 1.0;
 
     this.initEvents();
     this.resize();
@@ -167,8 +179,13 @@ class DrawingEngine {
   setPenOnlyMode(enabled) {
     this.penOnlyMode = Boolean(enabled);
     if (this.canvas) {
-      this.canvas.style.touchAction = this.penOnlyMode ? 'pan-x pan-y pinch-zoom' : 'none';
+      // ALWAYS keep touchAction = 'none' so the browser NEVER sends pointercancel to stylus/Apple Pencil
+      this.canvas.style.touchAction = 'none';
     }
+  }
+
+  isPenPointer(e) {
+    return e.pointerType === 'pen' || e.pointerType === 'mouse';
   }
 
   setHighlightOnTop(onTop) {
@@ -447,13 +464,62 @@ class DrawingEngine {
     const startDraw = (e) => {
       if (e.button === 2) return;
       
-      // Palm Rejection / Pen-Only Mode: When enabled, ignore touch events so finger can scroll & pinch!
-      if (this.penOnlyMode && e.pointerType === 'touch') {
+      const isPen = this.isPenPointer(e);
+      const isTouch = (e.pointerType === 'touch') && !isPen;
+
+      // Track active pointer in Map
+      this.activePointers.set(e.pointerId, {
+        type: e.pointerType,
+        isPen: isPen,
+        clientX: e.clientX,
+        clientY: e.clientY,
+        time: Date.now()
+      });
+
+      if (isPen) {
+        this.penActive = true;
+        // Stylus takes absolute priority: interrupt any ongoing hand scroll
+        this.isHandScrolling = false;
+        this.handScrollPointerId = null;
+      }
+
+      // ========================================================
+      // 1. PALM REJECTION & HAND SCROLLING (In Pen-Only Mode)
+      // ========================================================
+      if (this.penOnlyMode && isTouch) {
+        // A. Palm Rejection: If pen is active or drawing on screen, REJECT touch completely
+        if (this.penActive || this.isDrawing) {
+          return;
+        }
+
+        const touchList = Array.from(this.activePointers.values()).filter(p => !p.isPen);
+
+        if (touchList.length === 1) {
+          // Single finger: Initiate Hand Scrolling of the document (.notebook-panel)
+          this.isHandScrolling = true;
+          this.handScrollPointerId = e.pointerId;
+          this.handStartY = e.clientY;
+          this.handStartX = e.clientX;
+          this.handLastY = e.clientY;
+          this.handLastX = e.clientX;
+          this.handLastTime = Date.now();
+          this.handVelocityY = 0;
+          this.handVelocityX = 0;
+          try { this.canvas.setPointerCapture(e.pointerId); } catch (err) {}
+        } else if (touchList.length === 2) {
+          // Two fingers: Prepare pinch-to-zoom
+          this.isHandScrolling = false;
+          this.handScrollPointerId = null;
+          const p1 = touchList[0];
+          const p2 = touchList[1];
+          this.initialPinchDist = Math.hypot(p1.clientX - p2.clientX, p1.clientY - p2.clientY);
+          this.initialZoomOnPinch = (typeof window !== 'undefined' && window.currentPaperZoom) ? window.currentPaperZoom : 1.0;
+        }
         return;
       }
 
-      this.activePointers.add(e.pointerId);
-      if (this.activePointers.size > 1) {
+      // Multiple fingers in normal drawing mode: prevent multi-touch drawing artifacts
+      if (this.activePointers.size > 1 && !isPen) {
         if (this.isDrawing) {
           this.isDrawing = false;
           this.points = [];
@@ -464,6 +530,13 @@ class DrawingEngine {
         }
         return;
       }
+
+      // ========================================================
+      // 2. PRESENTATION TOOLS & PEN DRAWING
+      // ========================================================
+      try {
+        if (e.cancelable) e.preventDefault();
+      } catch (err) {}
 
       this.isDrawing = true;
       this.cachedRect = this.canvas.getBoundingClientRect();
@@ -510,9 +583,75 @@ class DrawingEngine {
     };
 
     const draw = (e) => {
+      // Update pointer position in activePointers map
+      if (this.activePointers.has(e.pointerId)) {
+        const pt = this.activePointers.get(e.pointerId);
+        pt.clientX = e.clientX;
+        pt.clientY = e.clientY;
+      }
+
+      const isPen = this.isPenPointer(e);
+      const isTouch = (e.pointerType === 'touch') && !isPen;
+
+      // ========================================================
+      // 1. HAND SCROLLING & PINCH ZOOM IN PEN-ONLY MODE
+      // ========================================================
+      if (this.penOnlyMode && isTouch) {
+        // If pen is down, reject touch (Palm Rejection)
+        if (this.penActive || this.isDrawing) {
+          this.isHandScrolling = false;
+          return;
+        }
+
+        const touchList = Array.from(this.activePointers.values()).filter(p => !p.isPen);
+
+        // A. Multi-Touch Pinch-to-Zoom (2 fingers)
+        if (touchList.length === 2 && this.initialPinchDist) {
+          const p1 = touchList[0];
+          const p2 = touchList[1];
+          const currentDist = Math.hypot(p1.clientX - p2.clientX, p1.clientY - p2.clientY);
+          const factor = currentDist / this.initialPinchDist;
+          if (typeof window !== 'undefined' && typeof window.setPaperZoom === 'function') {
+            window.setPaperZoom(this.initialZoomOnPinch * factor);
+          }
+          return;
+        }
+
+        // B. Single Finger Document Scrolling
+        if (this.isHandScrolling && e.pointerId === this.handScrollPointerId) {
+          const panel = document.querySelector('.notebook-panel');
+          if (panel) {
+            const deltaY = e.clientY - this.handLastY;
+            const deltaX = e.clientX - this.handLastX;
+            const now = Date.now();
+            const dt = Math.max(now - this.handLastTime, 1);
+
+            this.handVelocityY = deltaY / dt;
+            this.handVelocityX = deltaX / dt;
+
+            this.handLastY = e.clientY;
+            this.handLastX = e.clientX;
+            this.handLastTime = now;
+
+            panel.scrollTop -= deltaY;
+            panel.scrollLeft -= deltaX;
+          }
+          return;
+        }
+        return;
+      }
+
+      // ========================================================
+      // 2. PRESENTATION TOOLS & PEN DRAWING
+      // ========================================================
       const isPresTool = (this.currentTool === 'laser' || this.currentTool === 'finger');
       if (!this.isDrawing && !isPresTool) return;
-      if (this.activePointers.size > 1) return;
+      if (this.activePointers.size > 1 && !isPen) return;
+
+      try {
+        if (e.cancelable) e.preventDefault();
+      } catch (err) {}
+
       const pos = this.getPointerPos(e);
 
       // Presentation Tools
@@ -558,6 +697,42 @@ class DrawingEngine {
 
     const stopDraw = (e) => {
       this.activePointers.delete(e.pointerId);
+
+      if (this.isPenPointer(e)) {
+        this.penActive = false;
+      }
+
+      // Handle end of Hand Scrolling in Pen-Only Mode
+      if (this.isHandScrolling && e.pointerId === this.handScrollPointerId) {
+        this.isHandScrolling = false;
+        this.handScrollPointerId = null;
+        try { this.canvas.releasePointerCapture(e.pointerId); } catch (err) {}
+
+        // Apply smooth momentum scrolling (inertia)
+        const panel = document.querySelector('.notebook-panel');
+        if (panel && (Math.abs(this.handVelocityY) > 0.12 || Math.abs(this.handVelocityX) > 0.12)) {
+          let vy = this.handVelocityY * 16;
+          let vx = this.handVelocityX * 16;
+          const friction = 0.92;
+          const stepInertia = () => {
+            if (this.isDrawing || this.isHandScrolling || this.penActive) return;
+            if (Math.abs(vy) < 0.4 && Math.abs(vx) < 0.4) return;
+            panel.scrollTop -= vy;
+            panel.scrollLeft -= vx;
+            vy *= friction;
+            vx *= friction;
+            requestAnimationFrame(stepInertia);
+          };
+          requestAnimationFrame(stepInertia);
+        }
+        return;
+      }
+
+      const touchList = Array.from(this.activePointers.values()).filter(p => !p.isPen);
+      if (touchList.length < 2) {
+        this.initialPinchDist = null;
+      }
+
       if (!this.isDrawing) return;
       this.isDrawing = false;
       try {
@@ -598,6 +773,13 @@ class DrawingEngine {
 
     const cancelDraw = (e) => {
       this.activePointers.delete(e.pointerId);
+      if (this.isPenPointer(e)) {
+        this.penActive = false;
+      }
+      if (this.isHandScrolling && e.pointerId === this.handScrollPointerId) {
+        this.isHandScrolling = false;
+        this.handScrollPointerId = null;
+      }
       this.cachedRect = null;
       if (this.isDrawing) {
         this.isDrawing = false;
@@ -606,7 +788,7 @@ class DrawingEngine {
         if (this.currentTool === 'laser' || this.currentTool === 'finger') {
           this.clearPresentation();
         } else {
-          this.undo();
+          this.saveData();
         }
       }
     };
