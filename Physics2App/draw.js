@@ -41,6 +41,10 @@ class DrawingEngine {
     this.cachedRect = null;
     this.activePointers = new Map();
     this.penActive = false;
+    this.penGraceTimer = null; // Palm Rejection Hysteresis (hold penActive for rapid consecutive strokes)
+    this.saveDebounceTimer = null; // Debounce saveData to eliminate synchronous toDataURL freezes
+    this.isDirty = false;
+    this.smoothVelocity = 0;
     this.isHandScrolling = false;
     this.handScrollPointerId = null;
     this.handStartY = 0;
@@ -374,7 +378,7 @@ class DrawingEngine {
       this.ctx.drawImage(previous, 0, 0);
       this.ctx.restore();
 
-      this.saveData();
+      this.scheduleSave(600);
       this.updateUndoRedoUI();
     } catch (e) {
       console.warn('undo error:', e);
@@ -397,7 +401,7 @@ class DrawingEngine {
       this.ctx.drawImage(next, 0, 0);
       this.ctx.restore();
 
-      this.saveData();
+      this.scheduleSave(600);
       this.updateUndoRedoUI();
     } catch (e) {
       console.warn('redo error:', e);
@@ -447,7 +451,7 @@ class DrawingEngine {
         this.highlightCtx.restore();
       }
 
-      if (save) this.saveData();
+      if (save) this.scheduleSave(300);
       this.updateUndoRedoUI();
     } catch (e) {
       console.warn('Canvas clear error:', e);
@@ -505,10 +509,15 @@ class DrawingEngine {
         isPen: isPen,
         clientX: e.clientX,
         clientY: e.clientY,
-        time: Date.now()
+        time: performance.now ? performance.now() : Date.now()
       });
 
       if (isPen) {
+        // Cancel any pending pen grace timer immediately
+        if (this.penGraceTimer) {
+          clearTimeout(this.penGraceTimer);
+          this.penGraceTimer = null;
+        }
         this.penActive = true;
         // Stylus takes absolute priority: interrupt any ongoing hand scroll
         this.isHandScrolling = false;
@@ -519,7 +528,7 @@ class DrawingEngine {
       // 1. PALM REJECTION & HAND SCROLLING (In Pen-Only Mode)
       // ========================================================
       if (this.penOnlyMode && isTouch) {
-        // A. Palm Rejection: If pen is active or drawing on screen, REJECT touch completely
+        // A. Palm Rejection: If pen is active (including grace period) or drawing on screen, REJECT touch completely
         if (this.penActive || this.isDrawing) {
           return;
         }
@@ -573,6 +582,7 @@ class DrawingEngine {
       this.isDrawing = true;
       this.cachedRect = this.canvas.getBoundingClientRect();
       const pos = this.getPointerPos(e);
+      pos.time = performance.now ? performance.now() : Date.now();
 
       // Handle Presentation Tools (Laser & Finger)
       if (this.currentTool === 'laser') {
@@ -604,6 +614,7 @@ class DrawingEngine {
       this.pushUndoState();
       this.points = [pos];
       this.prevMid = { x: pos.x, y: pos.y };
+      this.smoothVelocity = 0;
 
       if (this.currentTool === 'highlight') {
         if (this.highlightCtx && this.highlightCanvas) {
@@ -642,7 +653,7 @@ class DrawingEngine {
         this.ctx.lineWidth = this.baseLineWidth * (0.8 + p * 0.7);
       }
 
-      // Draw initial touch mark (dot)
+      // Draw initial touch mark (instant tap dot guarantee for i, j, decimal points)
       this.ctx.beginPath();
       this.ctx.arc(pos.x, pos.y, Math.max(1, this.ctx.lineWidth / 2), 0, Math.PI * 2);
       this.ctx.fill();
@@ -667,7 +678,7 @@ class DrawingEngine {
       // 1. HAND SCROLLING & PINCH ZOOM IN PEN-ONLY MODE
       // ========================================================
       if (this.penOnlyMode && isTouch) {
-        // If pen is down, reject touch (Palm Rejection)
+        // If pen is down or active, reject touch (Palm Rejection)
         if (this.penActive || this.isDrawing) {
           this.isHandScrolling = false;
           return;
@@ -722,27 +733,73 @@ class DrawingEngine {
         if (e.cancelable) e.preventDefault();
       } catch (err) {}
 
-      const pos = this.getPointerPos(e);
+      // Process Coalesced Events (Apple Pencil 120Hz/240Hz ProMotion high-frequency capture)
+      const rawEvents = (typeof e.getCoalescedEvents === 'function') ? e.getCoalescedEvents() : null;
+      const events = (rawEvents && rawEvents.length > 0) ? rawEvents : [e];
 
-      // Presentation Tools
-      if (this.currentTool === 'laser') {
-        this.currentLaserPos = pos;
-        this.addLaserPoint(pos);
-        return;
-      }
+      for (let ei = 0; ei < events.length; ei++) {
+        const ev = events[ei];
+        const pos = this.getPointerPos(ev);
+        pos.time = ev.timeStamp || (performance.now ? performance.now() : Date.now());
 
-      if (this.currentTool === 'finger') {
-        this.currentFingerPos = pos;
-        if (!this.laserAnimRunning) {
-          this.laserAnimRunning = true;
-          this.animatePresentation();
+        // Presentation Tools
+        if (this.currentTool === 'laser') {
+          this.currentLaserPos = pos;
+          this.addLaserPoint(pos);
+          continue;
         }
-        return;
-      }
 
-      if (this.currentTool === 'highlight') {
+        if (this.currentTool === 'finger') {
+          this.currentFingerPos = pos;
+          if (!this.laserAnimRunning) {
+            this.laserAnimRunning = true;
+            this.animatePresentation();
+          }
+          continue;
+        }
+
+        if (this.currentTool === 'highlight') {
+          this.points.push(pos);
+          if (this.points.length >= 2 && this.highlightCtx) {
+            const p1 = this.points[this.points.length - 2];
+            const p2 = this.points[this.points.length - 1];
+            const mid = {
+              x: (p1.x + p2.x) / 2,
+              y: (p1.y + p2.y) / 2
+            };
+
+            this.highlightCtx.beginPath();
+            this.highlightCtx.moveTo(this.prevMid.x, this.prevMid.y);
+            this.highlightCtx.quadraticCurveTo(p1.x, p1.y, mid.x, mid.y);
+            this.highlightCtx.stroke();
+
+            this.prevMid = mid;
+          }
+          continue;
+        }
+
+        // Pen & Eraser Drawing
         this.points.push(pos);
-        if (this.points.length >= 2 && this.highlightCtx) {
+
+        // Velocity & Pressure adaptive line width (Natural Pigmented Ink)
+        const p = (ev.pressure && ev.pressure > 0) ? ev.pressure : 0.5;
+        if (this.currentTool === 'pen') {
+          if (this.points.length >= 2) {
+            const prev = this.points[this.points.length - 2];
+            const dist = Math.hypot(pos.x - prev.x, pos.y - prev.y);
+            const dt = Math.max(pos.time - prev.time, 1);
+            const currentV = dist / dt; // px/ms
+            this.smoothVelocity = this.smoothVelocity * 0.7 + currentV * 0.3;
+            // Taper with speed: fast strokes slightly thinner, but clamped at >= 0.75x
+            const speedFactor = Math.max(0.75, 1 - Math.min(this.smoothVelocity / 3.0, 0.25));
+            this.ctx.lineWidth = this.baseLineWidth * speedFactor * (0.8 + p * 0.6);
+          } else {
+            this.ctx.lineWidth = this.baseLineWidth * (0.8 + p * 0.7);
+          }
+        }
+
+        // Fast Incremental Bézier Midpoint Rendering (120 FPS, Zero lag)
+        if (this.points.length >= 2) {
           const p1 = this.points[this.points.length - 2];
           const p2 = this.points[this.points.length - 1];
           const mid = {
@@ -750,47 +807,38 @@ class DrawingEngine {
             y: (p1.y + p2.y) / 2
           };
 
-          this.highlightCtx.beginPath();
-          this.highlightCtx.moveTo(this.prevMid.x, this.prevMid.y);
-          this.highlightCtx.quadraticCurveTo(p1.x, p1.y, mid.x, mid.y);
-          this.highlightCtx.stroke();
+          this.ctx.beginPath();
+          this.ctx.moveTo(this.prevMid.x, this.prevMid.y);
+          this.ctx.quadraticCurveTo(p1.x, p1.y, mid.x, mid.y);
+          this.ctx.stroke();
 
           this.prevMid = mid;
-          this.renderHighlightComposite();
         }
-        return;
       }
 
-      this.points.push(pos);
-
-      const p = (e.pressure && e.pressure > 0) ? e.pressure : 0.5;
-      if (this.currentTool === 'pen') {
-        this.ctx.lineWidth = this.baseLineWidth * (0.8 + p * 0.7);
-      }
-
-      // Fast Incremental Bézier Midpoint Rendering (120 FPS, Zero lag)
-      if (this.points.length >= 2) {
-        const p1 = this.points[this.points.length - 2];
-        const p2 = this.points[this.points.length - 1];
-        const mid = {
-          x: (p1.x + p2.x) / 2,
-          y: (p1.y + p2.y) / 2
-        };
-
-        this.ctx.beginPath();
-        this.ctx.moveTo(this.prevMid.x, this.prevMid.y);
-        this.ctx.quadraticCurveTo(p1.x, p1.y, mid.x, mid.y);
-        this.ctx.stroke();
-
-        this.prevMid = mid;
+      if (this.currentTool === 'highlight') {
+        this.renderHighlightComposite();
       }
     };
 
     const stopDraw = (e) => {
+      // Prevent double invocation when window listener receives bubbled event from canvas
+      if (e.currentTarget === window && e.target === this.canvas) {
+        return;
+      }
+
       this.activePointers.delete(e.pointerId);
 
+      // Palm Rejection Hysteresis (Pen Grace Period 280ms)
+      // Keeps penActive true for 280ms after stylus lift so resting palm doesn't swallow rapid consecutive strokes
       if (this.isPenPointer(e)) {
-        this.penActive = false;
+        if (this.penGraceTimer) {
+          clearTimeout(this.penGraceTimer);
+        }
+        this.penGraceTimer = setTimeout(() => {
+          this.penActive = false;
+          this.penGraceTimer = null;
+        }, 280);
       }
 
       // Handle end of Hand Scrolling in Pen-Only Mode
@@ -855,34 +903,54 @@ class DrawingEngine {
           this.highlightCtx.moveTo(this.prevMid.x, this.prevMid.y);
           this.highlightCtx.lineTo(last.x, last.y);
           this.highlightCtx.stroke();
+        } else if (this.points.length === 1 && this.highlightCtx) {
+          const pt = this.points[0];
+          this.highlightCtx.beginPath();
+          this.highlightCtx.arc(pt.x, pt.y, Math.max(1, this.highlightWidth / 2), 0, Math.PI * 2);
+          this.highlightCtx.fill();
         }
         this.renderHighlightComposite();
         this.points = [];
         this.prevMid = null;
         this.cachedRect = null;
-        this.saveData();
+        this.scheduleSave(); // Non-blocking Debounced Save!
         return;
       }
 
-      // Draw last remaining segment to point
+      // Draw last remaining segment to point (or micro-stroke guarantee for dots & quick flicks)
       if (this.points.length >= 2 && this.prevMid) {
         const last = this.points[this.points.length - 1];
         this.ctx.beginPath();
         this.ctx.moveTo(this.prevMid.x, this.prevMid.y);
         this.ctx.lineTo(last.x, last.y);
         this.ctx.stroke();
+      } else if (this.points.length === 1) {
+        // Fast tap or flick: guarantee clean solid dot
+        const pt = this.points[0];
+        this.ctx.beginPath();
+        this.ctx.arc(pt.x, pt.y, Math.max(1, this.ctx.lineWidth / 2), 0, Math.PI * 2);
+        this.ctx.fill();
       }
 
       this.points = [];
       this.prevMid = null;
       this.cachedRect = null;
-      this.saveData();
+      this.scheduleSave(); // Non-blocking Debounced Save: 0ms main thread blocking!
     };
 
     const cancelDraw = (e) => {
+      if (e.currentTarget === window && e.target === this.canvas) {
+        return;
+      }
       this.activePointers.delete(e.pointerId);
       if (this.isPenPointer(e)) {
-        this.penActive = false;
+        if (this.penGraceTimer) {
+          clearTimeout(this.penGraceTimer);
+        }
+        this.penGraceTimer = setTimeout(() => {
+          this.penActive = false;
+          this.penGraceTimer = null;
+        }, 280);
       }
       if (this.isHandScrolling && e.pointerId === this.handScrollPointerId) {
         this.isHandScrolling = false;
@@ -899,7 +967,7 @@ class DrawingEngine {
         if (this.currentTool === 'laser' || this.currentTool === 'finger') {
           this.clearPresentation();
         } else {
-          this.saveData();
+          this.scheduleSave();
         }
       }
     };
@@ -912,6 +980,11 @@ class DrawingEngine {
     this.canvas.addEventListener('selectstart', (e) => e.preventDefault());
     window.addEventListener('pointerup', stopDraw);
     window.addEventListener('pointercancel', cancelDraw);
+    window.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') this.flushSave();
+    });
+    window.addEventListener('beforeunload', () => this.flushSave());
+
     this.canvas.addEventListener('pointerleave', () => {
       if (this.currentTool === 'laser' || this.currentTool === 'finger') {
         if (!this.isDrawing) {
@@ -923,7 +996,32 @@ class DrawingEngine {
     });
   }
 
+  scheduleSave(delay = 1200) {
+    this.isDirty = true;
+    if (this.saveDebounceTimer) {
+      clearTimeout(this.saveDebounceTimer);
+    }
+    this.saveDebounceTimer = setTimeout(() => {
+      this.flushSave();
+    }, delay);
+  }
+
+  flushSave() {
+    if (this.saveDebounceTimer) {
+      clearTimeout(this.saveDebounceTimer);
+      this.saveDebounceTimer = null;
+    }
+    if (this.isDirty) {
+      this.saveData();
+    }
+  }
+
   saveData() {
+    if (this.saveDebounceTimer) {
+      clearTimeout(this.saveDebounceTimer);
+      this.saveDebounceTimer = null;
+    }
+    this.isDirty = false;
     try {
       if (!this.canvas || this.canvas.width === 0 || this.canvas.height === 0) return;
       const dataURL = this.canvas.toDataURL('image/png');
