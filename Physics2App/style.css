@@ -33,83 +33,146 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 24px;
+  padding: 8px 16px;
   background: var(--panel-bg);
   border-bottom: 1px solid var(--border);
   box-shadow: 0 1px 2px rgba(0,0,0,0.05);
   z-index: 100;
+  gap: 12px;
+  flex-wrap: nowrap;
 }
 
 .logo {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 1.25rem;
+  font-size: 1.15rem;
   font-weight: bold;
   color: var(--primary);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .tools {
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 10px;
+  flex-shrink: 1;
+  min-width: 0;
 }
 
-select {
-  padding: 8px 12px;
+select#topicSelector {
+  max-width: 240px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+  padding: 8px 10px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   font-family: var(--font);
   font-size: 14px;
   outline: none;
+  background-color: #fff;
+  flex-shrink: 1;
+}
+@media (min-width: 1024px) {
+  select#topicSelector {
+    max-width: 320px;
+  }
 }
 
 .level-switch {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  font-weight: 500;
+  gap: 3px;
+  background: #f1f5f9;
+  padding: 3px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  flex-shrink: 0;
 }
 
 .toggle-btn {
   cursor: pointer;
+  display: inline-flex;
 }
 .toggle-btn input {
   display: none;
 }
 .btn-text {
-  padding: 6px 12px;
-  border-radius: 20px;
-  background: var(--bg);
+  width: 34px;
+  height: 34px;
+  border-radius: 6px;
+  background: transparent;
   color: var(--text-light);
-  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+.btn-text i {
+  font-size: 20px;
+  line-height: 1;
 }
 .toggle-btn input:checked + .btn-text {
   background: var(--primary);
   color: white;
+  box-shadow: 0 1px 3px rgba(37, 99, 235, 0.3);
 }
 
-.actions button {
-  padding: 8px 16px;
-  border: none;
-  border-radius: var(--radius);
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.actions button,
+.tools button {
   font-family: var(--font);
   font-weight: 600;
   cursor: pointer;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
+  border: none;
+  transition: all 0.15s ease;
 }
 .actions .primary {
+  height: 38px;
+  padding: 0 16px;
+  border-radius: var(--radius);
   background: var(--primary);
   color: white;
+  gap: 6px;
+  font-size: 14px;
 }
-.actions .secondary {
+.actions .secondary,
+.tools .secondary {
   background: #f3f4f6;
   color: var(--text);
 }
+.actions .secondary:hover,
+.tools .secondary:hover {
+  background: #e5e7eb;
+}
 
+.icon-btn {
+  width: 38px;
+  height: 38px;
+  min-width: 38px;
+  min-height: 38px;
+  padding: 0 !important;
+  border-radius: var(--radius) !important;
+  border: 1px solid var(--border) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+.icon-btn i {
+  font-size: 20px;
+  line-height: 1;
+}
 
 /* Toolbar Drag & Layout */
 .drawing-toolbar {
@@ -118,22 +181,24 @@ select {
   left: 50%;
   transform: translateX(-50%);
   background: var(--panel-bg);
-  padding: 8px 16px;
-  border-radius: 30px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+  padding: 8px 14px;
+  border-radius: 28px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.15);
   display: flex;
   flex-direction: row;
-  gap: 16px;
+  align-items: center;
+  gap: 10px;
   z-index: 999; /* Ensure it stays on top */
   border: 1px solid var(--border);
   transition: flex-direction 0.2s ease, border-radius 0.2s ease;
   user-select: none;
+  -webkit-user-select: none;
 }
 
 .drawing-toolbar.vertical {
   flex-direction: column;
-  border-radius: 16px;
-  padding: 16px 8px;
+  border-radius: 18px;
+  padding: 14px 8px;
   transform: translateY(-50%);
 }
 
@@ -141,7 +206,7 @@ select {
   border-left: none;
   border-top: 1px solid var(--border);
   padding-left: 0;
-  padding-top: 16px;
+  padding-top: 12px;
   flex-direction: column;
 }
 
@@ -166,8 +231,48 @@ select {
 .tool-group {
   display: flex;
   flex-direction: row;
-  gap: 8px;
+  gap: 6px;
   align-items: center;
+}
+
+.tool-btn {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  min-height: 40px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #374151;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.15s ease;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.tool-btn i {
+  font-size: 22px;
+  line-height: 1;
+}
+.tool-btn:hover {
+  background: #f1f5f9;
+  color: var(--text);
+}
+.tool-btn.active {
+  background: #eff6ff;
+  color: var(--primary);
+  border-color: #bfdbfe;
+}
+.tool-btn.danger:hover {
+  background: #fef2f2;
+  color: #dc2626;
+}
+.tool-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
 }
 
 .drag-handle {
@@ -183,8 +288,8 @@ select {
   cursor: grabbing;
 }
 
-.color-swatch { width: 28px; height: 28px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; }
-.color-swatch.active { border-color: #9ca3af; transform: scale(1.1); }
+.color-swatch { width: 28px; height: 28px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: transform 0.15s ease; }
+.color-swatch.active { border-color: #9ca3af; transform: scale(1.15); }
 
 /* Workspace */
 .workspace {
@@ -498,16 +603,18 @@ select {
   padding-left: 8px;
 }
 .size-btn {
-  width: 26px;
-  height: 26px;
-  border-radius: 6px;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  border-radius: 7px;
   border: 1px solid var(--border);
   background: transparent;
   cursor: pointer;
-  font-size: 0.75rem;
+  font-size: 0.85rem;
   font-weight: 700;
   color: var(--text-light);
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   transition: all 0.15s ease;

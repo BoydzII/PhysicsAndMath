@@ -311,9 +311,11 @@ function setupListeners() {
     
     const btn = e.currentTarget;
     if (leftPanel.classList.contains('collapsed')) {
-      btn.innerHTML = '<i class="ph ph-arrows-in-line-horizontal" style="font-size:16px;"></i> แสดงเนื้อหา';
+      btn.innerHTML = '<i class="ph ph-arrows-in-line-horizontal"></i>';
+      btn.title = 'แสดงเนื้อหาทฤษฎี';
     } else {
-      btn.innerHTML = '<i class="ph ph-arrows-out-line-horizontal" style="font-size:16px;"></i> ซ่อนเนื้อหา';
+      btn.innerHTML = '<i class="ph ph-arrows-out-line-horizontal"></i>';
+      btn.title = 'ซ่อนเนื้อหาทฤษฎี';
     }
     setTimeout(() => { if (drawingEngine) drawingEngine.resize(); }, 350);
   });
@@ -565,9 +567,9 @@ function updateFullscreenUI() {
   const btn = document.getElementById('btnFullscreen');
   if (btn) {
     btn.innerHTML = isFull 
-      ? '<i class="ph ph-corners-in"></i> ออกจากเต็มจอ' 
-      : '<i class="ph ph-corners-out"></i> เต็มจอ';
-    btn.title = isFull ? 'ออกจากโหมดเต็มจอ' : 'เปิดโหมดเต็มจอ';
+      ? '<i class="ph ph-corners-in"></i>' 
+      : '<i class="ph ph-corners-out"></i>';
+    btn.title = isFull ? 'ออกจากโหมดเต็มจอ (Fullscreen)' : 'เปิดโหมดเต็มจอ (Fullscreen)';
   }
   setTimeout(() => {
     try {

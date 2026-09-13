@@ -8,8 +8,9 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css?v=1789223339">
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js?v=1789223339"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js?v=1789223339"></script>
+  <link rel="stylesheet" type="text/css" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css"/>
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
-  <link rel="stylesheet" href="style.css?v=1789225000">
+  <link rel="stylesheet" href="style.css?v=1789230000">
 </head>
 <body>
 
@@ -20,10 +21,10 @@
     </div>
     
     <div class="tools">
-        <button id="btnTogglePanel" class="secondary" style="padding:8px; border-radius:8px; border:1px solid var(--border); cursor:pointer; background:#fff;" title="ซ่อน/แสดง ทฤษฎี">
-          <i class="ph ph-arrows-out-line-horizontal" style="font-size:16px;"></i> ซ่อนเนื้อหา
-        </button>
-            <select id="topicSelector">
+      <button id="btnTogglePanel" class="secondary icon-btn" title="ซ่อน/แสดง ทฤษฎี">
+        <i class="ph ph-arrows-out-line-horizontal"></i>
+      </button>
+      <select id="topicSelector">
         <optgroup label="บทที่ 5: งานและพลังงาน">
           <option value="work">5.1 งาน (Work)</option>
           <option value="power">5.2 กำลัง (Power)</option>
@@ -46,27 +47,26 @@
         </optgroup>
       </select>
 
-      <div class="level-switch">
-        <span>ระดับ:</span>
-        <label class="toggle-btn">
+      <div class="level-switch" title="เลือกระดับความยาก">
+        <label class="toggle-btn" title="ระดับพื้นฐาน (มีแนวทางการคำนวณไกด์)">
           <input type="radio" name="level" value="beginner" checked>
-          <span class="btn-text">พื้นฐาน (มีไกด์)</span>
+          <span class="btn-text"><i class="ph ph-cell-signal-low"></i></span>
         </label>
-        <label class="toggle-btn">
+        <label class="toggle-btn" title="ระดับปานกลาง (บอกตัวแปรที่โจทย์กำหนด)">
           <input type="radio" name="level" value="intermediate">
-          <span class="btn-text">ปานกลาง (บอกตัวแปร)</span>
+          <span class="btn-text"><i class="ph ph-cell-signal-medium"></i></span>
         </label>
-        <label class="toggle-btn">
+        <label class="toggle-btn" title="ระดับขั้นสูง (โจทย์ล้วน ท้าทาย)">
           <input type="radio" name="level" value="advanced">
-          <span class="btn-text">ขั้นสูง (โจทย์ล้วน)</span>
+          <span class="btn-text"><i class="ph ph-cell-signal-high"></i></span>
         </label>
       </div>
     </div>
 
     <div class="actions">
-      <button id="btnFullscreen" class="secondary" title="เปิด/ปิด โหมดเต็มจอ (Fullscreen)"><i class="ph ph-corners-out"></i> เต็มจอ</button>
-      <button id="btnCheckAnswers" class="secondary" title="ตรวจคำตอบที่กรอกทั้งหมด"><i class="ph ph-check-circle"></i> ตรวจคำตอบ</button>
-      <button id="btnSubmit" class="primary" title="ส่งงานและบันทึกคะแนน"><i class="ph ph-paper-plane-right"></i> ส่งงาน</button>
+      <button id="btnFullscreen" class="secondary icon-btn" title="เปิด/ปิด โหมดเต็มจอ (Fullscreen)"><i class="ph ph-corners-out"></i></button>
+      <button id="btnCheckAnswers" class="secondary icon-btn" title="ตรวจคำตอบทั้งหมด"><i class="ph ph-check-circle"></i></button>
+      <button id="btnSubmit" class="primary" title="ส่งงานและบันทึกคะแนน"><i class="ph ph-paper-plane-right"></i> <span>ส่งงาน</span></button>
     </div>
   </header>
 
@@ -185,17 +185,17 @@
   <!-- Toast Notification Container -->
   <div id="toastNotification" class="toast-notification"></div>
 
-  <script src="data.js?v=1789225000"></script>
-  <script src="data_ch6.js?v=1789225000"></script>
-  <script src="data_ch7.js?v=1789225000"></script>
-  <script src="data_ch5_challenge.js?v=1789225000"></script>
-  <script src="data_ch6_challenge.js?v=1789225000"></script>
-  <script src="data_ch7_challenge.js?v=1789225000"></script>
-  <script src="draw.js?v=1789225000"></script>
-  <script src="simulations/sim_core.js?v=1789225000"></script>
-  <script src="simulations/sim_ch5.js?v=1789225000"></script>
-  <script src="simulations/sim_ch6.js?v=1789225000"></script>
-  <script src="simulations/sim_ch7.js?v=1789225000"></script>
-  <script src="app.js?v=1789225000"></script>
+  <script src="data.js?v=1789230000"></script>
+  <script src="data_ch6.js?v=1789230000"></script>
+  <script src="data_ch7.js?v=1789230000"></script>
+  <script src="data_ch5_challenge.js?v=1789230000"></script>
+  <script src="data_ch6_challenge.js?v=1789230000"></script>
+  <script src="data_ch7_challenge.js?v=1789230000"></script>
+  <script src="draw.js?v=1789230000"></script>
+  <script src="simulations/sim_core.js?v=1789230000"></script>
+  <script src="simulations/sim_ch5.js?v=1789230000"></script>
+  <script src="simulations/sim_ch6.js?v=1789230000"></script>
+  <script src="simulations/sim_ch7.js?v=1789230000"></script>
+  <script src="app.js?v=1789230000"></script>
 </body>
 </html>

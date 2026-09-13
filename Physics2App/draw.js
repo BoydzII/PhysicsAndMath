@@ -23,6 +23,10 @@ class DrawingEngine {
     this.eraserWidth = 32;
     this.highlightWidth = 22;
 
+    // Dedicated Scratch Canvas for Highlighter (Guarantees zero overlapping circular beads)
+    this.highlightCanvas = document.createElement('canvas');
+    this.highlightCtx = this.highlightCanvas ? this.highlightCanvas.getContext('2d') : null;
+
     // Drawing settings
     this.penOnlyMode = false; // When true: touch scrolls/pinches, ONLY stylus/pen draws
     this.highlightOnTop = true; // When true: ink & highlighter layer on top of problem text
@@ -95,6 +99,14 @@ class DrawingEngine {
         this.presCtx.setTransform(1, 0, 0, 1, 0, 0);
         this.presCtx.scale(dpr, dpr);
       }
+    }
+
+    // Resize Highlighter Scratch Canvas
+    if (this.highlightCanvas && this.highlightCtx) {
+      this.highlightCanvas.width = Math.round(w * dpr);
+      this.highlightCanvas.height = Math.round(h * dpr);
+      this.highlightCtx.setTransform(1, 0, 0, 1, 0, 0);
+      this.highlightCtx.scale(dpr, dpr);
     }
 
     if (tempCanvas) {
@@ -405,6 +417,19 @@ class DrawingEngine {
     }
   }
 
+  renderHighlightComposite() {
+    const base = this.undoStack[this.undoStack.length - 1];
+    if (!base) return;
+    this.ctx.save();
+    this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    this.ctx.drawImage(base, 0, 0);
+    this.ctx.globalAlpha = 0.42;
+    this.ctx.globalCompositeOperation = 'multiply';
+    this.ctx.drawImage(this.highlightCanvas, 0, 0);
+    this.ctx.restore();
+  }
+
   clear(save = true) {
     try {
       if (this.canvas.width > 0 && this.canvas.height > 0) {
@@ -414,6 +439,13 @@ class DrawingEngine {
       this.ctx.setTransform(1, 0, 0, 1, 0, 0);
       this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
       this.ctx.restore();
+
+      if (this.highlightCtx && this.highlightCanvas) {
+        this.highlightCtx.save();
+        this.highlightCtx.setTransform(1, 0, 0, 1, 0, 0);
+        this.highlightCtx.clearRect(0, 0, this.highlightCanvas.width, this.highlightCanvas.height);
+        this.highlightCtx.restore();
+      }
 
       if (save) this.saveData();
       this.updateUndoRedoUI();
@@ -564,6 +596,36 @@ class DrawingEngine {
       this.pushUndoState();
       this.points = [pos];
       this.prevMid = { x: pos.x, y: pos.y };
+
+      if (this.currentTool === 'highlight') {
+        if (this.highlightCtx && this.highlightCanvas) {
+          this.highlightCtx.save();
+          this.highlightCtx.setTransform(1, 0, 0, 1, 0, 0);
+          this.highlightCtx.clearRect(0, 0, this.highlightCanvas.width, this.highlightCanvas.height);
+          this.highlightCtx.restore();
+
+          this.highlightCtx.lineCap = 'round';
+          this.highlightCtx.lineJoin = 'round';
+          this.highlightCtx.imageSmoothingEnabled = true;
+          this.highlightCtx.globalCompositeOperation = 'source-over';
+          this.highlightCtx.globalAlpha = 1.0;
+          this.highlightCtx.strokeStyle = this.currentColor;
+          this.highlightCtx.fillStyle = this.currentColor;
+          this.highlightCtx.lineWidth = this.highlightWidth;
+
+          // Draw initial touch mark on highlight scratch canvas at alpha = 1.0
+          this.highlightCtx.beginPath();
+          this.highlightCtx.arc(pos.x, pos.y, Math.max(1, this.highlightWidth / 2), 0, Math.PI * 2);
+          this.highlightCtx.fill();
+
+          this.renderHighlightComposite();
+        }
+        try {
+          this.canvas.setPointerCapture(e.pointerId);
+        } catch (err) {}
+        return;
+      }
+
       this.updateCtx();
 
       // Dynamic pressure line width
@@ -670,6 +732,27 @@ class DrawingEngine {
         return;
       }
 
+      if (this.currentTool === 'highlight') {
+        this.points.push(pos);
+        if (this.points.length >= 2 && this.highlightCtx) {
+          const p1 = this.points[this.points.length - 2];
+          const p2 = this.points[this.points.length - 1];
+          const mid = {
+            x: (p1.x + p2.x) / 2,
+            y: (p1.y + p2.y) / 2
+          };
+
+          this.highlightCtx.beginPath();
+          this.highlightCtx.moveTo(this.prevMid.x, this.prevMid.y);
+          this.highlightCtx.quadraticCurveTo(p1.x, p1.y, mid.x, mid.y);
+          this.highlightCtx.stroke();
+
+          this.prevMid = mid;
+          this.renderHighlightComposite();
+        }
+        return;
+      }
+
       this.points.push(pos);
 
       const p = (e.pressure && e.pressure > 0) ? e.pressure : 0.5;
@@ -756,6 +839,23 @@ class DrawingEngine {
         return;
       }
 
+      // Handle Highlighter Stroke Finish
+      if (this.currentTool === 'highlight') {
+        if (this.points.length >= 2 && this.prevMid && this.highlightCtx) {
+          const last = this.points[this.points.length - 1];
+          this.highlightCtx.beginPath();
+          this.highlightCtx.moveTo(this.prevMid.x, this.prevMid.y);
+          this.highlightCtx.lineTo(last.x, last.y);
+          this.highlightCtx.stroke();
+        }
+        this.renderHighlightComposite();
+        this.points = [];
+        this.prevMid = null;
+        this.cachedRect = null;
+        this.saveData();
+        return;
+      }
+
       // Draw last remaining segment to point
       if (this.points.length >= 2 && this.prevMid) {
         const last = this.points[this.points.length - 1];
@@ -783,6 +883,9 @@ class DrawingEngine {
       this.cachedRect = null;
       if (this.isDrawing) {
         this.isDrawing = false;
+        if (this.currentTool === 'highlight') {
+          this.renderHighlightComposite();
+        }
         this.points = [];
         this.prevMid = null;
         if (this.currentTool === 'laser' || this.currentTool === 'finger') {
