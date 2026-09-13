@@ -592,6 +592,14 @@ class DrawingEngine {
         return;
       }
 
+      // Clear any active text selection immediately
+      if (window.getSelection) {
+        const sel = window.getSelection();
+        if (sel && sel.rangeCount > 0 && !sel.isCollapsed) {
+          sel.removeAllRanges();
+        }
+      }
+
       // Normal Ink Drawing
       this.pushUndoState();
       this.points = [pos];
@@ -900,6 +908,8 @@ class DrawingEngine {
     this.canvas.addEventListener('pointermove', draw);
     this.canvas.addEventListener('pointerup', stopDraw);
     this.canvas.addEventListener('pointercancel', cancelDraw);
+    this.canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+    this.canvas.addEventListener('selectstart', (e) => e.preventDefault());
     window.addEventListener('pointerup', stopDraw);
     window.addEventListener('pointercancel', cancelDraw);
     this.canvas.addEventListener('pointerleave', () => {

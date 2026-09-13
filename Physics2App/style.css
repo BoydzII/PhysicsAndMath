@@ -16,6 +16,7 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  -webkit-touch-callout: none !important;
 }
 
 body {
@@ -26,6 +27,11 @@ body {
   flex-direction: column;
   height: 100vh;
   overflow: hidden;
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  user-select: none !important;
+  -webkit-touch-callout: none !important;
 }
 
 /* Header */
@@ -383,13 +389,35 @@ select#topicSelector {
   padding: 48px;
   position: relative;
   z-index: 1;
-  pointer-events: none; /* Let clicks pass through to canvas when drawing, unless it's a specific interactive element */
+  pointer-events: none; /* Let clicks pass through to canvas when drawing */
+  -webkit-user-select: none !important;
+  user-select: none !important;
+  -webkit-touch-callout: none !important;
 }
 
-/* We will make interactive elements in notebook (like inputs) have pointer-events: auto */
+/* Problem blocks pass pointer events to canvas so drawing and equations feel natural */
 .problem-block {
   margin-bottom: 64px;
-  pointer-events: auto;
+  pointer-events: none !important;
+  -webkit-user-select: none !important;
+  user-select: none !important;
+  -webkit-touch-callout: none !important;
+}
+
+.problem-text,
+.solution-guide,
+.step,
+.calc-steps,
+.calc-steps > div,
+.hint-box,
+.katex,
+.katex * {
+  pointer-events: none !important;
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  user-select: none !important;
+  -webkit-touch-callout: none !important;
 }
 
 .problem-text {
@@ -432,9 +460,15 @@ select#topicSelector {
   align-items: center;
 }
 
-.answer-input {
+/* Only inputs and interactive buttons receive pointer events */
+.answer-input,
+.expand-btn {
+  pointer-events: auto !important;
   position: relative;
   z-index: 10;
+}
+
+.answer-input {
   border: none;
   border-bottom: 2px solid var(--text-light);
   background: transparent;
@@ -445,6 +479,7 @@ select#topicSelector {
   outline: none;
   border-radius: 4px;
   transition: background 0.15s, border-color 0.15s;
+  -webkit-touch-callout: none !important;
 }
 .answer-input:focus {
   border-bottom-color: var(--primary);
@@ -456,7 +491,9 @@ select#topicSelector {
   border-bottom: 2px dashed #94a3b8;
   cursor: pointer;
   color: #334155;
-  user-select: none;
+  -webkit-user-select: none !important;
+  user-select: none !important;
+  -webkit-touch-callout: none !important;
 }
 .answer-input.input-protected:hover {
   background: rgba(224, 231, 255, 0.6);
@@ -526,8 +563,8 @@ select#topicSelector {
 .problem-block {
   pointer-events: none; /* Crucial: allow drawing in the empty space */
 }
-.answer-input, .expand-btn, .hint-box {
-  pointer-events: auto; /* Clickable elements */
+.answer-input, .expand-btn {
+  pointer-events: auto !important; /* Clickable elements */
   position: relative;
   z-index: 10;
 }

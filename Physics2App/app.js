@@ -612,7 +612,10 @@ function setupAnswerInputProtection() {
           input.classList.remove('input-protected');
           showToast('🔓 ปลดล็อกช่องตอบแล้ว: พร้อมพิมพ์ตัวเลขคำตอบ', 'info');
           input.focus();
-          input.select();
+          try {
+            const len = input.value.length;
+            input.setSelectionRange(len, len);
+          } catch (err) {}
         }
       });
 
@@ -1046,3 +1049,36 @@ function showToast(message, type = 'info', duration = 3500) {
     toast.className = 'toast-notification';
   }, duration);
 }
+
+// --- Suppress Native iOS/Browser Text Selection & Callout Popups ("คัดลอก | แปลภาษา | ค้นหา") ---
+document.addEventListener('selectstart', (e) => {
+  // Allow text selection only when user is typing inside unlocked inputs
+  if (e.target.tagName === 'INPUT' && !e.target.readOnly) {
+    return;
+  }
+  e.preventDefault();
+  return false;
+}, { passive: false });
+
+document.addEventListener('contextmenu', (e) => {
+  // Suppress long-press iOS context callouts ("คัดลอก | แปลภาษา | ค้นหา") across the app
+  if (e.target.tagName === 'INPUT' && !e.target.readOnly) {
+    return;
+  }
+  e.preventDefault();
+  return false;
+}, { passive: false });
+
+// Instantly clear any accidental selection outside active inputs
+document.addEventListener('selectionchange', () => {
+  const activeEl = document.activeElement;
+  if (activeEl && activeEl.tagName === 'INPUT' && !activeEl.readOnly) {
+    return;
+  }
+  if (window.getSelection) {
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0 && !sel.isCollapsed) {
+      sel.removeAllRanges();
+    }
+  }
+});
