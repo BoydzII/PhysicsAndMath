@@ -112,3 +112,9 @@ Physics2App/*
 !Physics2App/simulations/
 Physics2App/simulations/*
 !Physics2App/simulations/*.js
+
+# ---- ส่งงานออนไลน์ ----
+!WorkDesk/
+WorkDesk/*
+!WorkDesk/index.html
+!WorkDesk/README-workdesk.md

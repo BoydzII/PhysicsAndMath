@@ -558,7 +558,13 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
       </div>
 
       <div id="gStudent">
-        <label class="f">รหัสเข้าเรียน <em>— ที่ครูแจกให้</em></label>
+        <!-- รหัสเดียวทุกวิชา: ทางหลักคือลงชื่อที่หน้าพอร์ทัลด้วยเลขประจำตัวกับรหัสผ่านของคลังโจทย์
+             แอปนี้รับช่วงการลงชื่อมาเอง (adoptPortalSession) นักเรียนจึงไม่ต้องจำรหัสเข้าเรียนอีกชุด
+             รหัสเข้าเรียน 4 ตัวยังใช้ได้ เผื่อห้องที่ครูแจกบัตรรหัสไปแล้ว -->
+        <a class="btn pri wide" href="../" style="display:flex;justify-content:center;text-decoration:none">
+          เข้าด้วยเลขประจำตัว + รหัสผ่านคลังโจทย์</a>
+        <p class="hint" style="margin:8px 0 0;text-align:center">รหัสชุดเดียวกับทุกวิชา · ลงชื่อแล้วกด “ห้องเรียนสมดุลกล”</p>
+        <label class="f" style="margin-top:18px">หรือใช้รหัสเข้าเรียน <em>— 4 ตัวที่ครูแจกให้</em></label>
         <input id="gCode" class="codein" type="text" maxlength="8" inputmode="text"
                autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="AB12">
         <div id="gNameWrap" class="hide">
@@ -575,7 +581,7 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
             </div>
           </div>
         </div>
-        <button class="btn pri wide" id="gGo" style="margin-top:17px">เข้าห้องเรียน</button>
+        <button class="btn wide" id="gGo" style="margin-top:12px">เข้าห้องเรียนด้วยรหัส</button>
         <div style="text-align:center;margin-top:13px">
           <button class="btn ghost sm" id="gGuest">ยังไม่มีรหัส · เข้าทดลองใช้ก่อน</button>
         </div>
@@ -663,7 +669,7 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
    สร้างฉบับนักเรียนด้วย  node tools/build-dist.mjs  (หรือปุ่มในแท็บตั้งค่า)
    *** ห้ามลบบรรทัดเครื่องหมาย @@BUILTIN@@ ทั้งสองอัน ตัวสร้างไฟล์ใช้หาตำแหน่ง *** */
 /* @@BUILTIN@@ */
-const BUILTIN = {"url":"https://script.google.com/macros/s/AKfycbwiwNszVH4qwYNNr5o35r4JVWPbY66mM5XoQF-orwe-PmwvCM5wR9Gpw65nmQfPwT_W/exec","studentOnly":true,"lockCloud":true,"school":"โรงเรียนปากช่อง","teacher":"นายรังสรรค์ กรีกูล","term":"","build":"2026-09-11 17:16","ver":"v8.120","books":[{"url":"https://script.google.com/macros/s/AKfycbxVa8BYYQeIhBDmg85w2UBwsIqt6a2YudehUfCbyMny9T-5TTh1UfFxsJjTk9HLNuFc/exec","name":"ชีตวิทยาศาสตร์กายภาพ"},{"url":"https://script.google.com/macros/s/AKfycbzuuRbnE_oB7a9vx7zZizyPVEKao31ERDTU82DvydMuRTDqVoQvgns9EsjTIzpbBjuM/exec","name":"ชีตฟิสิกส์"}]};
+const BUILTIN = {"url":"https://script.google.com/macros/s/AKfycbwiwNszVH4qwYNNr5o35r4JVWPbY66mM5XoQF-orwe-PmwvCM5wR9Gpw65nmQfPwT_W/exec","studentOnly":true,"lockCloud":true,"school":"โรงเรียนปากช่อง","teacher":"นายรังสรรค์ กรีกูล","term":"","build":"2026-09-17 00:58","ver":"v8.153","books":[{"url":"https://script.google.com/macros/s/AKfycbxVa8BYYQeIhBDmg85w2UBwsIqt6a2YudehUfCbyMny9T-5TTh1UfFxsJjTk9HLNuFc/exec","name":"ชีตวิทยาศาสตร์กายภาพ"},{"url":"https://script.google.com/macros/s/AKfycbzuuRbnE_oB7a9vx7zZizyPVEKao31ERDTU82DvydMuRTDqVoQvgns9EsjTIzpbBjuM/exec","name":"ชีตฟิสิกส์"}]};
 /* @@BUILTIN-END@@ */
 
 const APPVER   = '1.0.0';
@@ -5329,11 +5335,11 @@ async function doStudentLogin() {
       const d = await api('codeLogin', { code: code }, { noToken: true, timeout: 20000 });
       DB.auth = { role:'student', name:d.name || '', room:d.room || '', no:String(d.no || ''),
                   sid:String(d.sid || ''), code:code, token:d.token || '', exp:d.exp || 0 };
-      save(true); btn.disabled = false; btn.textContent = 'เข้าห้องเรียน';
+      save(true); btn.disabled = false; btn.textContent = 'เข้าห้องเรียนด้วยรหัส';
       enterApp();
       return;
     } catch (e) {
-      btn.disabled = false; btn.textContent = 'เข้าห้องเรียน';
+      btn.disabled = false; btn.textContent = 'เข้าห้องเรียนด้วยรหัส';
       gateMsg('ไม่พบรหัสนี้ในระบบ — ' + esc(e.message) +
         '<br>ตรวจตัวอักษรอีกครั้ง (ไม่มีเลข 0 กับ 1 และไม่มีตัว I กับ O)');
       return;

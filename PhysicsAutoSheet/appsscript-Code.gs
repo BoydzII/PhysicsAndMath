@@ -20,6 +20,17 @@
  *   4) กลับมาที่แอพ → แท็บตั้งค่า → ปุ่ม "ซ่อมโครงสร้างชีต" หนึ่งครั้ง
  *      เพื่อเติมหัวตารางของคอลัมน์ใหม่ (ข้อมูลเดิมไม่หาย)
  *
+ * ── รุ่น 19 เพิ่มอะไร (ลืมรหัสผ่าน · ส่งงานออนไลน์) ─────────────────────
+ *   ลืมรหัสผ่าน: นักเรียนยื่นคำขอพร้อมตั้งรหัสใหม่เองที่หน้าพอร์ทัล (resetAsk)
+ *   ครูอนุมัติทีละคน อนุมัติรวม หรือเปิดช่วง "ปลดทันที" ไม่เกินหนึ่งชั่วโมง
+ *   (resetList · resetDecide · resetAuto) แผ่นใหม่ resetreq
+ *   ส่งงานออนไลน์: ครูสั่งงาน นักเรียนส่งรูปหรือ PDF จากแอป WorkDesk
+ *   ไฟล์เก็บใน Google Drive ของเจ้าของชีต ไม่มีปิดรับ ส่งช้าหักคะแนนตามที่ครูตั้ง
+ *   (workSave · workRemove · workList · workSubs · workGrade · workBoard ·
+ *    workMine · workUpload · workSubmit · workFile) แผ่นใหม่ works · worksubs
+ *   ⚠ รุ่นนี้ใช้ Google Drive เป็นครั้งแรก ตอน Deploy จะมีหน้าขออนุญาตสิทธิ์ Drive เพิ่ม ต้องกดอนุญาต
+ *   วางโค้ดนี้ในชีตศูนย์กลาง (วิทยาศาสตร์กายภาพ) เป็นอย่างน้อย ชีตสมาชิกวางด้วยก็ได้ไม่เสียหาย
+ *
  * ── รุ่น 18 แก้อะไร (รหัสเดียวทุกชีต) ────────────────────────────────────
  *   ชีตวิทยาศาสตร์กายภาพเป็น "ศูนย์กลาง" ตรวจรหัสผ่านที่นั่นที่เดียว
  *   ลงชื่อสำเร็จแล้วได้ "บัตรผ่าน" อายุสิบนาที เอาไปแลกเป็นการเข้าใช้ของชีตอื่นได้
@@ -273,6 +284,12 @@ function sheet_(name) {
     if (name === 'submissions') sh.getRange('C:C').setNumberFormat('@');
     /* สมุดจด: เลขประจำตัว ชั้น และเนื้อสมุดต้องเป็นข้อความ
        ชั้นอย่าง 4/1 จะถูกแปลงเป็นวันที่ และท่อนเนื้อสมุดที่บังเอิญขึ้นต้นด้วย = จะกลายเป็นสูตร */
+    /* แผ่นของรุ่น 19 — เลขประจำตัวและชั้นต้องเป็นข้อความเหมือนแผ่นอื่น */
+    if (name === 'resetreq' || name === 'worksubs') {
+      sh.getRange('C:C').setNumberFormat('@');
+      sh.getRange('E:E').setNumberFormat('@');
+    }
+    if (name === 'works') sh.getRange('D:D').setNumberFormat('@');
     if (name === 'notes') {
       sh.getRange('B:B').setNumberFormat('@');
       sh.getRange('D:D').setNumberFormat('@');
@@ -1239,6 +1256,684 @@ function apiHubSetup_(req) {
   return apiHubStatus_(req);
 }
 
+/* ====== ลืมรหัสผ่าน — นักเรียนยื่นคำขอ ครูอนุมัติ (รุ่น 19) ==================
+   ของเดิมนักเรียนที่ลืมรหัสต้องไปหาครูตัวต่อตัว ครูกดรีเซ็ตกลับเป็นรหัสตั้งต้น
+   แล้วทุกคนที่รู้รหัสตั้งต้นก็เข้าบัญชีนั้นได้จนกว่าเจ้าของจะมาตั้งใหม่
+
+   รุ่นนี้นักเรียนตั้งรหัสใหม่เองตอนยื่นคำขอ ชีตเก็บเป็นแฮชรอไว้ ยังไม่ใช้จริง
+   ครูเห็นว่าใครยื่นบ้าง แล้วเลือกได้สามแบบ
+     ปลดรายคน   กดอนุมัติทีละคน
+     ปลดรวม     อนุมัติทุกคำขอที่รออยู่ในชั้นที่ตัวเองดูแล
+     ปลดทันที   เปิดช่วงสั้น ๆ (ไม่เกินหนึ่งชั่วโมง) คำขอที่เข้ามาในช่วงนั้นมีผลทันที
+                ไม่ต้องรอครู — ใช้ตอนครูอยู่ในห้องกับนักเรียน
+   อนุมัติแล้วรหัสที่นักเรียนตั้งไว้ตอนยื่นจะใช้ได้ทันที ไม่มีรหัสตั้งต้นที่คนอื่นรู้
+
+   ทำไมต้องให้กรอกชื่อด้วย — กันการยื่นเปลี่ยนรหัสของเพื่อนแบบสุ่มเลขประจำตัว
+   ไม่ใช่ความลับจริงจัง แต่ทำให้ครูเห็นคำขอแปลก ๆ ได้ง่ายขึ้น
+   และจำกัดไว้สามครั้งต่อชั่วโมงต่อเลขประจำตัว
+
+   ช่วง "ปลดทันที" ใครรู้เลขประจำตัวกับชื่อของเพื่อนก็เปลี่ยนรหัสเพื่อนได้
+   จึงเปิดได้ไม่เกินหนึ่งชั่วโมง และครูผู้สอนเปิดได้เฉพาะชั้นของตัวเอง */
+var RESET_ASK_PER_HOUR = 3;
+var RESET_AUTO_MAX_MIN = 60;
+var RESET_KEEP_DAYS = 14;         /* คำขอที่จบแล้วแสดงย้อนหลังเท่านี้ */
+
+SHEETS.resetreq = ['id', 'ts', 'sid', 'name', 'cls', 'passHash', 'salt', 'status', 'by', 'doneAt', 'device'];
+HEADERS.resetreq = ['รหัสคำขอ', 'ยื่นเมื่อ', 'เลขประจำตัว', 'ชื่อ-นามสกุล', 'ชั้น',
+                    'รหัสใหม่ (เข้ารหัสแล้ว)', 'salt', 'สถานะ', 'ผู้อนุมัติ', 'อนุมัติเมื่อ', 'อุปกรณ์'];
+
+/** ชื่อที่ใช้เทียบ — ตัดคำนำหน้า ช่องว่าง และจุดออก */
+function plainName_(v) {
+  return String(v == null ? '' : v).trim()
+    .replace(/^(เด็กชาย|เด็กหญิง|นางสาว|นาย|นาง|ด\.ช\.|ด\.ญ\.|น\.ส\.)\s*/, '')
+    .replace(/[\s.]+/g, '');
+}
+/** ชื่อที่นักเรียนพิมพ์ ต้องเป็นส่วนต้นของชื่อจริงในชีต (ชื่อต้นอย่างเดียวก็ได้) */
+function nameMatches_(real, typed) {
+  var r = plainName_(real), t = plainName_(typed);
+  return t.length >= 2 && r.length > 0 && r.indexOf(t) === 0;
+}
+function isoOf_(v) {
+  if (!v) return '';
+  var d = v instanceof Date ? v : new Date(v);
+  return isNaN(d.getTime()) ? '' : d.toISOString();
+}
+
+/* ช่วงปลดทันทีเก็บใน Script Properties เป็นรายการ [{ by, name, cls, until }]
+   cls = null คือผู้ดูแลหลักเปิดให้ทุกชั้น · อาเรย์คือชั้นของครูผู้สอนคนนั้น */
+function resetAutoAll_() {
+  var list = [];
+  try { list = JSON.parse(props_().getProperty('RESET_AUTO') || '[]') || []; } catch (e) { list = []; }
+  var now = Date.now();
+  return list.filter(function (x) { return x && Number(x.until) > now; });
+}
+function resetAutoFor_(cls) {
+  var c = clsKey_(cls);
+  return resetAutoAll_().filter(function (x) { return !x.cls || x.cls.indexOf(c) >= 0; })[0] || null;
+}
+function resetAutoView_(t) {
+  var me = t.sub || 'main', sc = scopeOf_(t);
+  var all = resetAutoAll_();
+  var mine = all.filter(function (x) { return x.by === me; })[0] || null;
+  /* ครูผู้สอนต้องรู้ด้วยว่าชั้นของตัวเองถูกเปิดโดยคนอื่นอยู่ไหม ไม่งั้นกดปิดของตัวเองแล้วยังงงว่าทำไมยังปลดเอง */
+  var others = all.filter(function (x) {
+    if (x.by === me) return false;
+    if (!sc || !x.cls) return true;
+    return x.cls.some(function (c) { return sc.indexOf(c) >= 0; });
+  });
+  return { mine: mine ? { until: mine.until } : null,
+           others: others.map(function (x) { return { name: x.name, until: x.until, cls: x.cls }; }),
+           now: Date.now() };
+}
+
+/** นักเรียนยื่นคำขอ — ไม่ต้องมีโทเคน เพราะคนที่ลืมรหัสลงชื่อเข้าใช้ไม่ได้อยู่แล้ว */
+function apiResetAsk_(req) {
+  if (hubKey_() && hubRole_() === 'member') {
+    throw new Error('ชีตนี้ไม่ได้เก็บรหัสผ่าน — ยื่นคำขอที่หน้าลงชื่อเข้าใช้ของพอร์ทัลแทน');
+  }
+  var sid = normSid_(String(req.sid || '').replace(/\D/g, ''));
+  if (!validSid_(sid)) throw new Error('เลขประจำตัวต้องเป็นตัวเลขล้วน ไม่เกิน ' + SID_MAX_LEN + ' หลัก');
+  var np = normPass_(req.newPass);
+  if (np.length < 4) throw new Error('รหัสผ่านใหม่ต้องยาวอย่างน้อย 4 ตัว');
+  if (np.length > 64) throw new Error('รหัสผ่านใหม่ยาวเกินไป');
+  if (np === DEFAULT_STUDENT_PASS) throw new Error('ห้ามใช้รหัสตั้งต้น ' + DEFAULT_STUDENT_PASS + ' กรุณาตั้งรหัสอื่น');
+
+  var cache = CacheService.getScriptCache(), key = sidKey_(sid), ck = 'rask_' + key;
+  var asked = Number(cache.get(ck) || 0);
+  if (asked >= RESET_ASK_PER_HOUR) {
+    throw new Error('ยื่นคำขอของเลขประจำตัวนี้บ่อยเกินไป รออีกหนึ่งชั่วโมง หรือแจ้งครูผู้สอนโดยตรง');
+  }
+  cache.put(ck, String(asked + 1), 3600);
+
+  var row = findStudentRow_(sid);
+  if (row < 0) throw new Error('ไม่พบเลขประจำตัว ' + sid + ' ในระบบ — ตรวจเลขอีกครั้ง หรือแจ้งครูผู้สอน');
+  var me = readStudentRow_(row);
+  if (String(me.active) === 'false' || String(me.active) === '0') throw new Error('บัญชีนี้ถูกระงับการใช้งาน');
+  if (!nameMatches_(me.name, req.name)) {
+    throw new Error('ชื่อไม่ตรงกับเลขประจำตัวนี้ — พิมพ์ชื่อจริงตามทะเบียน ไม่ต้องมีคำนำหน้า');
+  }
+
+  var salt = newSalt_(), hash = hashPass_(np, salt), cls = normCls_(me.cls), now = new Date();
+  var lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    /* ยื่นซ้ำระหว่างรอ = แทนคำขอเดิม ครูจะได้ไม่เห็นชื่อเดียวกันหลายแถว และรหัสที่ใช้คือตัวล่าสุด */
+    var list = readAll_('resetreq'), r = null;
+    for (var i = list.length - 1; i >= 0; i--) {
+      if (sidKey_(list[i].sid) === key && String(list[i].status) === 'wait') { r = list[i]; break; }
+    }
+    if (!r) r = { id: 'R' + Utilities.getUuid().replace(/-/g, '').slice(0, 10) };
+    r.ts = now; r.sid = normSid_(me.sid) || sid; r.name = String(me.name || ''); r.cls = cls;
+    r.passHash = hash; r.salt = salt; r.status = 'wait'; r.by = ''; r.doneAt = '';
+    r.device = String(req.device || '').slice(0, 40);
+    if (r._row) writeRow_('resetreq', r._row, r); else appendRow_('resetreq', r);
+
+    var auto = resetAutoFor_(cls);
+    if (auto) {
+      if (!r._row) r = readAll_('resetreq').filter(function (x) { return x.id === r.id; })[0];
+      applyReset_(r, 'ปลดทันที · ' + (auto.name || auto.by), 'auto');
+      return { status: 'auto', name: String(me.name || ''), cls: cls };
+    }
+  } finally {
+    lock.releaseLock();
+  }
+  return { status: 'wait', name: String(me.name || ''), cls: cls };
+}
+
+/** ใช้รหัสจากคำขอจริง — เขียนแฮชลงแถวนักเรียน ล้างตัวนับรหัสผิด แล้วปิดคำขอ */
+function applyReset_(r, by, status) {
+  var row = findStudentRow_(r.sid);
+  if (row < 0) throw new Error('ไม่พบเลขประจำตัว ' + r.sid + ' ในรายชื่อแล้ว');
+  if (!r.passHash || !r.salt) throw new Error('คำขอของ ' + r.sid + ' ไม่มีรหัสใหม่');
+  var sh = sheet_('students');
+  sh.getRange(row, C_HASH, 1, 2).setValues([[r.passHash, r.salt]]);
+  sh.getRange(row, C_MUST).setValue(false);
+  try { CacheService.getScriptCache().remove(failKey_(sidKey_(r.sid))); } catch (e) {}
+  dropCache_('students');
+  /* แฮชรหัสไม่ต้องค้างอยู่ในแผ่นคำขออีกแล้ว ใช้ไปแล้วก็ลบทิ้ง */
+  r.passHash = ''; r.salt = ''; r.status = status || 'ok'; r.by = by; r.doneAt = new Date();
+  writeRow_('resetreq', r._row, r);
+}
+
+/** ครูดูคำขอ — ที่รออยู่ทั้งหมด และที่จบแล้วย้อนหลัง RESET_KEEP_DAYS วัน */
+function apiResetList_(req) {
+  var t = needAdmin_(req), sc = scopeOf_(t);
+  var since = Date.now() - RESET_KEEP_DAYS * 86400000;
+  var rows = readAll_('resetreq').filter(function (r) {
+    if (!inScope_(sc, r.cls)) return false;
+    if (String(r.status) === 'wait') return true;
+    var d = new Date(r.doneAt || r.ts).getTime();
+    return d >= since;
+  }).map(function (r) {
+    return { id: String(r.id), ts: isoOf_(r.ts), sid: normSid_(r.sid), name: String(r.name || ''),
+             cls: normCls_(r.cls), status: String(r.status || ''), by: String(r.by || ''),
+             doneAt: isoOf_(r.doneAt), device: String(r.device || '') };
+  });
+  rows.sort(function (a, b) {
+    var wa = a.status === 'wait' ? 0 : 1, wb = b.status === 'wait' ? 0 : 1;
+    return wa - wb || (b.ts < a.ts ? -1 : b.ts > a.ts ? 1 : 0);
+  });
+  return { rows: rows, auto: resetAutoView_(t) };
+}
+
+/** อนุมัติ/ไม่อนุมัติ — ids ว่างพร้อม all:true คือทุกคำขอที่รออยู่ในขอบเขตของตัวเอง */
+function apiResetDecide_(req) {
+  var t = needAdmin_(req), sc = scopeOf_(t);
+  var ok = req.ok !== false;
+  var ids = {};
+  (req.ids || []).forEach(function (x) { ids[String(x)] = 1; });
+  if (!req.all && !Object.keys(ids).length) throw new Error('ยังไม่ได้เลือกคำขอ');
+  var by = t.sub ? t.sub : 'ผู้ดูแลหลัก';
+  var lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  var done = 0, bad = [];
+  try {
+    readAll_('resetreq').forEach(function (r) {
+      if (String(r.status) !== 'wait' || !inScope_(sc, r.cls)) return;
+      if (!req.all && !ids[String(r.id)]) return;
+      try {
+        if (ok) applyReset_(r, by, 'ok');
+        else { r.passHash = ''; r.salt = ''; r.status = 'no'; r.by = by; r.doneAt = new Date(); writeRow_('resetreq', r._row, r); }
+        done++;
+      } catch (e) { bad.push(String(r.sid) + ': ' + (e.message || e)); }
+    });
+  } finally {
+    lock.releaseLock();
+  }
+  return { done: done, bad: bad };
+}
+
+/** เปิด/ปิดช่วงปลดทันที — minutes = 0 คือปิด */
+function apiResetAuto_(req) {
+  var t = needAdmin_(req), sc = scopeOf_(t);
+  var min = Math.round(Number(req.minutes) || 0);
+  if (min < 0 || min > RESET_AUTO_MAX_MIN) throw new Error('เปิดได้ครั้งละไม่เกิน ' + RESET_AUTO_MAX_MIN + ' นาที');
+  if (sc && !sc.length) throw new Error('บัญชีนี้ยังไม่ได้กำหนดชั้นที่ดูแล');
+  var me = t.sub || 'main';
+  var lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    var list = resetAutoAll_().filter(function (x) { return x.by !== me; });
+    if (min > 0) {
+      var nm = 'ผู้ดูแลหลัก';
+      if (t.sub) { var tt = findTeacher_(t.sub); nm = tt && tt.name ? String(tt.name) : t.sub; }
+      list.push({ by: me, name: nm, cls: sc, until: Date.now() + min * 60000 });
+    }
+    props_().setProperty('RESET_AUTO', JSON.stringify(list));
+  } finally {
+    lock.releaseLock();
+  }
+  /* คำขอที่รออยู่ก่อนเปิดช่วงไม่ถูกปลดตามไปด้วย ครูต้องกดเอง จะได้ไม่มีอะไรหลุดไปโดยไม่ได้ดู */
+  return resetAutoView_(t);
+}
+
+/** ต่อท้ายข้อความรหัสผิด ถ้าคนนี้มีคำขอรอครูอยู่ — เด็กจะได้ไม่ยื่นซ้ำไปเรื่อย ๆ */
+function pendingResetNote_(sid) {
+  try {
+    var sh = book_().getSheetByName('resetreq');       /* ห้ามสร้างแผ่นใหม่จากทางลงชื่อเข้าใช้ */
+    if (!sh || sh.getLastRow() < 2) return '';
+    var key = sidKey_(sid);
+    var v = sh.getRange(2, 3, sh.getLastRow() - 1, 6).getValues();   /* sid ... status */
+    for (var i = v.length - 1; i >= 0; i--) {
+      if (sidKey_(v[i][0]) !== key) continue;
+      if (String(v[i][5]) === 'wait') return ' · มีคำขอตั้งรหัสใหม่รอครูอนุมัติอยู่ พออนุมัติแล้วใช้รหัสใหม่ที่ตั้งไว้ตอนยื่นได้เลย';
+      if (String(v[i][5]) === 'no') return ' · คำขอตั้งรหัสใหม่ครั้งล่าสุดไม่ได้รับอนุมัติ ติดต่อครูผู้สอน';
+      return '';
+    }
+  } catch (e) {}
+  return '';
+}
+
+
+/* ====== ส่งงานออนไลน์ (รุ่น 19) ==========================================
+   ครูสั่งงาน นักเรียนถ่ายรูปใบงานหรือแนบ PDF ส่งได้จากมือถือ
+   ไฟล์เก็บใน Google Drive ของเจ้าของชีต ในโฟลเดอร์ "งานที่นักเรียนส่ง" แยกโฟลเดอร์ตามงาน
+   ไฟล์ไม่เปิดแชร์ให้ใคร ครูเปิดดูผ่านคำสั่ง workFile ซึ่งตรวจสิทธิ์ทุกครั้ง
+
+   ไม่มีการปิดรับ นักเรียนส่งได้ตลอด ส่งหลังกำหนดถือว่าส่งช้า
+   ครูเลือกการให้คะแนนต่องาน
+     same  คะแนนเท่ากันไม่ว่าส่งเมื่อไร
+     late  หักตามเวลาที่ช้า — วันละ perDay % (เศษของวันนับเป็นหนึ่งวัน) หักรวมไม่เกิน cap %
+
+   ความช้าคิดสดจากเวลาส่งกับกำหนดส่งปัจจุบันทุกครั้ง ไม่ได้จำไว้
+   ครูเลื่อนกำหนดส่งทีหลัง คะแนนที่หักก็ขยับตามให้เอง */
+var WORK_FILE_MAX = 10 * 1024 * 1024;   /* ต่อไฟล์ หลังถอดรหัส */
+var WORK_FILES_PER_SUB = 20;
+var WORK_UP_PER_HOUR = 60;
+var WORK_MIMES = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'application/pdf': 'pdf' };
+
+SHEETS.works = ['code', 'title', 'detail', 'cls', 'subject', 'dueAt', 'max', 'mode', 'perDay', 'cap',
+                'active', 'createdAt', 'by', 'folderId', 'updatedAt'];
+HEADERS.works = ['รหัสงาน', 'ชื่องาน', 'รายละเอียด', 'ชั้น', 'วิชา', 'กำหนดส่ง', 'คะแนนเต็ม',
+                 'การให้คะแนน', 'หักต่อวัน (%)', 'หักสูงสุด (%)', 'เปิดใช้งาน', 'สร้างเมื่อ', 'ผู้สั่ง',
+                 'โฟลเดอร์ไฟล์', 'แก้ล่าสุด'];
+SHEETS.worksubs = ['id', 'code', 'sid', 'name', 'cls', 'ts', 'firstTs', 'files', 'note', 'lateMin',
+                   'raw', 'score', 'comment', 'gradedAt', 'gradedBy', 'n'];
+HEADERS.worksubs = ['รหัสการส่ง', 'รหัสงาน', 'เลขประจำตัว', 'ชื่อ-นามสกุล', 'ชั้น', 'ส่งล่าสุด',
+                    'ส่งครั้งแรก', 'ไฟล์', 'ข้อความถึงครู', 'ช้ากี่นาที (ตอนส่ง)', 'คะแนนที่ครูให้',
+                    'คะแนนหลังหัก', 'ความเห็นครู', 'ตรวจเมื่อ', 'ผู้ตรวจ', 'ส่งกี่ครั้ง'];
+
+function workClasses_(w) { return parseClasses_(w.cls); }
+function workActive_(w) { return String(w.active) !== 'false' && String(w.active) !== '0'; }
+/** ครูคนนี้เห็นงานนี้ไหม — ครูผู้สอนเห็นเฉพาะงานที่มีชั้นของตัวเองอยู่ด้วย */
+function workVisible_(sc, w) {
+  if (!sc) return true;
+  return workClasses_(w).some(function (c) { return sc.indexOf(c) >= 0; });
+}
+function findWork_(code) {
+  var c = String(code || '').trim().toUpperCase();
+  if (!c) return null;
+  var list = readAll_('works');
+  for (var i = 0; i < list.length; i++) if (String(list[i].code).toUpperCase() === c) return list[i];
+  return null;
+}
+function dueMs_(w) { var d = new Date(w.dueAt); return isNaN(d.getTime()) ? 0 : d.getTime(); }
+/** ช้ากี่นาที เทียบกับกำหนดส่งปัจจุบัน */
+function lateMinOf_(w, ts) {
+  var due = dueMs_(w), t = ts ? new Date(ts).getTime() : 0;
+  if (!due || !t || isNaN(t)) return 0;
+  return Math.max(0, Math.ceil((t - due) / 60000));
+}
+/** หักกี่เปอร์เซ็นต์ — ต้องตรงกับ penaltyOf ในหน้าเว็บ */
+function workPenalty_(w, lateMin) {
+  if (String(w.mode) !== 'late' || !(lateMin > 0)) return 0;
+  var days = Math.ceil(lateMin / 1440);
+  var cap = w.cap === '' || w.cap == null ? 100 : Number(w.cap);
+  if (!(cap >= 0)) cap = 100;
+  return Math.max(0, Math.min(days * (Number(w.perDay) || 0), cap, 100));
+}
+function workFinal_(w, raw, lateMin) {
+  if (raw === '' || raw == null || isNaN(Number(raw))) return '';
+  return Math.round(Number(raw) * (100 - workPenalty_(w, lateMin))) / 100;
+}
+function workPublic_(w) {
+  return { code: String(w.code), title: String(w.title || ''), detail: String(w.detail || ''),
+           cls: workClasses_(w), subject: String(w.subject || ''), dueAt: isoOf_(w.dueAt),
+           max: Number(w.max) || 0, mode: String(w.mode) === 'late' ? 'late' : 'same',
+           perDay: Number(w.perDay) || 0, cap: w.cap === '' ? 100 : Number(w.cap) || 0,
+           createdAt: isoOf_(w.createdAt), by: String(w.by || '') };
+}
+function subFiles_(s) {
+  try { var f = JSON.parse(String(s.files || '[]')); return Array.isArray(f) ? f : []; } catch (e) { return []; }
+}
+/** สถานะการส่งของนักเรียนหนึ่งคนในงานหนึ่งงาน ในรูปที่หน้าเว็บใช้ */
+function subPublic_(w, s) {
+  if (!s) return null;
+  var files = subFiles_(s), late = lateMinOf_(w, s.ts), graded = s.raw !== '' && s.raw != null;
+  return { ts: isoOf_(s.ts), firstTs: isoOf_(s.firstTs), n: Number(s.n) || (files.length ? 1 : 0),
+           files: files, note: String(s.note || ''), lateMin: files.length ? late : 0,
+           penalty: files.length ? workPenalty_(w, late) : 0,
+           graded: graded, raw: graded ? Number(s.raw) : '',
+           score: graded ? workFinal_(w, s.raw, files.length ? late : 0) : '',
+           comment: String(s.comment || ''), gradedAt: isoOf_(s.gradedAt),
+           /* ส่งใหม่หลังครูตรวจไปแล้ว ครูต้องเห็นว่ามีของใหม่ให้ดู */
+           resent: !!(graded && files.length && s.gradedAt && new Date(s.ts) > new Date(s.gradedAt)) };
+}
+function newWorkCode_() {
+  var abc = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789', used = {};
+  readAll_('works').forEach(function (w) { used[String(w.code).toUpperCase()] = 1; });
+  for (var k = 0; k < 50; k++) {
+    var s = 'W';
+    for (var i = 0; i < 5; i++) s += abc.charAt(Math.floor(Math.random() * abc.length));
+    if (!used[s]) return s;
+  }
+  throw new Error('สร้างรหัสงานไม่สำเร็จ ลองใหม่อีกครั้ง');
+}
+
+/** ครูสร้างหรือแก้งาน */
+function apiWorkSave_(req) {
+  var t = needAdmin_(req), sc = scopeOf_(t);
+  var w = req.work || {};
+  var title = String(w.title || '').trim();
+  if (!title) throw new Error('ใส่ชื่องานก่อน');
+  if (title.length > 120) throw new Error('ชื่องานยาวเกิน 120 ตัวอักษร');
+  var cls = parseClasses_(w.cls);
+  if (!cls.length) throw new Error('เลือกชั้นที่สั่งงานอย่างน้อยหนึ่งชั้น');
+  cls.forEach(function (c) { if (!inScope_(sc, c)) throw new Error('ชั้น ' + c + ' ไม่ได้อยู่ในความดูแลของคุณ'); });
+  var due = new Date(w.dueAt);
+  if (isNaN(due.getTime())) throw new Error('กำหนดส่งไม่ถูกต้อง');
+  var max = Number(w.max);
+  if (!(max > 0) || max > 1000) throw new Error('คะแนนเต็มต้องมากกว่า 0 และไม่เกิน 1000');
+  var mode = w.mode === 'late' ? 'late' : 'same';
+  var perDay = Math.max(0, Math.min(100, Number(w.perDay) || 0));
+  var cap = w.cap === '' || w.cap == null ? 100 : Math.max(0, Math.min(100, Number(w.cap) || 0));
+  if (mode === 'late' && !(perDay > 0)) throw new Error('ใส่เปอร์เซ็นต์ที่หักต่อวันก่อน หรือเลือกให้คะแนนเท่ากัน');
+
+  var lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    var cur = w.code ? findWork_(w.code) : null;
+    if (w.code && !cur) throw new Error('ไม่พบงานรหัส ' + w.code);
+    if (cur && sc && !workClasses_(cur).every(function (c) { return sc.indexOf(c) >= 0; })) {
+      throw new Error('งานนี้มีชั้นที่ไม่ได้อยู่ในความดูแลของคุณ แก้ไม่ได้');
+    }
+    var row = cur || { code: newWorkCode_(), createdAt: new Date(), by: t.sub || 'main', active: true, folderId: '' };
+    row.title = title; row.detail = String(w.detail || '').slice(0, 2000); row.cls = cls.join(', ');
+    row.subject = String(w.subject || '').trim().slice(0, 60); row.dueAt = due; row.max = max;
+    row.mode = mode; row.perDay = perDay; row.cap = cap; row.updatedAt = new Date();
+    if (cur) writeRow_('works', cur._row, row); else appendRow_('works', row);
+    return workPublic_(row);
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+/** ครูลบงาน — ซ่อนจากนักเรียนแต่เก็บข้อมูลกับไฟล์ไว้ครบ กู้คืนได้ด้วยการแก้ชีต */
+function apiWorkRemove_(req) {
+  var t = needAdmin_(req), sc = scopeOf_(t);
+  var w = findWork_(req.code);
+  if (!w) throw new Error('ไม่พบงานนี้');
+  if (sc && !workClasses_(w).every(function (c) { return sc.indexOf(c) >= 0; })) {
+    throw new Error('งานนี้มีชั้นที่ไม่ได้อยู่ในความดูแลของคุณ ลบไม่ได้');
+  }
+  w.active = false; w.updatedAt = new Date();
+  writeRow_('works', w._row, w);
+  return { ok: true };
+}
+
+/** นักเรียนในชั้นที่กำหนด ตามขอบเขตของครู เรียงชั้นแล้วเลขที่ */
+function rosterOf_(classes, sc) {
+  var want = {};
+  classes.forEach(function (c) { if (inScope_(sc, c)) want[c] = 1; });
+  return readAll_('students').filter(function (s) {
+    return want[s.cls] && String(s.active) !== 'false' && String(s.active) !== '0';
+  }).sort(function (a, b) {
+    return String(a.cls).localeCompare(String(b.cls)) || (Number(a.no) || 0) - (Number(b.no) || 0);
+  });
+}
+function subsByCode_() {
+  var m = {};
+  readAll_('worksubs').forEach(function (s) {
+    var c = String(s.code).toUpperCase();
+    (m[c] = m[c] || {})[sidKey_(s.sid)] = s;
+  });
+  return m;
+}
+
+/** ครูดูรายการงาน พร้อมตัวเลขสรุปของแต่ละงาน */
+function apiWorkList_(req) {
+  var t = needAdmin_(req), sc = scopeOf_(t);
+  var subs = subsByCode_();
+  var students = readAll_('students');
+  var out = readAll_('works').filter(function (w) { return workActive_(w) && workVisible_(sc, w); }).map(function (w) {
+    var classes = workClasses_(w).filter(function (c) { return inScope_(sc, c); });
+    var mine = subs[String(w.code).toUpperCase()] || {};
+    var st = { roster: 0, sent: 0, late: 0, graded: 0, toGrade: 0 };
+    students.forEach(function (s) {
+      if (classes.indexOf(s.cls) < 0 || String(s.active) === 'false' || String(s.active) === '0') return;
+      st.roster++;
+      var p = subPublic_(w, mine[sidKey_(s.sid)]);
+      if (!p) return;
+      if (p.files.length) { st.sent++; if (p.lateMin > 0) st.late++; }
+      if (p.graded) st.graded++;
+      if (p.files.length && (!p.graded || p.resent)) st.toGrade++;
+    });
+    var o = workPublic_(w);
+    o.stats = st;
+    return o;
+  });
+  out.sort(function (a, b) { return a.dueAt < b.dueAt ? 1 : a.dueAt > b.dueAt ? -1 : 0; });
+  return out;
+}
+
+/** ครูดูการส่งของงานหนึ่ง — ทุกคนในชั้น รวมคนที่ยังไม่ส่ง */
+function apiWorkSubs_(req) {
+  var t = needAdmin_(req), sc = scopeOf_(t);
+  var w = findWork_(req.code);
+  if (!w || !workVisible_(sc, w)) throw new Error('ไม่พบงานนี้');
+  var mine = subsByCode_()[String(w.code).toUpperCase()] || {};
+  var rows = rosterOf_(workClasses_(w), sc).map(function (s) {
+    return { sid: normSid_(s.sid), no: s.no, name: String(s.name || ''), cls: s.cls,
+             sub: subPublic_(w, mine[sidKey_(s.sid)]) };
+  });
+  return { work: workPublic_(w), rows: rows, now: Date.now() };
+}
+
+/** ครูให้คะแนน — ทีละคนหรือหลายคนพร้อมกัน raw ว่างคือลบคะแนน
+    ให้คะแนนคนที่ยังไม่ได้ส่งผ่านระบบได้ด้วย (ส่งเป็นกระดาษในห้อง) */
+function apiWorkGrade_(req) {
+  var t = needAdmin_(req), sc = scopeOf_(t);
+  var w = findWork_(req.code);
+  if (!w || !workVisible_(sc, w)) throw new Error('ไม่พบงานนี้');
+  var max = Number(w.max) || 0, items = req.items || [];
+  if (!items.length) throw new Error('ไม่มีคะแนนที่จะบันทึก');
+  if (items.length > 200) throw new Error('บันทึกได้ครั้งละไม่เกิน 200 คน');
+  var roster = {};
+  rosterOf_(workClasses_(w), sc).forEach(function (s) { roster[sidKey_(s.sid)] = s; });
+  var by = t.sub || 'ผู้ดูแลหลัก', now = new Date(), out = [];
+  var lock = LockService.getScriptLock();
+  lock.waitLock(25000);
+  try {
+    var mine = subsByCode_()[String(w.code).toUpperCase()] || {};
+    var fresh = [];
+    items.forEach(function (it) {
+      var k = sidKey_(it.sid), st = roster[k];
+      if (!st) throw new Error('เลขประจำตัว ' + it.sid + ' ไม่อยู่ในชั้นของงานนี้ หรือไม่ได้อยู่ในความดูแลของคุณ');
+      var raw = it.raw === '' || it.raw == null ? '' : Number(it.raw);
+      if (raw !== '' && (isNaN(raw) || raw < 0 || raw > max)) throw new Error('คะแนนของ ' + st.name + ' ต้องอยู่ระหว่าง 0 ถึง ' + max);
+      var s = mine[k];
+      if (!s) {
+        s = { id: 'S' + Utilities.getUuid().replace(/-/g, '').slice(0, 12), code: String(w.code), sid: normSid_(st.sid),
+              name: String(st.name || ''), cls: st.cls, ts: '', firstTs: '', files: '[]', note: '', lateMin: 0, n: 0 };
+      }
+      s.raw = raw;
+      if (it.comment != null) s.comment = String(it.comment).slice(0, 1000);
+      var late = subFiles_(s).length ? lateMinOf_(w, s.ts) : 0;
+      s.score = workFinal_(w, raw, late);
+      s.gradedAt = raw === '' ? '' : now; s.gradedBy = raw === '' ? '' : by;
+      if (s._row) writeRow_('worksubs', s._row, s); else fresh.push(s);
+      out.push({ sid: normSid_(st.sid), sub: subPublic_(w, s) });
+    });
+    if (fresh.length) {
+      var sh = sheet_('worksubs'), head = SHEETS.worksubs;
+      sh.getRange(sh.getLastRow() + 1, 1, fresh.length, head.length).setValues(fresh.map(function (s) {
+        return head.map(function (k) { return s[k] == null ? '' : s[k]; });
+      }));
+      dropCache_('worksubs');
+    }
+  } finally {
+    lock.releaseLock();
+  }
+  return { rows: out };
+}
+
+/* ── ไฟล์ใน Drive ─────────────────────────────────────────────────────── */
+function workRoot_() {
+  var id = props_().getProperty('WORK_FOLDER');
+  if (id) { try { return DriveApp.getFolderById(id); } catch (e) {} }
+  var f = DriveApp.createFolder('งานที่นักเรียนส่ง · ' + bookName_());
+  props_().setProperty('WORK_FOLDER', f.getId());
+  return f;
+}
+function workFolder_(w) {
+  if (w.folderId) { try { return DriveApp.getFolderById(String(w.folderId)); } catch (e) {} }
+  var f = workRoot_().createFolder(String(w.code) + ' · ' + String(w.title || '').slice(0, 60));
+  w.folderId = f.getId();
+  writeRow_('works', w._row, w);
+  return f;
+}
+function inFolder_(file, folderId) {
+  var it = file.getParents();
+  while (it.hasNext()) if (it.next().getId() === folderId) return true;
+  return false;
+}
+function fileMeta_(file) {
+  var d = {};
+  try { d = JSON.parse(file.getDescription() || '{}') || {}; } catch (e) { d = {}; }
+  return d;
+}
+/** งานนี้สั่งให้นักเรียนคนนี้ไหม */
+function studentWork_(req) {
+  var t = needStudent_(req);
+  var row = findStudentRow_(t.sid);
+  if (row < 0) throw new Error('ไม่พบบัญชีนี้ในชีต');
+  var me = readStudentRow_(row);
+  me.cls = normCls_(me.cls); me.sid = normSid_(me.sid);
+  var w = findWork_(req.code);
+  if (!w || !workActive_(w) || workClasses_(w).indexOf(me.cls) < 0) throw new Error('ไม่พบงานนี้ในชั้นของคุณ');
+  return { me: me, w: w };
+}
+
+/** นักเรียนดูงานของตัวเอง พร้อมสรุปงานค้าง */
+function apiWorkMine_(req) {
+  var t = needStudent_(req);
+  var row = findStudentRow_(t.sid);
+  if (row < 0) throw new Error('ไม่พบบัญชีนี้ในชีต');
+  var me = readStudentRow_(row), cls = normCls_(me.cls), k = sidKey_(me.sid);
+  var subs = subsByCode_();
+  var list = readAll_('works').filter(function (w) {
+    return workActive_(w) && workClasses_(w).indexOf(cls) >= 0;
+  }).map(function (w) {
+    var o = workPublic_(w);
+    o.sub = subPublic_(w, (subs[String(w.code).toUpperCase()] || {})[k]);
+    return o;
+  });
+  list.sort(function (a, b) { return a.dueAt < b.dueAt ? -1 : a.dueAt > b.dueAt ? 1 : 0; });
+  return { cls: cls, works: list, risk: riskOf_(list, Date.now()), now: Date.now() };
+}
+
+/** นักเรียนอัปโหลดไฟล์ทีละไฟล์ — ได้รหัสไฟล์กลับไป แล้วค่อยกดส่งพร้อมกันทีหลัง
+    แยกเป็นทีละไฟล์เพราะเน็ตมือถือส่งก้อนใหญ่ก้อนเดียวแล้วหลุดกลางทางบ่อย */
+function apiWorkUpload_(req) {
+  var x = studentWork_(req), me = x.me, w = x.w;
+  var mime = String(req.mime || '');
+  var ext = WORK_MIMES[mime];
+  if (!ext) throw new Error('รับเฉพาะรูป (JPG PNG WEBP) หรือไฟล์ PDF');
+  var cache = CacheService.getScriptCache(), ck = 'wup_' + sidKey_(me.sid);
+  var n = Number(cache.get(ck) || 0);
+  if (n >= WORK_UP_PER_HOUR) throw new Error('อัปโหลดบ่อยเกินไป รอสักครู่แล้วลองใหม่');
+  cache.put(ck, String(n + 1), 3600);
+  var bytes;
+  try { bytes = Utilities.base64Decode(String(req.data || '')); } catch (e) { throw new Error('ไฟล์เสีย ลองเลือกใหม่'); }
+  if (!bytes.length) throw new Error('ไฟล์ว่าง ลองเลือกใหม่');
+  if (bytes.length > WORK_FILE_MAX) throw new Error('ไฟล์ใหญ่เกิน 10 MB');
+  var lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  var folder;
+  try { folder = workFolder_(w); } finally { lock.releaseLock(); }
+  var stamp = Utilities.formatDate(new Date(), 'Asia/Bangkok', 'yyyyMMdd-HHmmss');
+  var name = sidKey_(me.sid) + '_' + stamp + '_' + Utilities.getUuid().slice(0, 6) + '.' + ext;
+  var file = folder.createFile(Utilities.newBlob(bytes, mime, name));
+  file.setDescription(JSON.stringify({ sid: sidKey_(me.sid), code: String(w.code) }));
+  return { id: file.getId(), name: name, mime: mime, size: bytes.length };
+}
+
+/** นักเรียนกดส่ง — ไฟล์ชุดใหม่แทนชุดเดิมทั้งหมด ไฟล์เก่าย้ายไปถังขยะของ Drive (กู้คืนได้ 30 วัน) */
+function apiWorkSubmit_(req) {
+  var x = studentWork_(req), me = x.me, w = x.w, key = sidKey_(me.sid);
+  var ids = (req.files || []).map(String);
+  if (!ids.length) throw new Error('ยังไม่ได้แนบไฟล์');
+  if (ids.length > WORK_FILES_PER_SUB) throw new Error('ส่งได้ไม่เกิน ' + WORK_FILES_PER_SUB + ' ไฟล์ต่อครั้ง');
+  if (!w.folderId) throw new Error('ยังไม่มีไฟล์ที่อัปโหลดของงานนี้');
+  var files = ids.map(function (id) {
+    var f;
+    try { f = DriveApp.getFileById(id); } catch (e) { throw new Error('หาไฟล์ที่อัปโหลดไม่เจอ ลองแนบใหม่'); }
+    var m = fileMeta_(f);
+    /* ตรวจว่าเป็นไฟล์ที่คนนี้อัปโหลดให้งานนี้จริง ไม่ใช่รหัสไฟล์ของคนอื่นที่แอบใส่มา */
+    if (m.sid !== key || m.code !== String(w.code) || !inFolder_(f, String(w.folderId))) {
+      throw new Error('มีไฟล์ที่ไม่ได้อัปโหลดให้งานนี้ ลองแนบใหม่');
+    }
+    return { id: id, name: f.getName(), mime: f.getMimeType(), size: f.getSize() };
+  });
+  var now = new Date();
+  var lock = LockService.getScriptLock();
+  lock.waitLock(25000);
+  var s;
+  try {
+    s = (subsByCode_()[String(w.code).toUpperCase()] || {})[key];
+    var old = s ? subFiles_(s) : [];
+    if (!s) s = { id: 'S' + Utilities.getUuid().replace(/-/g, '').slice(0, 12), code: String(w.code), raw: '', score: '', comment: '', gradedAt: '', gradedBy: '', n: 0 };
+    s.sid = me.sid; s.name = String(me.name || ''); s.cls = me.cls;
+    s.ts = now; if (!s.firstTs) s.firstTs = now;
+    s.files = JSON.stringify(files); s.note = String(req.note || '').slice(0, 500);
+    s.lateMin = lateMinOf_(w, now); s.n = (Number(s.n) || 0) + 1;
+    s.score = workFinal_(w, s.raw, s.lateMin);
+    if (s._row) writeRow_('worksubs', s._row, s); else appendRow_('worksubs', s);
+    var keep = {};
+    ids.forEach(function (id) { keep[id] = 1; });
+    old.forEach(function (f) { if (!keep[f.id]) { try { DriveApp.getFileById(f.id).setTrashed(true); } catch (e) {} } });
+  } finally {
+    lock.releaseLock();
+  }
+  return { work: workPublic_(w), sub: subPublic_(w, s) };
+}
+
+/** เปิดไฟล์ — ครูที่ดูแลชั้นของเจ้าของงาน หรือเจ้าของไฟล์เอง */
+function apiWorkFile_(req) {
+  var t = readToken_(req.token);
+  if (!t) throw new Error('AUTH: ต้องเข้าใช้ก่อน');
+  var f;
+  try { f = DriveApp.getFileById(String(req.id || '')); } catch (e) { throw new Error('ไม่พบไฟล์นี้ (อาจถูกลบไปแล้ว)'); }
+  var m = fileMeta_(f), w = findWork_(m.code);
+  if (!w || !w.folderId || !inFolder_(f, String(w.folderId))) throw new Error('ไม่พบไฟล์นี้');
+  if (t.role === 'student') {
+    if (sidKey_(t.sid) !== m.sid) throw new Error('AUTH: เปิดได้เฉพาะไฟล์ของตัวเอง');
+  } else if (t.role === 'admin') {
+    var sc = scopeOf_(t);
+    if (sc) {
+      var row = findStudentRow_(m.sid);
+      var cls = row > 0 ? normCls_(readStudentRow_(row).cls) : '';
+      if (!inScope_(sc, cls)) throw new Error('AUTH: นักเรียนคนนี้ไม่ได้อยู่ในชั้นที่คุณดูแล');
+    }
+  } else {
+    throw new Error('AUTH: ต้องเข้าใช้ก่อน');
+  }
+  if (f.getSize() > WORK_FILE_MAX) throw new Error('ไฟล์ใหญ่เกินกว่าจะเปิดในหน้านี้');
+  return { id: f.getId(), name: f.getName(), mime: f.getMimeType(),
+           data: Utilities.base64Encode(f.getBlob().getBytes()) };
+}
+
+/* ── นักเรียนที่ต้องติดตาม ─────────────────────────────────────────────
+   คิดจากงานที่เลยกำหนดส่งแล้วเท่านั้น งานที่ยังไม่ถึงกำหนดยังไม่นับว่าขาด
+     ค้างส่ง    งานที่เลยกำหนดแล้วแต่ยังไม่มีไฟล์และครูยังไม่ได้ให้คะแนน
+     ร้อยละ     คะแนนที่ได้ ÷ คะแนนเต็มของ (งานที่ตรวจแล้ว + งานที่ค้างส่ง)
+                งานที่ส่งแล้วแต่ครูยังไม่ตรวจ ไม่นับทั้งตัวตั้งและตัวหาร จะได้ไม่ลงโทษเด็กที่ส่งแล้ว
+                ยังไม่มีงานไหนตรวจเลย = ยังไม่มีร้อยละ ไม่งั้นเด็กที่ส่งครบแต่ครูยังไม่ตรวจจะขึ้นว่าได้ 0
+   ระดับ
+     high  เสี่ยงติด 0 — ค้างส่งตั้งแต่ครึ่งหนึ่งของงานที่เลยกำหนด หรือได้ต่ำกว่าร้อยละ 50
+           (ต้องมีงานที่เลยกำหนดอย่างน้อย 2 งาน ไม่งั้นงานแรกงานเดียวจะทำให้ทั้งห้องขึ้นแดง)
+     mid   ค้างส่งตั้งแต่ 2 งานขึ้นไป
+   ต้องตรงกับ riskOf ในหน้าเว็บ */
+function riskOf_(works, now) {
+  var due = 0, missing = 0, late = 0, got = 0, full = 0, gradedN = 0, titles = [];
+  works.forEach(function (w) {
+    var d = new Date(w.dueAt).getTime();
+    var s = w.sub, sent = !!(s && s.files && s.files.length), graded = !!(s && s.graded);
+    if (sent && s.lateMin > 0) late++;
+    if (graded) { got += Number(s.score) || 0; full += Number(w.max) || 0; gradedN++; }
+    if (!(d <= now)) return;
+    due++;
+    if (!sent && !graded) { missing++; full += Number(w.max) || 0; titles.push(w.title); }
+  });
+  var pct = gradedN > 0 && full > 0 ? Math.round(got / full * 1000) / 10 : null;
+  var level = '';
+  if (due >= 2 && (missing * 2 >= due || (pct != null && pct < 50))) level = 'high';
+  else if (missing >= 2) level = 'mid';
+  return { due: due, missing: missing, late: late, got: Math.round(got * 100) / 100, full: full,
+           pct: pct, level: level, missingTitles: titles };
+}
+
+/** ครูดูภาพรวมรายชั้น — นักเรียนทุกคนพร้อมระดับความเสี่ยง */
+function apiWorkBoard_(req) {
+  var t = needAdmin_(req), sc = scopeOf_(t);
+  var want = parseClasses_(req.cls);
+  var works = readAll_('works').filter(function (w) { return workActive_(w) && workVisible_(sc, w); });
+  var classes = {};
+  works.forEach(function (w) { workClasses_(w).forEach(function (c) { if (inScope_(sc, c)) classes[c] = 1; }); });
+  var pick = want.length ? want.filter(function (c) { return classes[c]; }) : Object.keys(classes);
+  var subs = subsByCode_(), now = Date.now();
+  var rows = rosterOf_(pick, sc).map(function (s) {
+    var k = sidKey_(s.sid);
+    var mine = works.filter(function (w) { return workClasses_(w).indexOf(s.cls) >= 0; }).map(function (w) {
+      var o = workPublic_(w);
+      o.sub = subPublic_(w, (subs[String(w.code).toUpperCase()] || {})[k]);
+      return o;
+    });
+    return { sid: normSid_(s.sid), no: s.no, name: String(s.name || ''), cls: s.cls, risk: riskOf_(mine, now) };
+  });
+  return { classes: Object.keys(classes).sort(), rows: rows, now: now };
+}
+
 /* ====== ทางเข้าเว็บแอป ================================================== */
 
 function json_(o) {
@@ -1246,7 +1941,7 @@ function json_(o) {
 }
 
 function doGet() {
-  return json_({ ok: true, service: 'quiz-bank', version: 18, subjects: SUBJECTS,
+  return json_({ ok: true, service: 'quiz-bank', version: 19, subjects: SUBJECTS,
                  note: 'ใช้งานผ่าน POST จากแอพเท่านั้น' });
 }
 
@@ -1314,6 +2009,20 @@ function route_(action, req) {
     case 'noteGet':       return apiNoteGet_(req);
     case 'noteFeedback':  return apiNoteFeedback_(req);
     case 'noteMine':      return apiNoteMine_(req);
+    case 'resetAsk':      return apiResetAsk_(req);
+    case 'resetList':     return apiResetList_(req);
+    case 'resetDecide':   return apiResetDecide_(req);
+    case 'resetAuto':     return apiResetAuto_(req);
+    case 'workSave':      return apiWorkSave_(req);
+    case 'workRemove':    return apiWorkRemove_(req);
+    case 'workList':      return apiWorkList_(req);
+    case 'workSubs':      return apiWorkSubs_(req);
+    case 'workGrade':     return apiWorkGrade_(req);
+    case 'workBoard':     return apiWorkBoard_(req);
+    case 'workMine':      return apiWorkMine_(req);
+    case 'workUpload':    return apiWorkUpload_(req);
+    case 'workSubmit':    return apiWorkSubmit_(req);
+    case 'workFile':      return apiWorkFile_(req);
     default: throw new Error('ไม่รู้จักคำสั่ง: ' + action);
   }
 }
@@ -1370,7 +2079,7 @@ function apiPing_(req) {
   try { locale = String(book_().getSpreadsheetLocale() || ''); } catch (e) {}
 
   return {
-    version: 18, role: role, myClasses: myCls,
+    version: 19, role: role, myClasses: myCls,
     locale: locale, monthFirst: monthFirstSheet_(), classes: clsCount,
     teachers: Math.max(0, sheet_('teachers').getLastRow() - 1),
     needRepair: needRepair, layout: layout, subjects: SUBJECTS,
@@ -1422,7 +2131,7 @@ function apiLogin_(req) {
     /* บอกชื่อไฟล์ชีตไปด้วย เครื่องที่ค้างแอปรุ่นเก่าอาจคุยกับชีตผิดใบ
        ซึ่งรหัสผ่านเก็บแยกใบกัน ภาพหน้าจอเดียวจะได้รู้ทันทีว่าไปโดนใบไหน */
     throw new Error('รหัสผ่านไม่ถูกต้อง (ผิดได้อีก ' + (MAX_LOGIN_FAIL - fails - 1) + ' ครั้ง) ' +
-                    '· ชีต: ' + bookName_() + hubTag_());
+                    '· ชีต: ' + bookName_() + hubTag_() + pendingResetNote_(sid));
   }
   cache.remove(failKey_(key));
 

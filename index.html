@@ -142,6 +142,14 @@ div.card.soon{opacity:.5}
 
 .openrow{display:grid;gap:9px}
 .note{margin-top:22px;font-size:13px;color:var(--muted);line-height:1.8}
+/* ลืมรหัสผ่าน — ลิงก์เล็กใต้ช่องรหัส เปิดแล้วเป็นกล่องยื่นคำขอในหน้าเดียวกัน */
+button.linkish{border:none;background:transparent;color:var(--brand);font:inherit;font-size:13.5px;
+  padding:6px 0 0;cursor:pointer;min-height:32px}
+.forgot{margin-top:14px;padding:14px 16px 16px;border:1px solid var(--line);border-radius:var(--r);background:var(--bg)}
+.forgot .tt{font-size:15.5px}
+.forgot button.primary{margin-top:16px}
+.rnote{margin:0 4px 16px;padding:11px 14px;border-radius:8px;background:var(--brand-soft);font-size:14px;line-height:1.65}
+.rnote a{color:var(--brand);font-weight:700}
 .note a{color:var(--brand)}
 footer{margin-top:34px;padding-top:18px;border-top:1px solid var(--line);
   color:var(--muted);font-size:12.5px;line-height:1.9}
@@ -184,6 +192,22 @@ footer b{font-weight:700;color:var(--ink)}
            autocomplete="username" placeholder="เช่น 30201">
     <label class="f" for="spass">รหัสผ่าน</label>
     <input type="password" id="spass" autocomplete="current-password">
+    <button class="linkish" id="forgotOpen" type="button">ลืมรหัสผ่าน?</button>
+    <div class="forgot hide" id="forgotBox">
+      <div class="tt">ขอตั้งรหัสผ่านใหม่</div>
+      <p class="lead" style="margin:4px 0 0">ตั้งรหัสใหม่ได้เลยตอนนี้ แล้วรอครูอนุมัติ
+        อนุมัติแล้วเข้าด้วย<b>รหัสใหม่ที่ตั้งไว้</b>ได้ทันที ไม่ต้องยื่นซ้ำ</p>
+      <label class="f" for="fsid">เลขประจำตัวนักเรียน</label>
+      <input type="text" id="fsid" inputmode="numeric" pattern="[0-9]*" maxlength="5" autocomplete="off">
+      <label class="f" for="fname">ชื่อจริง <span class="hint">(ไม่ต้องมีคำนำหน้า เช่น สมชาย)</span></label>
+      <input type="text" id="fname" autocomplete="off">
+      <label class="f" for="fpass">รหัสผ่านใหม่ <span class="hint">(อย่างน้อย 4 ตัว)</span></label>
+      <input type="password" id="fpass" autocomplete="new-password">
+      <label class="f" for="fpass2">พิมพ์รหัสผ่านใหม่อีกครั้ง</label>
+      <input type="password" id="fpass2" autocomplete="new-password">
+      <button class="primary" id="forgotGo" type="button">ส่งคำขอ</button>
+      <div class="msg" id="forgotMsg"></div>
+    </div>
   </div>
 
   <div id="fTea" class="hide">
@@ -203,7 +227,7 @@ footer b{font-weight:700;color:var(--ink)}
   <div class="note">
     วิชาที่เข้าได้โดยไม่ต้องลงชื่อ ทำโจทย์ได้ครบทุกข้อเหมือนกัน · ถ้าลงชื่อก่อนจะดีกว่าตรงที่
     <b>ชื่อ ชั้น และเลขที่</b> จะถูกเติมให้เอง ไม่ต้องพิมพ์ตอนพิมพ์ใบงาน<br>
-    เข้าไม่ได้หรือลืมรหัส? ถามครูผู้สอนได้เลย
+    ลืมรหัสผ่าน? กด <b>ลืมรหัสผ่าน</b> ใต้ช่องรหัสผ่าน แล้วตั้งรหัสใหม่รอครูอนุมัติ
   </div>
 </div>
 
@@ -246,6 +270,7 @@ footer b{font-weight:700;color:var(--ink)}
 
   <div class="lead" style="margin:0 4px 4px">เลือกวิชาที่ต้องการ — ไม่ต้องลงชื่อเข้าใช้ซ้ำอีก</div>
   <div class="msg" id="pickMsg" style="margin-top:0"></div>
+  <div class="rnote hide" id="resetNote"></div>
   <!-- การ์ดวิชาวาดด้วยสคริปต์จากอาเรย์ SUBJECTS จะได้ไม่ต้องแก้สองที่เวลาเพิ่มวิชา -->
   <div class="cards" id="cards"></div>
 
@@ -281,7 +306,7 @@ footer b{font-weight:700;color:var(--ink)}
 /* เลขรุ่นกับวันเวลาที่สร้างไฟล์ — tools/build-dist.mjs ประทับให้ตอนขึ้นเว็บ
    *** ห้ามลบบรรทัดเครื่องหมาย @@VER@@ ทั้งสองอัน ตัวสร้างไฟล์ใช้หาตำแหน่ง *** */
 /* @@VER@@ */
-const APP_VER = "v8.120", BUILD_AT = "2026-09-11 17:16";
+const APP_VER = "v8.153", BUILD_AT = "2026-09-17 00:58";
 /* @@VER-END@@ */
 
 /* ---- ค่าที่ต้องตั้ง ------------------------------------------------------ */
@@ -357,6 +382,10 @@ const ICONS = {
   // หนังสือเปิด — ตราหัวเรื่องของหน้า
   book: '<path d="M3.4 5.2c2.8-1.2 5.6-1.2 8.6.8 3-2 5.8-2 8.6-.8v13c-2.8-1.2-5.6-1.2-8.6.8-3-2-5.8-2-8.6-.8z"/>' +
         '<path d="M12 6v13"/>',
+  // ถาดรับงานมีลูกศรลง — ส่งงานออนไลน์
+  work: '<path d="M4 13.5h4.2l1.6 2.6h4.4l1.6-2.6H20"/>' +
+        '<path d="M5.6 5.5h12.8L20 13.5v5a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 18.5v-5z"/>' +
+        '<path d="M12 3.5v7"/><path d="M9.4 8l2.6 2.6L14.6 8"/>',
   // ลูกศรขวา — ท้ายแถวของแต่ละวิชา
   next: '<path d="M9 5l7 7-7 7"/>'
 };
@@ -388,6 +417,13 @@ function icon(name, size) {
                   และไม่โผล่ในบรรทัดชื่อวิชาใต้หัวเรื่องที่นักเรียนเห็น
    ──────────────────────────────────────────────────────────────────────────── */
 const SUBJECTS = [
+  /* ส่งงานออนไลน์ใช้ได้ทุกวิชาทุกชั้น จึงอยู่บนสุด และใส่ทุกระดับชั้นไว้ จะได้ไม่ถูกดันลงไปตอนเรียงตามชั้น
+     ไฟล์เดียวใช้ทั้งครูและนักเรียน แอปเลือกหน้าจอเองจากบทบาทที่ลงชื่อไว้ */
+  { key: 'work', name: 'ส่งงานออนไลน์', level: 'ทุกวิชา', grades: [1, 2, 3, 4, 5, 6],
+    dir: 'WorkDesk/', teacher: 'index.html', student: 'index.html',
+    desc: 'ถ่ายรูปใบงานหรือแนบ PDF ส่งครู · ดูกำหนดส่ง คะแนน และงานที่ค้าง<br>' +
+          'ครูตรวจ ให้คะแนน และดูนักเรียนที่ต้องติดตามได้ในหน้าเดียว' },
+
   { key: 'physics2', icon: '📓', name: 'ฟิสิกส์ 2 (Interactive Notebook)', level: 'ฟิสิกส์ ม.4-5', grades: [4, 5, 6],
     dir: 'Physics2App/', teacher: 'index.html', student: 'index.html', openFree: true,
     desc: 'สมุดโน้ตอัจฉริยะแบบขีดเขียนได้ · บทที่ 1 งานและพลังงาน<br>' +
@@ -605,6 +641,7 @@ function showPicker(s) {
   $('#teaBox').classList.toggle('hide', !teacher);
   $('#hubBox').classList.toggle('hide', !(teacher && !isSub));
   if (teacher && !isSub) hubPaint();
+  resetNotePaint(s);
   $('#loginBox').classList.add('hide');
   $('#pickBox').classList.remove('hide');
 }
@@ -881,6 +918,80 @@ function warnMismatch(rs, who) {
   sayPick('เข้าใช้ได้แล้ว แต่รหัสนี้ใช้กับ <b>' + bad.map(x => x.bk.name).join(' และ ') +
     '</b> ไม่ได้ — วิชาที่อยู่บนชีตนั้นจะขอรหัสอีกครั้ง<br>' +
     'ให้แจ้งครูผู้สอนให้ตั้งรหัสของสองชีตให้ตรงกัน (รหัสของแต่ละชีตเก็บแยกกัน)');
+}
+
+/* ---- ลืมรหัสผ่าน (ชีตรุ่น 19) ------------------------------------------------
+   ยื่นที่ชีตศูนย์กลางใบเดียว เพราะรหัสของทุกวิชาตรวจที่นั่น
+   นักเรียนตั้งรหัสใหม่เองตอนยื่น ครูไม่ต้องรู้หรือบอกรหัสใคร */
+function sayForgot(text, kind) {
+  const el = $('#forgotMsg');
+  el.innerHTML = text || '';
+  el.className = 'msg' + (text ? ' ' + (kind || 'bad') : '');
+}
+$('#forgotOpen').addEventListener('click', () => {
+  const box = $('#forgotBox'), open = box.classList.contains('hide');
+  box.classList.toggle('hide', !open);
+  if (open) {
+    $('#fsid').value = String($('#sid').value || '').replace(/\D/g, '').slice(0, 5);
+    sayForgot('');
+    ($('#fsid').value ? $('#fname') : $('#fsid')).focus();
+  }
+});
+let FORGOT_BUSY = false;
+$('#forgotGo').addEventListener('click', async () => {
+  if (FORGOT_BUSY) return;
+  const sid = String($('#fsid').value || '').replace(/\D/g, '').slice(0, 5);
+  const name = String($('#fname').value || '').trim();
+  const p1 = $('#fpass').value || '', p2 = $('#fpass2').value || '';
+  if (!sid) return sayForgot('กรอกเลขประจำตัวก่อน');
+  if (!name) return sayForgot('กรอกชื่อจริงก่อน');
+  if (p1.trim().length < 4) return sayForgot('รหัสผ่านใหม่ต้องยาวอย่างน้อย 4 ตัว');
+  if (p1 !== p2) return sayForgot('รหัสผ่านใหม่สองช่องไม่ตรงกัน');
+  FORGOT_BUSY = true;
+  const btn = $('#forgotGo');
+  btn.disabled = true; btn.textContent = 'กำลังส่งคำขอ…';
+  sayForgot('');
+  try {
+    const r = await api('resetAsk', { sid: sid, name: name, newPass: p1,
+      device: (navigator.userAgent.match(/iPad|iPhone|Android|Windows|Macintosh|CrOS/) || [''])[0] }, BOOKS[0].url);
+    $('#fpass').value = ''; $('#fpass2').value = '';
+    if (r.status === 'auto') {
+      $('#sid').value = sid; $('#spass').value = '';
+      sayForgot('<b>ตั้งรหัสใหม่เรียบร้อย</b> — ครูเปิดให้ปลดทันทีอยู่ เข้าใช้ด้วยรหัสใหม่ได้เลย', 'ok');
+      setTimeout(() => { $('#forgotBox').classList.add('hide'); $('#spass').focus(); }, 2200);
+    } else {
+      sayForgot('<b>ส่งคำขอแล้ว</b> ' + (r.name ? '(' + r.name + (r.cls ? ' · ' + r.cls : '') + ')' : '') +
+        '<br>บอกครูผู้สอนว่ายื่นขอรหัสใหม่แล้ว พอครูอนุมัติ ให้เข้าด้วย<b>รหัสใหม่ที่เพิ่งตั้ง</b> ไม่ต้องยื่นซ้ำ', 'ok');
+    }
+  } catch (e) {
+    const m = e.message || String(e);
+    sayForgot(/ไม่รู้จักคำสั่ง/.test(m) ? 'ระบบยังไม่เปิดให้ยื่นคำขอ — แจ้งครูผู้สอนโดยตรง' : m);
+  } finally {
+    FORGOT_BUSY = false;
+    btn.disabled = false; btn.textContent = 'ส่งคำขอ';
+  }
+});
+['fsid', 'fname', 'fpass', 'fpass2'].forEach(id => {
+  $('#' + id).addEventListener('keydown', e => { if (e.key === 'Enter') { e.stopPropagation(); $('#forgotGo').click(); } });
+});
+
+/** ครูเห็นตั้งแต่หน้าเลือกวิชา ว่ามีนักเรียนรอรหัสใหม่อยู่กี่คน — ไม่งั้นต้องเข้าไปเปิดดูเองถึงจะรู้ */
+async function resetNotePaint(s) {
+  const el = $('#resetNote');
+  el.classList.add('hide');
+  if (!s || s.role !== 'admin') return;
+  const tok = tokenOf(BOOKS[0].url);
+  if (!tok) return;
+  try {
+    const r = await api('resetList', { token: tok }, BOOKS[0].url);
+    const n = (r.rows || []).filter(x => x.status === 'wait').length;
+    const auto = r.auto && r.auto.mine;
+    if (!n && !auto) return;
+    el.innerHTML = (n ? '<b>มีนักเรียนขอตั้งรหัสผ่านใหม่ ' + n + ' คน</b> รอครูอนุมัติ' : '') +
+      (auto ? (n ? '<br>' : '') + 'เปิด<b>ปลดทันที</b>อยู่ — ปิดเองเมื่อครบเวลา' : '') +
+      ' · <a href="WorkDesk/index.html#reset">เปิดดูคำขอ</a>';
+    el.classList.remove('hide');
+  } catch (e) { /* ชีตยังไม่ใช่รุ่น 19 ก็ไม่ต้องแจ้งอะไร */ }
 }
 
 $('#spCheck').addEventListener('click', spCheck);
