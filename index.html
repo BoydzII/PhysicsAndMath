@@ -439,7 +439,7 @@ const SUBJECTS = [
     desc: 'ครบชั้นละ 5 บท · 225 แม่แบบ · ชีววิทยา เคมี ฟิสิกส์ และโลก-อวกาศ<br>' +
           'ตรวจคำตอบทันที พร้อมวิธีทำ 7 ขั้น' },
 
-  { key: 'physics', name: 'ฟิสิกส์', level: 'ม.4', grades: [4, 5, 6],
+  { key: 'physics', name: 'ฟิสิกส์', level: 'ม.4', grades: [4, 5, 6], sheet: 1,
     dir: 'PhysicsAutoSheet/', teacher: 'physics.html', student: 'index.html',
     desc: '7 บท + แนวข้อสอบเข้ามหาวิทยาลัย · 236 แม่แบบ<br>' +
           'รับใบงานจากครูด้วยรหัส และส่งผลกลับได้' },
@@ -597,6 +597,30 @@ function showLogin() {
 
 /** อักษรตัวแรกของชื่อ ใช้แทนรูปอีโมจิในวงกลมประจำตัว
     ข้ามคำนำหน้าที่ใครก็มีเหมือนกัน (นาย/นาง/เด็กชาย) เพราะไม่ได้บอกว่าเป็นใคร */
+/** กดวิชาที่ชีตยังแลกบัตรไม่เสร็จ — รอให้เสร็จก่อน ไม่งั้นเข้าไปแล้วต้องลงชื่อซ้ำ */
+function bindCardWait() {
+  const box = $('#cards');
+  if (box.dataset.waitBound) return;
+  box.dataset.waitBound = '1';
+  box.addEventListener('click', async function (e) {
+    const a = e.target.closest('a.card[data-sheet]');
+    if (!a) return;
+    const bk = BOOKS[Number(a.dataset.sheet)];
+    const wait = bk && BOOK_PENDING[bk.url];
+    if (!wait) return;
+    e.preventDefault();
+    if (a.dataset.waiting) return;
+    a.dataset.waiting = '1';
+    const tag = a.querySelector('.tag');
+    const old = tag ? tag.textContent : '';
+    if (tag) tag.textContent = 'กำลังเชื่อมชีตวิชานี้…';
+    try { await wait; } catch (err) {}
+    if (tag) tag.textContent = old;
+    delete a.dataset.waiting;
+    location.href = a.getAttribute('href');
+  });
+}
+
 function initialOf(name) {
   const s = String(name || '').trim()
     .replace(/^(นาย|นางสาว|นาง|เด็กชาย|เด็กหญิง|ด\.ช\.|ด\.ญ\.|ครู)\s*/, '');
@@ -628,11 +652,13 @@ function showPicker(s) {
                         ((a.grades || []).indexOf(g) >= 0 ? 1 : 0));
   }
   // ครูได้ไฟล์ฉบับเต็ม ส่วนนักเรียนได้ฉบับที่ไม่มีเฉลยและสถิติชั้นเรียน
+  bindCardWait();
   $('#cards').innerHTML = list.map(s => s.soon
     ? '<div class="card soon"><span class="ic">' + icon(s.ic || s.key) + '</span>' +
       '<span class="bd"><h2>' + s.name + '<span class="tag">' + s.soon + '</span></h2>' +
       '<p>' + s.desc + '</p></span></div>'
-    : '<a class="card" href="' + s.dir + (teacher ? s.teacher : s.student) + '">' +
+    : '<a class="card" href="' + s.dir + (teacher ? s.teacher : s.student) + '"' +
+      (s.sheet != null ? ' data-sheet="' + s.sheet + '"' : '') + '>' +
       '<span class="ic">' + icon(s.ic || s.key) + '</span>' +
       '<span class="bd"><h2>' + s.name + '<span class="tag">' + s.level + '</span></h2>' +
       '<p>' + s.desc + '</p></span>' +
@@ -750,20 +776,58 @@ async function spRun() {
 function hubSoft(err) {
   return /^HUB:|ไม่รู้จักคำสั่ง|ไม่พบเลขประจำตัว|ไม่พบชื่อผู้ใช้/.test(String(err || ''));
 }
+/* ชีตสมาชิกช้าได้มากเป็นพัก ๆ — วัดจริง 16 ก.ย. 2569 คำสั่งที่ไม่ทำอะไรเลยบนชีตฟิสิกส์
+   ใช้ 2 วินาทีเป็นปกติ แต่บางครั้งกระโดดเป็น 7–53 วินาที ขณะที่ชีตศูนย์กลางนิ่งอยู่ที่ 2–3 วินาที
+   ของเดิมรอชีตทุกใบครบก่อนเปิดหน้าเลือกวิชา ชีตที่ช้าที่สุดจึงลากการลงชื่อทั้งหมดไปด้วย
+   รุ่นนี้ถ้าศูนย์กลางผ่านแล้ว รอชีตสมาชิกไม่เกิน MEMBER_WAIT_MS แล้วเปิดหน้าเลือกวิชาเลย
+   ที่เหลือแลกบัตรต่อเบื้องหลัง ถ้ากดวิชาของชีตที่ยังแลกไม่เสร็จ การ์ดจะรอให้เสร็จก่อนค่อยเข้า
+   (บัตรผ่านใช้ได้สิบนาที เหลือเฟือ) */
+const MEMBER_WAIT_MS = 2500;
+const BOOK_PENDING = {};          // url → Promise ของการแลกบัตรที่ยังไม่เสร็จ
+
+/** เติมโทเคนของชีตหนึ่งใบลงก้อนลงชื่อเข้าใช้ที่เก็บไว้ */
+function addBookToken(url, token) {
+  const s = readSession();
+  if (!s || !token) return;
+  s.tokens = s.tokens || {};
+  s.tokens[url] = token;
+  try { localStorage.setItem(SESSION_KEY, JSON.stringify(s)); } catch (e) {}
+}
+
 async function hubLoginAll(action, params) {
   const hub = BOOKS[0];
   let h;
   try { h = { bk: hub, data: await api(action, params, hub.url) }; }
   catch (e) { h = { bk: hub, err: e.message || String(e) }; }
   if (h.err && /ชีตศูนย์กลาง/.test(h.err)) return [h];
-  const rest = await Promise.all(BOOKS.slice(1).map(async function (bk) {
+  const restP = BOOKS.slice(1).map(async function (bk) {
     if (h.data && h.data.hub) {
       try { return { bk: bk, data: await api('hubLogin', { hub: h.data.hub }, bk.url), via: 'hub' }; }
       catch (e) { if (!hubSoft(e.message)) return { bk: bk, err: e.message || String(e) }; }
     }
     try { return { bk: bk, data: await api(action, params, bk.url) }; }
     catch (e) { return { bk: bk, err: e.message || String(e) }; }
-  }));
+  });
+  let rest = null;
+  if (h.data && h.data.hub) {
+    /* ศูนย์กลางผ่านแล้ว ไม่ต้องรอชีตที่ช้า — แต่ถ้าชีตไม่ได้เชื่อมศูนย์กลาง (ไม่มีบัตรผ่าน)
+       ยังต้องรอครบเหมือนเดิม เพราะอาจเป็นชีตเดียวที่คนนี้มีชื่อ */
+    const done = BOOKS.slice(1).map(() => null);
+    restP.forEach((p, i) => p.then(x => { done[i] = x; }));
+    await Promise.race([Promise.all(restP), new Promise(r => setTimeout(r, MEMBER_WAIT_MS))]);
+    rest = BOOKS.slice(1).map(function (bk, i) {
+      if (done[i]) return done[i];
+      BOOK_PENDING[bk.url] = restP[i].then(function (x) {
+        delete BOOK_PENDING[bk.url];
+        if (x.data && x.data.token) addBookToken(bk.url, x.data.token);
+        else if (isPassMismatch(x.err)) warnMismatch([x]);
+        return x;
+      });
+      return { bk: bk, pending: true };
+    });
+  } else {
+    rest = await Promise.all(restP);
+  }
   // ศูนย์กลางให้ต้องตั้งรหัสใหม่ ใบที่แลกบัตรมาต้องรู้ด้วย
   if (h.data && h.data.mustChange) rest.forEach(function (x) { if (x.data && x.via) x.data.mustChange = true; });
   return [h].concat(rest);
