@@ -79,6 +79,12 @@ const TARGETS = [
     builtin: { url: '', studentOnly: true, lockCloud: false, logo: '', header: null, about: null }
   },
   {
+    src: 'PhysicsFoundation/foundation.html',
+    out: 'PhysicsFoundation/index.html',
+    // ปรับพื้นฐานฟิสิกส์ — ใช้เอนจินเดียวกับคณิต ยังไม่ได้เชื่อมชีต จึงเป็นฉบับนักเรียนล้วน
+    builtin: { url: '', studentOnly: true, lockCloud: false, logo: '', header: null, about: null }
+  },
+  {
     src: 'ChemistryAutoSheet/chem.html',
     out: 'ChemistryAutoSheet/index.html',
     // เคมียังไม่ได้เชื่อมชีต จึงเป็นฉบับนักเรียนล้วนเช่นเดียวกับคณิต

@@ -28,6 +28,8 @@
   var APPS = [
     { key: 'work',        ic: 'work',        name: 'ส่งงานออนไลน์',      level: 'ทุกวิชา',
       dir: 'WorkDesk/', teacher: 'index.html', student: 'index.html' },
+    { key: 'found',       ic: 'found',       name: 'ปรับพื้นฐานฟิสิกส์',  level: 'ก่อนเรียน ม.4',
+      dir: 'PhysicsFoundation/', teacher: 'foundation.html', student: 'index.html' },
     { key: 'physics2',    ic: 'book',        name: 'ฟิสิกส์ 2 (Interactive Notebook)', level: 'ฟิสิกส์ ม.4-5',
       dir: 'Physics2App/', teacher: 'index.html', student: 'index.html' },
     { key: 'math',        ic: 'math',        name: 'คณิตศาสตร์',          level: 'ม.1–ม.3',
@@ -60,6 +62,7 @@
     figure: '<path d="M4.2 19.8l4.3-1.1 9.7-9.7a2.5 2.5 0 0 0-3.5-3.5L5 15.3z"/><path d="M14.1 6.2l3.5 3.5"/>',
     book: '<path d="M3.4 5.2c2.8-1.2 5.6-1.2 8.6.8 3-2 5.8-2 8.6-.8v13c-2.8-1.2-5.6-1.2-8.6.8-3-2-5.8-2-8.6-.8z"/><path d="M12 6v13"/>',
     work: '<path d="M4 13.5h4.2l1.6 2.6h4.4l1.6-2.6H20"/><path d="M5.6 5.5h12.8L20 13.5v5a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 18.5v-5z"/><path d="M12 3.5v7"/><path d="M9.4 8l2.6 2.6L14.6 8"/>',
+    found: '<path d="M3.5 19.5h4.4v-4.2h4.3v-4.2h4.3V6.9h4"/><path d="M3.5 19.5h17"/><path d="M17.8 3.6l2.7 3.3-3.3 2.6"/>',
     home: '<path d="M3.5 11 12 4l8.5 7"/><path d="M5.8 9.2V20h12.4V9.2"/><path d="M10 20v-5.5h4V20"/>',
     grid: '<rect x="4" y="4" width="6.4" height="6.4" rx="1.4"/><rect x="13.6" y="4" width="6.4" height="6.4" rx="1.4"/><rect x="4" y="13.6" width="6.4" height="6.4" rx="1.4"/><rect x="13.6" y="13.6" width="6.4" height="6.4" rx="1.4"/>'
   };

@@ -29,6 +29,13 @@ MathAutoSheet/outputs/*
 !MathAutoSheet/outputs/figures-math.html
 !MathAutoSheet/outputs/preview.html
 
+# ---- ปรับพื้นฐานฟิสิกส์ (คณิตศาสตร์ที่ใช้ในฟิสิกส์) ----
+!PhysicsFoundation/
+PhysicsFoundation/*
+!PhysicsFoundation/foundation.html
+!PhysicsFoundation/index.html
+!PhysicsFoundation/README-foundation.md
+
 # ---- คลังโจทย์เคมี ----
 !ChemistryAutoSheet/
 ChemistryAutoSheet/*

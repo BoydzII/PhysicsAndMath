@@ -20,6 +20,7 @@ const FILES = [
   'index.html',
   'PhysicsAutoSheet/physics.html',   'PhysicsAutoSheet/index.html',
   'MathAutoSheet/math.html',         'MathAutoSheet/index.html',
+  'PhysicsFoundation/foundation.html', 'PhysicsFoundation/index.html',
   'ChemistryAutoSheet/chem.html',    'ChemistryAutoSheet/index.html',
   'ScienceAutoSheet/science.html',   'ScienceAutoSheet/index.html',
   'BiologyAutoSheet/bio.html',       'BiologyAutoSheet/index.html',
@@ -35,6 +36,7 @@ const FILES = [
 const PAIRS = [
   ['PhysicsAutoSheet/physics.html',   'PhysicsAutoSheet/index.html'],
   ['MathAutoSheet/math.html',         'MathAutoSheet/index.html'],
+  ['PhysicsFoundation/foundation.html', 'PhysicsFoundation/index.html'],
   ['ChemistryAutoSheet/chem.html',    'ChemistryAutoSheet/index.html'],
   ['ScienceAutoSheet/science.html',   'ScienceAutoSheet/index.html'],
   ['BiologyAutoSheet/bio.html',       'BiologyAutoSheet/index.html'],
