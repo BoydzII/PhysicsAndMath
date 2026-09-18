@@ -87,5 +87,37 @@ for (const [a, b] of PAIRS) {
   }
 }
 
+/* แถบเปลี่ยนแอป (apps.js) — ไวยากรณ์ต้องผ่าน และรายการแอปต้องตรงกับ SUBJECTS ของหน้าพอร์ทัล
+   เพิ่มแอปใหม่ที่พอร์ทัลแล้วลืมเติมใน apps.js แอปใหม่จะไม่โผล่ในแถบ โดยไม่มีอะไรฟ้อง
+   และทุกแอปที่อยู่ในรายการต้องโหลด ../apps.js ด้วย ไม่งั้นแอปนั้นไม่มีทางไปแอปอื่น */
+{
+  const appsPath = path.join(ROOT, 'apps.js');
+  if (!fs.existsSync(appsPath)) { console.error('✗  apps.js  : ไม่พบไฟล์'); fail++; }
+  else {
+    const src = fs.readFileSync(appsPath, 'utf8');
+    let ok = true;
+    try { new Function(src); } catch (e) { console.error('✗  apps.js  : ' + e.message); fail++; ok = false; }
+    const dirsOf = (s, from, to) => {
+      const a = s.indexOf(from), b = s.indexOf(to, a);
+      /* ตัดคอมเมนต์ทิ้งก่อน — ในพอร์ทัลมีตัวอย่าง "เพิ่มวิชาใหม่" ที่เขียน dir ไว้ในคอมเมนต์ */
+      return new Set([...s.slice(a, b).replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/dir:\s*'([^']+)'/g)].map(m => m[1]));
+    };
+    const portal = dirsOf(fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8'), 'const SUBJECTS', '\n];');
+    const mine = dirsOf(src, 'var APPS', '\n  ];');
+    const miss = [...portal].filter(d => !mine.has(d)), extra = [...mine].filter(d => !portal.has(d));
+    if (miss.length || extra.length) {
+      console.error('✗  apps.js  : รายการแอปไม่ตรงกับ SUBJECTS ในหน้าพอร์ทัล' +
+        (miss.length ? ' · ขาด ' + miss.join(', ') : '') + (extra.length ? ' · เกิน ' + extra.join(', ') : ''));
+      fail++; ok = false;
+    }
+    const noTag = [...mine].flatMap(d => {
+      const m = src.match(new RegExp("dir: '" + d.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + "', teacher: '([^']+)', student: '([^']+)'"));
+      return m ? [...new Set([d + m[1], d + m[2]])] : [];
+    }).filter(f => fs.existsSync(path.join(ROOT, f)) && !fs.readFileSync(path.join(ROOT, f), 'utf8').includes('src="../apps.js"'));
+    if (noTag.length) { console.error('✗  apps.js  : ไฟล์เหล่านี้ยังไม่โหลดแถบเปลี่ยนแอป — ' + noTag.join(', ')); fail++; ok = false; }
+    if (ok) console.log('✓  apps.js  (แถบเปลี่ยนแอป · ' + mine.size + ' แอป ตรงกับหน้าพอร์ทัล)');
+  }
+}
+
 console.log(fail ? '\nไม่ผ่าน ' + fail + ' รายการ — ยังไม่ควรขึ้นเว็บ' : '\nผ่านทั้งหมด พร้อมขึ้นเว็บ');
 process.exit(fail ? 1 : 0);
