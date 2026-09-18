@@ -171,15 +171,20 @@ td.nm{white-space:nowrap}
    การเชื่อมต่อ
    ────────────────────────────────────────────────────────────────────────────
    ใช้การลงชื่อเข้าใช้ของหน้าพอร์ทัล (localStorage คีย์ pcportal.v1) ไม่มีหน้าลงชื่อของตัวเอง
-   รหัสผ่าน งานที่สั่ง และไฟล์ที่ส่ง อยู่ที่ชีตศูนย์กลางใบเดียว (ใบแรกของ BOOKS ในหน้าพอร์ทัล)
-   จึงต้องเป็นที่อยู่เดียวกับ BOOKS[0] ของ index.html หน้าแรกเสมอ
+   คุยกับสองชีต
+     HUB_URL   ชีตศูนย์กลาง — รหัสผ่านอยู่ที่นี่ คำขอลืมรหัสผ่านจึงไปที่นี่ (BOOKS[0] ของหน้าพอร์ทัล)
+     WORK_URL  ชีตส่งงาน — งานที่สั่ง การส่ง และไฟล์ แยกออกมาไม่ให้การอัปโหลดถ่วงการลงชื่อเข้าใช้
+               (ใบที่มี autoRoster ใน BOOKS ของหน้าพอร์ทัล) ต้องเป็นที่อยู่เดียวกันเสมอ
 
    ?api= ใช้ได้เฉพาะตอนเปิดจากเครื่องตัวเอง (localhost) ไว้ทดสอบกับชีตจำลอง
    เปิดจากเว็บจริงพารามิเตอร์นี้ไม่มีผล ใครก็ส่งลิงก์หลอกให้ไปคุยกับที่อื่นไม่ได้
    ──────────────────────────────────────────────────────────────────────────── */
 const HUB_URL = 'https://script.google.com/macros/s/AKfycbxVa8BYYQeIhBDmg85w2UBwsIqt6a2YudehUfCbyMny9T-5TTh1UfFxsJjTk9HLNuFc/exec';
+const WORK_URL = 'https://script.google.com/macros/s/AKfycbyKZicAzLfUfc7UXPMrGsejrq9DyOU7w3AyinaueUsarp72UZD6w8gYbv_FtpUfasbDkw/exec';
 const LOCAL = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
-const API_URL = (LOCAL && new URLSearchParams(location.search).get('api')) || HUB_URL;
+const TEST_API = LOCAL ? new URLSearchParams(location.search).get('api') : '';
+/** คำขอรหัสผ่านไปชีตศูนย์กลาง ที่เหลือไปชีตส่งงาน */
+const urlOf = action => TEST_API || (/^reset/.test(action) ? HUB_URL : WORK_URL);
 const SESSION_KEY = 'pcportal.v1';
 
 const IMG_MAX_SIDE = 1600;          /* ด้านยาวของรูปหลังย่อ อ่านลายมือได้ชัด ไฟล์ราว 250–450 KB */
@@ -212,15 +217,14 @@ function readSession() {
   if (!s || s.v !== 1 || !s.exp || s.exp < Date.now()) return null;
   return s;
 }
-/** โทเคนของชีตศูนย์กลาง — ลงชื่อด้วยรุ่นเก่าที่เก็บโทเคนใบเดียว ก็ยังใช้ได้ถ้าเป็นใบเดียวกัน */
-function hubToken(s) {
+/** โทเคนของชีตใบหนึ่ง — พอร์ทัลรุ่นเก่าเก็บโทเคนใบเดียวไว้ที่ s.token ก็ยังใช้ได้ถ้าเป็นใบเดียวกัน */
+function tokenFor(s, url) {
   if (!s) return '';
-  const key = LOCAL && API_URL !== HUB_URL ? API_URL : HUB_URL;
-  if (s.tokens && s.tokens[key]) return s.tokens[key];
-  return s.url === key ? (s.token || '') : '';
+  if (s.tokens && s.tokens[url]) return s.tokens[url];
+  return s.url === url ? (s.token || '') : '';
 }
 
-const ME = { s: null, token: '', role: '' };
+const ME = { s: null, role: '', tok: {} };
 
 /** ยิงคำสั่งไปที่ Apps Script — ต้องเป็น text/plain ไม่งั้นเบราว์เซอร์ยิง preflight ที่ Apps Script ตอบไม่ได้ */
 async function api(action, params, timeoutMs) {
@@ -228,9 +232,10 @@ async function api(action, params, timeoutMs) {
   const timer = setTimeout(() => ctl.abort(), timeoutMs || 45000);
   let res;
   try {
-    res = await fetch(API_URL, {
+    const url = urlOf(action);
+    res = await fetch(url, {
       method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify(Object.assign({ action: action, token: ME.token }, params || {})),
+      body: JSON.stringify(Object.assign({ action: action, token: ME.tok[url] || '' }, params || {})),
       redirect: 'follow', signal: ctl.signal
     });
   } catch (e) {
@@ -645,6 +650,14 @@ function teacherShell() {
 }
 
 async function teacherLoad() {
+  if (T.noWork) {
+    T.tab = 'reset'; T.works = [];
+    try { T.resets = await api('resetList', {}); } catch (e) { T.resets = null; }
+    teacherShell();
+    $('#pane').insertAdjacentHTML('beforebegin', '<div class="notice warn">ยังเชื่อมกับชีตส่งงานไม่ได้ จึงเปิดได้เฉพาะคำขอรหัสผ่าน — ' +
+      'ผู้ดูแลหลักกด “เชื่อมทุกชีต” ที่หน้าหลัก แล้วออกจากระบบและลงชื่อใหม่</div>');
+    return;
+  }
   try {
     const [works, resets] = await Promise.all([api('workList', {}), api('resetList', {}).catch(e => ({ err: e }))]);
     T.works = works;
@@ -1168,13 +1181,15 @@ function start() {
   $('#mark').innerHTML = icon('tray', 22);
   const s = readSession();
   if (!s) return showSignin();
-  const token = hubToken(s);
-  if (!token) {
-    return showSignin(s.role === 'admin'
-      ? 'บัญชีนี้ยังไม่ได้ลงชื่อกับชีตศูนย์กลาง'
-      : 'บัญชีนี้ไม่มีชื่อในชีตศูนย์กลาง — แจ้งครูผู้สอนให้เพิ่มรายชื่อ');
+  ME.s = s; ME.role = s.role;
+  [HUB_URL, WORK_URL, TEST_API].filter(Boolean).forEach(u => { ME.tok[u] = tokenFor(s, u); });
+  const hasWork = !!ME.tok[urlOf('workMine')], hasHub = !!ME.tok[urlOf('resetList')];
+  if (!hasWork && !(s.role === 'admin' && hasHub)) {
+    return showSignin('ยังเชื่อมกับชีตส่งงานไม่ได้ — กดออกจากระบบที่หน้าหลักแล้วลงชื่อใหม่อีกครั้ง' +
+      (s.role === 'admin' ? ' (ถ้ายังไม่ได้ ผู้ดูแลหลักต้องกด “เชื่อมทุกชีต” ที่หน้าหลักก่อน)' : ''));
   }
-  ME.s = s; ME.token = token; ME.role = s.role;
+  /* ครูที่ยังเชื่อมชีตส่งงานไม่ได้ ยังจัดการคำขอรหัสผ่านได้ เพราะคำขออยู่ชีตศูนย์กลาง */
+  T.noWork = !hasWork;
   const p = s.profile || {};
   if (s.role === 'admin') {
     /* ลิงก์จากหน้าพอร์ทัล "เปิดดูคำขอ" พามาที่แท็บคำขอรหัสผ่านตรง ๆ */

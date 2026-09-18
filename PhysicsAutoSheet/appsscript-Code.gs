@@ -20,6 +20,13 @@
  *   4) กลับมาที่แอพ → แท็บตั้งค่า → ปุ่ม "ซ่อมโครงสร้างชีต" หนึ่งครั้ง
  *      เพื่อเติมหัวตารางของคอลัมน์ใหม่ (ข้อมูลเดิมไม่หาย)
  *
+ * ── รุ่น 20 เพิ่มอะไร (ชีตส่งงานแยก) ───────────────────────────────────
+ *   งานที่ส่งย้ายไปชีตใบใหม่ (สำเนาของชีตศูนย์กลาง) การลงชื่อจะได้ไม่ช้าตอนนักเรียนอัปโหลด
+ *   ชีตส่งงานเชื่อมเป็นสมาชิกแบบ "รับรายชื่ออัตโนมัติ" (AUTO_ROSTER) ตั้งจากปุ่มเชื่อมชีตในหน้าพอร์ทัล
+ *   นักเรียนที่เพิ่มหรือย้ายชั้นที่ชีตศูนย์กลาง ถูกเติม/อัปเดตในชีตส่งงานเองตอนลงชื่อ
+ *   ชีตส่งงานไม่รับรหัสผ่านตรง รับเฉพาะบัตรผ่านจากชีตศูนย์กลาง
+ *   ต้องวางรุ่นนี้ทั้งชีตศูนย์กลาง (บัตรผ่านพกชื่อ ชั้น) และชีตส่งงาน
+ *
  * ── รุ่น 19 เพิ่มอะไร (ลืมรหัสผ่าน · ส่งงานออนไลน์) ─────────────────────
  *   ลืมรหัสผ่าน: นักเรียนยื่นคำขอพร้อมตั้งรหัสใหม่เองที่หน้าพอร์ทัล (resetAsk)
  *   ครูอนุมัติทีละคน อนุมัติรวม หรือเปิดช่วง "ปลดทันที" ไม่เกินหนึ่งชั่วโมง
@@ -1201,8 +1208,10 @@ function apiHubLogin_(req) {
   if (p.role === 'student') {
     var sid = normSid_(p.sid);
     var row = findStudentRow_(sid);
+    if (row < 0 && autoRoster_() && p.name) row = autoAddStudent_(p);
     if (row < 0) throw new Error('ไม่พบเลขประจำตัว ' + sid + ' ในชีตนี้ (' + bookName_() + ')');
     var me = readStudentRow_(row);
+    if (autoRoster_() && p.name) me = autoSyncStudent_(me, p);
     if (String(me.active) === 'false' || String(me.active) === '0') throw new Error('บัญชีนี้ถูกระงับการใช้งาน');
     sheet_('students').getRange(me._row, C_LOGIN).setValue(new Date());
     return {
@@ -1231,12 +1240,49 @@ function apiHubLogin_(req) {
   }
   throw new Error('HUB: บัตรผ่านไม่ถูกต้อง');
 }
+/* ── ชีตส่งงาน: รับรายชื่อจากชีตศูนย์กลางอัตโนมัติ (รุ่น 20) ─────────────────
+   ชีตส่งงานเป็นสำเนาของชีตศูนย์กลาง รายชื่อที่เพิ่มหรือย้ายชั้นทีหลังจึงไม่ตามมาเอง
+   บัตรผ่านที่ศูนย์กลางเซ็นพกชื่อ ชั้น เลขที่ของนักเรียนมาด้วย ชีตนี้จึงเติมหรืออัปเดตแถวให้
+   ตอนนักเรียนลงชื่อ ครูไม่ต้องส่งรายชื่อสองที่
+   เปิดเฉพาะชีตที่ตั้ง AUTO_ROSTER (ตั้งจากปุ่มเชื่อมชีตของหน้าพอร์ทัล) ชีตฟิสิกส์ไม่โดน
+   ไม่งั้นนักเรียน ม.1 ที่ลงชื่อจะไปโผล่ในรายชื่อของชีตฟิสิกส์ */
+function autoRoster_() { return hubRole_() === 'member' && props_().getProperty('AUTO_ROSTER') === '1'; }
+function autoAddStudent_(p) {
+  var lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    _sidCol = null;
+    var row = findStudentRow_(p.sid);
+    if (row > 0) return row;
+    /* แฮชสุ่มที่ไม่มีใครรู้รหัส — แถวนี้ลงชื่อด้วยรหัสผ่านตรง ๆ ไม่ได้ ต้องมาทางบัตรผ่านเท่านั้น */
+    var salt = newSalt_();
+    appendRow_('students', { no: p.no || '', sid: normSid_(p.sid), name: String(p.name || ''), cls: normCls_(p.cls),
+                             passHash: hashPass_(Utilities.getUuid() + Utilities.getUuid(), salt), salt: salt,
+                             mustChange: false, active: true });
+    _sidCol = null;
+    return findStudentRow_(p.sid);
+  } finally {
+    lock.releaseLock();
+  }
+}
+function autoSyncStudent_(me, p) {
+  var cls = normCls_(p.cls), name = String(p.name || ''), no = p.no == null ? '' : p.no;
+  if (normCls_(me.cls) === cls && String(me.name || '') === name && String(me.no) === String(no)) return me;
+  var sh = sheet_('students');
+  sh.getRange(me._row, C_NO).setValue(no);
+  sh.getRange(me._row, C_NAME, 1, 2).setValues([[name, cls]]);
+  dropCache_('students');
+  me.no = no; me.name = name; me.cls = cls;
+  return me;
+}
+
 /** สถานะการเชื่อม — ลายนิ้วมือของกุญแจ (8 ตัวแรกของแฮช) ไว้เทียบว่าทุกชีตถือกุญแจเดียวกัน
     ไม่คืนตัวกุญแจเด็ดขาด */
 function apiHubStatus_(req) {
   needAdmin_(req);
   var k = hubKey_();
-  return { role: hubRole_(), fp: k ? sha256_('fp|' + k).slice(0, 8) : '', book: bookName_() };
+  return { role: hubRole_(), fp: k ? sha256_('fp|' + k).slice(0, 8) : '', book: bookName_(),
+           autoRoster: props_().getProperty('AUTO_ROSTER') === '1' };
 }
 /** ตั้งกุญแจร่วมและบทบาทของชีตนี้ — เฉพาะผู้ดูแลหลัก ส่งว่างทั้งคู่ = เลิกเชื่อม */
 function apiHubSetup_(req) {
@@ -1247,12 +1293,15 @@ function apiHubSetup_(req) {
   if (!key && !role) {
     props_().deleteProperty('HUB_KEY');
     props_().deleteProperty('HUB_ROLE');
+    props_().deleteProperty('AUTO_ROSTER');
     return apiHubStatus_(req);
   }
   if (role !== 'hub' && role !== 'member') throw new Error('บทบาทต้องเป็น hub หรือ member');
   if (key.length < HUB_KEY_MIN) throw new Error('กุญแจร่วมต้องยาวอย่างน้อย ' + HUB_KEY_MIN + ' ตัว');
   props_().setProperty('HUB_KEY', key);
   props_().setProperty('HUB_ROLE', role);
+  if (role === 'member' && req.autoRoster) props_().setProperty('AUTO_ROSTER', '1');
+  else props_().deleteProperty('AUTO_ROSTER');
   return apiHubStatus_(req);
 }
 
@@ -1941,7 +1990,7 @@ function json_(o) {
 }
 
 function doGet() {
-  return json_({ ok: true, service: 'quiz-bank', version: 19, subjects: SUBJECTS,
+  return json_({ ok: true, service: 'quiz-bank', version: 20, subjects: SUBJECTS,
                  note: 'ใช้งานผ่าน POST จากแอพเท่านั้น' });
 }
 
@@ -2079,7 +2128,7 @@ function apiPing_(req) {
   try { locale = String(book_().getSpreadsheetLocale() || ''); } catch (e) {}
 
   return {
-    version: 19, role: role, myClasses: myCls,
+    version: 20, role: role, myClasses: myCls,
     locale: locale, monthFirst: monthFirstSheet_(), classes: clsCount,
     teachers: Math.max(0, sheet_('teachers').getLastRow() - 1),
     needRepair: needRepair, layout: layout, subjects: SUBJECTS,
@@ -2097,6 +2146,10 @@ function apiPing_(req) {
 function failKey_(sid) { return 'fail_' + sid; }
 
 function apiLogin_(req) {
+  /* ชีตส่งงาน (รับรายชื่ออัตโนมัติ) ไม่มีรหัสผ่านของตัวเอง — แฮชที่ติดมากับสำเนาใช้ไม่ได้
+     เพราะกุญแจลับคนละชุด ส่วนแถวที่ยังไม่มีแฮชจะรับรหัสตั้งต้น ถ้าเปิดทางนี้ไว้
+     ใครก็เข้าในชื่อเด็กคนนั้นด้วย 1111 แล้วส่งงานแทนได้ จึงรับเฉพาะบัตรผ่านจากชีตศูนย์กลาง */
+  if (autoRoster_()) throw new Error('HUB: ชีตนี้รับเฉพาะการลงชื่อผ่านหน้าพอร์ทัล (ชีตศูนย์กลาง)');
   var sid = normSid_(req.sid);
   var pass = String(req.pass || '');
   if (!sid || !pass) throw new Error('กรอกเลขประจำตัวและรหัสผ่านให้ครบ');
@@ -2145,7 +2198,8 @@ function apiLogin_(req) {
     token: makeToken_({ role: 'student', sid: normSid_(me.sid) || sid }),
     profile: { sid: normSid_(me.sid) || sid, name: me.name, no: me.no, cls: me.cls },
     mustChange: mustChange,
-    hub: hubMake_({ role: 'student', sid: normSid_(me.sid) || sid })
+    hub: hubMake_({ role: 'student', sid: normSid_(me.sid) || sid,
+                    name: String(me.name || ''), cls: normCls_(me.cls), no: me.no })
   };
 }
 

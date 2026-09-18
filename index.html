@@ -328,7 +328,11 @@ const APP_VER = "v8.153", BUILD_AT = "2026-09-17 00:58";
    ──────────────────────────────────────────────────────────────────────────── */
 const BOOKS = [
   { url: 'https://script.google.com/macros/s/AKfycbxVa8BYYQeIhBDmg85w2UBwsIqt6a2YudehUfCbyMny9T-5TTh1UfFxsJjTk9HLNuFc/exec', name: 'ชีตวิทยาศาสตร์กายภาพ' },
-  { url: 'https://script.google.com/macros/s/AKfycbzuuRbnE_oB7a9vx7zZizyPVEKao31ERDTU82DvydMuRTDqVoQvgns9EsjTIzpbBjuM/exec', name: 'ชีตฟิสิกส์' }
+  { url: 'https://script.google.com/macros/s/AKfycbzuuRbnE_oB7a9vx7zZizyPVEKao31ERDTU82DvydMuRTDqVoQvgns9EsjTIzpbBjuM/exec', name: 'ชีตฟิสิกส์' },
+  /* ชีตส่งงานออนไลน์ (สำเนาของชีตศูนย์กลาง) — แยกไว้เพื่อไม่ให้การอัปโหลดไฟล์ถ่วงการลงชื่อเข้าใช้
+     autoRoster: รับรายชื่อนักเรียนจากบัตรผ่านของศูนย์กลางเอง และไม่รับรหัสผ่านตรง (ชีตรุ่น 20)
+     ต้องตรงกับ WORK_URL ใน WorkDesk/index.html */
+  { url: 'https://script.google.com/macros/s/AKfycbyKZicAzLfUfc7UXPMrGsejrq9DyOU7w3AyinaueUsarp72UZD6w8gYbv_FtpUfasbDkw/exec', name: 'ชีตส่งงาน', autoRoster: true }
 ];
 /* ใบหลัก = ใบแรกในรายการ ใช้กับวิชาที่ยังไม่มีชีตของตัวเอง (คณิต วิทย์ ชีวะ เคมี)
    ห้ามสลับใบแรกโดยไม่ย้ายข้อมูล เพราะวิชากลุ่มนั้นอ่านที่อยู่จากใบหลัก
@@ -419,7 +423,7 @@ function icon(name, size) {
 const SUBJECTS = [
   /* ส่งงานออนไลน์ใช้ได้ทุกวิชาทุกชั้น จึงอยู่บนสุด และใส่ทุกระดับชั้นไว้ จะได้ไม่ถูกดันลงไปตอนเรียงตามชั้น
      ไฟล์เดียวใช้ทั้งครูและนักเรียน แอปเลือกหน้าจอเองจากบทบาทที่ลงชื่อไว้ */
-  { key: 'work', name: 'ส่งงานออนไลน์', level: 'ทุกวิชา', grades: [1, 2, 3, 4, 5, 6],
+  { key: 'work', name: 'ส่งงานออนไลน์', level: 'ทุกวิชา', grades: [1, 2, 3, 4, 5, 6], sheet: 2,
     dir: 'WorkDesk/', teacher: 'index.html', student: 'index.html',
     desc: 'ถ่ายรูปใบงานหรือแนบ PDF ส่งครู · ดูกำหนดส่ง คะแนน และงานที่ค้าง<br>' +
           'ครูตรวจ ให้คะแนน และดูนักเรียนที่ต้องติดตามได้ในหน้าเดียว' },
@@ -859,16 +863,23 @@ async function hubPaint() {
     }
   }));
   const fp0 = HUBROWS[0].st && HUBROWS[0].st.fp;
-  const linked = HUBROWS.every(function (r, i) { return r.st && r.st.role === hubWant(i) && r.st.fp && r.st.fp === fp0; });
+  /* ชีตที่ต้องรับรายชื่ออัตโนมัติ ต้องเปิดค่านั้นด้วยถึงจะนับว่าเชื่อมแล้ว — ชีตรุ่นเก่ายังไม่มีค่านี้ จะขึ้นปุ่มให้เชื่อมใหม่ */
+  const rowOk = function (r, i) {
+    return r.st && r.st.role === hubWant(i) && r.st.fp && r.st.fp === fp0 && (!BOOKS[i].autoRoster || r.st.autoRoster === true);
+  };
+  const linked = HUBROWS.every(rowOk);
   const line = function (r, i) {
     const tag = i === 0 ? 'ศูนย์กลาง' : 'สมาชิก';
     if (r.err) return '· <b>' + r.bk.name + '</b> (' + tag + ') — ' + r.err +
       (r.need ? '<div class="trow" style="margin-top:6px"><input type="password" data-hubpw="' + i +
         '" placeholder="รหัสผู้ดูแลหลักของ' + r.bk.name + '"><button class="ghost" data-hubin="' + i +
         '">ลงชื่อชีตนี้</button></div>' : '');
-    const ok = r.st.role === hubWant(i) && r.st.fp && r.st.fp === fp0;
+    const ok = rowOk(r, i);
     return '· <b>' + r.bk.name + '</b> (' + tag + ') — ' +
-      (ok ? 'เชื่อมแล้ว ✓' : r.st.role ? 'ตั้งไว้ไม่ตรง (' + r.st.role + ')' : 'ยังไม่ได้เชื่อม');
+      (ok ? 'เชื่อมแล้ว ✓'
+          : BOOKS[i].autoRoster && r.st.role === 'member' && r.st.autoRoster === undefined
+            ? 'ชีตนี้ยังเป็นรุ่นเก่า — วางโค้ดชีตรุ่น 20 แล้ว Deploy ใหม่ก่อน'
+          : r.st.role ? 'ตั้งไว้ไม่ตรง (' + r.st.role + ')' : 'ยังไม่ได้เชื่อม');
   };
   const lines = HUBROWS.map(line).join('<br>');
   if (linked) {
@@ -904,7 +915,7 @@ async function hubRun() {
   const bad = [];
   // ตั้งสมาชิกก่อน ศูนย์กลางทีหลัง — ถ้าพลาดกลางทาง ศูนย์กลางยังไม่ออกบัตร ทุกคนยังเข้าได้แบบเดิม
   for (let i = BOOKS.length - 1; i >= 0; i--) {
-    try { await api('hubSetup', { token: tokenOf(BOOKS[i].url), key: key, role: hubWant(i) }, BOOKS[i].url); }
+    try { await api('hubSetup', { token: tokenOf(BOOKS[i].url), key: key, role: hubWant(i), autoRoster: !!BOOKS[i].autoRoster }, BOOKS[i].url); }
     catch (e) { bad.push(BOOKS[i].name + ': ' + (e.message || e)); if (i > 0) break; }
   }
   if (bad.length) { hubSay('เชื่อมไม่สำเร็จ — ' + bad.join(' · ')); return; }
