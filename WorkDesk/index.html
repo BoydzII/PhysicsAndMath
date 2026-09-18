@@ -147,6 +147,18 @@ td.nm{white-space:nowrap}
 .stat div{font-size:13px;color:var(--muted)}
 .stat b{display:block;font-size:20px;color:var(--ink)}
 .count{font-variant-numeric:tabular-nums}
+/* ---------- ใบงานจากครู ---------- */
+.shlist{border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.shrow{display:flex;align-items:center;gap:10px;padding:8px 10px;border-bottom:1px solid var(--line2)}
+.shrow:last-child{border-bottom:0}
+.shrow .ic{flex:none;color:var(--brand);display:flex}
+.shrow .nm{flex:1;min-width:0;line-height:1.45;word-break:break-word}
+.shrow .nm small{display:block;color:var(--muted);font-size:12px}
+.shrow.gone .nm{text-decoration:line-through;color:var(--muted)}
+.shrow.new .ic{color:var(--ok)}
+a.dl{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px;min-height:48px;border-radius:8px;background:var(--brand);color:var(--brand-ink);font-weight:700;text-decoration:none}
+.shpick{display:flex;align-items:center;justify-content:center;gap:8px;border:1px dashed var(--brand);color:var(--brand);border-radius:10px;min-height:48px;cursor:pointer;font-weight:700;margin-top:8px}
+.shpick input{display:none}
 </style>
 </head>
 <body>
@@ -191,6 +203,17 @@ const IMG_MAX_SIDE = 1600;          /* ด้านยาวของรูป�
 const IMG_QUALITY = 0.74;
 const PDF_MAX = 10 * 1024 * 1024;
 const FILES_MAX = 20;
+/* ใบงานที่ครูแนบให้นักเรียนโหลด — ต้องตรงกับ SHEET_MIMES และ SHEETS_PER_WORK ในโค้ดชีต (รุ่น 21) */
+const SHEET_EXT = {
+  pdf: 'application/pdf', jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp',
+  doc: 'application/msword', docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  xls: 'application/vnd.ms-excel', xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  ppt: 'application/vnd.ms-powerpoint', pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+};
+const SHEET_ACCEPT = '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,image/*';
+const SHEET_MAX = 10 * 1024 * 1024;
+const SHEETS_MAX = 10;
+const SHEET_IMG_SIDE = 2400;        /* ใบงานต้องพิมพ์ออกมาอ่านได้ จึงย่อน้อยกว่ารูปงานที่นักเรียนส่ง */
 
 const $ = (s, r) => (r || document).querySelector(s);
 const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
@@ -199,7 +222,8 @@ const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&a
 const ICONS = {
   tray: '<path d="M4 13.5h4.2l1.6 2.6h4.4l1.6-2.6H20"/><path d="M5.6 5.5h12.8L20 13.5v5a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 18.5v-5z"/><path d="M12 3.5v7"/><path d="M9.4 8l2.6 2.6L14.6 8"/>',
   camera: '<path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2.3l1.4-2h5.6l1.4 2h2.3A1.5 1.5 0 0 1 20 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5z"/><circle cx="12" cy="12.8" r="3.3"/>',
-  doc: '<path d="M7 3.5h7l4 4v13H7z"/><path d="M14 3.5v4h4"/><path d="M9.5 12.5h6"/><path d="M9.5 16h6"/>'
+  doc: '<path d="M7 3.5h7l4 4v13H7z"/><path d="M14 3.5v4h4"/><path d="M9.5 12.5h6"/><path d="M9.5 16h6"/>',
+  down: '<path d="M12 4v11"/><path d="M7.5 10.5L12 15l4.5-4.5"/><path d="M5 19.5h14"/>'
 };
 const icon = (n, s) => '<svg width="' + (s || 22) + '" height="' + (s || 22) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICONS[n] + '</svg>';
 
@@ -245,7 +269,7 @@ async function api(action, params, timeoutMs) {
   let j;
   try { j = JSON.parse(await res.text()); } catch (e) { throw new Error('ระบบตอบกลับไม่ถูกรูปแบบ — ลองใหม่อีกครั้ง'); }
   if (!j.ok) {
-    if (/ไม่รู้จักคำสั่ง/.test(j.error || '')) throw new Error('ชีตยังเป็นรุ่นเก่า — ครูต้องวางโค้ดชีตรุ่น 19 แล้ว Deploy ใหม่ก่อน');
+    if (/ไม่รู้จักคำสั่ง/.test(j.error || '')) throw new Error('ชีตยังเป็นรุ่นเก่า — ครูต้องวางโค้ดชีตรุ่น ' + (/^workSheet/.test(action) ? 21 : 19) + ' แล้ว Deploy ใหม่ก่อน');
     const err = new Error(String(j.error || 'ทำรายการไม่สำเร็จ').replace(/^AUTH:\s*/, ''));
     err.auth = !!j.auth;
     throw err;
@@ -293,6 +317,28 @@ function dueLine(w, now) {
   const due = new Date(w.dueAt).getTime(), left = (due - now) / 60000;
   if (left >= 0) return 'กำหนดส่ง ' + thDate(w.dueAt, true) + ' · เหลือ ' + spanText(left);
   return 'กำหนดส่ง ' + thDate(w.dueAt, true) + ' · <span class="nw" style="color:var(--bad)">เลยกำหนดมา ' + spanText(-left) + '</span>';
+}
+
+/* ---- ใบงานจากครู ----------------------------------------------------------- */
+const fmtSize = n => n >= 1048576 ? (Math.round(n / 104857.6) / 10) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB';
+function sheetKind(mime) {
+  if (mime === 'application/pdf') return 'PDF';
+  if (/^image\//.test(mime)) return 'รูป';
+  if (/word/.test(mime)) return 'Word';
+  if (/excel|spreadsheet/.test(mime)) return 'Excel';
+  if (/powerpoint|presentation/.test(mime)) return 'PowerPoint';
+  return 'ไฟล์';
+}
+/** ชนิดของไฟล์ที่ครูเลือก — Windows บางเครื่องไม่บอกชนิดของไฟล์ Word จึงดูจากนามสกุลด้วย */
+function sheetMime(file) {
+  if (/^image\//.test(file.type)) return file.type;       /* รูปชนิดอื่น (HEIC ฯลฯ) แปลงเป็น JPG ตอนส่ง */
+  if (Object.values(SHEET_EXT).indexOf(file.type) >= 0) return file.type;
+  const ext = (String(file.name).match(/\.([a-z0-9]+)$/i) || [])[1];
+  return ext ? SHEET_EXT[ext.toLowerCase()] || '' : '';
+}
+function sheetRow(f, right, cls) {
+  return '<div class="shrow' + (cls ? ' ' + cls : '') + '"><span class="ic">' + icon('doc', 22) + '</span>' +
+    '<span class="nm">' + esc(f.name) + '<small>' + sheetKind(f.mime) + ' · ' + fmtSize(f.size) + '</small></span>' + right + '</div>';
 }
 
 /* ---- แผ่นทับหน้า ----------------------------------------------------------- */
@@ -388,6 +434,7 @@ function studentRender() {
 function stuItem(w, now) {
   return '<button class="item" data-open="' + esc(w.code) + '"><span class="mark" style="width:36px;height:36px">' + icon('tray', 19) + '</span>' +
     '<span class="bd"><span class="tt">' + esc(w.title) + '</span>' + (w.subject ? ' <span class="chip">' + esc(w.subject) + '</span>' : '') +
+    ((w.sheets || []).length ? ' <span class="chip brand">มีใบงาน ' + w.sheets.length + ' ไฟล์</span>' : '') +
     '<br><span class="ln">' + dueLine(w, now) + '</span><br>' + stuStatus(w, now) + '</span></button>';
 }
 
@@ -404,6 +451,11 @@ function studentOpen(code) {
     '<div class="muted small">' + (w.subject ? esc(w.subject) + ' · ' : '') + 'คะแนนเต็ม ' + fmtN(w.max) + ' · ' + ruleText(w) + '</div>' +
     '<div class="small" style="margin-top:4px">' + dueLine(w, now) + '</div>';
   if (w.detail) h += '<div class="detail" style="margin-top:10px">' + esc(w.detail) + '</div>';
+  if ((w.sheets || []).length) {
+    h += '<h3>ใบงานจากครู</h3><div class="shlist">' + w.sheets.map(f =>
+      sheetRow(f, '<button class="sm" data-sheet="' + esc(f.id) + '">' + icon('down', 16) + ' เปิด / โหลด</button>')).join('') + '</div>' +
+      '<div class="muted small" style="margin-top:4px">ทำในกระดาษหรือพิมพ์ออกมาทำ แล้วถ่ายรูปส่งด้านล่าง</div>';
+  }
 
   if (s && s.graded) {
     h += '<div class="notice ok" style="margin-top:12px"><span class="big">' + fmtN(s.score) + '</span> / ' + fmtN(w.max) + ' คะแนน' +
@@ -437,6 +489,8 @@ function studentOpen(code) {
   $('[data-img]', root).addEventListener('change', e => { addFiles(Array.from(e.target.files || []), 'img').then(paint); e.target.value = ''; });
   $('[data-pdf]', root).addEventListener('change', e => { addFiles(Array.from(e.target.files || []), 'pdf').then(paint); e.target.value = ''; });
   $$('[data-see]', root).forEach(b => b.addEventListener('click', () => viewOwnFile(b.dataset.see, b)));
+  $$('[data-sheet]', root).forEach(b => b.addEventListener('click', () =>
+    viewOwnFile(b.dataset.sheet, b, (w.sheets.find(f => f.id === b.dataset.sheet) || {}).name, true)));
   $('[data-send]', root).addEventListener('click', () => studentSend(w, root, sh));
   paint();
   return sh;
@@ -485,7 +539,7 @@ function paintPending(root, w) {
 }
 
 /** ย่อรูปก่อนส่ง — รูปจากกล้องมือถือ 3–6 MB ส่งช้าบนเน็ตโรงเรียน ย่อแล้วยังอ่านลายมือได้ชัด */
-async function shrinkImage(file) {
+async function shrinkImage(file, maxSide) {
   let bmp = null, w, h;
   try {
     bmp = await createImageBitmap(file, { imageOrientation: 'from-image' });
@@ -499,7 +553,7 @@ async function shrinkImage(file) {
     });
     w = bmp.naturalWidth; h = bmp.naturalHeight;
   }
-  const k = Math.min(1, IMG_MAX_SIDE / Math.max(w, h));
+  const k = Math.min(1, (maxSide || IMG_MAX_SIDE) / Math.max(w, h));
   const cv = document.createElement('canvas');
   cv.width = Math.round(w * k); cv.height = Math.round(h * k);
   const cx = cv.getContext('2d');
@@ -608,8 +662,10 @@ async function fileUrl(id) {
   FILECACHE.set(id, v);
   return v;
 }
-/* ไม่ใช้ window.open เพราะ Safari บนไอแพดบล็อกหน้าต่างที่เปิดหลังรอโหลดเสร็จ จึงแสดงในแผ่นเล็กแทน */
-async function viewOwnFile(id, btn) {
+/* ไม่ใช้ window.open เพราะ Safari บนไอแพดบล็อกหน้าต่างที่เปิดหลังรอโหลดเสร็จ จึงแสดงในแผ่นเล็กแทน
+   withSave: มีปุ่มบันทึกลงเครื่อง (ใบงานจากครู) — เป็นลิงก์จริงที่ผู้ใช้แตะเอง ไม่สั่งคลิกจากสคริปต์
+   ไฟล์ Word Excel PowerPoint แสดงในหน้าไม่ได้ จึงมีแต่ปุ่มบันทึก */
+async function viewOwnFile(id, btn, title, withSave) {
   const old = btn.textContent;
   btn.disabled = true; btn.textContent = 'กำลังเปิด…';
   try {
@@ -617,11 +673,14 @@ async function viewOwnFile(id, btn) {
     const box = document.createElement('div');
     box.className = 'overlay';
     box.style.zIndex = 70;
-    box.innerHTML = '<div class="sheet"><button class="x sm" data-x>ปิด</button><h2>' + esc(old) + '</h2>' +
+    const save = withSave ? '<a class="dl" href="' + f.url + '" download="' + esc(f.name) + '">' + icon('down', 20) + 'ดาวน์โหลดลงเครื่อง</a>' : '';
+    box.innerHTML = '<div class="sheet"><button class="x sm" data-x>ปิด</button><h2 style="padding-right:56px;word-break:break-word">' + esc(title || old) + '</h2>' +
       (f.mime === 'application/pdf'
-        ? '<iframe src="' + f.url + '" title="PDF" style="width:100%;height:70vh;border:1px solid var(--line);border-radius:6px"></iframe>' +
+        ? save + '<iframe src="' + f.url + '" title="PDF" style="width:100%;height:70vh;border:1px solid var(--line);border-radius:6px;margin-top:10px"></iframe>' +
           '<p><a href="' + f.url + '" target="_blank" rel="noopener">เปิด PDF ในแท็บใหม่</a></p>'
-        : '<img alt="" src="' + f.url + '" style="max-width:100%;border:1px solid var(--line);border-radius:6px">') + '</div>';
+        : /^image\//.test(f.mime)
+          ? save + '<img alt="" src="' + f.url + '" style="max-width:100%;border:1px solid var(--line);border-radius:6px;margin-top:10px">'
+          : '<div class="empty">' + icon('doc', 40) + '<br>' + esc(f.name) + '<br><span class="small">ไฟล์ชนิดนี้เปิดดูในหน้านี้ไม่ได้ ดาวน์โหลดแล้วเปิดด้วยแอปในเครื่อง</span></div>' + save) + '</div>';
     document.body.appendChild(box);
     const shut = () => box.remove();
     box.addEventListener('click', e => { if (e.target === box) shut(); });
@@ -682,7 +741,8 @@ function paneWorks() {
       return '<div class="item" style="cursor:default"><div class="bd">' +
         '<div class="tt">' + esc(w.title) + (w.subject ? ' <span class="chip">' + esc(w.subject) + '</span>' : '') + '</div>' +
         '<div class="ln">' + esc(w.cls.join(', ')) + ' · ' + dueLine(w, now) + '</div>' +
-        '<div class="ln">เต็ม ' + fmtN(w.max) + ' · ' + ruleText(w) + '</div>' +
+        '<div class="ln">เต็ม ' + fmtN(w.max) + ' · ' + ruleText(w) +
+          ((w.sheets || []).length ? ' · <span style="color:var(--brand)">ใบงาน ' + w.sheets.length + ' ไฟล์</span>' : '') + '</div>' +
         '<div class="ln count">ส่งแล้ว <b style="color:var(--ink)">' + st.sent + '/' + st.roster + '</b>' +
           (st.late ? ' · ส่งช้า ' + st.late : '') + ' · ตรวจแล้ว ' + st.graded +
           (st.toGrade ? ' · <b style="color:var(--brand)">รอตรวจ ' + st.toGrade + '</b>' : '') + '</div>' +
@@ -721,6 +781,9 @@ function workForm(w) {
     '<div class="grid2"><div><label class="f">กำหนดส่ง (วัน)</label><input data-f="date" type="date" value="' + localInput(due) + '"></div>' +
     '<div><label class="f">เวลา</label><input data-f="time" type="time" value="' + p2(due.getHours()) + ':' + p2(due.getMinutes()) + '"></div></div>' +
     '<label class="f">รายละเอียด / คำสั่ง <span class="muted">(ไม่บังคับ)</span></label><textarea data-f="detail" maxlength="2000" placeholder="เช่น ทำข้อ 1–10 ถ่ายรูปให้เห็นวิธีทำครบ">' + esc(w ? w.detail : '') + '</textarea>' +
+    '<label class="f">ใบงานให้นักเรียนโหลด <span class="muted">(ไม่บังคับ · PDF รูป Word Excel PowerPoint ไม่เกิน 10 MB ต่อไฟล์)</span></label>' +
+    '<div data-sheets></div>' +
+    '<label class="shpick">' + icon('doc', 20) + '<span>แทรกใบงาน</span><input type="file" multiple accept="' + SHEET_ACCEPT + '" data-sheetpick></label>' +
     '<label class="f">การให้คะแนน</label>' +
     '<div class="seg2" data-mode><button data-m="same">คะแนนเท่ากัน ไม่ว่าส่งเมื่อไร</button><button data-m="late">ตามเวลาที่ส่ง</button></div>' +
     '<div data-lateopts class="grid2" style="margin-top:4px"><div><label class="f">หักต่อวันที่ช้า (%)</label><input data-f="perDay" type="number" min="1" max="100" inputmode="numeric" value="' + esc(w && w.mode === 'late' ? w.perDay : 10) + '"></div>' +
@@ -748,22 +811,95 @@ function workForm(w) {
     f('cls').value = cur.join(', ');
   }));
   paintMode();
+
+  /* ใบงาน — ของเดิมกดเอาออกได้ (ขีดฆ่าไว้ กดอีกครั้งเพื่อเก็บไว้) ของใหม่รอในเครื่อง
+     ทั้งหมดเกิดจริงตอนกดบันทึก งานใหม่ยังไม่มีรหัสงานจนกว่าจะบันทึก จึงต้องบันทึกงานก่อนแล้วค่อยอัปโหลด */
+  const oldSheets = w ? (w.sheets || []) : [], drop = new Set(), fresh = [];
+  const paintSheets = () => {
+    const box = $('[data-sheets]', root);
+    const rows = oldSheets.map(x => sheetRow(x,
+        (drop.has(x.id) ? '' : '<button class="sm" data-shopen="' + esc(x.id) + '">เปิด</button>') +
+        '<button class="sm' + (drop.has(x.id) ? '' : ' danger') + '" data-shdrop="' + esc(x.id) + '">' + (drop.has(x.id) ? 'เก็บไว้' : 'เอาออก') + '</button>',
+        drop.has(x.id) ? 'gone' : ''))
+      .concat(fresh.map((x, i) => sheetRow(x, '<span class="chip ok">ใหม่</span><button class="sm" data-shrm="' + i + '" aria-label="เอาออก">×</button>', 'new')));
+    box.innerHTML = rows.length ? '<div class="shlist">' + rows.join('') + '</div>' : '';
+    $$('[data-shopen]', box).forEach(b => b.addEventListener('click', () =>
+      viewOwnFile(b.dataset.shopen, b, (oldSheets.find(x => x.id === b.dataset.shopen) || {}).name, true)));
+    $$('[data-shdrop]', box).forEach(b => b.addEventListener('click', () => {
+      const id = b.dataset.shdrop;
+      if (drop.has(id)) drop.delete(id); else drop.add(id);
+      paintSheets();
+    }));
+    $$('[data-shrm]', box).forEach(b => b.addEventListener('click', () => { fresh.splice(Number(b.dataset.shrm), 1); paintSheets(); }));
+  };
+  $('[data-sheetpick]', root).addEventListener('change', e => {
+    for (const file of Array.from(e.target.files || [])) {
+      const mime = sheetMime(file);
+      if (oldSheets.length - drop.size + fresh.length >= SHEETS_MAX) { toast('แนบใบงานได้ไม่เกิน ' + SHEETS_MAX + ' ไฟล์ต่องาน'); break; }
+      if (!mime) { toast(file.name + ' — แนบได้เฉพาะ PDF รูป Word Excel PowerPoint', 4000); continue; }
+      /* รูปใหญ่ถูกย่อตอนส่งอยู่แล้ว ที่ต้องกันคือไฟล์เอกสาร */
+      if (!/^image\//.test(mime) && file.size > SHEET_MAX) { toast(file.name + ' ใหญ่เกิน 10 MB — ลองบันทึกเป็น PDF หรือบีบอัดก่อน', 4500); continue; }
+      fresh.push({ file: file, name: file.name, mime: mime, size: file.size });
+    }
+    e.target.value = '';
+    paintSheets();
+  });
+  paintSheets();
+
   $('[data-save]', root).addEventListener('click', async e => {
     const btn = e.currentTarget;
     const [yy, mm, dd] = f('date').value.split('-').map(Number), [hh, mi] = (f('time').value || '16:30').split(':').map(Number);
     const dueAt = new Date(yy, (mm || 1) - 1, dd || 1, hh || 0, mi || 0);
     if (!f('date').value || isNaN(dueAt)) return toast('เลือกวันกำหนดส่งก่อน');
     btn.disabled = true;
+    let saved = null;
     try {
-      await api('workSave', { work: {
+      saved = await api('workSave', { work: {
         code: w ? w.code : '', title: f('title').value, subject: f('subject').value, detail: f('detail').value,
         cls: f('cls').value, dueAt: dueAt.toISOString(), max: f('max').value, mode: mode,
         perDay: f('perDay').value, cap: f('cap').value
       } });
-      sh.close();
+    } catch (err) { btn.disabled = false; return fail(err); }
+    if (drop.size || fresh.length) $$('button,input,textarea,label', root).forEach(x => { x.disabled = true; x.style.pointerEvents = 'none'; });
+    /* งานบันทึกแล้ว ต่อจากนี้ถ้าไฟล์ไหนพลาด บอกครูว่าไฟล์ไหน แล้วกดแก้ไขเพื่อแนบใหม่ได้ */
+    const failed = [];
+    let authErr = null;
+    for (const id of drop) {
+      btn.textContent = 'กำลังเอาใบงานออก…';
+      try { await api('workSheetDel', { code: saved.code, id: id }); }
+      catch (err) { if (err.auth) { authErr = err; break; } failed.push('เอาออก ' + (oldSheets.find(x => x.id === id) || {}).name + ': ' + err.message); }
+    }
+    for (let i = 0; i < fresh.length && !authErr; i++) {
+      const x = fresh[i];
+      btn.textContent = 'กำลังอัปโหลดใบงาน ' + (i + 1) + '/' + fresh.length + '…';
+      try {
+        let blob = x.file, mime = x.mime;
+        if (/^image\//.test(mime) && (x.size > 2 * 1024 * 1024 || !/^image\/(jpeg|png|webp)$/.test(mime))) {
+          const s = await shrinkImage(x.file, SHEET_IMG_SIDE); blob = s.blob; mime = s.mime;
+        }
+        if (blob.size > SHEET_MAX) throw new Error('ใหญ่เกิน 10 MB');
+        const data = await blobToBase64(blob);
+        let ok = false, last = null;
+        for (let k = 0; k < 2 && !ok; k++) {
+          try { await api('workSheetAdd', { code: saved.code, name: x.name, mime: mime, data: data }, 180000); ok = true; }
+          catch (err) { last = err; if (err.auth || /รุ่นเก่า|ไม่เกิน|เฉพาะ/.test(err.message)) break; }
+        }
+        if (!ok) throw last;
+      } catch (err) {
+        if (err.auth) { authErr = err; break; }
+        failed.push(x.name + ': ' + err.message);
+      }
+    }
+    sh.close();
+    if (authErr) return fail(authErr);
+    if (failed.length) {
+      confirmBoxOk('บันทึกงานแล้ว แต่ใบงานบางไฟล์ไม่สำเร็จ',
+        '<div class="notice warn">' + failed.map(esc).join('<br>') + '</div>' +
+        '<p class="muted small">กด “แก้ไข” ที่งานนี้แล้วแทรกใบงานใหม่อีกครั้ง</p>');
+    } else {
       toast(w ? 'บันทึกแล้ว' : 'สั่งงานแล้ว นักเรียนเห็นได้ทันที');
-      teacherLoad();
-    } catch (err) { btn.disabled = false; fail(err); }
+    }
+    teacherLoad();
   });
   const del = $('[data-del]', root);
   if (del) del.addEventListener('click', async () => {

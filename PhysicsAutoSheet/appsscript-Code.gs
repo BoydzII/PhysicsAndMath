@@ -20,6 +20,11 @@
  *   4) กลับมาที่แอพ → แท็บตั้งค่า → ปุ่ม "ซ่อมโครงสร้างชีต" หนึ่งครั้ง
  *      เพื่อเติมหัวตารางของคอลัมน์ใหม่ (ข้อมูลเดิมไม่หาย)
  *
+ * ── รุ่น 21 เพิ่มอะไร (ใบงานจากครู) ────────────────────────────────────
+ *   ครูแนบใบงาน (PDF รูป Word Excel PowerPoint) ไว้กับงานที่สั่ง นักเรียนในชั้นนั้นเปิดดูและดาวน์โหลดได้
+ *   (workSheetAdd · workSheetDel) คอลัมน์ใหม่ "ใบงานจากครู" ต่อท้ายแผ่น works เติมให้เองตอนใช้ครั้งแรก
+ *   ต้องวางรุ่นนี้เฉพาะชีตส่งงาน ชีตศูนย์กลางใช้รุ่น 20 ต่อได้
+ *
  * ── รุ่น 20 เพิ่มอะไร (ชีตส่งงานแยก) ───────────────────────────────────
  *   งานที่ส่งย้ายไปชีตใบใหม่ (สำเนาของชีตศูนย์กลาง) การลงชื่อจะได้ไม่ช้าตอนนักเรียนอัปโหลด
  *   ชีตส่งงานเชื่อมเป็นสมาชิกแบบ "รับรายชื่ออัตโนมัติ" (AUTO_ROSTER) ตั้งจากปุ่มเชื่อมชีตในหน้าพอร์ทัล
@@ -35,6 +40,7 @@
  *   ไฟล์เก็บใน Google Drive ของเจ้าของชีต ไม่มีปิดรับ ส่งช้าหักคะแนนตามที่ครูตั้ง
  *   (workSave · workRemove · workList · workSubs · workGrade · workBoard ·
  *    workMine · workUpload · workSubmit · workFile) แผ่นใหม่ works · worksubs
+ *   (รุ่น 21 เพิ่ม workSheetAdd · workSheetDel ใบงานที่ครูแนบให้นักเรียนโหลด)
  *   ⚠ รุ่นนี้ใช้ Google Drive เป็นครั้งแรก ตอน Deploy จะมีหน้าขออนุญาตสิทธิ์ Drive เพิ่ม ต้องกดอนุญาต
  *   วางโค้ดนี้ในชีตศูนย์กลาง (วิทยาศาสตร์กายภาพ) เป็นอย่างน้อย ชีตสมาชิกวางด้วยก็ได้ไม่เสียหาย
  *
@@ -1550,12 +1556,23 @@ var WORK_FILE_MAX = 10 * 1024 * 1024;   /* ต่อไฟล์ หลังถ
 var WORK_FILES_PER_SUB = 20;
 var WORK_UP_PER_HOUR = 60;
 var WORK_MIMES = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'application/pdf': 'pdf' };
+/* ใบงานที่ครูแนบ — รับไฟล์เอกสารสำนักงานด้วย เพราะครูส่วนใหญ่ทำใบงานใน Word */
+var SHEET_MIMES = {
+  'application/pdf': 'pdf', 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp',
+  'application/msword': 'doc',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
+  'application/vnd.ms-excel': 'xls',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'xlsx',
+  'application/vnd.ms-powerpoint': 'ppt',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'pptx'
+};
+var SHEETS_PER_WORK = 10;
 
 SHEETS.works = ['code', 'title', 'detail', 'cls', 'subject', 'dueAt', 'max', 'mode', 'perDay', 'cap',
-                'active', 'createdAt', 'by', 'folderId', 'updatedAt'];
+                'active', 'createdAt', 'by', 'folderId', 'updatedAt', 'sheets'];
 HEADERS.works = ['รหัสงาน', 'ชื่องาน', 'รายละเอียด', 'ชั้น', 'วิชา', 'กำหนดส่ง', 'คะแนนเต็ม',
                  'การให้คะแนน', 'หักต่อวัน (%)', 'หักสูงสุด (%)', 'เปิดใช้งาน', 'สร้างเมื่อ', 'ผู้สั่ง',
-                 'โฟลเดอร์ไฟล์', 'แก้ล่าสุด'];
+                 'โฟลเดอร์ไฟล์', 'แก้ล่าสุด', 'ใบงานจากครู'];
 SHEETS.worksubs = ['id', 'code', 'sid', 'name', 'cls', 'ts', 'firstTs', 'files', 'note', 'lateMin',
                    'raw', 'score', 'comment', 'gradedAt', 'gradedBy', 'n'];
 HEADERS.worksubs = ['รหัสการส่ง', 'รหัสงาน', 'เลขประจำตัว', 'ชื่อ-นามสกุล', 'ชั้น', 'ส่งล่าสุด',
@@ -1600,7 +1617,11 @@ function workPublic_(w) {
            cls: workClasses_(w), subject: String(w.subject || ''), dueAt: isoOf_(w.dueAt),
            max: Number(w.max) || 0, mode: String(w.mode) === 'late' ? 'late' : 'same',
            perDay: Number(w.perDay) || 0, cap: w.cap === '' ? 100 : Number(w.cap) || 0,
-           createdAt: isoOf_(w.createdAt), by: String(w.by || '') };
+           createdAt: isoOf_(w.createdAt), by: String(w.by || ''), sheets: workSheets_(w) };
+}
+/** ใบงานที่ครูแนบไว้ [{id, name, mime, size}] */
+function workSheets_(w) {
+  try { var f = JSON.parse(String(w.sheets || '[]')); return Array.isArray(f) ? f : []; } catch (e) { return []; }
 }
 function subFiles_(s) {
   try { var f = JSON.parse(String(s.files || '[]')); return Array.isArray(f) ? f : []; } catch (e) { return []; }
@@ -1915,7 +1936,18 @@ function apiWorkFile_(req) {
   try { f = DriveApp.getFileById(String(req.id || '')); } catch (e) { throw new Error('ไม่พบไฟล์นี้ (อาจถูกลบไปแล้ว)'); }
   var m = fileMeta_(f), w = findWork_(m.code);
   if (!w || !w.folderId || !inFolder_(f, String(w.folderId))) throw new Error('ไม่พบไฟล์นี้');
-  if (t.role === 'student') {
+  if (m.kind === 'sheet') {
+    /* ใบงานจากครู — นักเรียนทุกคนในชั้นของงาน และครูที่เห็นงานนี้ เปิดได้ ถ้ายังอยู่ในรายการใบงานของงาน */
+    var listed = workSheets_(w).some(function (x) { return x.id === f.getId(); });
+    if (!listed || !workActive_(w)) throw new Error('ไม่พบใบงานนี้ (ครูอาจเอาออกไปแล้ว)');
+    if (t.role === 'student') {
+      var sr = findStudentRow_(t.sid);
+      var mine = sr > 0 ? normCls_(readStudentRow_(sr).cls) : '';
+      if (workClasses_(w).indexOf(mine) < 0) throw new Error('AUTH: ใบงานนี้ไม่ได้สั่งให้ชั้นของคุณ');
+    } else if (t.role !== 'admin' || !workVisible_(scopeOf_(t), w)) {
+      throw new Error('AUTH: ต้องเข้าใช้ก่อน');
+    }
+  } else if (t.role === 'student') {
     if (sidKey_(t.sid) !== m.sid) throw new Error('AUTH: เปิดได้เฉพาะไฟล์ของตัวเอง');
   } else if (t.role === 'admin') {
     var sc = scopeOf_(t);
@@ -1930,6 +1962,71 @@ function apiWorkFile_(req) {
   if (f.getSize() > WORK_FILE_MAX) throw new Error('ไฟล์ใหญ่เกินกว่าจะเปิดในหน้านี้');
   return { id: f.getId(), name: f.getName(), mime: f.getMimeType(),
            data: Utilities.base64Encode(f.getBlob().getBytes()) };
+}
+
+/* ── ใบงานจากครู (รุ่น 21) ─────────────────────────────────────────────
+   ครูแนบไฟล์ทีละไฟล์ต่องานที่บันทึกแล้ว ไฟล์อยู่ในโฟลเดอร์ของงานเดียวกับงานที่นักเรียนส่ง
+   คำอธิบายไฟล์ติด kind: 'sheet' ไว้ workSubmit จึงเอาไปอ้างเป็นงานของนักเรียนไม่ได้ (ไม่มี sid) */
+function teacherWork_(req) {
+  var t = needAdmin_(req), sc = scopeOf_(t);
+  var w = findWork_(req.code);
+  if (!w || !workActive_(w) || !workVisible_(sc, w)) throw new Error('ไม่พบงานนี้');
+  if (sc && !workClasses_(w).every(function (c) { return sc.indexOf(c) >= 0; })) {
+    throw new Error('งานนี้มีชั้นที่ไม่ได้อยู่ในความดูแลของคุณ แก้ใบงานไม่ได้');
+  }
+  return w;
+}
+/** ชื่อไฟล์ที่นักเรียนเห็นตอนดาวน์โหลด — ตัดอักขระที่ใช้ในชื่อไฟล์ไม่ได้ และบังคับนามสกุลให้ตรงชนิดจริง */
+function sheetName_(name, ext) {
+  var base = String(name || '').replace(/[\\/:*?"<>|\u0000-\u001f]+/g, ' ').replace(/\.[A-Za-z0-9]{1,5}$/, '').trim().slice(0, 80);
+  return (base || 'ใบงาน') + '.' + ext;
+}
+
+/** ครูแนบใบงานหนึ่งไฟล์ */
+function apiWorkSheetAdd_(req) {
+  var w0 = teacherWork_(req);
+  var mime = String(req.mime || ''), ext = SHEET_MIMES[mime];
+  if (!ext) throw new Error('แนบได้เฉพาะ PDF รูป Word Excel หรือ PowerPoint');
+  var bytes;
+  try { bytes = Utilities.base64Decode(String(req.data || '')); } catch (e) { throw new Error('ไฟล์เสีย ลองเลือกใหม่'); }
+  if (!bytes.length) throw new Error('ไฟล์ว่าง ลองเลือกใหม่');
+  if (bytes.length > WORK_FILE_MAX) throw new Error('ไฟล์ใหญ่เกิน 10 MB');
+  var name = sheetName_(req.name, ext);
+  var lock = LockService.getScriptLock();
+  lock.waitLock(25000);
+  try {
+    dropCache_('works');                              /* อ่านใหม่ในล็อก เผื่อครูแนบหลายไฟล์พร้อมกัน */
+    var w = findWork_(w0.code);
+    var list = workSheets_(w);
+    if (list.length >= SHEETS_PER_WORK) throw new Error('แนบใบงานได้ไม่เกิน ' + SHEETS_PER_WORK + ' ไฟล์ต่องาน');
+    var file = workFolder_(w).createFile(Utilities.newBlob(bytes, mime, name));
+    file.setDescription(JSON.stringify({ kind: 'sheet', code: String(w.code) }));
+    list.push({ id: file.getId(), name: name, mime: mime, size: bytes.length });
+    w.sheets = JSON.stringify(list); w.updatedAt = new Date();
+    writeRow_('works', w._row, w);
+    return workPublic_(w);
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+/** ครูเอาใบงานออก — ไฟล์ย้ายไปถังขยะของ Drive กู้คืนได้ 30 วัน */
+function apiWorkSheetDel_(req) {
+  var w0 = teacherWork_(req), id = String(req.id || '');
+  var lock = LockService.getScriptLock();
+  lock.waitLock(25000);
+  try {
+    dropCache_('works');
+    var w = findWork_(w0.code);
+    var list = workSheets_(w), keep = list.filter(function (f) { return f.id !== id; });
+    if (keep.length === list.length) throw new Error('ไม่พบใบงานนี้ (อาจถูกเอาออกไปแล้ว)');
+    try { DriveApp.getFileById(id).setTrashed(true); } catch (e) {}
+    w.sheets = JSON.stringify(keep); w.updatedAt = new Date();
+    writeRow_('works', w._row, w);
+    return workPublic_(w);
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 /* ── นักเรียนที่ต้องติดตาม ─────────────────────────────────────────────
@@ -1990,7 +2087,7 @@ function json_(o) {
 }
 
 function doGet() {
-  return json_({ ok: true, service: 'quiz-bank', version: 20, subjects: SUBJECTS,
+  return json_({ ok: true, service: 'quiz-bank', version: 21, subjects: SUBJECTS,
                  note: 'ใช้งานผ่าน POST จากแอพเท่านั้น' });
 }
 
@@ -2072,6 +2169,8 @@ function route_(action, req) {
     case 'workUpload':    return apiWorkUpload_(req);
     case 'workSubmit':    return apiWorkSubmit_(req);
     case 'workFile':      return apiWorkFile_(req);
+    case 'workSheetAdd':  return apiWorkSheetAdd_(req);
+    case 'workSheetDel':  return apiWorkSheetDel_(req);
     default: throw new Error('ไม่รู้จักคำสั่ง: ' + action);
   }
 }
