@@ -20,6 +20,13 @@
  *   4) กลับมาที่แอพ → แท็บตั้งค่า → ปุ่ม "ซ่อมโครงสร้างชีต" หนึ่งครั้ง
  *      เพื่อเติมหัวตารางของคอลัมน์ใหม่ (ข้อมูลเดิมไม่หาย)
  *
+ * ── รุ่น 24 เพิ่มอะไร (เขียนตรวจงาน · ลายเซ็นครู · เลขที่เพื่อนที่ส่งแล้ว) ──────────────
+ *   workMarkUp · workMark — ครูเขียนตรวจบนงานของนักเรียน (แบบสมุดโน้ต) แล้วบันทึกเป็นรูปทีละหน้า
+ *     นักเรียนเปิดดูงานที่ครูเขียนตรวจได้ในหน้าส่งงาน · คอลัมน์ใหม่ต่อท้ายแผ่น worksubs เติมให้เองตอนบันทึกครั้งแรก
+ *   workSignGet · workSignSet — ลายเซ็นของครูแต่ละคน เก็บเป็นรูปในโฟลเดอร์ "ลายเซ็นครู" ใช้ได้ทุกเครื่อง
+ *   workMine ส่งเลขที่ของเพื่อนร่วมชั้นมาด้วยว่าใครส่งแล้ว (เฉพาะเลขที่ ไม่มีชื่อ) ให้นักเรียนช่วยกันตามงาน
+ *   ต้องวางรุ่นนี้เฉพาะชีตส่งงาน
+ *
  * ── รุ่น 23 แก้อะไร (ชื่อภาษาไทยในบัตรผ่าน) ───────────────────────────────
  *   บัตรผ่านจากชีตศูนย์กลางเข้ารหัสชื่อ/ชั้นแบบไม่ระบุ UTF-8 อักษรไทยกลายเป็น "?"
  *   ชีตส่งงานที่รับรายชื่ออัตโนมัติจึงบันทึกชั้น ม.0 เป็น ?.0 งานที่สั่งให้ชั้นนั้นเลยไม่ขึ้น
@@ -1586,10 +1593,11 @@ HEADERS.works = ['รหัสงาน', 'ชื่องาน', 'รายล
                  'การให้คะแนน', 'หักต่อวัน (%)', 'หักสูงสุด (%)', 'เปิดใช้งาน', 'สร้างเมื่อ', 'ผู้สั่ง',
                  'โฟลเดอร์ไฟล์', 'แก้ล่าสุด', 'ใบงานจากครู'];
 SHEETS.worksubs = ['id', 'code', 'sid', 'name', 'cls', 'ts', 'firstTs', 'files', 'note', 'lateMin',
-                   'raw', 'score', 'comment', 'gradedAt', 'gradedBy', 'n'];
+                   'raw', 'score', 'comment', 'gradedAt', 'gradedBy', 'n', 'marked', 'markedAt'];
 HEADERS.worksubs = ['รหัสการส่ง', 'รหัสงาน', 'เลขประจำตัว', 'ชื่อ-นามสกุล', 'ชั้น', 'ส่งล่าสุด',
                     'ส่งครั้งแรก', 'ไฟล์', 'ข้อความถึงครู', 'ช้ากี่นาที (ตอนส่ง)', 'คะแนนที่ครูให้',
-                    'คะแนนหลังหัก', 'ความเห็นครู', 'ตรวจเมื่อ', 'ผู้ตรวจ', 'ส่งกี่ครั้ง'];
+                    'คะแนนหลังหัก', 'ความเห็นครู', 'ตรวจเมื่อ', 'ผู้ตรวจ', 'ส่งกี่ครั้ง',
+                    'หน้าที่ครูเขียนตรวจ', 'เขียนตรวจเมื่อ'];
 
 function workClasses_(w) { return parseClasses_(w.cls); }
 function workActive_(w) { return String(w.active) !== 'false' && String(w.active) !== '0'; }
@@ -1635,6 +1643,10 @@ function workPublic_(w) {
 function workSheets_(w) {
   try { var f = JSON.parse(String(w.sheets || '[]')); return Array.isArray(f) ? f : []; } catch (e) { return []; }
 }
+/** หน้าที่ครูเขียนตรวจ [{id, mime, size}] (รุ่น 24) */
+function subMarked_(s) {
+  try { var f = JSON.parse(String(s.marked || '[]')); return Array.isArray(f) ? f : []; } catch (e) { return []; }
+}
 function subFiles_(s) {
   try { var f = JSON.parse(String(s.files || '[]')); return Array.isArray(f) ? f : []; } catch (e) { return []; }
 }
@@ -1648,6 +1660,7 @@ function subPublic_(w, s) {
            graded: graded, raw: graded ? Number(s.raw) : '',
            score: graded ? workFinal_(w, s.raw, files.length ? late : 0) : '',
            comment: String(s.comment || ''), gradedAt: isoOf_(s.gradedAt),
+           marked: subMarked_(s), markedAt: isoOf_(s.markedAt),
            /* ส่งใหม่หลังครูตรวจไปแล้ว ครูต้องเห็นว่ามีของใหม่ให้ดู */
            resent: !!(graded && files.length && s.gradedAt && new Date(s.ts) > new Date(s.gradedAt)) };
 }
@@ -1863,11 +1876,20 @@ function apiWorkMine_(req) {
   if (row < 0) throw new Error('ไม่พบบัญชีนี้ในชีต');
   var me = readStudentRow_(row), cls = normCls_(me.cls), k = sidKey_(me.sid);
   var subs = subsByCode_();
+  /* เพื่อนร่วมชั้น — ส่งแค่เลขที่กับว่าส่งแล้วหรือยัง ไม่มีชื่อ ไม่มีคะแนน (รุ่น 24) */
+  var mates = readAll_('students').filter(function (s) {
+    return s.cls === cls && String(s.active) !== 'false' && String(s.active) !== '0';
+  }).sort(function (a, b) { return (Number(a.no) || 999) - (Number(b.no) || 999); });
   var list = readAll_('works').filter(function (w) {
     return workActive_(w) && workClasses_(w).indexOf(cls) >= 0;
   }).map(function (w) {
-    var o = workPublic_(w);
-    o.sub = subPublic_(w, (subs[String(w.code).toUpperCase()] || {})[k]);
+    var o = workPublic_(w), mine = subs[String(w.code).toUpperCase()] || {};
+    o.sub = subPublic_(w, mine[k]);
+    o.peers = mates.map(function (s) {
+      var p = mine[sidKey_(s.sid)];
+      var sent = !!(p && (subFiles_(p).length || (p.raw !== '' && p.raw != null)));
+      return [s.no === '' || s.no == null ? '' : String(s.no), sent ? 1 : 0, sidKey_(s.sid) === k ? 1 : 0];
+    });
     return o;
   });
   list.sort(function (a, b) { return a.dueAt < b.dueAt ? -1 : a.dueAt > b.dueAt ? 1 : 0; });
@@ -2029,7 +2051,7 @@ function apiWorkSubmit_(req) {
     try { f = DriveApp.getFileById(id); } catch (e) { throw new Error('หาไฟล์ที่อัปโหลดไม่เจอ ลองแนบใหม่'); }
     var m = fileMeta_(f);
     /* ตรวจว่าเป็นไฟล์ที่คนนี้อัปโหลดให้งานนี้จริง ไม่ใช่รหัสไฟล์ของคนอื่นที่แอบใส่มา */
-    if (m.sid !== key || m.code !== String(w.code) || !inFolder_(f, String(w.folderId))) {
+    if (m.kind || m.sid !== key || m.code !== String(w.code) || !inFolder_(f, String(w.folderId))) {
       throw new Error('มีไฟล์ที่ไม่ได้อัปโหลดให้งานนี้ ลองแนบใหม่');
     }
     return { id: id, name: f.getName(), mime: f.getMimeType(), size: f.getSize() };
@@ -2091,6 +2113,113 @@ function apiWorkFile_(req) {
   if (f.getSize() > WORK_FILE_MAX) throw new Error('ไฟล์ใหญ่เกินกว่าจะเปิดในหน้านี้');
   return { id: f.getId(), name: f.getName(), mime: f.getMimeType(),
            data: Utilities.base64Encode(f.getBlob().getBytes()) };
+}
+
+/* ── เขียนตรวจงาน · ลายเซ็นครู (รุ่น 24) ──────────────────────────────────
+   หน้าเว็บวาดทับงานของนักเรียนแล้วรวมเป็นรูปทีละหน้า อัปโหลดทีละหน้าด้วย workMarkUp
+   แล้วยืนยันทั้งชุดด้วย workMark (ชุดใหม่แทนชุดเดิม ไฟล์เก่าย้ายไปถังขยะ) — แบบเดียวกับที่นักเรียนส่งงาน
+   ไฟล์ติด kind: 'mark' นักเรียนจึงเอาไปอ้างเป็นงานที่ตัวเองส่งไม่ได้ แต่เปิดดูได้เพราะ sid เป็นของตัวเอง */
+var MARK_PAGES_MAX = 30;
+var SIGN_MAX = 600 * 1024;
+/** ครูคนนี้ตรวจงานของนักเรียนคนนี้ได้ไหม */
+function teacherSub_(req) {
+  var t = needAdmin_(req), sc = scopeOf_(t);
+  var w = findWork_(req.code);
+  if (!w || !workActive_(w) || !workVisible_(sc, w)) throw new Error('ไม่พบงานนี้');
+  var k = sidKey_(req.sid), st = null;
+  rosterOf_(workClasses_(w), sc).forEach(function (s) { if (sidKey_(s.sid) === k) st = s; });
+  if (!st) throw new Error('นักเรียนคนนี้ไม่อยู่ในชั้นของงานนี้ หรือไม่ได้อยู่ในความดูแลของคุณ');
+  return { t: t, w: w, st: st, k: k };
+}
+/** เติมหัวตารางของคอลัมน์ที่เพิ่มทีหลังให้เอง ไม่ต้องรอครูกดซ่อมโครงสร้าง */
+function fillHead_(name) {
+  var sh = sheet_(name), want = HEADERS[name];
+  if (sh.getMaxColumns() < want.length) sh.insertColumnsAfter(sh.getMaxColumns(), want.length - sh.getMaxColumns());
+  var got = sh.getRange(1, 1, 1, want.length).getValues()[0];
+  for (var i = 0; i < want.length; i++) {
+    if (String(got[i] == null ? '' : got[i]).trim() === '') sh.getRange(1, i + 1).setValue(want[i]).setFontWeight('bold');
+  }
+}
+function imgBytes_(req, max) {
+  var mime = String(req.mime || '');
+  if (mime !== 'image/jpeg' && mime !== 'image/png') throw new Error('รับเฉพาะรูป JPG หรือ PNG');
+  var bytes;
+  try { bytes = Utilities.base64Decode(String(req.data || '')); } catch (e) { throw new Error('ไฟล์เสีย ลองใหม่'); }
+  if (!bytes.length) throw new Error('ไฟล์ว่าง');
+  if (bytes.length > max) throw new Error('รูปใหญ่เกินไป');
+  return { bytes: bytes, mime: mime, ext: mime === 'image/png' ? 'png' : 'jpg' };
+}
+/** ครูอัปโหลดหน้าที่เขียนตรวจแล้วหนึ่งหน้า */
+function apiWorkMarkUp_(req) {
+  var x = teacherSub_(req), w = x.w;
+  var img = imgBytes_(req, WORK_FILE_MAX);
+  var lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  var folder;
+  try { folder = workFolder_(w); } finally { lock.releaseLock(); }
+  var stamp = Utilities.formatDate(new Date(), 'Asia/Bangkok', 'yyyyMMdd-HHmmss');
+  var name = x.k + '_ตรวจ_' + stamp + '_' + Utilities.getUuid().slice(0, 6) + '.' + img.ext;
+  var file = folder.createFile(Utilities.newBlob(img.bytes, img.mime, name));
+  file.setDescription(JSON.stringify({ kind: 'mark', sid: x.k, code: String(w.code) }));
+  return { id: file.getId(), mime: img.mime, size: img.bytes.length };
+}
+/** ครูยืนยันชุดหน้าที่เขียนตรวจ — ids ว่างคือเอางานที่เขียนตรวจออกทั้งหมด */
+function apiWorkMark_(req) {
+  var x = teacherSub_(req), w = x.w, k = x.k;
+  var ids = (req.ids || []).map(String);
+  if (ids.length > MARK_PAGES_MAX) throw new Error('เขียนตรวจได้ไม่เกิน ' + MARK_PAGES_MAX + ' หน้า');
+  var pages = ids.map(function (id) {
+    var f;
+    try { f = DriveApp.getFileById(id); } catch (e) { throw new Error('หาหน้าที่อัปโหลดไม่เจอ ลองบันทึกใหม่'); }
+    var m = fileMeta_(f);
+    if (m.kind !== 'mark' || m.sid !== k || m.code !== String(w.code) || !inFolder_(f, String(w.folderId))) {
+      throw new Error('มีหน้าที่ไม่ได้อัปโหลดให้งานนี้ ลองบันทึกใหม่');
+    }
+    return { id: id, mime: f.getMimeType(), size: f.getSize() };
+  });
+  var lock = LockService.getScriptLock();
+  lock.waitLock(25000);
+  var s;
+  try {
+    s = (subsByCode_()[String(w.code).toUpperCase()] || {})[k];
+    if (!s || !subFiles_(s).length) throw new Error('นักเรียนคนนี้ยังไม่ได้ส่งไฟล์งาน');
+    var old = subMarked_(s);
+    s.marked = JSON.stringify(pages);
+    s.markedAt = pages.length ? new Date() : '';
+    fillHead_('worksubs');
+    writeRow_('worksubs', s._row, s);
+    var keep = {};
+    ids.forEach(function (id) { keep[id] = 1; });
+    old.forEach(function (f) { if (!keep[f.id]) { try { DriveApp.getFileById(f.id).setTrashed(true); } catch (e) {} } });
+  } finally {
+    lock.releaseLock();
+  }
+  return { sid: normSid_(x.st.sid), sub: subPublic_(w, s) };
+}
+/** ลายเซ็นครู — หนึ่งรูปต่อบัญชีครู ผู้ดูแลหลักใช้คีย์ของตัวเอง */
+function signKey_(t) { return 'SIGN_' + (t.sub ? normUser_(t.sub) : '_main'); }
+function apiWorkSignGet_(req) {
+  var t = needAdmin_(req), id = props_().getProperty(signKey_(t));
+  if (!id) return { data: '' };
+  try {
+    var f = DriveApp.getFileById(id);
+    if (f.isTrashed()) return { data: '' };
+    return { data: Utilities.base64Encode(f.getBlob().getBytes()), mime: f.getMimeType() };
+  } catch (e) { return { data: '' }; }
+}
+function apiWorkSignSet_(req) {
+  var t = needAdmin_(req), key = signKey_(t), old = props_().getProperty(key);
+  var drop = function () { if (old) { try { DriveApp.getFileById(old).setTrashed(true); } catch (e) {} } };
+  if (!req.data) { drop(); props_().deleteProperty(key); return { data: '' }; }
+  var img = imgBytes_(req, SIGN_MAX);
+  var fid = props_().getProperty('SIGN_FOLDER'), folder = null;
+  if (fid) { try { folder = DriveApp.getFolderById(fid); } catch (e) { folder = null; } }
+  if (!folder) { folder = workRoot_().createFolder('ลายเซ็นครู'); props_().setProperty('SIGN_FOLDER', folder.getId()); }
+  var file = folder.createFile(Utilities.newBlob(img.bytes, img.mime, key + '.' + img.ext));
+  file.setDescription(JSON.stringify({ kind: 'sign' }));
+  drop();
+  props_().setProperty(key, file.getId());
+  return { data: req.data, mime: img.mime };
 }
 
 /* ── ใบงานจากครู (รุ่น 21) ─────────────────────────────────────────────
@@ -2216,7 +2345,7 @@ function json_(o) {
 }
 
 function doGet() {
-  return json_({ ok: true, service: 'quiz-bank', version: 23, subjects: SUBJECTS,
+  return json_({ ok: true, service: 'quiz-bank', version: 24, subjects: SUBJECTS,
                  note: 'ใช้งานผ่าน POST จากแอพเท่านั้น' });
 }
 
@@ -2303,6 +2432,10 @@ function route_(action, req) {
     case 'workScores':    return apiWorkScores_(req);
     case 'workNotify':    return apiWorkNotify_(req);
     case 'workNoteRead':  return apiWorkNoteRead_(req);
+    case 'workMarkUp':    return apiWorkMarkUp_(req);
+    case 'workMark':      return apiWorkMark_(req);
+    case 'workSignGet':   return apiWorkSignGet_(req);
+    case 'workSignSet':   return apiWorkSignSet_(req);
     default: throw new Error('ไม่รู้จักคำสั่ง: ' + action);
   }
 }

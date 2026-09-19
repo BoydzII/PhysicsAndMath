@@ -156,6 +156,51 @@ td.nm{white-space:nowrap}
 .shrow .nm small{display:block;color:var(--muted);font-size:12px}
 .shrow.gone .nm{text-decoration:line-through;color:var(--muted)}
 .shrow.new .ic{color:var(--ok)}
+/* ---------- เลขที่เพื่อนร่วมชั้น (นักเรียน) ---------- */
+.peers{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px}
+.peers span{min-width:36px;height:32px;padding:0 5px;border-radius:7px;display:inline-flex;align-items:center;justify-content:center;font-size:13.5px;font-weight:700;font-variant-numeric:tabular-nums}
+.peers .y,.dot.y{background:var(--ok-bg);color:var(--ok);border:1px solid var(--ok)}
+.peers .n,.dot.n{background:var(--bad-bg);color:var(--bad);border:1px solid var(--bad)}
+.peers .me{outline:2px solid var(--ink);outline-offset:2px}
+.dot{display:inline-block;width:11px;height:11px;border-radius:3px;vertical-align:-1px;margin:0 3px 0 8px}
+/* ---------- เขียนตรวจงาน (ครู) ---------- */
+.ink{position:fixed;inset:0;z-index:80;background:#e8e6e1;display:flex;flex-direction:column;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+@media (prefers-color-scheme:dark){.ink{background:#07090d}}
+.inktop{display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:wrap}
+.inktop .who{font-weight:700;line-height:1.35}
+.inktools{display:flex;flex-wrap:wrap;gap:2px 4px;align-items:center;padding:4px 8px;background:var(--panel);border-bottom:1px solid var(--line);flex:none}
+.inktools .grp{display:flex;gap:1px;align-items:center;padding-right:5px;border-right:1px solid var(--line);flex:none}
+.inktools .grp:last-child{border-right:0}
+.inktools .grp.off{opacity:.3;pointer-events:none}
+button.tb{min-height:42px;min-width:42px;padding:0 8px;border:1px solid transparent;background:transparent;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;color:var(--ink)}
+button.tb.on{background:var(--brand-soft);border-color:var(--brand);color:var(--brand)}
+button.tb.txt{font-size:13px;font-weight:700;white-space:nowrap}
+button.tb.stamp{font-size:22px;font-weight:700}
+button.sw,button.sz{min-height:42px;min-width:34px;padding:0;border:0;background:transparent;display:inline-flex;align-items:center;justify-content:center;border-radius:8px}
+.sw i{width:22px;height:22px;border-radius:50%;display:block;box-shadow:0 0 0 1px rgba(0,0,0,.18)}
+.sw.on i{box-shadow:0 0 0 2px var(--panel),0 0 0 4px var(--ink)}
+.sz i{display:block;border-radius:50%;background:var(--muted)}
+button.sz.on{background:var(--brand-soft)}
+.sz.on i{background:var(--brand)}
+.inknote{font-size:13px;background:var(--panel);color:var(--muted);flex:none}
+.inknote:not(:empty){padding:6px 12px;border-bottom:1px solid var(--line)}
+button.linkb{border:0;background:none;padding:0;min-height:0;color:var(--brand);text-decoration:underline;font-size:13px}
+button.linkb.danger{color:var(--bad)}
+.inkbody{flex:1;overflow:auto;padding:14px;overscroll-behavior:contain}
+.inkbody .pg{position:relative;margin:0 auto 14px;background:#fff;border:1px solid #cfccc4;touch-action:none}
+.pg>img,.pg>canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.pg .its{position:absolute;inset:0;pointer-events:none}
+.pg .pn{position:absolute;right:6px;bottom:4px;font-size:11px;color:#6b7480;background:rgba(255,255,255,.85);padding:0 7px;border-radius:99px;pointer-events:none}
+.ink.fscroll .pg,.ink.mv .pg{touch-action:pan-x pan-y pinch-zoom}
+.pg .it{position:absolute;pointer-events:none}
+.pg .it img{width:100%;height:100%;display:block;pointer-events:none}
+.pg .it .del,.pg .it .rs{display:none}
+.ink.mv .pg .it{pointer-events:auto;outline:1.5px dashed #1f5fd1;outline-offset:2px;cursor:move;touch-action:none}
+.ink.mv .pg .it .del{display:flex;position:absolute;top:-15px;right:-15px;width:30px;height:30px;min-height:0;padding:0;border-radius:50%;background:#c0302b;color:#fff;border:0;align-items:center;justify-content:center;font-size:18px;line-height:1}
+.ink.mv .pg .it .rs{display:block;position:absolute;right:-10px;bottom:-10px;width:20px;height:20px;border-radius:5px;background:#1f5fd1;border:2px solid #fff;cursor:nwse-resize}
+.ink.busy .inktools,.ink.busy .inkbody{pointer-events:none;opacity:.55}
+.signpad{width:100%;height:auto;aspect-ratio:900/320;margin-top:10px;border:1px dashed var(--muted);border-radius:8px;background:#fff;touch-action:none;display:block}
+label.pickimg{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:8px;padding:4px 10px;min-height:32px;font-size:13px;cursor:pointer}
 a.dl{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px;min-height:48px;border-radius:8px;background:var(--brand);color:var(--brand-ink);font-weight:700;text-decoration:none}
 .shpick{display:flex;align-items:center;justify-content:center;gap:8px;border:1px dashed var(--brand);color:var(--brand);border-radius:10px;min-height:48px;cursor:pointer;font-weight:700;margin-top:8px}
 .shpick input{display:none}
@@ -206,7 +251,7 @@ const LOCK_BOOKS = [
   { url: PHYS_URL, name: 'ชีตฟิสิกส์', apps: 'ฟิสิกส์ ม.4' }
 ];
 /** รุ่นชีตที่ต้องมีคำสั่งนี้ — ใช้บอกครูว่าต้องวางโค้ดรุ่นไหนเมื่อชีตยังเป็นรุ่นเก่า */
-const needVer = action => /^work(Scores|Notify|NoteRead)$/.test(action) ? 22 : /^workSheet/.test(action) ? 21 : 19;
+const needVer = action => /^work(Mark|Sign)/.test(action) ? 24 : /^work(Scores|Notify|NoteRead)$/.test(action) ? 22 : /^workSheet/.test(action) ? 21 : 19;
 const SESSION_KEY = 'pcportal.v1';
 
 const IMG_MAX_SIDE = 1600;          /* ด้านยาวของรูปหลังย่อ อ่านลายมือได้ชัด ไฟล์ราว 250–450 KB */
@@ -466,7 +511,13 @@ function stuItem(w, now) {
   return '<button class="item" data-open="' + esc(w.code) + '"><span class="mark" style="width:36px;height:36px">' + icon('tray', 19) + '</span>' +
     '<span class="bd"><span class="tt">' + esc(w.title) + '</span>' + (w.subject ? ' <span class="chip">' + esc(w.subject) + '</span>' : '') +
     ((w.sheets || []).length ? ' <span class="chip brand">มีใบงาน ' + w.sheets.length + ' ไฟล์</span>' : '') +
-    '<br><span class="ln">' + dueLine(w, now) + '</span><br>' + stuStatus(w, now) + '</span></button>';
+    '<br><span class="ln">' + dueLine(w, now) + peerLine(w) + '</span><br>' + stuStatus(w, now) +
+    (w.sub && w.sub.marked && w.sub.marked.length ? ' <span class="chip brand">ครูเขียนตรวจแล้ว</span>' : '') + '</span></button>';
+}
+/** เพื่อนในห้องส่งแล้วกี่คน (ชีตรุ่น 24 ขึ้นไป — รุ่นเก่าไม่ส่ง peers มา ก็ไม่ขึ้น) */
+function peerLine(w) {
+  const p = w.peers || [];
+  return p.length ? ' · ห้องส่งแล้ว ' + p.filter(x => x[1]).length + '/' + p.length : '';
 }
 
 /* ไฟล์ที่เลือกไว้แต่ยังไม่ส่ง — เก็บในหน่วยความจำเท่านั้น ปิดหน้าไปแล้วต้องเลือกใหม่ */
@@ -502,6 +553,20 @@ function studentOpen(code) {
         '<button class="sm" data-see="' + esc(f.id) + '">' + (f.mime === 'application/pdf' ? 'PDF' : 'หน้า ' + (i + 1)) + '</button>').join('') + '</div></div>';
   }
 
+  if (s && s.marked && s.marked.length) {
+    h += '<h3>งานที่ครูเขียนตรวจ</h3><div class="notice info">ครูเขียนตรวจงานของคุณเมื่อ ' + thDate(s.markedAt, true) +
+      (s.ts && s.markedAt && new Date(s.ts) > new Date(s.markedAt) ? ' <span class="small">(เป็นงานชุดก่อนที่คุณส่งใหม่)</span>' : '') +
+      '<div class="row" style="margin-top:6px">' + s.marked.map((f, i) => '<button class="sm" data-mk="' + esc(f.id) + '">หน้า ' + (i + 1) + '</button>').join('') + '</div></div>';
+  }
+  /* เลขที่ของเพื่อนร่วมห้อง เขียว = ส่งแล้ว แดง = ยังไม่ส่ง ไม่มีชื่อ ให้ช่วยกันตามงาน */
+  if ((w.peers || []).length) {
+    const sent = w.peers.filter(p => p[1]).length;
+    h += '<h3>เพื่อนในห้อง <span class="muted small" style="font-weight:400">ส่งแล้ว ' + sent + ' จาก ' + w.peers.length + ' คน</span></h3>' +
+      '<div class="peers">' + w.peers.map(p => '<span class="' + (p[1] ? 'y' : 'n') + (p[2] ? ' me' : '') + '" title="เลขที่ ' + esc(p[0]) +
+        (p[1] ? ' ส่งแล้ว' : ' ยังไม่ส่ง') + (p[2] ? ' (คุณ)' : '') + '">' + esc(p[0] || '?') + '</span>').join('') + '</div>' +
+      '<div class="muted small" style="margin-top:6px"><span class="dot y" style="margin-left:0"></span>ส่งแล้ว<span class="dot n"></span>ยังไม่ส่ง · กรอบดำคือคุณ — ช่วยเตือนเพื่อนที่ยังไม่ส่งด้วยนะ</div>';
+  }
+
   h += '<h3>' + (s && s.files.length ? 'ส่งใหม่ <span class="muted small">(แทนไฟล์ชุดเดิมทั้งหมด)</span>' : 'แนบงาน') + '</h3>' +
     '<div class="pick-btns">' +
       '<label>' + icon('camera', 22) + '<span>ถ่ายรูป / เลือกรูป</span><input type="file" accept="image/*" multiple data-img></label>' +
@@ -520,6 +585,7 @@ function studentOpen(code) {
   $('[data-img]', root).addEventListener('change', e => { addFiles(Array.from(e.target.files || []), 'img').then(paint); e.target.value = ''; });
   $('[data-pdf]', root).addEventListener('change', e => { addFiles(Array.from(e.target.files || []), 'pdf').then(paint); e.target.value = ''; });
   $$('[data-see]', root).forEach(b => b.addEventListener('click', () => viewOwnFile(b.dataset.see, b)));
+  $$('[data-mk]', root).forEach(b => b.addEventListener('click', () => viewOwnFile(b.dataset.mk, b, 'งานที่ครูเขียนตรวจ · ' + b.textContent, true)));
   $$('[data-sheet]', root).forEach(b => b.addEventListener('click', () =>
     viewOwnFile(b.dataset.sheet, b, (w.sheets.find(f => f.id === b.dataset.sheet) || {}).name, true)));
   $('[data-send]', root).addEventListener('click', () => studentSend(w, root, sh));
@@ -1199,7 +1265,7 @@ async function openViewer(sid) {
   const layer = $('#layer');
   layer.innerHTML = '<div class="viewer" role="dialog" aria-modal="true">' +
     '<div class="vtop"><button class="sm" data-vclose>ปิด</button><div class="who" data-vwho></div><span class="sp"></span>' +
-    '<button class="sm" data-vzoom>ขยาย</button><button class="sm" data-vprev>‹ ก่อนหน้า</button><button class="sm" data-vnext>ถัดไป ›</button></div>' +
+    '<button class="sm primary" data-vink>✏️ เขียนตรวจ</button><button class="sm" data-vzoom>ขยาย</button><button class="sm" data-vprev>‹ ก่อนหน้า</button><button class="sm" data-vnext>ถัดไป ›</button></div>' +
     '<div class="vbody" data-vbody></div>' +
     '<div class="vbot"><div class="fld"><span>คะแนน (เต็ม ' + fmtN(w.max) + ')</span><input class="score" data-vscore type="number" min="0" max="' + esc(w.max) + '" step="0.5" inputmode="decimal"></div>' +
     '<button class="sm" data-vfull>เต็ม</button>' +
@@ -1218,13 +1284,20 @@ async function openViewer(sid) {
     const r = order[i], s = r.sub, v = score.value;
     $('[data-vpen]', root).textContent = s.penalty ? 'ช้า −' + s.penalty + '% → ' + (v === '' ? '—' : fmtN(finalOf(w, v, s.lateMin))) : ' ';
   };
+  let orig = false;                   /* มีฉบับที่เขียนตรวจแล้ว ตัวดูงานแสดงฉบับนั้นก่อน กดดูต้นฉบับได้ */
   const show = async () => {
     const r = order[i], s = r.sub;
+    if (!VIEW || VIEW.sid !== r.sid) orig = false;
     VIEW = { sid: r.sid };
+    const marked = s.marked && s.marked.length;
+    const files = marked && !orig ? s.marked : s.files;
     $('[data-vwho]', root).innerHTML = esc(r.name) + ' <span class="muted small">เลขที่ ' + esc(r.no) + ' · ' + esc(r.cls) + ' · ' + (i + 1) + '/' + order.length + '</span>' +
       '<div class="small" style="font-weight:400">ส่ง ' + thDate(s.ts, true) + (s.n > 1 ? ' (ครั้งที่ ' + s.n + ')' : '') +
       (s.lateMin > 0 ? ' <span class="chip warn">ช้า ' + spanText(s.lateMin) + '</span>' : ' <span class="chip ok">ทันเวลา</span>') +
-      (s.resent ? ' <span class="chip brand">ส่งใหม่หลังตรวจ</span>' : '') + '</div>';
+      (s.resent ? ' <span class="chip brand">ส่งใหม่หลังตรวจ</span>' : '') +
+      (marked ? ' <span class="chip brand">เขียนตรวจแล้ว</span> <button class="linkb" data-vorig>' + (orig ? 'ดูฉบับที่เขียนตรวจ' : 'ดูต้นฉบับ') + '</button>' : '') + '</div>';
+    const vo = $('[data-vorig]', root);
+    if (vo) vo.addEventListener('click', () => { orig = !orig; show(); });
     $('[data-vprev]', root).disabled = i === 0;
     $('[data-vnext]', root).disabled = i === order.length - 1;
     score.value = s.graded ? s.raw : '';
@@ -1232,12 +1305,12 @@ async function openViewer(sid) {
     paintPen();
     const body = $('[data-vbody]', root);
     body.innerHTML = (s.note ? '<div class="notice info" style="max-width:900px;width:100%"><b>ข้อความจากนักเรียน:</b> ' + esc(s.note) + '</div>' : '') +
-      s.files.map((f, k) => '<div data-slot="' + k + '" class="empty" style="width:100%;max-width:900px">กำลังโหลดหน้า ' + (k + 1) + '…</div>').join('');
+      files.map((f, k) => '<div data-slot="' + k + '" class="empty" style="width:100%;max-width:900px">กำลังโหลดหน้า ' + (k + 1) + '…</div>').join('');
     body.scrollTop = 0;
     const mySid = r.sid;
-    for (let k = 0; k < s.files.length; k++) {
+    for (let k = 0; k < files.length; k++) {
       try {
-        const f = await fileUrl(s.files[k].id);
+        const f = await fileUrl(files[k].id);
         if (!VIEW || VIEW.sid !== mySid) return;           /* ครูกดไปคนอื่นแล้ว */
         const slot = $('[data-slot="' + k + '"]', body);
         if (!slot) return;
@@ -1272,6 +1345,7 @@ async function openViewer(sid) {
     if (window.innerWidth > 700) score.focus();
   };
   function onKey(e) {
+    if (INK) return;                   /* หน้าต่างเขียนตรวจเปิดทับอยู่ */
     if (e.key === 'Escape') { close(); return; }
     if (e.target === cm || e.target === score) { if (e.key === 'Enter') { e.preventDefault(); saveNext(); } return; }
     if (e.key === 'ArrowRight') go(1);
@@ -1284,6 +1358,10 @@ async function openViewer(sid) {
   $('[data-vnext]', root).addEventListener('click', () => go(1));
   $('[data-vfull]', root).addEventListener('click', () => { score.value = w.max; paintPen(); });
   $('[data-vsave]', root).addEventListener('click', saveNext);
+  $('[data-vink]', root).addEventListener('click', () => {
+    const r = order[i];
+    openInk(r, w, sub => { r.sub = sub; orig = false; show(); });
+  });
   $('[data-vzoom]', root).addEventListener('click', e => {
     const b = $('[data-vbody]', root);
     b.classList.toggle('zoom');
@@ -1291,6 +1369,794 @@ async function openViewer(sid) {
   });
   show();
   if (window.innerWidth > 700) score.focus();
+}
+
+/* ============================================================================
+   เขียนตรวจงาน (แบบสมุดโน้ต) — ชีตรุ่น 24
+   ============================================================================
+   ครูเขียนทับงานของนักเรียนด้วยปากกา ปากกาเน้นข้อความ ยางลบ แปะเครื่องหมายถูก/ผิด คะแนน ข้อความ
+   และลายเซ็นของตัวเอง แล้วบันทึกเป็นรูปทีละหน้าไปให้นักเรียนเปิดดู
+     · เส้นเก็บเป็นพิกัดของหน้า (ไม่ใช่พิกเซลบนจอ) ซูมเท่าไรก็เขียนต่อได้ ยางลบลบทั้งเส้นและย้อนกลับได้
+     · เจอปากกา (Apple Pencil) เมื่อไร นิ้วจะเปลี่ยนเป็นเลื่อน/ซูมหน้าเอง ฝ่ามือที่วางบนจอจึงไม่เป็นเส้น
+     · ไม่มีปากกา นิ้วเดียวเขียน สองนิ้วซูมและเลื่อน · เมาส์เขียนได้ Ctrl+ล้อเมาส์ซูม
+     · PDF แปลงเป็นรูปทีละหน้าด้วย pdf.js (โหลดตอนใช้ครั้งแรก)
+     · ของที่แปะ (ลายเซ็น ถูก/ผิด ข้อความ) ลากย้ายและย่อขยายได้ด้วยเครื่องมือ "ย้าย"
+   หน้าต่างนี้กับกล่องถามของมันต่อท้าย body เอง ไม่ใช้ #layer เพราะตัวดูงานของครูอยู่ในนั้น */
+const INK_COLORS = [['#d7263d', 'แดง'], ['#1f5fd1', 'น้ำเงิน'], ['#1b1f24', 'ดำ'], ['#11875d', 'เขียว'], ['#f2b705', 'เหลือง']];
+/* ขนาดเส้นคิดต่อความกว้างหน้า 1000 หน่วย หน้าใหญ่เล็กแค่ไหนเส้นก็ดูหนาเท่ากัน */
+const INK_SIZES = { pen: [2, 3.4, 6], hl: [14, 22, 34], er: [9, 18, 34] };
+const INK_PAGE_MAX = 30;            /* ต้องตรงกับ MARK_PAGES_MAX ในโค้ดชีต */
+const INK_SIDE = 1800;              /* ด้านยาวของหน้า — พอให้ลายมือคม และไม่กินหน่วยความจำไอแพด */
+const PDFJS_URL = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
+const INK_ICONS = {
+  pen: '<path d="M4 20l1.2-4.6L15.6 5a2 2 0 0 1 2.8 0l.6.6a2 2 0 0 1 0 2.8L8.6 18.8z"/><path d="M13.8 6.8l3.4 3.4"/>',
+  hl: '<path d="M9 14l-3.5 3.5V20h2.5L11.5 16.5"/><path d="M9 14l7.3-9.3a1.7 1.7 0 0 1 2.5-.1l.6.6a1.7 1.7 0 0 1-.1 2.5L10 15"/><path d="M13 20h7"/>',
+  er: '<path d="M8.5 19.5h11"/><path d="M4.8 14.8l8.6-8.6a2 2 0 0 1 2.8 0l2.4 2.4a2 2 0 0 1 0 2.8l-7.6 7.6a2 2 0 0 1-1.4.6H9.1a2 2 0 0 1-1.4-.6l-2.9-2.9a1 1 0 0 1 0-1.3z"/><path d="M9.5 10.2l5.3 5.3"/>',
+  move: '<path d="M12 3v18"/><path d="M3 12h18"/><path d="M9 6l3-3 3 3"/><path d="M9 18l3 3 3-3"/><path d="M6 9l-3 3 3 3"/><path d="M18 9l3 3-3 3"/>',
+  text: '<path d="M5 6.5V5h14v1.5"/><path d="M12 5v14"/><path d="M9.5 19h5"/>',
+  undo: '<path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>',
+  redo: '<path d="M15 14l5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/>',
+  sign: '<path d="M3 17c3-6 5-10 6.5-10S9 15 11 15s2.5-4 4-4 1 4 2.5 4H21"/><path d="M3 21h18"/>',
+  hand: '<path d="M8 12V5.5a1.5 1.5 0 0 1 3 0V11"/><path d="M11 10V4.5a1.5 1.5 0 0 1 3 0V11"/><path d="M14 10.5V6a1.5 1.5 0 0 1 3 0v7.5a6.5 6.5 0 0 1-6.5 6.5h-.8a6 6 0 0 1-4.6-2.2L3.4 15a1.5 1.5 0 0 1 2.3-2L8 15"/>'
+};
+const inkIcon = n => '<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + INK_ICONS[n] + '</svg>';
+let INK = null;                     /* หน้าต่างเขียนตรวจที่เปิดอยู่ — ตัวดูงานเช็กค่านี้เพื่อไม่แย่งปุ่มคีย์บอร์ด */
+let SIGN;                           /* ลายเซ็นของครู: undefined = ยังไม่ได้ถามชีต · '' = ยังไม่ได้ตั้ง · data URL */
+const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
+
+/** กล่องถามที่วางทับหน้าต่างเขียนตรวจ (ไม่ใช้ #layer) — คืน { root, close } */
+function popup(html, onClose) {
+  const box = document.createElement('div');
+  box.className = 'overlay';
+  box.style.zIndex = 96;
+  box.innerHTML = '<div class="sheet" role="dialog" aria-modal="true"><button class="x sm" data-px>ปิด</button>' + html + '</div>';
+  document.body.appendChild(box);
+  let shut = false;
+  const close = () => { if (shut) return; shut = true; box.remove(); if (onClose) onClose(); };
+  box.addEventListener('click', e => { if (e.target === box) close(); });
+  $('[data-px]', box).addEventListener('click', close);
+  return { root: $('.sheet', box), close: close };
+}
+function popupAsk(title, html, okLabel, danger) {
+  return new Promise(resolve => {
+    let v = false;
+    const p = popup('<h2 style="padding-right:56px">' + esc(title) + '</h2><div style="margin-top:8px">' + html + '</div>' +
+      '<div class="row" style="margin-top:18px;justify-content:flex-end"><button data-no>ยกเลิก</button>' +
+      '<button class="' + (danger ? 'danger' : 'primary') + '" data-yes>' + esc(okLabel) + '</button></div>', () => resolve(v));
+    $('[data-no]', p.root).addEventListener('click', p.close);
+    $('[data-yes]', p.root).addEventListener('click', () => { v = true; p.close(); });
+  });
+}
+function askText(title, hint) {
+  return new Promise(resolve => {
+    let v = null;
+    const p = popup('<h2 style="padding-right:56px">' + esc(title) + '</h2>' +
+      '<textarea data-t maxlength="300" style="margin-top:8px;min-height:74px" placeholder="' + esc(hint || '') + '"></textarea>' +
+      '<div class="row" style="margin-top:12px;justify-content:flex-end"><button data-no>ยกเลิก</button><button class="primary" data-yes>ใส่ข้อความ</button></div>',
+      () => resolve(v));
+    const t = $('[data-t]', p.root);
+    const ok = () => { v = t.value.trim() || null; p.close(); };
+    $('[data-no]', p.root).addEventListener('click', p.close);
+    $('[data-yes]', p.root).addEventListener('click', ok);
+    t.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); ok(); } });
+    setTimeout(() => t.focus(), 30);
+  });
+}
+
+let PDFJS = null;
+function loadPdfJs() {
+  if (!PDFJS) PDFJS = new Promise((ok, no) => {
+    const s = document.createElement('script');
+    s.src = PDFJS_URL + 'pdf.min.js';
+    s.onload = () => { window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_URL + 'pdf.worker.min.js'; ok(window.pdfjsLib); };
+    s.onerror = () => { PDFJS = null; no(new Error('โหลดตัวเปิด PDF ไม่ได้ ตรวจอินเทอร์เน็ตแล้วลองใหม่')); };
+    document.head.appendChild(s);
+  });
+  return PDFJS;
+}
+function loadImg(src) {
+  return new Promise((ok, no) => {
+    const im = new Image();
+    im.onload = () => ok(im);
+    im.onerror = () => no(new Error('เปิดรูปไม่ได้'));
+    im.src = src;
+  });
+}
+const canvasBlob = (cv, type, q) => new Promise(ok => cv.toBlob(ok, type, q));
+
+/** ไฟล์งาน → หน้าที่เขียนได้ [{ url, own, img, W, H, strokes, items, ink, el }] */
+async function inkLoadPages(files, say) {
+  const pages = [];
+  const page = async (url, own) => {
+    const im = await loadImg(url);
+    const k = Math.min(1, INK_SIDE / Math.max(im.naturalWidth, im.naturalHeight));
+    pages.push({ url: url, own: own, img: im, W: Math.round(im.naturalWidth * k), H: Math.round(im.naturalHeight * k),
+                 strokes: [], items: [], ink: null, el: null });
+  };
+  for (let i = 0; i < files.length && pages.length < INK_PAGE_MAX; i++) {
+    say('กำลังเปิดไฟล์ ' + (i + 1) + ' จาก ' + files.length + '…');
+    const f = await fileUrl(files[i].id);
+    if (f.mime === 'application/pdf') {
+      const lib = await loadPdfJs();
+      const doc = await lib.getDocument({ data: new Uint8Array(await (await fetch(f.url)).arrayBuffer()) }).promise;
+      for (let n = 1; n <= doc.numPages && pages.length < INK_PAGE_MAX; n++) {
+        say('กำลังแปลง PDF หน้า ' + n + ' จาก ' + doc.numPages + '…');
+        const pg = await doc.getPage(n);
+        const vp = pg.getViewport({ scale: Math.min(3, 1400 / pg.getViewport({ scale: 1 }).width) });
+        const cv = document.createElement('canvas');
+        cv.width = Math.round(vp.width); cv.height = Math.round(vp.height);
+        const cx = cv.getContext('2d');
+        cx.fillStyle = '#fff'; cx.fillRect(0, 0, cv.width, cv.height);
+        await pg.render({ canvasContext: cx, viewport: vp }).promise;
+        const blob = await canvasBlob(cv, 'image/jpeg', 0.9);
+        cv.width = cv.height = 0;
+        await page(URL.createObjectURL(blob), true);
+      }
+      if (doc.destroy) doc.destroy();
+    } else if (/^image\//.test(f.mime)) {
+      await page(f.url, false);
+    }
+  }
+  return pages;
+}
+
+/* ---- วาดเส้น ---- */
+function drawStroke(c, s) {
+  const P = s.pts, n = P.length;
+  if (!n) return;
+  c.save();
+  c.lineCap = 'round'; c.lineJoin = 'round';
+  c.strokeStyle = c.fillStyle = s.color;
+  const mid = (a, b) => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+  if (s.tool === 'hl') {
+    /* ปากกาเน้นข้อความวาดเป็นเส้นเดียว สีจึงไม่ทับกันเข้มขึ้นตรงที่เส้นวกกลับ */
+    c.globalAlpha = 0.33; c.lineWidth = s.size; c.lineCap = 'butt';
+    c.beginPath(); c.moveTo(P[0][0], P[0][1]);
+    for (let i = 1; i < n - 1; i++) { const m = mid(P[i], P[i + 1]); c.quadraticCurveTo(P[i][0], P[i][1], m[0], m[1]); }
+    c.lineTo(P[n - 1][0], P[n - 1][1]);
+    if (n === 1) c.lineTo(P[0][0] + 0.1, P[0][1]);
+    c.stroke();
+  } else {
+    const wOf = p => s.pr ? s.size * (0.35 + 1.15 * Math.min(1, Math.max(0.05, p[2] || 0.5))) : s.size;
+    if (n === 1) { c.beginPath(); c.arc(P[0][0], P[0][1], wOf(P[0]) / 2, 0, Math.PI * 2); c.fill(); }
+    let from = P[0];
+    for (let i = 1; i < n; i++) {
+      const to = i < n - 1 ? mid(P[i], P[i + 1]) : P[i];
+      c.lineWidth = wOf(P[i]);
+      c.beginPath(); c.moveTo(from[0], from[1]); c.quadraticCurveTo(P[i][0], P[i][1], to[0], to[1]); c.stroke();
+      from = to;
+    }
+  }
+  c.restore();
+}
+function inkCanvas(p) {
+  if (!p.ink) {
+    p.ink = document.createElement('canvas');
+    p.ink.className = 'inkc';
+    p.ink.width = p.W; p.ink.height = p.H;
+    if (p.el) p.el.insertBefore(p.ink, $('.its', p.el));
+  }
+  return p.ink;
+}
+function inkRedraw(p) {
+  const cv = inkCanvas(p), c = cv.getContext('2d');
+  c.clearRect(0, 0, cv.width, cv.height);
+  p.strokes.forEach(s => drawStroke(c, s));
+}
+function segDist(q, a, b) {
+  const dx = b[0] - a[0], dy = b[1] - a[1], L = dx * dx + dy * dy;
+  const t = L ? Math.max(0, Math.min(1, ((q[0] - a[0]) * dx + (q[1] - a[1]) * dy) / L)) : 0;
+  return Math.hypot(q[0] - a[0] - t * dx, q[1] - a[1] - t * dy);
+}
+function strokeHit(s, q, R) {
+  const r = R + s.size / 2, P = s.pts;
+  if (P.length === 1) return Math.hypot(q[0] - P[0][0], q[1] - P[0][1]) < r;
+  for (let i = 1; i < P.length; i++) if (segDist(q, P[i - 1], P[i]) < r) return true;
+  return false;
+}
+
+/* ---- ของที่แปะ: ถูก ผิด คะแนน ข้อความ ลายเซ็น ---- */
+async function inkFont() { try { await document.fonts.load('700 64px Anuphan'); } catch (e) {} }
+function stampImg(kind, color, text) {
+  const cv = document.createElement('canvas'), c = cv.getContext('2d');
+  const F = '700 64px Anuphan, "Leelawadee UI", Tahoma, sans-serif';
+  c.font = F;
+  if (kind === 'ok' || kind === 'no') {
+    cv.width = cv.height = 160;
+    c.strokeStyle = color; c.lineWidth = 20; c.lineCap = 'round'; c.lineJoin = 'round';
+    c.beginPath();
+    if (kind === 'ok') { c.moveTo(22, 86); c.lineTo(64, 128); c.lineTo(140, 30); }
+    else { c.moveTo(30, 30); c.lineTo(130, 130); c.moveTo(130, 30); c.lineTo(30, 130); }
+    c.stroke();
+  } else {
+    const lines = String(text).split('\n').map(x => x.trim()).filter(Boolean).slice(0, 8);
+    const pad = kind === 'score' ? 26 : 8, lh = 80;
+    cv.width = Math.ceil(Math.max.apply(null, lines.map(l => c.measureText(l).width)) + pad * 2);
+    cv.height = lines.length * lh + (kind === 'score' ? 28 : 10);
+    c.font = F; c.fillStyle = color; c.textBaseline = 'middle';
+    if (kind === 'score') {
+      c.strokeStyle = color; c.lineWidth = 7;
+      const r = 26, W = cv.width - 8, H = cv.height - 8;
+      c.beginPath(); c.moveTo(4 + r, 4); c.arcTo(4 + W, 4, 4 + W, 4 + H, r); c.arcTo(4 + W, 4 + H, 4, 4 + H, r);
+      c.arcTo(4, 4 + H, 4, 4, r); c.arcTo(4, 4, 4 + W, 4, r); c.closePath(); c.stroke();
+      c.textAlign = 'center';
+      lines.forEach((l, i) => c.fillText(l, cv.width / 2, 14 + lh / 2 + i * lh));
+    } else {
+      lines.forEach((l, i) => c.fillText(l, pad, 5 + lh / 2 + i * lh));
+    }
+  }
+  return { src: cv.toDataURL('image/png'), w: cv.width, h: cv.height };
+}
+/** ลายเซ็น + วันที่ตรวจใต้ลายเซ็น (ถ้าเปิดไว้) */
+async function signImg(withDate) {
+  const im = await loadImg(SIGN);
+  if (!withDate) return { src: SIGN, w: im.naturalWidth, h: im.naturalHeight };
+  await inkFont();
+  const d = 'ตรวจ ' + new Date().toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' });
+  const fs = Math.max(22, Math.min(46, Math.round(im.naturalWidth * 0.1)));
+  const cv = document.createElement('canvas'), c = cv.getContext('2d');
+  const font = '600 ' + fs + 'px Anuphan, "Leelawadee UI", Tahoma, sans-serif';
+  c.font = font;
+  const tw = Math.ceil(c.measureText(d).width);
+  cv.width = Math.max(im.naturalWidth, tw + 8); cv.height = im.naturalHeight + Math.round(fs * 1.5);
+  c.drawImage(im, Math.round((cv.width - im.naturalWidth) / 2), 0);
+  c.font = font; c.fillStyle = '#2a3340'; c.textAlign = 'center'; c.textBaseline = 'bottom';
+  c.fillText(d, cv.width / 2, cv.height - Math.round(fs * 0.15));
+  return { src: cv.toDataURL('image/png'), w: cv.width, h: cv.height };
+}
+async function loadSign() {
+  if (SIGN !== undefined) return SIGN;
+  const r = await api('workSignGet', {});
+  SIGN = r && r.data ? 'data:' + (r.mime || 'image/png') + ';base64,' + r.data : '';
+  return SIGN;
+}
+
+/** แผ่นเซ็นชื่อ — เซ็นด้วยนิ้ว/ปากกา/เมาส์ หรือเลือกรูปลายเซ็นที่ถ่ายไว้ (ตัดพื้นขาวให้เอง) คืน true ถ้าบันทึก */
+function signPad() {
+  return new Promise(resolve => {
+    let saved = false;
+    const withDate = lsGet('wd.signDate') !== '0';
+    const p = popup('<h2 style="padding-right:56px">ลายเซ็นของครู</h2>' +
+      '<div class="muted small">เซ็นในกรอบด้วยนิ้ว ปากกา หรือเมาส์ — บันทึกไว้ในชีต ใช้ได้ทุกเครื่องที่ลงชื่อด้วยบัญชีนี้</div>' +
+      '<canvas class="signpad" width="900" height="320" data-pad></canvas>' +
+      '<div class="row" style="margin-top:8px"><button class="sm" data-clr>ล้าง</button>' +
+      '<label class="sm pickimg">เลือกรูปลายเซ็น<input type="file" accept="image/*" data-file hidden></label><span class="sp"></span>' +
+      '<label class="small row" style="gap:6px"><input type="checkbox" data-date style="width:auto;min-height:0"' + (withDate ? ' checked' : '') + '> ใส่วันที่ตรวจใต้ลายเซ็น</label></div>' +
+      '<div class="row" style="margin-top:14px">' + (SIGN ? '<button class="danger sm" data-del>ลบลายเซ็นที่บันทึกไว้</button>' : '') +
+      '<span class="sp"></span><button data-no>ยกเลิก</button><button class="primary" data-yes>บันทึกลายเซ็น</button></div>',
+      () => resolve(saved));
+    const cv = $('[data-pad]', p.root), c = cv.getContext('2d');
+    let blank = true, cur = null;
+    if (SIGN) loadImg(SIGN).then(im => {
+      const k = Math.min(1, (cv.width - 40) / im.naturalWidth, (cv.height - 40) / im.naturalHeight);
+      c.drawImage(im, (cv.width - im.naturalWidth * k) / 2, (cv.height - im.naturalHeight * k) / 2, im.naturalWidth * k, im.naturalHeight * k);
+      blank = false;
+    }).catch(() => {});
+    const pt = e => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) / r.width * cv.width, (e.clientY - r.top) / r.height * cv.height, e.pressure]; };
+    cv.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      try { cv.setPointerCapture(e.pointerId); } catch (err) {}
+      cur = { tool: 'pen', color: '#10141b', size: 5.5, pr: e.pointerType === 'pen', pts: [pt(e)] };
+      blank = false;
+    });
+    cv.addEventListener('pointermove', e => {
+      if (!cur) return;
+      const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [];
+      (evs.length ? evs : [e]).forEach(ev => cur.pts.push(pt(ev)));
+      const n = cur.pts.length;
+      drawStroke(c, Object.assign({}, cur, { pts: cur.pts.slice(Math.max(0, n - 4)) }));
+    });
+    const end = () => { if (cur) drawStroke(c, cur); cur = null; };
+    cv.addEventListener('pointerup', end); cv.addEventListener('pointercancel', end);
+    $('[data-clr]', p.root).addEventListener('click', () => { c.clearRect(0, 0, cv.width, cv.height); blank = true; });
+    $('[data-file]', p.root).addEventListener('change', async e => {
+      const f = e.target.files && e.target.files[0];
+      if (!f) return;
+      try {
+        const url = URL.createObjectURL(f), im = await loadImg(url);
+        URL.revokeObjectURL(url);
+        const k = Math.min((cv.width - 20) / im.naturalWidth, (cv.height - 20) / im.naturalHeight);
+        c.clearRect(0, 0, cv.width, cv.height);
+        c.drawImage(im, (cv.width - im.naturalWidth * k) / 2, (cv.height - im.naturalHeight * k) / 2, im.naturalWidth * k, im.naturalHeight * k);
+        /* ตัดพื้นกระดาษออก — จุดที่สว่างกลายเป็นโปร่งใส ที่เหลือเข้มขึ้นให้คมเหมือนหมึก */
+        const d = c.getImageData(0, 0, cv.width, cv.height), a = d.data;
+        for (let i = 0; i < a.length; i += 4) {
+          const L = 0.3 * a[i] + 0.59 * a[i + 1] + 0.11 * a[i + 2];
+          if (L > 175) a[i + 3] = 0;
+          else { a[i + 3] = Math.min(255, Math.round((175 - L) * 2.6)); a[i] = a[i] * 0.5; a[i + 1] = a[i + 1] * 0.5; a[i + 2] = a[i + 2] * 0.6; }
+        }
+        c.putImageData(d, 0, 0);
+        blank = false;
+      } catch (err) { toast(err.message); }
+      e.target.value = '';
+    });
+    $('[data-no]', p.root).addEventListener('click', p.close);
+    if (SIGN) $('[data-del]', p.root).addEventListener('click', async () => {
+      try { await api('workSignSet', { data: '' }); SIGN = ''; toast('ลบลายเซ็นแล้ว'); p.close(); } catch (e) { toast(e.message, 4000); }
+    });
+    $('[data-yes]', p.root).addEventListener('click', async e => {
+      lsSet('wd.signDate', $('[data-date]', p.root).checked ? '1' : '0');
+      /* ตัดขอบว่างรอบลายเซ็น */
+      const d = c.getImageData(0, 0, cv.width, cv.height).data;
+      let x0 = cv.width, y0 = cv.height, x1 = -1, y1 = -1;
+      for (let y = 0; y < cv.height; y++) for (let x = 0; x < cv.width; x++) {
+        if (d[(y * cv.width + x) * 4 + 3] > 10) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+      }
+      if (blank || x1 < 0) { toast('ยังไม่ได้เซ็น'); return; }
+      const pad = 8, out = document.createElement('canvas');
+      x0 = Math.max(0, x0 - pad); y0 = Math.max(0, y0 - pad); x1 = Math.min(cv.width - 1, x1 + pad); y1 = Math.min(cv.height - 1, y1 + pad);
+      out.width = x1 - x0 + 1; out.height = y1 - y0 + 1;
+      out.getContext('2d').drawImage(cv, x0, y0, out.width, out.height, 0, 0, out.width, out.height);
+      const url = out.toDataURL('image/png');
+      const b = e.currentTarget;
+      b.disabled = true; b.textContent = 'กำลังบันทึก…';
+      try {
+        await api('workSignSet', { mime: 'image/png', data: url.split(',')[1] });
+        SIGN = url; saved = true; p.close();
+      } catch (err) { b.disabled = false; b.textContent = 'บันทึกลายเซ็น'; toast(err.message, 4000); }
+    });
+  });
+}
+
+/* ---- หน้าต่างเขียนตรวจ ---- */
+async function openInk(r, w, onSaved) {
+  if (INK) return;
+  const s = r.sub;
+  const box = document.createElement('div');
+  box.className = 'ink';
+  box.setAttribute('role', 'dialog');
+  box.setAttribute('aria-label', 'เขียนตรวจงาน');
+  const tool = (t, label) => '<button class="tb" data-tool="' + t + '" title="' + label + '" aria-label="' + label + '">' + inkIcon(t) + '</button>';
+  box.innerHTML =
+    '<div class="inktop"><button class="sm" data-ik="close">ปิด</button>' +
+      '<div class="who">' + esc(r.name) + ' <span class="muted small">เลขที่ ' + esc(r.no) + ' · ' + esc(r.cls) + ' · ' + esc(w.title) + '</span></div>' +
+      '<span class="sp"></span><span class="small muted" data-prog></span>' +
+      '<button class="primary sm" data-ik="save">บันทึกส่งให้นักเรียน</button></div>' +
+    '<div class="inktools">' +
+      '<div class="grp">' + tool('pen', 'ปากกา') + tool('hl', 'ปากกาเน้นข้อความ') + tool('er', 'ยางลบ (ลบทีละเส้น)') + tool('text', 'ข้อความ — แตะตรงที่จะใส่') + tool('move', 'ย้าย/ย่อขยายของที่แปะ') + '</div>' +
+      '<div class="grp" data-colors>' + INK_COLORS.map(c => '<button class="sw" data-color="' + c[0] + '" title="' + c[1] + '" aria-label="สี' + c[1] + '"><i style="background:' + c[0] + '"></i></button>').join('') + '</div>' +
+      '<div class="grp" data-sizes>' + [0, 1, 2].map(i => '<button class="sz" data-size="' + i + '" aria-label="ขนาด ' + (i + 1) + '"><i style="width:' + (5 + i * 5) + 'px;height:' + (5 + i * 5) + 'px"></i></button>').join('') + '</div>' +
+      '<div class="grp"><button class="tb" data-ik="undo" title="ย้อนกลับ (Ctrl+Z)" aria-label="ย้อนกลับ">' + inkIcon('undo') + '</button>' +
+        '<button class="tb" data-ik="redo" title="ทำซ้ำ (Ctrl+Y)" aria-label="ทำซ้ำ">' + inkIcon('redo') + '</button></div>' +
+      '<div class="grp"><button class="tb stamp" data-stamp="ok" title="แปะเครื่องหมายถูก" style="color:#11875d">✓</button>' +
+        '<button class="tb stamp" data-stamp="no" title="แปะเครื่องหมายผิด" style="color:#d7263d">✗</button>' +
+        '<button class="tb txt" data-stamp="score" title="แปะคะแนน">คะแนน</button>' +
+        '<button class="tb txt" data-stamp="good" title="แปะคำชม">ดีมาก</button>' +
+        '<button class="tb" data-ik="sign" title="แปะลายเซ็น" aria-label="แปะลายเซ็น">' + inkIcon('sign') + '</button>' +
+        '<button class="tb txt" data-ik="signset" title="ตั้ง/แก้ลายเซ็น">แก้ลายเซ็น</button></div>' +
+      '<div class="grp"><button class="tb txt" data-ik="zout" aria-label="ย่อ">−</button><button class="tb txt" data-ik="zfit" data-zl title="พอดีจอ">100%</button>' +
+        '<button class="tb txt" data-ik="zin" aria-label="ขยาย">+</button>' +
+        '<button class="tb" data-ik="finger" title="นิ้วเขียน / นิ้วเลื่อนหน้า">' + inkIcon('hand') + '</button></div>' +
+    '</div>' +
+    '<div class="inknote" data-note></div>' +
+    '<div class="inkbody" data-ib><div class="empty">กำลังเตรียมหน้า…</div></div>';
+  document.body.appendChild(box);
+  document.body.style.overflow = 'hidden';
+  const st = INK = {
+    r: r, w: w, box: box, body: $('[data-ib]', box), pages: [], tool: 'pen',
+    color: { pen: lsGet('wd.inkPen') || INK_COLORS[0][0], hl: lsGet('wd.inkHl') || INK_COLORS[4][0], text: lsGet('wd.inkPen') || INK_COLORS[0][0] },
+    size: { pen: Number(lsGet('wd.inkPenSize') || 1), hl: 1, er: 1 },
+    zoom: 1, fingerDraw: true, penSeen: false, undo: [], redo: [], dirty: false, busy: false,
+    cur: null, live: null, touches: new Map(), pinch: null,
+    from: s.marked && s.marked.length ? 'marked' : 'orig'
+  };
+  const B = st.body;
+  const act = n => $('[data-ik="' + n + '"]', box);
+
+  const close = async force => {
+    if (st.busy) return;
+    if (!force && st.dirty && !(await popupAsk('ปิดโดยไม่บันทึก?', 'สิ่งที่เขียนไว้ในหน้านี้จะหายไป นักเรียนจะไม่เห็น', 'ปิดเลย', true))) return;
+    document.removeEventListener('keydown', onKey, true);
+    window.removeEventListener('resize', onResize);
+    st.pages.forEach(p => { if (p.own) URL.revokeObjectURL(p.url); if (p.ink) p.ink.width = p.ink.height = 0; });
+    box.remove();
+    INK = null;
+    if (!$('.viewer')) document.body.style.overflow = '';
+  };
+
+  const paintTools = () => {
+    $$('[data-tool]', box).forEach(b => b.classList.toggle('on', b.dataset.tool === st.tool));
+    const k = st.tool === 'hl' ? 'hl' : st.tool === 'er' ? 'er' : 'pen';
+    const col = st.color[st.tool === 'hl' ? 'hl' : 'pen'];
+    $$('[data-color]', box).forEach(b => b.classList.toggle('on', b.dataset.color === col));
+    $('[data-colors]', box).classList.toggle('off', st.tool === 'er' || st.tool === 'move');
+    $$('[data-size]', box).forEach(b => b.classList.toggle('on', Number(b.dataset.size) === st.size[k]));
+    $('[data-sizes]', box).classList.toggle('off', st.tool === 'move' || st.tool === 'text');
+    act('undo').disabled = !st.undo.length;
+    act('redo').disabled = !st.redo.length;
+    act('finger').classList.toggle('on', !st.fingerDraw);
+    act('finger').title = st.fingerDraw ? 'ตอนนี้: นิ้วเขียนได้ (แตะเพื่อให้นิ้วเลื่อนหน้าแทน)' : 'ตอนนี้: นิ้วเลื่อนหน้า ปากกาเขียน (แตะเพื่อให้นิ้วเขียนได้)';
+    box.classList.toggle('mv', st.tool === 'move');
+    box.classList.toggle('fscroll', !st.fingerDraw && st.tool !== 'move');
+    act('zfit').textContent = Math.round(st.zoom * 100) + '%';
+  };
+  const setTool = t => { st.tool = t; paintTools(); };
+  const pushOp = op => { st.undo.push(op); st.redo = []; st.dirty = true; paintTools(); };
+
+  /* ---- ซูม ---- */
+  const fitW = () => Math.max(260, Math.min(B.clientWidth - 28, 920));
+  const setZoom = (z, cx, cy) => {
+    z = Math.max(0.5, Math.min(4, z));
+    const old = st.zoom, br = B.getBoundingClientRect();
+    const ax = cx == null ? B.clientWidth / 2 : cx - br.left, ay = cy == null ? B.clientHeight / 2 : cy - br.top;
+    const fx = B.scrollLeft + ax, fy = B.scrollTop + ay;
+    st.zoom = z;
+    const w0 = Math.round(fitW() * z);
+    st.pages.forEach(p => { if (p.el) p.el.style.width = w0 + 'px'; });
+    B.scrollLeft = fx * z / old - ax;
+    B.scrollTop = fy * z / old - ay;
+    paintTools();
+  };
+  const onResize = () => setZoom(st.zoom);
+
+  /* ---- หน้ากระดาษ ---- */
+  const placeItem = (p, it) => {
+    const e = it.el.style;
+    e.left = it.x / p.W * 100 + '%'; e.top = it.y / p.H * 100 + '%';
+    e.width = it.w / p.W * 100 + '%'; e.height = it.h / p.H * 100 + '%';
+  };
+  const itemEl = (p, it) => {
+    const el = document.createElement('div');
+    el.className = 'it';
+    el.innerHTML = '<img alt="" draggable="false" src="' + it.src + '"><button class="del" aria-label="เอาออก">×</button><span class="rs" aria-hidden="true"></span>';
+    it.el = el;
+    placeItem(p, it);
+    $('.its', p.el).appendChild(el);
+    $('.del', el).addEventListener('pointerdown', e => e.stopPropagation());
+    $('.del', el).addEventListener('click', () => {
+      p.items.splice(p.items.indexOf(it), 1); el.remove();
+      pushOp({ t: 'itdel', p: p, it: it });
+    });
+    el.addEventListener('pointerdown', e => {
+      if (st.tool !== 'move') return;
+      e.preventDefault(); e.stopPropagation();
+      try { el.setPointerCapture(e.pointerId); } catch (err) {}
+      const resize = e.target.classList.contains('rs');
+      const r0 = p.el.getBoundingClientRect(), k = p.W / r0.width;
+      const g = { x: e.clientX, y: e.clientY, it: { x: it.x, y: it.y, w: it.w, h: it.h } };
+      const mv = ev => {
+        const dx = (ev.clientX - g.x) * k, dy = (ev.clientY - g.y) * k;
+        if (resize) {
+          const nw = Math.max(p.W * 0.03, g.it.w + dx);
+          it.w = nw; it.h = nw * g.it.h / g.it.w;
+        } else {
+          it.x = Math.max(-it.w / 2, Math.min(p.W - it.w / 2, g.it.x + dx));
+          it.y = Math.max(-it.h / 2, Math.min(p.H - it.h / 2, g.it.y + dy));
+        }
+        placeItem(p, it);
+      };
+      const up = () => {
+        el.removeEventListener('pointermove', mv); el.removeEventListener('pointerup', up); el.removeEventListener('pointercancel', up);
+        if (it.x !== g.it.x || it.y !== g.it.y || it.w !== g.it.w) st.dirty = true;
+      };
+      el.addEventListener('pointermove', mv); el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
+    });
+  };
+  const paintPages = () => {
+    B.innerHTML = '';
+    if (!st.pages.length) { B.innerHTML = '<div class="empty">งานนี้ไม่มีหน้าที่เขียนตรวจได้ (ไฟล์ไม่ใช่รูปหรือ PDF)</div>'; return; }
+    st.pages.forEach((p, i) => {
+      const el = document.createElement('div');
+      el.className = 'pg';
+      el.style.aspectRatio = p.W + ' / ' + p.H;
+      el.innerHTML = '<img alt="หน้า ' + (i + 1) + '" draggable="false" src="' + p.url + '"><div class="its"></div><span class="pn">' + (i + 1) + '/' + st.pages.length + '</span>';
+      p.el = el;
+      B.appendChild(el);
+      if (p.ink) el.insertBefore(p.ink, $('.its', el));
+      p.items.forEach(it => itemEl(p, it));
+    });
+    setZoom(st.zoom);
+  };
+  const note = () => {
+    const n = $('[data-note]', box);
+    if (st.from === 'marked') {
+      n.innerHTML = 'แก้ต่อจากฉบับที่เขียนตรวจไว้เมื่อ ' + thDate(s.markedAt, true) +
+        (s.markedAt && s.ts && new Date(s.ts) > new Date(s.markedAt) ? ' · <b style="color:var(--warn)">นักเรียนส่งงานใหม่หลังจากนั้น</b>' : '') +
+        ' · <button class="linkb" data-ik="orig">เริ่มใหม่จากต้นฉบับ</button> · <button class="linkb danger" data-ik="unmark">ลบฉบับที่เขียนตรวจ</button>';
+      act('orig').addEventListener('click', async () => {
+        if (st.dirty && !(await popupAsk('เริ่มใหม่จากต้นฉบับ?', 'สิ่งที่เขียนในหน้านี้จะหายไป ฉบับที่บันทึกไว้ยังอยู่จนกว่าจะกดบันทึกใหม่', 'เริ่มใหม่', true))) return;
+        st.from = 'orig'; load();
+      });
+      act('unmark').addEventListener('click', async () => {
+        if (!(await popupAsk('ลบฉบับที่เขียนตรวจ?', 'นักเรียนจะเห็นแค่งานต้นฉบับที่ส่งมา (ไฟล์ย้ายไปถังขยะของ Drive กู้คืนได้ 30 วัน)', 'ลบ', true))) return;
+        try {
+          const res = await api('workMark', { code: w.code, sid: r.sid, ids: [] }, 60000);
+          onSaved(res.sub); toast('ลบฉบับที่เขียนตรวจแล้ว'); close(true);
+        } catch (e) { if (e.auth) { close(true); return fail(e); } toast(e.message, 4000); }
+      });
+    } else {
+      n.innerHTML = '';
+    }
+  };
+  const load = async () => {
+    st.pages.forEach(p => { if (p.own) URL.revokeObjectURL(p.url); });
+    st.pages = []; st.undo = []; st.redo = []; st.dirty = false;
+    B.innerHTML = '<div class="empty" data-say>กำลังเตรียมหน้า…</div>';
+    note(); paintTools();
+    try {
+      st.pages = await inkLoadPages(st.from === 'marked' ? s.marked : s.files, t => { const x = $('[data-say]', B); if (x) x.textContent = t; });
+      if (INK !== st) return;
+      paintPages();
+    } catch (e) {
+      if (e.auth) { close(true); return fail(e); }
+      B.innerHTML = '<div class="notice bad" style="margin:14px">' + esc(e.message || String(e)) + '</div>';
+    }
+  };
+
+  /* ---- ปากกา ---- */
+  const pageAt = el => { const pg = el && el.closest ? el.closest('.pg') : null; return pg ? st.pages.find(p => p.el === pg) : null; };
+  const ptOf = (p, e) => { const q = p.el.getBoundingClientRect(); return [(e.clientX - q.left) / q.width * p.W, (e.clientY - q.top) / q.height * p.H, e.pressure]; };
+  const liveDraw = () => {
+    const c = st.cur, lv = st.live, x = lv.getContext('2d');
+    x.clearRect(0, 0, lv.width, lv.height);
+    drawStroke(x, c.s);
+  };
+  const dropLive = () => { if (st.live) { st.live.width = st.live.height = 0; st.live.remove(); st.live = null; } };
+  const erase = (p, q) => {
+    const c = st.cur;
+    let hit = false;
+    for (let i = p.strokes.length - 1; i >= 0; i--) {
+      if (strokeHit(p.strokes[i], q, c.r)) { c.er.push(p.strokes[i]); p.strokes.splice(i, 1); hit = true; }
+    }
+    if (hit) inkRedraw(p);
+  };
+  const cancelStroke = () => { if (st.cur && st.cur.s) dropLive(); if (st.cur && st.cur.er && st.cur.er.length) pushOp({ t: 'er', p: st.cur.p, list: st.cur.er }); st.cur = null; };
+
+  B.addEventListener('pointerdown', async e => {
+    if (e.pointerType === 'pen' && !st.penSeen) {
+      st.penSeen = true;
+      if (st.fingerDraw) { st.fingerDraw = false; paintTools(); toast('เจอปากกาแล้ว — ปากกาเขียน นิ้วเลื่อนและซูมหน้า (เปลี่ยนได้ที่ปุ่มรูปมือ)', 3200); }
+    }
+    if (e.pointerType === 'touch') {
+      st.touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (!st.fingerDraw || st.tool === 'move') return;          /* ให้เบราว์เซอร์เลื่อนหน้าเอง */
+      if (st.touches.size >= 2) {
+        /* นิ้วที่สองลงมา = ซูม/เลื่อน ไม่ใช่เขียน — ทิ้งเส้นที่นิ้วแรกเพิ่งเริ่ม */
+        if (st.cur && st.cur.touch) { if (st.cur.s) dropLive(); st.cur = null; }
+        const [a, b] = Array.from(st.touches.values());
+        st.pinch = { d: Math.hypot(a.x - b.x, a.y - b.y) || 1, z: st.zoom, mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2 };
+        return;
+      }
+    }
+    if (e.button > 0 || st.tool === 'move' || st.busy) return;
+    const p = pageAt(e.target);
+    if (!p) return;
+    e.preventDefault();
+    const q = ptOf(p, e);
+    if (st.tool === 'text') {
+      const t = await askText('ข้อความ', 'พิมพ์ข้อความที่จะเขียนลงบนงาน (Enter เพื่อใส่ · Shift+Enter ขึ้นบรรทัดใหม่)');
+      if (!t) return;
+      await inkFont();
+      addItem(p, stampImg('text', st.color.text, t), 0, q[0], q[1]);
+      return;
+    }
+    try { B.setPointerCapture(e.pointerId); } catch (err) {}
+    if (st.tool === 'er') {
+      st.cur = { id: e.pointerId, touch: e.pointerType === 'touch', p: p, er: [], r: INK_SIZES.er[st.size.er] * p.W / 1000 };
+      erase(p, q);
+      return;
+    }
+    const t = st.tool;
+    st.cur = { id: e.pointerId, touch: e.pointerType === 'touch', p: p,
+               s: { tool: t, color: st.color[t], size: INK_SIZES[t][st.size[t]] * p.W / 1000, pr: e.pointerType === 'pen', pts: [q] } };
+    dropLive();
+    st.live = document.createElement('canvas');
+    st.live.className = 'inkc';
+    st.live.width = p.W; st.live.height = p.H;
+    p.el.insertBefore(st.live, $('.its', p.el));
+    liveDraw();
+  });
+  B.addEventListener('pointermove', e => {
+    if (e.pointerType === 'touch' && st.touches.has(e.pointerId)) {
+      st.touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (st.pinch && st.touches.size >= 2) {
+        const [a, b] = Array.from(st.touches.values());
+        const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+        setZoom(st.pinch.z * Math.hypot(a.x - b.x, a.y - b.y) / st.pinch.d, mx, my);
+        B.scrollLeft -= mx - st.pinch.mx; B.scrollTop -= my - st.pinch.my;
+        st.pinch.mx = mx; st.pinch.my = my;
+        return;
+      }
+    }
+    const c = st.cur;
+    if (!c || c.id !== e.pointerId) return;
+    const list = e.getCoalescedEvents ? e.getCoalescedEvents() : [];
+    const evs = list.length ? list : [e];
+    if (c.er) { evs.forEach(ev => erase(c.p, ptOf(c.p, ev))); return; }
+    evs.forEach(ev => {
+      const q = ptOf(c.p, ev), L = c.s.pts[c.s.pts.length - 1];
+      if (Math.hypot(q[0] - L[0], q[1] - L[1]) > 0.7) c.s.pts.push(q);
+    });
+    liveDraw();
+  });
+  const up = (e, cancel) => {
+    if (e.pointerType === 'touch') {
+      st.touches.delete(e.pointerId);
+      if (st.touches.size < 2) st.pinch = null;
+    }
+    const c = st.cur;
+    if (!c || c.id !== e.pointerId) return;
+    st.cur = null;
+    if (c.er) { if (c.er.length) pushOp({ t: 'er', p: c.p, list: c.er }); return; }
+    dropLive();
+    if (cancel && c.s.pts.length < 3) return;
+    c.p.strokes.push(c.s);
+    drawStroke(inkCanvas(c.p).getContext('2d'), c.s);
+    pushOp({ t: 'st', p: c.p, s: c.s });
+  };
+  B.addEventListener('pointerup', e => up(e, false));
+  B.addEventListener('pointercancel', e => up(e, true));
+  B.addEventListener('wheel', e => {
+    if (!e.ctrlKey) return;
+    e.preventDefault();
+    setZoom(st.zoom * Math.exp(-e.deltaY / 300), e.clientX, e.clientY);
+  }, { passive: false });
+
+  /* ---- ย้อนกลับ / ทำซ้ำ ---- */
+  const apply = (op, back) => {
+    const p = op.p;
+    if (op.t === 'st') { if (back) p.strokes.splice(p.strokes.indexOf(op.s), 1); else p.strokes.push(op.s); inkRedraw(p); }
+    else if (op.t === 'er') { if (back) op.list.forEach(x => p.strokes.push(x)); else op.list.forEach(x => { const i = p.strokes.indexOf(x); if (i >= 0) p.strokes.splice(i, 1); }); inkRedraw(p); }
+    else if ((op.t === 'it') === back) { p.items.splice(p.items.indexOf(op.it), 1); op.it.el.remove(); }
+    else { p.items.push(op.it); itemEl(p, op.it); }
+  };
+  const undo = () => { cancelStroke(); const op = st.undo.pop(); if (!op) return; apply(op, true); st.redo.push(op); st.dirty = true; paintTools(); };
+  const redo = () => { const op = st.redo.pop(); if (!op) return; apply(op, false); st.undo.push(op); st.dirty = true; paintTools(); };
+
+  /* ---- แปะของ ---- */
+  const visiblePage = () => {
+    const b = B.getBoundingClientRect(), cy = b.top + b.height / 2;
+    let best = null, bd = Infinity;
+    st.pages.forEach(p => {
+      const q = p.el.getBoundingClientRect();
+      const d = cy < q.top ? q.top - cy : cy > q.bottom ? cy - q.bottom : 0;
+      if (d < bd) { bd = d; best = p; }
+    });
+    return best;
+  };
+  /* frac = ความกว้างเทียบหน้า (0 = ขนาดตามตัวอักษร) · cx, cy = จุดกึ่งกลาง (ไม่ใส่ = กลางส่วนที่เห็นของหน้า) */
+  const addItem = (p, img, frac, cx, cy) => {
+    if (!p) return;
+    const w0 = frac ? p.W * frac : img.w * (26 * p.W / 1000) / 64;
+    const h0 = w0 * img.h / img.w;
+    if (cx == null) {
+      const q = p.el.getBoundingClientRect(), b = B.getBoundingClientRect();
+      const sy = (Math.max(q.top, b.top) + Math.min(q.bottom, b.bottom)) / 2, sx = (Math.max(q.left, b.left) + Math.min(q.right, b.right)) / 2;
+      cx = (sx - q.left) / q.width * p.W; cy = (sy - q.top) / q.height * p.H;
+    } else {
+      cx += w0 / 2 - 4 * p.W / 1000;                  /* ข้อความเริ่มตรงจุดที่แตะ */
+    }
+    const it = { src: img.src, x: cx - w0 / 2, y: cy - h0 / 2, w: w0, h: h0 };
+    p.items.push(it);
+    itemEl(p, it);
+    pushOp({ t: 'it', p: p, it: it });
+  };
+  $$('[data-stamp]', box).forEach(b => b.addEventListener('click', async () => {
+    if (!st.pages.length) return;
+    await inkFont();
+    const k = b.dataset.stamp, col = st.color.pen;
+    let img;
+    if (k === 'score') {
+      const v = $('[data-vscore]') ? $('[data-vscore]').value : '';
+      const sc = v !== '' ? v : (s.graded ? s.raw : '');
+      if (sc === '') { toast('ใส่คะแนนที่ช่องด้านล่างของตัวดูงานก่อน แล้วค่อยแปะ', 3500); return; }
+      img = stampImg('score', col, fmtN(sc) + '/' + fmtN(w.max));
+    } else if (k === 'good') img = stampImg('text', col, 'ดีมาก');
+    else img = stampImg(k, k === 'ok' ? '#11875d' : '#d7263d');
+    addItem(visiblePage(), img, k === 'ok' || k === 'no' ? 0.09 : k === 'score' ? 0.2 : 0.16);
+    setTool('move');
+    toast('ลากเพื่อย้าย · ลากมุมขวาล่างเพื่อย่อขยาย · เลือกปากกาเพื่อเขียนต่อ', 2600);
+  }));
+  act('sign').addEventListener('click', async () => {
+    if (!st.pages.length) return;
+    try { await loadSign(); } catch (e) { if (e.auth) { close(true); return fail(e); } toast(e.message, 4000); return; }
+    if (!SIGN && !(await signPad())) return;
+    try {
+      addItem(visiblePage(), await signImg(lsGet('wd.signDate') !== '0'), 0.26);
+      setTool('move');
+      toast('ลากลายเซ็นไปวางตรงที่ต้องการ', 2400);
+    } catch (e) { toast(e.message, 4000); }
+  });
+  act('signset').addEventListener('click', async () => {
+    try { await loadSign(); } catch (e) { if (e.auth) { close(true); return fail(e); } toast(e.message, 4000); return; }
+    if (await signPad()) toast('บันทึกลายเซ็นแล้ว — กดปุ่มลายเซ็นเพื่อแปะ');
+  });
+
+  /* ---- บันทึก ---- */
+  const save = async () => {
+    if (st.busy || !st.pages.length) return;
+    cancelStroke();
+    const any = st.pages.some(p => p.strokes.length || p.items.length);
+    if (st.from === 'orig' && !any) { toast('ยังไม่ได้เขียนอะไรลงบนงาน'); return; }
+    if (st.from === 'marked' && !st.dirty) { toast('ไม่มีอะไรเปลี่ยนจากฉบับที่บันทึกไว้'); return; }
+    st.busy = true;
+    box.classList.add('busy');
+    const btn = act('save'), prog = $('[data-prog]', box);
+    btn.disabled = true;
+    try {
+      const ids = [];
+      for (let i = 0; i < st.pages.length; i++) {
+        const p = st.pages[i];
+        prog.textContent = 'กำลังบันทึกหน้า ' + (i + 1) + ' จาก ' + st.pages.length + '…';
+        const cv = document.createElement('canvas');
+        cv.width = p.W; cv.height = p.H;
+        const c = cv.getContext('2d');
+        c.fillStyle = '#fff'; c.fillRect(0, 0, p.W, p.H);
+        c.drawImage(p.img, 0, 0, p.W, p.H);
+        if (p.ink) c.drawImage(p.ink, 0, 0);
+        p.items.forEach(it => c.drawImage($('img', it.el), it.x, it.y, it.w, it.h));
+        const blob = await canvasBlob(cv, 'image/jpeg', 0.86);
+        cv.width = cv.height = 0;
+        const data = await blobToBase64(blob);
+        let upd = null, last = null;
+        for (let k = 0; k < 2 && !upd; k++) {
+          try { upd = await api('workMarkUp', { code: w.code, sid: r.sid, mime: 'image/jpeg', data: data }, 120000); }
+          catch (e) { last = e; if (e.auth) throw e; }
+        }
+        if (!upd) throw last;
+        ids.push(upd.id);
+      }
+      prog.textContent = 'กำลังส่งให้นักเรียน…';
+      const res = await api('workMark', { code: w.code, sid: r.sid, ids: ids }, 60000);
+      st.busy = false;
+      onSaved(res.sub);
+      toast('บันทึกแล้ว — ' + r.name + ' เปิดดูงานที่เขียนตรวจได้ในหน้าส่งงาน', 2600);
+      close(true);
+    } catch (e) {
+      st.busy = false;
+      box.classList.remove('busy');
+      btn.disabled = false; prog.textContent = '';
+      if (e.auth) { close(true); return fail(e); }
+      toast(e.message || String(e), 5000);
+    }
+  };
+
+  /* ---- ปุ่ม ---- */
+  $$('[data-tool]', box).forEach(b => b.addEventListener('click', () => setTool(b.dataset.tool)));
+  $$('[data-color]', box).forEach(b => b.addEventListener('click', () => {
+    const k = st.tool === 'hl' ? 'hl' : 'pen';
+    st.color[k] = b.dataset.color;
+    if (k === 'pen') { st.color.text = b.dataset.color; lsSet('wd.inkPen', b.dataset.color); } else lsSet('wd.inkHl', b.dataset.color);
+    if (st.tool === 'er' || st.tool === 'move') st.tool = 'pen';
+    paintTools();
+  }));
+  $$('[data-size]', box).forEach(b => b.addEventListener('click', () => {
+    const k = st.tool === 'hl' ? 'hl' : st.tool === 'er' ? 'er' : 'pen';
+    st.size[k] = Number(b.dataset.size);
+    if (k === 'pen') lsSet('wd.inkPenSize', b.dataset.size);
+    paintTools();
+  }));
+  act('close').addEventListener('click', () => close(false));
+  act('save').addEventListener('click', save);
+  act('undo').addEventListener('click', undo);
+  act('redo').addEventListener('click', redo);
+  act('zin').addEventListener('click', () => setZoom(st.zoom * 1.25));
+  act('zout').addEventListener('click', () => setZoom(st.zoom / 1.25));
+  act('zfit').addEventListener('click', () => setZoom(1));
+  act('finger').addEventListener('click', () => {
+    st.fingerDraw = !st.fingerDraw; paintTools();
+    toast(st.fingerDraw ? 'นิ้วเขียนได้ · สองนิ้วซูมและเลื่อนหน้า' : 'นิ้วเลื่อนหน้า · เขียนด้วยปากกาหรือเมาส์', 2200);
+  });
+  function onKey(e) {
+    if (document.querySelector('.overlay[style*="96"]')) return;      /* มีกล่องถามเปิดทับอยู่ */
+    const k = e.key.toLowerCase(), mod = e.ctrlKey || e.metaKey;
+    if (e.target.matches && e.target.matches('input,textarea')) return;
+    e.stopPropagation();
+    if (mod && k === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
+    else if (mod && (k === 'y' || (k === 'z' && e.shiftKey))) { e.preventDefault(); redo(); }
+    else if (mod && k === 's') { e.preventDefault(); save(); }
+    else if (k === 'escape') close(false);
+    else if (!mod && k === 'p') setTool('pen');
+    else if (!mod && k === 'h') setTool('hl');
+    else if (!mod && k === 'e') setTool('er');
+    else if (!mod && k === 'v') setTool('move');
+    else if (!mod && k === 't') setTool('text');
+  }
+  document.addEventListener('keydown', onKey, true);
+  window.addEventListener('resize', onResize);
+  paintTools();
+  load();
 }
 
 /* ---- แจ้งเตือนนักเรียนของงานหนึ่ง ----------------------------------------------
