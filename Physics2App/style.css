@@ -678,39 +678,107 @@ select#topicSelector {
 .sim-wrapper.is-full .fs-btn { width: 52px; height: 52px; font-size: 28px; top: 12px; right: 16px; }
 .sim-wrapper.is-full .sim-controls { padding-right: 84px !important; }
 
-/* ---- สมการตั้งต้นแบบเวกเตอร์ ---- */
+/* ---- ส่วนทฤษฎี: ลำดับชั้นตัวอักษร + สมการเรียงลงล่าง ----
+   น้ำหนัก 3 ค่า (400 / 600 / 700) · สีเน้น 2 สี: คราม = สมการตั้งต้น, ม่วง = สมการเวกเตอร์ */
+.panel-inner {
+  --ink: #1b2033;
+  --ink-2: #454b60;
+  --ink-3: #737a8f;
+  --line: #e7e6ef;
+  --core: #4338ca;
+  --core-bg: #f5f5fd;
+  --vec: #7c3aed;
+  --warn: #b45309;
+  color: var(--ink-2);
+  font-size: 16px;
+  line-height: 1.8;
+  container-type: inline-size;
+}
+.panel-inner h2 {
+  display: flex; align-items: baseline; gap: 10px;
+  font-size: 1.55rem; font-weight: 700; line-height: 1.35;
+  color: var(--ink);
+  margin: 0 0 8px; padding: 0; border: none;
+  text-wrap: balance;
+}
+.panel-inner h2 .t-num { font-weight: 400; color: var(--core); font-variant-numeric: tabular-nums; }
+.panel-inner .lead { font-size: 1.02rem; color: var(--ink-2); margin: 0 0 22px; text-wrap: pretty; }
+.panel-inner .lead b { color: var(--ink); font-weight: 700; }
+
+/* สมการเรียงลงล่าง ชิดซ้าย จัดตรงเครื่องหมาย = */
+.eq-block { overflow-x: auto; overflow-y: hidden; }
+.eq-block .katex-display { margin: 4px 0; text-align: left; }
+.eq-block .katex-display > .katex { text-align: left; }
+.eq-block::-webkit-scrollbar { height: 4px; }
+
+/* สมการตั้งต้น: จุดโฟกัสเดียวของหน้า */
 .eq-core {
-  position: relative;
-  margin: 18px 0;
-  padding: 14px 16px 12px;
-  border-radius: 14px;
-  background: linear-gradient(135deg, #eef2ff 0%, #f5f3ff 60%, #fdf4ff 100%);
-  border: 1px solid #c7d2fe;
+  background: var(--core-bg);
+  border-left: 4px solid var(--core);
+  border-radius: 0 6px 6px 0;
+  padding: 14px 18px 12px;
+  margin: 0 0 30px;
 }
-.eq-core .eq-tag {
-  display: inline-flex; align-items: center; gap: 6px;
-  font-size: 0.8rem; font-weight: 700; color: #4338ca;
-  background: #fff; border: 1px solid #c7d2fe; border-radius: 999px;
-  padding: 2px 10px; margin-bottom: 6px;
+.eq-core .eq-label { font-size: 0.9rem; font-weight: 700; color: var(--core); }
+.eq-core .eq-label span { font-weight: 400; color: var(--ink-3); }
+.eq-core > .eq-block { font-size: clamp(1rem, 4.4cqi, 1.28rem); color: #1e1b4b; padding: 2px 0 6px; }
+.derive {
+  list-style: none; counter-reset: d;
+  margin: 10px 0 0; padding: 12px 0 0;
+  border-top: 1px solid #e0def5;
 }
-.eq-core .eq-main { font-size: 1.15rem; text-align: center; margin: 4px 0 8px; overflow-x: auto; overflow-y: hidden; }
-.eq-core .eq-note { font-size: 0.92rem; color: #475569; line-height: 1.6; }
-.eq-core .eq-note b { color: #3730a3; }
-.eq-steps { margin: 6px 0 0; padding-left: 0; list-style: none; font-size: 0.93rem; line-height: 1.7; }
-.eq-steps li { padding-left: 1.4em; position: relative; }
-.eq-steps li::before { content: '▸'; position: absolute; left: 0.2em; color: #6366f1; }
-.eq-list-title { font-weight: 700; color: #1e293b; margin: 18px 0 8px; font-size: 1rem; }
-.eq-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 8px 10px; margin-bottom: 14px; }
-.eq-card {
-  background: #fff; border: 1px solid #e2e8f0; border-left: 4px solid #2563eb;
-  border-radius: 10px; padding: 8px 12px; overflow-x: auto; overflow-y: hidden;
+.derive li { counter-increment: d; position: relative; padding-left: 30px; margin-bottom: 10px; }
+.derive li:last-child { margin-bottom: 0; }
+.derive li::before {
+  content: counter(d);
+  position: absolute; left: 0; top: 3px;
+  width: 20px; height: 20px; border-radius: 999px;
+  background: var(--core); color: #fff;
+  font-size: 0.75rem; font-weight: 700; line-height: 20px; text-align: center;
 }
-.eq-card .eq-name { font-size: 0.82rem; font-weight: 700; color: #475569; margin-bottom: 2px; }
-.eq-card .katex-display { margin: 4px 0; font-size: 1.02em; }
-.eq-card::-webkit-scrollbar, .eq-core .eq-main::-webkit-scrollbar { height: 4px; }
-.eq-card.vec { border-left-color: #7c3aed; background: #faf5ff; }
-.eq-card.warn { border-left-color: #f59e0b; background: #fffbeb; }
-.sim-title { display: flex; align-items: center; gap: 8px; font-weight: 700; color: #0f172a; margin: 20px 0 4px; font-size: 1.05rem; }
+.derive p { margin: 0; font-size: 0.95rem; color: var(--ink-2); }
+.derive p b { color: var(--ink); }
+.derive .eq-block { font-size: clamp(0.9rem, 3.5cqi, 1.02rem); }
+
+/* ป้ายเครื่องหมายของงาน */
+.signs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.signs > span { font-size: 0.88rem; font-weight: 600; padding: 1px 10px; border-radius: 999px; border: 1px solid; }
+.signs > .pos { color: #15803d; border-color: #bbf7d0; background: #f0fdf4; }
+.signs > .zero { color: #475569; border-color: #e2e8f0; background: #f8fafc; }
+.signs > .neg { color: #b91c1c; border-color: #fecaca; background: #fef2f2; }
+
+/* รายการสมการหลัก: คั่นด้วยเส้นบาง ไม่ใช้การ์ด */
+.panel-inner .eq-sec {
+  font-size: 1.12rem; font-weight: 700; color: var(--ink);
+  margin: 0 0 4px; padding: 0 0 8px;
+  border-bottom: 2px solid var(--ink);
+}
+.eq-list { margin-bottom: 26px; }
+.eq-row { padding: 10px 0 8px; border-bottom: 1px solid var(--line); }
+.eq-row .eq-name { font-size: 0.9rem; font-weight: 600; color: var(--ink-3); line-height: 1.5; }
+.eq-row .eq-block { font-size: clamp(0.92rem, 3.6cqi, 1.05rem); color: var(--ink); }
+.eq-row.vec .eq-name { color: var(--vec); }
+.eq-row.vec .eq-name::after {
+  content: 'เวกเตอร์'; margin-left: 8px;
+  font-size: 0.72rem; font-weight: 600; padding: 0 7px; border-radius: 999px;
+  background: #f3e8ff; color: var(--vec); vertical-align: 1px;
+}
+.eq-row.warn .eq-name { color: var(--warn); }
+
+/* จุดเน้น */
+.tips {
+  border-left: 4px solid #d97706;
+  background: #fffaf0;
+  border-radius: 0 6px 6px 0;
+  padding: 10px 16px 10px 14px;
+  margin: 0 0 28px;
+}
+.tips-title { font-weight: 700; color: #92400e; font-size: 0.95rem; margin-bottom: 2px; }
+.tips ul { margin: 0; padding-left: 1.2em; }
+.tips li { font-size: 0.95rem; margin: 2px 0; text-wrap: pretty; }
+.tips li b { color: var(--ink); }
+
+.sim-title { display: flex; align-items: center; gap: 8px; font-weight: 700; color: #1b2033; margin: 8px 0 4px; font-size: 1.12rem; }
 .sim-title .badge { font-size: 0.72rem; background: #fef3c7; color: #92400e; border-radius: 999px; padding: 2px 8px; font-weight: 700; }
 
 /* --- Drawing Toolbar Stroke Size Buttons --- */
@@ -861,8 +929,3 @@ select#topicSelector {
     background: transparent !important;
   }
 }
-
-/* หัวเรื่องในแผงทฤษฎี */
-.panel-inner h2 { color: var(--primary); font-size: 1.35rem; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 2px solid var(--border); }
-.panel-inner > p { line-height: 1.7; margin: 8px 0; }
-.panel-inner > ul { margin: 8px 0 8px 1.3em; line-height: 1.7; }
