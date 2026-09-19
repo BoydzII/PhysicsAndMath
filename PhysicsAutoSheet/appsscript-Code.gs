@@ -20,6 +20,12 @@
  *   4) กลับมาที่แอพ → แท็บตั้งค่า → ปุ่ม "ซ่อมโครงสร้างชีต" หนึ่งครั้ง
  *      เพื่อเติมหัวตารางของคอลัมน์ใหม่ (ข้อมูลเดิมไม่หาย)
  *
+ * ── รุ่น 23 แก้อะไร (ชื่อภาษาไทยในบัตรผ่าน) ───────────────────────────────
+ *   บัตรผ่านจากชีตศูนย์กลางเข้ารหัสชื่อ/ชั้นแบบไม่ระบุ UTF-8 อักษรไทยกลายเป็น "?"
+ *   ชีตส่งงานที่รับรายชื่ออัตโนมัติจึงบันทึกชั้น ม.0 เป็น ?.0 งานที่สั่งให้ชั้นนั้นเลยไม่ขึ้น
+ *   ต้องวางรุ่นนี้ทั้งชีตศูนย์กลาง (ผู้ออกบัตร) และชีตส่งงาน (ผู้อ่านบัตร)
+ *   แถวที่เพี้ยนไปแล้วจะแก้ให้เองตอนนักเรียนคนนั้นลงชื่อครั้งถัดไป
+ *
  * ── รุ่น 22 เพิ่มอะไร (คะแนนรวมรายวิชา · แจ้งเตือนนักเรียน) ─────────────────
  *   workScores — ตารางคะแนนรวมรายวิชา กรองวิชาและชั้นได้ พร้อมสถานะส่งตรงเวลา/ช้า/ขาดส่ง ทุกคนทุกงาน
  *   workNotify — ครูแจ้งเตือนคนที่ยังไม่ส่ง ส่งช้า หรือส่งตรงเวลาของงานหนึ่ง (ชีตเลือกคนเองจากสถานะจริง)
@@ -471,7 +477,7 @@ function sidKey_(v) { return normSid_(v).replace(/^0+/, '') || '0'; }
 
 function makeToken_(payload) {
   payload.exp = Date.now() + TOKEN_HOURS * 3600 * 1000;
-  var body = Utilities.base64EncodeWebSafe(JSON.stringify(payload));
+  var body = Utilities.base64EncodeWebSafe(JSON.stringify(payload), Utilities.Charset.UTF_8);
   var sig = Utilities.base64EncodeWebSafe(Utilities.computeHmacSha256Signature(body, secret_()));
   return body + '.' + sig;
 }
@@ -481,7 +487,7 @@ function readToken_(tok) {
   var sig = Utilities.base64EncodeWebSafe(Utilities.computeHmacSha256Signature(parts[0], secret_()));
   if (sig !== parts[1]) return null;
   var p;
-  try { p = JSON.parse(Utilities.newBlob(Utilities.base64DecodeWebSafe(parts[0])).getDataAsString()); }
+  try { p = JSON.parse(Utilities.newBlob(Utilities.base64DecodeWebSafe(parts[0])).getDataAsString("UTF-8")); }
   catch (e) { return null; }
   if (!p.exp || p.exp < Date.now()) return null;
   return p;
@@ -1196,7 +1202,7 @@ function hubMake_(payload) {
   if (!hubKey_() || hubRole_() !== 'hub') return '';
   payload.iss = 'hub';
   payload.exp = Date.now() + HUB_TOKEN_MIN * 60 * 1000;
-  var body = Utilities.base64EncodeWebSafe(JSON.stringify(payload));
+  var body = Utilities.base64EncodeWebSafe(JSON.stringify(payload), Utilities.Charset.UTF_8);
   return body + '.' + hubSign_(body);
 }
 /** อ่านบัตรผ่าน — ข้อความผิดพลาดขึ้นต้นด้วย HUB: แอปจะถอยไปตรวจรหัสกับชีตนี้แบบเดิม */
@@ -1208,7 +1214,7 @@ function hubRead_(tok) {
     throw new Error('HUB: บัตรผ่านไม่ถูกต้อง — กุญแจร่วมของชีตนี้อาจไม่ตรงกับชีตศูนย์กลาง');
   }
   var p = null;
-  try { p = JSON.parse(Utilities.newBlob(Utilities.base64DecodeWebSafe(parts[0])).getDataAsString()); }
+  try { p = JSON.parse(Utilities.newBlob(Utilities.base64DecodeWebSafe(parts[0])).getDataAsString("UTF-8")); }
   catch (e) { p = null; }
   if (!p || p.iss !== 'hub') throw new Error('HUB: บัตรผ่านไม่ถูกต้อง');
   if (!p.exp || p.exp < Date.now()) throw new Error('HUB: บัตรผ่านหมดอายุ — ลงชื่อเข้าใช้ใหม่อีกครั้ง');
@@ -2210,7 +2216,7 @@ function json_(o) {
 }
 
 function doGet() {
-  return json_({ ok: true, service: 'quiz-bank', version: 22, subjects: SUBJECTS,
+  return json_({ ok: true, service: 'quiz-bank', version: 23, subjects: SUBJECTS,
                  note: 'ใช้งานผ่าน POST จากแอพเท่านั้น' });
 }
 
