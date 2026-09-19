@@ -199,6 +199,14 @@ button.linkb.danger{color:var(--bad)}
 .ink.mv .pg .it .del{display:flex;position:absolute;top:-15px;right:-15px;width:30px;height:30px;min-height:0;padding:0;border-radius:50%;background:#c0302b;color:#fff;border:0;align-items:center;justify-content:center;font-size:18px;line-height:1}
 .ink.mv .pg .it .rs{display:block;position:absolute;right:-10px;bottom:-10px;width:20px;height:20px;border-radius:5px;background:#1f5fd1;border:2px solid #fff;cursor:nwse-resize}
 .ink.busy .inktools,.ink.busy .inkbody{pointer-events:none;opacity:.55}
+.ink .vbot{flex:none}
+.obfloat{position:fixed;right:12px;bottom:calc(86px + env(safe-area-inset-bottom));z-index:95;display:flex;flex-direction:column;align-items:flex-end;gap:6px;pointer-events:none}
+.obfloat:empty{display:none}
+.obx{pointer-events:auto;display:inline-flex;align-items:center;gap:7px;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:999px;padding:5px 12px;font-size:13px;min-height:0;line-height:1.5;box-shadow:0 2px 10px rgba(0,0,0,.12)}
+button.obx.bad,.obx.bad{color:var(--bad);border-color:var(--bad)}
+.obx.ok{color:var(--ok);border-color:var(--ok)}
+.obx .spin{width:12px;height:12px;border:2px solid var(--line);border-top-color:var(--brand);border-radius:50%;animation:obspin .8s linear infinite}
+@keyframes obspin{to{transform:rotate(360deg)}}
 .signpad{width:100%;height:auto;aspect-ratio:900/320;margin-top:10px;border:1px dashed var(--muted);border-radius:8px;background:#fff;touch-action:none;display:block}
 label.pickimg{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:8px;padding:4px 10px;min-height:32px;font-size:13px;cursor:pointer}
 a.dl{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px;min-height:48px;border-radius:8px;background:var(--brand);color:var(--brand-ink);font-weight:700;text-decoration:none}
@@ -221,6 +229,7 @@ a.dl{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:1
 </div>
 <div id="layer"></div>
 <div class="toast" id="toast"></div>
+<div class="obfloat" id="obfloat" aria-live="polite"></div>
 
 <script>
 'use strict';
@@ -251,7 +260,7 @@ const LOCK_BOOKS = [
   { url: PHYS_URL, name: 'ชีตฟิสิกส์', apps: 'ฟิสิกส์ ม.4' }
 ];
 /** รุ่นชีตที่ต้องมีคำสั่งนี้ — ใช้บอกครูว่าต้องวางโค้ดรุ่นไหนเมื่อชีตยังเป็นรุ่นเก่า */
-const needVer = action => /^work(Mark|Sign)/.test(action) ? 24 : /^work(Scores|Notify|NoteRead)$/.test(action) ? 22 : /^workSheet/.test(action) ? 21 : 19;
+const needVer = action => action === 'workMarkSave' ? 25 : /^work(Mark|Sign)/.test(action) ? 24 : /^work(Scores|Notify|NoteRead)$/.test(action) ? 22 : /^workSheet/.test(action) ? 21 : 19;
 const SESSION_KEY = 'pcportal.v1';
 
 const IMG_MAX_SIDE = 1600;          /* ด้านยาวของรูปหลังย่อ อ่านลายมือได้ชัด ไฟล์ราว 250–450 KB */
@@ -1289,13 +1298,15 @@ async function openViewer(sid) {
     const r = order[i], s = r.sub;
     if (!VIEW || VIEW.sid !== r.sid) orig = false;
     VIEW = { sid: r.sid };
-    const marked = s.marked && s.marked.length;
-    const files = marked && !orig ? s.marked : s.files;
+    /* หน้าที่เพิ่งเขียนแต่ยังรอส่งในคิว แสดงจากเครื่องเลย ไม่ต้องรอชีต */
+    const qj = !orig && obPagesOf(w.code, r.sid);
+    const marked = qj || (s.marked && s.marked.length);
+    const files = qj ? [] : marked && !orig ? s.marked : s.files;
     $('[data-vwho]', root).innerHTML = esc(r.name) + ' <span class="muted small">เลขที่ ' + esc(r.no) + ' · ' + esc(r.cls) + ' · ' + (i + 1) + '/' + order.length + '</span>' +
       '<div class="small" style="font-weight:400">ส่ง ' + thDate(s.ts, true) + (s.n > 1 ? ' (ครั้งที่ ' + s.n + ')' : '') +
       (s.lateMin > 0 ? ' <span class="chip warn">ช้า ' + spanText(s.lateMin) + '</span>' : ' <span class="chip ok">ทันเวลา</span>') +
       (s.resent ? ' <span class="chip brand">ส่งใหม่หลังตรวจ</span>' : '') +
-      (marked ? ' <span class="chip brand">เขียนตรวจแล้ว</span> <button class="linkb" data-vorig>' + (orig ? 'ดูฉบับที่เขียนตรวจ' : 'ดูต้นฉบับ') + '</button>' : '') + '</div>';
+      (marked ? ' <span class="chip brand">' + (qj ? 'เขียนตรวจแล้ว · กำลังส่ง' : 'เขียนตรวจแล้ว') + '</span> <button class="linkb" data-vorig>' + (orig ? 'ดูฉบับที่เขียนตรวจ' : 'ดูต้นฉบับ') + '</button>' : '') + '</div>';
     const vo = $('[data-vorig]', root);
     if (vo) vo.addEventListener('click', () => { orig = !orig; show(); });
     $('[data-vprev]', root).disabled = i === 0;
@@ -1305,6 +1316,7 @@ async function openViewer(sid) {
     paintPen();
     const body = $('[data-vbody]', root);
     body.innerHTML = (s.note ? '<div class="notice info" style="max-width:900px;width:100%"><b>ข้อความจากนักเรียน:</b> ' + esc(s.note) + '</div>' : '') +
+      (qj ? obUrls(qj).map((u, k) => '<img alt="หน้า ' + (k + 1) + '" src="' + u + '">').join('') : '') +
       files.map((f, k) => '<div data-slot="' + k + '" class="empty" style="width:100%;max-width:900px">กำลังโหลดหน้า ' + (k + 1) + '…</div>').join('');
     body.scrollTop = 0;
     const mySid = r.sid;
@@ -1328,15 +1340,15 @@ async function openViewer(sid) {
     if (nx) nx.sub.files.forEach(f => fileUrl(f.id).catch(() => {}));
   };
   const go = d => { const j = i + d; if (j < 0 || j >= order.length) return; i = j; show(); if (window.innerWidth > 700) score.focus(); };
-  const saveNext = async () => {
-    const r = order[i];
-    if (score.value === '' && !r.sub.graded) { toast('ใส่คะแนนก่อน'); score.focus(); return; }
-    const btn = $('[data-vsave]', root);
-    btn.disabled = true;
-    const ok = await saveScore(r.sid, score.value, cm.value, null);
-    btn.disabled = false;
-    if (!ok) return;
-    toast('บันทึก ' + r.name + ' แล้ว', 1400);
+  /* บันทึกเข้าคิวส่งเบื้องหลัง แล้วไปคนถัดไปทันที ไม่รอชีต */
+  const saveNext = () => {
+    const r = order[i], s = r.sub, v = score.value.trim();
+    if (v === '' && !s.graded) { toast('ใส่คะแนนก่อน'); score.focus(); return; }
+    if (v !== '' && (isNaN(Number(v)) || Number(v) < 0 || Number(v) > Number(w.max))) { toast('คะแนนต้องอยู่ระหว่าง 0 ถึง ' + fmtN(w.max)); score.focus(); return; }
+    const ch = {};
+    if (v !== (s.graded ? String(s.raw) : '')) ch.raw = v === '' ? '' : Number(v);
+    if (cm.value !== (s.comment || '')) ch.comment = cm.value;
+    if (ch.raw != null || ch.comment != null) { queueSave(w, r, ch); toast('บันทึก ' + r.name + ' แล้ว — ส่งเบื้องหลัง', 1200); }
     /* ไปคนถัดไปที่ยังไม่ได้ตรวจ ถ้าไม่มีแล้วก็คนถัดไปตามลำดับ */
     let j = order.findIndex((x, k) => k > i && needsGrade(x));
     if (j < 0) j = i + 1;
@@ -1359,8 +1371,7 @@ async function openViewer(sid) {
   $('[data-vfull]', root).addEventListener('click', () => { score.value = w.max; paintPen(); });
   $('[data-vsave]', root).addEventListener('click', saveNext);
   $('[data-vink]', root).addEventListener('click', () => {
-    const r = order[i];
-    openInk(r, w, sub => { r.sub = sub; orig = false; show(); });
+    openInk({ order: order, i: i, w: w, onClose: j => { i = j; orig = false; VIEW = null; show(); } });
   });
   $('[data-vzoom]', root).addEventListener('click', e => {
     const b = $('[data-vbody]', root);
@@ -1372,7 +1383,7 @@ async function openViewer(sid) {
 }
 
 /* ============================================================================
-   เขียนตรวจงาน (แบบสมุดโน้ต) — ชีตรุ่น 24
+   เขียนตรวจงาน (แบบสมุดโน้ต) — ชีตรุ่น 24 · ตรวจต่อเนื่องและส่งเบื้องหลัง ชีตรุ่น 25
    ============================================================================
    ครูเขียนทับงานของนักเรียนด้วยปากกา ปากกาเน้นข้อความ ยางลบ แปะเครื่องหมายถูก/ผิด คะแนน ข้อความ
    และลายเซ็นของตัวเอง แล้วบันทึกเป็นรูปทีละหน้าไปให้นักเรียนเปิดดู
@@ -1465,15 +1476,16 @@ function loadImg(src) {
 }
 const canvasBlob = (cv, type, q) => new Promise(ok => cv.toBlob(ok, type, q));
 
-/** ไฟล์งาน → หน้าที่เขียนได้ [{ url, own, img, W, H, strokes, items, ink, el }] */
-async function inkLoadPages(files, say) {
-  const pages = [];
+/** แหล่งหน้า → หน้าที่เขียนได้ [{ url, own, img, W, H }]
+    src.files = ไฟล์บนชีต (รูปหรือ PDF) · src.blobs = รูปที่เขียนแล้วแต่ยังรอส่งในคิว */
+async function inkLoadPages(src, say) {
+  const pages = [], files = src.files || [];
   const page = async (url, own) => {
     const im = await loadImg(url);
     const k = Math.min(1, INK_SIDE / Math.max(im.naturalWidth, im.naturalHeight));
-    pages.push({ url: url, own: own, img: im, W: Math.round(im.naturalWidth * k), H: Math.round(im.naturalHeight * k),
-                 strokes: [], items: [], ink: null, el: null });
+    pages.push({ url: url, own: own, img: im, W: Math.round(im.naturalWidth * k), H: Math.round(im.naturalHeight * k) });
   };
+  for (const bl of src.blobs || []) await page(URL.createObjectURL(bl), true);
   for (let i = 0; i < files.length && pages.length < INK_PAGE_MAX; i++) {
     say('กำลังเปิดไฟล์ ' + (i + 1) + ' จาก ' + files.length + '…');
     const f = await fileUrl(files[i].id);
@@ -1699,10 +1711,220 @@ function signPad() {
   });
 }
 
-/* ---- หน้าต่างเขียนตรวจ ---- */
-async function openInk(r, w, onSaved) {
-  if (INK) return;
+/* ---- คิวส่งเบื้องหลัง (ตรวจต่อเนื่อง · ชีตรุ่น 25) ---------------------------
+   ครูกดบันทึกแล้วไปคนถัดไปได้ทันที งานเข้าคิวในเครื่อง (IndexedDB) แล้วทยอยส่งเบื้องหลังพร้อมกันสองคน
+     · ปิดหน้า เน็ตหลุด หรือหมดเวลาเข้าใช้ งานยังอยู่ในเครื่อง เปิดหน้าส่งงานอีกครั้งจะส่งต่อให้เอง
+     · คนเดียวกันกดบันทึกซ้ำก่อนส่งถึง = รวมเป็นงานเดียว ส่งครั้งเดียวด้วยของล่าสุด
+     · ส่งไม่ผ่านลองใหม่เอง 3 ครั้ง (3 · 8 · 20 วินาที) แล้วขึ้นปุ่มให้ครูกดส่งใหม่
+     · งานในคิวผูกกับบัญชีที่บันทึก ครูอีกคนลงชื่อเครื่องเดียวกันจะไม่ส่งงานของคนก่อนด้วยบัญชีตัวเอง
+     · ชีตรุ่น 24 ยังใช้ได้ (ส่งทีละหน้าแบบเดิม) เจอครั้งแรกแล้วจำไว้ไม่ถามซ้ำ
+   job: { id, code, sid, name, acct, pages: Blob[] | null, raw: '' | ตัวเลข | null, comment: ข้อความ | null }
+        null = ไม่แตะส่วนนั้น · raw '' = ลบคะแนน */
+const OB = { jobs: [], busy: new Set(), legacy: false, db: undefined, timer: 0, halt: '', doneAt: 0 };
+const OB_PAR = 2;
+const obKey = j => j.code + '|' + j.sid;
+const obAcct = () => { const p = (ME.s && ME.s.profile) || {}; return String(p.user || p.name || '') + (p.sub ? '|sub' : '|main'); };
+const obMine = j => j.acct === obAcct();
+function obDb() {
+  if (OB.db !== undefined) return Promise.resolve(OB.db);
+  return new Promise(ok => {
+    try {
+      const rq = indexedDB.open('workdesk', 1);
+      rq.onupgradeneeded = () => rq.result.createObjectStore('outbox', { keyPath: 'id' });
+      rq.onsuccess = () => { OB.db = rq.result; ok(OB.db); };
+      rq.onerror = rq.onblocked = () => { OB.db = null; ok(null); };
+    } catch (e) { OB.db = null; ok(null); }
+  });
+}
+async function obStore(j, del) {
+  const db = await obDb();
+  if (!db) return;
+  try {
+    const os = db.transaction('outbox', 'readwrite').objectStore('outbox');
+    if (del) os.delete(j.id);
+    else os.put({ id: j.id, code: j.code, sid: j.sid, name: j.name, acct: j.acct, pages: j.pages, raw: j.raw, comment: j.comment, ts: j.ts });
+  } catch (e) {}
+}
+async function obRestore() {
+  const db = await obDb();
+  if (!db) return;
+  const all = await new Promise(ok => {
+    try { const rq = db.transaction('outbox').objectStore('outbox').getAll(); rq.onsuccess = () => ok(rq.result || []); rq.onerror = () => ok([]); }
+    catch (e) { ok([]); }
+  });
+  all.sort((a, b) => a.ts - b.ts).forEach(j => {
+    if (!OB.jobs.some(x => x.id === j.id)) OB.jobs.push(Object.assign(j, { state: 'wait', tries: 0, nextAt: 0, err: '' }));
+  });
+  obPaint(); obKick();
+}
+/** งานล่าสุดในคิวที่มีหน้าที่เขียนตรวจของนักเรียนคนนี้ (ยังไม่ถึงชีต) */
+function obPagesOf(code, sid) {
+  for (let i = OB.jobs.length - 1; i >= 0; i--) { const j = OB.jobs[i]; if (j.code === code && j.sid === sid && j.pages) return j; }
+  return null;
+}
+function obUrls(j) { if (!j._urls) j._urls = j.pages.map(b => URL.createObjectURL(b)); return j._urls; }
+function obAdd(w, r, ch) {
+  let j = OB.jobs.find(x => x.code === w.code && x.sid === r.sid && x.state !== 'send');
+  if (!j) {
+    j = { id: w.code + '|' + r.sid + '|' + Date.now(), code: w.code, sid: r.sid, name: r.name, acct: obAcct(), pages: null, raw: null, comment: null };
+    OB.jobs.push(j);
+  }
+  if (ch.pages) { if (j._urls) j._urls.forEach(u => URL.revokeObjectURL(u)); j._urls = null; j.pages = ch.pages; }
+  if (ch.raw != null) j.raw = ch.raw;
+  if (ch.comment != null) j.comment = ch.comment;
+  Object.assign(j, { ts: Date.now(), state: 'wait', tries: 0, nextAt: 0, err: '' });
+  obStore(j); obPaint(); obKick();
+}
+function obKick() {
+  clearTimeout(OB.timer);
+  if (OB.halt) return;
+  const now = Date.now();
+  let wake = Infinity;
+  for (const j of OB.jobs) {
+    if (OB.busy.size >= OB_PAR) break;
+    if (j.state !== 'wait' || !obMine(j) || OB.busy.has(obKey(j))) continue;
+    if (j.nextAt > now) { wake = Math.min(wake, j.nextAt); continue; }
+    obRun(j);
+  }
+  if (wake < Infinity) OB.timer = setTimeout(obKick, wake - now + 50);
+}
+async function obRun(j) {
+  const key = obKey(j);
+  OB.busy.add(key); j.state = 'send'; obPaint();
+  try {
+    const res = await obSend(j);
+    OB.jobs.splice(OB.jobs.indexOf(j), 1);
+    obStore(j, true);
+    if (j._urls) j._urls.forEach(u => URL.revokeObjectURL(u));
+    if (!OB.jobs.some(x => obMine(x))) OB.doneAt = Date.now();
+    obDone(j, res && res.sub);
+  } catch (e) {
+    j.tries++; j.err = e.message || String(e);
+    if (e.auth) {
+      j.state = 'wait'; OB.halt = j.err;
+      toast('การเข้าใช้หมดอายุ — งานที่ตรวจแล้วเก็บไว้ในเครื่อง ลงชื่อใหม่ที่หน้าหลักแล้วเปิดหน้านี้อีกครั้ง ระบบจะส่งต่อให้เอง', 7000);
+    } else if (e.old || j.tries >= 4 || /ไม่อยู่ในชั้น|ไม่พบงาน|คะแนนต้อง|ยังไม่ได้ส่ง/.test(j.err)) {
+      j.state = 'err';                                  /* ส่งซ้ำก็ไม่ผ่าน รอครูดู */
+    } else {
+      j.state = 'wait'; j.nextAt = Date.now() + [3, 8, 20][j.tries - 1] * 1000;
+    }
+  } finally {
+    OB.busy.delete(key); obPaint(); obKick();
+  }
+}
+async function obSend(j) {
+  const data = j.pages ? await Promise.all(j.pages.map(blobToBase64)) : null;
+  if (!OB.legacy) {
+    try {
+      const p = { code: j.code, sid: j.sid };
+      if (data) p.pages = data.map(d => ({ mime: 'image/jpeg', data: d }));
+      if (j.raw != null) p.raw = j.raw;
+      if (j.comment != null) p.comment = j.comment;
+      return await api('workMarkSave', p, 240000);
+    } catch (e) { if (!e.old) throw e; OB.legacy = true; }
+  }
+  /* ชีตรุ่น 24 — อัปโหลดทีละหน้า ยืนยันชุด แล้วให้คะแนนแยก */
+  let out = null;
+  if (data) {
+    const ids = [];
+    for (const d of data) ids.push((await api('workMarkUp', { code: j.code, sid: j.sid, mime: 'image/jpeg', data: d }, 120000)).id);
+    out = await api('workMark', { code: j.code, sid: j.sid, ids: ids }, 60000);
+  }
+  if (j.raw != null || j.comment != null) {
+    let raw = j.raw;
+    if (raw == null) {
+      const s = (out && out.sub) || obRow(j) && obRow(j).sub;
+      raw = s && s.graded ? s.raw : '';
+    }
+    const it = { sid: j.sid, raw: raw };
+    if (j.comment != null) it.comment = j.comment;
+    const g = await api('workGrade', { code: j.code, items: [it] });
+    out = { sub: g.rows[0] && g.rows[0].sub };
+  }
+  return out;
+}
+const obRow = j => T.subs && T.subs.work.code === j.code ? T.subs.rows.find(r => r.sid === j.sid) : null;
+/** ชีตตอบกลับแล้ว — เอาของจริงใส่แถว (ถ้ายังมีงานของคนนี้รอในคิว เก็บค่าที่ครูเพิ่งแก้ไว้ก่อน) */
+function obDone(j, sub) {
+  const row = obRow(j);
+  if (!row || !sub) return;
+  if (OB.jobs.some(x => obKey(x) === obKey(j))) {
+    row.sub = Object.assign({}, row.sub, { marked: sub.marked, markedAt: sub.markedAt, gradedAt: sub.gradedAt });
+  } else {
+    row.sub = sub;
+  }
+  applyGraded([{ sid: row.sid, sub: row.sub }]);
+}
+/** ใส่ผลลงแถวทันที (ยังไม่รอชีต) ตารางและตัวนับรอตรวจจะได้ขยับตาม */
+function queueSave(w, r, ch) {
+  const s = Object.assign({}, r.sub || { files: [], lateMin: 0, marked: [] });
+  if (ch.raw != null) {
+    s.graded = ch.raw !== ''; s.raw = ch.raw;
+    s.score = ch.raw === '' ? '' : finalOf(w, ch.raw, s.files && s.files.length ? s.lateMin : 0);
+    s.gradedAt = new Date().toISOString(); s.resent = false;
+  }
+  if (ch.comment != null) s.comment = ch.comment;
+  r.sub = s;
+  applyGraded([{ sid: r.sid, sub: s }]);
+  obAdd(w, r, ch);
+}
+function obPaint() {
+  const el = $('#obfloat');
+  if (!el) return;
+  const mine = OB.jobs.filter(obMine);
+  const bad = mine.filter(j => j.state === 'err'), n = mine.length - bad.length;
+  let h = '';
+  if (OB.halt && n) h += '<span class="obx bad">รอส่ง ' + n + ' คน · ลงชื่อใหม่ก่อน</span>';
+  else if (n) h += '<span class="obx"><i class="spin"></i>กำลังส่ง ' + n + ' คน</span>';
+  if (bad.length) h += '<button class="obx bad" data-obretry title="' + esc(bad.map(j => j.name + ': ' + j.err).join('\n')) + '">ส่งไม่ผ่าน ' + bad.length + ' คน · ลองใหม่</button>';
+  if (!mine.length && Date.now() - OB.doneAt < 2500) { h = '<span class="obx ok">ส่งครบแล้ว ✓</span>'; setTimeout(obPaint, 2600); }
+  el.innerHTML = h;
+  const b = $('[data-obretry]', el);
+  if (b) b.addEventListener('click', () => {
+    const why = bad[0] && bad[0].err;
+    bad.forEach(j => { j.state = 'wait'; j.tries = 0; j.nextAt = 0; });
+    if (why) toast('ส่งใหม่ — ครั้งก่อน: ' + why, 4000);
+    obPaint(); obKick();
+  });
+}
+window.addEventListener('online', () => obKick());
+window.addEventListener('beforeunload', e => {
+  if (OB.jobs.some(j => obMine(j) && j.state !== 'err') && !OB.db) { e.preventDefault(); e.returnValue = ''; }
+});
+
+/* ---- หน้าต่างเขียนตรวจ: ตรวจต่อเนื่องทีละคน ----
+   ใส่คะแนน ความเห็น แล้วกด "บันทึก · คนถัดไป" — งานเข้าคิวส่งเบื้องหลัง หน้าถัดไปขึ้นทันที
+   ระหว่างตรวจคนนี้ ระบบโหลดและแปลงงานของอีกสองคนถัดไปรอไว้
+   ctx: { order: นักเรียนที่ส่งไฟล์ เรียงตามตัวดูงาน, i, w, onClose(i) } */
+/* แหล่งหน้าของนักเรียนหนึ่งคน: ที่เขียนแล้วแต่ยังรอส่งในคิว > ฉบับที่เขียนตรวจบนชีต > ต้นฉบับ */
+function inkSource(w, r, orig) {
+  const j = !orig && obPagesOf(w.code, r.sid);
+  if (j) return { kind: 'queued', key: 'q' + j.id + '|' + j.ts, blobs: j.pages };
   const s = r.sub;
+  if (!orig && s.marked && s.marked.length) return { kind: 'marked', key: 'm' + s.marked.map(f => f.id).join(','), files: s.marked };
+  return { kind: 'orig', key: 'o' + s.files.map(f => f.id).join(','), files: s.files };
+}
+const PREP = new Map();
+function prepPages(src, say) {
+  if (!PREP.has(src.key)) {
+    const pr = inkLoadPages(src, say || (() => {}));
+    pr.catch(() => PREP.delete(src.key));
+    PREP.set(src.key, pr);
+  }
+  return PREP.get(src.key);
+}
+function prepDrop(keep) {
+  for (const [k, pr] of Array.from(PREP)) {
+    if (keep && keep.has(k)) continue;
+    PREP.delete(k);
+    pr.then(list => list.forEach(p => { if (p.own) URL.revokeObjectURL(p.url); })).catch(() => {});
+  }
+}
+const INK_OUT_SIDE = 1600;          /* ด้านยาวของหน้าที่ส่งให้นักเรียน — ลายมือยังคม ไฟล์เล็กส่งเร็ว */
+
+async function openInk(ctx) {
+  if (INK) return;
+  const w = ctx.w, order = ctx.order;
   const box = document.createElement('div');
   box.className = 'ink';
   box.setAttribute('role', 'dialog');
@@ -1710,9 +1932,8 @@ async function openInk(r, w, onSaved) {
   const tool = (t, label) => '<button class="tb" data-tool="' + t + '" title="' + label + '" aria-label="' + label + '">' + inkIcon(t) + '</button>';
   box.innerHTML =
     '<div class="inktop"><button class="sm" data-ik="close">ปิด</button>' +
-      '<div class="who">' + esc(r.name) + ' <span class="muted small">เลขที่ ' + esc(r.no) + ' · ' + esc(r.cls) + ' · ' + esc(w.title) + '</span></div>' +
-      '<span class="sp"></span><span class="small muted" data-prog></span>' +
-      '<button class="primary sm" data-ik="save">บันทึกส่งให้นักเรียน</button></div>' +
+      '<div class="who" data-who></div><span class="sp"></span>' +
+      '<button class="sm" data-ik="prev">‹ ก่อนหน้า</button><button class="sm" data-ik="next">ถัดไป ›</button></div>' +
     '<div class="inktools">' +
       '<div class="grp">' + tool('pen', 'ปากกา') + tool('hl', 'ปากกาเน้นข้อความ') + tool('er', 'ยางลบ (ลบทีละเส้น)') + tool('text', 'ข้อความ — แตะตรงที่จะใส่') + tool('move', 'ย้าย/ย่อขยายของที่แปะ') + '</div>' +
       '<div class="grp" data-colors>' + INK_COLORS.map(c => '<button class="sw" data-color="' + c[0] + '" title="' + c[1] + '" aria-label="สี' + c[1] + '"><i style="background:' + c[0] + '"></i></button>').join('') + '</div>' +
@@ -1721,39 +1942,32 @@ async function openInk(r, w, onSaved) {
         '<button class="tb" data-ik="redo" title="ทำซ้ำ (Ctrl+Y)" aria-label="ทำซ้ำ">' + inkIcon('redo') + '</button></div>' +
       '<div class="grp"><button class="tb stamp" data-stamp="ok" title="แปะเครื่องหมายถูก" style="color:#11875d">✓</button>' +
         '<button class="tb stamp" data-stamp="no" title="แปะเครื่องหมายผิด" style="color:#d7263d">✗</button>' +
-        '<button class="tb txt" data-stamp="score" title="แปะคะแนน">คะแนน</button>' +
+        '<button class="tb txt" data-stamp="score" title="แปะคะแนน (จากช่องคะแนนด้านล่าง)">คะแนน</button>' +
         '<button class="tb txt" data-stamp="good" title="แปะคำชม">ดีมาก</button>' +
         '<button class="tb" data-ik="sign" title="แปะลายเซ็น" aria-label="แปะลายเซ็น">' + inkIcon('sign') + '</button>' +
         '<button class="tb txt" data-ik="signset" title="ตั้ง/แก้ลายเซ็น">แก้ลายเซ็น</button></div>' +
-      '<div class="grp"><button class="tb txt" data-ik="zout" aria-label="ย่อ">−</button><button class="tb txt" data-ik="zfit" data-zl title="พอดีจอ">100%</button>' +
+      '<div class="grp"><button class="tb txt" data-ik="zout" aria-label="ย่อ">−</button><button class="tb txt" data-ik="zfit" title="พอดีจอ">100%</button>' +
         '<button class="tb txt" data-ik="zin" aria-label="ขยาย">+</button>' +
         '<button class="tb" data-ik="finger" title="นิ้วเขียน / นิ้วเลื่อนหน้า">' + inkIcon('hand') + '</button></div>' +
     '</div>' +
     '<div class="inknote" data-note></div>' +
-    '<div class="inkbody" data-ib><div class="empty">กำลังเตรียมหน้า…</div></div>';
+    '<div class="inkbody" data-ib></div>' +
+    '<div class="vbot inkbot"><div class="fld"><span>คะแนน (เต็ม ' + fmtN(w.max) + ')</span>' +
+        '<input class="score" data-sc type="number" min="0" max="' + esc(w.max) + '" step="0.5" inputmode="decimal"></div>' +
+      '<button class="sm" data-ik="full">เต็ม</button>' +
+      '<div class="fld" style="flex:1"><span>ความเห็นถึงนักเรียน</span><input class="cm" data-cm maxlength="1000" placeholder="ไม่บังคับ"></div>' +
+      '<div class="fld"><span data-pen>&nbsp;</span><button class="primary" data-ik="savenext">บันทึก · คนถัดไป ›</button></div></div>';
   document.body.appendChild(box);
   document.body.style.overflow = 'hidden';
   const st = INK = {
-    r: r, w: w, box: box, body: $('[data-ib]', box), pages: [], tool: 'pen',
+    w: w, box: box, body: $('[data-ib]', box), pages: [], tool: 'pen', i: ctx.i, r: null, seq: 0,
     color: { pen: lsGet('wd.inkPen') || INK_COLORS[0][0], hl: lsGet('wd.inkHl') || INK_COLORS[4][0], text: lsGet('wd.inkPen') || INK_COLORS[0][0] },
     size: { pen: Number(lsGet('wd.inkPenSize') || 1), hl: 1, er: 1 },
     zoom: 1, fingerDraw: true, penSeen: false, undo: [], redo: [], dirty: false, busy: false,
-    cur: null, live: null, touches: new Map(), pinch: null,
-    from: s.marked && s.marked.length ? 'marked' : 'orig'
+    cur: null, live: null, touches: new Map(), pinch: null, from: 'orig', sc0: '', cm0: ''
   };
-  const B = st.body;
+  const B = st.body, sc = $('[data-sc]', box), cm = $('[data-cm]', box);
   const act = n => $('[data-ik="' + n + '"]', box);
-
-  const close = async force => {
-    if (st.busy) return;
-    if (!force && st.dirty && !(await popupAsk('ปิดโดยไม่บันทึก?', 'สิ่งที่เขียนไว้ในหน้านี้จะหายไป นักเรียนจะไม่เห็น', 'ปิดเลย', true))) return;
-    document.removeEventListener('keydown', onKey, true);
-    window.removeEventListener('resize', onResize);
-    st.pages.forEach(p => { if (p.own) URL.revokeObjectURL(p.url); if (p.ink) p.ink.width = p.ink.height = 0; });
-    box.remove();
-    INK = null;
-    if (!$('.viewer')) document.body.style.overflow = '';
-  };
 
   const paintTools = () => {
     $$('[data-tool]', box).forEach(b => b.classList.toggle('on', b.dataset.tool === st.tool));
@@ -1773,6 +1987,10 @@ async function openInk(r, w, onSaved) {
   };
   const setTool = t => { st.tool = t; paintTools(); };
   const pushOp = op => { st.undo.push(op); st.redo = []; st.dirty = true; paintTools(); };
+  const paintPen = () => {
+    const s = st.r.sub, v = sc.value;
+    $('[data-pen]', box).textContent = s.penalty ? 'ช้า −' + s.penalty + '% → ' + (v === '' ? '—' : fmtN(finalOf(w, v, s.lateMin))) : ' ';
+  };
 
   /* ---- ซูม ---- */
   const fitW = () => Math.max(260, Math.min(B.clientWidth - 28, 920));
@@ -1835,7 +2053,7 @@ async function openInk(r, w, onSaved) {
   };
   const paintPages = () => {
     B.innerHTML = '';
-    if (!st.pages.length) { B.innerHTML = '<div class="empty">งานนี้ไม่มีหน้าที่เขียนตรวจได้ (ไฟล์ไม่ใช่รูปหรือ PDF)</div>'; return; }
+    if (!st.pages.length) { B.innerHTML = '<div class="empty">งานนี้ไม่มีหน้าที่เขียนตรวจได้ (ไฟล์ไม่ใช่รูปหรือ PDF) — ใส่คะแนนด้านล่างได้</div>'; return; }
     st.pages.forEach((p, i) => {
       const el = document.createElement('div');
       el.className = 'pg';
@@ -1843,46 +2061,140 @@ async function openInk(r, w, onSaved) {
       el.innerHTML = '<img alt="หน้า ' + (i + 1) + '" draggable="false" src="' + p.url + '"><div class="its"></div><span class="pn">' + (i + 1) + '/' + st.pages.length + '</span>';
       p.el = el;
       B.appendChild(el);
-      if (p.ink) el.insertBefore(p.ink, $('.its', el));
       p.items.forEach(it => itemEl(p, it));
     });
     setZoom(st.zoom);
   };
+  const freePages = () => { st.pages.forEach(p => { if (p.ink) p.ink.width = p.ink.height = 0; }); st.pages = []; };
+
+  /* ---- ใครอยู่ถัดไป: คนถัดไปที่ยังรอตรวจ ไม่มีแล้วก็คนถัดไปตามลำดับ ---- */
+  const nextAfter = i => { const j = order.findIndex((x, k) => k > i && needsGrade(x)); return j < 0 ? i + 1 : j; };
   const note = () => {
-    const n = $('[data-note]', box);
-    if (st.from === 'marked') {
-      n.innerHTML = 'แก้ต่อจากฉบับที่เขียนตรวจไว้เมื่อ ' + thDate(s.markedAt, true) +
-        (s.markedAt && s.ts && new Date(s.ts) > new Date(s.markedAt) ? ' · <b style="color:var(--warn)">นักเรียนส่งงานใหม่หลังจากนั้น</b>' : '') +
-        ' · <button class="linkb" data-ik="orig">เริ่มใหม่จากต้นฉบับ</button> · <button class="linkb danger" data-ik="unmark">ลบฉบับที่เขียนตรวจ</button>';
-      act('orig').addEventListener('click', async () => {
-        if (st.dirty && !(await popupAsk('เริ่มใหม่จากต้นฉบับ?', 'สิ่งที่เขียนในหน้านี้จะหายไป ฉบับที่บันทึกไว้ยังอยู่จนกว่าจะกดบันทึกใหม่', 'เริ่มใหม่', true))) return;
-        st.from = 'orig'; load();
-      });
-      act('unmark').addEventListener('click', async () => {
-        if (!(await popupAsk('ลบฉบับที่เขียนตรวจ?', 'นักเรียนจะเห็นแค่งานต้นฉบับที่ส่งมา (ไฟล์ย้ายไปถังขยะของ Drive กู้คืนได้ 30 วัน)', 'ลบ', true))) return;
-        try {
-          const res = await api('workMark', { code: w.code, sid: r.sid, ids: [] }, 60000);
-          onSaved(res.sub); toast('ลบฉบับที่เขียนตรวจแล้ว'); close(true);
-        } catch (e) { if (e.auth) { close(true); return fail(e); } toast(e.message, 4000); }
-      });
-    } else {
-      n.innerHTML = '';
-    }
+    const n = $('[data-note]', box), s = st.r.sub;
+    if (st.from === 'orig') { n.innerHTML = ''; return; }
+    n.innerHTML = (st.from === 'queued'
+        ? 'แก้ต่อจากที่เพิ่งเขียน (กำลังส่งเบื้องหลัง)'
+        : 'แก้ต่อจากฉบับที่เขียนตรวจไว้เมื่อ ' + thDate(s.markedAt, true) +
+          (s.markedAt && s.ts && new Date(s.ts) > new Date(s.markedAt) ? ' · <b style="color:var(--warn)">นักเรียนส่งงานใหม่หลังจากนั้น</b>' : '')) +
+      ' · <button class="linkb" data-ik="orig">เริ่มใหม่จากต้นฉบับ</button>' +
+      (st.from === 'marked' ? ' · <button class="linkb danger" data-ik="unmark">ลบฉบับที่เขียนตรวจ</button>' : '');
+    act('orig').addEventListener('click', async () => {
+      if (st.dirty && !(await popupAsk('เริ่มใหม่จากต้นฉบับ?', 'สิ่งที่เพิ่งเขียนในหน้านี้จะหายไป', 'เริ่มใหม่', true))) return;
+      st.dirty = false; show(st.i, true);
+    });
+    if (st.from === 'marked') act('unmark').addEventListener('click', async () => {
+      if (!(await popupAsk('ลบฉบับที่เขียนตรวจ?', 'นักเรียนจะเห็นแค่งานต้นฉบับที่ส่งมา (ไฟล์ย้ายไปถังขยะของ Drive กู้คืนได้ 30 วัน)', 'ลบ', true))) return;
+      const r = st.r;
+      try {
+        const res = await api('workMark', { code: w.code, sid: r.sid, ids: [] }, 60000);
+        r.sub = Object.assign({}, r.sub, { marked: res.sub.marked, markedAt: res.sub.markedAt });
+        toast('ลบฉบับที่เขียนตรวจแล้ว'); st.dirty = false; show(st.i, true);
+      } catch (e) { if (e.auth) { shut(); return fail(e); } toast(e.message, 4000); }
+    });
   };
-  const load = async () => {
-    st.pages.forEach(p => { if (p.own) URL.revokeObjectURL(p.url); });
-    st.pages = []; st.undo = []; st.redo = []; st.dirty = false;
-    B.innerHTML = '<div class="empty" data-say>กำลังเตรียมหน้า…</div>';
+  /** เปิดนักเรียนคนที่ i — ใช้หน้าที่โหลดรอไว้ถ้ามี แล้วโหลดอีกสองคนถัดไปรอ */
+  const show = async (i, orig) => {
+    const seq = ++st.seq;
+    st.i = i; st.r = order[i];
+    const r = st.r, s = r.sub;
+    freePages(); dropLive();
+    st.undo = []; st.redo = []; st.dirty = false; st.cur = null;
+    $('[data-who]', box).innerHTML = esc(r.name) + ' <span class="muted small">เลขที่ ' + esc(r.no) + ' · ' + esc(r.cls) + ' · ' + (i + 1) + '/' + order.length + '</span>' +
+      (s.lateMin > 0 ? ' <span class="chip warn">ช้า ' + spanText(s.lateMin) + '</span>' : '') +
+      (s.resent ? ' <span class="chip brand">ส่งใหม่หลังตรวจ</span>' : '') +
+      (s.note ? '<div class="small" style="font-weight:400">นักเรียน: ' + esc(s.note) + '</div>' : '');
+    act('prev').disabled = i === 0;
+    act('next').disabled = i >= order.length - 1;
+    sc.value = s.graded ? s.raw : ''; cm.value = s.comment || '';
+    st.sc0 = sc.value; st.cm0 = cm.value;
+    paintPen();
+    const src = inkSource(w, r, orig);
+    st.from = src.kind;
     note(); paintTools();
+    B.innerHTML = '<div class="empty" data-say>กำลังเตรียมหน้า…</div>';
     try {
-      st.pages = await inkLoadPages(st.from === 'marked' ? s.marked : s.files, t => { const x = $('[data-say]', B); if (x) x.textContent = t; });
-      if (INK !== st) return;
+      const base = await prepPages(src, t => { const x = $('[data-say]', B); if (x && st.seq === seq) x.textContent = t; });
+      if (INK !== st || st.seq !== seq) return;
+      st.pages = base.map(p => ({ url: p.url, img: p.img, W: p.W, H: p.H, strokes: [], items: [], ink: null, el: null }));
       paintPages();
+      B.scrollTop = 0; B.scrollLeft = 0;
     } catch (e) {
-      if (e.auth) { close(true); return fail(e); }
+      if (st.seq !== seq) return;
+      if (e.auth) { shut(); return fail(e); }
       B.innerHTML = '<div class="notice bad" style="margin:14px">' + esc(e.message || String(e)) + '</div>';
     }
+    if (INK !== st || st.seq !== seq) return;
+    /* โหลดสองคนถัดไปรอไว้ เก็บคนก่อนหน้าไว้หนึ่งคนเผื่อกดย้อน ที่เหลือทิ้ง */
+    const keep = new Set([src.key]);
+    const j1 = nextAfter(i), j2 = nextAfter(j1);
+    [j1, j2, i - 1].forEach(k => { if (k >= 0 && k < order.length) { const s2 = inkSource(w, order[k], false); keep.add(s2.key); if (k !== i - 1) prepPages(s2).catch(() => {}); } });
+    prepDrop(keep);
   };
+
+  /* ---- บันทึก: รวมหน้าเป็นรูปแล้วเข้าคิว ไม่รอชีต ---- */
+  const flatten = async () => {
+    const out = [];
+    for (const p of st.pages) {
+      const k = Math.min(1, INK_OUT_SIDE / Math.max(p.W, p.H));
+      const cv = document.createElement('canvas');
+      cv.width = Math.round(p.W * k); cv.height = Math.round(p.H * k);
+      const c = cv.getContext('2d');
+      c.fillStyle = '#fff'; c.fillRect(0, 0, cv.width, cv.height);
+      c.scale(k, k);
+      c.drawImage(p.img, 0, 0, p.W, p.H);
+      if (p.ink) c.drawImage(p.ink, 0, 0);
+      p.items.forEach(it => c.drawImage($('img', it.el), it.x, it.y, it.w, it.h));
+      out.push(await canvasBlob(cv, 'image/jpeg', 0.8));
+      cv.width = cv.height = 0;
+    }
+    return out;
+  };
+  /** เก็บสิ่งที่เปลี่ยนของคนนี้เข้าคิว — คืน false ถ้าคะแนนไม่ถูกต้อง (ยังอยู่คนเดิม) */
+  const commit = async () => {
+    cancelStroke();
+    if (!st.r) return true;
+    const v = sc.value.trim(), c = cm.value;
+    if (v !== '' && (isNaN(Number(v)) || Number(v) < 0 || Number(v) > Number(w.max))) {
+      toast('คะแนนต้องอยู่ระหว่าง 0 ถึง ' + fmtN(w.max)); sc.focus(); return false;
+    }
+    const ch = {};
+    if (st.dirty && st.pages.length) {
+      st.busy = true; box.classList.add('busy');
+      try { ch.pages = await flatten(); } finally { st.busy = false; box.classList.remove('busy'); }
+    }
+    if (v !== String(st.sc0)) ch.raw = v === '' ? '' : Number(v);
+    if (c !== st.cm0) ch.comment = c;
+    if (ch.pages || ch.raw != null || ch.comment != null) {
+      queueSave(w, st.r, ch);
+      toast('บันทึก ' + st.r.name + ' แล้ว — ส่งเบื้องหลัง', 1300);
+    }
+    st.dirty = false; st.sc0 = v; st.cm0 = c;
+    return true;
+  };
+  const go = async j => {
+    if (st.busy || j < 0 || j >= order.length || j === st.i) return;
+    if (!(await commit())) return;
+    show(j);
+  };
+  const saveNext = async () => {
+    if (st.busy) return;
+    if (!(await commit())) return;
+    const j = nextAfter(st.i);
+    if (j >= order.length) { toast('ตรวจถึงคนสุดท้ายแล้ว'); shut(); return; }
+    show(j);
+  };
+  const shut = () => {
+    document.removeEventListener('keydown', onKey, true);
+    window.removeEventListener('resize', onResize);
+    freePages(); dropLive();
+    box.remove();
+    INK = null;
+    prepDrop(null);
+    if (!$('.viewer')) document.body.style.overflow = '';
+    if (ctx.onClose) ctx.onClose(st.i);
+  };
+  /* ปิดแล้วเก็บของคนปัจจุบันเข้าคิวให้ด้วย เหมือนพลิกกระดาษ — ไม่อยากเก็บก็กดย้อนกลับก่อน */
+  const close = async () => { if (st.busy) return; if (await commit()) shut(); };
 
   /* ---- ปากกา ---- */
   const pageAt = el => { const pg = el && el.closest ? el.closest('.pg') : null; return pg ? st.pages.find(p => p.el === pg) : null; };
@@ -1901,7 +2213,14 @@ async function openInk(r, w, onSaved) {
     }
     if (hit) inkRedraw(p);
   };
-  const cancelStroke = () => { if (st.cur && st.cur.s) dropLive(); if (st.cur && st.cur.er && st.cur.er.length) pushOp({ t: 'er', p: st.cur.p, list: st.cur.er }); st.cur = null; };
+  const cancelStroke = () => {
+    const c = st.cur;
+    if (!c) return;
+    st.cur = null;
+    if (c.er) { if (c.er.length) pushOp({ t: 'er', p: c.p, list: c.er }); return; }
+    dropLive();
+    if (c.s.pts.length > 1) { c.p.strokes.push(c.s); drawStroke(inkCanvas(c.p).getContext('2d'), c.s); pushOp({ t: 'st', p: c.p, s: c.s }); }
+  };
 
   B.addEventListener('pointerdown', async e => {
     if (e.pointerType === 'pen' && !st.penSeen) {
@@ -1923,6 +2242,7 @@ async function openInk(r, w, onSaved) {
     const p = pageAt(e.target);
     if (!p) return;
     e.preventDefault();
+    if (document.activeElement && document.activeElement.blur && box.contains(document.activeElement)) document.activeElement.blur();
     const q = ptOf(p, e);
     if (st.tool === 'text') {
       const t = await askText('ข้อความ', 'พิมพ์ข้อความที่จะเขียนลงบนงาน (Enter เพื่อใส่ · Shift+Enter ขึ้นบรรทัดใหม่)');
@@ -2038,10 +2358,8 @@ async function openInk(r, w, onSaved) {
     const k = b.dataset.stamp, col = st.color.pen;
     let img;
     if (k === 'score') {
-      const v = $('[data-vscore]') ? $('[data-vscore]').value : '';
-      const sc = v !== '' ? v : (s.graded ? s.raw : '');
-      if (sc === '') { toast('ใส่คะแนนที่ช่องด้านล่างของตัวดูงานก่อน แล้วค่อยแปะ', 3500); return; }
-      img = stampImg('score', col, fmtN(sc) + '/' + fmtN(w.max));
+      if (sc.value === '') { toast('ใส่คะแนนที่ช่องด้านล่างก่อน แล้วค่อยแปะ', 3000); sc.focus(); return; }
+      img = stampImg('score', col, fmtN(sc.value) + '/' + fmtN(w.max));
     } else if (k === 'good') img = stampImg('text', col, 'ดีมาก');
     else img = stampImg(k, k === 'ok' ? '#11875d' : '#d7263d');
     addItem(visiblePage(), img, k === 'ok' || k === 'no' ? 0.09 : k === 'score' ? 0.2 : 0.16);
@@ -2050,7 +2368,7 @@ async function openInk(r, w, onSaved) {
   }));
   act('sign').addEventListener('click', async () => {
     if (!st.pages.length) return;
-    try { await loadSign(); } catch (e) { if (e.auth) { close(true); return fail(e); } toast(e.message, 4000); return; }
+    try { await loadSign(); } catch (e) { if (e.auth) { shut(); return fail(e); } toast(e.message, 4000); return; }
     if (!SIGN && !(await signPad())) return;
     try {
       addItem(visiblePage(), await signImg(lsGet('wd.signDate') !== '0'), 0.26);
@@ -2059,58 +2377,9 @@ async function openInk(r, w, onSaved) {
     } catch (e) { toast(e.message, 4000); }
   });
   act('signset').addEventListener('click', async () => {
-    try { await loadSign(); } catch (e) { if (e.auth) { close(true); return fail(e); } toast(e.message, 4000); return; }
+    try { await loadSign(); } catch (e) { if (e.auth) { shut(); return fail(e); } toast(e.message, 4000); return; }
     if (await signPad()) toast('บันทึกลายเซ็นแล้ว — กดปุ่มลายเซ็นเพื่อแปะ');
   });
-
-  /* ---- บันทึก ---- */
-  const save = async () => {
-    if (st.busy || !st.pages.length) return;
-    cancelStroke();
-    const any = st.pages.some(p => p.strokes.length || p.items.length);
-    if (st.from === 'orig' && !any) { toast('ยังไม่ได้เขียนอะไรลงบนงาน'); return; }
-    if (st.from === 'marked' && !st.dirty) { toast('ไม่มีอะไรเปลี่ยนจากฉบับที่บันทึกไว้'); return; }
-    st.busy = true;
-    box.classList.add('busy');
-    const btn = act('save'), prog = $('[data-prog]', box);
-    btn.disabled = true;
-    try {
-      const ids = [];
-      for (let i = 0; i < st.pages.length; i++) {
-        const p = st.pages[i];
-        prog.textContent = 'กำลังบันทึกหน้า ' + (i + 1) + ' จาก ' + st.pages.length + '…';
-        const cv = document.createElement('canvas');
-        cv.width = p.W; cv.height = p.H;
-        const c = cv.getContext('2d');
-        c.fillStyle = '#fff'; c.fillRect(0, 0, p.W, p.H);
-        c.drawImage(p.img, 0, 0, p.W, p.H);
-        if (p.ink) c.drawImage(p.ink, 0, 0);
-        p.items.forEach(it => c.drawImage($('img', it.el), it.x, it.y, it.w, it.h));
-        const blob = await canvasBlob(cv, 'image/jpeg', 0.86);
-        cv.width = cv.height = 0;
-        const data = await blobToBase64(blob);
-        let upd = null, last = null;
-        for (let k = 0; k < 2 && !upd; k++) {
-          try { upd = await api('workMarkUp', { code: w.code, sid: r.sid, mime: 'image/jpeg', data: data }, 120000); }
-          catch (e) { last = e; if (e.auth) throw e; }
-        }
-        if (!upd) throw last;
-        ids.push(upd.id);
-      }
-      prog.textContent = 'กำลังส่งให้นักเรียน…';
-      const res = await api('workMark', { code: w.code, sid: r.sid, ids: ids }, 60000);
-      st.busy = false;
-      onSaved(res.sub);
-      toast('บันทึกแล้ว — ' + r.name + ' เปิดดูงานที่เขียนตรวจได้ในหน้าส่งงาน', 2600);
-      close(true);
-    } catch (e) {
-      st.busy = false;
-      box.classList.remove('busy');
-      btn.disabled = false; prog.textContent = '';
-      if (e.auth) { close(true); return fail(e); }
-      toast(e.message || String(e), 5000);
-    }
-  };
 
   /* ---- ปุ่ม ---- */
   $$('[data-tool]', box).forEach(b => b.addEventListener('click', () => setTool(b.dataset.tool)));
@@ -2127,8 +2396,12 @@ async function openInk(r, w, onSaved) {
     if (k === 'pen') lsSet('wd.inkPenSize', b.dataset.size);
     paintTools();
   }));
-  act('close').addEventListener('click', () => close(false));
-  act('save').addEventListener('click', save);
+  act('close').addEventListener('click', close);
+  act('prev').addEventListener('click', () => go(st.i - 1));
+  act('next').addEventListener('click', () => go(st.i + 1));
+  act('savenext').addEventListener('click', saveNext);
+  act('full').addEventListener('click', () => { sc.value = w.max; paintPen(); });
+  sc.addEventListener('input', paintPen);
   act('undo').addEventListener('click', undo);
   act('redo').addEventListener('click', redo);
   act('zin').addEventListener('click', () => setZoom(st.zoom * 1.25));
@@ -2141,22 +2414,25 @@ async function openInk(r, w, onSaved) {
   function onKey(e) {
     if (document.querySelector('.overlay[style*="96"]')) return;      /* มีกล่องถามเปิดทับอยู่ */
     const k = e.key.toLowerCase(), mod = e.ctrlKey || e.metaKey;
+    e.stopPropagation();                                                /* ไม่ให้ตัวดูงานข้างใต้รับปุ่มไปด้วย */
+    if (k === 'enter' && (mod || e.target === sc || e.target === cm)) { e.preventDefault(); saveNext(); return; }
+    if (k === 'escape') { close(); return; }
     if (e.target.matches && e.target.matches('input,textarea')) return;
-    e.stopPropagation();
     if (mod && k === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
     else if (mod && (k === 'y' || (k === 'z' && e.shiftKey))) { e.preventDefault(); redo(); }
-    else if (mod && k === 's') { e.preventDefault(); save(); }
-    else if (k === 'escape') close(false);
+    else if (mod && k === 's') { e.preventDefault(); commit(); }
     else if (!mod && k === 'p') setTool('pen');
     else if (!mod && k === 'h') setTool('hl');
     else if (!mod && k === 'e') setTool('er');
     else if (!mod && k === 'v') setTool('move');
     else if (!mod && k === 't') setTool('text');
+    else if (!mod && k === 'pagedown') { e.preventDefault(); go(st.i + 1); }
+    else if (!mod && k === 'pageup') { e.preventDefault(); go(st.i - 1); }
   }
   document.addEventListener('keydown', onKey, true);
   window.addEventListener('resize', onResize);
   paintTools();
-  load();
+  show(ctx.i);
 }
 
 /* ---- แจ้งเตือนนักเรียนของงานหนึ่ง ----------------------------------------------
@@ -2519,6 +2795,7 @@ function start() {
     if (location.hash === '#reset') T.tab = 'reset';
     $('#who').textContent = (p.sub ? (p.name || 'ครูผู้สอน') + ' · ดูแล ' + (p.classes || []).join(', ') : 'ผู้ดูแลหลัก · ทุกชั้น');
     teacherLoad();
+    if (!T.noWork) obRestore();
   } else {
     $('#who').textContent = [p.name, p.cls, p.no ? 'เลขที่ ' + p.no : ''].filter(Boolean).join(' · ');
     studentLoad();
