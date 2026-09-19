@@ -257,19 +257,22 @@ window.initPowerSimulation = function() {
             if (!c.done && c.y > 0) E.drawVector(x - boxS / 2 - 12, boxTop + boxS / 2, 0, -Math.min(60, 12 + v * 8), '#16a34a', 'v⃗', { width: 3 });
             E.drawVector(x - boxS / 2 - 32, boxTop + boxS, 0, -38, c.color, 'F⃗', { width: 3 });
             // ป้ายชื่อเครน
-            E.text('เครน ' + c.name, x + 5, gY + 22, { size: 14, weight: 'bold', color: c.color, align: 'center' });
+            E.text('เครน ' + c.name, x + 5, gY + 22, { size: 14, weight: 'bold', color: c.color, align: 'center', plain: true });
             if (c.done) E.text('✔ ' + fmt(c.t, 2) + ' s', x, boxTop - 12, { size: 14, weight: 'bold', color: '#16a34a', align: 'center', stroke: '#fff' });
         });
 
         // การ์ดสูตรและตัวเลข
         var lines = [
-            { t: 'P = W / t = F⃗ · v⃗ = Fv cos 0°', b: true, s: 14, c: '#1e1b4b' },
-            { t: 'F = mg = ' + (mass * g) + ' N  (ยกด้วย v คงตัว)', s: 12, c: '#475569' }
+            { t: 'P = W / t', b: true, s: 14, c: '#1e1b4b' },
+            { t: '= F⃗ · v⃗ = Fv cos 0°', b: true, s: 14, c: '#1e1b4b' },
+            { t: 'F = mg = ' + (mass * g) + ' N', s: 12, c: '#475569' },
+            { t: '(ยกด้วยความเร็วคงตัว)', s: 11, c: '#64748b' }
         ];
         cr.forEach(function(c) {
             var v = c.P / (mass * g);
-            lines.push({ t: c.name + ':  v = P/F = ' + fmt(v, 2) + ' m/s', s: 13, b: true, c: c.color });
-            lines.push({ t: '     W = ' + Math.round(mass * g * c.y) + ' J   t = ' + fmt(c.t, 2) + ' s', s: 12, c: '#334155' });
+            lines.push({ t: 'เครน ' + c.name, s: 12, b: true, c: c.color, plain: true });
+            lines.push({ t: 'v = P/F = ' + fmt(v, 2) + ' m/s', s: 13, b: true, c: c.color });
+            lines.push({ t: 'W = ' + Math.round(mass * g * c.y) + ' J   t = ' + fmt(c.t, 2) + ' s', s: 12, c: '#334155' });
         });
         lines.push({ t: 'งานเท่ากัน = mgh = ' + (mass * g * HEIGHT) + ' J', s: 12, b: true, c: '#15803d' });
         E.card(10, 10, lines);
@@ -376,10 +379,12 @@ window.initKineticSimulation = function() {
         E.bar(bx + 58, by, 36, bh, Ek / maxE, '#f97316', 'ΔEk', fmt(Ek, 0) + ' J');
 
         E.card(10, 10, [
-            { t: 'W = F⃗ · s⃗ = ΔEk', b: true, s: 15, c: '#1e1b4b' },
-            { t: 'F s cos θ = ½mv² − ½mu²', s: 13, c: '#334155' },
-            { t: '(' + F + ')(' + fmt(Math.min(x, sPush), 2) + ')(cos ' + thetaDeg + '°) = ' + fmt(Wnet, 1) + ' J', s: 12, c: '#15803d' },
-            { t: '½(' + m + ')(' + fmt(v, 2) + ')² = ' + fmt(Ek, 1) + ' J', s: 12, c: '#c2410c' },
+            { t: 'W = F⃗ · s⃗ = F s cos θ', b: true, s: 15, c: '#1e1b4b' },
+            { t: '= (' + F + ')(' + fmt(Math.min(x, sPush), 2) + ')(cos ' + thetaDeg + '°)', s: 12, c: '#334155' },
+            { t: '= ' + fmt(Wnet, 1) + ' J', s: 14, b: true, c: '#15803d' },
+            { t: 'ΔEk = ½mv² − ½mu²', b: true, s: 15, c: '#1e1b4b' },
+            { t: '= ½(' + m + ')(' + fmt(v, 2) + ')² − 0', s: 12, c: '#334155' },
+            { t: '= ' + fmt(Ek, 1) + ' J', s: 14, b: true, c: '#c2410c' },
             { t: '🎯 ภารกิจ: ให้รถผ่านเครื่องวัดที่ ' + target + ' m/s', s: 12, b: true, c: '#9a3412' }
         ]);
         if (SLOW < 1) E.text('ภาพช้าลง 2 เท่า', w - 10, h - 8, { size: 11, color: '#cbd5e1', align: 'right' });
