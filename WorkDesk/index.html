@@ -197,6 +197,16 @@ const LOCAL = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
 const TEST_API = LOCAL ? new URLSearchParams(location.search).get('api') : '';
 /** คำขอรหัสผ่านไปชีตศูนย์กลาง ที่เหลือไปชีตส่งงาน */
 const urlOf = action => TEST_API || (/^reset/.test(action) ? HUB_URL : WORK_URL);
+/* ชีตที่รับรหัสผ่านตรง จึงมีตัวนับการกรอกผิดของตัวเอง — แท็บปลดล็อกรหัสดึงจากทุกใบมารวมที่เดียว
+   ชีตส่งงานไม่อยู่ในรายการ เพราะไม่รับรหัสผ่านตรง (รับเฉพาะบัตรผ่านจากศูนย์กลาง)
+   ต้องตรงกับ BOOKS ในหน้าพอร์ทัล (index.html) */
+const PHYS_URL = 'https://script.google.com/macros/s/AKfycbzuuRbnE_oB7a9vx7zZizyPVEKao31ERDTU82DvydMuRTDqVoQvgns9EsjTIzpbBjuM/exec';
+const LOCK_BOOKS = [
+  { url: HUB_URL, name: 'ชีตศูนย์กลาง', apps: 'หน้าหลัก · คณิต · วิทย์ · เคมี · ชีวะ · วิทย์กายภาพ · สมดุลกล · ปรับพื้นฐาน' },
+  { url: PHYS_URL, name: 'ชีตฟิสิกส์', apps: 'ฟิสิกส์ ม.4' }
+];
+/** รุ่นชีตที่ต้องมีคำสั่งนี้ — ใช้บอกครูว่าต้องวางโค้ดรุ่นไหนเมื่อชีตยังเป็นรุ่นเก่า */
+const needVer = action => /^work(Scores|Notify|NoteRead)$/.test(action) ? 22 : /^workSheet/.test(action) ? 21 : 19;
 const SESSION_KEY = 'pcportal.v1';
 
 const IMG_MAX_SIDE = 1600;          /* ด้านยาวของรูปหลังย่อ อ่านลายมือได้ชัด ไฟล์ราว 250–450 KB */
@@ -251,12 +261,14 @@ function tokenFor(s, url) {
 const ME = { s: null, role: '', tok: {} };
 
 /** ยิงคำสั่งไปที่ Apps Script — ต้องเป็น text/plain ไม่งั้นเบราว์เซอร์ยิง preflight ที่ Apps Script ตอบไม่ได้ */
-async function api(action, params, timeoutMs) {
+async function api(action, params, timeoutMs) { return apiAt(urlOf(action), action, params, timeoutMs); }
+/** ยิงคำสั่งไปชีตที่ระบุ — ใช้กับแท็บปลดล็อกรหัสที่ต้องคุยกับหลายชีต (ตอนทดสอบในเครื่อง ?api= ชนะเสมอ) */
+async function apiAt(urlIn, action, params, timeoutMs) {
   const ctl = new AbortController();
   const timer = setTimeout(() => ctl.abort(), timeoutMs || 45000);
   let res;
   try {
-    const url = urlOf(action);
+    const url = TEST_API || urlIn;
     res = await fetch(url, {
       method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify(Object.assign({ action: action, token: ME.tok[url] || '' }, params || {})),
@@ -269,7 +281,7 @@ async function api(action, params, timeoutMs) {
   let j;
   try { j = JSON.parse(await res.text()); } catch (e) { throw new Error('ระบบตอบกลับไม่ถูกรูปแบบ — ลองใหม่อีกครั้ง'); }
   if (!j.ok) {
-    if (/ไม่รู้จักคำสั่ง/.test(j.error || '')) throw new Error('ชีตยังเป็นรุ่นเก่า — ครูต้องวางโค้ดชีตรุ่น ' + (/^workSheet/.test(action) ? 21 : 19) + ' แล้ว Deploy ใหม่ก่อน');
+    if (/ไม่รู้จักคำสั่ง/.test(j.error || '')) { const e0 = new Error('ชีตยังเป็นรุ่นเก่า — ครูต้องวางโค้ดชีตรุ่น ' + needVer(action) + ' แล้ว Deploy ใหม่ก่อน'); e0.old = true; throw e0; }
     const err = new Error(String(j.error || 'ทำรายการไม่สำเร็จ').replace(/^AUTH:\s*/, ''));
     err.auth = !!j.auth;
     throw err;
@@ -427,7 +439,26 @@ function studentRender() {
     h = '<div class="panel"><div class="empty">ยังไม่มีงานที่ครูสั่งให้ชั้น <b>' + esc(d.cls || '—') + '</b><br>' +
       '<span class="small">ถ้าครูบอกว่าสั่งแล้วแต่ไม่ขึ้น ให้แจ้งครูว่าชั้นในระบบของคุณคือ ' + esc(d.cls || '(ว่าง)') + '</span></div></div>';
   }
+  /* ข้อความแจ้งเตือนจากครู — อยู่บนสุดจนกว่านักเรียนจะกดรับทราบ (ชีตรุ่นเก่าไม่ส่ง notes มา ก็ไม่ขึ้นอะไร) */
+  const notes = d.notes || [];
+  if (notes.length) {
+    const K = { miss: ['bad', '🔔', 'ยังไม่ส่งงาน'], late: ['warn', '⏰', 'ส่งไม่ตรงกำหนด'], ontime: ['ok', '🌟', 'ส่งตรงกำหนด'] };
+    h = '<div class="panel"><div class="row"><h2 style="margin:0">ข้อความจากครู</h2><span class="chip bad">' + notes.length + '</span></div>' +
+      notes.map(n => { const k = K[n.kind] || K.miss;
+        return '<div class="notice ' + k[0] + '" style="display:flex;gap:10px;align-items:flex-start"><span style="font-size:20px;line-height:1.3">' + k[1] + '</span>' +
+          '<div style="flex:1"><b>' + esc(n.title || 'งาน') + '</b> · ' + k[2] + '<br>' + esc(n.msg) +
+          '<div class="small muted">' + esc(n.by) + ' · ' + thDate(n.ts, true) + '</div></div>' +
+          '<button class="sm" data-ack="' + esc(n.id) + '">รับทราบ</button></div>'; }).join('') + '</div>' + h;
+  }
   $('#view').innerHTML = h;
+  $$('[data-ack]').forEach(b => b.addEventListener('click', async () => {
+    b.disabled = true;
+    try {
+      await api('workNoteRead', { ids: [b.dataset.ack] });
+      d.notes = (d.notes || []).filter(n => n.id !== b.dataset.ack);
+      studentRender();
+    } catch (e) { b.disabled = false; fail(e); }
+  }));
   $$('[data-open]').forEach(b => b.addEventListener('click', () => studentOpen(b.dataset.open)));
   const rl = $('[data-reload]'); if (rl) rl.addEventListener('click', studentLoad);
 }
@@ -692,11 +723,12 @@ async function viewOwnFile(id, btn, title, withSave) {
 /* ============================================================================
    ฝั่งครู
    ========================================================================== */
-const T = { tab: 'works', works: null, resets: null, subs: null, board: null, gradeCode: '', filter: 'todo', boardCls: '', onlyRisk: true, timer: 0 };
+const T = { tab: 'works', works: null, resets: null, subs: null, board: null, gradeCode: '', filter: 'todo', boardCls: '', onlyRisk: true, timer: 0,
+            fSubj: null, fCls: '', sel: new Set(), gCls: '', scores: null, sSubj: null, sCls: '', locks: null };
 
 function teacherShell() {
-  const pend = T.resets ? T.resets.rows.filter(r => r.status === 'wait').length : 0;
-  const tabs = [['works', 'งานที่สั่ง'], ['grade', 'ตรวจงาน'], ['watch', 'นักเรียนที่ต้องติดตาม'], ['reset', 'คำขอรหัสผ่าน']];
+  const pend = (T.resets ? T.resets.rows.filter(r => r.status === 'wait').length : 0) + (T.locks ? T.locks.rows.filter(r => r.locked).length : 0);
+  const tabs = [['works', 'งานที่สั่ง'], ['grade', 'ตรวจงาน'], ['scores', 'คะแนนรวมรายวิชา'], ['watch', 'นักเรียนที่ต้องติดตาม'], ['reset', 'ปลดล็อกรหัส']];
   $('#view').innerHTML = '<div class="tabs" role="tablist">' + tabs.map(t =>
     '<button data-tab="' + t[0] + '" class="' + (T.tab === t[0] ? 'on' : '') + '">' + t[1] +
     (t[0] === 'reset' && pend ? '<span class="n">' + pend + '</span>' : '') + '</button>').join('') + '</div><div id="pane"></div>';
@@ -704,9 +736,23 @@ function teacherShell() {
   clearInterval(T.timer);
   if (T.tab === 'works') paneWorks();
   else if (T.tab === 'grade') paneGrade();
+  else if (T.tab === 'scores') paneScores();
   else if (T.tab === 'watch') paneWatch();
   else paneReset();
 }
+
+/** ชื่อวิชาที่แสดง — งานที่ไม่ได้ใส่วิชาไว้รวมกันเป็นกลุ่มเดียว */
+const subjName = s => s ? s : 'ไม่ระบุวิชา';
+/** ตัวเลือกวิชาและห้องจากรายการงาน — ใช้ทั้งแท็บงานที่สั่งและคะแนนรวม */
+function subjOptions(list, cur) {
+  const subs = Array.from(new Set(list.map(w => w.subject || ''))).sort((a, b) => a.localeCompare(b, 'th'));
+  return '<option value="*"' + (cur == null ? ' selected' : '') + '>ทุกวิชา</option>' +
+    subs.map(s => '<option value="' + esc(s) + '"' + (cur === s ? ' selected' : '') + '>' + esc(subjName(s)) + '</option>').join('');
+}
+function clsOptions(classes, cur) {
+  return '<option value="">ทุกห้อง</option>' + classes.map(c => '<option' + (c === cur ? ' selected' : '') + '>' + esc(c) + '</option>').join('');
+}
+const byTh = (a, b) => String(a).localeCompare(String(b), 'th', { numeric: true });
 
 async function teacherLoad() {
   if (T.noWork) {
@@ -722,6 +768,8 @@ async function teacherLoad() {
     T.works = works;
     T.resets = resets && resets.err ? null : resets;
     teacherShell();
+    /* ตัวเลขบนแท็บปลดล็อกรหัสรวมคนที่ถูกพักจากทุกแอป — ดึงเบื้องหลัง ไม่ให้หน้างานที่สั่งต้องรอ */
+    if (T.tab !== 'reset') loadLocks().then(resetTabBadge, () => {});
   } catch (e) {
     if (e.auth) return fail(e);
     $('#view').innerHTML = '<div class="notice bad">' + esc(e.message) + '</div>';
@@ -731,14 +779,28 @@ async function teacherLoad() {
 /* ---- แท็บงานที่สั่ง ------------------------------------------------------- */
 function paneWorks() {
   const now = Date.now();
+  const classes = Array.from(new Set(T.works.flatMap(w => w.cls))).sort(byTh);
+  if (T.fCls && classes.indexOf(T.fCls) < 0) T.fCls = '';
+  const shown = T.works.filter(w => (T.fSubj == null || (w.subject || '') === T.fSubj) && (!T.fCls || w.cls.indexOf(T.fCls) >= 0));
+  /* งานที่เลือกไว้แต่ถูกกรองหายไป ไม่นับรวม — ลบเฉพาะที่ครูมองเห็นอยู่ จะได้ไม่เผลอลบของที่ไม่ได้ดู */
+  const codes = new Set(shown.map(w => w.code));
+  Array.from(T.sel).forEach(c => { if (!codes.has(c)) T.sel.delete(c); });
   let h = '<div class="row" style="margin-bottom:12px"><button class="primary" data-new>+ สั่งงานใหม่</button>' +
     '<span class="sp"></span><button class="sm" data-reload>โหลดใหม่</button></div>';
   if (!T.works.length) {
     h += '<div class="panel"><div class="empty">ยังไม่มีงานที่สั่ง<br><span class="small">กด “สั่งงานใหม่” แล้วนักเรียนในชั้นนั้นจะเห็นงานทันทีที่เปิดหน้าส่งงาน</span></div></div>';
   } else {
-    h += '<div class="panel" style="padding:4px 14px"><div class="list" style="border-top:0">' + T.works.map(w => {
+    h += '<div class="panel" style="padding:12px 14px"><div class="row">' +
+      '<select data-fsubj style="width:auto;min-width:150px">' + subjOptions(T.works, T.fSubj) + '</select>' +
+      '<select data-fcls style="width:auto;min-width:120px">' + clsOptions(classes, T.fCls) + '</select>' +
+      '<span class="small muted">แสดง ' + shown.length + ' จาก ' + T.works.length + ' งาน</span><span class="sp"></span>' +
+      '<label class="small row" style="gap:6px"><input type="checkbox" data-selall style="width:18px;min-height:18px"' +
+        (shown.length && shown.every(w => T.sel.has(w.code)) ? ' checked' : '') + '> เลือกทั้งหมด</label>' +
+      '<button class="sm danger" data-delsel' + (T.sel.size ? '' : ' disabled') + '>ลบที่เลือก' + (T.sel.size ? ' (' + T.sel.size + ')' : '') + '</button></div></div>';
+    h += '<div class="panel" style="padding:4px 14px"><div class="list" style="border-top:0">' + (shown.length ? shown.map(w => {
       const st = w.stats, pct = st.roster ? Math.round(st.sent / st.roster * 100) : 0;
-      return '<div class="item" style="cursor:default"><div class="bd">' +
+      return '<div class="item" style="cursor:default"><input type="checkbox" data-sel="' + esc(w.code) + '" aria-label="เลือกงาน ' + esc(w.title) + '"' +
+        (T.sel.has(w.code) ? ' checked' : '') + ' style="width:20px;min-height:20px;margin-top:3px;flex:none"><div class="bd">' +
         '<div class="tt">' + esc(w.title) + (w.subject ? ' <span class="chip">' + esc(w.subject) + '</span>' : '') + '</div>' +
         '<div class="ln">' + esc(w.cls.join(', ')) + ' · ' + dueLine(w, now) + '</div>' +
         '<div class="ln">เต็ม ' + fmtN(w.max) + ' · ' + ruleText(w) +
@@ -750,13 +812,43 @@ function paneWorks() {
         '<div class="row" style="flex-direction:column;align-items:stretch;gap:6px">' +
           '<button class="sm primary" data-grade="' + esc(w.code) + '">ตรวจงาน</button>' +
           '<button class="sm" data-edit="' + esc(w.code) + '">แก้ไข</button></div></div>';
-    }).join('') + '</div></div>';
+    }).join('') : '<div class="empty">ไม่มีงานที่ตรงกับตัวกรอง</div>') + '</div></div>';
   }
   $('#pane').innerHTML = h;
   $('[data-new]').addEventListener('click', () => workForm(null));
   $('[data-reload]').addEventListener('click', teacherLoad);
+  const fs = $('[data-fsubj]');
+  if (fs) {
+    fs.addEventListener('change', e => { T.fSubj = e.target.value === '*' ? null : e.target.value; paneWorks(); });
+    $('[data-fcls]').addEventListener('change', e => { T.fCls = e.target.value; paneWorks(); });
+    $('[data-selall]').addEventListener('change', e => { shown.forEach(w => e.target.checked ? T.sel.add(w.code) : T.sel.delete(w.code)); paneWorks(); });
+    $$('[data-sel]').forEach(c => c.addEventListener('change', () => { c.checked ? T.sel.add(c.dataset.sel) : T.sel.delete(c.dataset.sel); paneWorks(); }));
+    $('[data-delsel]').addEventListener('click', deleteSelected);
+  }
   $$('[data-grade]').forEach(b => b.addEventListener('click', () => { T.gradeCode = b.dataset.grade; T.subs = null; T.tab = 'grade'; teacherShell(); }));
   $$('[data-edit]').forEach(b => b.addEventListener('click', () => workForm(T.works.find(w => w.code === b.dataset.edit))));
+}
+
+/** ลบงานที่ติ๊กไว้ทีละงาน — ชีตตรวจสิทธิ์ทุกงาน งานไหนลบไม่ได้ก็บอกชื่อ ส่วนที่เหลือยังลบต่อ */
+async function deleteSelected() {
+  const list = T.works.filter(w => T.sel.has(w.code));
+  if (!list.length) return;
+  const sent = list.reduce((n, w) => n + w.stats.sent, 0);
+  const yes = await confirmBox('ลบงาน ' + list.length + ' งาน',
+    '<div class="tw"><table><tbody>' + list.map(w => '<tr><td>' + esc(w.title) + '</td><td class="small muted">' + esc(subjName(w.subject)) +
+      ' · ' + esc(w.cls.join(', ')) + '</td><td class="num small">ส่งแล้ว ' + w.stats.sent + '</td></tr>').join('') + '</tbody></table></div>' +
+    '<p class="muted small">นักเรียนจะไม่เห็นงานเหล่านี้อีก' + (sent ? ' · งานที่ส่งมาแล้ว ' + sent + ' ชิ้น คะแนนและไฟล์ยังเก็บไว้ในชีตและ Drive ครบ' : '') +
+    ' — กู้คืนได้ด้วยการแก้คอลัมน์ "เปิดใช้งาน" ในแผ่น works</p>', 'ลบ ' + list.length + ' งาน', true);
+  if (!yes) return;
+  const bad = [];
+  let done = 0;
+  for (const w of list) {
+    try { await api('workRemove', { code: w.code }); done++; T.sel.delete(w.code); }
+    catch (e) { if (e.auth) return fail(e); bad.push(w.title + ': ' + e.message); }
+  }
+  toast('ลบแล้ว ' + done + ' งาน' + (bad.length ? ' · ลบไม่ได้ ' + bad.length : ''), 3600);
+  if (bad.length) confirmBoxOk('บางงานลบไม่ได้', '<div class="notice warn">' + bad.map(esc).join('<br>') + '</div>');
+  teacherLoad();
 }
 
 /** ชั้นที่ครูน่าจะใช้ — ชั้นที่ดูแล (ครูผู้สอน) กับชั้นที่เคยสั่งงานไปแล้ว */
@@ -932,28 +1024,53 @@ async function paneGrade() {
 
 const hasFiles = r => !!(r.sub && r.sub.files.length);
 const needsGrade = r => hasFiles(r) && (!r.sub.graded || r.sub.resent);
-function gradeRows() {
+/** สถานะการส่ง — ต้องตรงกับ sendState_ ในโค้ดชีต (ontime · late · paper · miss · todo) */
+function stateOf(r, w, now) {
+  if (hasFiles(r)) return r.sub.lateMin > 0 ? 'late' : 'ontime';
+  if (r.sub && r.sub.graded) return 'paper';
+  const due = new Date(w.dueAt).getTime();
+  return due && due <= now ? 'miss' : 'todo';
+}
+/** แถวของงานที่เปิดอยู่ หลังกรองห้อง (งานที่สั่งหลายห้อง) */
+function scopedRows() {
   const rows = T.subs.rows;
+  return T.gCls ? rows.filter(r => r.cls === T.gCls) : rows;
+}
+function gradeRows() {
+  const rows = scopedRows(), w = T.subs.work, now = Date.now();
   if (T.filter === 'todo') return rows.filter(needsGrade);
-  if (T.filter === 'late') return rows.filter(r => hasFiles(r) && r.sub.lateMin > 0);
+  if (T.filter === 'late') return rows.filter(r => stateOf(r, w, now) === 'late');
+  if (T.filter === 'ontime') return rows.filter(r => stateOf(r, w, now) === 'ontime');
   if (T.filter === 'none') return rows.filter(r => !hasFiles(r) && !(r.sub && r.sub.graded));
   return rows;
 }
 
 function gradeBody() {
-  const S = T.subs, w = S.work, rows = S.rows, now = Date.now();
+  const S = T.subs, w = S.work, now = Date.now();
   /* ตัวเลขรอตรวจในช่องเลือกงานต้องขยับตามที่เพิ่งตรวจ */
   const opt = $('[data-pickwork] option[value="' + w.code + '"]'), ww = (T.works || []).find(x => x.code === w.code);
   if (opt && ww) opt.textContent = ww.title + ' · ' + ww.cls.join(', ') + (ww.stats.toGrade ? ' (รอตรวจ ' + ww.stats.toGrade + ')' : '');
-  const sent = rows.filter(hasFiles).length, late = rows.filter(r => hasFiles(r) && r.sub.lateMin > 0).length;
-  const todo = rows.filter(needsGrade).length, none = rows.filter(r => !hasFiles(r) && !(r.sub && r.sub.graded)).length;
   const multi = w.cls.length > 1;
+  if (!multi || w.cls.indexOf(T.gCls) < 0) T.gCls = '';
+  const rows = scopedRows();
+  const cnt = { ontime: 0, late: 0, paper: 0, miss: 0, todo: 0 };
+  rows.forEach(r => { cnt[stateOf(r, w, now)]++; });
+  const sent = cnt.ontime + cnt.late;
+  const todo = rows.filter(needsGrade).length, none = cnt.miss + cnt.todo;
   const list = gradeRows();
   let h = '<div class="panel"><h2>' + esc(w.title) + '</h2>' +
-    '<div class="muted small">' + esc(w.cls.join(', ')) + ' · ' + dueLine(w, now) + ' · เต็ม ' + fmtN(w.max) + ' · ' + ruleText(w) + '</div>' +
-    '<div class="stat"><div><b>' + sent + '/' + rows.length + '</b>ส่งแล้ว</div><div><b>' + todo + '</b>รอตรวจ</div><div><b>' + late + '</b>ส่งช้า</div><div><b>' + none + '</b>ยังไม่ส่ง</div></div>' +
+    '<div class="muted small">' + esc(subjName(w.subject)) + ' · ' + esc(w.cls.join(', ')) + ' · ' + dueLine(w, now) + ' · เต็ม ' + fmtN(w.max) + ' · ' + ruleText(w) + '</div>' +
+    (multi ? '<div class="row" style="margin-top:8px"><select data-gcls style="width:auto;min-width:130px">' + clsOptions(w.cls, T.gCls) + '</select></div>' : '') +
+    '<div class="stat"><div><b>' + sent + '/' + rows.length + '</b>ส่งแล้ว</div><div><b style="color:var(--ok)">' + cnt.ontime + '</b>ตรงกำหนด</div>' +
+      '<div><b style="color:var(--warn)">' + cnt.late + '</b>ไม่ตรงกำหนด</div><div><b style="color:var(--bad)">' + cnt.miss + '</b>ขาดส่ง</div>' +
+      (cnt.todo ? '<div><b>' + cnt.todo + '</b>ยังไม่ถึงกำหนด</div>' : '') + (cnt.paper ? '<div><b>' + cnt.paper + '</b>ส่งกระดาษ</div>' : '') +
+      '<div><b>' + todo + '</b>รอตรวจ</div></div>' +
+    '<div class="row" style="margin-top:6px;gap:6px"><span class="small"><b>แจ้งเตือนนักเรียน:</b></span>' +
+      '<button class="sm" data-notify="miss"' + (cnt.miss ? '' : ' disabled') + '>🔔 ขาดส่ง (' + cnt.miss + ')</button>' +
+      '<button class="sm" data-notify="late"' + (cnt.late ? '' : ' disabled') + '>⏰ ส่งไม่ตรงกำหนด (' + cnt.late + ')</button>' +
+      '<button class="sm" data-notify="ontime"' + (cnt.ontime ? '' : ' disabled') + '>🌟 ส่งตรงกำหนด (' + cnt.ontime + ')</button></div>' +
     '<div class="row" style="margin-top:10px"><div class="seg2">' +
-      [['todo', 'รอตรวจ'], ['all', 'ทั้งหมด'], ['late', 'ส่งช้า'], ['none', 'ยังไม่ส่ง']].map(x =>
+      [['todo', 'รอตรวจ'], ['all', 'ทั้งหมด'], ['ontime', 'ตรงกำหนด'], ['late', 'ส่งช้า'], ['none', 'ยังไม่ส่ง']].map(x =>
         '<button data-flt="' + x[0] + '" class="' + (T.filter === x[0] ? 'on' : '') + '">' + x[1] + '</button>').join('') + '</div>' +
       '<span class="sp"></span>' + (todo ? '<button class="primary" data-start>เริ่มตรวจ (' + todo + ')</button>' : '') +
       '<button class="sm" data-copy>คัดลอกคะแนน</button><button class="sm" data-reload>โหลดใหม่</button></div>' +
@@ -979,6 +1096,9 @@ function gradeBody() {
   $('#gbody').innerHTML = h;
 
   $$('[data-flt]').forEach(b => b.addEventListener('click', () => { T.filter = b.dataset.flt; gradeBody(); }));
+  const gc = $('[data-gcls]'); if (gc) gc.addEventListener('change', e => { T.gCls = e.target.value; gradeBody(); });
+  $$('[data-notify]').forEach(b => b.addEventListener('click', () =>
+    notifyForm(w, b.dataset.notify, rows.filter(r => stateOf(r, w, Date.now()) === b.dataset.notify))));
   $('[data-reload]').addEventListener('click', () => { T.subs = null; paneGrade(); });
   $('[data-copy]').addEventListener('click', copyScores);
   const st = $('[data-start]'); if (st) st.addEventListener('click', () => openViewer(rows.find(needsGrade).sid));
@@ -1038,7 +1158,7 @@ function applyGraded(list) {
 }
 
 async function bulkGrade() {
-  const w = T.subs.work, v = $('[data-bulk]').value, targets = T.subs.rows.filter(needsGrade);
+  const w = T.subs.work, v = $('[data-bulk]').value, targets = scopedRows().filter(needsGrade);
   if (v === '' || isNaN(Number(v)) || Number(v) < 0 || Number(v) > Number(w.max)) return toast('คะแนนต้องอยู่ระหว่าง 0 ถึง ' + fmtN(w.max));
   const lateN = targets.filter(r => r.sub.lateMin > 0 && r.sub.penalty > 0).length;
   const yes = await confirmBox('ให้คะแนนเท่ากัน ' + targets.length + ' คน',
@@ -1173,6 +1293,125 @@ async function openViewer(sid) {
   if (window.innerWidth > 700) score.focus();
 }
 
+/* ---- แจ้งเตือนนักเรียนของงานหนึ่ง ----------------------------------------------
+   ครูเลือกกลุ่ม (ขาดส่ง · ส่งไม่ตรงกำหนด · ส่งตรงกำหนด) แก้ข้อความได้ แล้วกดส่ง
+   นักเรียนเห็นข้อความบนสุดของหน้าส่งงานจนกว่าจะกดรับทราบ
+   ชีตเลือกคนจากสถานะจริงตอนกดอีกรอบ รายชื่อที่ส่งไปจึงจำกัดให้แคบลงได้แต่เพิ่มคนนอกกลุ่มไม่ได้ */
+const NOTIFY_KIND = {
+  miss: { t: 'แจ้งคนที่ขาดส่ง', icon: '🔔', msg: w => 'ยังไม่ได้ส่งงาน “' + w.title + '” ซึ่งเลยกำหนดส่งแล้ว ระบบยังเปิดรับอยู่ ส่งได้ที่หน้าส่งงานออนไลน์ ' +
+                              (w.mode === 'late' ? 'ยิ่งส่งเร็วยิ่งถูกหักคะแนนน้อย' : 'ส่งช้าไม่หักคะแนน รีบส่งนะ') },
+  late: { t: 'แจ้งคนที่ส่งไม่ตรงกำหนด', icon: '⏰', msg: w => 'ครูได้รับงาน “' + w.title + '” แล้ว แต่ส่งช้ากว่ากำหนด งานต่อไปส่งให้ทันเวลานะ' },
+  ontime: { t: 'ชมคนที่ส่งตรงกำหนด', icon: '🌟', msg: w => 'ส่งงาน “' + w.title + '” ตรงกำหนด เยี่ยมมาก รักษามาตรฐานนี้ไว้นะ' }
+};
+function notifyForm(w, kind, list) {
+  const K = NOTIFY_KIND[kind];
+  if (!list.length) return;
+  const sh = openSheet('<h2 style="padding-right:56px">' + K.icon + ' ' + K.t + ' · ' + esc(w.title) + '</h2>' +
+    '<div class="muted small">' + list.length + ' คน' + (T.gCls ? ' · เฉพาะ ' + esc(T.gCls) : '') + '</div>' +
+    '<div class="detail small" style="margin-top:8px;max-height:150px;overflow:auto">' +
+      list.map(r => esc(r.cls) + ' เลขที่ ' + esc(r.no) + ' ' + esc(r.name) +
+        (kind === 'late' && r.sub ? ' (ช้า ' + spanText(r.sub.lateMin) + ')' : '')).join('\n') + '</div>' +
+    '<label class="f">ข้อความถึงนักเรียน</label><textarea data-msg maxlength="500">' + esc(K.msg(w)) + '</textarea>' +
+    '<p class="muted small">นักเรียนเห็นข้อความนี้บนสุดของหน้าส่งงานจนกว่าจะกด “รับทราบ”</p>' +
+    '<div class="row"><button class="sm" data-cpy>คัดลอกรายชื่อ (ส่งต่อทาง LINE)</button><span class="sp"></span>' +
+      '<button data-close>ยกเลิก</button><button class="primary" data-send>ส่งแจ้งเตือน ' + list.length + ' คน</button></div>');
+  const root = sh.root;
+  $('[data-cpy]', root).addEventListener('click', async () => {
+    const text = K.icon + ' ' + w.title + ' — ' + K.t.replace('แจ้ง', '').replace('ชม', '') + '\n' +
+      list.map(r => r.cls + ' เลขที่ ' + r.no + ' ' + r.name).join('\n');
+    try { await navigator.clipboard.writeText(text); toast('คัดลอกรายชื่อแล้ว'); } catch (e) { toast('คัดลอกไม่สำเร็จ'); }
+  });
+  $('[data-send]', root).addEventListener('click', async e => {
+    const btn = e.currentTarget, msg = $('[data-msg]', root).value.trim();
+    if (!msg) return toast('ใส่ข้อความก่อน');
+    btn.disabled = true;
+    try {
+      const r = await api('workNotify', { code: w.code, kind: kind, msg: msg, sids: list.map(x => x.sid) });
+      sh.close();
+      toast('ส่งแจ้งเตือนแล้ว ' + r.sent + ' คน', 3200);
+    } catch (err) { btn.disabled = false; fail(err); }
+  });
+}
+
+/* ---- แท็บคะแนนรวมรายวิชา --------------------------------------------------------
+   เลือกวิชา (หรือทุกวิชา) กับห้อง แล้วเห็นทุกคนทุกงานในตารางเดียว
+   ช่องแสดงคะแนนถ้าตรวจแล้ว ไม่งั้นแสดงสถานะ · รวม = คะแนนที่ได้ ÷ คะแนนเต็มของทุกงานที่สั่งให้คนนั้น (ขาดส่งนับ 0) */
+async function paneScores() {
+  $('#pane').innerHTML = '<div class="empty">กำลังรวมคะแนน…</div>';
+  /* ดึงทุกห้องมาทีเดียว แล้วกรองห้องฝั่งหน้าเว็บ — สลับห้องจะได้ไม่ต้องรอชีตทุกครั้ง */
+  try { T.scores = await api('workScores', T.sSubj == null ? {} : { subject: T.sSubj }, 60000); }
+  catch (e) { if (e.auth) return fail(e); $('#pane').innerHTML = '<div class="notice ' + (e.old ? 'warn' : 'bad') + '">' + esc(e.message) + '</div>'; return; }
+  scoresBody();
+}
+const ST_CHIP = {
+  ontime: '<span class="chip ok">ตรง</span>', late: '<span class="chip warn">ช้า</span>', paper: '<span class="chip">กระดาษ</span>',
+  miss: '<span class="chip bad">ขาด</span>', todo: '<span class="chip">ยังไม่ถึง</span>'
+};
+function scoresTotals(r, works) {
+  let got = 0, full = 0, graded = 0;
+  const c = { ontime: 0, late: 0, miss: 0 };
+  works.forEach(w => {
+    const x = r.cells[w.code];
+    if (!x) return;
+    if (c[x.st] != null) c[x.st]++;
+    if (x.score !== '' && x.score != null) { got += Number(x.score); full += Number(w.max); graded++; }
+    else if (x.st === 'miss') full += Number(w.max);
+  });
+  return { got: Math.round(got * 100) / 100, full: full, pct: full ? Math.round(got / full * 1000) / 10 : null, c: c, graded: graded };
+}
+function scoresBody() {
+  const S = T.scores, works = S.works;
+  if (T.sCls && S.classes.indexOf(T.sCls) < 0) T.sCls = '';
+  const rows = T.sCls ? S.rows.filter(r => r.cls === T.sCls) : S.rows;
+  let h = '<div class="panel"><div class="row">' +
+    '<select data-ssubj style="width:auto;min-width:160px"><option value="*"' + (T.sSubj == null ? ' selected' : '') + '>ทุกวิชา</option>' +
+      S.subjects.map(s => '<option value="' + esc(s) + '"' + (T.sSubj === s ? ' selected' : '') + '>' + esc(subjName(s)) + '</option>').join('') + '</select>' +
+    '<select data-scls style="width:auto;min-width:120px">' + clsOptions(S.classes, T.sCls) + '</select>' +
+    '<span class="sp"></span><button class="sm" data-scopy>คัดลอกไปวาง Excel</button><button class="sm" data-sreload>โหลดใหม่</button></div>' +
+    '<div class="muted small" style="margin-top:6px">' + works.length + ' งาน · ' + rows.length + ' คน · ' +
+    '<b>รวม</b> = คะแนนที่ได้ ÷ เต็มของงานที่ตรวจแล้วและงานที่ขาดส่ง (ขาดส่งนับ 0 · ส่งแล้วรอตรวจยังไม่นับ)</div></div>';
+  if (!works.length) {
+    h += '<div class="panel"><div class="empty">ยังไม่มีงานของวิชานี้</div></div>';
+  } else {
+    const avg = rows.map(r => scoresTotals(r, works).pct).filter(v => v != null);
+    h += '<div class="panel" style="padding:0"><div class="tw" style="border:0;max-height:70vh"><table><thead><tr><th>เลขที่</th><th>ชื่อ</th>' +
+      (T.sCls ? '' : '<th>ชั้น</th>') +
+      works.map(w => '<th class="num" title="' + esc(w.title) + '">' + esc(w.title.length > 14 ? w.title.slice(0, 13) + '…' : w.title) +
+        '<div class="small" style="font-weight:400">เต็ม ' + fmtN(w.max) + '</div></th>').join('') +
+      '<th class="num">รวม</th><th class="num">%</th><th class="num">ตรง</th><th class="num">ช้า</th><th class="num">ขาด</th></tr></thead><tbody>' +
+      rows.map(r => {
+        const t = scoresTotals(r, works);
+        return '<tr><td class="num">' + esc(r.no) + '</td><td class="nm">' + esc(r.name) + '</td>' + (T.sCls ? '' : '<td class="nw">' + esc(r.cls) + '</td>') +
+          works.map(w => { const x = r.cells[w.code];
+            if (!x) return '<td class="num muted">—</td>';
+            if (x.score !== '' && x.score != null) return '<td class="num"><b>' + fmtN(x.score) + '</b>' + (x.st === 'late' ? ' <span class="chip warn">ช้า</span>' : '') + '</td>';
+            return '<td class="num">' + (x.st === 'ontime' || x.st === 'late' ? '<span class="chip brand">รอตรวจ</span>' : ST_CHIP[x.st]) + '</td>'; }).join('') +
+          '<td class="num"><b>' + fmtN(t.got) + '</b>/' + fmtN(t.full) + '</td>' +
+          '<td class="num" style="color:' + (t.pct == null ? 'var(--muted)' : t.pct < 50 ? 'var(--bad)' : 'var(--ink)') + '">' + (t.pct == null ? '—' : t.pct) + '</td>' +
+          '<td class="num">' + (t.c.ontime || '') + '</td><td class="num">' + (t.c.late || '') + '</td><td class="num" style="color:var(--bad)">' + (t.c.miss || '') + '</td></tr>';
+      }).join('') +
+      '<tr><td></td><td class="nm"><b>เฉลี่ยทั้งกลุ่ม</b></td>' + (T.sCls ? '' : '<td></td>') + works.map(w => {
+        const v = rows.map(r => r.cells[w.code]).filter(x => x && x.score !== '' && x.score != null).map(x => Number(x.score));
+        return '<td class="num small">' + (v.length ? fmtN(v.reduce((a, b) => a + b, 0) / v.length) : '—') + '</td>'; }).join('') +
+      '<td></td><td class="num"><b>' + (avg.length ? fmtN(avg.reduce((a, b) => a + b, 0) / avg.length) : '—') + '</b></td><td colspan="3"></td></tr>' +
+      '</tbody></table></div></div>';
+  }
+  $('#pane').innerHTML = h;
+  $('[data-ssubj]').addEventListener('change', e => { T.sSubj = e.target.value === '*' ? null : e.target.value; paneScores(); });
+  $('[data-scls]').addEventListener('change', e => { T.sCls = e.target.value; scoresBody(); });
+  $('[data-sreload]').addEventListener('click', paneScores);
+  $('[data-scopy]').addEventListener('click', async () => {
+    const head = ['เลขที่', 'เลขประจำตัว', 'ชื่อ', 'ชั้น'].concat(works.map(w => w.title + ' (' + w.max + ')'), ['รวม', 'เต็ม', '%', 'ตรงกำหนด', 'ช้า', 'ขาดส่ง']);
+    const text = [head.join('\t')].concat(rows.map(r => {
+      const t = scoresTotals(r, works);
+      return [r.no, r.sid, r.name, r.cls].concat(works.map(w => { const x = r.cells[w.code];
+        return !x ? '' : x.score !== '' && x.score != null ? x.score : ({ miss: 'ขาด', todo: '', paper: '', ontime: 'รอตรวจ', late: 'รอตรวจ' })[x.st]; }),
+        [t.got, t.full, t.pct == null ? '' : t.pct, t.c.ontime, t.c.late, t.c.miss]).join('\t');
+    })).join('\n');
+    try { await navigator.clipboard.writeText(text); toast('คัดลอกแล้ว วางใน Excel หรือ Google Sheets ได้เลย'); } catch (e) { toast('คัดลอกไม่สำเร็จ'); }
+  });
+}
+
 /* ---- แท็บนักเรียนที่ต้องติดตาม ---------------------------------------------- */
 async function paneWatch() {
   $('#pane').innerHTML = '<div class="empty">กำลังรวมข้อมูลทุกงาน…</div>';
@@ -1217,14 +1456,58 @@ function watchBody() {
   });
 }
 
-/* ---- แท็บคำขอรหัสผ่าน ------------------------------------------------------ */
+/* ---- แท็บปลดล็อกรหัส — ศูนย์กลางของทุกแอป ------------------------------------
+   รวมสองเรื่องไว้ที่เดียว ครูไม่ต้องเข้าไปปลดทีละแอปอีก
+     1) ถูกพักการเข้าใช้เพราะกรอกรหัสผิดหลายครั้ง — ตัวนับอยู่ในแคชของแต่ละชีตที่รับรหัสผ่าน (LOCK_BOOKS)
+        ดึงจากทุกใบพร้อมกันแล้วรวมเป็นรายคน ปลดแล้วลบตัวนับในทุกใบที่คนนั้นติดอยู่
+     2) คำขอตั้งรหัสใหม่ (ลืมรหัสผ่าน) และช่วงปลดทันที — อยู่ชีตศูนย์กลาง */
+async function loadLocks() {
+  const books = LOCK_BOOKS.filter(b => ME.tok[TEST_API || b.url]);
+  const out = { rows: [], errs: [], missing: LOCK_BOOKS.filter(b => !ME.tok[TEST_API || b.url]).map(b => b.name) };
+  const got = await Promise.all(books.map(b => apiAt(b.url, 'lockList', {}).then(list => ({ b: b, list: list }), e => ({ b: b, err: e }))));
+  const by = {};
+  got.forEach(g => {
+    if (g.err) { if (!g.err.auth) out.errs.push(g.b.name + ': ' + g.err.message); return; }
+    (g.list || []).forEach(x => {
+      const k = String(x.sid);
+      const r = by[k] || (by[k] = { sid: k, name: x.name, no: x.no, cls: x.cls, books: [], locked: false, fails: 0, left: 99 });
+      r.books.push({ url: g.b.url, name: g.b.name, apps: g.b.apps, fails: x.fails, locked: x.locked });
+      r.locked = r.locked || x.locked; r.fails = Math.max(r.fails, x.fails); r.left = Math.min(r.left, x.left);
+    });
+  });
+  out.rows = Object.values(by).sort((a, b) => (b.locked - a.locked) || byTh(a.cls, b.cls) || (Number(a.no) || 0) - (Number(b.no) || 0));
+  T.locks = out;
+  return out;
+}
+/** ปลดคนที่ระบุ (หรือทุกคนเมื่อไม่ส่ง rows) ในทุกชีตที่ติดอยู่ */
+async function unlockRows(rows) {
+  const per = {};
+  (rows || T.locks.rows).forEach(r => r.books.forEach(b => { (per[b.url] = per[b.url] || []).push(r.sid); }));
+  let n = 0;
+  const bad = [];
+  await Promise.all(Object.keys(per).map(url => apiAt(url, 'unlock', rows ? { sids: per[url] } : {})
+    .then(r => { n += r.unlocked || 0; }, e => bad.push(e.message))));
+  return { n: n, bad: bad };
+}
+function resetTabBadge() {
+  const wait = T.resets ? T.resets.rows.filter(r => r.status === 'wait').length : 0;
+  const locked = T.locks ? T.locks.rows.filter(r => r.locked).length : 0;
+  const tabBtn = $('[data-tab="reset"]');
+  if (tabBtn) tabBtn.innerHTML = 'ปลดล็อกรหัส' + (wait + locked ? '<span class="n">' + (wait + locked) + '</span>' : '');
+}
+
 async function paneReset(silent) {
   if (T.resetBusy) return;
-  if (!silent) $('#pane').innerHTML = '<div class="empty">กำลังโหลด…</div>';
+  if (!silent) $('#pane').innerHTML = '<div class="empty">กำลังรวมข้อมูลจากทุกแอป…</div>';
   T.resetBusy = true;
-  try { T.resets = await api('resetList', {}); }
-  catch (e) { T.resetBusy = false; if (e.auth) return fail(e); $('#pane').innerHTML = '<div class="notice bad">' + esc(e.message) + '</div>'; return; }
+  let resetErr = null;
+  const [rs] = await Promise.all([api('resetList', {}).catch(e => ({ err: e })), loadLocks().catch(() => null)]);
   T.resetBusy = false;
+  if (rs && rs.err) {
+    if (rs.err.auth) return fail(rs.err);
+    resetErr = rs.err;
+    T.resets = { rows: [], auto: { mine: null, others: [], now: Date.now() }, err: resetErr.message };
+  } else T.resets = rs;
   if (T.tab !== 'reset') return;
   resetBody();
   /* ระหว่างเปิดแท็บนี้ ดึงคำขอใหม่ทุก 20 วินาที ครูจะเห็นเด็กที่เพิ่งยื่นโดยไม่ต้องกดโหลด */
@@ -1249,9 +1532,31 @@ function resetBody() {
   const R = T.resets, a = R.auto;
   R.fetchedAt = R.fetchedAt || Date.now();
   const wait = R.rows.filter(r => r.status === 'wait'), done = R.rows.filter(r => r.status !== 'wait');
-  const tabBtn = $('[data-tab="reset"]');
-  if (tabBtn) tabBtn.innerHTML = 'คำขอรหัสผ่าน' + (wait.length ? '<span class="n">' + wait.length + '</span>' : '');
-  let h = '<div class="panel" data-auto>' +
+  resetTabBadge();
+  const L = T.locks || { rows: [], errs: [], missing: [] };
+  const nLock = L.rows.filter(r => r.locked).length;
+  let h = '<div class="notice info small">ศูนย์กลางปลดล็อกรหัสของ<b>ทุกแอปในเครือ</b> — ' +
+    LOCK_BOOKS.map(b => '<b>' + esc(b.name) + '</b> (' + esc(b.apps) + ')').join(' · ') +
+    ' · ครูไม่ต้องเข้าไปปลดในแต่ละแอปอีก</div>';
+  h += '<div class="panel"><div class="row"><h2 style="margin:0">ถูกพักเพราะกรอกรหัสผิด</h2>' +
+    '<span class="chip ' + (nLock ? 'bad' : '') + '">' + nLock + ' คนถูกพัก</span>' +
+    (L.rows.length - nLock ? '<span class="chip warn">' + (L.rows.length - nLock) + ' คนเริ่มผิด</span>' : '') +
+    '<span class="sp"></span><button class="sm" data-lreload>โหลดใหม่</button>' +
+    (L.rows.length > 1 ? '<button class="primary" data-lall>ปลดทุกคน (' + L.rows.length + ')</button>' : '') + '</div>' +
+    (L.missing.length ? '<div class="notice warn small">ยังเชื่อมกับ ' + L.missing.map(esc).join(' · ') + ' ไม่ได้ จึงไม่เห็นคนที่ติดในแอปของชีตนั้น — ' +
+      'ออกจากระบบที่หน้าหลักแล้วลงชื่อใหม่ (ผู้ดูแลหลักกด “เชื่อมทุกชีต” ก่อน)</div>' : '') +
+    (L.errs.length ? '<div class="notice bad small">' + L.errs.map(esc).join('<br>') + '</div>' : '') +
+    (L.rows.length ? '<div class="tw" style="margin-top:10px"><table><thead><tr><th>ชื่อ</th><th>ชั้น</th><th>สถานะ</th><th>ติดที่</th><th></th></tr></thead><tbody>' +
+      L.rows.map(r => '<tr><td>' + esc(r.name) + ' <span class="muted small">' + esc(r.sid) + '</span></td><td class="nw">' + esc(r.cls) + '</td>' +
+        '<td>' + (r.locked ? '<span class="chip bad">ถูกพักการเข้าใช้</span>'
+                           : '<span class="chip warn">ผิด ' + r.fails + ' ครั้ง · เหลือ ' + r.left + '</span>') + '</td>' +
+        '<td class="small">' + r.books.map(b => esc(b.name) + ' <span class="muted">(' + esc(b.apps) + ')</span>').join('<br>') + '</td>' +
+        '<td class="num"><button class="sm primary" data-unl="' + esc(r.sid) + '">ปลด</button></td></tr>').join('') +
+      '</tbody></table></div>' : '<div class="empty">ไม่มีใครติดอยู่ตอนนี้</div>') +
+    '<p class="muted small" style="margin:10px 0 0">ระบบพักการเข้าใช้สิบนาทีเมื่อกรอกรหัสผิดหลายครั้ง เพื่อกันการเดารหัส · ' +
+      'การปลดแค่ล้างตัวนับ ไม่ได้เปลี่ยนรหัส — ถ้านักเรียน<b>จำรหัสไม่ได้จริง</b> ให้กด “ลืมรหัสผ่าน” ที่หน้าลงชื่อ แล้วอนุมัติด้านล่าง</p></div>';
+  if (R.err) h += '<div class="notice bad">โหลดคำขอตั้งรหัสใหม่ไม่ได้: ' + esc(R.err) + '</div>';
+  h += '<div class="panel" data-auto>' +
     '<h2>ปลดทันที</h2>' +
     (a.mine
       ? '<div class="notice ok"><b>เปิดอยู่</b> — นักเรียน' + ((ME.s.profile || {}).sub ? 'ในชั้นที่คุณดูแล' : 'ทุกชั้น') +
@@ -1264,7 +1569,7 @@ function resetBody() {
     (a.others.length ? '<div class="small muted" style="margin-top:8px">' + a.others.map(o =>
       esc(o.name) + ' เปิดปลดทันทีให้ ' + esc(o.cls ? o.cls.join(', ') : 'ทุกชั้น') + ' อยู่ ถึง ' + thDate(new Date(o.until).toISOString())).join('<br>') + '</div>' : '') +
     '</div>';
-  h += '<div class="panel"><div class="row"><h2 style="margin:0">รออนุมัติ</h2><span class="chip">' + wait.length + '</span><span class="sp"></span>' +
+  h += '<div class="panel"><div class="row"><h2 style="margin:0">คำขอตั้งรหัสใหม่ · รออนุมัติ</h2><span class="chip">' + wait.length + '</span><span class="sp"></span>' +
     (wait.length > 1 ? '<button class="primary" data-all>ปลดทั้งหมด (' + wait.length + ')</button>' : '') + '</div>' +
     (wait.length ? '<div class="tw" style="margin-top:10px"><table><thead><tr><th>ยื่นเมื่อ</th><th>เลขประจำตัว</th><th>ชื่อ</th><th>ชั้น</th><th></th></tr></thead><tbody>' +
       wait.map(r => '<tr><td class="small">' + thDate(r.ts) + '</td><td>' + esc(r.sid) + '</td><td>' + esc(r.name) + '</td><td>' + esc(r.cls) + '</td>' +
@@ -1280,6 +1585,22 @@ function resetBody() {
   }
   $('#pane').innerHTML = h;
   paintCountdown();
+  const unl = async (rows, btn) => {
+    if (btn) btn.disabled = true;
+    try {
+      const r = await unlockRows(rows);
+      toast('ปลดแล้ว ' + r.n + ' รายการ' + (r.bad.length ? ' · ไม่สำเร็จ: ' + r.bad.join(' · ') : ''), 3600);
+    } catch (e) { fail(e); }
+    paneReset(true);
+  };
+  $$('[data-unl]').forEach(b => b.addEventListener('click', () => unl(L.rows.filter(r => r.sid === b.dataset.unl), b)));
+  const lall = $('[data-lall]');
+  if (lall) lall.addEventListener('click', async () => {
+    const yes = await confirmBox('ปลดทุกคน ' + L.rows.length + ' คน',
+      '<p>ล้างตัวนับการกรอกรหัสผิดของทุกคนในรายการ ในทุกแอปที่ติดอยู่ · ไม่ได้เปลี่ยนรหัสของใคร</p>', 'ปลดทุกคน');
+    if (yes) unl(L.rows, lall);
+  });
+  $('[data-lreload]').addEventListener('click', () => paneReset());
   const decide = async (body, label) => {
     try {
       const r = await api('resetDecide', body);
@@ -1318,7 +1639,7 @@ function start() {
   const s = readSession();
   if (!s) return showSignin();
   ME.s = s; ME.role = s.role;
-  [HUB_URL, WORK_URL, TEST_API].filter(Boolean).forEach(u => { ME.tok[u] = tokenFor(s, u); });
+  [HUB_URL, WORK_URL, PHYS_URL, TEST_API].filter(Boolean).forEach(u => { ME.tok[u] = tokenFor(s, u); });
   const hasWork = !!ME.tok[urlOf('workMine')], hasHub = !!ME.tok[urlOf('resetList')];
   if (!hasWork && !(s.role === 'admin' && hasHub)) {
     return showSignin('ยังเชื่อมกับชีตส่งงานไม่ได้ — กดออกจากระบบที่หน้าหลักแล้วลงชื่อใหม่อีกครั้ง' +

@@ -1041,7 +1041,7 @@ table td,table th,.num,.xpstat b,.tick,
    *** ห้ามลบบรรทัดเครื่องหมาย @@BUILTIN@@ ทั้งสองอัน ตัวสร้างไฟล์ใช้หาตำแหน่ง ***
    ========================================================================== */
 /* @@BUILTIN@@ */
-const BUILTIN = {"url":"","studentOnly":false,"lockCloud":false,"logo":"","header":null,"about":null,"build":"2026-09-19 00:15","ver":"v8.158","books":[{"url":"https://script.google.com/macros/s/AKfycbxVa8BYYQeIhBDmg85w2UBwsIqt6a2YudehUfCbyMny9T-5TTh1UfFxsJjTk9HLNuFc/exec","name":"ชีตวิทยาศาสตร์กายภาพ"},{"url":"https://script.google.com/macros/s/AKfycbzuuRbnE_oB7a9vx7zZizyPVEKao31ERDTU82DvydMuRTDqVoQvgns9EsjTIzpbBjuM/exec","name":"ชีตฟิสิกส์"}]};
+const BUILTIN = {"url":"","studentOnly":false,"lockCloud":false,"logo":"","header":null,"about":null,"build":"2026-09-19 14:41","ver":"v8.159","books":[{"url":"https://script.google.com/macros/s/AKfycbxVa8BYYQeIhBDmg85w2UBwsIqt6a2YudehUfCbyMny9T-5TTh1UfFxsJjTk9HLNuFc/exec","name":"ชีตวิทยาศาสตร์กายภาพ"},{"url":"https://script.google.com/macros/s/AKfycbzuuRbnE_oB7a9vx7zZizyPVEKao31ERDTU82DvydMuRTDqVoQvgns9EsjTIzpbBjuM/exec","name":"ชีตฟิสิกส์"}]};
 /* @@BUILTIN-END@@ */
 
 /* ถ่ายภาพซอร์สของหน้านี้ไว้ตั้งแต่สคริปต์เพิ่งเริ่มทำงาน
@@ -16765,7 +16765,9 @@ async function unlockStudents() {
              : 'ยังไม่มีใครติดล็อก') +
       ' · คนที่ยังไม่ติดคือกรอกผิดไปบ้างแล้ว ปลดตอนนี้ได้เลยเพื่อกันไม่ให้ติด<br>' +
       'การปลดจะ<b>ไม่เปลี่ยนรหัสผ่าน</b> นักเรียนใช้รหัสเดิมเข้าได้ทันที ' +
-      '(ถ้าจำรหัสไม่ได้จริง ๆ ให้ใช้ปุ่ม <b>รีเซ็ตรหัสนักเรียน</b> แทน)</div>' +
+      '(ถ้าจำรหัสไม่ได้จริง ๆ ให้ใช้ปุ่ม <b>รีเซ็ตรหัสนักเรียน</b> แทน)<br>' +
+      /* ศูนย์กลางปลดล็อกรหัสของทุกแอปอยู่ที่ส่งงานออนไลน์ — ปลดครั้งเดียวได้ทุกชีต รวมคำขอลืมรหัสผ่าน */
+      '🔓 ปลดพร้อมกันทุกแอปได้ที่ <a href="../WorkDesk/index.html#reset" target="_blank" rel="noopener">ศูนย์ปลดล็อกรหัส</a> (ส่งงานออนไลน์ → ปลดล็อกรหัส)</div>' +
       '<div class="row" style="margin-bottom:8px"><button class="sm" id="ukAll">เลือกทั้งหมด</button>' +
       '<button class="sm" id="ukNone">ไม่เลือกเลย</button></div>' +
       '<div class="tablewrap" style="max-height:320px"><table><thead><tr><th style="width:40px"></th>' +

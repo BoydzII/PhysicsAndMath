@@ -306,7 +306,7 @@ footer b{font-weight:700;color:var(--ink)}
 /* เลขรุ่นกับวันเวลาที่สร้างไฟล์ — tools/build-dist.mjs ประทับให้ตอนขึ้นเว็บ
    *** ห้ามลบบรรทัดเครื่องหมาย @@VER@@ ทั้งสองอัน ตัวสร้างไฟล์ใช้หาตำแหน่ง *** */
 /* @@VER@@ */
-const APP_VER = "v8.158", BUILD_AT = "2026-09-19 00:15";
+const APP_VER = "v8.159", BUILD_AT = "2026-09-19 14:41";
 /* @@VER-END@@ */
 
 /* ---- ค่าที่ต้องตั้ง ------------------------------------------------------ */
@@ -1065,14 +1065,23 @@ async function resetNotePaint(s) {
   if (!s || s.role !== 'admin') return;
   const tok = tokenOf(BOOKS[0].url);
   if (!tok) return;
+  /* คนที่ถูกพักเพราะกรอกรหัสผิด — นับจากทุกชีตที่รับรหัสผ่านตรง (ชีตส่งงานไม่รับ จึงข้าม)
+     ดึงพร้อมคำขอตั้งรหัสใหม่ ครูจะเห็นเรื่องรหัสของทุกแอปในบรรทัดเดียว */
+  const lockBooks = BOOKS.filter(b => !b.autoRoster && tokenOf(b.url));
+  const lockReq = Promise.all(lockBooks.map(b => api('lockList', { token: tokenOf(b.url) }, b.url).catch(() => [])));
   try {
-    const r = await api('resetList', { token: tok }, BOOKS[0].url);
+    const [r, locks] = await Promise.all([api('resetList', { token: tok }, BOOKS[0].url).catch(() => ({ rows: [] })), lockReq]);
     const n = (r.rows || []).filter(x => x.status === 'wait').length;
     const auto = r.auto && r.auto.mine;
-    if (!n && !auto) return;
-    el.innerHTML = (n ? '<b>มีนักเรียนขอตั้งรหัสผ่านใหม่ ' + n + ' คน</b> รอครูอนุมัติ' : '') +
-      (auto ? (n ? '<br>' : '') + 'เปิด<b>ปลดทันที</b>อยู่ — ปิดเองเมื่อครบเวลา' : '') +
-      ' · <a href="WorkDesk/index.html#reset">เปิดดูคำขอ</a>';
+    const lockedSids = new Set();
+    locks.forEach(list => (list || []).forEach(x => { if (x.locked) lockedSids.add(String(x.sid)); }));
+    const nl = lockedSids.size;
+    if (!n && !auto && !nl) return;
+    el.innerHTML = [
+      n ? '<b>มีนักเรียนขอตั้งรหัสผ่านใหม่ ' + n + ' คน</b> รอครูอนุมัติ' : '',
+      nl ? '<b>ถูกพักเพราะกรอกรหัสผิด ' + nl + ' คน</b>' : '',
+      auto ? 'เปิด<b>ปลดทันที</b>อยู่ — ปิดเองเมื่อครบเวลา' : ''
+    ].filter(Boolean).join('<br>') + ' · <a href="WorkDesk/index.html#reset">เปิดศูนย์ปลดล็อกรหัส</a>';
     el.classList.remove('hide');
   } catch (e) { /* ชีตยังไม่ใช่รุ่น 19 ก็ไม่ต้องแจ้งอะไร */ }
 }

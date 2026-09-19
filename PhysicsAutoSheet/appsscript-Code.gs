@@ -20,6 +20,12 @@
  *   4) กลับมาที่แอพ → แท็บตั้งค่า → ปุ่ม "ซ่อมโครงสร้างชีต" หนึ่งครั้ง
  *      เพื่อเติมหัวตารางของคอลัมน์ใหม่ (ข้อมูลเดิมไม่หาย)
  *
+ * ── รุ่น 22 เพิ่มอะไร (คะแนนรวมรายวิชา · แจ้งเตือนนักเรียน) ─────────────────
+ *   workScores — ตารางคะแนนรวมรายวิชา กรองวิชาและชั้นได้ พร้อมสถานะส่งตรงเวลา/ช้า/ขาดส่ง ทุกคนทุกงาน
+ *   workNotify — ครูแจ้งเตือนคนที่ยังไม่ส่ง ส่งช้า หรือส่งตรงเวลาของงานหนึ่ง (ชีตเลือกคนเองจากสถานะจริง)
+ *   workNoteRead — นักเรียนกดรับทราบ · แผ่นใหม่ worknotes สร้างให้เองตอนแจ้งครั้งแรก
+ *   ต้องวางรุ่นนี้เฉพาะชีตส่งงาน
+ *
  * ── รุ่น 21 เพิ่มอะไร (ใบงานจากครู) ────────────────────────────────────
  *   ครูแนบใบงาน (PDF รูป Word Excel PowerPoint) ไว้กับงานที่สั่ง นักเรียนในชั้นนั้นเปิดดูและดาวน์โหลดได้
  *   (workSheetAdd · workSheetDel) คอลัมน์ใหม่ "ใบงานจากครู" ต่อท้ายแผ่น works เติมให้เองตอนใช้ครั้งแรก
@@ -298,7 +304,7 @@ function sheet_(name) {
     /* สมุดจด: เลขประจำตัว ชั้น และเนื้อสมุดต้องเป็นข้อความ
        ชั้นอย่าง 4/1 จะถูกแปลงเป็นวันที่ และท่อนเนื้อสมุดที่บังเอิญขึ้นต้นด้วย = จะกลายเป็นสูตร */
     /* แผ่นของรุ่น 19 — เลขประจำตัวและชั้นต้องเป็นข้อความเหมือนแผ่นอื่น */
-    if (name === 'resetreq' || name === 'worksubs') {
+    if (name === 'resetreq' || name === 'worksubs' || name === 'worknotes') {
       sh.getRange('C:C').setNumberFormat('@');
       sh.getRange('E:E').setNumberFormat('@');
     }
@@ -1859,7 +1865,124 @@ function apiWorkMine_(req) {
     return o;
   });
   list.sort(function (a, b) { return a.dueAt < b.dueAt ? -1 : a.dueAt > b.dueAt ? 1 : 0; });
-  return { cls: cls, works: list, risk: riskOf_(list, Date.now()), now: Date.now() };
+  return { cls: cls, works: list, risk: riskOf_(list, Date.now()), now: Date.now(), notes: myNotes_(k) };
+}
+
+/* ── คะแนนรวมรายวิชา · แจ้งเตือนนักเรียน (รุ่น 22) ─────────────────────────
+   สถานะการส่งของนักเรียนหนึ่งคนในงานหนึ่งงาน ใช้ทั้งตารางคะแนนรวมและการเลือกคนที่จะแจ้งเตือน
+     ontime  ส่งไฟล์ทันกำหนด · late ส่งไฟล์หลังกำหนด · paper ไม่มีไฟล์แต่ครูให้คะแนนแล้ว (ส่งเป็นกระดาษ)
+     miss    เลยกำหนดแล้วยังไม่ส่ง · todo ยังไม่ถึงกำหนดและยังไม่ส่ง */
+function sendState_(w, p, now) {
+  if (p && p.files.length) return p.lateMin > 0 ? 'late' : 'ontime';
+  if (p && p.graded) return 'paper';
+  return dueMs_(w) && dueMs_(w) <= now ? 'miss' : 'todo';
+}
+
+/** ครูดูคะแนนรวมรายวิชา — ทุกงานของวิชานั้น (subject ว่าง = ทุกวิชา) ทุกคนในชั้นที่เลือก
+    ตอบเฉพาะงานในขอบเขตของครู รวมคะแนนฝั่งหน้าเว็บ จะได้กรองชั้นหรือวิชาต่อได้โดยไม่ต้องถามชีตซ้ำ */
+function apiWorkScores_(req) {
+  var t = needAdmin_(req), sc = scopeOf_(t);
+  var subj = req.subject == null ? null : String(req.subject).trim();
+  var all = readAll_('works').filter(function (w) { return workActive_(w) && workVisible_(sc, w); });
+  var subjects = {};
+  all.forEach(function (w) { subjects[String(w.subject || '').trim()] = 1; });
+  var works = subj == null ? all : all.filter(function (w) { return String(w.subject || '').trim() === subj; });
+  var classes = {};
+  works.forEach(function (w) { workClasses_(w).forEach(function (c) { if (inScope_(sc, c)) classes[c] = 1; }); });
+  var want = parseClasses_(req.cls).filter(function (c) { return classes[c]; });
+  var pick = want.length ? want : Object.keys(classes);
+  works.sort(function (a, b) { return dueMs_(a) - dueMs_(b); });
+  var subs = subsByCode_(), now = Date.now();
+  var rows = rosterOf_(pick, sc).map(function (s) {
+    var k = sidKey_(s.sid), cells = {};
+    works.forEach(function (w) {
+      if (workClasses_(w).indexOf(s.cls) < 0) return;
+      var p = subPublic_(w, (subs[String(w.code).toUpperCase()] || {})[k]);
+      cells[String(w.code)] = { st: sendState_(w, p, now), score: p && p.graded ? p.score : '', lateMin: p ? p.lateMin : 0 };
+    });
+    return { sid: normSid_(s.sid), no: s.no, name: String(s.name || ''), cls: s.cls, cells: cells };
+  });
+  return {
+    works: works.map(function (w) { var o = workPublic_(w); o.cls = workClasses_(w); return o; }),
+    rows: rows, subjects: Object.keys(subjects).sort(), classes: Object.keys(classes).sort(), now: now
+  };
+}
+
+/* แจ้งเตือนเก็บในแผ่น worknotes หนึ่งแถวต่อนักเรียนหนึ่งคน
+   นักเรียนเห็นที่หน้าส่งงานจนกว่าจะกดรับทราบ · ครูเห็นว่าใครอ่านแล้วจากคอลัมน์ readAt ในชีต */
+var NOTE_KEEP_DAYS = 30;
+var NOTE_MAX_PER_CALL = 300;
+SHEETS.worknotes = ['id', 'code', 'sid', 'cls', 'kind', 'msg', 'ts', 'by', 'readAt'];
+HEADERS.worknotes = ['รหัสแจ้งเตือน', 'รหัสงาน', 'เลขประจำตัว', 'ชั้น', 'ประเภท', 'ข้อความ', 'ส่งเมื่อ', 'ผู้ส่ง', 'อ่านเมื่อ'];
+
+/** ครูแจ้งเตือนนักเรียนของงานหนึ่ง — kind: miss (ยังไม่ส่ง) · late (ส่งช้า) · ontime (ส่งตรงเวลา)
+    เลือกคนฝั่งชีตเองจากสถานะจริงตอนกด ไม่เชื่อรายชื่อจากหน้าเว็บ · ส่ง sids มาเพื่อจำกัดให้แคบลงได้ (เช่น กรองห้องไว้) */
+function apiWorkNotify_(req) {
+  var t = needAdmin_(req), sc = scopeOf_(t);
+  var w = findWork_(req.code);
+  if (!w || !workActive_(w) || !workVisible_(sc, w)) throw new Error('ไม่พบงานนี้');
+  var kind = String(req.kind || '');
+  if (['miss', 'late', 'ontime'].indexOf(kind) < 0) throw new Error('ประเภทการแจ้งเตือนไม่ถูกต้อง');
+  var msg = String(req.msg || '').trim().slice(0, 500);
+  if (!msg) throw new Error('ใส่ข้อความก่อน');
+  var only = null;
+  if (Array.isArray(req.sids) && req.sids.length) { only = {}; req.sids.forEach(function (s) { only[sidKey_(s)] = 1; }); }
+  var mine = subsByCode_()[String(w.code).toUpperCase()] || {}, now = Date.now();
+  var target = rosterOf_(workClasses_(w), sc).filter(function (s) {
+    var k = sidKey_(s.sid);
+    if (only && !only[k]) return false;
+    return sendState_(w, subPublic_(w, mine[k]), now) === kind;
+  });
+  if (!target.length) throw new Error('ไม่มีนักเรียนที่ตรงกับประเภทนี้');
+  if (target.length > NOTE_MAX_PER_CALL) throw new Error('แจ้งได้ครั้งละไม่เกิน ' + NOTE_MAX_PER_CALL + ' คน');
+  var by = t.sub ? (function () { var tt = findTeacher_(t.sub); return tt && tt.name ? String(tt.name) : t.sub; })() : 'ผู้ดูแลหลัก';
+  var ts = new Date();
+  var head = SHEETS.worknotes, sh = sheet_('worknotes');
+  var lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    sh.getRange(sh.getLastRow() + 1, 1, target.length, head.length).setValues(target.map(function (s) {
+      var o = { id: 'N' + Utilities.getUuid().replace(/-/g, '').slice(0, 12), code: String(w.code), sid: normSid_(s.sid),
+                cls: s.cls, kind: kind, msg: msg, ts: ts, by: by, readAt: '' };
+      return head.map(function (k) { return o[k]; });
+    }));
+    dropCache_('worknotes');
+  } finally {
+    lock.releaseLock();
+  }
+  return { sent: target.length, names: target.map(function (s) { return String(s.name || ''); }) };
+}
+
+/** แจ้งเตือนที่นักเรียนคนนี้ยังไม่กดรับทราบ ย้อนหลัง NOTE_KEEP_DAYS วัน — อ่านแผ่นเฉพาะเมื่อมีอยู่แล้ว */
+function myNotes_(key) {
+  var ss = book_();
+  if (!ss.getSheetByName('worknotes')) return [];
+  var since = Date.now() - NOTE_KEEP_DAYS * 86400000;
+  var works = {};
+  readAll_('works').forEach(function (w) { works[String(w.code).toUpperCase()] = w; });
+  return readAll_('worknotes').filter(function (n) {
+    return sidKey_(n.sid) === key && !String(n.readAt || '') && new Date(n.ts).getTime() >= since;
+  }).map(function (n) {
+    var w = works[String(n.code).toUpperCase()];
+    return { id: String(n.id), code: String(n.code), title: w ? String(w.title || '') : '', kind: String(n.kind),
+             msg: String(n.msg || ''), ts: isoOf_(n.ts), by: String(n.by || '') };
+  }).reverse();
+}
+
+/** นักเรียนกดรับทราบแจ้งเตือน — แก้ได้เฉพาะแถวของตัวเอง */
+function apiWorkNoteRead_(req) {
+  var t = needStudent_(req), key = sidKey_(t.sid);
+  var ids = {};
+  (req.ids || []).forEach(function (x) { ids[String(x)] = 1; });
+  if (!Object.keys(ids).length) return { read: 0 };
+  var n = 0, now = new Date();
+  readAll_('worknotes').forEach(function (r) {
+    if (!ids[String(r.id)] || sidKey_(r.sid) !== key || String(r.readAt || '')) return;
+    r.readAt = now;
+    writeRow_('worknotes', r._row, r);
+    n++;
+  });
+  return { read: n };
 }
 
 /** นักเรียนอัปโหลดไฟล์ทีละไฟล์ — ได้รหัสไฟล์กลับไป แล้วค่อยกดส่งพร้อมกันทีหลัง
@@ -2087,7 +2210,7 @@ function json_(o) {
 }
 
 function doGet() {
-  return json_({ ok: true, service: 'quiz-bank', version: 21, subjects: SUBJECTS,
+  return json_({ ok: true, service: 'quiz-bank', version: 22, subjects: SUBJECTS,
                  note: 'ใช้งานผ่าน POST จากแอพเท่านั้น' });
 }
 
@@ -2171,6 +2294,9 @@ function route_(action, req) {
     case 'workFile':      return apiWorkFile_(req);
     case 'workSheetAdd':  return apiWorkSheetAdd_(req);
     case 'workSheetDel':  return apiWorkSheetDel_(req);
+    case 'workScores':    return apiWorkScores_(req);
+    case 'workNotify':    return apiWorkNotify_(req);
+    case 'workNoteRead':  return apiWorkNoteRead_(req);
     default: throw new Error('ไม่รู้จักคำสั่ง: ' + action);
   }
 }
