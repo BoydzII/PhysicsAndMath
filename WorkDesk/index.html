@@ -139,6 +139,21 @@ td.nm{white-space:nowrap}
 .vbot .fld span{font-size:12px;color:var(--muted)}
 .vbot input.score{width:92px;text-align:right;font-size:20px;font-weight:700}
 .vbot input.cm{min-width:220px}
+/* ---------- ตัวโหลด: อะตอมมีอิเล็กตรอนโคจร ---------- */
+.empty.loading{display:flex;flex-direction:column;align-items:center;gap:6px}
+.atom{display:block;color:var(--muted);overflow:visible;flex:none}
+.atom .ao{fill:none;stroke:currentColor;stroke-width:1.5;opacity:.5}
+.atom .ae{fill:var(--brand)}
+.atom .ap,.atom .an{stroke:var(--panel);stroke-width:1.2}
+.atom .ap{fill:var(--bad)}
+.atom .an{fill:var(--muted)}
+.atom .orbs{animation:atomspin 14s linear infinite}
+.atom .nuc{animation:atompulse 1.4s ease-in-out infinite}
+.atom.sm{display:inline-block;vertical-align:-4px;margin-right:6px}
+button .atom.sm .ae,button.primary .atom .ae{fill:currentColor}
+@keyframes atomspin{to{transform:rotate(360deg)}}
+@keyframes atompulse{50%{transform:scale(.86)}}
+@media (prefers-reduced-motion:reduce){.atom .orbs,.atom .nuc{animation:none}}
 .toast{position:fixed;left:50%;bottom:calc(22px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:999px;font-size:14px;z-index:90;max-width:calc(100% - 32px);text-align:center;opacity:0;transition:opacity .2s;pointer-events:none}
 .toast.on{opacity:1}
 .empty{padding:26px 8px;text-align:center;color:var(--muted)}
@@ -205,8 +220,6 @@ button.linkb.danger{color:var(--bad)}
 .obx{pointer-events:auto;display:inline-flex;align-items:center;gap:7px;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:999px;padding:5px 12px;font-size:13px;min-height:0;line-height:1.5;box-shadow:0 2px 10px rgba(0,0,0,.12)}
 button.obx.bad,.obx.bad{color:var(--bad);border-color:var(--bad)}
 .obx.ok{color:var(--ok);border-color:var(--ok)}
-.obx .spin{width:12px;height:12px;border:2px solid var(--line);border-top-color:var(--brand);border-radius:50%;animation:obspin .8s linear infinite}
-@keyframes obspin{to{transform:rotate(360deg)}}
 .signpad{width:100%;height:auto;aspect-ratio:900/320;margin-top:10px;border:1px dashed var(--muted);border-radius:8px;background:#fff;touch-action:none;display:block}
 label.pickimg{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:8px;padding:4px 10px;min-height:32px;font-size:13px;cursor:pointer}
 a.dl{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px;min-height:48px;border-radius:8px;background:var(--brand);color:var(--brand-ink);font-weight:700;text-decoration:none}
@@ -289,6 +302,26 @@ const ICONS = {
   doc: '<path d="M7 3.5h7l4 4v13H7z"/><path d="M14 3.5v4h4"/><path d="M9.5 12.5h6"/><path d="M9.5 16h6"/>',
   down: '<path d="M12 4v11"/><path d="M7.5 10.5L12 15l4.5-4.5"/><path d="M5 19.5h14"/>'
 };
+/* ตัวโหลดรูปอะตอม — นิวเคลียส (โปรตอนแดง นิวตรอนน้ำเงิน) กับอิเล็กตรอนสามตัววิ่งบนวงโคจรวงรีที่เอียงต่างกัน 60°
+   อิเล็กตรอนวิ่งด้วย <animateMotion> ใช้ได้ทุกเบราว์เซอร์รวม Safari บนไอแพดรุ่นเก่า
+   คนที่ตั้งเครื่องให้ลดการเคลื่อนไหว เห็นอะตอมนิ่ง (อิเล็กตรอนวางไว้คนละจุดบนวงโคจร) */
+const REDUCE_MOTION = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+const ORBIT = 'M-44,0a44,15 0 1,0 88,0a44,15 0 1,0 -88,0';
+function atom(size, small) {
+  const orbs = [0, 60, 120].map((a, i) => '<g transform="rotate(' + a + ')"><ellipse class="ao" rx="44" ry="15"/>' +
+    (REDUCE_MOTION
+      ? '<circle class="ae" r="5" cx="' + [44, -44, 0][i] + '" cy="' + [0, 0, 15][i] + '"/>'
+      : '<circle class="ae" r="5"><animateMotion dur="' + [1.5, 2.1, 1.8][i] + 's" begin="-' + [0, 0.7, 1.2][i] + 's" repeatCount="indefinite" path="' + ORBIT + '"/></circle>') +
+    '</g>').join('');
+  const nuc = small ? '<circle class="ap" r="7"/>'
+    : '<circle class="ap" cx="-3.4" cy="-2.6" r="4.6"/><circle class="an" cx="3.4" cy="-2.2" r="4.6"/><circle class="an" cx="-2.4" cy="3.6" r="4.6"/><circle class="ap" cx="3" cy="3.4" r="4.6"/>';
+  return '<svg class="atom' + (small ? ' sm' : '') + '" width="' + size + '" height="' + size + '" viewBox="-50 -50 100 100" aria-hidden="true">' +
+    '<g class="orbs">' + orbs + '</g><g class="nuc">' + nuc + '</g></svg>';
+}
+/** กล่องกำลังโหลด — attr ใส่ที่ข้อความ (เช่น data-say) เวลาต้องเปลี่ยนข้อความทีหลังจะได้ไม่ลบอะตอม */
+const loading = (text, attr) => '<div class="empty loading" role="status">' + atom(64) + '<div' + (attr ? ' ' + attr : '') + '>' + esc(text) + '</div></div>';
+/** ปุ่มกำลังทำงาน — อะตอมเล็กหน้าข้อความ */
+const busyBtn = (btn, text) => { btn.innerHTML = atom(18, true) + esc(text); };
 const icon = (n, s) => '<svg width="' + (s || 22) + '" height="' + (s || 22) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICONS[n] + '</svg>';
 
 function toast(text, ms) {
@@ -700,7 +733,7 @@ async function studentSend(w, root, sh) {
   }
   SENDING = true;
   const btn = $('[data-send]', root), prog = $('[data-prog]', root), pt = $('[data-progtext]', root);
-  btn.disabled = true; btn.textContent = 'กำลังส่ง…';
+  btn.disabled = true; busyBtn(btn, 'กำลังส่ง…');
   $$('input,textarea,button', root).forEach(x => { if (!x.hasAttribute('data-close')) x.disabled = true; });
   prog.classList.remove('hide');
   const bar = $('i', prog);
@@ -773,7 +806,7 @@ async function fileUrl(id) {
    ไฟล์ Word Excel PowerPoint แสดงในหน้าไม่ได้ จึงมีแต่ปุ่มบันทึก */
 async function viewOwnFile(id, btn, title, withSave) {
   const old = btn.textContent;
-  btn.disabled = true; btn.textContent = 'กำลังเปิด…';
+  btn.disabled = true; busyBtn(btn, 'กำลังเปิด…');
   try {
     const f = await fileUrl(id);
     const box = document.createElement('div');
@@ -1032,13 +1065,13 @@ function workForm(w) {
     const failed = [];
     let authErr = null;
     for (const id of drop) {
-      btn.textContent = 'กำลังเอาใบงานออก…';
+      busyBtn(btn, 'กำลังเอาใบงานออก…');
       try { await api('workSheetDel', { code: saved.code, id: id }); }
       catch (err) { if (err.auth) { authErr = err; break; } failed.push('เอาออก ' + (oldSheets.find(x => x.id === id) || {}).name + ': ' + err.message); }
     }
     for (let i = 0; i < fresh.length && !authErr; i++) {
       const x = fresh[i];
-      btn.textContent = 'กำลังอัปโหลดใบงาน ' + (i + 1) + '/' + fresh.length + '…';
+      busyBtn(btn, 'กำลังอัปโหลดใบงาน ' + (i + 1) + '/' + fresh.length + '…');
       try {
         let blob = x.file, mime = x.mime;
         if (/^image\//.test(mime) && (x.size > 2 * 1024 * 1024 || !/^image\/(jpeg|png|webp)$/.test(mime))) {
@@ -1089,7 +1122,7 @@ async function paneGrade() {
   }
   $('#pane').innerHTML = '<div class="row" style="margin-bottom:10px"><select data-pickwork style="max-width:520px">' +
     works.map(w => '<option value="' + esc(w.code) + '"' + (w.code === T.gradeCode ? ' selected' : '') + '>' + esc(w.title) + ' · ' + esc(w.cls.join(', ')) +
-      (w.stats.toGrade ? ' (รอตรวจ ' + w.stats.toGrade + ')' : '') + '</option>').join('') + '</select></div><div id="gbody"><div class="empty">กำลังโหลด…</div></div>';
+      (w.stats.toGrade ? ' (รอตรวจ ' + w.stats.toGrade + ')' : '') + '</option>').join('') + '</select></div><div id="gbody">' + loading('กำลังโหลด…') + '</div>';
   $('[data-pickwork]').addEventListener('change', e => { T.gradeCode = e.target.value; T.subs = null; paneGrade(); });
   if (!T.subs || T.subs.work.code !== T.gradeCode) {
     try { T.subs = await api('workSubs', { code: T.gradeCode }); } catch (e) { if (e.auth) return fail(e); $('#gbody').innerHTML = '<div class="notice bad">' + esc(e.message) + '</div>'; return; }
@@ -1317,7 +1350,7 @@ async function openViewer(sid) {
     const body = $('[data-vbody]', root);
     body.innerHTML = (s.note ? '<div class="notice info" style="max-width:900px;width:100%"><b>ข้อความจากนักเรียน:</b> ' + esc(s.note) + '</div>' : '') +
       (qj ? obUrls(qj).map((u, k) => '<img alt="หน้า ' + (k + 1) + '" src="' + u + '">').join('') : '') +
-      files.map((f, k) => '<div data-slot="' + k + '" class="empty" style="width:100%;max-width:900px">กำลังโหลดหน้า ' + (k + 1) + '…</div>').join('');
+      files.map((f, k) => '<div data-slot="' + k + '" class="empty loading" style="width:100%;max-width:900px">' + atom(56) + 'กำลังโหลดหน้า ' + (k + 1) + '…</div>').join('');
     body.scrollTop = 0;
     const mySid = r.sid;
     for (let k = 0; k < files.length; k++) {
@@ -1702,7 +1735,7 @@ function signPad() {
       out.getContext('2d').drawImage(cv, x0, y0, out.width, out.height, 0, 0, out.width, out.height);
       const url = out.toDataURL('image/png');
       const b = e.currentTarget;
-      b.disabled = true; b.textContent = 'กำลังบันทึก…';
+      b.disabled = true; busyBtn(b, 'กำลังบันทึก…');
       try {
         await api('workSignSet', { mime: 'image/png', data: url.split(',')[1] });
         SIGN = url; saved = true; p.close();
@@ -1875,7 +1908,7 @@ function obPaint() {
   const bad = mine.filter(j => j.state === 'err'), n = mine.length - bad.length;
   let h = '';
   if (OB.halt && n) h += '<span class="obx bad">รอส่ง ' + n + ' คน · ลงชื่อใหม่ก่อน</span>';
-  else if (n) h += '<span class="obx"><i class="spin"></i>กำลังส่ง ' + n + ' คน</span>';
+  else if (n) h += '<span class="obx">' + atom(18, true) + 'กำลังส่ง ' + n + ' คน</span>';
   if (bad.length) h += '<button class="obx bad" data-obretry title="' + esc(bad.map(j => j.name + ': ' + j.err).join('\n')) + '">ส่งไม่ผ่าน ' + bad.length + ' คน · ลองใหม่</button>';
   if (!mine.length && Date.now() - OB.doneAt < 2500) { h = '<span class="obx ok">ส่งครบแล้ว ✓</span>'; setTimeout(obPaint, 2600); }
   el.innerHTML = h;
@@ -2111,7 +2144,7 @@ async function openInk(ctx) {
     const src = inkSource(w, r, orig);
     st.from = src.kind;
     note(); paintTools();
-    B.innerHTML = '<div class="empty" data-say>กำลังเตรียมหน้า…</div>';
+    B.innerHTML = loading('กำลังเตรียมหน้า…', 'data-say');
     try {
       const base = await prepPages(src, t => { const x = $('[data-say]', B); if (x && st.seq === seq) x.textContent = t; });
       if (INK !== st || st.seq !== seq) return;
@@ -2479,7 +2512,7 @@ function notifyForm(w, kind, list) {
    เลือกวิชา (หรือทุกวิชา) กับห้อง แล้วเห็นทุกคนทุกงานในตารางเดียว
    ช่องแสดงคะแนนถ้าตรวจแล้ว ไม่งั้นแสดงสถานะ · รวม = คะแนนที่ได้ ÷ คะแนนเต็มของทุกงานที่สั่งให้คนนั้น (ขาดส่งนับ 0) */
 async function paneScores() {
-  $('#pane').innerHTML = '<div class="empty">กำลังรวมคะแนน…</div>';
+  $('#pane').innerHTML = loading('กำลังรวมคะแนน…');
   /* ดึงทุกห้องมาทีเดียว แล้วกรองห้องฝั่งหน้าเว็บ — สลับห้องจะได้ไม่ต้องรอชีตทุกครั้ง */
   try { T.scores = await api('workScores', T.sSubj == null ? {} : { subject: T.sSubj }, 60000); }
   catch (e) { if (e.auth) return fail(e); $('#pane').innerHTML = '<div class="notice ' + (e.old ? 'warn' : 'bad') + '">' + esc(e.message) + '</div>'; return; }
@@ -2556,7 +2589,7 @@ function scoresBody() {
 
 /* ---- แท็บนักเรียนที่ต้องติดตาม ---------------------------------------------- */
 async function paneWatch() {
-  $('#pane').innerHTML = '<div class="empty">กำลังรวมข้อมูลทุกงาน…</div>';
+  $('#pane').innerHTML = loading('กำลังรวมข้อมูลทุกงาน…');
   try { T.board = await api('workBoard', { cls: T.boardCls }); }
   catch (e) { if (e.auth) return fail(e); $('#pane').innerHTML = '<div class="notice bad">' + esc(e.message) + '</div>'; return; }
   watchBody();
@@ -2640,7 +2673,7 @@ function resetTabBadge() {
 
 async function paneReset(silent) {
   if (T.resetBusy) return;
-  if (!silent) $('#pane').innerHTML = '<div class="empty">กำลังรวมข้อมูลจากทุกแอป…</div>';
+  if (!silent) $('#pane').innerHTML = loading('กำลังรวมข้อมูลจากทุกแอป…');
   T.resetBusy = true;
   let resetErr = null;
   const [rs] = await Promise.all([api('resetList', {}).catch(e => ({ err: e })), loadLocks().catch(() => null)]);
@@ -2778,6 +2811,7 @@ function resetBody() {
    ========================================================================== */
 function start() {
   $('#mark').innerHTML = icon('tray', 22);
+  $('#view').innerHTML = loading('กำลังโหลด…');
   const s = readSession();
   if (!s) return showSignin();
   ME.s = s; ME.role = s.role;
