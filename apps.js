@@ -19,6 +19,104 @@
      tools/check.mjs ฟ้องถ้าโฟลเดอร์ของสองที่ไม่ตรงกัน
    ไม่อยากให้แถบขึ้นในแอปไหน ให้ตั้ง window.PC_NO_SWITCHER = true ก่อนโหลดไฟล์นี้
    ========================================================================== */
+/* ============================================================================
+   ตัวโหลดรูปอะตอม — ทุกแอปได้พร้อมกันจากไฟล์นี้ ไม่ต้องแก้ในแต่ละแอป
+   ============================================================================
+   ข้อความที่ขึ้นต้นด้วย "กำลัง" และมี "…" (เช่น "กำลังโหลด…" ในปุ่ม บรรทัดบอกสถานะ หรือกล่องแจ้งเตือน)
+   จะมีอะตอมเล็ก ๆ ที่อิเล็กตรอนโคจรรอบนิวเคลียสขึ้นหน้าข้อความให้เอง พอข้อความเปลี่ยน อะตอมก็หายไปเอง
+     · กล่องใหญ่ (class="empty") ได้อะตอมใหญ่อยู่เหนือข้อความ
+     · ไม่แตะข้อความในช่องพิมพ์ SVG หรือส่วนที่แอปวาดอะตอมเองแล้ว (.atom · .loading · .pc-noatom)
+     · อะตอมไม่มีตัวอักษรข้างใน textContent ของปุ่มจึงเหมือนเดิม โค้ดแอปที่อ่านข้อความปุ่มไม่พัง
+     · เครื่องที่ตั้ง "ลดการเคลื่อนไหว" เห็นอะตอมนิ่ง
+   ทำงานแม้แอปถูกฝังในกรอบ หรือปิดแถบเปลี่ยนแอป (หน้าพอร์ทัลโหลดไฟล์นี้เพื่อใช้ตัวโหลดอย่างเดียว) */
+(function () {
+  'use strict';
+  if (window.__pcAtom || !window.MutationObserver || !document.createTreeWalker) return;
+  window.__pcAtom = true;
+  var REDUCE = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+  var ORBIT = 'M-44,0a44,15 0 1,0 88,0a44,15 0 1,0 -88,0';
+  var CSS =
+    '.pc-atom{display:inline-block;width:1.3em;height:1.3em;vertical-align:-.28em;margin-right:.4em;overflow:visible;flex:none}' +
+    '.pc-atom.big{display:block;width:60px;height:60px;margin:0 auto 8px}' +
+    '.pc-atom .o{fill:none;stroke:currentColor;stroke-width:4;opacity:.45}' +
+    '.pc-atom.big .o{stroke-width:1.6}' +
+    '.pc-atom .e{fill:#2f6fce}' +
+    'button .pc-atom .e{fill:currentColor}' +
+    '.pc-atom .p{fill:#d64541}.pc-atom .n{fill:currentColor;opacity:.55}' +
+    '.pc-atom .os{animation:pcAtomSpin 14s linear infinite}' +
+    '.pc-atom .nu{animation:pcAtomPulse 1.4s ease-in-out infinite}' +
+    '@keyframes pcAtomSpin{to{transform:rotate(360deg)}}' +
+    '@keyframes pcAtomPulse{50%{transform:scale(.86)}}' +
+    '@media (prefers-color-scheme:dark){.pc-atom .e{fill:#8fb4e8}}' +
+    '@media (prefers-reduced-motion:reduce){.pc-atom .os,.pc-atom .nu{animation:none}}' +
+    '@media print{.pc-atom{display:none}}';
+  function atom(big) {
+    var orbs = '';
+    [0, 60, 120].forEach(function (a, i) {
+      orbs += '<g transform="rotate(' + a + ')"><ellipse class="o" rx="44" ry="15"/>' +
+        (REDUCE ? '<circle class="e" r="' + (big ? 5 : 8) + '" cx="' + [44, -44, 0][i] + '" cy="' + [0, 0, 15][i] + '"/>'
+                : '<circle class="e" r="' + (big ? 5 : 8) + '"><animateMotion dur="' + [1.5, 2.1, 1.8][i] + 's" begin="-' + [0, 0.7, 1.2][i] +
+                  's" repeatCount="indefinite" path="' + ORBIT + '"/></circle>') + '</g>';
+    });
+    var nu = big
+      ? '<circle class="p" cx="-3.4" cy="-2.6" r="4.6"/><circle class="n" cx="3.4" cy="-2.2" r="4.6"/><circle class="n" cx="-2.4" cy="3.6" r="4.6"/><circle class="p" cx="3" cy="3.4" r="4.6"/>'
+      : '<circle class="p" r="10"/>';
+    return '<svg class="pc-atom' + (big ? ' big' : '') + '" viewBox="-50 -50 100 100" aria-hidden="true" focusable="false">' +
+      '<g class="os">' + orbs + '</g><g class="nu">' + nu + '</g></svg>';
+  }
+  var LOADING = /^\s*กำลัง[^\n]{0,100}…/;
+  var SKIP = { SCRIPT: 1, STYLE: 1, TEXTAREA: 1, INPUT: 1, SELECT: 1, OPTION: 1, TITLE: 1, NOSCRIPT: 1 };
+  var INLINE = { B: 1, STRONG: 1, SPAN: 1, SMALL: 1, I: 1, EM: 1 };
+  function ownAtom(el) {
+    for (var c = el.firstChild; c; c = c.nextSibling) if (c.nodeType === 1 && c.classList && c.classList.contains('pc-atom')) return c;
+    return null;
+  }
+  /* ข้อความสั้น ๆ ที่มีแต่ตัวอักษร (หรือตัวหนา/ตัวเล็กปน) — กล่องที่มีอย่างอื่นซ้อนอยู่ไม่แตะ */
+  function fits(el) {
+    if (!el || el.nodeType !== 1 || SKIP[el.tagName] || el.isContentEditable) return false;
+    if (el.closest('svg, .loading, .pc-noatom') || el.querySelector('.atom')) return false;
+    if (el.previousElementSibling && el.previousElementSibling.classList.contains('atom')) return false;
+    for (var c = el.firstChild; c; c = c.nextSibling) {
+      if (c.nodeType === 1 && !INLINE[c.tagName] && !(c.classList && c.classList.contains('pc-atom'))) return false;
+    }
+    var t = el.textContent;
+    return t.length <= 140 && LOADING.test(t);
+  }
+  function check(el) {
+    if (!el || el.nodeType !== 1) return;
+    /* ข้อความอยู่ใน <b>/<span> ข้างในปุ่ม ให้ดูที่ตัวนอกสุดที่ยังเป็นข้อความล้วน */
+    while (el.parentElement && INLINE[el.tagName] && fits(el.parentElement)) el = el.parentElement;
+    var has = ownAtom(el);
+    if (fits(el)) { if (!has) el.insertAdjacentHTML('afterbegin', atom(el.classList.contains('empty'))); }
+    else if (has) has.remove();
+  }
+  var queue = new Set(), timer = 0;
+  function flush() { timer = 0; var list = Array.from(queue); queue.clear(); list.forEach(check); }
+  function want(el) { if (el) { queue.add(el); if (!timer) timer = setTimeout(flush, 0); } }
+  function scan(root) {
+    if (root.nodeType === 3) { if (root.data.indexOf('กำลัง') >= 0) want(root.parentElement); return; }
+    if (root.nodeType !== 1 || SKIP[root.tagName]) return;
+    if ((root.textContent || '').indexOf('กำลัง') < 0) return;
+    var w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null), n;
+    while ((n = w.nextNode())) if (n.data.indexOf('กำลัง') >= 0 && n.data.indexOf('…') >= 0) want(n.parentElement);
+  }
+  function start() {
+    var st = document.createElement('style');
+    st.textContent = CSS;
+    (document.head || document.documentElement).appendChild(st);
+    scan(document.body);
+    new MutationObserver(function (ms) {
+      ms.forEach(function (m) {
+        if (m.type === 'characterData') { want(m.target.parentElement); return; }
+        if (ownAtom(m.target)) want(m.target);          /* ข้อความในกล่องที่มีอะตอมเปลี่ยน — อาจต้องเอาอะตอมออก */
+        m.addedNodes.forEach(scan);
+      });
+    }).observe(document.body, { childList: true, subtree: true, characterData: true });
+  }
+  if (document.body) start();
+  else document.addEventListener('DOMContentLoaded', start);
+})();
+
 (function () {
   'use strict';
   if (window.PC_NO_SWITCHER || window.__pcSwitcher) return;
