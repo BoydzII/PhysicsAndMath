@@ -4,18 +4,7 @@ Object.assign(physicsData.topics, {
     id: "projectile",
     title: "7.1 โพรเจกไทล์",
     theory: `
-      <h3>การเคลื่อนที่แบบโพรเจกไทล์ (Projectile Motion)</h3>
-      <p>การเคลื่อนที่ใน 2 มิติ โดยมีความเร่งคงตัวในแนวดิ่ง ($g$) และไม่มีความเร่งในแนวระดับ</p>
-      <ul>
-          <li><strong>แนวระดับ (แกน $x$):</strong> ความเร็วคงตัว $v_x = u_x = u \\cos \\theta$, การกระจัด $S_x = u_x t$</li>
-          <li><strong>แนวดิ่ง (แกน $y$):</strong> ความเร่ง $a_y = -g$ (ถ้าให้ทิศขึ้นเป็นบวก)</li>
-          <li>สมการแนวดิ่ง: $v_y = u_y - gt$, $S_y = u_y t - \\frac{1}{2}gt^2$, $v_y^2 = u_y^2 - 2gS_y$</li>
-          <li>เวลาที่ใช้ไปถึงจุดสูงสุด: $t = \\frac{u \\sin \\theta}{g}$</li>
-          <li>เวลาที่ลอยในอากาศ (ตกกลับมาที่ระดับเดิม): $t = \\frac{2u \\sin \\theta}{g}$</li>
-          <li>ระยะทางไกลสุดในแนวระดับ: $S_x = \\frac{u^2 \\sin 2\\theta}{g}$</li>
-      </ul>
-      <canvas id="simProjectile" class="sim-canvas" style="position:relative; z-index:10; cursor:crosshair;"></canvas>
-      <p class="sim-tip" style="text-align:center; color:#6b7280; font-size:13px; margin-top:4px;">🎯 คลิกที่จอเพื่อยิงกระสุน (คลิกสูง = มุมมาก)</p>
+      <h2>7.1 การเคลื่อนที่แบบโพรเจกไทล์ (Projectile)</h2><p>วัตถุเคลื่อนที่ใน 2 มิติภายใต้ความเร่งคงตัว $\\vec g$ ซึ่งชี้ลงเสมอ เขียนเป็นสมการเวกเตอร์ชุดเดียว แล้วแยกคิดทีละแกน</p><div class="eq-core"><span class="eq-tag">🧭 สมการตั้งต้น · เวกเตอร์</span><div class="eq-main">$$\\begin{gathered}\\vec v = \\vec u + \\vec g\\,t \\\\ \\vec s = \\vec u\\,t + \\tfrac12\\vec g\\,t^2,\\quad \\vec g = -g\\,\\hat j\\end{gathered}$$</div><ul class="eq-steps"><li>แกน $x$: $a_x = 0$ → $v_x = u_x = u\\cos\\theta$ คงตัว และ $s_x = u_x t$</li><li>แกน $y$: $a_y = -g$ → $v_y = u_y - gt$, $s_y = u_y t - \\tfrac12 gt^2$, $v_y^2 = u_y^2 - 2gs_y$</li><li>ขนาดความเร็ว $|\\vec v| = \\sqrt{v_x^2 + v_y^2}$ และทิศ $\\tan\\alpha = v_y / v_x$</li><li>ดอท $\\vec v\\cdot\\vec g = -g\\,v_y$: ขาขึ้น ($v_y>0$) ดอทติดลบ อัตราเร็วลดลง · ที่จุดสูงสุด $\\vec v\\perp\\vec g$ ดอทเป็นศูนย์ (แต่ $\\vec v = v_x\\hat i \\neq 0$) · ขาลงดอทเป็นบวก อัตราเร็วเพิ่มขึ้น</li></ul></div><div class="eq-list-title">📌 สมการหลักของหัวข้อนี้</div><div class="eq-grid"><div class="eq-card"><div class="eq-name">แนวระดับ</div>$$v_x = u\\cos\\theta,\\quad s_x = (u\\cos\\theta)\\,t$$</div><div class="eq-card"><div class="eq-name">แนวดิ่ง</div>$$v_y = u\\sin\\theta - gt$$</div><div class="eq-card"><div class="eq-name">การกระจัดแนวดิ่ง</div>$$s_y = (u\\sin\\theta)t - \\tfrac12 gt^2$$</div><div class="eq-card"><div class="eq-name">เวลาถึงจุดสูงสุด</div>$$t_{top} = \\frac{u\\sin\\theta}{g}$$</div><div class="eq-card"><div class="eq-name">เวลาลอยทั้งหมด (ตกระดับเดิม)</div>$$T = \\frac{2u\\sin\\theta}{g}$$</div><div class="eq-card"><div class="eq-name">ความสูงสูงสุด</div>$$H = \\frac{u^2\\sin^2\\theta}{2g}$$</div><div class="eq-card"><div class="eq-name">พิสัยแนวราบ (ไกลสุดที่ 45°)</div>$$R = \\frac{u^2\\sin 2\\theta}{g}$$</div><div class="eq-card warn"><div class="eq-name">ยิงแนวระดับจากที่สูง h</div>$$t = \\sqrt{\\frac{2h}{g}},\\quad R = ut$$</div><div class="eq-card"><div class="eq-name">สมการเส้นทาง</div>$$y = x\\tan\\theta - \\frac{gx^2}{2u^2\\cos^2\\theta}$$</div></div><div class="sim-title">🎮 ลองเล่น: ยิงลูกให้ลงตะกร้า <span class="badge">เกม</span></div><canvas id="simProjectile" class="sim-canvas"></canvas>
     `,
     problems: [
       {
@@ -331,17 +320,7 @@ Object.assign(physicsData.topics, {
     id: "circular",
     title: "7.2 แบบวงกลม",
     theory: `
-      <h3>การเคลื่อนที่แบบวงกลม (Circular Motion)</h3>
-      <p>วัตถุที่เคลื่อนที่เป็นวงกลมหรือส่วนของวงกลม จะมีแรงเข้าสู่ศูนย์กลางเสมอ ($F_c$)</p>
-      <ul>
-          <li><strong>ความเร็วเชิงเส้นและเชิงมุม:</strong> $v = \\omega r$, $\\omega = \\frac{\\Delta \\theta}{\\Delta t} = 2\\pi f = \\frac{2\\pi}{T}$</li>
-          <li><strong>ความเร่งเข้าสู่ศูนย์กลาง:</strong> $a_c = \\frac{v^2}{r} = \\omega^2 r$</li>
-          <li><strong>แรงสู่ศูนย์กลาง:</strong> $F_c = m a_c = m \\frac{v^2}{r} = m \\omega^2 r$</li>
-          <li>รถเลี้ยวโค้งบนถนนราบ: $\\mu_s N = m \\frac{v^2}{r} \\Rightarrow v_{\\max} = \\sqrt{\\mu_s r g}$</li>
-          <li>รถเลี้ยวโค้งบนถนนเอียงมุม $\\theta$: $\\tan \\theta = \\frac{v^2}{rg}$</li>
-      </ul>
-      <canvas id="simCircular" class="sim-canvas" style="position:relative; z-index:10; cursor:pointer;"></canvas>
-      <p class="sim-tip" style="text-align:center; color:#6b7280; font-size:13px; margin-top:4px;">🔄 สังเกตเวกเตอร์ความเร็ว (v) และแรงสู่ศูนย์กลาง (Fc)</p>
+      <h2>7.2 การเคลื่อนที่แบบวงกลม (Circular Motion)</h2><p>วัตถุที่เคลื่อนที่เป็นวงกลมด้วยอัตราเร็วคงตัว ความเร็วยังเปลี่ยน <b>ทิศ</b> ตลอดเวลา จึงมีความเร่งและแรงลัพธ์ชี้เข้าสู่ศูนย์กลาง ($F_c$)</p><div class="eq-core"><span class="eq-tag">🧭 สมการตั้งต้น · ผลคูณเชิงสเกลาร์ (ดอท) ของเวกเตอร์</span><div class="eq-main">$$\\begin{gathered}\\vec a_c = -\\frac{v^2}{r}\\,\\hat r = -\\omega^2\\vec r \\\\ \\vec v\\cdot\\vec a_c = 0\\end{gathered}$$</div><ul class="eq-steps"><li>$\\vec v$ อยู่ในแนวเส้นสัมผัส ส่วน $\\vec a_c$ ชี้เข้าหาศูนย์กลาง สองเวกเตอร์ <b>ตั้งฉากกันเสมอ</b> ดอทจึงเป็นศูนย์</li><li>กำลังของแรงสู่ศูนย์กลาง $P = \\vec F_c\\cdot\\vec v = 0$ → แรงสู่ศูนย์กลาง <b>ไม่ทำงาน</b> อัตราเร็ว (และ $E_k$) จึงคงตัว เปลี่ยนแค่ทิศ</li><li>ตามกฎข้อสอง $\\sum\\vec F$ ที่ชี้เข้าศูนย์กลาง $= m\\dfrac{v^2}{r}$ — $F_c$ ไม่ใช่แรงชนิดใหม่ แต่เป็นผลรวมของแรงจริง (แรงตึง แรงเสียดทาน แรงโน้มถ่วง แรงแนวฉาก)</li><li>ถ้าแรงลัพธ์หายไป (เชือกขาด) วัตถุจะพุ่งไปตามแนวเส้นสัมผัสเป็นเส้นตรง</li></ul></div><div class="eq-list-title">📌 สมการหลักของหัวข้อนี้</div><div class="eq-grid"><div class="eq-card"><div class="eq-name">ความเร็วเชิงเส้นและเชิงมุม</div>$$v = \\omega r = \\frac{2\\pi r}{T}$$</div><div class="eq-card"><div class="eq-name">อัตราเร็วเชิงมุม</div>$$\\omega = 2\\pi f = \\frac{2\\pi}{T}$$</div><div class="eq-card"><div class="eq-name">ความเร่งสู่ศูนย์กลาง</div>$$a_c = \\frac{v^2}{r} = \\omega^2 r$$</div><div class="eq-card"><div class="eq-name">แรงสู่ศูนย์กลาง</div>$$F_c = \\frac{mv^2}{r} = m\\omega^2 r$$</div><div class="eq-card vec"><div class="eq-name">แรงสู่ศูนย์กลางไม่ทำงาน</div>$$W = \\vec F_c\\cdot\\vec s = 0$$</div><div class="eq-card"><div class="eq-name">โค้งราบ (แรงเสียดทาน)</div>$$v_{max} = \\sqrt{\\mu_s g r}$$</div><div class="eq-card"><div class="eq-name">โค้งเอียงมุม θ</div>$$\\tan\\theta = \\frac{v^2}{rg}$$</div><div class="eq-card warn"><div class="eq-name">วงกลมแนวดิ่ง: จุดบนสุด</div>$$T + mg = \\frac{mv^2}{r},\\ v_{min} = \\sqrt{gr}$$</div><div class="eq-card"><div class="eq-name">วงกลมแนวดิ่ง: จุดล่างสุด</div>$$T - mg = \\frac{mv^2}{r}$$</div><div class="eq-card"><div class="eq-name">ดาวเทียมโคจร</div>$$\\frac{GMm}{r^2} = \\frac{mv^2}{r} \\Rightarrow v = \\sqrt{\\frac{GM}{r}}$$</div></div><div class="sim-title">🎮 ลองเล่น: ตัดเชือกให้ลงหลุม <span class="badge">เกม</span></div><canvas id="simCircular" class="sim-canvas"></canvas>
     `,
     problems: [
       {
@@ -596,17 +575,7 @@ Object.assign(physicsData.topics, {
     id: "shm",
     title: "7.3 ฮาร์มอนิกอย่างง่าย",
     theory: `
-      <h3>การเคลื่อนที่แบบฮาร์มอนิกอย่างง่าย (SHM)</h3>
-      <p>การเคลื่อนที่กลับไปกลับมาซ้ำรอยเดิม โดยมีความเร่งแปรผันตรงกับการกระจัด และมีทิศตรงข้ามกับการกระจัดเสมอ ($a = -\\omega^2 x$)</p>
-      <ul>
-          <li><strong>สมการการเคลื่อนที่:</strong> $x(t) = A \\sin(\\omega t)$</li>
-          <li><strong>ความเร็ว:</strong> $v = \\omega \\sqrt{A^2 - x^2}$, $v_{\\max} = \\omega A$ (ที่สมดุล $x=0$)</li>
-          <li><strong>ความเร่ง:</strong> $a = -\\omega^2 x$, $a_{\\max} = \\omega^2 A$ (ที่จุดปลาย $x = \\pm A$)</li>
-          <li><strong>ระบบมวล-สปริง:</strong> $T = 2\\pi \\sqrt{\\frac{m}{k}}$, $\\omega = \\sqrt{\\frac{k}{m}}$</li>
-          <li><strong>ลูกตุ้มอย่างง่าย (Simple Pendulum):</strong> $T = 2\\pi \\sqrt{\\frac{L}{g}}$, $\\omega = \\sqrt{\\frac{g}{L}}$</li>
-      </ul>
-      <canvas id="simSHM" class="sim-canvas" style="position:relative; z-index:10; cursor:pointer;"></canvas>
-      <p class="sim-tip" style="text-align:center; color:#6b7280; font-size:13px; margin-top:4px;">〰️ สังเกตมวลสั่นและกราฟการกระจัดเทียบเวลา</p>
+      <h2>7.3 การเคลื่อนที่แบบฮาร์มอนิกอย่างง่าย (SHM)</h2><p>การเคลื่อนที่กลับไปกลับมาซ้ำรอยเดิมรอบตำแหน่งสมดุล เกิดจาก <b>แรงดึงกลับ</b> ที่มีขนาดแปรผันตรงกับการกระจัด และทิศตรงข้ามกับการกระจัดเสมอ</p><div class="eq-core"><span class="eq-tag">🧭 สมการตั้งต้น · เวกเตอร์</span><div class="eq-main">$$\\begin{gathered}\\vec F = -k\\vec x \\\\ \\vec a = -\\frac{k}{m}\\vec x = -\\omega^2\\vec x\\end{gathered}$$</div><ul class="eq-steps"><li>เครื่องหมายลบบอกว่า $\\vec a$ ชี้กลับเข้าหาสมดุลเสมอ ($\\vec a\\cdot\\vec x \\le 0$)</li><li>ลูกตุ้มมุมเล็ก: $F = -mg\\sin\\theta \\approx -\\dfrac{mg}{L}x$ จึงได้ $\\omega^2 = \\dfrac gL$</li><li>ที่สมดุล $x = 0$: $v$ สูงสุด $a = 0$ · ที่ปลาย $x = \\pm A$: $v = 0$ $a$ สูงสุด</li><li>พลังงานรวม $E = \\tfrac12 kA^2 = \\tfrac12 kx^2 + \\tfrac12 mv^2$ คงตัว (แรงสปริงเป็นแรงอนุรักษ์)</li></ul></div><div class="eq-list-title">📌 สมการหลักของหัวข้อนี้</div><div class="eq-grid"><div class="eq-card"><div class="eq-name">การกระจัด</div>$$x = A\\sin(\\omega t + \\phi)$$</div><div class="eq-card"><div class="eq-name">ความเร็ว</div>$$v = \\omega A\\cos(\\omega t + \\phi) = \\pm\\,\\omega\\sqrt{A^2 - x^2}$$</div><div class="eq-card vec"><div class="eq-name">ความเร่ง</div>$$a = -\\omega^2 x$$</div><div class="eq-card"><div class="eq-name">ค่าสูงสุด</div>$$v_{max} = \\omega A,\\quad a_{max} = \\omega^2 A$$</div><div class="eq-card"><div class="eq-name">ความถี่เชิงมุม</div>$$\\omega = 2\\pi f = \\frac{2\\pi}{T}$$</div><div class="eq-card"><div class="eq-name">มวล–สปริง</div>$$T = 2\\pi\\sqrt{\\frac mk},\\quad \\omega = \\sqrt{\\frac km}$$</div><div class="eq-card"><div class="eq-name">ลูกตุ้มอย่างง่าย</div>$$T = 2\\pi\\sqrt{\\frac Lg},\\quad \\omega = \\sqrt{\\frac gL}$$</div><div class="eq-card warn"><div class="eq-name">พลังงาน</div>$$E = \\tfrac12 kA^2 = \\tfrac12 kx^2 + \\tfrac12 mv^2$$</div></div><div class="sim-title">🎮 ลองเล่น: ปรับคาบให้ตรงเป้า <span class="badge">ภารกิจ</span></div><canvas id="simSHM" class="sim-canvas"></canvas>
     `,
     problems: [
       {

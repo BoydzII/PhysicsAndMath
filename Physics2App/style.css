@@ -513,16 +513,6 @@ select#topicSelector {
   touch-action: none; 
 }
 
-/* Simulation Canvas */
-.sim-canvas {
-  width: 100%;
-  height: 200px;
-  background: #f8fafc;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  margin-bottom: 16px;
-}
-
 /* Print Styles */
 @media print {
   body { height: auto; overflow: auto; background: white; }
@@ -600,37 +590,128 @@ select#topicSelector {
 .sim-canvas {
   display: block;
   width: 100%;
-  height: 300px;
-  border-radius: 8px;
+  height: 330px;
   touch-action: none;
   background: #f8fafc;
 }
 .sim-wrapper {
   position: relative;
   width: 100%;
-  border-radius: 12px;
+  border-radius: 14px;
   overflow: hidden;
   background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  margin: 12px 0;
+  border: 1px solid #dbe3ee;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
+  margin: 14px 0;
+  -webkit-user-select: none;
+  user-select: none;
 }
-.sim-wrapper:fullscreen,
-.sim-wrapper:-webkit-full-screen {
-  background: #f0f4f8 !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
+.sim-stage { position: relative; }
+.fs-btn {
+  position: absolute; top: 8px; right: 10px; z-index: 5;
+  width: 36px; height: 36px;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid #cbd5e1; border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  font-size: 19px; color: #334155; cursor: pointer;
 }
-.sim-wrapper:fullscreen .sim-canvas,
-.sim-wrapper:-webkit-full-screen .sim-canvas {
-  width: 90vmin !important;
-  height: 60vmin !important;
-  border-radius: 12px;
+.fs-btn:hover { background: #f1f5f9; border-color: #94a3b8; }
+
+/* แถบควบคุมใต้ภาพ */
+.sim-controls {
+  position: relative;
+  padding-right: 56px !important;
+  display: flex; flex-wrap: wrap; align-items: center;
+  gap: 8px 14px;
+  padding: 10px 12px;
+  background: linear-gradient(180deg, #ffffff, #f1f5f9);
+  border-top: 1px solid #e2e8f0;
+  font-size: 0.9rem;
 }
-.fs-btn:hover {
-  background: #f1f5f9 !important;
-  border-color: #94a3b8 !important;
+.sim-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; width: 100%; }
+.sim-ctl { display: flex; align-items: center; gap: 8px; }
+.sim-slider { flex: 1 1 180px; min-width: 160px; }
+.sim-slider .sim-lbl { white-space: nowrap; font-weight: 600; color: #334155; }
+.sim-slider input[type=range] { flex: 1; min-width: 60px; accent-color: #2563eb; height: 22px; cursor: pointer; }
+.sim-slider output {
+  min-width: 4.6em; text-align: right; font-variant-numeric: tabular-nums;
+  font-weight: 700; color: #1d4ed8;
 }
+.sim-slider.off { opacity: 0.45; }
+.sim-btn {
+  font-family: var(--font); font-size: inherit; font-weight: 600;
+  padding: 6px 14px; border-radius: 999px;
+  border: 1px solid #cbd5e1; background: #fff; color: #334155; cursor: pointer;
+  transition: transform 0.08s, background 0.15s;
+}
+.sim-btn:hover { background: #f1f5f9; }
+.sim-btn:active { transform: scale(0.95); }
+.sim-btn.primary { background: #2563eb; border-color: #2563eb; color: #fff; box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35); }
+.sim-btn.primary:hover { background: #1d4ed8; }
+.sim-btn.warn { background: #f97316; border-color: #f97316; color: #fff; }
+.sim-seg { flex-wrap: wrap; }
+.sim-seg .sim-lbl { font-weight: 600; color: #334155; }
+.sim-seg button {
+  font-family: var(--font); font-size: inherit;
+  padding: 5px 11px; border: 1px solid #cbd5e1; background: #fff; color: #475569; cursor: pointer;
+  margin-left: -1px;
+}
+.sim-seg button:first-of-type { border-radius: 999px 0 0 999px; margin-left: 0; }
+.sim-seg button:last-of-type { border-radius: 0 999px 999px 0; }
+.sim-seg button.on { background: #1e293b; border-color: #1e293b; color: #fff; font-weight: 700; }
+
+/* โหมดเต็มจอ: ภาพเต็มจอ ตัวอักษรในภาพขยายตามสเกล และแถบควบคุมใหญ่ขึ้น */
+.sim-wrapper:fullscreen, .sim-wrapper:-webkit-full-screen {
+  display: flex; flex-direction: column;
+  width: 100vw; height: 100vh; margin: 0; border: none; border-radius: 0;
+  background: #f0f4f8;
+}
+.sim-wrapper.is-full { display: flex; flex-direction: column; }
+.sim-wrapper.is-full .sim-stage { flex: 1 1 auto; min-height: 0; overflow: hidden; }
+.sim-wrapper.is-full .sim-canvas { border-radius: 0; }
+.sim-wrapper.is-full .sim-controls { font-size: 1.35rem; padding: 14px 24px; gap: 12px 26px; justify-content: center; }
+.sim-wrapper.is-full .sim-slider { flex-basis: 280px; }
+.sim-wrapper.is-full .sim-slider input[type=range] { height: 32px; }
+.sim-wrapper.is-full .sim-btn { padding: 10px 24px; }
+.sim-wrapper.is-full .sim-seg button { padding: 9px 18px; }
+.sim-wrapper.is-full .fs-btn { width: 52px; height: 52px; font-size: 28px; top: 12px; right: 16px; }
+.sim-wrapper.is-full .sim-controls { padding-right: 84px !important; }
+
+/* ---- สมการตั้งต้นแบบเวกเตอร์ ---- */
+.eq-core {
+  position: relative;
+  margin: 18px 0;
+  padding: 14px 16px 12px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #eef2ff 0%, #f5f3ff 60%, #fdf4ff 100%);
+  border: 1px solid #c7d2fe;
+}
+.eq-core .eq-tag {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 0.8rem; font-weight: 700; color: #4338ca;
+  background: #fff; border: 1px solid #c7d2fe; border-radius: 999px;
+  padding: 2px 10px; margin-bottom: 6px;
+}
+.eq-core .eq-main { font-size: 1.15rem; text-align: center; margin: 4px 0 8px; overflow-x: auto; overflow-y: hidden; }
+.eq-core .eq-note { font-size: 0.92rem; color: #475569; line-height: 1.6; }
+.eq-core .eq-note b { color: #3730a3; }
+.eq-steps { margin: 6px 0 0; padding-left: 0; list-style: none; font-size: 0.93rem; line-height: 1.7; }
+.eq-steps li { padding-left: 1.4em; position: relative; }
+.eq-steps li::before { content: '▸'; position: absolute; left: 0.2em; color: #6366f1; }
+.eq-list-title { font-weight: 700; color: #1e293b; margin: 18px 0 8px; font-size: 1rem; }
+.eq-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 8px 10px; margin-bottom: 14px; }
+.eq-card {
+  background: #fff; border: 1px solid #e2e8f0; border-left: 4px solid #2563eb;
+  border-radius: 10px; padding: 8px 12px; overflow-x: auto; overflow-y: hidden;
+}
+.eq-card .eq-name { font-size: 0.82rem; font-weight: 700; color: #475569; margin-bottom: 2px; }
+.eq-card .katex-display { margin: 4px 0; font-size: 1.02em; }
+.eq-card::-webkit-scrollbar, .eq-core .eq-main::-webkit-scrollbar { height: 4px; }
+.eq-card.vec { border-left-color: #7c3aed; background: #faf5ff; }
+.eq-card.warn { border-left-color: #f59e0b; background: #fffbeb; }
+.sim-title { display: flex; align-items: center; gap: 8px; font-weight: 700; color: #0f172a; margin: 20px 0 4px; font-size: 1.05rem; }
+.sim-title .badge { font-size: 0.72rem; background: #fef3c7; color: #92400e; border-radius: 999px; padding: 2px 8px; font-weight: 700; }
 
 /* --- Drawing Toolbar Stroke Size Buttons --- */
 .tool-group.sizes {
@@ -780,3 +861,8 @@ select#topicSelector {
     background: transparent !important;
   }
 }
+
+/* หัวเรื่องในแผงทฤษฎี */
+.panel-inner h2 { color: var(--primary); font-size: 1.35rem; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 2px solid var(--border); }
+.panel-inner > p { line-height: 1.7; margin: 8px 0; }
+.panel-inner > ul { margin: 8px 0 8px 1.3em; line-height: 1.7; }
