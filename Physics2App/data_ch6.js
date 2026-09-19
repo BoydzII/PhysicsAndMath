@@ -5,15 +5,7 @@ Object.assign(physicsData.topics, {
     title: "6.1 โมเมนตัม",
     canvas: "simMomentum",
     theory: `
-      <h3>โมเมนตัม (Momentum)</h3>
-      <p>โมเมนตัม คือ ปริมาณที่บอกถึงสภาพการเคลื่อนที่ของวัตถุ เป็นปริมาณเวกเตอร์ที่มีทิศทางเดียวกับความเร็วของวัตถุ</p>
-      <p>สูตร: $$p = mv$$</p>
-      <ul>
-        <li>$p$ คือ โมเมนตัม หน่วยเป็น $\\text{kg}\\cdot\\text{m/s}$</li>
-        <li>$m$ คือ มวลของวัตถุ หน่วยเป็น $\\text{kg}$</li>
-        <li>$v$ คือ ความเร็วของวัตถุ หน่วยเป็น $\\text{m/s}$</li>
-      </ul>
-      <p>การเปลี่ยนแปลงโมเมนตัม: $$\\Delta p = p_f - p_i = m(v - u)$$</p>
+      <h2>6.1 โมเมนตัม (Momentum)</h2><p><b>โมเมนตัม ($\\vec p$)</b> บอกสภาพการเคลื่อนที่ของวัตถุ เป็น <b>ปริมาณเวกเตอร์</b> ทิศเดียวกับความเร็ว ต่างจากงานและพลังงานที่เป็นสเกลาร์ — การรวมหรือลบโมเมนตัมจึงต้องทำแบบเวกเตอร์เสมอ</p><div class="eq-core"><span class="eq-tag">🧭 สมการตั้งต้น · เวกเตอร์</span><div class="eq-main">$$\\begin{gathered}\\vec p = m\\vec v \\\\ \\Delta\\vec p = \\vec p_2 - \\vec p_1 = m\\vec v - m\\vec u\\end{gathered}$$</div><ul class="eq-steps"><li>แยกองค์ประกอบ: $p_x = mv_x = mv\\cos\\theta$, $p_y = mv_y = mv\\sin\\theta$ และ $|\\vec p| = \\sqrt{p_x^2 + p_y^2}$</li><li>1 มิติ: กำหนดทิศบวกก่อนแล้วใส่เครื่องหมาย เช่น ลูกบอลกระทบผนังแล้วสะท้อนกลับ $\\Delta p = m(-v) - m(u) = -m(u+v)$ ขนาดจึงเป็น $m(u+v)$ ไม่ใช่ $m(u-v)$</li><li>2 มิติ: $\\Delta\\vec p = \\vec p_2 + (-\\vec p_1)$ วาดหัวต่อหาง หรือคิดทีละแกน</li><li>หน่วย $\\text{kg}\\cdot\\text{m/s}$ หรือ $\\text{N}\\cdot\\text{s}$</li></ul></div><div class="eq-list-title">📌 สมการหลักของหัวข้อนี้</div><div class="eq-grid"><div class="eq-card vec"><div class="eq-name">โมเมนตัม</div>$$\\vec p = m\\vec v$$</div><div class="eq-card vec"><div class="eq-name">การเปลี่ยนโมเมนตัม</div>$$\\Delta\\vec p = m(\\vec v - \\vec u)$$</div><div class="eq-card"><div class="eq-name">ขนาดจากองค์ประกอบ</div>$$p = \\sqrt{p_x^2 + p_y^2}$$</div><div class="eq-card vec"><div class="eq-name">กฎข้อสองของนิวตัน (รูปโมเมนตัม)</div>$$\\sum\\vec F = \\frac{\\Delta\\vec p}{\\Delta t}$$</div><div class="eq-card"><div class="eq-name">เชื่อมกับพลังงานจลน์</div>$$E_k = \\frac{p^2}{2m} = \\tfrac12\\,\\vec p\\cdot\\vec v$$</div><div class="eq-card warn"><div class="eq-name">สะท้อนกลับแนวเดิม</div>$$|\\Delta p| = m(u + v)$$</div></div><div class="sim-title">🎮 ลองเล่น: แอร์ฮอกกี้เก็บดาว <span class="badge">เกม</span></div><canvas id="simMomentum" class="sim-canvas"></canvas>
     `,
     problems: [
       {
@@ -202,15 +194,7 @@ Object.assign(physicsData.topics, {
     title: "6.2 แรงและการดล",
     canvas: "simImpulse",
     theory: `
-      <h3>แรงและการดล (Impulse)</h3>
-      <p>การดล ($I$) คือ การเปลี่ยนแปลงโมเมนตัมของวัตถุเมื่อมีแรงกระทำในช่วงเวลา $\\Delta t$</p>
-      <p>สูตร: $$I = F \\Delta t = \\Delta p = m(v - u)$$</p>
-      <ul>
-        <li>$I$ คือ การดล หน่วยเป็น $\\text{N}\\cdot\\text{s}$ หรือ $\\text{kg}\\cdot\\text{m/s}$</li>
-        <li>$F$ คือ แรงดลเฉลี่ย หน่วยเป็น $\\text{N}$</li>
-        <li>$\\Delta t$ คือ ช่วงเวลาที่แรงกระทำ หน่วยเป็น $\\text{s}$</li>
-      </ul>
-      <p>พื้นที่ใต้กราฟระหว่างแรง ($F$) และเวลา ($t$) คือ ค่าของการดล ($I$)</p>
+      <h2>6.2 แรงและการดล (Impulse)</h2><p><b>การดล ($\\vec I$)</b> คือผลของแรงที่กระทำในช่วงเวลาหนึ่ง มีค่าเท่ากับการเปลี่ยนโมเมนตัม และมี <b>ทิศเดียวกับ $\\Delta\\vec p$</b> (ไม่จำเป็นต้องทิศเดียวกับความเร็ว)</p><div class="eq-core"><span class="eq-tag">🧭 สมการตั้งต้น · เวกเตอร์</span><div class="eq-main">$$\\begin{gathered}\\vec I = \\vec F\\,\\Delta t = \\Delta\\vec p \\\\ \\Delta\\vec p = m\\vec v - m\\vec u\\end{gathered}$$</div><ul class="eq-steps"><li>มาจาก $\\sum\\vec F = \\dfrac{\\Delta\\vec p}{\\Delta t}$ คูณ $\\Delta t$ ทั้งสองข้าง</li><li>ถ้าแรงไม่คงตัว การดลเท่ากับ <b>พื้นที่ใต้กราฟ $F$–$t$</b> และ $\\vec F$ ในสมการคือแรงดลเฉลี่ย</li><li>$\\Delta\\vec p$ เท่ากัน แต่ $\\Delta t$ ยาวขึ้น → แรงดลเฉลี่ยน้อยลง (ถุงลมนิรภัย หมอน การย่อเข่าตอนลงพื้น)</li><li>หน่วย $\\text{N}\\cdot\\text{s} = \\text{kg}\\cdot\\text{m/s}$</li></ul></div><div class="eq-list-title">📌 สมการหลักของหัวข้อนี้</div><div class="eq-grid"><div class="eq-card vec"><div class="eq-name">การดล</div>$$\\vec I = \\vec F\\,\\Delta t$$</div><div class="eq-card vec"><div class="eq-name">ทฤษฎีบทการดล–โมเมนตัม</div>$$\\vec I = \\Delta\\vec p = m\\vec v - m\\vec u$$</div><div class="eq-card"><div class="eq-name">แรงดลเฉลี่ย</div>$$F = \\frac{\\Delta p}{\\Delta t}$$</div><div class="eq-card"><div class="eq-name">แรงไม่คงตัว</div>$$I = \\text{พื้นที่ใต้กราฟ } F\\text{–}t$$</div><div class="eq-card"><div class="eq-name">กระทบแล้วหยุด</div>$$F = \\frac{mu}{\\Delta t}$$</div><div class="eq-card warn"><div class="eq-name">กระทบแล้วสะท้อนกลับ</div>$$F = \\frac{m(u+v)}{\\Delta t}$$</div></div><div class="sim-title">🎮 ลองเล่น: ปล่อยไข่ลงพื้นแบบต่าง ๆ <span class="badge">ไข่จะรอดไหม</span></div><canvas id="simImpulse" class="sim-canvas"></canvas>
     `,
     problems: [
       {
@@ -401,12 +385,7 @@ Object.assign(physicsData.topics, {
     title: "6.3 การชน",
     canvas: "simCollision",
     theory: `
-      <h3>การชน (Collision)</h3>
-      <p>กฎการอนุรักษ์โมเมนตัม: ผลรวมโมเมนตัมก่อนชน เท่ากับ ผลรวมโมเมนตัมหลังชนเสมอ (เมื่อไม่มีแรงภายนอกกระทำ)</p>
-      <p>$$\\sum p_{\\text{ก่อน}} = \\sum p_{\\text{หลัง}}$$</p>
-      <p>$$m_1 u_1 + m_2 u_2 = m_1 v_1 + m_2 v_2$$</p>
-      <p><b>1. การชนแบบยืดหยุ่น:</b> พลังงานจลน์รวมอนุรักษ์ ($\sum E_{k,\\text{ก่อน}} = \sum E_{k,\\text{หลัง}}$) และใน 1 มิติ: $$u_1 + v_1 = u_2 + v_2$$</p>
-      <p><b>2. การชนแบบไม่ยืดหยุ่น:</b> พลังงานจลน์ไม่คงที่ (สูญเสียพลังงาน) ถ้าชนแล้วติดกันไป: $$m_1 u_1 + m_2 u_2 = (m_1 + m_2)v$$</p>
+      <h2>6.3 การชน (Collisions)</h2><p>เมื่อ <b>แรงลัพธ์ภายนอกเป็นศูนย์</b> โมเมนตัมรวมของระบบคงตัว สมการนี้เป็น <b>สมการเวกเตอร์</b> — ใน 2 มิติต้องแยกคิดแกน $x$ และแกน $y$ แยกกัน</p><div class="eq-core"><span class="eq-tag">🧭 สมการตั้งต้น · เวกเตอร์</span><div class="eq-main">$$\\begin{gathered}\\textstyle\\sum\\vec p_{\\text{ก่อน}} = \\sum\\vec p_{\\text{หลัง}} \\\\ m_1\\vec u_1 + m_2\\vec u_2 = m_1\\vec v_1 + m_2\\vec v_2\\end{gathered}$$</div><ul class="eq-steps"><li>แยกแกน: $\\sum p_x$ คงตัว และ $\\sum p_y$ คงตัว (สองสมการ)</li><li>การชนแบบยืดหยุ่น: พลังงานจลน์รวมคงตัวด้วย $\\sum E_k$ ก่อน $=$ หลัง</li><li>มวลเท่ากันชนแบบยืดหยุ่นกับลูกที่หยุดนิ่ง (2 มิติ): จาก $\\vec u = \\vec v_1 + \\vec v_2$ และ $u^2 = v_1^2 + v_2^2$ ยกกำลังสองแบบดอทจะได้ $2\\,\\vec v_1\\cdot\\vec v_2 = 0$ → สองลูก <b>แยกกันตั้งฉาก $90^\\circ$</b></li><li>การชนแบบไม่ยืดหยุ่น: โมเมนตัมคงตัว แต่พลังงานจลน์บางส่วนกลายเป็นความร้อน/เสียง</li></ul></div><div class="eq-list-title">📌 สมการหลักของหัวข้อนี้</div><div class="eq-grid"><div class="eq-card"><div class="eq-name">อนุรักษ์โมเมนตัม (1 มิติ)</div>$$m_1u_1 + m_2u_2 = m_1v_1 + m_2v_2$$</div><div class="eq-card vec"><div class="eq-name">แยกแกน (2 มิติ)</div>$$\\textstyle\\sum p_x = \\text{คงตัว},\\ \\sum p_y = \\text{คงตัว}$$</div><div class="eq-card"><div class="eq-name">ยืดหยุ่น: พลังงานจลน์คงตัว</div>$$\\tfrac12 m_1u_1^2 + \\tfrac12 m_2u_2^2 = \\tfrac12 m_1v_1^2 + \\tfrac12 m_2v_2^2$$</div><div class="eq-card"><div class="eq-name">ยืดหยุ่น 1 มิติ (ลัด)</div>$$u_1 + v_1 = u_2 + v_2$$</div><div class="eq-card warn"><div class="eq-name">ชนแล้วติดกันไป</div>$$v = \\frac{m_1u_1 + m_2u_2}{m_1 + m_2}$$</div><div class="eq-card vec"><div class="eq-name">การระเบิด / ดีดตัว</div>$$0 = m_1\\vec v_1 + m_2\\vec v_2$$</div><div class="eq-card vec"><div class="eq-name">มวลเท่ากัน ยืดหยุ่น 2 มิติ</div>$$\\vec v_1\\cdot\\vec v_2 = 0$$</div></div><div class="sim-title">🎮 ลองเล่น: ห้องทดลองการชน <span class="badge">1 มิติ / 2 มิติ</span></div><canvas id="simCollision" class="sim-canvas"></canvas>
     `,
     problems: [
       {

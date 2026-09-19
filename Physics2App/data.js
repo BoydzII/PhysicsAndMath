@@ -4,21 +4,8 @@ const physicsData = {
       id: "work",
       title: "5.1 งาน",
       theory: `
-        <h2>5.1 งาน (Work)</h2>
-        <p>ในทางฟิสิกส์ <b>งาน ($W$)</b> เกิดขึ้นเมื่อมีแรง ($F$) กระทำต่อวัตถุ และทำให้วัตถุเคลื่อนที่ไปตามแนวการกระจัด ($s$) โดยมีสมการดังนี้:</p>
-        <div class="formula-box">
-          $$ W = F s \\cos \\theta $$
-        </div>
-        <p>เมื่อ $\\theta$ คือมุมระหว่างเวกเตอร์ของแรงและการกระจัด</p>
-        <ul>
-          <li>ถ้า $\\theta = 0^\\circ$ แรงและการกระจัดทิศเดียวกัน $W = Fs$</li>
-          <li>ถ้า $\\theta = 90^\\circ$ แรงตั้งฉากกับการกระจัด $W = 0$</li>
-          <li>ถ้า $\\theta = 180^\\circ$ แรงทิศตรงข้ามการกระจัด $W = -Fs$</li>
-        </ul>
-        <br>
-        <canvas id="simWork" class="sim-canvas" style="position:relative; z-index:10; cursor:grab;"></canvas>
-        <p class="hint-box" style="margin-top:12px"><b>💡 Tips:</b> คลิกค้างแล้วลากในภาพจำลองด้านบนเพื่อดูแรงและการแตกแรง</p>
-      `,
+      <h2>5.1 งาน (Work)</h2><p><b>งาน ($W$)</b> คือปริมาณที่บอกว่าแรงถ่ายโอนพลังงานให้วัตถุมากน้อยเท่าใดขณะวัตถุมีการกระจัด งานเกิดจากการ <b>“ดอท”</b> เวกเตอร์แรงกับเวกเตอร์การกระจัด ผลลัพธ์จึงเป็น <b>ปริมาณสเกลาร์</b> (ไม่มีทิศ มีแต่เครื่องหมาย + / −)</p><div class="eq-core"><span class="eq-tag">🧭 สมการตั้งต้น · ผลคูณเชิงสเกลาร์ (ดอท) ของเวกเตอร์</span><div class="eq-main">$$\\begin{gathered}W = \\vec{F}\\cdot\\vec{s} = Fs\\cos\\theta \\\\ W = F_x s_x + F_y s_y\\end{gathered}$$</div><ul class="eq-steps"><li>ดอทคือ “ขนาดของเวกเตอร์หนึ่ง × เงาของอีกเวกเตอร์ที่ทาบลงบนแนวเดียวกัน” จึงได้ $W = (F\\cos\\theta)\\,s$ — ใช้เฉพาะส่วนของแรงที่อยู่ในแนวการกระจัด</li><li>$\\theta$ คือมุมระหว่าง $\\vec F$ กับ $\\vec s$ (วางหางชนกัน): $\\theta<90^\\circ$ งานเป็นบวก · $\\theta=90^\\circ$ งานเป็นศูนย์ · $\\theta>90^\\circ$ งานเป็นลบ</li><li>ถ้าแยกเป็นองค์ประกอบ $\\vec F=(F_x,F_y)$ และ $\\vec s=(s_x,0)$ จะได้ $W = F_x s_x$ ทันที เพราะ $F_y$ ตั้งฉากกับการกระจัด</li><li>หน่วย $\\text{N}\\cdot\\text{m} = \\text{J}$ (จูล)</li></ul></div><div class="eq-list-title">📌 สมการหลักของหัวข้อนี้</div><div class="eq-grid"><div class="eq-card vec"><div class="eq-name">ทบทวน: ดอทของเวกเตอร์</div>$$\\vec A\\cdot\\vec B = AB\\cos\\theta = A_xB_x + A_yB_y$$</div><div class="eq-card vec"><div class="eq-name">เวกเตอร์ตั้งฉากกัน</div>$$\\vec A\\perp\\vec B \\;\\Rightarrow\\; \\vec A\\cdot\\vec B = 0$$</div><div class="eq-card"><div class="eq-name">งานของแรงคงตัว</div>$$W = Fs\\cos\\theta$$</div><div class="eq-card"><div class="eq-name">งานของแรงเสียดทาน</div>$$W_f = \\vec f\\cdot\\vec s = fs\\cos180^\\circ = -fs$$</div><div class="eq-card"><div class="eq-name">งานของแรงโน้มถ่วง</div>$$W_{mg} = m\\vec g\\cdot\\vec s = -mg\\,\\Delta h$$</div><div class="eq-card"><div class="eq-name">งานของแรงสปริง</div>$$W_{s} = -\\left(\\tfrac12 kx_2^2 - \\tfrac12 kx_1^2\\right)$$</div><div class="eq-card"><div class="eq-name">แรงไม่คงตัว</div>$$W = \\text{พื้นที่ใต้กราฟ } F\\text{–}s$$</div><div class="eq-card"><div class="eq-name">งานลัพธ์</div>$$W_{net} = \\textstyle\\sum W_i = \\vec F_{net}\\cdot\\vec s$$</div></div><ul><li>ถ้า $\\theta = 0^\\circ$ แรงและการกระจัดทิศเดียวกัน $W = Fs$</li><li>ถ้า $\\theta = 90^\\circ$ (เช่น แบกของเดินแนวราบ, แรงแนวฉาก $N$) $W = 0$</li><li>ถ้า $\\theta = 180^\\circ$ แรงทิศตรงข้ามการกระจัด $W = -Fs$</li></ul><div class="sim-title">🎮 ลองเล่น: ดอทแรงกับการกระจัด <span class="badge">ภารกิจ</span></div><canvas id="simWork" class="sim-canvas"></canvas>
+    `,
       problems: [
         {
           id: "w1",
@@ -190,25 +177,8 @@ const physicsData = {
       id: "power",
       title: "5.2 กำลัง",
       theory: `
-        <h2>5.2 กำลัง (Power)</h2>
-        <p><b>กำลัง ($P$)</b> คือ อัตราการทำงาน หรืองานที่ทำได้ในหนึ่งหน่วยเวลา</p>
-        <div class="formula-box">
-          $$ P = \\frac{W}{t} $$
-        </div>
-        <p>เนื่องจาก $W = Fs$ เราสามารถเขียนสมการใหม่ได้เป็น:</p>
-        <div class="formula-box">
-          $$ P = \\frac{Fs}{t} = Fv $$
-        </div>
-        <p>เมื่อวัตถุเคลื่อนที่ด้วยความเร็วคงที่ ($v$)</p>
-        <ul>
-          <li><b>W</b> = งานที่ทำได้ (Joule, J)</li>
-          <li><b>t</b> = เวลาที่ใช้ (second, s)</li>
-          <li><b>P</b> = กำลัง (Watt, W หรือ J/s)</li>
-        </ul>
-        <br>
-        <canvas id="simPower" class="sim-canvas" style="position:relative; z-index:10; cursor:pointer;"></canvas>
-        <p class="hint-box" style="margin-top:12px"><b>💡 Tips:</b> ลากตุ้มน้ำหนักขึ้น-ลงด้วยนิ้วหรือเมาส์ เพื่อดูค่ากำลังที่เปลี่ยนไปตามความเร็ว</p>
-      `,
+      <h2>5.2 กำลัง (Power)</h2><p><b>กำลัง ($P$)</b> คืออัตราการทำงาน หรืองานที่ทำได้ในหนึ่งหน่วยเวลา เมื่อแทนงานด้วยดอท $\\vec F\\cdot\\vec s$ แล้วหารด้วยเวลา จะได้กำลังเป็น <b>ดอทของแรงกับความเร็ว</b></p><div class="eq-core"><span class="eq-tag">🧭 สมการตั้งต้น · ผลคูณเชิงสเกลาร์ (ดอท) ของเวกเตอร์</span><div class="eq-main">$$\\begin{gathered}P = \\frac{W}{t} = \\frac{\\vec F\\cdot\\vec s}{t} \\\\ P = \\vec F\\cdot\\vec v = Fv\\cos\\theta\\end{gathered}$$</div><ul class="eq-steps"><li>เพราะ $\\vec v = \\vec s/t$ กำลังจึงขึ้นกับเฉพาะส่วนของแรงที่อยู่ในแนวความเร็ว</li><li>แรงทิศเดียวกับความเร็ว ($\\theta = 0^\\circ$) ได้ $P = Fv$ เช่น เครนยกของขึ้นด้วยความเร็วคงตัว $F = mg$ จึงได้ $P = mgv$</li><li>แรงตั้งฉากกับความเร็ว ($\\theta = 90^\\circ$) ให้กำลังเป็นศูนย์ — ไม่ทำให้อัตราเร็วเปลี่ยน</li><li>หน่วย $\\text{J/s} = \\text{W}$ (วัตต์)</li></ul></div><div class="eq-list-title">📌 สมการหลักของหัวข้อนี้</div><div class="eq-grid"><div class="eq-card"><div class="eq-name">กำลังเฉลี่ย</div>$$P = \\frac{W}{t}$$</div><div class="eq-card vec"><div class="eq-name">กำลังจากแรงและความเร็ว</div>$$P = \\vec F\\cdot\\vec v = Fv\\cos\\theta$$</div><div class="eq-card"><div class="eq-name">ยกของด้วยความเร็วคงตัว</div>$$P = mgv$$</div><div class="eq-card"><div class="eq-name">เวลาที่ใช้ทำงาน</div>$$t = \\frac{W}{P}$$</div><div class="eq-card warn"><div class="eq-name">ประสิทธิภาพ</div>$$\\eta = \\frac{W_{out}}{W_{in}}\\times 100\\% = \\frac{P_{out}}{P_{in}}\\times 100\\%$$</div><div class="eq-card"><div class="eq-name">หน่วยกำลังม้า</div>$$1\\ \\text{hp} \\approx 746\\ \\text{W}$$</div></div><div class="sim-title">🎮 ลองเล่น: แข่งเครนยกของ <span class="badge">แข่งกัน</span></div><canvas id="simPower" class="sim-canvas"></canvas>
+    `,
       problems: [
         {
           id: "p1",
@@ -379,20 +349,8 @@ const physicsData = {
       id: "kinetic",
       title: "5.3 พลังงานจลน์",
       theory: `
-        <h2>5.3 พลังงานจลน์ (Kinetic Energy)</h2>
-        <p><b>พลังงานจลน์ ($KE$)</b> คือ พลังงานที่วัตถุมีอยู่เนื่องจากการเคลื่อนที่:</p>
-        <div class="formula-box">
-          $$ KE = \\frac{1}{2}mv^2 $$
-        </div>
-        <p><b>ทฤษฎีบทงาน-พลังงานจลน์:</b> งานลัพธ์ที่ทำต่อวัตถุจะเท่ากับการเปลี่ยนแปลงพลังงานจลน์ของวัตถุ</p>
-        <div class="formula-box">
-          $$ W_{net} = \\Delta KE = \\frac{1}{2}mv^2 - \\frac{1}{2}mv_0^2 $$
-        </div>
-        <p>หน่วย: จูล (J)</p>
-        <br>
-        <canvas id="simKinetic" class="sim-canvas" style="position:relative; z-index:10; cursor:pointer;"></canvas>
-        <p class="hint-box" style="margin-top:12px"><b>💡 Tips:</b> ลากรถเพื่อเปลี่ยนความเร็ว ดูพลังงานจลน์เปลี่ยนตาม</p>
-      `,
+      <h2>5.3 พลังงานจลน์ (Kinetic Energy)</h2><p><b>พลังงานจลน์ ($E_k$)</b> คือพลังงานที่วัตถุมีเพราะกำลังเคลื่อนที่ และเชื่อมกับงานผ่าน <b>ทฤษฎีบทงาน–พลังงาน</b> ซึ่งได้มาจากการดอทกฎข้อที่สองของนิวตันกับการกระจัด</p><div class="eq-core"><span class="eq-tag">🧭 สมการตั้งต้น · ผลคูณเชิงสเกลาร์ (ดอท) ของเวกเตอร์</span><div class="eq-main">$$\\begin{gathered}W_{net} = \\vec F_{net}\\cdot\\vec s = \\Delta E_k \\\\ \\Delta E_k = \\tfrac12 mv^2 - \\tfrac12 mu^2\\end{gathered}$$</div><ul class="eq-steps"><li>เริ่มจาก $\\vec F_{net} = m\\vec a$ แล้วดอทด้วย $\\vec s$ ทั้งสองข้าง: $\\vec F_{net}\\cdot\\vec s = m\\,\\vec a\\cdot\\vec s$</li><li>สมการการเคลื่อนที่แบบเวกเตอร์ $v^2 = u^2 + 2\\,\\vec a\\cdot\\vec s$ ให้ $\\vec a\\cdot\\vec s = \\tfrac12(v^2-u^2)$</li><li>แทนค่ากลับจะได้ $W_{net} = \\tfrac12 mv^2 - \\tfrac12 mu^2$</li><li>$E_k = \\tfrac12 m\\,\\vec v\\cdot\\vec v = \\tfrac12 mv^2$ จึงเป็นสเกลาร์และไม่ติดลบเสมอ — ทิศของความเร็วไม่มีผล</li></ul></div><div class="eq-list-title">📌 สมการหลักของหัวข้อนี้</div><div class="eq-grid"><div class="eq-card"><div class="eq-name">พลังงานจลน์</div>$$E_k = \\tfrac12 mv^2$$</div><div class="eq-card vec"><div class="eq-name">ทฤษฎีบทงาน–พลังงาน</div>$$W_{net} = \\Delta E_k$$</div><div class="eq-card"><div class="eq-name">แรงคงตัวทำงานระยะ s</div>$$Fs\\cos\\theta = \\tfrac12 mv^2 - \\tfrac12 mu^2$$</div><div class="eq-card vec"><div class="eq-name">สมการเวกเตอร์ของการเคลื่อนที่</div>$$v^2 = u^2 + 2\\,\\vec a\\cdot\\vec s$$</div><div class="eq-card"><div class="eq-name">เชื่อมกับโมเมนตัม</div>$$E_k = \\frac{p^2}{2m}$$</div><div class="eq-card"><div class="eq-name">เบรกจนหยุด</div>$$-fs = 0 - \\tfrac12 mu^2$$</div></div><p>หน่วย: จูล (J) · ถ้าความเร็วเพิ่มเป็น 2 เท่า พลังงานจลน์เพิ่มเป็น 4 เท่า</p><div class="sim-title">🎮 ลองเล่น: ดันรถแล้ววัดความเร็ว <span class="badge">ภารกิจ</span></div><canvas id="simKinetic" class="sim-canvas"></canvas>
+    `,
       problems: [
         {
           id: "ke1",
@@ -559,20 +517,8 @@ const physicsData = {
       id: "potential",
       title: "5.4 พลังงานศักย์",
       theory: `
-        <h2>5.4 พลังงานศักย์ (Potential Energy)</h2>
-        <p><b>พลังงานศักย์โน้มถ่วง ($PE_g$):</b> พลังงานสะสมเมื่อวัตถุอยู่สูงจากจุดอ้างอิง</p>
-        <div class="formula-box">
-          $$ PE = mgh $$
-        </div>
-        <p><b>พลังงานศักย์ยืดหยุ่น ($PE_s$):</b> พลังงานสะสมในสปริงที่ยืดหรือหดจากตำแหน่งสมดุล</p>
-        <div class="formula-box">
-          $$ PE = \\frac{1}{2}kx^2 $$
-        </div>
-        <p>เมื่อ $k$ คือค่านิจสปริง และ $x$ คือระยะยืด/หด การกำหนด <b>จุดอ้างอิง (reference point)</b> มีความสำคัญมาก</p>
-        <br>
-        <canvas id="simPotential" class="sim-canvas" style="position:relative; z-index:10; cursor:pointer;"></canvas>
-        <p class="hint-box" style="margin-top:12px"><b>💡 Tips:</b> ลากวัตถุเปลี่ยนความสูง หรือกดสปริง เพื่อดูพลังงานศักย์เปลี่ยนตาม</p>
-      `,
+      <h2>5.4 พลังงานศักย์ (Potential Energy)</h2><p><b>พลังงานศักย์</b> คือพลังงานที่สะสมตามตำแหน่ง เกิดจาก <b>แรงอนุรักษ์</b> (แรงโน้มถ่วง แรงสปริง) ซึ่งงานของแรงนี้ไม่ขึ้นกับเส้นทาง นิยามจากดอทของแรงกับการกระจัด</p><div class="eq-core"><span class="eq-tag">🧭 สมการตั้งต้น · ผลคูณเชิงสเกลาร์ (ดอท) ของเวกเตอร์</span><div class="eq-main">$$\\begin{gathered}\\Delta E_p = -W_{c} = -m\\vec g\\cdot\\Delta\\vec s \\\\ \\Delta E_p = mg\\,\\Delta h\\end{gathered}$$</div><ul class="eq-steps"><li>ให้ $\\vec g = -g\\,\\hat j$ (ชี้ลง) และ $\\Delta\\vec s = \\Delta x\\,\\hat i + \\Delta h\\,\\hat j$ จะได้ $m\\vec g\\cdot\\Delta\\vec s = -mg\\,\\Delta h$ — ไม่มีพจน์ $\\Delta x$ งานจึงขึ้นกับความสูงเท่านั้น</li><li>จึงนิยาม $E_p = mgh$ โดย $h$ วัดจาก <b>ระดับอ้างอิง</b> ที่เราเลือกเอง (ต่ำกว่าระดับอ้างอิง $h$ และ $E_p$ ติดลบได้)</li><li>สปริง: $\\vec F = -k\\vec x$ ทำงาน $W_s = -(\\tfrac12 kx_2^2 - \\tfrac12 kx_1^2)$ จึงได้ $E_p = \\tfrac12 kx^2$</li><li>แรงที่ทำให้พลังงานศักย์ลดลงคือแรงที่ทำงานเป็นบวก เช่น วัตถุตก ($\\vec g$ ทิศเดียวกับ $\\Delta\\vec s$)</li></ul></div><div class="eq-list-title">📌 สมการหลักของหัวข้อนี้</div><div class="eq-grid"><div class="eq-card"><div class="eq-name">ศักย์โน้มถ่วง</div>$$E_p = mgh$$</div><div class="eq-card"><div class="eq-name">ศักย์ยืดหยุ่น</div>$$E_p = \\tfrac12 kx^2$$</div><div class="eq-card vec"><div class="eq-name">กฎของฮุก (เวกเตอร์)</div>$$\\vec F = -k\\vec x$$</div><div class="eq-card vec"><div class="eq-name">งานของแรงอนุรักษ์</div>$$W_c = -\\Delta E_p$$</div><div class="eq-card"><div class="eq-name">พื้นที่ใต้กราฟ F–x</div>$$\\text{พื้นที่} = \\tfrac12 (kx)(x) = \\tfrac12 kx^2$$</div><div class="eq-card"><div class="eq-name">งานที่ต้องทำเพื่อยกช้า ๆ</div>$$W_{\\text{คน}} = +mg\\,\\Delta h$$</div></div><div class="sim-title">🎮 ลองเล่น: ระดับอ้างอิงและสปริง <span class="badge">ลาก/ปล่อย</span></div><canvas id="simPotential" class="sim-canvas"></canvas>
+    `,
       problems: [
         {
           id: "pe1",
@@ -726,19 +672,8 @@ const physicsData = {
       id: "conservation",
       title: "5.5 การอนุรักษ์พลังงานกล",
       theory: `
-        <h2>5.5 กฎการอนุรักษ์พลังงานกล (Conservation of Mechanical Energy)</h2>
-        <p>หากไม่มีแรงภายนอก (เช่น แรงเสียดทาน หรือแรงลาก) มากระทำต่อระบบ พลังงานกลรวมของระบบจะคงที่เสมอ</p>
-        <div class="formula-box">
-          $$ KE_1 + PE_1 = KE_2 + PE_2 $$
-        </div>
-        <p>หรือสามารถเขียนกระจายได้เป็น:</p>
-        <div class="formula-box">
-          $$ \\frac{1}{2}mv_1^2 + mgh_1 = \\frac{1}{2}mv_2^2 + mgh_2 $$
-        </div>
-        <br>
-        <canvas id="simConservation" class="sim-canvas" style="position:relative; z-index:10; cursor:grab;"></canvas>
-        <p class="hint-box" style="margin-top:12px"><b>💡 Tips:</b> ลากลูกตุ้มแล้วปล่อย ดูพลังงานจลน์และพลังงานศักย์แลกกัน</p>
-      `,
+      <h2>5.5 กฎการอนุรักษ์พลังงานกล (Conservation)</h2><p>พลังงานกล $E = E_k + E_p$ จะคงตัวเมื่อ <b>ไม่มีแรงไม่อนุรักษ์ทำงาน</b> (เช่น แรงเสียดทาน แรงต้านอากาศ แรงลากจากภายนอก)</p><div class="eq-core"><span class="eq-tag">🧭 สมการตั้งต้น · ผลคูณเชิงสเกลาร์ (ดอท) ของเวกเตอร์</span><div class="eq-main">$$\\begin{gathered}E_{k1} + E_{p1} + W_{nc} = E_{k2} + E_{p2} \\\\ W_{nc} = \\textstyle\\sum \\vec F_{nc}\\cdot\\vec s\\end{gathered}$$</div><ul class="eq-steps"><li>จากทฤษฎีบทงาน–พลังงาน $W_c + W_{nc} = \\Delta E_k$ และ $W_c = -\\Delta E_p$ จะได้ $W_{nc} = \\Delta E_k + \\Delta E_p$</li><li>ถ้า $W_{nc} = 0$ ได้ $E_{k1}+E_{p1} = E_{k2}+E_{p2}$ — พลังงานกลคงตัว</li><li>แรงตึงเชือกของลูกตุ้ม และแรงแนวฉากของราง <b>ตั้งฉากกับความเร็วตลอดเวลา</b> ดอทจึงเป็นศูนย์ ($\\vec N\\cdot\\vec s = 0$) พลังงานกลยังคงตัวแม้ทางเดินจะโค้ง</li><li>แรงเสียดทานทำงาน $\\vec f\\cdot\\vec s = -fs$ พลังงานกลส่วนนี้กลายเป็นความร้อน</li></ul></div><div class="eq-list-title">📌 สมการหลักของหัวข้อนี้</div><div class="eq-grid"><div class="eq-card"><div class="eq-name">ไม่มีแรงเสียดทาน</div>$$E_{k1} + E_{p1} = E_{k2} + E_{p2}$$</div><div class="eq-card"><div class="eq-name">เขียนกระจาย</div>$$\\tfrac12 mv_1^2 + mgh_1 = \\tfrac12 mv_2^2 + mgh_2$$</div><div class="eq-card"><div class="eq-name">มีสปริงร่วมด้วย</div>$$\\tfrac12 mv^2 + mgh + \\tfrac12 kx^2 = \\text{คงตัว}$$</div><div class="eq-card warn"><div class="eq-name">มีแรงเสียดทาน</div>$$E_1 - fs = E_2$$</div><div class="eq-card"><div class="eq-name">ตกจากที่สูง h (เริ่มหยุดนิ่ง)</div>$$v = \\sqrt{2gh}$$</div><div class="eq-card vec"><div class="eq-name">แรงตั้งฉากไม่ทำงาน</div>$$\\vec N\\cdot\\vec v = 0,\\ \\vec T\\cdot\\vec v = 0$$</div></div><div class="sim-title">🎮 ลองเล่น: ลานสเก็ต <span class="badge">ภารกิจราง W</span></div><canvas id="simConservation" class="sim-canvas"></canvas>
+    `,
       problems: [
         {
           id: "ce1",

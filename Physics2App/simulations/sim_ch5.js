@@ -1,1172 +1,717 @@
 // sim_ch5.js - Chapter 5 Simulations (Work, Power, Kinetic, Potential, Conservation)
-// Designed for clear educational demonstration and smooth, responsive interaction
+// ทุกซิมเก็บสถานะเป็นหน่วยจริง (m, s, N) แล้วแปลงเป็นพิกเซลทุกเฟรม → ย่อ/ขยาย/เต็มจอ ได้ไม่เพี้ยน
+(function() {
+var M = window.SimMath;
+var fmt = M.fmt;
 
 // ==========================================
-// 5.1 งาน (W = Fs cos θ)
+// 5.1 งาน: W = F⃗ · s⃗ = Fs cos θ
 // ==========================================
 window.initWorkSimulation = function() {
-    var engine = new window.SimEngine('simWork');
-    if (!engine.ctx) return;
+    var E = new window.SimEngine('simWork', { height: 340, bg: ['#f8fafc', '#eef2ff'] });
+    if (!E.ctx) return;
 
-    var W = engine.width, H = engine.height;
-    var groundY = H - 35;
-    var boxW = 50, boxH = 40;
-    var boxX = W * 0.25;
-    var startBoxX = boxX;
-    var isDragging = false;
-    var pointerX = boxX + boxW / 2 + 80;
-    var pointerY = groundY - boxH / 2 - 50;
-    var totalDistance = 0;
+    var TRACK = 5;          // ระยะทางทั้งหมด (m)
+    var SPEED = 1.0;        // อัตราเร็วคงตัวของกล่อง (m/s)
+    var F = 30, thetaDeg = 60, below = false;
+    var s = 0, W = 0, running = false, finished = false;
+    var target = null;
+    var TARGETS = [120, 75, -60, 0, 100, -100, 150, 50];
 
-    function getBoxCenter() {
-        return { x: boxX + boxW / 2, y: groundY - boxH / 2 };
+    function newMission() {
+        var t;
+        do { t = TARGETS[Math.floor(Math.random() * TARGETS.length)]; } while (target === t);
+        target = t;
+        reset();
+    }
+    function reset() { s = 0; W = 0; running = false; finished = false; btnRun.innerHTML = '▶ เริ่มเคลื่อนที่'; }
+
+    var geo = {};
+    function layout() {
+        var w = E.width, h = E.height;
+        geo.groundY = h - 58;
+        geo.x0 = 60;
+        geo.ppm = (w - 150) / TRACK;
+        geo.boxW = 58; geo.boxH = 46;
+        geo.fScale = Math.min(2.4, (h - 150) / 50 + 0.2);   // px ต่อ N
     }
 
-    engine.canvas.style.cursor = 'grab';
+    // ลากหัวลูกศร F เพื่อกำหนดขนาดและทิศ
+    E.onDrag({
+        down: function(p) { setFromPointer(p); return true; },
+        move: function(p) { setFromPointer(p); }
+    });
+    function setFromPointer(p) {
+        layout();
+        var cx = geo.x0 + s * geo.ppm, cy = geo.groundY - geo.boxH / 2;
+        var dx = p.x - cx, dy = p.y - cy;
+        var mag = Math.sqrt(dx * dx + dy * dy) / geo.fScale;
+        F = Math.round(M.clamp(mag, 0, 50));
+        thetaDeg = Math.round(M.deg(Math.abs(Math.atan2(dy, dx))));
+        below = dy > 0;
+        slF.set(F, true); slT.set(thetaDeg, true);
+    }
 
-    function onPointerDown(e) {
-        isDragging = true;
-        engine.canvas.style.cursor = 'grabbing';
-        var pos = engine.getPointerPos(e);
-        pointerX = pos.x;
-        pointerY = pos.y;
-        if (engine.canvas.setPointerCapture && e.pointerId !== undefined) {
-            try { engine.canvas.setPointerCapture(e.pointerId); } catch(err) {}
+    var slF = E.addSlider({ label: 'ขนาดแรง F', min: 0, max: 50, value: F, unit: 'N', onInput: function(v) { F = v; } });
+    var slT = E.addSlider({ label: 'มุม θ (แรง–การกระจัด)', min: 0, max: 180, value: thetaDeg, format: function(v) { return v + '°'; }, onInput: function(v) { thetaDeg = v; } });
+    var row = E.addRow();
+    var btnRun = E.addButton('▶ เริ่มเคลื่อนที่', function() {
+        if (finished) reset();
+        running = !running;
+        btnRun.innerHTML = running ? '⏸ หยุด' : '▶ เคลื่อนที่ต่อ';
+    }, { primary: true, row: row });
+    E.addButton('↺ เริ่มใหม่', reset, { row: row });
+    E.addButton('🎯 ภารกิจใหม่', newMission, { row: row });
+
+    newMission();
+
+    E.start(function(dt) {
+        if (!running) return;
+        var ds = Math.min(SPEED * dt, TRACK - s);
+        // งานสะสม dW = F⃗ · ds⃗ = F cos θ ds
+        W += F * Math.cos(M.rad(thetaDeg)) * ds;
+        s += ds;
+        if (s >= TRACK - 1e-9) {
+            running = false; finished = true;
+            btnRun.innerHTML = '▶ เล่นอีกครั้ง';
+            var ok = Math.abs(W - target) <= Math.max(4, Math.abs(target) * 0.04);
+            if (ok) { E.toast('สำเร็จ! W = ' + fmt(W, 0) + ' J ตรงเป้า 🎉', '#16a34a'); E.burst(E.width / 2, 80, 60); }
+            else E.toast('ได้ W = ' + fmt(W, 0) + ' J  (เป้า ' + target + ' J) ลองปรับ F หรือ θ', '#ea580c');
         }
-    }
-
-    function onPointerMove(e) {
-        if (!isDragging) return;
-        var pos = engine.getPointerPos(e);
-        pointerX = pos.x;
-        pointerY = Math.min(pos.y, groundY - 5); // Don't pull downwards below ground
-    }
-
-    function onPointerUp() {
-        isDragging = false;
-        engine.canvas.style.cursor = 'grab';
-    }
-
-    engine.canvas.addEventListener('pointerdown', onPointerDown);
-    engine.canvas.addEventListener('pointermove', onPointerMove);
-    window.addEventListener('pointerup', onPointerUp);
-
-    engine.start(function(dt) {
-        W = engine.width;
-        H = engine.height;
-        groundY = H - 35;
-
-        var center = getBoxCenter();
-        var dx = pointerX - center.x;
-        var dy = pointerY - center.y;
-        if (dy > 0) dy = 0; // limit pull up only
-
-        // In the classic approved version:
-        // When pulling, box moves with strong friction/resistance towards pull direction
-        if (isDragging && Math.abs(dx) > 15) {
-            // Strong damping friction resistance (moves smoothly without tele-transporting)
-            var moveStep = dx * 0.006;
-            boxX += moveStep;
-            totalDistance += Math.abs(moveStep);
-        }
-
-        // Clamp box within canvas
-        if (boxX < 10) boxX = 10;
-        if (boxX > W - boxW - 10) boxX = W - boxW - 10;
     }, function(ctx) {
-        W = engine.width;
-        H = engine.height;
-        groundY = H - 35;
+        layout();
+        var w = E.width, h = E.height, gY = geo.groundY;
+        var th = M.rad(thetaDeg), sgn = below ? 1 : -1;
 
-        var center = getBoxCenter();
-        var dx = pointerX - center.x;
-        var dy = pointerY - center.y;
-        if (dy > 0) dy = 0;
-        var dist = Math.sqrt(dx * dx + dy * dy);
+        // พื้นและไม้บรรทัด
+        ctx.fillStyle = '#cbd5e1'; ctx.fillRect(0, gY, w, h - gY);
+        ctx.fillStyle = '#94a3b8'; ctx.fillRect(0, gY, w, 3);
+        for (var m = 0; m <= TRACK; m++) {
+            var rx = geo.x0 + m * geo.ppm;
+            ctx.fillStyle = '#475569'; ctx.fillRect(rx - 1, gY, 2, 10);
+            E.text(m + ' m', rx, gY + 24, { size: 12, align: 'center', color: '#475569' });
+            for (var q = 1; q < 5 && m < TRACK; q++) { ctx.fillStyle = '#64748b'; ctx.fillRect(rx + q * geo.ppm / 5, gY, 1, 5); }
+        }
+        // ธงเส้นชัย
+        var fx = geo.x0 + TRACK * geo.ppm;
+        ctx.fillStyle = '#334155'; ctx.fillRect(fx + geo.boxW / 2 + 6, gY - 70, 3, 70);
+        ctx.fillStyle = finished ? '#16a34a' : '#ef4444';
+        ctx.beginPath(); ctx.moveTo(fx + geo.boxW / 2 + 9, gY - 70); ctx.lineTo(fx + geo.boxW / 2 + 32, gY - 62); ctx.lineTo(fx + geo.boxW / 2 + 9, gY - 54); ctx.fill();
 
-        // Ground
-        ctx.fillStyle = '#cbd5e1';
-        ctx.fillRect(0, groundY, W, H - groundY);
-        ctx.fillStyle = '#94a3b8';
-        ctx.fillRect(0, groundY, W, 2);
+        var cx = geo.x0 + s * geo.ppm, cy = gY - geo.boxH / 2;
 
-        // Distance markers / ruler on ground
-        ctx.fillStyle = '#64748b';
-        ctx.font = '10px sans-serif';
-        for (var rx = 20; rx < W; rx += 40) {
-            ctx.fillRect(rx, groundY, 1, 6);
+        // เวกเตอร์การกระจัด s⃗
+        if (s > 0.02) E.drawVector(geo.x0, gY + 38, s * geo.ppm, 0, '#7c3aed', 's⃗ = ' + fmt(s, 2) + ' m', { width: 3.5 });
+
+        // กล่อง
+        ctx.save();
+        ctx.shadowColor = 'rgba(0,0,0,0.18)'; ctx.shadowBlur = 8; ctx.shadowOffsetY = 3;
+        var bg = ctx.createLinearGradient(cx, cy - geo.boxH / 2, cx, cy + geo.boxH / 2);
+        bg.addColorStop(0, '#5eead4'); bg.addColorStop(1, '#0f766e');
+        ctx.fillStyle = bg;
+        ctx.beginPath(); ctx.roundRect(cx - geo.boxW / 2, gY - geo.boxH, geo.boxW, geo.boxH, 6); ctx.fill();
+        ctx.restore();
+        ctx.strokeStyle = '#115e59'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(cx - geo.boxW / 2 + 6, gY - geo.boxH + 6); ctx.lineTo(cx + geo.boxW / 2 - 6, gY - 6);
+        ctx.moveTo(cx + geo.boxW / 2 - 6, gY - geo.boxH + 6); ctx.lineTo(cx - geo.boxW / 2 + 6, gY - 6); ctx.stroke();
+        if (running) {
+            for (var i = 0; i < 3; i++) {
+                ctx.strokeStyle = 'rgba(100,116,139,' + (0.5 - i * 0.15) + ')'; ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.moveTo(cx - geo.boxW / 2 - 8 - i * 9, cy - 10 + i * 10); ctx.lineTo(cx - geo.boxW / 2 - 20 - i * 9, cy - 10 + i * 10); ctx.stroke();
+            }
         }
 
-        // Box shadow
-        ctx.fillStyle = 'rgba(0,0,0,0.15)';
-        ctx.fillRect(boxX + 2, groundY - 2, boxW - 4, 4);
-
-        // Wooden/metallic box
-        var boxGrad = ctx.createLinearGradient(boxX, groundY - boxH, boxX + boxW, groundY);
-        boxGrad.addColorStop(0, '#f87171');
-        boxGrad.addColorStop(1, '#dc2626');
-        ctx.fillStyle = boxGrad;
-        ctx.beginPath();
-        ctx.roundRect(boxX, groundY - boxH, boxW, boxH, 6);
-        ctx.fill();
-        ctx.strokeStyle = '#b91c1c';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-
-        // Box label
-        ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 13px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('m = 5 kg', center.x, center.y + 4);
-
-        // Pull Force Vector F (Diagonal)
-        var F_val = 0;
-        var angleDeg = 0;
-        var Fx = 0;
-        var Fy = 0;
-
-        if (dist > 15) {
-            var pullAngle = Math.atan2(dy, dx);
-            angleDeg = Math.round(Math.abs(pullAngle * 180 / Math.PI));
-            if (angleDeg > 90) angleDeg = 180 - angleDeg;
-
-            // Scaled Force value for educational display
-            F_val = Math.min(Math.round(dist * 0.8), 150);
-            var angleRad = Math.abs(pullAngle);
-            Fx = Math.round(F_val * Math.cos(pullAngle));
-            Fy = Math.round(Math.abs(F_val * Math.sin(pullAngle)));
-
-            var endX = center.x + dx;
-            var endY = center.y + dy;
-
-            // Draw Pull Rope / Force F
+        // แรง F⃗ + เงาของ F บนแนว s (F cos θ) + มุม θ
+        var Lf = F * geo.fScale;
+        var fdx = Lf * Math.cos(th), fdy = sgn * Lf * Math.sin(th);
+        if (F > 0) {
             ctx.save();
-            ctx.beginPath();
-            ctx.moveTo(center.x, center.y);
-            ctx.lineTo(endX, endY);
-            ctx.strokeStyle = '#2563eb';
-            ctx.lineWidth = 3.5;
-            ctx.stroke();
-
-            // Arrow head for F
-            var headLen = 12;
-            ctx.beginPath();
-            ctx.moveTo(endX, endY);
-            ctx.lineTo(endX - headLen * Math.cos(pullAngle - Math.PI / 6), endY - headLen * Math.sin(pullAngle - Math.PI / 6));
-            ctx.lineTo(endX - headLen * Math.cos(pullAngle + Math.PI / 6), endY - headLen * Math.sin(pullAngle + Math.PI / 6));
-            ctx.closePath();
-            ctx.fillStyle = '#2563eb';
-            ctx.fill();
-
-            // Label F
-            ctx.font = 'bold 14px sans-serif';
-            ctx.fillStyle = '#1d4ed8';
-            ctx.fillText('F = ' + F_val + ' N', endX + (dx >= 0 ? 10 : -10), endY - 8);
-
-            // Angle arc θ
-            if (Math.abs(dx) > 25) {
-                ctx.beginPath();
-                var arcStart = dx >= 0 ? 0 : Math.PI;
-                var arcEnd = pullAngle;
-                ctx.arc(center.x, center.y, 24, Math.min(arcStart, arcEnd), Math.max(arcStart, arcEnd));
-                ctx.strokeStyle = '#6366f1';
-                ctx.lineWidth = 1.5;
-                ctx.stroke();
-                ctx.font = 'bold 11px sans-serif';
-                ctx.fillStyle = '#4338ca';
-                ctx.fillText(angleDeg + '°', center.x + (dx >= 0 ? 34 : -34), center.y - 6);
-            }
-
-            // Component Fx (Horizontal dashed line with arrow) - NO friction vector per user request
-            if (Math.abs(dx) > 15) {
-                ctx.beginPath();
-                ctx.moveTo(center.x, center.y);
-                ctx.lineTo(endX, center.y);
-                ctx.strokeStyle = '#dc2626'; // Red for Fx
-                ctx.lineWidth = 2;
-                ctx.setLineDash([4, 4]);
-                ctx.stroke();
-                ctx.setLineDash([]);
-
-                var sgnX = dx >= 0 ? 1 : -1;
-                ctx.beginPath();
-                ctx.moveTo(endX, center.y);
-                ctx.lineTo(endX - sgnX * 8, center.y - 4);
-                ctx.lineTo(endX - sgnX * 8, center.y + 4);
-                ctx.closePath();
-                ctx.fillStyle = '#dc2626';
-                ctx.fill();
-
-                ctx.font = 'bold 12px sans-serif';
-                ctx.fillStyle = '#dc2626';
-                ctx.fillText('Fx = ' + Math.abs(Fx) + ' N', endX + sgnX * 18, center.y + 4);
-            }
-
-            // Component Fy (Vertical dashed line with arrow)
-            if (Math.abs(dy) > 15) {
-                ctx.beginPath();
-                ctx.moveTo(endX, center.y);
-                ctx.lineTo(endX, endY);
-                ctx.strokeStyle = '#10b981'; // Green for Fy
-                ctx.lineWidth = 2;
-                ctx.setLineDash([4, 4]);
-                ctx.stroke();
-                ctx.setLineDash([]);
-
-                var sgnY = dy >= 0 ? 1 : -1;
-                ctx.beginPath();
-                ctx.moveTo(endX, endY);
-                ctx.lineTo(endX - 4, endY - sgnY * 8);
-                ctx.lineTo(endX + 4, endY - sgnY * 8);
-                ctx.closePath();
-                ctx.fillStyle = '#10b981';
-                ctx.fill();
-
-                ctx.font = 'bold 12px sans-serif';
-                ctx.fillStyle = '#059669';
-                ctx.fillText('Fy = ' + Fy + ' N', endX - (dx >= 0 ? 25 : -25), (center.y + endY) / 2);
-            }
+            ctx.setLineDash([5, 4]); ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 1.5;
+            ctx.beginPath(); ctx.moveTo(cx + fdx, cy + fdy); ctx.lineTo(cx + fdx, cy); ctx.stroke();
+            ctx.setLineDash([]);
+            // เส้นแนว s (แกนอ้างอิง)
+            ctx.strokeStyle = 'rgba(124,58,237,0.35)'; ctx.lineWidth = 1.5;
+            ctx.beginPath(); ctx.moveTo(cx - Lf - 10, cy); ctx.lineTo(cx + Lf + 10, cy); ctx.stroke();
             ctx.restore();
+            var proj = F * Math.cos(th);
+            if (Math.abs(proj) > 0.5) E.drawVector(cx, cy, proj * geo.fScale, 0, '#f97316', 'F cos θ = ' + fmt(proj, 1) + ' N', { width: 6, labelSize: 13 });
+            E.drawVector(cx, cy, fdx, fdy, '#2563eb', 'F⃗ = ' + F + ' N', { width: 4 });
+            // มุม
+            ctx.save();
+            ctx.strokeStyle = '#6366f1'; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.arc(cx, cy, 26, 0, sgn * th, sgn < 0); ctx.stroke();
+            ctx.restore();
+            E.text('θ', cx + 34 * Math.cos(th / 2), cy + sgn * 34 * Math.sin(th / 2) + 5, { size: 14, weight: 'bold', color: '#4338ca', align: 'center', stroke: '#fff' });
         }
 
-        // Distance moved from initial start
-        var sMeters = Math.abs((boxX - startBoxX) / 50).toFixed(2);
-        var workJ = (Math.abs(Fx) * parseFloat(sMeters)).toFixed(1);
-
-        // Educational Info Panel (Top Left)
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
-        ctx.beginPath();
-        ctx.roundRect(10, 10, 220, 95, 8);
-        ctx.fill();
-        ctx.strokeStyle = '#e2e8f0';
-        ctx.lineWidth = 1;
-        ctx.stroke();
-
-        ctx.textAlign = 'left';
-        ctx.fillStyle = '#1e293b';
-        ctx.font = 'bold 15px sans-serif';
-        ctx.fillText('สูตร: W = Fs cos θ = Fx · s', 18, 30);
-
-        ctx.font = '13px sans-serif';
-        ctx.fillStyle = '#2563eb';
-        ctx.fillText('แรงดึง F = ' + (F_val || 0) + ' N  (θ = ' + angleDeg + '°)', 18, 50);
-
-        ctx.fillStyle = '#dc2626';
-        ctx.fillText('แรงแนวราบ Fx = ' + Math.abs(Fx) + ' N', 18, 70);
-
-        ctx.fillStyle = '#059669';
-        ctx.font = 'bold 13px sans-serif';
-        ctx.fillText('ระยะทาง s = ' + sMeters + ' m  ➔  งาน W = ' + workJ + ' J', 18, 92);
-
-        // Helpful user tip
-        ctx.textAlign = 'center';
-        ctx.fillStyle = '#64748b';
-        ctx.font = '12px sans-serif';
-        ctx.fillText('👈 กดลากเมาส์/นิ้วเพื่อออกแรงดึงกล่อง (สังเกตการแตกแรง Fx และ Fy) 👉', W / 2, H - 12);
+        // การ์ดผลคูณเชิงสเกลาร์
+        var cosT = Math.cos(th);
+        var kind = Math.abs(cosT) < 0.02 ? ['งานเป็นศูนย์ (F⃗ ⟂ s⃗)', '#64748b'] : (cosT > 0 ? ['งานเป็นบวก (θ < 90°)', '#16a34a'] : ['งานเป็นลบ (θ > 90°)', '#dc2626']);
+        E.card(10, 10, [
+            { t: 'W = F⃗ · s⃗ = F s cos θ', b: true, s: 15, c: '#1e1b4b' },
+            { t: '= (' + F + ')(' + fmt(s, 2) + ')(cos ' + thetaDeg + '°)', s: 13, c: '#334155' },
+            { t: '= ' + fmt(W, 1) + ' J', b: true, s: 16, c: kind[1] },
+            { t: kind[0], s: 12, b: true, c: kind[1] }
+        ]);
+        E.card(w - 10, 10, [
+            { t: '🎯 ภารกิจ', b: true, s: 13, c: '#9a3412' },
+            { t: 'ให้งานของแรง F = ' + (target > 0 ? '+' : '') + target + ' J', s: 13 },
+            { t: 'เมื่อกล่องเลื่อนไป 5 m', s: 12, c: '#64748b' }
+        ], { alignRight: true, fill: 'rgba(255,247,237,0.96)', border: '#fdba74' });
+        if (!running && s === 0) E.text('👆 ลากบนภาพเพื่อหมุนลูกศร F⃗ แล้วกด ▶ เริ่ม', w / 2, gY - geo.boxH - 70 > 120 ? gY - geo.boxH - 70 : 150, { size: 13, align: 'center', color: '#475569', stroke: '#fff' });
     });
 };
 
 
 // ==========================================
-// 5.2 กำลัง (P = W/t = Fv)
+// 5.2 กำลัง: P = W/t = F⃗ · v⃗
 // ==========================================
 window.initPowerSimulation = function() {
-    var engine = new window.SimEngine('simPower');
-    if (!engine.ctx) return;
+    var E = new window.SimEngine('simPower', { height: 360, bg: ['#e0f2fe', '#f0f9ff'], grid: false });
+    if (!E.ctx) return;
 
-    var W = engine.width, H = engine.height;
-    var ropeX = W * 0.48;
-    var pulleyY = 28;
-    var weightSize = 44;
-    var weightY = H - 85;
-    var isDragging = false;
-    var lastY = weightY;
-    var speed = 0;
-    var prevWeightY = weightY;
+    var g = 10, HEIGHT = 10;
+    var mass = 100;
+    var cr = [
+        { name: 'A', P: 2000, y: 0, t: 0, done: false, color: '#2563eb' },
+        { name: 'B', P: 4000, y: 0, t: 0, done: false, color: '#db2777' }
+    ];
+    var running = false, finishedOrder = [];
 
-    var mass = 100;    // kg
-    var g = 10;
-    var mg = mass * g; // 1000 N
-
-    function getPos(e) {
-        return engine.getPointerPos(e);
+    function reset() {
+        running = false; finishedOrder = [];
+        cr.forEach(function(c) { c.y = 0; c.t = 0; c.done = false; });
+        btnGo.innerHTML = '🏁 เริ่มแข่งยก!';
     }
 
-    engine.canvas.style.cursor = 'grab';
+    E.addSlider({ label: 'มวลของ m', min: 20, max: 300, step: 10, value: mass, unit: 'kg', onInput: function(v) { mass = v; reset(); } });
+    E.addSlider({ label: 'กำลังเครน A', min: 500, max: 8000, step: 100, value: cr[0].P, format: function(v) { return (v / 1000).toFixed(1) + ' kW'; }, onInput: function(v) { cr[0].P = v; reset(); } });
+    E.addSlider({ label: 'กำลังเครน B', min: 500, max: 8000, step: 100, value: cr[1].P, format: function(v) { return (v / 1000).toFixed(1) + ' kW'; }, onInput: function(v) { cr[1].P = v; reset(); } });
+    var row = E.addRow();
+    var btnGo = E.addButton('🏁 เริ่มแข่งยก!', function() {
+        if (finishedOrder.length === 2) reset();
+        running = !running;
+        btnGo.innerHTML = running ? '⏸ หยุด' : '▶ ต่อ';
+    }, { primary: true, row: row });
+    E.addButton('↺ เริ่มใหม่', reset, { row: row });
 
-    function onPointerDown(e) {
-        var pos = getPos(e);
-        if (pos.y >= weightY - 20 && pos.y <= weightY + weightSize + 20) {
-            isDragging = true;
-            lastY = pos.y;
-            engine.canvas.style.cursor = 'grabbing';
-            if (engine.canvas.setPointerCapture && e.pointerId !== undefined) {
-                try { engine.canvas.setPointerCapture(e.pointerId); } catch(err) {}
+    E.start(function(dt) {
+        if (!running) return;
+        cr.forEach(function(c) {
+            if (c.done) return;
+            var v = c.P / (mass * g);        // F = mg (ยกด้วยความเร็วคงตัว) → v = P/F
+            c.t += dt;
+            c.y = Math.min(HEIGHT, c.y + v * dt);
+            if (c.y >= HEIGHT) {
+                c.done = true;
+                c.t = mass * g * HEIGHT / c.P;
+                finishedOrder.push(c);
+                if (finishedOrder.length === 1) {
+                    E.toast('เครน ' + c.name + ' ถึงก่อน! t = ' + fmt(c.t, 2) + ' s', c.color);
+                    E.burst(c._px || E.width / 2, 70, 50);
+                }
+                if (finishedOrder.length === 2) { running = false; btnGo.innerHTML = '🏁 แข่งอีกรอบ'; }
             }
-        }
-    }
-
-    function onPointerMove(e) {
-        if (!isDragging) return;
-        var pos = getPos(e);
-        var dy = pos.y - lastY;
-        weightY += dy;
-        lastY = pos.y;
-
-        // Clamp inside crane range
-        if (weightY < pulleyY + 30) weightY = pulleyY + 30;
-        if (weightY > H - 85) weightY = H - 85;
-    }
-
-    function onPointerUp() {
-        isDragging = false;
-        engine.canvas.style.cursor = 'grab';
-    }
-
-    engine.canvas.addEventListener('pointerdown', onPointerDown);
-    engine.canvas.addEventListener('pointermove', onPointerMove);
-    window.addEventListener('pointerup', onPointerUp);
-
-    // Calculate speed based on interval
-    var speedInterval = setInterval(function() {
-        speed = (prevWeightY - weightY) / 0.05; // pixels/sec (positive = moving up)
-        prevWeightY = weightY;
-    }, 50);
-
-    engine.start(function(dt) {
-        W = engine.width;
-        H = engine.height;
-        ropeX = W * 0.48;
+        });
     }, function(ctx) {
-        W = engine.width;
-        H = engine.height;
-        ropeX = W * 0.48;
+        var w = E.width, h = E.height;
+        var gY = h - 34, topY = 70;
+        var ppm = (gY - topY - 60) / HEIGHT;
+        var leftCol = Math.max(250, w * 0.4);
 
-        // Background Sky
-        var skyGrad = ctx.createLinearGradient(0, 0, 0, H);
-        skyGrad.addColorStop(0, '#f0f9ff');
-        skyGrad.addColorStop(1, '#e0f2fe');
-        ctx.fillStyle = skyGrad;
-        ctx.fillRect(0, 0, W, H);
+        // พื้นดิน
+        ctx.fillStyle = '#a3a3a3'; ctx.fillRect(0, gY, w, h - gY);
+        ctx.fillStyle = '#737373'; ctx.fillRect(0, gY, w, 3);
+        // เส้นเป้าความสูง 10 m
+        var goalY = gY - HEIGHT * ppm - 40;
+        ctx.save(); ctx.setLineDash([6, 5]); ctx.strokeStyle = '#16a34a'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(leftCol, goalY); ctx.lineTo(w - 10, goalY); ctx.stroke(); ctx.restore();
+        E.text('🏁 เส้นชัย h = 10 m', leftCol + 4, goalY - 6, { size: 12, weight: 'bold', color: '#16a34a', stroke: '#fff' });
 
-        // Ground
-        ctx.fillStyle = '#94a3b8';
-        ctx.fillRect(0, H - 35, W, 35);
-        ctx.fillStyle = '#64748b';
-        ctx.fillRect(0, H - 35, W, 2);
+        var colW = (w - leftCol) / 2;
+        cr.forEach(function(c, i) {
+            var x = leftCol + colW * (i + 0.5);
+            c._px = x;
+            var boxS = 40;
+            var boxTop = gY - boxS - c.y * ppm;
+            // เสาและแขนเครน
+            ctx.fillStyle = '#f59e0b';
+            ctx.fillRect(x + 30, topY - 10, 10, gY - topY + 10);
+            for (var yy = topY; yy < gY - 10; yy += 22) {
+                ctx.strokeStyle = '#b45309'; ctx.lineWidth = 1.5;
+                ctx.beginPath(); ctx.moveTo(x + 30, yy); ctx.lineTo(x + 40, yy + 22); ctx.stroke();
+            }
+            ctx.fillStyle = '#f59e0b'; ctx.fillRect(x - 20, topY - 16, 70, 10);
+            ctx.fillStyle = '#334155'; ctx.beginPath(); ctx.arc(x, topY - 4, 8, 0, Math.PI * 2); ctx.fill();
+            // สลิง
+            ctx.strokeStyle = '#334155'; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(x, topY + 4); ctx.lineTo(x, boxTop); ctx.stroke();
+            // กล่องมวล
+            var gr = ctx.createLinearGradient(x - boxS / 2, boxTop, x + boxS / 2, boxTop + boxS);
+            gr.addColorStop(0, c.color); gr.addColorStop(1, '#1e293b');
+            ctx.fillStyle = gr;
+            ctx.beginPath(); ctx.roundRect(x - boxS / 2, boxTop, boxS, boxS, 6); ctx.fill();
+            E.text(mass + ' kg', x, boxTop + boxS / 2 + 5, { size: 12, weight: 'bold', color: '#fff', align: 'center' });
+            // เวกเตอร์ F และ v (ทิศเดียวกัน θ = 0°)
+            var v = c.P / (mass * g);
+            if (!c.done && c.y > 0) E.drawVector(x - boxS / 2 - 12, boxTop + boxS / 2, 0, -Math.min(60, 12 + v * 8), '#16a34a', 'v⃗', { width: 3 });
+            E.drawVector(x - boxS / 2 - 32, boxTop + boxS, 0, -38, c.color, 'F⃗', { width: 3 });
+            // ป้ายชื่อเครน
+            E.text('เครน ' + c.name, x + 5, gY + 22, { size: 14, weight: 'bold', color: c.color, align: 'center' });
+            if (c.done) E.text('✔ ' + fmt(c.t, 2) + ' s', x, boxTop - 12, { size: 14, weight: 'bold', color: '#16a34a', align: 'center', stroke: '#fff' });
+        });
 
-        // Crane Tower
-        ctx.fillStyle = '#f59e0b';
-        ctx.fillRect(ropeX - 10, pulleyY, 20, H - 35 - pulleyY);
-        // Crane Arm
-        ctx.fillRect(ropeX - 80, pulleyY - 6, 160, 12);
-        // Diagonal support beams
-        ctx.strokeStyle = '#d97706';
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.moveTo(ropeX - 75, pulleyY + 6);
-        ctx.lineTo(ropeX - 10, pulleyY + 50);
-        ctx.moveTo(ropeX + 75, pulleyY + 6);
-        ctx.lineTo(ropeX + 10, pulleyY + 50);
-        ctx.stroke();
-
-        // Pulley wheel
-        ctx.beginPath();
-        ctx.arc(ropeX, pulleyY, 14, 0, Math.PI * 2);
-        ctx.fillStyle = '#374151';
-        ctx.fill();
-        ctx.strokeStyle = '#1f2937';
-        ctx.lineWidth = 2.5;
-        ctx.stroke();
-
-        // Cable / Rope
-        ctx.beginPath();
-        ctx.moveTo(ropeX, pulleyY + 14);
-        ctx.lineTo(ropeX, weightY);
-        ctx.strokeStyle = '#475569';
-        ctx.lineWidth = 3;
-        ctx.stroke();
-
-        // Weight box
-        var boxGrad = ctx.createLinearGradient(ropeX - weightSize / 2, weightY, ropeX + weightSize / 2, weightY + weightSize);
-        boxGrad.addColorStop(0, '#ef4444');
-        boxGrad.addColorStop(1, '#b91c1c');
-        ctx.fillStyle = boxGrad;
-        ctx.beginPath();
-        ctx.roundRect(ropeX - weightSize / 2, weightY, weightSize, weightSize, 6);
-        ctx.fill();
-        ctx.strokeStyle = '#991b1b';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-
-        // Weight Label
-        ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 12px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(mass + ' kg', ropeX, weightY + weightSize / 2 + 4);
-
-        // Real-time values
-        var travelRange = (H - 85) - (pulleyY + 30);
-        var heightM = (((H - 85 - weightY) / travelRange) * 10).toFixed(1); // 0 - 10 m
-        var speedMS = Math.abs((speed / travelRange) * 10).toFixed(1);       // m/s
-        var isLifting = speed > 5;
-        var powerVal = isLifting ? Math.round(mg * parseFloat(speedMS)) : 0;
-
-        // Motion Arrow on the weight
-        if (Math.abs(speed) > 10) {
-            var dir = speed > 0 ? -1 : 1; // negative = up
-            var arrowY = weightY + weightSize / 2;
-            var arrowX = ropeX + weightSize / 2 + 15;
-            ctx.beginPath();
-            ctx.moveTo(arrowX, arrowY);
-            ctx.lineTo(arrowX, arrowY + dir * 25);
-            ctx.strokeStyle = dir < 0 ? '#10b981' : '#f59e0b';
-            ctx.lineWidth = 3.5;
-            ctx.stroke();
-
-            var aHead = 8;
-            ctx.beginPath();
-            ctx.moveTo(arrowX, arrowY + dir * 25);
-            ctx.lineTo(arrowX - aHead, arrowY + dir * 25 - dir * aHead);
-            ctx.lineTo(arrowX + aHead, arrowY + dir * 25 - dir * aHead);
-            ctx.closePath();
-            ctx.fillStyle = dir < 0 ? '#10b981' : '#f59e0b';
-            ctx.fill();
-
-            ctx.font = 'bold 12px sans-serif';
-            ctx.fillText(speedMS + ' m/s', arrowX + 22, arrowY + dir * 15);
-        }
-
-        // Info Card (Top Left)
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
-        ctx.beginPath();
-        ctx.roundRect(10, 10, 200, 95, 8);
-        ctx.fill();
-        ctx.strokeStyle = '#e2e8f0';
-        ctx.lineWidth = 1;
-        ctx.stroke();
-
-        ctx.textAlign = 'left';
-        ctx.fillStyle = '#1e293b';
-        ctx.font = 'bold 15px sans-serif';
-        ctx.fillText('สูตร: P = W/t = F·v', 18, 30);
-
-        ctx.font = '13px sans-serif';
-        ctx.fillStyle = '#475569';
-        ctx.fillText('แรงยก F = mg = ' + mg + ' N', 18, 50);
-
-        ctx.fillStyle = '#2563eb';
-        ctx.fillText('ความเร็ว v = ' + speedMS + ' m/s', 18, 70);
-
-        ctx.fillStyle = '#dc2626';
-        ctx.font = 'bold 13px sans-serif';
-        ctx.fillText('กำลัง P = ' + powerVal + ' วัตต์ (W)', 18, 92);
-
-        // Power Bar Graph on the Right Side
-        var barW = 36;
-        var maxBarH = 140;
-        var barX = W - 60;
-        var barBaseY = H - 50;
-        var barH = Math.min((powerVal / 4000) * maxBarH, maxBarH);
-
-        // Bar background
-        ctx.fillStyle = 'rgba(226, 232, 240, 0.8)';
-        ctx.fillRect(barX, barBaseY - maxBarH, barW, maxBarH);
-        ctx.strokeStyle = '#cbd5e1';
-        ctx.strokeRect(barX, barBaseY - maxBarH, barW, maxBarH);
-
-        // Active Power Bar
-        var pGrad = ctx.createLinearGradient(barX, barBaseY - barH, barX, barBaseY);
-        pGrad.addColorStop(0, '#f97316');
-        pGrad.addColorStop(1, '#ef4444');
-        ctx.fillStyle = pGrad;
-        ctx.fillRect(barX, barBaseY - barH, barW, barH);
-
-        ctx.textAlign = 'center';
-        ctx.fillStyle = '#1e293b';
-        ctx.font = 'bold 12px sans-serif';
-        ctx.fillText('Power (P)', barX + barW / 2, barBaseY - maxBarH - 8);
-        ctx.fillStyle = '#dc2626';
-        ctx.fillText(powerVal + ' W', barX + barW / 2, barBaseY + 16);
-
-        // Tip
-        ctx.fillStyle = '#64748b';
-        ctx.font = '12px sans-serif';
-        ctx.fillText('👆 ลากกล่องน้ำหนักขึ้น-ลงเร็วๆ เพื่อสังเกตกำลัง (Power) ที่เพิ่มขึ้นตามความเร็ว', W / 2, H - 12);
+        // การ์ดสูตรและตัวเลข
+        var lines = [
+            { t: 'P = W / t = F⃗ · v⃗ = Fv cos 0°', b: true, s: 14, c: '#1e1b4b' },
+            { t: 'F = mg = ' + (mass * g) + ' N  (ยกด้วย v คงตัว)', s: 12, c: '#475569' }
+        ];
+        cr.forEach(function(c) {
+            var v = c.P / (mass * g);
+            lines.push({ t: c.name + ':  v = P/F = ' + fmt(v, 2) + ' m/s', s: 13, b: true, c: c.color });
+            lines.push({ t: '     W = ' + Math.round(mass * g * c.y) + ' J   t = ' + fmt(c.t, 2) + ' s', s: 12, c: '#334155' });
+        });
+        lines.push({ t: 'งานเท่ากัน = mgh = ' + (mass * g * HEIGHT) + ' J', s: 12, b: true, c: '#15803d' });
+        E.card(10, 10, lines);
     });
 };
 
 
 // ==========================================
-// 5.3 พลังงานจลน์ (KE = ½mv²)
+// 5.3 พลังงานจลน์: W_net = F⃗·s⃗ = ΔE_k
 // ==========================================
 window.initKineticSimulation = function() {
-    var engine = new window.SimEngine('simKinetic');
-    if (!engine.ctx) return;
+    var E = new window.SimEngine('simKinetic', { height: 340, bg: ['#f1f5f9', '#e2e8f0'], grid: false });
+    if (!E.ctx) return;
 
-    var W = engine.width, H = engine.height;
-    var groundY = H - 45;
-    var carW = 65, carH = 32;
-    var carX = W * 0.35;
-    var isDragging = false;
-    var lastX = carX;
-    var v = 0; // m/s
-    var m = 2; // kg
+    var TRACK = 12, GUN = 9.5, SLOW = 0.5;
+    var m = 4, F = 20, sPush = 3, thetaDeg = 0;
+    var x = 0, v = 0, running = false, done = false, measured = null;
+    var target = 6;
+    var TARGETS = [4, 5, 6, 7, 8];
 
-    function getPos(e) {
-        return engine.getPointerPos(e);
-    }
+    function reset() { x = 0; v = 0; running = false; done = false; measured = null; }
+    function newMission() { var t; do { t = TARGETS[Math.floor(Math.random() * TARGETS.length)]; } while (t === target); target = t; reset(); }
 
-    engine.canvas.style.cursor = 'grab';
+    E.addSlider({ label: 'มวลรถ m', min: 1, max: 20, value: m, unit: 'kg', onInput: function(val) { m = val; reset(); } });
+    E.addSlider({ label: 'แรงดัน F', min: 5, max: 60, value: F, unit: 'N', onInput: function(val) { F = val; reset(); } });
+    E.addSlider({ label: 'ระยะที่ออกแรง s', min: 0.5, max: 6, step: 0.5, value: sPush, unit: 'm', onInput: function(val) { sPush = val; reset(); } });
+    E.addSlider({ label: 'มุมของแรง θ', min: 0, max: 80, step: 5, value: thetaDeg, format: function(val) { return val + '°'; }, onInput: function(val) { thetaDeg = val; reset(); } });
+    var row = E.addRow();
+    E.addButton('🚀 ปล่อยรถ!', function() { reset(); running = true; }, { primary: true, row: row });
+    E.addButton('🎯 ภารกิจใหม่', newMission, { row: row });
 
-    function onPointerDown(e) {
-        var pos = getPos(e);
-        if (Math.abs(pos.x - carX) < 60 && pos.y > groundY - carH - 20 && pos.y < groundY + 20) {
-            isDragging = true;
-            lastX = pos.x;
-            engine.canvas.style.cursor = 'grabbing';
-            if (engine.canvas.setPointerCapture && e.pointerId !== undefined) {
-                try { engine.canvas.setPointerCapture(e.pointerId); } catch(err) {}
-            }
+    E.start(function(dt) {
+        if (!running) return;
+        var t = dt * SLOW;
+        var a = x < sPush ? F * Math.cos(M.rad(thetaDeg)) / m : 0;
+        if (x < sPush) {
+            // ออกแรงถึงระยะ sPush พอดี
+            v += a * t;
+            x += v * t;
+            if (x >= sPush) { x = sPush; v = Math.sqrt(2 * F * Math.cos(M.rad(thetaDeg)) * sPush / m); }
+        } else {
+            x += v * t;
         }
-    }
-
-    function onPointerMove(e) {
-        if (!isDragging) return;
-        var pos = getPos(e);
-        carX = Math.max(carW / 2 + 10, Math.min(W - 120, pos.x));
-    }
-
-    function onPointerUp() {
-        isDragging = false;
-        engine.canvas.style.cursor = 'grab';
-    }
-
-    engine.canvas.addEventListener('pointerdown', onPointerDown);
-    engine.canvas.addEventListener('pointermove', onPointerMove);
-    window.addEventListener('pointerup', onPointerUp);
-
-    // Smooth speed calculation
-    var speedInterval = setInterval(function() {
-        v = (carX - lastX) / 0.05 / 30; // scaled m/s
-        lastX = carX;
-    }, 50);
-
-    engine.start(function(dt) {
-        W = engine.width;
-        H = engine.height;
-        groundY = H - 45;
-
-        // If not dragging, car gradually slows down with gentle rolling resistance
-        if (!isDragging && Math.abs(v) > 0.05) {
-            carX += v * 30 * dt;
-            v *= 0.95; // gentle rolling friction
-            if (carX < carW / 2 + 10) { carX = carW / 2 + 10; v = -v * 0.6; }
-            if (carX > W - 120) { carX = W - 120; v = -v * 0.6; }
+        if (measured === null && x >= GUN) {
+            measured = v;
+            var ok = Math.abs(v - target) < 0.15;
+            if (ok) { E.toast('ความเร็ว ' + fmt(v, 2) + ' m/s ตรงเป้า! 🎉', '#16a34a'); E.burst(E.width * 0.75, 90, 60); }
+            else E.toast('วัดได้ ' + fmt(v, 2) + ' m/s  (เป้า ' + target + ' m/s)', '#ea580c');
         }
+        if (x >= TRACK - 0.3) { x = TRACK - 0.3; running = false; done = true; }
     }, function(ctx) {
-        W = engine.width;
-        H = engine.height;
-        groundY = H - 45;
+        var w = E.width, h = E.height;
+        var gY = h - 60, x0 = 80, ppm = (w - 120) / TRACK;
+        var cosT = Math.cos(M.rad(thetaDeg));
+        var Wnet = F * cosT * Math.min(x, sPush);
+        var Ek = 0.5 * m * v * v;
 
-        // Road background
-        ctx.fillStyle = '#334155';
-        ctx.fillRect(0, groundY, W, H - groundY);
-        // Road lane dashed line
-        ctx.setLineDash([16, 12]);
-        ctx.strokeStyle = '#facc15';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(0, groundY + (H - groundY) / 2);
-        ctx.lineTo(W, groundY + (H - groundY) / 2);
-        ctx.stroke();
-        ctx.setLineDash([]);
+        // ถนน
+        ctx.fillStyle = '#334155'; ctx.fillRect(0, gY, w, h - gY);
+        ctx.save(); ctx.setLineDash([18, 12]); ctx.strokeStyle = '#facc15'; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(0, gY + (h - gY) / 2); ctx.lineTo(w, gY + (h - gY) / 2); ctx.stroke(); ctx.restore();
+        // เขตออกแรง
+        ctx.fillStyle = 'rgba(34,197,94,0.18)';
+        ctx.fillRect(x0, gY - 90, sPush * ppm, 90);
+        ctx.fillStyle = '#16a34a'; ctx.fillRect(x0 + sPush * ppm - 1, gY - 90, 3, 90);
+        E.text('เขตออกแรง s = ' + sPush + ' m', x0 + 4, gY - 76, { size: 12, weight: 'bold', color: '#15803d' });
+        // เครื่องวัดความเร็ว
+        var gx = x0 + GUN * ppm;
+        ctx.fillStyle = '#0f172a'; ctx.fillRect(gx - 2, gY - 120, 4, 120);
+        ctx.fillStyle = '#1e293b'; ctx.beginPath(); ctx.roundRect(gx - 46, gY - 150, 92, 34, 8); ctx.fill();
+        E.text(measured === null ? '— m/s' : fmt(measured, 2) + ' m/s', gx, gY - 127, { size: 15, weight: 'bold', color: measured === null ? '#94a3b8' : '#4ade80', align: 'center' });
+        E.text('📡 เครื่องวัด', gx, gY - 156, { size: 11, color: '#475569', align: 'center' });
+        // กำแพงปลายทาง
+        ctx.fillStyle = '#64748b'; ctx.fillRect(x0 + TRACK * ppm, gY - 60, 12, 60);
 
-        // Car body
-        var carGrad = ctx.createLinearGradient(carX - carW / 2, groundY - carH, carX + carW / 2, groundY);
-        carGrad.addColorStop(0, '#38bdf8');
-        carGrad.addColorStop(1, '#0284c7');
-        ctx.fillStyle = carGrad;
-        ctx.beginPath();
-        ctx.roundRect(carX - carW / 2, groundY - carH, carW, carH, 6);
-        ctx.fill();
-        ctx.strokeStyle = '#0369a1';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-
-        // Cabin/Windshield
-        ctx.fillStyle = '#e0f2fe';
-        ctx.beginPath();
-        ctx.roundRect(carX - carW / 4, groundY - carH + 4, carW / 2, carH / 2 - 2, 3);
-        ctx.fill();
-
-        // Wheels
-        ctx.fillStyle = '#1e293b';
-        ctx.beginPath(); ctx.arc(carX - carW / 3, groundY + 2, 7, 0, Math.PI * 2); ctx.fill();
-        ctx.beginPath(); ctx.arc(carX + carW / 3, groundY + 2, 7, 0, Math.PI * 2); ctx.fill();
-
-        // Velocity Vector Arrow
-        var absV = Math.abs(v);
-        if (absV > 0.2) {
-            var arrowLen = Math.min(absV * 25, 70) * (v >= 0 ? 1 : -1);
-            var aX = carX + (v >= 0 ? carW / 2 : -carW / 2);
-            var aY = groundY - carH / 2;
-
-            ctx.beginPath();
-            ctx.moveTo(aX, aY);
-            ctx.lineTo(aX + arrowLen, aY);
-            ctx.strokeStyle = '#ef4444';
-            ctx.lineWidth = 3;
-            ctx.stroke();
-
-            var aHead = 7 * (v >= 0 ? 1 : -1);
-            ctx.beginPath();
-            ctx.moveTo(aX + arrowLen, aY);
-            ctx.lineTo(aX + arrowLen - aHead, aY - 5);
-            ctx.lineTo(aX + arrowLen - aHead, aY + 5);
-            ctx.closePath();
-            ctx.fillStyle = '#ef4444';
-            ctx.fill();
+        // รถ
+        var cx = x0 + x * ppm, cw = 70, ch = 30;
+        ctx.save();
+        var cg = ctx.createLinearGradient(cx - cw / 2, gY - ch - 16, cx + cw / 2, gY);
+        cg.addColorStop(0, '#38bdf8'); cg.addColorStop(1, '#0369a1');
+        ctx.fillStyle = cg;
+        ctx.beginPath(); ctx.roundRect(cx - cw / 2, gY - ch - 8, cw, ch, 8); ctx.fill();
+        ctx.beginPath(); ctx.roundRect(cx - cw / 4, gY - ch - 22, cw / 2, 16, 6); ctx.fill();
+        ctx.fillStyle = '#e0f2fe'; ctx.beginPath(); ctx.roundRect(cx - cw / 4 + 4, gY - ch - 19, cw / 2 - 8, 11, 3); ctx.fill();
+        var wheelA = x * ppm / 9;
+        [-cw / 3, cw / 3].forEach(function(o) {
+            ctx.fillStyle = '#0f172a'; ctx.beginPath(); ctx.arc(cx + o, gY - 8, 9, 0, Math.PI * 2); ctx.fill();
+            ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 2; ctx.beginPath();
+            ctx.moveTo(cx + o, gY - 8); ctx.lineTo(cx + o + 7 * Math.cos(wheelA), gY - 8 + 7 * Math.sin(wheelA)); ctx.stroke();
+        });
+        ctx.restore();
+        E.text(m + ' kg', cx, gY - ch + 4, { size: 12, weight: 'bold', color: '#fff', align: 'center' });
+        // แรง F⃗ (มุม θ) เฉพาะในเขตออกแรง
+        if (x < sPush || (!running && x === 0)) {
+            var L = 30 + F * 1.3, th = M.rad(thetaDeg);
+            E.drawVector(cx - cw / 2 - 8 - L * Math.cos(th), gY - ch / 2 - 8 + L * Math.sin(th), L * Math.cos(th), -L * Math.sin(th), '#16a34a', 'F⃗', { width: 4 });
         }
+        if (v > 0.05) E.drawVector(cx + cw / 2 + 4, gY - ch - 8, Math.min(120, v * 12), 0, '#ef4444', 'v⃗ = ' + fmt(v, 2) + ' m/s', { width: 3 });
 
-        // Calculations
-        var keVal = 0.5 * m * (absV * absV);
+        // แท่งเทียบ W กับ ΔEk
+        var maxE = Math.max(F * sPush, 1);
+        var bx = w - 118, bh = Math.max(70, gY - 250), by = 24 + bh;
+        E.bar(bx, by, 36, bh, Wnet / maxE, '#16a34a', 'W', fmt(Wnet, 0) + ' J');
+        E.bar(bx + 58, by, 36, bh, Ek / maxE, '#f97316', 'ΔEk', fmt(Ek, 0) + ' J');
 
-        // Info Card (Top Left)
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
-        ctx.beginPath();
-        ctx.roundRect(10, 10, 220, 95, 8);
-        ctx.fill();
-        ctx.strokeStyle = '#e2e8f0';
-        ctx.lineWidth = 1;
-        ctx.stroke();
-
-        ctx.textAlign = 'left';
-        ctx.fillStyle = '#1e293b';
-        ctx.font = 'bold 15px sans-serif';
-        ctx.fillText('สูตร: KE = ½mv²', 18, 30);
-
-        ctx.font = '13px sans-serif';
-        ctx.fillStyle = '#475569';
-        ctx.fillText('มวล m = ' + m + ' kg', 18, 50);
-
-        ctx.fillStyle = '#0284c7';
-        ctx.fillText('ความเร็ว v = ' + absV.toFixed(1) + ' m/s', 18, 70);
-
-        ctx.fillStyle = '#ea580c';
-        ctx.font = 'bold 13px sans-serif';
-        ctx.fillText('พลังงานจลน์ KE = ' + keVal.toFixed(1) + ' J', 18, 92);
-
-        // Kinetic Energy Bar Graph on the Right
-        var barW = 38;
-        var maxBarH = 130;
-        var barX = W - 65;
-        var barBaseY = H - 55;
-        var barH = Math.min((keVal / 25) * maxBarH, maxBarH);
-
-        ctx.fillStyle = 'rgba(226, 232, 240, 0.8)';
-        ctx.fillRect(barX, barBaseY - maxBarH, barW, maxBarH);
-        ctx.strokeStyle = '#cbd5e1';
-        ctx.strokeRect(barX, barBaseY - maxBarH, barW, maxBarH);
-
-        var keGrad = ctx.createLinearGradient(barX, barBaseY - barH, barX, barBaseY);
-        keGrad.addColorStop(0, '#f97316');
-        keGrad.addColorStop(1, '#ea580c');
-        ctx.fillStyle = keGrad;
-        ctx.fillRect(barX, barBaseY - barH, barW, barH);
-
-        ctx.textAlign = 'center';
-        ctx.fillStyle = '#1e293b';
-        ctx.font = 'bold 12px sans-serif';
-        ctx.fillText('KE', barX + barW / 2, barBaseY - maxBarH - 8);
-        ctx.fillStyle = '#ea580c';
-        ctx.fillText(keVal.toFixed(1) + ' J', barX + barW / 2, barBaseY + 16);
-
-        // Tip
-        ctx.fillStyle = '#64748b';
-        ctx.font = '12px sans-serif';
-        ctx.fillText('👈 ลากรถไปมาเร็วๆ เพื่อสังเกตพลังงานจลน์ (KE) ที่เพิ่มขึ้นตามความเร็วยกกำลังสอง (v²) 👉', W / 2, H - 12);
+        E.card(10, 10, [
+            { t: 'W = F⃗ · s⃗ = ΔEk', b: true, s: 15, c: '#1e1b4b' },
+            { t: 'F s cos θ = ½mv² − ½mu²', s: 13, c: '#334155' },
+            { t: '(' + F + ')(' + fmt(Math.min(x, sPush), 2) + ')(cos ' + thetaDeg + '°) = ' + fmt(Wnet, 1) + ' J', s: 12, c: '#15803d' },
+            { t: '½(' + m + ')(' + fmt(v, 2) + ')² = ' + fmt(Ek, 1) + ' J', s: 12, c: '#c2410c' },
+            { t: '🎯 ภารกิจ: ให้รถผ่านเครื่องวัดที่ ' + target + ' m/s', s: 12, b: true, c: '#9a3412' }
+        ]);
+        if (SLOW < 1) E.text('ภาพช้าลง 2 เท่า', w - 10, h - 8, { size: 11, color: '#cbd5e1', align: 'right' });
     });
 };
 
 
 // ==========================================
-// 5.4 พลังงานศักย์ (PE = mgh และ PE = ½kx²)
+// 5.4 พลังงานศักย์: Ep = mgh และ Ep = ½kx²
 // ==========================================
 window.initPotentialSimulation = function() {
-    var engine = new window.SimEngine('simPotential');
-    if (!engine.ctx) return;
+    var E = new window.SimEngine('simPotential', { height: 360, bg: ['#f8fafc', '#f1f5f9'] });
+    if (!E.ctx) return;
 
-    var W = engine.width, H = engine.height;
-    var midX = W / 2;
-    var groundY = H - 40;
+    var g = 10, m = 2, k = 200;
+    var ref = 'floor';          // 'floor' | 'table'
+    var TABLE = 1.2, MAXH = 4;
+    var ball = { y: 3, vy: 0, falling: false, fromY: 3 };
+    var spr = { x: 0.3, v: 0, free: false };   // x > 0 = ยืด, < 0 = หด (m)
+    var drag = null;
 
-    // --- Left: Gravitational Potential Energy ---
-    var ballRadius = 18;
-    var ballY = H * 0.45;
-    var m = 2; // kg
-    var g = 10;
-    var isDraggingBall = false;
-
-    // --- Right: Elastic Potential Energy ---
-    var springNaturalX = W * 0.82;
-    var springX = springNaturalX - 35;
-    var k = 200; // N/m
-    var isDraggingSpring = false;
-
-    function getPos(e) {
-        return engine.getPointerPos(e);
+    var geo = {};
+    function layout() {
+        var w = E.width, h = E.height;
+        geo.split = Math.max(220, w * 0.46);
+        geo.floorY = h - 40;
+        geo.ppmY = (geo.floorY - 120) / MAXH;
+        geo.ballX = geo.split * 0.58;
+        geo.eqX = geo.split + (w - geo.split) * 0.52;   // จุดสมดุลของสปริง
+        geo.sprY = h - 120;
+        geo.ppmX = Math.min(180, (w - geo.split) * 0.32 / 0.5);
+        geo.wallX = geo.split + 18;
     }
+    function refY() { return ref === 'table' ? TABLE : 0; }
 
-    engine.canvas.style.cursor = 'pointer';
+    E.onDrag({
+        down: function(p) {
+            layout();
+            var by = geo.floorY - ball.y * geo.ppmY - 16;
+            if (Math.abs(p.x - geo.ballX) < 40 && Math.abs(p.y - by) < 40) { drag = 'ball'; ball.falling = false; return true; }
+            var bx = geo.eqX + spr.x * geo.ppmX;
+            if (Math.abs(p.x - bx) < 40 && Math.abs(p.y - geo.sprY) < 40) { drag = 'spring'; spr.free = false; spr.v = 0; return true; }
+            return false;
+        },
+        move: function(p) {
+            if (drag === 'ball') { ball.y = M.clamp((geo.floorY - 16 - p.y) / geo.ppmY, 0, MAXH); ball.vy = 0; }
+            if (drag === 'spring') { spr.x = M.clamp((p.x - geo.eqX) / geo.ppmX, -0.45, 0.5); }
+        },
+        up: function() { drag = null; },
+        hover: function(p) {
+            layout();
+            var by = geo.floorY - ball.y * geo.ppmY - 16, bx = geo.eqX + spr.x * geo.ppmX;
+            return (Math.abs(p.x - geo.ballX) < 40 && Math.abs(p.y - by) < 40) || (Math.abs(p.x - bx) < 40 && Math.abs(p.y - geo.sprY) < 40);
+        }
+    });
 
-    function onPointerDown(e) {
-        var pos = getPos(e);
-        midX = engine.width / 2;
+    E.addSlider({ label: 'มวล m', min: 0.5, max: 5, step: 0.5, value: m, unit: 'kg', onInput: function(v) { m = v; } });
+    E.addSlider({ label: 'ค่านิจสปริง k', min: 50, max: 400, step: 10, value: k, unit: 'N/m', onInput: function(v) { k = v; } });
+    E.addSegment([{ v: 'floor', t: 'พื้น' }, { v: 'table', t: 'โต๊ะ (1.2 m)' }], ref, function(v) { ref = v; }, { label: 'ระดับอ้างอิง h = 0 :' });
+    var row = E.addRow();
+    E.addButton('⬇ ปล่อยลูกบอล', function() { if (ball.y > 0.01) { ball.falling = true; ball.vy = 0; ball.fromY = ball.y; } }, { primary: true, row: row });
+    E.addButton('↔ ปล่อยสปริง', function() { spr.free = !spr.free; }, { primary: true, row: row });
+    E.addButton('↺ เริ่มใหม่', function() { ball.y = 3; ball.falling = false; spr.x = 0.3; spr.v = 0; spr.free = false; }, { row: row });
 
-        if (pos.x < midX) {
-            // Drag ball
-            if (Math.abs(pos.x - midX / 2) < 45 && Math.abs(pos.y - ballY) < 45) {
-                isDraggingBall = true;
-                if (engine.canvas.setPointerCapture && e.pointerId !== undefined) {
-                    try { engine.canvas.setPointerCapture(e.pointerId); } catch(err) {}
-                }
+    E.start(function(dt) {
+        if (ball.falling) {
+            ball.vy -= g * dt;
+            ball.y += ball.vy * dt;
+            if (ball.y <= 0) {
+                ball.y = 0; ball.falling = false;
+                E.toast('W ของ mg = mg·Δh = ' + fmt(m * g * ball.fromY, 1) + ' J = −ΔEp', '#2563eb');
+                ball.vy = 0;
             }
-        } else {
-            // Drag spring block
-            if (Math.abs(pos.x - springX) < 40 && Math.abs(pos.y - (H / 2)) < 45) {
-                isDraggingSpring = true;
-                if (engine.canvas.setPointerCapture && e.pointerId !== undefined) {
-                    try { engine.canvas.setPointerCapture(e.pointerId); } catch(err) {}
-                }
-            }
         }
-    }
-
-    function onPointerMove(e) {
-        var pos = getPos(e);
-        midX = engine.width / 2;
-
-        if (isDraggingBall) {
-            ballY = Math.max(ballRadius + 20, Math.min(groundY - ballRadius, pos.y));
+        if (spr.free && !drag) {
+            // F⃗ = −k x⃗  (อินทิเกรตแบบ semi-implicit)
+            var steps = 4, h = dt / steps;
+            for (var i = 0; i < steps; i++) { spr.v += (-k * spr.x / m) * h; spr.x += spr.v * h; }
         }
-        if (isDraggingSpring) {
-            springX = Math.max(midX + 25, Math.min(W - 35, pos.x));
-        }
-    }
-
-    function onPointerUp() {
-        isDraggingBall = false;
-        isDraggingSpring = false;
-    }
-
-    engine.canvas.addEventListener('pointerdown', onPointerDown);
-    engine.canvas.addEventListener('pointermove', onPointerMove);
-    window.addEventListener('pointerup', onPointerUp);
-
-    engine.start(function(dt) {
-        W = engine.width;
-        H = engine.height;
-        midX = W / 2;
-        groundY = H - 40;
     }, function(ctx) {
-        W = engine.width;
-        H = engine.height;
-        midX = W / 2;
-        groundY = H - 40;
+        layout();
+        var w = E.width, h = E.height;
 
-        // Middle dashed divider
-        ctx.beginPath();
-        ctx.setLineDash([6, 6]);
-        ctx.moveTo(midX, 10);
-        ctx.lineTo(midX, H - 10);
-        ctx.strokeStyle = '#cbd5e1';
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-        ctx.setLineDash([]);
+        // ---------- ซ้าย: ศักย์โน้มถ่วง ----------
+        ctx.fillStyle = '#bbf7d0'; ctx.fillRect(0, geo.floorY, geo.split, h - geo.floorY);
+        ctx.fillStyle = '#16a34a'; ctx.fillRect(0, geo.floorY, geo.split, 3);
+        // โต๊ะ
+        var tY = geo.floorY - TABLE * geo.ppmY;
+        ctx.fillStyle = '#a16207'; ctx.fillRect(geo.ballX + 30, tY, 50, 8);
+        ctx.fillRect(geo.ballX + 34, tY + 8, 5, TABLE * geo.ppmY - 8); ctx.fillRect(geo.ballX + 71, tY + 8, 5, TABLE * geo.ppmY - 8);
+        // ระดับอ้างอิง
+        var r0 = geo.floorY - refY() * geo.ppmY;
+        ctx.save(); ctx.setLineDash([7, 5]); ctx.strokeStyle = '#7c3aed'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(8, r0); ctx.lineTo(geo.split - 10, r0); ctx.stroke(); ctx.restore();
+        E.text('h = 0', 10, r0 - 5, { size: 12, weight: 'bold', color: '#7c3aed' });
+        // ลูกบอล
+        var by = geo.floorY - ball.y * geo.ppmY - 16;
+        var hRel = ball.y - refY();
+        // ไม้บรรทัดความสูงจากระดับอ้างอิง
+        var rx = geo.ballX - 30;
+        if (Math.abs(hRel) > 0.03) E.drawVector(rx, r0, 0, (by + 16) - r0, hRel >= 0 ? '#2563eb' : '#dc2626', '', { width: 2.5, head: 9 });
+        E.text('h = ' + fmt(hRel, 2) + ' m', rx - 6, Math.max(120, (r0 + by + 16) / 2), { size: 13, weight: 'bold', color: hRel >= 0 ? '#1d4ed8' : '#b91c1c', baseline: 'middle', align: 'right', stroke: '#fff' });
+        var bgd = ctx.createRadialGradient(geo.ballX - 5, by - 6, 2, geo.ballX, by, 16);
+        bgd.addColorStop(0, '#fca5a5'); bgd.addColorStop(1, '#dc2626');
+        ctx.fillStyle = bgd; ctx.beginPath(); ctx.arc(geo.ballX, by, 16, 0, Math.PI * 2); ctx.fill();
+        E.text(m + 'kg', geo.ballX, by + 4, { size: 10, weight: 'bold', color: '#fff', align: 'center' });
+        E.drawVector(geo.ballX, by + 18, 0, 24 + m * 4, '#0f766e', 'mg⃗', { width: 3, head: 9 });
+        var Epg = m * g * hRel;
+        E.card(8, 8, [
+            { t: 'Ep = mgh', b: true, s: 14, c: '#1e1b4b' },
+            { t: '= (' + m + ')(10)(' + fmt(hRel, 2) + ')', s: 12, c: '#475569' },
+            { t: '= ' + fmt(Epg, 1) + ' J', b: true, s: 15, c: Epg >= 0 ? '#1d4ed8' : '#b91c1c' },
+            { t: 'W ของ mg⃗ = mg⃗ · s⃗ = −ΔEp', s: 12, c: '#0f766e', b: true }
+        ]);
 
-        // ==============================================
-        // LEFT: Gravitational PE (PE = mgh)
-        // ==============================================
-        // Ground
-        ctx.fillStyle = '#86efac';
-        ctx.fillRect(0, groundY, midX, H - groundY);
-        ctx.fillStyle = '#4ade80';
-        ctx.fillRect(0, groundY, midX, 2);
-
-        // Height calculation (0 to 10 m)
-        var maxTravel = groundY - ballRadius - 25;
-        var hMeters = (((groundY - ballRadius - ballY) / maxTravel) * 10).toFixed(1);
-        if (hMeters < 0) hMeters = '0.0';
-        var peG = (m * g * parseFloat(hMeters)).toFixed(1);
-
-        // Height reference dashed line & arrow
-        var rulerX = 25;
-        ctx.beginPath();
-        ctx.moveTo(rulerX, groundY);
-        ctx.lineTo(rulerX, ballY);
-        ctx.strokeStyle = '#3b82f6';
-        ctx.lineWidth = 2;
-        ctx.setLineDash([4, 4]);
-        ctx.stroke();
-        ctx.setLineDash([]);
-
-        // Ruler arrowheads
-        ctx.fillStyle = '#3b82f6';
-        ctx.beginPath();
-        ctx.moveTo(rulerX, ballY); ctx.lineTo(rulerX - 4, ballY + 8); ctx.lineTo(rulerX + 4, ballY + 8); ctx.fill();
-
-        ctx.font = 'bold 12px sans-serif';
-        ctx.fillText('h = ' + hMeters + ' m', rulerX + 32, (groundY + ballY) / 2);
-
-        // Ball with 3D gradient
-        var ballX = midX * 0.45;
-        var ballGrad = ctx.createRadialGradient(ballX - 5, ballY - 5, 2, ballX, ballY, ballRadius);
-        ballGrad.addColorStop(0, '#f87171');
-        ballGrad.addColorStop(1, '#dc2626');
-        ctx.fillStyle = ballGrad;
-        ctx.beginPath();
-        ctx.arc(ballX, ballY, ballRadius, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = '#b91c1c';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-
-        ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 11px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(m + 'kg', ballX, ballY + 4);
-
-        // Left Info Card
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
-        ctx.beginPath();
-        ctx.roundRect(40, 15, midX - 60, 60, 6);
-        ctx.fill();
-        ctx.strokeStyle = '#e2e8f0';
-        ctx.stroke();
-
-        ctx.textAlign = 'left';
-        ctx.fillStyle = '#1e293b';
-        ctx.font = 'bold 13px sans-serif';
-        ctx.fillText('ศักย์โน้มถ่วง: PE = mgh', 48, 33);
-        ctx.fillStyle = '#2563eb';
-        ctx.font = '12px sans-serif';
-        ctx.fillText('m=2kg, g=10 ➔ PE = ' + peG + ' J', 48, 55);
-
-        // PE_g Bar
-        var barW = 22;
-        var barMaxH = 90;
-        var barX1 = midX - 35;
-        var barH1 = Math.min((parseFloat(peG) / 200) * barMaxH, barMaxH);
-        ctx.fillStyle = '#e2e8f0';
-        ctx.fillRect(barX1, groundY - barMaxH, barW, barMaxH);
-        ctx.fillStyle = '#3b82f6';
-        ctx.fillRect(barX1, groundY - barH1, barW, barH1);
-        ctx.textAlign = 'center';
-        ctx.font = '10px sans-serif';
-        ctx.fillStyle = '#1e293b';
-        ctx.fillText('PE', barX1 + barW / 2, groundY + 14);
-
-        // ==============================================
-        // RIGHT: Elastic PE (PE = ½kx²)
-        // ==============================================
-        var centerY = H / 2;
-
-        // Wall on far right
-        ctx.fillStyle = '#64748b';
-        ctx.fillRect(W - 20, centerY - 45, 12, 90);
-        // Wall hatching
-        for (var wy = centerY - 45; wy <= centerY + 40; wy += 10) {
-            ctx.strokeStyle = '#94a3b8';
-            ctx.lineWidth = 1.5;
-            ctx.beginPath();
-            ctx.moveTo(W - 20, wy);
-            ctx.lineTo(W - 8, wy + 8);
-            ctx.stroke();
+        // ---------- ขวา: ศักย์ยืดหยุ่น ----------
+        ctx.strokeStyle = '#cbd5e1'; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.moveTo(geo.split, 8); ctx.lineTo(geo.split, h - 8); ctx.stroke();
+        var sy = geo.sprY;
+        ctx.fillStyle = '#e2e8f0'; ctx.fillRect(geo.split + 1, sy + 20, w - geo.split, 6);
+        ctx.fillStyle = '#64748b'; ctx.fillRect(geo.wallX - 10, sy - 40, 10, 66);
+        var bx = geo.eqX + spr.x * geo.ppmX;
+        // ขดสปริง
+        var coils = 12, x1 = geo.wallX, x2 = bx - 22, step = (x2 - x1) / coils;
+        ctx.strokeStyle = '#10b981'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(x1, sy);
+        for (var i = 0; i < coils; i++) { ctx.lineTo(x1 + step * (i + 0.25), sy - 13); ctx.lineTo(x1 + step * (i + 0.75), sy + 13); }
+        ctx.lineTo(x2, sy); ctx.stroke();
+        // ตำแหน่งสมดุล
+        ctx.save(); ctx.setLineDash([4, 4]); ctx.strokeStyle = '#94a3b8';
+        ctx.beginPath(); ctx.moveTo(geo.eqX, sy - 50); ctx.lineTo(geo.eqX, sy + 30); ctx.stroke(); ctx.restore();
+        E.text('x = 0', geo.eqX, sy - 54, { size: 11, color: '#64748b', align: 'center' });
+        // มวล
+        ctx.fillStyle = '#f59e0b'; ctx.beginPath(); ctx.roundRect(bx - 22, sy - 20, 44, 40, 6); ctx.fill();
+        ctx.strokeStyle = '#b45309'; ctx.lineWidth = 2; ctx.stroke();
+        E.text(m + 'kg', bx, sy + 5, { size: 11, weight: 'bold', color: '#fff', align: 'center' });
+        // x⃗ และ F⃗ = −k x⃗
+        if (Math.abs(spr.x) > 0.01) {
+            E.drawVector(geo.eqX, sy + 42, spr.x * geo.ppmX, 0, '#7c3aed', 'x⃗', { width: 3, head: 9 });
+            var Fs = -k * spr.x;
+            E.drawVector(bx, sy - 30, M.clamp(Fs * 0.5, -120, 120), 0, '#dc2626', 'F⃗ = −kx⃗', { width: 3.5 });
         }
+        var Eps = 0.5 * k * spr.x * spr.x;
+        var Eks = 0.5 * m * spr.v * spr.v;
 
-        // Natural equilibrium position dashed line
-        springNaturalX = W - 110;
-        ctx.beginPath();
-        ctx.moveTo(springNaturalX, centerY - 40);
-        ctx.lineTo(springNaturalX, centerY + 40);
-        ctx.strokeStyle = '#94a3b8';
-        ctx.lineWidth = 1.5;
-        ctx.setLineDash([4, 4]);
-        ctx.stroke();
-        ctx.setLineDash([]);
-        ctx.font = '10px sans-serif';
-        ctx.fillStyle = '#64748b';
-        ctx.fillText('x=0', springNaturalX, centerY - 44);
+        // กราฟ F–x (พื้นที่ใต้กราฟ = ½kx²)
+        var wide = (w - geo.split) > 380;
+        var gw = wide ? 150 : Math.min(150, (w - geo.split) - 60), gh = wide ? 90 : 54;
+        var gx0 = w - gw - 14, gy0 = wide ? 16 : 112;
+        ctx.fillStyle = 'rgba(255,255,255,0.95)'; ctx.beginPath(); ctx.roundRect(gx0 - 8, gy0 - 6, gw + 16, gh + 30, 8); ctx.fill();
+        ctx.strokeStyle = '#e2e8f0'; ctx.stroke();
+        var ox = gx0, oy = gy0 + gh;
+        var X = Math.abs(spr.x), fmax = 400 * 0.5;
+        var px = ox + X / 0.5 * gw, py = oy - (k * X) / fmax * gh;
+        ctx.fillStyle = 'rgba(16,185,129,0.35)';
+        ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(px, oy); ctx.lineTo(px, py); ctx.closePath(); ctx.fill();
+        ctx.strokeStyle = '#059669'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(ox + gw, oy - (k * 0.5) / fmax * gh); ctx.stroke();
+        ctx.strokeStyle = '#334155'; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.moveTo(ox, gy0); ctx.lineTo(ox, oy); ctx.lineTo(ox + gw, oy); ctx.stroke();
+        E.text('F', ox + 4, gy0 + 8, { size: 11, weight: 'bold' });
+        E.text('x', ox + gw - 2, oy + 13, { size: 11, weight: 'bold', align: 'right' });
+        E.text('พื้นที่ = ½kx²', ox + gw / 2, oy + 13, { size: 11, color: '#047857', align: 'center' });
 
-        // Spring Zigzag Coils from Wall to Spring Block
-        var springWallX = W - 20;
-        var blockLeftX = springX;
-        var numCoils = 10;
-        var coilStep = (springWallX - blockLeftX) / numCoils;
-
-        ctx.beginPath();
-        ctx.moveTo(springWallX, centerY);
-        for (var i = 0; i < numCoils; i++) {
-            var p1 = springWallX - coilStep * (i + 0.25);
-            var p2 = springWallX - coilStep * (i + 0.75);
-            ctx.lineTo(p1, centerY - 14);
-            ctx.lineTo(p2, centerY + 14);
-        }
-        ctx.lineTo(blockLeftX, centerY);
-        ctx.strokeStyle = '#10b981';
-        ctx.lineWidth = 3.5;
-        ctx.stroke();
-
-        // Mass block attached to spring
-        var sBoxW = 28, sBoxH = 34;
-        ctx.fillStyle = '#f59e0b';
-        ctx.beginPath();
-        ctx.roundRect(blockLeftX - sBoxW, centerY - sBoxH / 2, sBoxW, sBoxH, 4);
-        ctx.fill();
-        ctx.strokeStyle = '#d97706';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-
-        // Elastic calculation
-        var xDisplacement = ((springNaturalX - blockLeftX) / 60).toFixed(2); // meters
-        var peE = (0.5 * k * (parseFloat(xDisplacement) * parseFloat(xDisplacement))).toFixed(1);
-
-        // Right Info Card
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
-        ctx.beginPath();
-        ctx.roundRect(midX + 20, 15, midX - 60, 60, 6);
-        ctx.fill();
-        ctx.strokeStyle = '#e2e8f0';
-        ctx.stroke();
-
-        ctx.textAlign = 'left';
-        ctx.fillStyle = '#1e293b';
-        ctx.font = 'bold 13px sans-serif';
-        ctx.fillText('ศักย์ยืดหยุ่น: PE = ½kx²', midX + 28, 33);
-        ctx.fillStyle = '#059669';
-        ctx.font = '12px sans-serif';
-        ctx.fillText('k=200, x=' + Math.abs(xDisplacement) + 'm ➔ PE = ' + peE + ' J', midX + 28, 55);
-
-        // PE_s Bar
-        var barX2 = midX + 20;
-        var barH2 = Math.min((parseFloat(peE) / 100) * barMaxH, barMaxH);
-        ctx.fillStyle = '#e2e8f0';
-        ctx.fillRect(barX2, groundY - barMaxH, barW, barMaxH);
-        ctx.fillStyle = '#10b981';
-        ctx.fillRect(barX2, groundY - barH2, barW, barH2);
-        ctx.textAlign = 'center';
-        ctx.font = '10px sans-serif';
-        ctx.fillStyle = '#1e293b';
-        ctx.fillText('PE', barX2 + barW / 2, groundY + 14);
-
-        // Tips
-        ctx.textAlign = 'center';
-        ctx.fillStyle = '#64748b';
-        ctx.font = '12px sans-serif';
-        ctx.fillText('ลากลูกบอลขึ้น-ลง (ศักย์โน้มถ่วง)  |  ลากกล่องสปริง ซ้าย-ขวา (ศักย์ยืดหยุ่น)', W / 2, H - 12);
+        E.card(geo.split + 8, 8, [
+            { t: 'Ep = ½kx²', b: true, s: 14, c: '#1e1b4b' },
+            { t: '= ½(' + k + ')(' + fmt(spr.x, 2) + ')²', s: 12, c: '#475569' },
+            { t: '= ' + fmt(Eps, 1) + ' J', b: true, s: 15, c: '#047857' },
+            { t: spr.free ? 'Ek = ' + fmt(Eks, 1) + ' J · รวม ' + fmt(Eps + Eks, 1) + ' J' : 'ลากกล่องเพื่อยืด/หด', s: 12, c: '#475569' }
+        ]);
     });
 };
 
 
 // ==========================================
-// 5.5 การอนุรักษ์พลังงานกล (KE + PE = คงตัว)
+// 5.5 การอนุรักษ์พลังงานกล — ลานสเก็ต
 // ==========================================
 window.initConservationSimulation = function() {
-    var engine = new window.SimEngine('simConservation');
-    if (!engine.ctx) return;
+    var E = new window.SimEngine('simConservation', { height: 370, bg: ['#dbeafe', '#f0f9ff'], grid: false });
+    if (!E.ctx) return;
 
-    var W = engine.width, H = engine.height;
-    var L = 140;
-    var pivotX = W * 0.52;
-    var pivotY = 32;
-    var m = 2;
-    var g = 10;
+    var g = 9.8, m = 50, mu = 0;
+    var L = 10;
+    var shape = 'U';
+    var TR = {
+        U: function(x) { var u = (x - 5) / 5; return 5.5 * u * u; },
+        W: function(x) { var u = (x - 5) / 5; return 10 * u * u * u * u - 8 * u * u + 2.5 + 1; },
+        S: function(x) { return 5.5 / (1 + Math.exp(1.6 * (x - 3))) + 1.0 * Math.max(0, x - 7.5) * Math.max(0, x - 7.5); }
+    };
+    function y(x) { return TR[shape](x); }
+    function dy(x) { return (y(x + 0.001) - y(x - 0.001)) / 0.002; }
 
-    var theta = Math.PI / 4;
-    var omega = 0;
-    var isDragging = false;
-    var lastTime = performance.now();
+    var s = { x: 1.2, dir: 1, e: 0, heat: 0, dragging: false, crossed: false };
+    var trail = [];
+    function place(x) { s.x = x; s.e = g * y(x); s.heat = 0; s.dir = x < 5 ? 1 : -1; s.crossed = false; trail = []; }
+    place(1.2);
 
-    function getBobPos() {
-        return {
-            x: pivotX + L * Math.sin(theta),
-            y: pivotY + L * Math.cos(theta)
-        };
+    var geo = {};
+    function layout() {
+        var w = E.width, h = E.height;
+        geo.left = 36; geo.right = w - 150;
+        geo.ppx = (geo.right - geo.left) / L;
+        geo.base = h - 36;
+        geo.ppy = Math.min(geo.ppx, (geo.base - 160) / 6.2);   // เว้นที่ด้านบนให้การ์ดสูตร
     }
+    function toPx(x, yy) { return { x: geo.left + x * geo.ppx, y: geo.base - yy * geo.ppy }; }
 
-    function getPos(e) {
-        return engine.getPointerPos(e);
-    }
+    E.onDrag({
+        down: function(p) {
+            layout();
+            var q = toPx(s.x, y(s.x));
+            if (Math.hypot(p.x - q.x, p.y - (q.y - 16)) < 45) { s.dragging = true; return true; }
+            return false;
+        },
+        move: function(p) { place(M.clamp((p.x - geo.left) / geo.ppx, 0.05, L - 0.05)); s.dragging = true; },
+        up: function() { s.dragging = false; },
+        hover: function(p) { layout(); var q = toPx(s.x, y(s.x)); return Math.hypot(p.x - q.x, p.y - (q.y - 16)) < 45; }
+    });
 
-    engine.canvas.style.cursor = 'grab';
+    E.addSegment([{ v: 'U', t: 'ราง U' }, { v: 'W', t: 'ราง W (มีเนิน)' }, { v: 'S', t: 'ลาดลง' }], shape, function(v) { shape = v; place(v === 'S' ? 0.4 : 1.2); }, { label: 'รูปราง:' });
+    E.addSlider({ label: 'มวลนักสเก็ต', min: 20, max: 100, step: 5, value: m, unit: 'kg', onInput: function(v) { m = v; } });
+    E.addSlider({ label: 'แรงเสียดทาน μ', min: 0, max: 0.15, step: 0.01, value: mu, format: function(v) { return v.toFixed(2); }, onInput: function(v) { mu = v; } });
+    E.addButton('↺ เริ่มใหม่', function() { place(shape === 'S' ? 0.4 : 1.2); }, {});
 
-    function onPointerDown(e) {
-        var pos = getPos(e);
-        var bob = getBobPos();
-        if (Math.abs(pos.x - bob.x) < 35 && Math.abs(pos.y - bob.y) < 35) {
-            isDragging = true;
-            omega = 0;
-            engine.canvas.style.cursor = 'grabbing';
-            if (engine.canvas.setPointerCapture && e.pointerId !== undefined) {
-                try { engine.canvas.setPointerCapture(e.pointerId); } catch(err) {}
+    E.start(function(dt) {
+        if (s.dragging) return;
+        var steps = 8, h = dt / steps;
+        for (var i = 0; i < steps; i++) {
+            var ke = s.e - g * y(s.x);
+            var v = Math.sqrt(Math.max(0, 2 * ke));
+            var slope = dy(s.x);
+            var cosA = 1 / Math.sqrt(1 + slope * slope);
+            // ใกล้จุดกลับตัว: เร่งออกจากจุดนิ่งตามทิศลาดลง
+            if (v < 0.05) {
+                if (mu > 0 && Math.abs(slope) < 0.08) break;   // หยุดนิ่งที่ก้นราง
+                s.dir = slope > 0 ? -1 : 1; v = 0.05;
             }
+            var nx = s.x + s.dir * v * cosA * h;
+            if (nx <= 0.02 || nx >= L - 0.02) { s.dir *= -1; continue; }
+            if (s.e - g * y(nx) < 0) { s.dir *= -1; continue; }
+            // แรงเสียดทานทำงานลบ: W_f = −μ N s ≈ −μ mg cos α Δs
+            if (mu > 0) {
+                var ds = Math.abs(nx - s.x) / cosA;
+                var loss = mu * g * cosA * ds;
+                loss = Math.min(loss, Math.max(0, s.e - g * y(nx)));
+                s.e -= loss; s.heat += loss;
+            }
+            s.x = nx;
         }
-    }
-
-    function onPointerMove(e) {
-        if (!isDragging) return;
-        var pos = getPos(e);
-        var dx = pos.x - pivotX;
-        var dy = pos.y - pivotY;
-        if (dy < 10) dy = 10; // Don't flip above pivot
-        theta = Math.atan2(dx, dy);
-        // Limit angle to +/- 80 degrees
-        theta = Math.max(-1.4, Math.min(1.4, theta));
-        omega = 0;
-    }
-
-    function onPointerUp() {
-        isDragging = false;
-        engine.canvas.style.cursor = 'grab';
-    }
-
-    engine.canvas.addEventListener('pointerdown', onPointerDown);
-    engine.canvas.addEventListener('pointermove', onPointerMove);
-    window.addEventListener('pointerup', onPointerUp);
-
-    engine.start(function(dt) {
-        W = engine.width;
-        H = engine.height;
-        pivotX = W * 0.52;
-
-        if (!isDragging) {
-            // Natural pendulum equation: alpha = - (g / L) * sin(theta)
-            var alpha = - (g / (L / 100)) * Math.sin(theta);
-            omega += alpha * dt;
-            omega *= 0.999; // slight air damping
-            theta += omega * dt;
+        if (shape === 'W' && !s.crossed && ((trail.length && trail[0].x < 5 && s.x > 5) || (trail.length && trail[0].x > 5 && s.x < 5))) {
+            s.crossed = true; E.toast('ข้ามเนินได้! E ตั้งต้นพอ 🎉', '#16a34a'); E.burst(E.width * 0.4, 80, 50);
         }
+        trail.push({ x: s.x, t: E.time });
+        if (trail.length > 70) trail.splice(1, 1);
     }, function(ctx) {
-        W = engine.width;
-        H = engine.height;
-        pivotX = W * 0.52;
+        layout();
+        var w = E.width, h = E.height;
 
-        var bob = getBobPos();
-        var lowestY = pivotY + L;
+        // ภูเขาฉากหลัง
+        ctx.fillStyle = 'rgba(148,163,184,0.25)';
+        ctx.beginPath(); ctx.moveTo(0, geo.base);
+        for (var bx = 0; bx <= w; bx += 20) ctx.lineTo(bx, geo.base - 60 - 30 * Math.sin(bx / 60) - 20 * Math.sin(bx / 23));
+        ctx.lineTo(w, geo.base); ctx.fill();
 
-        // Reference line at lowest point
+        // ราง
         ctx.beginPath();
-        ctx.setLineDash([4, 4]);
-        ctx.moveTo(pivotX - 110, lowestY);
-        ctx.lineTo(pivotX + 110, lowestY);
-        ctx.strokeStyle = '#cbd5e1';
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-        ctx.setLineDash([]);
-        ctx.fillStyle = '#94a3b8';
-        ctx.font = '10px sans-serif';
-        ctx.fillText('ระดับอ้างอิง h = 0', pivotX + 115, lowestY + 3);
+        var p0 = toPx(0, y(0)); ctx.moveTo(p0.x, p0.y);
+        for (var xx = 0; xx <= L + 1e-6; xx += 0.05) { var q = toPx(xx, y(xx)); ctx.lineTo(q.x, q.y); }
+        ctx.lineTo(toPx(L, 0).x, geo.base + 30); ctx.lineTo(p0.x, geo.base + 30); ctx.closePath();
+        var tg = ctx.createLinearGradient(0, 0, 0, geo.base);
+        tg.addColorStop(0, '#94a3b8'); tg.addColorStop(1, '#475569');
+        ctx.fillStyle = tg; ctx.fill();
+        ctx.beginPath(); ctx.moveTo(p0.x, p0.y);
+        for (xx = 0; xx <= L + 1e-6; xx += 0.05) { q = toPx(xx, y(xx)); ctx.lineTo(q.x, q.y); }
+        ctx.strokeStyle = mu > 0 ? '#a16207' : '#1e293b'; ctx.lineWidth = 5; ctx.stroke();
+        // ระดับอ้างอิง
+        ctx.save(); ctx.setLineDash([6, 5]); ctx.strokeStyle = '#7c3aed'; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.moveTo(geo.left, geo.base); ctx.lineTo(geo.right, geo.base); ctx.stroke(); ctx.restore();
+        E.text('h = 0', geo.left + 2, geo.base + 16, { size: 12, weight: 'bold', color: '#7c3aed' });
+        // เส้นระดับพลังงานรวม (จุดสูงสุดที่ไปถึงได้)
+        var eh = s.e / g;
+        ctx.save(); ctx.setLineDash([3, 6]); ctx.strokeStyle = '#16a34a'; ctx.lineWidth = 2;
+        var ey = geo.base - eh * geo.ppy;
+        ctx.beginPath(); ctx.moveTo(geo.left, ey); ctx.lineTo(geo.right, ey); ctx.stroke(); ctx.restore();
+        E.text('ระดับพลังงานรวม', geo.right - 4, ey - 5, { size: 11, color: '#15803d', align: 'right', weight: 'bold', stroke: '#fff' });
 
-        // Rope
-        ctx.beginPath();
-        ctx.moveTo(pivotX, pivotY);
-        ctx.lineTo(bob.x, bob.y);
-        ctx.strokeStyle = '#64748b';
-        ctx.lineWidth = 2.5;
-        ctx.stroke();
+        // รอยทาง
+        trail.forEach(function(t, i) {
+            var q = toPx(t.x, y(t.x));
+            ctx.fillStyle = 'rgba(234,88,12,' + (i / trail.length * 0.5) + ')';
+            ctx.beginPath(); ctx.arc(q.x, q.y - 16, 3, 0, Math.PI * 2); ctx.fill();
+        });
 
-        // Pivot mount
-        ctx.beginPath();
-        ctx.arc(pivotX, pivotY, 6, 0, Math.PI * 2);
-        ctx.fillStyle = '#334155';
-        ctx.fill();
+        // นักสเก็ต
+        var P = toPx(s.x, y(s.x));
+        var ang = Math.atan2(-dy(s.x) * geo.ppy, geo.ppx);
+        ctx.save();
+        ctx.translate(P.x, P.y); ctx.rotate(ang);
+        ctx.fillStyle = '#1e293b'; ctx.beginPath(); ctx.roundRect(-16, -7, 32, 5, 2); ctx.fill();
+        ctx.fillStyle = '#f97316'; ctx.beginPath(); ctx.arc(-10, -2, 3, 0, 7); ctx.arc(10, -2, 3, 0, 7); ctx.fill();
+        ctx.fillStyle = '#2563eb'; ctx.beginPath(); ctx.roundRect(-7, -32, 14, 25, 5); ctx.fill();
+        ctx.fillStyle = '#fcd34d'; ctx.beginPath(); ctx.arc(0, -40, 8, 0, 7); ctx.fill();
+        ctx.fillStyle = '#dc2626'; ctx.beginPath(); ctx.arc(0, -42, 8, Math.PI, 0); ctx.fill();
+        ctx.restore();
 
-        // Bob ball with 3D gradient
-        var bobRadius = 16;
-        var bobGrad = ctx.createRadialGradient(bob.x - 4, bob.y - 4, 2, bob.x, bob.y, bobRadius);
-        bobGrad.addColorStop(0, '#f87171');
-        bobGrad.addColorStop(1, '#dc2626');
-        ctx.fillStyle = bobGrad;
-        ctx.beginPath();
-        ctx.arc(bob.x, bob.y, bobRadius, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = '#991b1b';
-        ctx.lineWidth = 2;
-        ctx.stroke();
+        var hh = y(s.x);
+        var ke = Math.max(0, s.e - g * hh) * m, pe = m * g * hh, heat = s.heat * m, tot = ke + pe + heat;
+        var v = Math.sqrt(Math.max(0, 2 * (s.e - g * hh)));
+        // ลูกศรความเร็ว (สัมผัสราง)
+        if (v > 0.2) {
+            var vl = Math.min(80, v * 9);
+            var dirx = s.dir * Math.cos(ang), diry = s.dir * Math.sin(ang);
+            E.drawVector(P.x, P.y - 18, dirx * vl, diry * vl, '#ef4444', 'v⃗', { width: 3 });
+        }
 
-        // Physics Calculation
-        var h = Math.max(0, (lowestY - bob.y) / 70); // height in meters
-        var pe = m * g * h;
-        var v = Math.abs(omega * (L / 100)); // m/s
-        var ke = 0.5 * m * v * v;
-        var total = pe + ke;
+        // แท่งพลังงาน
+        var bx0 = w - 140, baseY = h - 48, maxH = Math.max(120, h - 190);
+        var E0 = Math.max(tot, 1);
+        E.bar(bx0, baseY, 26, maxH, ke / E0, '#f97316', 'Ek', fmt(ke / 1000, 2));
+        E.bar(bx0 + 32, baseY, 26, maxH, pe / E0, '#3b82f6', 'Ep', fmt(pe / 1000, 2));
+        E.bar(bx0 + 64, baseY, 26, maxH, heat / E0, '#ef4444', 'ร้อน', fmt(heat / 1000, 2));
+        E.bar(bx0 + 96, baseY, 26, maxH, tot / E0, '#10b981', 'รวม', fmt(tot / 1000, 2));
+        E.text('หน่วย kJ', bx0 + 60, baseY - maxH - 22, { size: 11, color: '#475569', align: 'center' });
 
-        // Energy Bar Chart on the Left Side
-        var startX = 25;
-        var barW = 26;
-        var maxBarH = 110;
-        var barBaseY = H - 55;
-        var maxEnergy = Math.max(total, 25);
-
-        // KE Bar (Orange)
-        var keH = Math.min((ke / maxEnergy) * maxBarH, maxBarH);
-        ctx.fillStyle = '#e2e8f0';
-        ctx.fillRect(startX, barBaseY - maxBarH, barW, maxBarH);
-        ctx.fillStyle = '#f97316';
-        ctx.fillRect(startX, barBaseY - keH, barW, keH);
-        ctx.fillStyle = '#1e293b';
-        ctx.font = 'bold 11px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('KE', startX + barW / 2, barBaseY + 15);
-        ctx.fillText(ke.toFixed(0), startX + barW / 2, barBaseY - keH - 5);
-
-        // PE Bar (Blue)
-        var peH = Math.min((pe / maxEnergy) * maxBarH, maxBarH);
-        ctx.fillStyle = '#e2e8f0';
-        ctx.fillRect(startX + 36, barBaseY - maxBarH, barW, maxBarH);
-        ctx.fillStyle = '#3b82f6';
-        ctx.fillRect(startX + 36, barBaseY - peH, barW, peH);
-        ctx.fillStyle = '#1e293b';
-        ctx.fillText('PE', startX + 36 + barW / 2, barBaseY + 15);
-        ctx.fillText(pe.toFixed(0), startX + 36 + barW / 2, barBaseY - peH - 5);
-
-        // Total Bar (Green)
-        var totH = Math.min((total / maxEnergy) * maxBarH, maxBarH);
-        ctx.fillStyle = '#e2e8f0';
-        ctx.fillRect(startX + 72, barBaseY - maxBarH, barW, maxBarH);
-        ctx.fillStyle = '#10b981';
-        ctx.fillRect(startX + 72, barBaseY - totH, barW, totH);
-        ctx.fillStyle = '#1e293b';
-        ctx.fillText('รวม', startX + 72 + barW / 2, barBaseY + 15);
-        ctx.fillText(total.toFixed(0), startX + 72 + barW / 2, barBaseY - totH - 5);
-
-        // Info Card (Top Right)
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
-        ctx.beginPath();
-        ctx.roundRect(W - 220, 12, 165, 78, 8);
-        ctx.fill();
-        ctx.strokeStyle = '#e2e8f0';
-        ctx.lineWidth = 1;
-        ctx.stroke();
-
-        ctx.textAlign = 'left';
-        ctx.fillStyle = '#1e293b';
-        ctx.font = 'bold 14px sans-serif';
-        ctx.fillText('กฎการอนุรักษ์พลังงานกล', W - 212, 30);
-        ctx.font = '12px sans-serif';
-        ctx.fillStyle = '#f97316';
-        ctx.fillText('KE (จลน์) = ' + ke.toFixed(1) + ' J', W - 212, 48);
-        ctx.fillStyle = '#3b82f6';
-        ctx.fillText('PE (ศักย์) = ' + pe.toFixed(1) + ' J', W - 212, 65);
-        ctx.fillStyle = '#059669';
-        ctx.font = 'bold 12px sans-serif';
-        ctx.fillText('รวม E = ' + total.toFixed(1) + ' J (คงตัว)', W - 212, 82);
-
-        // Tip
-        ctx.textAlign = 'center';
-        ctx.fillStyle = '#64748b';
-        ctx.font = '12px sans-serif';
-        ctx.fillText('👈 ลากลูกตุ้มไปด้านข้างแล้วปล่อย สังเกตแท่งพลังงานแลกเปลี่ยนกัน แต่ผลรวม (Total) คงที่เสมอ 👉', W / 2, H - 12);
+        E.card(10, 10, [
+            { t: mu > 0 ? 'Ek₁ + Ep₁ + W(f) = Ek₂ + Ep₂' : 'Ek₁ + Ep₁ = Ek₂ + Ep₂', b: true, s: 14, c: '#1e1b4b' },
+            { t: 'h = ' + fmt(hh, 2) + ' m   v = ' + fmt(v, 2) + ' m/s', s: 13, c: '#334155' },
+            { t: 'Ek = ½mv² = ' + fmt(ke, 0) + ' J', s: 12, c: '#c2410c' },
+            { t: 'Ep = mgh = ' + fmt(pe, 0) + ' J', s: 12, c: '#1d4ed8' },
+            { t: mu > 0 ? 'W(f) = f⃗ · s⃗ = −' + fmt(heat, 0) + ' J (กลายเป็นความร้อน)' : 'ไม่มีแรงเสียดทาน → E รวมคงตัว', s: 12, c: mu > 0 ? '#b91c1c' : '#15803d', b: true }
+        ]);
+        if (shape === 'W' && !s.crossed) E.text('🎯 ลากนักสเก็ตไปปล่อยให้ข้ามเนินกลางได้', geo.left + (geo.right - geo.left) / 2, h - 10, { size: 12, weight: 'bold', color: '#9a3412', align: 'center', stroke: '#fff' });
+        else E.text('👆 ลากนักสเก็ตไปวางที่ใดก็ได้แล้วปล่อย', geo.left + (geo.right - geo.left) / 2, h - 10, { size: 12, color: '#334155', align: 'center', stroke: '#fff' });
     });
 };
+})();
