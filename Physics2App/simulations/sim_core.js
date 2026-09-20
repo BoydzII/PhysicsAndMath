@@ -5,7 +5,9 @@
 // - โหมดเต็มจอ: ขยายทั้งฉากด้วย engine.scale (ตัวหนังสือจึงใหญ่ขึ้นตามจอ)
 //   และขยายพื้นที่ตรรกะให้เต็มจอ ซิมจึงต้องอ่าน engine.width / engine.height ทุกเฟรม
 (function() {
-var FONT = "'Sarabun','Prompt','Noto Sans Thai','Leelawadee UI',system-ui,sans-serif";
+// อังกฤษ/ตัวเลข/สมการ ใช้ Times New Roman ส่วนอักษรไทยตกไปใช้ Sarabun (Times ไม่มีอักษรไทย)
+var FONT = "'Times New Roman',Times,'Sarabun','Noto Sans Thai','Leelawadee UI',serif";
+var UPRIGHT = /^(cos|sin|tan|max|min|kg|rad|kW|kJ|hp|Hz|ms|km)$/;
 var active = [];
 
 function fsElement() { return document.fullscreenElement || document.webkitFullscreenElement || null; }
@@ -218,42 +220,58 @@ class SimEngine {
     }
 
     // ---------- ตัวช่วยวาด ----------
-    font(size, weight) { return (weight || 'normal') + ' ' + size + 'px ' + FONT; }
+    font(size, weight, italic) { return (italic ? 'italic ' : '') + (weight || 'normal') + ' ' + size + 'px ' + FONT; }
 
-    // วาดข้อความ: ตัวอักษรที่ตามด้วย U+20D7 (เช่น 'F⃗') จะมีลูกศรเวกเตอร์วาดเหนือตัว
-    // เพราะฟอนต์ส่วนใหญ่บน canvas แสดงเครื่องหมายรวมนี้เป็นกล่องสี่เหลี่ยม
+    // แยกข้อความเป็นช่วง: ตัวแปรละติน/กรีกเล็ก → ตัวเอียง (แบบตำรา)
+    // ฟังก์ชัน (cos sin tan) หน่วย (kg, m/s, N หลังตัวเลข) และอักษรไทย → ตัวตรง
+    // ตัวอักษรที่ตามด้วย U+20D7 จะวาดลูกศรเวกเตอร์เหนือตัวเอง (ฟอนต์ส่วนใหญ่แสดงเป็นกล่อง)
+    runs(str, plain) {
+        if (plain) return [{ t: str, it: false }];
+        var out = [], i = 0, n = str.length;
+        var isLat = function(c) { return /[A-Za-zα-ωϑϕ]/.test(c); };
+        while (i < n) {
+            var j = i;
+            if (isLat(str[i])) {
+                while (j < n && (isLat(str[j]) || str[j] === '⃗')) j++;
+                var t = str.slice(i, j), word = t.replace(/⃗/g, '');
+                var prev = str.slice(0, i);
+                var upright = UPRIGHT.test(word) ||
+                    (word.length <= 2 && /(\d ?|\/|·|— ?)$/.test(prev) && /^[a-zA-Z]+$/.test(word));
+                out.push({ t: t, it: !upright });
+            } else {
+                while (j < n && !isLat(str[j])) j++;
+                out.push({ t: str.slice(i, j), it: false });
+            }
+            i = j;
+        }
+        return out;
+    }
+
     text(str, x, y, o) {
         o = o || {};
         str = String(str);
-        var ctx = this.ctx, size = o.size || 14;
-        ctx.save();
-        ctx.font = this.font(size, o.weight);
-        ctx.fillStyle = o.color || '#1e293b';
-        if (str.indexOf('⃗') < 0) {
-            ctx.textAlign = o.align || 'left';
-            ctx.textBaseline = o.baseline || 'alphabetic';
-            if (o.stroke) { ctx.lineWidth = 4; ctx.strokeStyle = o.stroke; ctx.strokeText(str, x, y); }
-            ctx.fillText(str, x, y);
-            ctx.restore();
-            return;
-        }
-        var plain = str.replace(/⃗/g, '');
-        var total = ctx.measureText(plain).width;
+        var ctx = this.ctx, size = o.size || 14, self = this;
+        var runs = this.runs(str, o.plain);
+        var total = this.measure(str, size, o.weight, o.plain);
         var sx = o.align === 'center' ? x - total / 2 : (o.align === 'right' ? x - total : x);
         var bl = o.baseline || 'alphabetic';
         var by = bl === 'middle' ? y + size * 0.35 : (bl === 'top' ? y + size * 0.9 : (bl === 'bottom' ? y - size * 0.22 : y));
+        ctx.save();
         ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-        var parts = str.split(/(.⃗)/);
+        ctx.fillStyle = o.color || '#1e293b';
         var cx = sx, arrows = [];
-        parts.forEach(function(pt) {
-            if (!pt) return;
-            var isVec = pt.length === 2 && pt.charAt(1) === '⃗';
-            var t = isVec ? pt.charAt(0) : pt;
-            var w = ctx.measureText(t).width;
-            if (o.stroke) { ctx.lineWidth = 4; ctx.strokeStyle = o.stroke; ctx.strokeText(t, cx, by); }
-            ctx.fillText(t, cx, by);
-            if (isVec) arrows.push([cx, w]);
-            cx += w;
+        runs.forEach(function(r) {
+            ctx.font = self.font(size, o.weight, r.it);
+            r.t.split(/(.⃗)/).forEach(function(pt) {
+                if (!pt) return;
+                var isVec = pt.length === 2 && pt.charAt(1) === '⃗';
+                var t = isVec ? pt.charAt(0) : pt;
+                var w = ctx.measureText(t).width;
+                if (o.stroke) { ctx.lineWidth = 4; ctx.strokeStyle = o.stroke; ctx.strokeText(t, cx, by); }
+                ctx.fillText(t, cx, by);
+                if (isVec) arrows.push([cx + (r.it ? size * 0.08 : 0), w]);
+                cx += w;
+            });
         });
         var ay = by - size * 0.92, hs = Math.max(2.5, size * 0.2);
         ctx.strokeStyle = ctx.fillStyle; ctx.lineWidth = Math.max(1.2, size * 0.09); ctx.lineCap = 'round';
@@ -270,40 +288,79 @@ class SimEngine {
         ctx.restore();
     }
 
-    measure(str, size, weight) {
-        this.ctx.save();
-        this.ctx.font = this.font(size, weight);
-        var w = this.ctx.measureText(String(str).replace(/⃗/g, '')).width;
-        this.ctx.restore();
+    measure(str, size, weight, plain) {
+        var ctx = this.ctx, self = this, w = 0;
+        ctx.save();
+        this.runs(String(str), plain).forEach(function(r) {
+            ctx.font = self.font(size, weight, r.it);
+            w += ctx.measureText(r.t.replace(/⃗/g, '')).width;
+        });
+        ctx.restore();
         return w;
     }
 
     // การ์ดข้อมูล: lines = [{t:'ข้อความ', c:'#สี', b:true, s:ขนาด}]
+    // บรรทัดสมการที่ต่อกัน (เช่น "W = F⃗ · s⃗", "= (30)(2)", "= 60 J") จัดให้เครื่องหมาย = ตรงกันเป็นแนวตั้ง
     card(x, y, lines, o) {
         o = o || {};
-        var pad = 9, lh = [], w = 0, self = this;
-        lines.forEach(function(l) {
-            var s = l.s || 13;
-            lh.push(s + 6);
-            w = Math.max(w, self.measure(l.t, s, l.b ? 'bold' : 'normal'));
+        var pad = 10, self = this;
+        var THAI = /[฀-๿]/;
+        var info = lines.map(function(l) {
+            var s = l.s || 13, wt = l.b ? 'bold' : 'normal', t = String(l.t);
+            var k = t.indexOf('=');
+            var left = null, right = null;
+            if (k === 0) { left = ''; right = t.slice(1).trim(); }
+            else if (k > 0) {
+                var L = t.slice(0, k).trim();
+                if (L.length <= 8 && !THAI.test(L)) { left = L; right = t.slice(k + 1).trim(); }
+            }
+            return { l: l, s: s, wt: wt, t: t, left: left, right: right };
         });
-        var h = lh.reduce(function(a, b) { return a + b; }, 0) + pad * 2 - 4;
+        // กลุ่ม = บรรทัดสมการที่อยู่ติดกัน (รวมบรรทัดที่ขึ้นต้นด้วย "=") ใช้แนว = ร่วมกัน
+        for (var i = 0; i < info.length; i++) {
+            if (info[i].left === null) continue;
+            var j = i;
+            while (j + 1 < info.length && info[j + 1].left !== null) j++;
+            if (j > i || info[i].left !== '') {
+                var colL = 0;
+                for (var q = i; q <= j; q++) colL = Math.max(colL, self.measure(info[q].left, info[q].s, info[q].wt));
+                for (q = i; q <= j; q++) info[q].col = colL;
+            }
+            i = j;
+        }
+        var w = 0, lh = [];
+        info.forEach(function(r) {
+            lh.push(r.s + 8);
+            if (r.col !== undefined) {
+                r.eqW = self.measure(' = ', r.s, r.wt);
+                w = Math.max(w, r.col + r.eqW + self.measure(r.right, r.s, r.wt));
+            } else w = Math.max(w, self.measure(r.t, r.s, r.wt, r.l.plain));
+        });
+        var h = lh.reduce(function(a, b) { return a + b; }, 0) + pad * 2 - 6;
         w += pad * 2;
         if (o.alignRight) x = x - w;
         var ctx = this.ctx;
         ctx.save();
         ctx.shadowColor = 'rgba(15,23,42,0.12)';
         ctx.shadowBlur = 10; ctx.shadowOffsetY = 3;
-        ctx.fillStyle = o.fill || 'rgba(255,255,255,0.94)';
+        ctx.fillStyle = o.fill || 'rgba(255,255,255,0.95)';
         ctx.beginPath(); ctx.roundRect(x, y, w, h, 10); ctx.fill();
         ctx.shadowColor = 'transparent';
         ctx.strokeStyle = o.border || '#e2e8f0'; ctx.lineWidth = 1; ctx.stroke();
         ctx.restore();
         var cy = y + pad;
-        lines.forEach(function(l, i) {
-            cy += lh[i] - 4;
-            self.text(l.t, x + pad, cy, { size: l.s || 13, weight: l.b ? 'bold' : 'normal', color: l.c || '#1e293b' });
-            cy += 4;
+        info.forEach(function(r, k) {
+            cy += lh[k] - 6;
+            var st = { size: r.s, weight: r.wt, color: r.l.c || '#1e293b', plain: r.l.plain };
+            if (r.col !== undefined) {
+                var ex = x + pad + r.col;
+                if (r.left) self.text(r.left, ex, cy, Object.assign({ align: 'right' }, st));
+                self.text('=', ex + r.eqW / 2, cy, Object.assign({ align: 'center' }, st));
+                self.text(r.right, ex + r.eqW, cy, st);
+            } else {
+                self.text(r.t, x + pad, cy, st);
+            }
+            cy += 6;
         });
         return { x: x, y: y, w: w, h: h };
     }
