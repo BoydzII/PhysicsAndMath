@@ -1,7 +1,7 @@
 // data_ch5_challenge.js
 
-const getSvgIncline = () => `<br><svg width="200" height="100" viewBox="0 0 200 100"><polygon points="20,90 180,90 180,40" fill="#eee" stroke="#333"/><rect x="80" y="58" width="30" height="30" fill="#add8e6" stroke="#000" transform="rotate(17.5 80 58)"/><text x="90" y="50" font-size="12">m</text></svg>`;
-const getSvgPendulum = () => `<br><svg width="100" height="150" viewBox="0 0 100 150"><line x1="50" y1="10" x2="50" y2="100" stroke="#333" stroke-width="2"/><circle cx="50" cy="100" r="15" fill="#f08080" stroke="#000"/><line x1="20" y1="10" x2="80" y2="10" stroke="#000" stroke-width="4"/></svg>`;
+const getSvgIncline = (h) => `<br><svg width="250" height="135" viewBox="0 0 250 135"><line x1="10" y1="110" x2="240" y2="110" stroke="#334155" stroke-width="2"/><polygon points="30,110 200,110 200,11.9" fill="#eef2f7" stroke="#334155" stroke-width="2"/><line x1="132" y1="51" x2="132" y2="110" stroke="#2563eb" stroke-width="1.5" stroke-dasharray="4 3"/><polygon points="132,51 128,60 136,60" fill="#2563eb"/><polygon points="132,110 128,101 136,101" fill="#2563eb"/><text x="139" y="86" font-size="13" fill="#1d4ed8">h = ${h} m</text><g transform="translate(132,51) rotate(-30)"><rect x="-17" y="-26" width="34" height="26" rx="3" fill="#bae6fd" stroke="#0f172a" stroke-width="1.5"/><text x="0" y="-8" font-size="13" text-anchor="middle">m</text></g><line x1="115" y1="62" x2="86" y2="79" stroke="#dc2626" stroke-width="2"/><polygon points="84,80 94,78 90,72" fill="#dc2626"/><path d="M 62 110 A 32 32 0 0 0 58 94" fill="none" stroke="#7c3aed" stroke-width="1.5"/><text x="66" y="105" font-size="12" fill="#6d28d9">30\u00B0</text></svg>`;
+const getSvgFreeFall = () => `<br><svg width="150" height="150" viewBox="0 0 150 150"><line x1="40" y1="28" x2="105" y2="28" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="3 3"/><circle cx="55" cy="28" r="14" fill="#f08080" stroke="#000"/><text x="55" y="33" font-size="12" text-anchor="middle">m</text><line x1="55" y1="46" x2="55" y2="106" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="4 3"/><polygon points="55,118 49,104 61,104" fill="#dc2626"/><line x1="95" y1="28" x2="95" y2="125" stroke="#2563eb" stroke-width="1.5"/><polygon points="95,28 91,38 99,38" fill="#2563eb"/><polygon points="95,125 91,115 99,115" fill="#2563eb"/><text x="103" y="80" font-size="13" fill="#1d4ed8">h</text><line x1="15" y1="125" x2="135" y2="125" stroke="#334155" stroke-width="2"/></svg>`;
 const getSvgSpring = () => `<br><svg width="200" height="80" viewBox="0 0 200 80"><line x1="20" y1="40" x2="180" y2="40" stroke="#999" stroke-width="2"/><path d="M 20 40 Q 30 20 40 40 T 60 40 T 80 40 T 100 40" fill="none" stroke="#333" stroke-width="2"/><rect x="100" y="25" width="30" height="30" fill="#90ee90" stroke="#000"/><line x1="20" y1="10" x2="20" y2="70" stroke="#000" stroke-width="4"/></svg>`;
 const getSvgBlock = () => `<br><svg width="200" height="80" viewBox="0 0 200 80"><line x1="10" y1="60" x2="190" y2="60" stroke="#333" stroke-width="2"/><rect x="50" y="30" width="40" height="30" fill="#ffd700" stroke="#000"/><line x1="90" y1="45" x2="140" y2="45" stroke="#f00" stroke-width="2" marker-end="url(#arrow)"/><defs><marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#f00"/></marker></defs></svg>`;
 
@@ -71,7 +71,7 @@ const generateProblems = () => {
     const ans = Math.sqrt(2 * 10 * h).toFixed(2);
     problems.push({
       id: `ch5_c${i}`,
-      text: `วัตถุมวล $2$ kg ถูกปล่อยจากความสูง $h = ${h}$ m ลงสู่พื้น จงหาความเร็วของวัตถุกระทบพื้น (m/s) ให้ $g = 10$ m/s$^2$ (ใช้หลักอนุรักษ์พลังงาน)${i===16?getSvgPendulum():""}`,
+      text: `วัตถุมวล $2$ kg ถูกปล่อยจากความสูง $h = ${h}$ m ลงสู่พื้น จงหาความเร็วของวัตถุกระทบพื้น (m/s) ให้ $g = 10$ m/s$^2$ (ใช้หลักอนุรักษ์พลังงาน)${i===16?getSvgFreeFall():""}`,
       hints: `พลังงานศักย์โน้มถ่วงเปลี่ยนเป็นพลังงานจลน์: $mgh = \\frac{1}{2}mv^2$`,
       guide: `<div class="calc-steps">
         <div>1. $v$</div><div>$=$</div><div>$\\sqrt{2gh}$</div>
@@ -128,7 +128,7 @@ const generateProblems = () => {
     const ans = 20 * h;
     problems.push({
       id: `ch5_c${i}`,
-      text: `มวล $2$ kg ไถลลงมาตามพื้นเอียงลื่นทำมุม $30^\\circ$ กับแนวระดับ จากจุดที่สูงจากพื้น $h = ${h}$ m จงหาพลังงานจลน์เมื่อถึงปลายพื้นเอียง (J)${getSvgIncline()}`,
+      text: `มวล $2$ kg ไถลลงมาตามพื้นเอียงลื่นทำมุม $30^\\circ$ กับแนวระดับ จากจุดที่สูงจากพื้น $h = ${h}$ m จงหาพลังงานจลน์เมื่อถึงปลายพื้นเอียง (J)${getSvgIncline(h)}`,
       hints: `พลังงานจลน์ที่ปลายพื้นเอียงเท่ากับพลังงานศักย์ที่จุดเริ่มต้น: $E_k = mgh$`,
       guide: `<div class="calc-steps">
         <div>1. $E_k$</div><div>$=$</div><div>$mgh$</div>
