@@ -2,6 +2,21 @@ let currentTopic = 'work';
 window.currentTopic = currentTopic;
 if (typeof physicsData !== 'undefined') window.physicsData = physicsData;
 let currentLevel = 'beginner';
+
+// แบบฝึกหัดท้ายบท (ท้าทาย) บังคับเป็นระดับขั้นสูงอย่างเดียว เลือกระดับไม่ได้
+function isChallengeTopic(t) { return /_challenge$/.test(t || ''); }
+function effectiveLevel() { return isChallengeTopic(currentTopic) ? 'advanced' : currentLevel; }
+function updateLevelSwitch() {
+  const sw = document.querySelector('.level-switch');
+  if (!sw) return;
+  const locked = isChallengeTopic(currentTopic);
+  sw.classList.toggle('locked', locked);
+  sw.title = locked ? 'แบบฝึกหัดท้ายบทเป็นระดับขั้นสูงอย่างเดียว' : 'เลือกระดับความยาก';
+  sw.querySelectorAll('input[name="level"]').forEach(r => {
+    r.disabled = locked;
+    r.checked = r.value === (locked ? 'advanced' : currentLevel);
+  });
+}
 let drawingEngine = null;
 let currentPaperZoom = 1.0;
 window.currentPaperZoom = currentPaperZoom;
@@ -438,6 +453,8 @@ function polishSolutionSteps(root) {
 function renderApp() {
   const data = physicsData.topics[currentTopic];
   if (!data) return;
+  const level = effectiveLevel();
+  updateLevelSwitch();
 
   // 1. Render Left Panel (Theory)
   const theoryContainer = document.getElementById('theoryContainer');
@@ -453,17 +470,17 @@ function renderApp() {
       html += `<div class="problem-text">ข้อ ${idx + 1}. ${prob.text}</div>`;
       
       // สมการหลัก (รูปเวกเตอร์) แสดงก่อนสมการที่ใช้คำนวณ
-      const mainEq = (currentLevel !== 'advanced' && typeof mainEquationHTML === 'function')
+      const mainEq = (level !== 'advanced' && typeof mainEquationHTML === 'function')
         ? mainEquationHTML(prob, currentTopic) : '';
 
-      if (currentLevel === 'beginner') {
+      if (level === 'beginner') {
         if (prob.hints) {
           const hintText = Array.isArray(prob.hints) ? prob.hints.join(' | ') : prob.hints;
           html += `<div class="hint-box"><b>ไกด์นำทาง:</b> ${hintText}</div>`;
         }
         html += mainEq;
         html += `<div class="solution-guide">${prob.guide}</div>`;
-      } else if (currentLevel === 'intermediate') {
+      } else if (level === 'intermediate') {
         html += mainEq;
         html += `<div class="solution-guide">${prob.intermediateHtml || ''}</div>`;
         html += `<div class="spacer-div" style="height:256px;"></div>`;
@@ -545,7 +562,7 @@ function saveInputs() {
   try {
     const inputs = document.querySelectorAll('.answer-input');
     const values = Array.from(inputs).map(inp => inp.value);
-    localStorage.setItem('physics2_inputs_' + currentTopic + '_' + currentLevel, JSON.stringify(values));
+    localStorage.setItem('physics2_inputs_' + currentTopic + '_' + effectiveLevel(), JSON.stringify(values));
   } catch(e) {
     console.warn('saveInputs error:', e);
   }
@@ -556,7 +573,7 @@ function loadInputs() {
 }
 
 function restoreInputs() {
-  const saved = localStorage.getItem('physics2_inputs_' + currentTopic + '_' + currentLevel);
+  const saved = localStorage.getItem('physics2_inputs_' + currentTopic + '_' + effectiveLevel());
   if (saved) {
     const values = JSON.parse(saved);
     const inputs = document.querySelectorAll('.answer-input');
@@ -961,7 +978,7 @@ function printWorksheet() {
     <div style="display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2px solid #000; padding-bottom:10px; margin-bottom:14px;">
       <div>
         <div style="font-size:15pt; font-weight:bold;">โรงเรียน...........................................................</div>
-        <div style="font-size:12pt; font-weight:600;">ใบงานแบบฝึกหัดฟิสิกส์ เรื่อง: ${topic ? topic.title : currentTopic} (ระดับ: ${currentLevel})</div>
+        <div style="font-size:12pt; font-weight:600;">ใบงานแบบฝึกหัดฟิสิกส์ เรื่อง: ${topic ? topic.title : currentTopic} (ระดับ: ${effectiveLevel()})</div>
         <div style="font-size:11pt; margin-top:4px;">
           ชื่อ-สกุล: <b>${profile.name || '........................................................'}</b> &nbsp;&nbsp;&nbsp;
           ชั้น: <b>${profile.room || '.........'}</b> &nbsp;&nbsp;&nbsp;
@@ -990,7 +1007,7 @@ function copyReportSummary() {
 
   const text = `📊 ผลการส่งงานฟิสิกส์ออนไลน์ (Physics2App)\n` +
     `👤 ชื่อ-สกุล: ${profile.name || '(ไม่ได้ระบุ)'} ชั้น: ${profile.room || '-'} เลขที่: ${profile.no || '-'}\n` +
-    `📚 บทเรียน: ${topic ? topic.title : currentTopic} [ระดับ: ${currentLevel}]\n` +
+    `📚 บทเรียน: ${topic ? topic.title : currentTopic} [ระดับ: ${effectiveLevel()}]\n` +
     `🎯 คะแนนที่ได้: ${result.correct}/${result.total} (${result.percentage}%)\n` +
     `📅 เวลาส่ง: ${now}\n` +
     `📝 รายละเอียด: ตอบถูก ${result.correct} ข้อ, ตอบผิด ${result.answered - result.correct} ข้อ, เว้นว่าง ${result.total - result.answered} ข้อ`;
@@ -1036,7 +1053,7 @@ function submitToGoogleSheets() {
     number: profile.no || '',
     topicId: currentTopic,
     topicTitle: topic ? topic.title : currentTopic,
-    level: currentLevel,
+    level: effectiveLevel(),
     score: result.correct,
     total: result.total,
     percentage: result.percentage,

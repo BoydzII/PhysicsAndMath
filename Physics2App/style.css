@@ -950,3 +950,7 @@ select#topicSelector {
   .main-eq { background: none; border-left: 3px solid #000; }
   .main-eq .me-tag { color: #000; }
 }
+
+/* แบบฝึกหัดท้ายบท: ล็อกระดับความยาก เลือกไม่ได้ */
+.level-switch.locked { opacity: 0.55; }
+.level-switch.locked .toggle-btn { cursor: not-allowed; }
