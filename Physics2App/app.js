@@ -402,6 +402,39 @@ function setupListeners() {
   });
 }
 
+// ตัดเลขลำดับ ("1." "2." ...) ที่ขึ้นต้นบรรทัดวิธีทำออก
+// และเติมชื่อตัวแปรซ้ำที่บรรทัดสุดท้ายของแต่ละชุดสมการ เช่น
+//   F  =  mg          →  F  =  mg
+//      =  10 x 10            =  10 x 10
+//      =  100 N        F     =  100 N
+function polishSolutionSteps(root) {
+  var NUM = /^(\s|&nbsp;)*\d+[.)]\s*/;
+
+  // บรรทัดคำอธิบายของวิธีทำ
+  root.querySelectorAll('.solution-guide .step').forEach(function(el) {
+    el.innerHTML = el.innerHTML.replace(NUM, '');
+  });
+
+  // ตารางคำนวณ: 3 ช่องต่อแถว (ตัวแปร / = / นิพจน์)
+  root.querySelectorAll('.calc-steps').forEach(function(grid) {
+    var cells = Array.prototype.slice.call(grid.children);
+    if (cells.length % 3 !== 0) return;
+    var rows = [];
+    for (var i = 0; i < cells.length; i += 3) rows.push(cells.slice(i, i + 3));
+
+    rows.forEach(function(r) { r[0].innerHTML = r[0].innerHTML.replace(NUM, ''); });
+
+    var isBlank = function(c) { return c.innerHTML.replace(/(&nbsp;|\s)/g, '') === ''; };
+    for (var a = 0; a < rows.length; a++) {
+      if (isBlank(rows[a][0])) continue;          // แถวเริ่มต้นของชุดต้องมีชื่อตัวแปร
+      var b = a;
+      while (b + 1 < rows.length && isBlank(rows[b + 1][0])) b++;
+      if (b > a) rows[b][0].innerHTML = rows[a][0].innerHTML;   // เติมตัวแปรที่บรรทัดสุดท้าย
+      a = b;
+    }
+  });
+}
+
 function renderApp() {
   const data = physicsData.topics[currentTopic];
   if (!data) return;
@@ -446,6 +479,9 @@ function renderApp() {
   }
 
   if (notebookContainer) notebookContainer.innerHTML = html;
+
+  // 2.5 จัดวิธีทำให้อ่านง่าย: ตัดเลขลำดับข้อย่อยออก และเติมตัวแปรที่บรรทัดสุดท้ายของแต่ละชุดสมการ
+  if (notebookContainer) polishSolutionSteps(notebookContainer);
 
   // 3. Render Math using KaTeX safely
   try {
