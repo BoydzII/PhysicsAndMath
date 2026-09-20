@@ -419,13 +419,19 @@ function renderApp() {
       html += `<div class="problem-block" data-id="${prob.id}">`;
       html += `<div class="problem-text">ข้อ ${idx + 1}. ${prob.text}</div>`;
       
+      // สมการหลัก (รูปเวกเตอร์) แสดงก่อนสมการที่ใช้คำนวณ
+      const mainEq = (currentLevel !== 'advanced' && typeof mainEquationHTML === 'function')
+        ? mainEquationHTML(prob, currentTopic) : '';
+
       if (currentLevel === 'beginner') {
         if (prob.hints) {
           const hintText = Array.isArray(prob.hints) ? prob.hints.join(' | ') : prob.hints;
           html += `<div class="hint-box"><b>ไกด์นำทาง:</b> ${hintText}</div>`;
         }
+        html += mainEq;
         html += `<div class="solution-guide">${prob.guide}</div>`;
       } else if (currentLevel === 'intermediate') {
+        html += mainEq;
         html += `<div class="solution-guide">${prob.intermediateHtml || ''}</div>`;
         html += `<div class="spacer-div" style="height:256px;"></div>`;
         html += `<button class="sm expand-btn" style="position:relative; z-index:10; margin-top:16px; padding:4px 8px; border-radius:4px; border:1px solid #ccc; cursor:pointer; background:#fff;">+ เพิ่มพื้นที่ทด</button>`;

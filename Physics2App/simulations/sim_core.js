@@ -281,8 +281,9 @@ class SimEngine {
                 ctx.save(); ctx.strokeStyle = o.stroke; ctx.lineWidth = ctx.lineWidth + 3;
                 ctx.beginPath(); ctx.moveTo(x1, ay); ctx.lineTo(x2, ay); ctx.stroke(); ctx.restore();
             }
+            // ลูกศรครึ่งซีก (harpoon) แบบเดียวกับที่ใช้ในสมการ
             ctx.beginPath(); ctx.moveTo(x1, ay); ctx.lineTo(x2, ay);
-            ctx.moveTo(x2 - hs, ay - hs * 0.7); ctx.lineTo(x2, ay); ctx.lineTo(x2 - hs, ay + hs * 0.7);
+            ctx.moveTo(x2 - hs, ay - hs * 0.75); ctx.lineTo(x2, ay);
             ctx.stroke();
         });
         ctx.restore();
