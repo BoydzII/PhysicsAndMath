@@ -651,6 +651,12 @@ hl{background:var(--warn-bg);border-radius:4px;padding:0 3px}
 .solstep>.h .cv{margin-left:auto;color:var(--muted);font-size:13px;font-weight:400}
 .solstep>.b{padding:11px 13px 13px 44px}
 .solstep.closed>.b{display:none}
+.sol.hide-steps .solstep > .b > .sol-text { display: none; }
+.sol.hide-steps .solstep > .b > .sol-lines { display: block; }
+.sol.hide-steps .solstep.closed > .b { display: block !important; }
+.sol.hide-steps .solstep > .h .cv { display: none; }
+.sol-lines .wl { border-bottom: 1px dotted var(--line2); height: 26px; }
+.sol-lines .wl:last-child { border-bottom: none; }
 .solstep .why{color:var(--muted);font-size:14px;margin-top:3px}
 
 /* ตารางสิ่งที่กำหนดให้ */
@@ -3594,12 +3600,26 @@ function choiceWhyHTML(p) {
 function solutionHTML(p, open) {
   if (p.theory) return theorySolutionHTML(p, open);
   const b = stepBodies(p);
+  const L = workLines(1);
   let h = '<div class="sol">';
+  
+  h += '<div class="row noprint" style="justify-content:flex-end; margin-bottom: 8px;">' +
+       '<button class="sm" type="button" onclick="this.closest('.sol').classList.toggle('hide-steps'); ' +
+       'this.innerHTML = this.closest('.sol').classList.contains('hide-steps') ? '👁️ แสดงวิธีทำทั้งหมด' : '👁️ ซ่อนข้อความ (เว้นบรรทัดไว้เขียน)'">' +
+       '👁️ ซ่อนข้อความ (เว้นบรรทัดไว้เขียน)</button></div>';
+
   for (let i = 0; i < 7; i++) {
+    const blockId = WORK_BLOCKS[i].id;
+    const count = L[blockId] || 0;
+    const linesHTML = count > 0 ? '<div class="sol-lines" style="display:none; padding: 6px 0;">' + 
+                      new Array(count + 1).join('<div class="wl"></div>') + 
+                      '</div>' : '<div class="sol-lines" style="display:none"><div class="hint" style="margin-top:8px">— ไม่มีบรรทัดในช่องนี้ —</div></div>';
+
     h += '<div class="solstep' + (open ? '' : ' closed') + '" data-step="' + i + '">' +
       '<div class="h"><span class="n">' + (i + 1) + '</span>' + STEP_TITLES[i] +
       (open ? '' : '<span class="cv">แตะเพื่อดู</span>') + '</div>' +
-      '<div class="b">' + (b[i] || '<span class="hint">—</span>') + '</div></div>';
+      '<div class="b"><div class="sol-text">' + (b[i] || '<span class="hint">—</span>') + '</div>' +
+      linesHTML + '</div></div>';
   }
   return h + '</div>';
 }
