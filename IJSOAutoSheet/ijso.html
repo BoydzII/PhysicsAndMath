@@ -4681,7 +4681,7 @@ T({
     const s = u * t + 0.5 * a * t * t;
     return {
       stem: `รถยนต์คันหนึ่งเคลื่อนที่ด้วยความเร็วต้น ${u  } m/s มีความเร่งคงตัว ${a  } m/s² จงหาระยะทางที่รถเคลื่อนที่ได้ในเวลา ${t  } วินาที`,
-      given: [{s: 'u', v: u, unit: 'm/s'  }, {s: 'a', v: a, unit: 'm/s^2'  }, {s: 't', v: t, unit: 's'  }],
+      given: [{s: 'u', v: u, unit: 'm/s'  }, {s: 'a', v: a, unit: 'm/s²'  }, {s: 't', v: t, unit: 's'  }],
       finds: [{s: 's', unit: 'm', value: s, positive: true  }],
       distract: D3(s, [s+a, s-a, s*2, s/2]),
       sol: {
@@ -4707,7 +4707,7 @@ T({
     return {
       stem: `วัตถุหนึ่งเพิ่มความเร็วจาก ${u  } m/s เป็น ${v  } m/s ในเวลา ${t  } วินาที จงหาความเร่งของวัตถุ`,
       given: [{s: 'u', v: u, unit: 'm/s'  }, {s: 'v', v: v, unit: 'm/s'  }, {s: 't', v: t, unit: 's'  }],
-      finds: [{s: 'a', unit: 'm/s^2', value: a, positive: true  }],
+      finds: [{s: 'a', unit: 'm/s²', value: a, positive: true  }],
       distract: D3(a, [a+2, a-1, a*2, a/2]),
       sol: {
         analyze: 'ความเร่งคืออัตราการเปลี่ยนแปลงความเร็ว',
@@ -4730,7 +4730,7 @@ T({
     const f = m * a;
     return {
       stem: `ออกแรง F ผลักมวล ${m  } kg บนพื้นลื่น ทำให้วัตถุมีความเร่ง ${a  } m/s² จงหาขนาดของแรง F`,
-      given: [{s: 'm', v: m, unit: 'kg'  }, {s: 'a', v: a, unit: 'm/s^2'  }],
+      given: [{s: 'm', v: m, unit: 'kg'  }, {s: 'a', v: a, unit: 'm/s²'  }],
       finds: [{s: 'F', unit: 'N', value: f, positive: true  }],
       distract: D3(f, [f+m, f-m, f*2]),
       sol: {
@@ -4757,7 +4757,7 @@ T({
     const sx = (u * u * sin2t) / g;
     return {
       stem: `ขว้างวัตถุด้วยความเร็วต้น ${u  } m/s ทำมุม ${angle  } กับแนวระดับ จงหาระยะตกไกลสุดในแนวระดับ (กำหนด g = 10 m/s², sin(2θ) ≈ ${sin2t  })`,
-      given: [{s: 'u', v: u, unit: 'm/s'  }, {s: 'g', v: 10, unit: 'm/s^2'  }],
+      given: [{s: 'u', v: u, unit: 'm/s'  }, {s: 'g', v: 10, unit: 'm/s²'  }],
       finds: [{s: 'S_x', unit: 'm', value: sx, positive: true  }],
       distract: D3(sx, [sx*2, sx/2, sx+10]),
       sol: {
@@ -4807,8 +4807,8 @@ T({
     const a = g * sinT.v;
     return {
       stem: `วัตถุมวล ${m  } kg วางบนพื้นเอียงลื่นทำมุม ${sinT.a  } กับแนวระดับ จงหาความเร่งของวัตถุเมื่อปล่อยให้ไถลลงมา (g = 10 m/s², sin(${sinT.a  }) = ${sinT.v  })`,
-      given: [{s: 'm', v: m, unit: 'kg'  }, {s: 'g', v: 10, unit: 'm/s^2'  }],
-      finds: [{s: 'a', unit: 'm/s^2', value: a, positive: true  }],
+      given: [{s: 'm', v: m, unit: 'kg'  }, {s: 'g', v: 10, unit: 'm/s²'  }],
+      finds: [{s: 'a', unit: 'm/s²', value: a, positive: true  }],
       distract: D3(a, [a*m, a/m, a+2]),
       sol: {
         analyze: 'แรงที่ทำให้วัตถุไถลลงคือองค์ประกอบของน้ำหนักขนานกับพื้นเอียง',
@@ -4846,7 +4846,7 @@ T({
     return {
       stem: `มวล m₁ = ${m1  } kg วางบนพื้นเอียงทำมุม 37° กับแนวระดับ สัมประสิทธิ์ความเสียดทานจลน์ μ = ${mu  } ผูกเชือกผ่านรอกมวลเบาไปยังมวล m₂ = ${m2  } kg ที่ห้อยในแนวดิ่ง จงหาความเร่งของระบบ (g = 10 m/s², sin37°=0.6, cos37°=0.8)`,
       given: [{s: 'm_1', v: m1, unit: 'kg'  }, {s: 'm_2', v: m2, unit: 'kg'  }, {s: 'μ', v: mu, unit: ''  }],
-      finds: [{s: 'a', unit: 'm/s^2', value: a, positive: true  }],
+      finds: [{s: 'a', unit: 'm/s²', value: a, positive: true  }],
       distract: D3(a, [a+1, a-1, net_f/m2]),
       sol: {
         analyze: 'พิจารณาระบบรวม แรงฉุดคือ m₂g แรงต้านคือองค์ประกอบน้ำหนัก m₁ และแรงเสียดทาน',
@@ -4904,7 +4904,7 @@ T({
     
     return {
       stem: `วัตถุปริมาตร ${v_obj  } m³ ความหนาแน่น ${rho_obj  } kg/m³ ถูกผูกเชือกแขวนจมมิดอยู่ในน้ำความหนาแน่น ${rho_water  } kg/m³ จงหาความตึงของเชือก (g = 10 m/s²)`,
-      given: [{s: 'V', v: v_obj, unit: 'm^3'  }, {s: 'ρ_{obj  }', v: rho_obj, unit: 'kg/m^3'  }],
+      given: [{s: 'V', v: v_obj, unit: 'm³'  }, {s: 'ρ_{obj  }', v: rho_obj, unit: 'kg/m³'  }],
       finds: [{s: 'T', unit: 'N', value: t_string, positive: true  }],
       distract: D3(t_string, [weight, f_buoy, weight + f_buoy]),
       sol: {
@@ -4934,9 +4934,9 @@ T({
         fig += svgArrow(100, 45, 100, 90, 'stroke:var(--blue);stroke-width:2', 'v = ?', 15, 5);
         fig += svgHatch(20, 200, 180, 200, 15, 6);
         return {
-          stem: `ปล่อยลูกบอลจากดาดฟ้าตึก (ความเร็วต้น 0 m/s) เมื่อเวลาผ่านไป ${ t } วินาที ลูกบอลจะมีความเร็วเท่าใด (g = 10 m/s^2)`,
+          stem: `ปล่อยลูกบอลจากดาดฟ้าตึก (ความเร็วต้น 0 m/s) เมื่อเวลาผ่านไป ${ t } วินาที ลูกบอลจะมีความเร็วเท่าใด (g = 10 m/s²)`,
           figure: svgWrap(200, 220, fig),
-          given: [ { s: 'u', v: u, unit: 'm/s' }, { s: 't', v: t, unit: 's' }, { s: 'g', v: g, unit: 'm/s^2' } ],
+          given: [ { s: 'u', v: u, unit: 'm/s' }, { s: 't', v: t, unit: 's' }, { s: 'g', v: g, unit: 'm/s²' } ],
           finds: [ { s: 'v', unit: 'm/s', value: v, positive: true } ],
           ans: v, unit: 'm/s',
           sol: {
@@ -4964,16 +4964,16 @@ T({
         fig += svgTxt(120, 200, m2 + ' kg', 'middle', false, 'fill:black;font-size:12px;');
         fig += svgHatch(60, 20, 140, 20, 8, -6);
         return {
-          stem: `มวล ${ m1 } kg และ ${ m2 } kg แขวนผ่านรอกเดี่ยวตายตัวที่ไม่มีความฝืด ระบบนี้จะมีความเร่งกี่ m/s^2 (g = 10 m/s^2)`,
+          stem: `มวล ${ m1 } kg และ ${ m2 } kg แขวนผ่านรอกเดี่ยวตายตัวที่ไม่มีความฝืด ระบบนี้จะมีความเร่งกี่ m/s² (g = 10 m/s²)`,
           figure: svgWrap(200, 250, fig),
-          given: [ { s: 'm_{ 1 }', v: m1, unit: 'kg' }, { s: 'm_{ 2 }', v: m2, unit: 'kg' }, { s: 'g', v: g, unit: 'm/s^2' } ],
-          finds: [ { s: 'a', unit: 'm/s^2', value: a, positive: true } ],
-          ans: a, unit: 'm/s^2',
+          given: [ { s: 'm_{ 1 }', v: m1, unit: 'kg' }, { s: 'm_{ 2 }', v: m2, unit: 'kg' }, { s: 'g', v: g, unit: 'm/s²' } ],
+          finds: [ { s: 'a', unit: 'm/s²', value: a, positive: true } ],
+          ans: a, unit: 'm/s²',
           sol: {
             analyze: 'ใช้กฎข้อที่สองของนิวตันกับระบบรวม',
             eqs: [ { eq: 'a = \\frac{(m_{ 2 } - m_{ 1 })g}{m_{ 1 } + m_{ 2 }}', why: 'ความเร่งระบบรอก' } ],
             solve: 'แทนค่ามวล', subst: `a = \\frac{(${ m2 } - ${ m1 })(10)}{${ m1 } + ${ m2 }}`, calc: `a = ${ a }`,
-            conclude: `ระบบมีความเร่ง ${ a } m/s^2`
+            conclude: `ระบบมีความเร่ง ${ a } m/s²`
           }
         };
       }
@@ -5094,7 +5094,7 @@ T({
     const v = Math.round(Math.sqrt(2 * g * h));
     return {
       stem: `ปล่อยวัตถุจากที่สูง ${h  } เมตร ลงสู่พื้นดิน จงหาความเร็วของวัตถุขณะกระทบพื้น (g = 10 m/s² ไม่คิดแรงต้านอากาศ)`,
-      given: [{s: 'h', v: h, unit: 'm'  }, {s: 'g', v: 10, unit: 'm/s^2'  }],
+      given: [{s: 'h', v: h, unit: 'm'  }, {s: 'g', v: 10, unit: 'm/s²'  }],
       finds: [{s: 'v', unit: 'm/s', value: v, positive: true  }],
       distract: D3(v, [v*2, v/2, v+5]),
       sol: {
@@ -5307,9 +5307,9 @@ T({
         fig += '<circle cx="100" cy="140" r="4" fill="#ef4444"/>';
         fig += svgArrow(180, 60, 180, 140, 'stroke:#333', 'h = ' + h + ' m', 10, 0);
         return {
-          stem: `ถังน้ำบรรจุน้ำลึก ${ h } เมตร ความดันเกจที่ก้นถังมีค่ากี่พาสคัล (ความหนาแน่นน้ำ = 1000 kg/m^3, g = 10 m/s^2)`,
+          stem: `ถังน้ำบรรจุน้ำลึก ${ h } เมตร ความดันเกจที่ก้นถังมีค่ากี่พาสคัล (ความหนาแน่นน้ำ = 1000 kg/m³, g = 10 m/s²)`,
           figure: svgWrap(240, 180, fig),
-          given: [ { s: 'h', v: h, unit: 'm' }, { s: '\\rho', v: rho, unit: 'kg/m^3' }, { s: 'g', v: g, unit: 'm/s^2' } ],
+          given: [ { s: 'h', v: h, unit: 'm' }, { s: '\\rho', v: rho, unit: 'kg/m³' }, { s: 'g', v: g, unit: 'm/s²' } ],
           finds: [ { s: 'P', unit: 'Pa', value: p, positive: true } ],
           ans: p, unit: 'Pa',
           sol: {
@@ -5335,9 +5335,9 @@ T({
         fig += svgArrow(25, 40, 25, 80, 'stroke:#333', 'h_{ 2 } = ?', -35, 0);
         fig += svgArrow(135, 80, 135, 100, 'stroke:#333', 'h_{ 1 } = ' + h1 + ' cm', 10, 0);
         return {
-          stem: `หลอดแก้วรูปตัวยูบรรจุน้ำ (ความหนาแน่น 1000 kg/m^3) จากนั้นเติมน้ำมัน (ความหนาแน่น 800 kg/m^3) ลงในขาข้างหนึ่ง พบว่าระดับน้ำในอีกข้างสูงกว่ารอยต่อ ${ h1 } cm น้ำมันลำนี้สูงกี่ cm`,
+          stem: `หลอดแก้วรูปตัวยูบรรจุน้ำ (ความหนาแน่น 1000 kg/m³) จากนั้นเติมน้ำมัน (ความหนาแน่น 800 kg/m³) ลงในขาข้างหนึ่ง พบว่าระดับน้ำในอีกข้างสูงกว่ารอยต่อ ${ h1 } cm น้ำมันลำนี้สูงกี่ cm`,
           figure: svgWrap(240, 220, fig),
-          given: [ { s: '\\rho_{ 1 }', v: rho1, unit: 'kg/m^3' }, { s: 'h_{ 1 }', v: h1, unit: 'cm' }, { s: '\\rho_{ 2 }', v: rho2, unit: 'kg/m^3' } ],
+          given: [ { s: '\\rho_{ 1 }', v: rho1, unit: 'kg/m³' }, { s: 'h_{ 1 }', v: h1, unit: 'cm' }, { s: '\\rho_{ 2 }', v: rho2, unit: 'kg/m³' } ],
           finds: [ { s: 'h_{ 2 }', unit: 'cm', value: h2, positive: true } ],
           ans: h2, unit: 'cm',
           sol: {
@@ -5363,16 +5363,16 @@ T({
         fig += svgArrow(20, y_top, 20, y_top + 60, 'stroke:#333', 'V_{ total }', -10, 0);
         fig += svgArrow(180, 80, 180, 80 + h_sub, 'stroke:#333', pct + '% V', 10, 0);
         return {
-          stem: `วัตถุลอยในน้ำ (ความหนาแน่น 1000 kg/m^3) โดยปริมาตรส่วนที่จมคิดเป็น ${ pct }% ของปริมาตรทั้งหมด วัตถุมีความหนาแน่นกี่ kg/m^3`,
+          stem: `วัตถุลอยในน้ำ (ความหนาแน่น 1000 kg/m³) โดยปริมาตรส่วนที่จมคิดเป็น ${ pct }% ของปริมาตรทั้งหมด วัตถุมีความหนาแน่นกี่ kg/m³`,
           figure: svgWrap(240, 180, fig),
-          given: [ { s: '\\%V_{ sub }', v: pct, unit: '\\%' }, { s: '\\rho_{ fluid }', v: rho_fluid, unit: 'kg/m^3' } ],
-          finds: [ { s: '\\rho_{ obj }', unit: 'kg/m^3', value: rho_obj, positive: true } ],
-          ans: rho_obj, unit: 'kg/m^3',
+          given: [ { s: '\\%V_{ sub }', v: pct, unit: '\\%' }, { s: '\\rho_{ fluid }', v: rho_fluid, unit: 'kg/m³' } ],
+          finds: [ { s: '\\rho_{ obj }', unit: 'kg/m³', value: rho_obj, positive: true } ],
+          ans: rho_obj, unit: 'kg/m³',
           sol: {
             analyze: 'วัตถุลอย น้ำหนักวัตถุเท่ากับแรงพยุง',
             eqs: [ { eq: '\\rho_{ obj } V_{ obj } g = \\rho_{ fluid } V_{ sub } g', why: 'แรงพยุงอาร์คิมิดีส' } ],
             solve: 'ย้ายข้างและแทนสัดส่วน V จม', subst: `\\rho_{ obj } = 1000 \\times \\frac{${ pct }}{100}`, calc: `\\rho_{ obj } = ${ rho_obj }`,
-            conclude: `วัตถุมีความหนาแน่น ${ rho_obj } kg/m^3`
+            conclude: `วัตถุมีความหนาแน่น ${ rho_obj } kg/m³`
           }
         };
       }
@@ -5933,9 +5933,9 @@ T({
       distract: D3(p.single, [p.single+1, p.single-1, 1]),
       sol: {
         analyze: 'จัดเรียงอิเล็กตรอนในระดับพลังงานย่อย (s, p, d, f) แล้วพิจารณา d-orbital ตามกฎของฮุนด์ (Hund\'s Rule)',
-        eqs: [{ eq: 'Z = 1s^2 2s^2 2p^6 3s^2 3p^6 4s^2 3d^x', why: 'การบรรจุอิเล็กตรอน'   }],
+        eqs: [{ eq: 'Z = 1s² 2s² 2p^6 3s² 3p^6 4s² 3d^x', why: 'การบรรจุอิเล็กตรอน'   }],
         solve: 'บรรจุอิเล็กตรอนเดี่ยวลงใน d-orbital 5 ห้องให้เต็มก่อน แล้วจึงเข้าคู่',
-        subst: `${p.sym  }(23) = [Ar] 4s^2 3d^{${p.z - 20  }  }`,
+        subst: `${p.sym  }(23) = [Ar] 4s² 3d^{${p.z - 20  }  }`,
         calc: `มีอิเล็กตรอนใน 3d = ${p.z - 20  } ตัว จัดลง 5 ช่องได้อิเล็กตรอนเดี่ยว ${p.single  } ตัว`,
         conclude: `ธาตุนี้มีอิเล็กตรอนเดี่ยว ${p.single  } ตัว`
         }
@@ -7497,7 +7497,7 @@ function esNewQuestionDialog() {
 function esDownloadExcelTemplate() {
   const csv = '\uFEFF"โจทย์","คะแนน","เฉลยวิธีทำ","คำตอบสุดท้าย","หน่วย","รูปภาพURL"\n' +
     '"คลื่นเสียงความถี่ 500 Hz เคลื่อนที่ในอากาศอุณหภูมิ 25 C จงหาความเร็วเสียงและความยาวคลื่น",10,"v = 331 + 0.6*25 = 346 m/s, lambda = v/f = 0.692 m",346,"m/s",""\n' +
-    '"วัตถุมวล 2 kg เคลื่อนที่ด้วยความเร่ง 3 m/s^2 จงหาแรงลัพธ์ที่กระทำต่อวัตถุ",5,"F = ma = 2 * 3 = 6 N",6,"N",""\n';
+    '"วัตถุมวล 2 kg เคลื่อนที่ด้วยความเร่ง 3 m/s² จงหาแรงลัพธ์ที่กระทำต่อวัตถุ",5,"F = ma = 2 * 3 = 6 N",6,"N",""\n';
   download(new Blob([csv], { type: 'text/csv;charset=utf-8;'   }), 'แม่แบบนำเข้าโจทย์ข้อสอบ_' + SUBJECT + '.csv');
   toast('ดาวน์โหลดแม่แบบเรียบร้อย สามารถเปิดแก้ไขใน Excel ได้เลย', 'ok');
   }
@@ -17871,8 +17871,8 @@ applyAppIcon();
           finds: [ { s: 'R', unit: '', value: r, positive: true } ],
           ans: r, unit: '',
           sol: {
-            analyze: 'หาพื้นที่ผิว (6s^2) หารด้วยปริมาตร (s^3)',
-            eqs: [ { eq: 'R = \\frac{6s^2}{s^3}', why: 'สูตรอัตราส่วน' } ],
+            analyze: 'หาพื้นที่ผิว (6s²) หารด้วยปริมาตร (s^3)',
+            eqs: [ { eq: 'R = \\frac{6s²}{s^3}', why: 'สูตรอัตราส่วน' } ],
             solve: 'แทนค่าความยาว', subst: `R = \\frac{6(${ s }^2)}{${ s }^3}`, calc: `R = ${ r }`,
             conclude: `อัตราส่วนคือ ${ r }`
           }
@@ -18276,12 +18276,12 @@ applyAppIcon();
         const q = Math.sqrt(q2);
         return {
           stem: `ประชากรมีผู้ป่วยโรคยีนด้อยร้อยละ ${q2 * 100} ความถี่ของอัลลีลด้อย (q) คือเท่าใด`,
-          given: [ { s: 'q^2', v: q2, unit: '' } ],
+          given: [ { s: 'q²', v: q2, unit: '' } ],
           finds: [ { s: 'q', unit: '', value: q, positive: true } ],
           ans: q, unit: '',
           sol: {
             analyze: 'ถอดรากที่สองของความถี่จีโนไทป์ด้อย',
-            eqs: [ { eq: 'q = \\sqrt{q^2}', why: 'ฮาร์ดีไวน์เบิร์ก' } ],
+            eqs: [ { eq: 'q = \\sqrt{q²}', why: 'ฮาร์ดีไวน์เบิร์ก' } ],
             solve: 'แทนค่า', subst: `q = \\sqrt{${ q2 }}`, calc: `q = ${ q }`,
             conclude: `ความถี่อัลลีลด้อยคือ ${ q }`
           }
@@ -18296,8 +18296,8 @@ applyAppIcon();
         const p = 0.9;
         const pct = 2 * p * q * 100;
         return {
-          stem: `ความถี่ของคนเป็นโรค (q^2) เท่ากับ ${ q2 } จงหาเปอร์เซ็นต์ของประชากรที่เป็นพาหะ (2pq)`,
-          given: [ { s: 'q^2', v: q2, unit: '' } ],
+          stem: `ความถี่ของคนเป็นโรค (q²) เท่ากับ ${ q2 } จงหาเปอร์เซ็นต์ของประชากรที่เป็นพาหะ (2pq)`,
+          given: [ { s: 'q²', v: q2, unit: '' } ],
           finds: [ { s: '2pq', unit: '\\%', value: pct, positive: true } ],
           ans: pct, unit: '%',
           sol: {
@@ -18362,15 +18362,15 @@ applyAppIcon();
         const v2 = R.pick([10, 20]);
         const d = (m1 + m2) / (v1 + v2);
         return {
-          stem: `นำของเหลว A มวล ${ m1 } g ปริมาตร ${ v1 } cm^3 ผสมกับของเหลว B มวล ${ m2 } g ปริมาตร ${ v2 } cm^3 ของเหลวผสมจะมีความหนาแน่นกี่ g/cm^3`,
-          given: [ { s: 'm_{ 1 }', v: m1, unit: 'g' }, { s: 'V_{ 1 }', v: v1, unit: 'cm^3' }, { s: 'm_{ 2 }', v: m2, unit: 'g' }, { s: 'V_{ 2 }', v: v2, unit: 'cm^3' } ],
-          finds: [ { s: 'D', unit: 'g/cm^3', value: d, positive: true } ],
-          ans: d, unit: 'g/cm^3',
+          stem: `นำของเหลว A มวล ${ m1 } g ปริมาตร ${ v1 } cm³ ผสมกับของเหลว B มวล ${ m2 } g ปริมาตร ${ v2 } cm³ ของเหลวผสมจะมีความหนาแน่นกี่ g/cm³`,
+          given: [ { s: 'm_{ 1 }', v: m1, unit: 'g' }, { s: 'V_{ 1 }', v: v1, unit: 'cm³' }, { s: 'm_{ 2 }', v: m2, unit: 'g' }, { s: 'V_{ 2 }', v: v2, unit: 'cm³' } ],
+          finds: [ { s: 'D', unit: 'g/cm³', value: d, positive: true } ],
+          ans: d, unit: 'g/cm³',
           sol: {
             analyze: 'ความหนาแน่นผสมหาได้จากผลรวมมวลหารด้วยผลรวมปริมาตร',
             eqs: [ { eq: 'D = \\frac{m_{ 1 } + m_{ 2 }}{V_{ 1 } + V_{ 2 }}', why: 'สูตรความหนาแน่น' } ],
             solve: 'แทนค่ามวลและปริมาตรทั้งหมด', subst: `D = \\frac{${ m1 } + ${ m2 }}{${ v1 } + ${ v2 }}`, calc: `D = ${ d }`,
-            conclude: `ความหนาแน่นผสมคือ ${ d } g/cm^3`
+            conclude: `ความหนาแน่นผสมคือ ${ d } g/cm³`
           }
         };
       }
