@@ -476,7 +476,11 @@ const SUBJECTS = [
     desc: 'บทเรียน 8 หน่วย · ซิมมูเลชันโต้ตอบ 7 ชุด · โจทย์ 30 แม่แบบ<br>' +
           'เรียน–ทดลอง–ฝึก–สอบ ครบในที่เดียว พร้อมเก็บ XP และเหรียญตรา' },
 
-  { key: 'figure', name: 'ห้องวาดรูปโจทย์', level: 'เครื่องมือของครู', grades: [],
+      { key: 'ijso', icon: '🔬', name: 'ข้อสอบ IJSO สอวน. ม.ต้น', level: 'ม.ต้น (สอบแข่งขัน)', grades: [1, 2, 3],
+      dir: 'IJSOApp/', teacher: 'index.html', student: 'index.html', openFree: true,
+      desc: 'แอปตะลุยข้อสอบ IJSO และ สอวน. ม.ต้น<br>สุ่มโจทย์ฟิสิกส์ เคมี ชีววิทยา บูรณาการ' },
+  
+    { key: 'figure', name: 'ห้องวาดรูปโจทย์', level: 'เครื่องมือของครู', grades: [],
     dir: 'FigureLab/', teacher: 'figure.html', student: 'figure.html', teacherOnly: true,
     desc: 'วาดรูปประกอบโจทย์ฟิสิกส์ คณิตศาสตร์ และเคมี เก็บเป็นคลังใช้ซ้ำได้<br>' +
           'ส่งออกเป็นโค้ด SVG วางลงแม่แบบโจทย์ได้ทันที' }

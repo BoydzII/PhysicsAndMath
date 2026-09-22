@@ -144,7 +144,9 @@
       dir: 'PhysicalScienceAutoSheet/', teacher: 'physci.html', student: 'index.html' },
     { key: 'equilibrium', ic: 'equilibrium', name: 'ห้องเรียนสมดุลกล',    level: 'ฟิสิกส์ ม.4',
       dir: 'EquilibriumLab/', teacher: 'equilibrium.html', student: 'index.html' },
-    { key: 'figure',      ic: 'figure',      name: 'ห้องวาดรูปโจทย์',     level: 'เครื่องมือของครู',
+          { key: 'ijso',        ic: 'science',     name: 'ข้อสอบ IJSO สอวน. ม.ต้น', level: 'ม.ต้น (สอบแข่งขัน)',
+        dir: 'IJSOApp/', teacher: 'index.html', student: 'index.html' },
+      { key: 'figure',      ic: 'figure',      name: 'ห้องวาดรูปโจทย์',     level: 'เครื่องมือของครู',
       dir: 'FigureLab/', teacher: 'figure.html', student: 'figure.html', teacherOnly: true }
   ];
 
