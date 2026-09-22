@@ -3604,8 +3604,8 @@ function solutionHTML(p, open) {
   let h = '<div class="sol">';
   
   h += '<div class="row noprint" style="justify-content:flex-end; margin-bottom: 8px;">' +
-       '<button class="sm" type="button" onclick="this.closest('.sol').classList.toggle('hide-steps'); ' +
-       'this.innerHTML = this.closest('.sol').classList.contains('hide-steps') ? '👁️ แสดงวิธีทำทั้งหมด' : '👁️ ซ่อนข้อความ (เว้นบรรทัดไว้เขียน)'">' +
+       '<button class="sm" type="button" onclick="this.closest(\'.sol\').classList.toggle(\'hide-steps\'); ' +
+       'this.innerHTML = this.closest(\'.sol\').classList.contains(\'hide-steps\') ? \'👁️ แสดงวิธีทำทั้งหมด\' : \'👁️ ซ่อนข้อความ (เว้นบรรทัดไว้เขียน)\'">' +
        '👁️ ซ่อนข้อความ (เว้นบรรทัดไว้เขียน)</button></div>';
 
   for (let i = 0; i < 7; i++) {

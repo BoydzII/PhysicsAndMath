@@ -18646,7 +18646,7 @@ applyAppIcon();
         fig += '<polygon points="30,130 150,130 150,50" fill="#bae6fd" stroke="#0ea5e9" stroke-width="2" opacity="0.5"/>';
         fig += svgTxt(15, 50, v, 'end', false);
         fig += svgTxt(150, 145, t, 'middle', false);
-        fig += svgTxt(20, 15, 'v (m/s)', 'middle', false);
+        fig += svgTxt(35, 15, 'v (m/s)', 'middle', false);
         fig += svgTxt(215, 135, 't (s)', 'middle', false);
         return {
           stem: `จากกราฟความเร็ว-เวลาของรถยนต์คันหนึ่ง จงหาระยะทางที่รถเคลื่อนที่ได้ใน ${ t } วินาที`,
@@ -19299,6 +19299,743 @@ applyAppIcon();
         };
       }
     });
+
+
+
+    // ----------------------------------------------------------------------
+    // PHYSICS: 30 NEW MECHANICS TEMPLATES (10 B, 10 A, 10 I)
+    // ----------------------------------------------------------------------
+
+    // พื้นฐาน (Basic) - 10 items
+    T({
+      id: 'phys-101-b8', topic: 101, sub: 'การเคลื่อนที่เส้นตรง', level: 'พื้นฐาน', skills: ['สมการการเคลื่อนที่'],
+      desc: 'หาความเร่งจากสมการ v^2 = u^2 + 2as',
+      gen(R) {
+        const u = R.pick([0, 10, 20]);
+        const a = R.pick([2, 4, 5]);
+        const s = R.pick([50, 100]);
+        const v2 = u * u + 2 * a * s;
+        const v = R.round(Math.sqrt(v2), 2);
+        return {
+          stem: `รถคันหนึ่งเริ่มต้นด้วยความเร็ว ${ u } m/s มีความเร่งคงที่ ${ a } m/s² เมื่อเคลื่อนที่ได้ระยะทาง ${ s } m จะมีความเร็วเท่าใด`,
+          given: [ { s: 'u', v: u, unit: 'm/s' }, { s: 'a', v: a, unit: 'm/s²' }, { s: 's', v: s, unit: 'm' } ],
+          finds: [ { s: 'v', unit: 'm/s', value: v, positive: true } ],
+          ans: v, unit: 'm/s',
+          sol: {
+            analyze: 'ใช้สมการ v² = u² + 2as เพื่อหาความเร็วปลายโดยไม่รู้เวลา',
+            eqs: [ { eq: 'v^2 = u^2 + 2as', why: 'สมการการเคลื่อนที่' } ],
+            solve: 'แทนค่าในสมการ', subst: `v^2 = ${ u }^2 + 2(${ a })(${ s })`, calc: `v^2 = ${ v2 } \\Rightarrow v \\approx ${ v }`,
+            conclude: `ความเร็วประมาณ ${ v } m/s`
+          }
+        };
+      }
+    });
+
+    T({
+      id: 'phys-101-b9', topic: 101, sub: 'โปรเจกไทล์', level: 'พื้นฐาน', skills: ['โปรเจกไทล์แนวนอน'],
+      desc: 'เวลาตกของโปรเจกไทล์ขว้างแนวระดับ',
+      gen(R) {
+        const h = R.pick([20, 45, 80]); // 5t^2 -> t = 2, 3, 4
+        const g = 10;
+        const t = Math.sqrt((2 * h) / g);
+        return {
+          stem: `ขว้างก้อนหินออกไปในแนวระดับจากหน้าผาสูง ${ h } m ก้อนหินจะตกถึงพื้นในเวลากี่วินาที (g = 10 m/s²)`,
+          given: [ { s: 'h', v: h, unit: 'm' }, { s: 'u_{ y }', v: 0, unit: 'm/s' } ],
+          finds: [ { s: 't', unit: 's', value: t, positive: true } ],
+          ans: t, unit: 's',
+          sol: {
+            analyze: 'การเคลื่อนที่แนวดิ่งมีความเร็วต้นเป็นศูนย์ (ตกอิสระ)',
+            eqs: [ { eq: 's_{ y } = u_{ y }t + \\frac{ 1 }{ 2 }gt^2', why: 'การกระจัดแนวดิ่ง' } ],
+            solve: 'แทนค่า', subst: `${ h } = 0 + \\frac{ 1 }{ 2 }(10)t^2`, calc: `t^2 = \\frac{ ${ h } }{ 5 } = ${ h / 5 } \\Rightarrow t = ${ t }`,
+            conclude: `ใช้เวลา ${ t } s`
+          }
+        };
+      }
+    });
+
+    T({
+      id: 'phys-101-b10', topic: 101, sub: 'แรงและกฎของนิวตัน', level: 'พื้นฐาน', skills: ['แรงแนวตั้งฉาก'],
+      desc: 'แรงปฏิกิริยาตั้งฉากบนพื้นเอียง',
+      gen(R) {
+        const m = R.pick([2, 5, 10]);
+        const theta = R.pick([30, 45, 60]);
+        const rad = theta * Math.PI / 180;
+        const g = 10;
+        const n = Number((m * g * Math.cos(rad)).toFixed(2));
+        return {
+          stem: `วางกล่องมวล ${ m } kg บนพื้นเอียงทำมุม ${ theta }° กับแนวระดับ จงหาแรงปฏิกิริยาตั้งฉากที่พื้นกระทำต่อกล่อง (g = 10 m/s²)`,
+          given: [ { s: 'm', v: m, unit: 'kg' }, { s: '\\theta', v: theta, unit: '°' } ],
+          finds: [ { s: 'N', unit: 'N', value: n, positive: true } ],
+          ans: n, unit: 'N',
+          sol: {
+            analyze: 'แรงแนวตั้งฉากกับพื้นเอียงสมดุลกับองค์ประกอบของน้ำหนัก',
+            eqs: [ { eq: 'N = mg \\cos \\theta', why: 'สมดุลแนวตั้งฉากพื้นเอียง' } ],
+            solve: 'แทนค่า', subst: `N = (${ m })(10) \\cos ${ theta }^\\circ`, calc: `N = ${ m * 10 } \\times ${ Number(Math.cos(rad).toFixed(3)) } = ${ n }`,
+            conclude: `แรงแนวตั้งฉาก ${ n } N`
+          }
+        };
+      }
+    });
+
+    T({
+      id: 'phys-101-b11', topic: 101, sub: 'แรงเสียดทาน', level: 'พื้นฐาน', skills: ['แรงเสียดทานจลน์'],
+      desc: 'ผลักวัตถุด้วยความเร็วคงที่บนพื้นฝืด',
+      gen(R) {
+        const m = R.pick([5, 10, 20]);
+        const mu = R.pick([0.2, 0.3, 0.4]);
+        const g = 10;
+        const f = m * g * mu;
+        return {
+          stem: `ผลักกล่องมวล ${ m } kg ให้เคลื่อนที่ด้วยความเร็วคงที่บนพื้นราบที่มีสัมประสิทธิ์ความเสียดทานจลน์ ${ mu } ต้องออกแรงผลักกี่นิวตัน (g = 10 m/s²)`,
+          given: [ { s: 'm', v: m, unit: 'kg' }, { s: '\\mu_{ k }', v: mu, unit: '' } ],
+          finds: [ { s: 'F', unit: 'N', value: f, positive: true } ],
+          ans: f, unit: 'N',
+          sol: {
+            analyze: 'ความเร็วคงที่แสดงว่าแรงลัพธ์เป็นศูนย์ แรงผลักเท่ากับแรงเสียดทาน',
+            eqs: [ { eq: 'F = f_{ k } = \\mu_{ k }N', why: 'สมดุลของแรง' }, { eq: 'N = mg', why: 'สมดุลแนวดิ่ง' } ],
+            solve: 'แทนค่า', subst: `F = (${ mu })(${ m })(10)`, calc: `F = ${ f }`,
+            conclude: `ต้องออกแรง ${ f } N`
+          }
+        };
+      }
+    });
+
+    T({
+      id: 'phys-101-b12', topic: 101, sub: 'งานและพลังงาน', level: 'พื้นฐาน', skills: ['งานจากแรงโน้มถ่วง'],
+      desc: 'งานในการยกของ',
+      gen(R) {
+        const m = R.pick([10, 15, 25]);
+        const h = R.pick([2, 3, 5]);
+        const g = 10;
+        const w = m * g * h;
+        return {
+          stem: `ชายคนหนึ่งยกกล่องมวล ${ m } kg ขึ้นไปวางบนชั้นที่สูงจากพื้น ${ h } m ด้วยความเร็วคงที่ เขาต้องทำงานกี่จูล (g = 10 m/s²)`,
+          given: [ { s: 'm', v: m, unit: 'kg' }, { s: 'h', v: h, unit: 'm' } ],
+          finds: [ { s: 'W', unit: 'J', value: w, positive: true } ],
+          ans: w, unit: 'J',
+          sol: {
+            analyze: 'งานที่ทำในการยกของเท่ากับการเปลี่ยนแปลงพลังงานศักย์โน้มถ่วง',
+            eqs: [ { eq: 'W = \\Delta E_{ p } = mgh', why: 'งาน-พลังงาน' } ],
+            solve: 'แทนค่า', subst: `W = (${ m })(10)(${ h })`, calc: `W = ${ w }`,
+            conclude: `ทำงาน ${ w } J`
+          }
+        };
+      }
+    });
+
+    T({
+      id: 'phys-101-b13', topic: 101, sub: 'งานและพลังงาน', level: 'พื้นฐาน', skills: ['พลังงานศักย์ยืดหยุ่น'],
+      desc: 'พลังงานสะสมในสปริง',
+      gen(R) {
+        const k = R.pick([100, 200, 500]);
+        const x_cm = R.pick([10, 20]);
+        const x = x_cm / 100;
+        const e = 0.5 * k * x * x;
+        return {
+          stem: `สปริงตัวหนึ่งมีค่านิจ ${ k } N/m ถ้ายืดสปริงออกไปจากตำแหน่งสมดุล ${ x_cm } cm จะมีพลังงานศักย์ยืดหยุ่นสะสมอยู่กี่จูล`,
+          given: [ { s: 'k', v: k, unit: 'N/m' }, { s: 'x', v: x_cm, unit: 'cm' } ],
+          finds: [ { s: 'E_{ ps }', unit: 'J', value: e, positive: true } ],
+          ans: e, unit: 'J',
+          sol: {
+            analyze: 'ต้องแปลงระยะยืดเป็นเมตรก่อนคำนวณ',
+            eqs: [ { eq: 'E_{ ps } = \\frac{ 1 }{ 2 }kx^2', why: 'พลังงานศักย์ยืดหยุ่น' } ],
+            solve: 'แทนค่า', subst: `E_{ ps } = \\frac{ 1 }{ 2 }(${ k })(${ x })^2`, calc: `E_{ ps } = ${ e }`,
+            conclude: `พลังงาน ${ e } J`
+          }
+        };
+      }
+    });
+
+    T({
+      id: 'phys-101-b14', topic: 101, sub: 'โมเมนตัม', level: 'พื้นฐาน', skills: ['การดล'],
+      desc: 'หาการดลจากแรงและเวลา',
+      gen(R) {
+        const f = R.pick([50, 100, 200]);
+        const dt = R.pick([0.1, 0.2, 0.5]);
+        const i = f * dt;
+        return {
+          stem: `ออกแรง ${ f } N กระทำต่อวัตถุเป็นเวลา ${ dt } s จงหาขนาดของการดลที่เกิดขึ้น`,
+          given: [ { s: 'F', v: f, unit: 'N' }, { s: '\\Delta t', v: dt, unit: 's' } ],
+          finds: [ { s: 'I', unit: 'N·s', value: i, positive: true } ],
+          ans: i, unit: 'N·s',
+          sol: {
+            analyze: 'การดลคือผลคูณของแรงที่กระทำกับเวลา',
+            eqs: [ { eq: 'I = F\\Delta t', why: 'นิยามการดล' } ],
+            solve: 'แทนค่า', subst: `I = (${ f })(${ dt })`, calc: `I = ${ i }`,
+            conclude: `การดล ${ i } N·s`
+          }
+        };
+      }
+    });
+
+    T({
+      id: 'phys-101-b15', topic: 101, sub: 'การเคลื่อนที่แบบวงกลม', level: 'พื้นฐาน', skills: ['ความเร่งสู่ศูนย์กลาง'],
+      desc: 'หาความเร่งสู่ศูนย์กลาง',
+      gen(R) {
+        const v = R.pick([2, 4, 10]);
+        const r = R.pick([0.5, 2, 4]);
+        const ac = (v * v) / r;
+        return {
+          stem: `วัตถุเคลื่อนที่แบบวงกลมด้วยอัตราเร็ว ${ v } m/s รัศมีความโค้ง ${ r } m จะมีความเร่งสู่ศูนย์กลางเท่าใด`,
+          given: [ { s: 'v', v: v, unit: 'm/s' }, { s: 'r', v: r, unit: 'm' } ],
+          finds: [ { s: 'a_{ c }', unit: 'm/s²', value: ac, positive: true } ],
+          ans: ac, unit: 'm/s²',
+          sol: {
+            analyze: 'ความเร่งสู่ศูนย์กลางขึ้นกับความเร็วและรัศมี',
+            eqs: [ { eq: 'a_{ c } = \\frac{ v^2 }{ r }', why: 'ความเร่งสู่ศูนย์กลาง' } ],
+            solve: 'แทนค่า', subst: `a_{ c } = \\frac{ ${ v }^2 }{ ${ r } }`, calc: `a_{ c } = ${ ac }`,
+            conclude: `ความเร่งสู่ศูนย์กลาง ${ ac } m/s²`
+          }
+        };
+      }
+    });
+
+    T({
+      id: 'phys-101-b16', topic: 101, sub: 'สมดุลกล', level: 'พื้นฐาน', skills: ['โมเมนต์'],
+      desc: 'หาโมเมนต์ของแรง',
+      gen(R) {
+        const f = R.pick([20, 30, 50]);
+        const r = R.pick([2, 3, 5]);
+        const torque = f * r;
+        return {
+          stem: `ออกแรง ${ f } N กระทำที่ปลายคานซึ่งห่างจากจุดหมุน ${ r } m ในแนวตั้งฉากกับคาน จงหาขนาดของทอร์ก (โมเมนต์) ที่เกิดขึ้น`,
+          given: [ { s: 'F', v: f, unit: 'N' }, { s: 'r', v: r, unit: 'm' } ],
+          finds: [ { s: '\\tau', unit: 'N·m', value: torque, positive: true } ],
+          ans: torque, unit: 'N·m',
+          sol: {
+            analyze: 'ทอร์กคือผลคูณของแรงกับระยะทางตั้งฉากจากจุดหมุน',
+            eqs: [ { eq: '\\tau = F \\times r', why: 'สมการโมเมนต์' } ],
+            solve: 'แทนค่า', subst: `\\tau = ${ f } \\times ${ r }`, calc: `\\tau = ${ torque }`,
+            conclude: `ทอร์ก ${ torque } N·m`
+          }
+        };
+      }
+    });
+
+    T({
+      id: 'phys-101-b17', topic: 101, sub: 'แรงโน้มถ่วง', level: 'พื้นฐาน', skills: ['แรงดึงดูดระหว่างมวล'],
+      desc: 'แรงดึงดูดระหว่างมวล',
+      gen(R) {
+        const m1 = R.pick([1000, 2000]);
+        const m2 = R.pick([3000, 4000]);
+        const r = R.pick([2, 4]);
+        const G = 6.67e-11;
+        const f = (G * m1 * m2) / (r * r);
+        const f_sci = f.toExponential(2);
+        return {
+          stem: `วัตถุมวล ${ m1 } kg และ ${ m2 } kg วางห่างกัน ${ r } m จะมีแรงดึงดูดระหว่างมวลกี่นิวตัน (G = 6.67 x 10⁻¹¹ N·m²/kg²)`,
+          given: [ { s: 'm_{ 1 }', v: m1, unit: 'kg' }, { s: 'm_{ 2 }', v: m2, unit: 'kg' }, { s: 'r', v: r, unit: 'm' } ],
+          finds: [ { s: 'F_{ G }', unit: 'N', value: f, positive: true } ],
+          ans: f, unit: 'N',
+          sol: {
+            analyze: 'ใช้กฎแรงดึงดูดระหว่างมวลของนิวตัน',
+            eqs: [ { eq: 'F_{ G } = G\\frac{ m_{ 1 }m_{ 2 } }{ r^2 }', why: 'แรงโน้มถ่วงสากล' } ],
+            solve: 'แทนค่า', subst: `F_{ G } = (6.67 \\times 10^{-11})\\frac{ (${ m1 })(${ m2 }) }{ ${ r }^2 }`, calc: `F_{ G } \\approx ${ f_sci }`,
+            conclude: `แรงดึงดูด ${ f_sci } N`
+          }
+        };
+      }
+    });
+
+    // ประยุกต์ (Applied) - 10 items
+    T({
+      id: 'phys-101-a5', topic: 101, sub: 'การเคลื่อนที่เส้นตรง', level: 'ประยุกต์', skills: ['ความเร็วสัมพัทธ์'],
+      desc: 'ความเร็วสัมพัทธ์ตั้งฉากกัน',
+      gen(R) {
+        const vx = R.pick([30, 40, 60]);
+        const vy = R.pick([40, 30, 80]);
+        const v_rel = Math.sqrt(vx * vx + vy * vy);
+        return {
+          stem: `รถ A วิ่งไปทางทิศตะวันออกด้วยความเร็ว ${ vx } km/hr รถ B วิ่งไปทางทิศเหนือด้วยความเร็ว ${ vy } km/hr คนขับรถ A จะเห็นรถ B เคลื่อนที่ด้วยความเร็วกี่ km/hr`,
+          given: [ { s: 'v_{ A }', v: vx, unit: 'km/hr' }, { s: 'v_{ B }', v: vy, unit: 'km/hr' } ],
+          finds: [ { s: 'v_{ BA }', unit: 'km/hr', value: v_rel, positive: true } ],
+          ans: v_rel, unit: 'km/hr',
+          sol: {
+            analyze: 'ความเร็วสัมพัทธ์ v_{BA} = v_B - v_A เป็นการลบเวกเตอร์ที่ตั้งฉากกัน',
+            eqs: [ { eq: '|\\vec{ v }_{ BA }| = \\sqrt{ v_{ B }^2 + v_{ A }^2 }', why: 'พีทาโกรัส' } ],
+            solve: 'แทนค่า', subst: `|\\vec{ v }_{ BA }| = \\sqrt{ ${ vy }^2 + ${ vx }^2 }`, calc: `|\\vec{ v }_{ BA }| = ${ v_rel }`,
+            conclude: `ความเร็วสัมพัทธ์ ${ v_rel } km/hr`
+          }
+        };
+      }
+    });
+
+    T({
+      id: 'phys-101-a6', topic: 101, sub: 'โปรเจกไทล์', level: 'ประยุกต์', skills: ['จุดสูงสุด'],
+      desc: 'จุดสูงสุดของโปรเจกไทล์',
+      gen(R) {
+        const u = R.pick([20, 40, 50]);
+        const theta = R.pick([30, 45, 60]);
+        const rad = theta * Math.PI / 180;
+        const g = 10;
+        const uy = u * Math.sin(rad);
+        const h = Number(((uy * uy) / (2 * g)).toFixed(2));
+        return {
+          stem: `ยิงปืนใหญ่ด้วยความเร็วต้น ${ u } m/s ทำมุม ${ theta }° กับแนวระดับ ลูกปืนใหญ่จะขึ้นไปได้สูงสุดกี่เมตร (g = 10 m/s²)`,
+          given: [ { s: 'u', v: u, unit: 'm/s' }, { s: '\\theta', v: theta, unit: '°' } ],
+          finds: [ { s: 'H', unit: 'm', value: h, positive: true } ],
+          ans: h, unit: 'm',
+          sol: {
+            analyze: 'ที่จุดสูงสุด ความเร็วในแนวดิ่งเป็นศูนย์',
+            eqs: [ { eq: 'H = \\frac{ u^2 \\sin^2 \\theta }{ 2g }', why: 'ความสูงโปรเจกไทล์' } ],
+            solve: 'แทนค่า', subst: `H = \\frac{ ${ u }^2 \\sin^2 ${ theta }^\\circ }{ 2(10) }`, calc: `H = \\frac{ ${ u * u } \\times ${ Number((Math.sin(rad)**2).toFixed(3)) } }{ 20 } = ${ h }`,
+            conclude: `ความสูง ${ h } m`
+          }
+        };
+      }
+    });
+
+    T({
+      id: 'phys-101-a7', topic: 101, sub: 'แรงและกฎของนิวตัน', level: 'ประยุกต์', skills: ['เครื่องรอก Atwood'],
+      desc: 'ความเร่งของเครื่องรอก Atwood',
+      gen(R) {
+        const m1 = R.pick([2, 3]);
+        const m2 = R.pick([5, 7]);
+        const g = 10;
+        const a = Number((((m2 - m1) * g) / (m1 + m2)).toFixed(2));
+        return {
+          stem: `มวล ${ m1 } kg และ ${ m2 } kg แขวนอยู่ที่ปลายเชือกเบาที่คล้องผ่านรอกเกลี้ยง เมื่อปล่อยให้เคลื่อนที่ ระบบจะมีความเร่งกี่ m/s² (g = 10 m/s²)`,
+          given: [ { s: 'm_{ 1 }', v: m1, unit: 'kg' }, { s: 'm_{ 2 }', v: m2, unit: 'kg' } ],
+          finds: [ { s: 'a', unit: 'm/s²', value: a, positive: true } ],
+          ans: a, unit: 'm/s²',
+          sol: {
+            analyze: 'คิดมวลทั้งระบบ น้ำหนักของมวลทั้งสองหักล้างกัน',
+            eqs: [ { eq: 'a = \\frac{ m_{ 2 } - m_{ 1 } }{ m_{ 1 } + m_{ 2 } }g', why: 'กฎข้อที่ 2 ของนิวตัน' } ],
+            solve: 'แทนค่า', subst: `a = \\frac{ ${ m2 } - ${ m1 } }{ ${ m1 } + ${ m2 } }(10)`, calc: `a = \\frac{ ${ m2 - m1 } }{ ${ m1 + m2 } } \\times 10 = ${ a }`,
+            conclude: `ความเร่ง ${ a } m/s²`
+          }
+        };
+      }
+    });
+
+    T({
+      id: 'phys-101-a8', topic: 101, sub: 'การเคลื่อนที่แบบวงกลม', level: 'ประยุกต์', skills: ['ลูกตุ้มทรงกรวย'],
+      desc: 'ความเร็วของลูกตุ้มทรงกรวย',
+      gen(R) {
+        const r = R.pick([0.5, 1.0, 1.5]);
+        const theta = R.pick([30, 45, 60]);
+        const rad = theta * Math.PI / 180;
+        const g = 10;
+        const v = Number(Math.sqrt(r * g * Math.tan(rad)).toFixed(2));
+        return {
+          stem: `ลูกตุ้มมวล m ผูกเชือกแกว่งเป็นวงกลมในระนาบระดับ (ลูกตุ้มทรงกรวย) รัศมี ${ r } m โดยเชือกทำมุม ${ theta }° กับแนวดิ่ง จงหาอัตราเร็วของการแกว่ง (g = 10 m/s²)`,
+          given: [ { s: 'r', v: r, unit: 'm' }, { s: '\\theta', v: theta, unit: '°' } ],
+          finds: [ { s: 'v', unit: 'm/s', value: v, positive: true } ],
+          ans: v, unit: 'm/s',
+          sol: {
+            analyze: 'แรงดึงเชือก T แตกเป็น T sinθ เข้าสู่ศูนย์กลาง และ T cosθ สมดุลกับ mg',
+            eqs: [ { eq: '\\tan \\theta = \\frac{ v^2 }{ rg }', why: 'สมดุลแรงในลูกตุ้มทรงกรวย' } ],
+            solve: 'แทนค่า', subst: `\\tan ${ theta }^\\circ = \\frac{ v^2 }{ (${ r })(10) }`, calc: `v = \\sqrt{ ${ r * 10 } \\times ${ Number(Math.tan(rad).toFixed(3)) } } = ${ v }`,
+            conclude: `อัตราเร็ว ${ v } m/s`
+          }
+        };
+      }
+    });
+
+    T({
+      id: 'phys-101-a9', topic: 101, sub: 'งานและพลังงาน', level: 'ประยุกต์', skills: ['อนุรักษ์พลังงานบนพื้นฝืด'],
+      desc: 'วัตถุไถลลงพื้นเอียงฝืด',
+      gen(R) {
+        const m = R.pick([2, 5]);
+        const h = R.pick([3, 5]);
+        const s = R.pick([6, 10]);
+        const mu = R.pick([0.1, 0.2]);
+        const g = 10;
+        // theta is such that sin(theta) = h/s. cos(theta) = sqrt(s^2 - h^2)/s
+        const cos_th = Math.sqrt(s * s - h * h) / s;
+        const w_f = mu * m * g * cos_th * s;
+        const e_p = m * g * h;
+        const e_k = e_p - w_f;
+        const v = Number(Math.sqrt((2 * e_k) / m).toFixed(2));
+        return {
+          stem: `ปล่อยกล่องมวล ${ m } kg ให้ไถลลงจากจุดสูงสุดของพื้นเอียงที่มีความยาว ${ s } m และสูง ${ h } m ถ้าสัมประสิทธิ์ความเสียดทานจลน์คือ ${ mu } ความเร็วที่ปลายล่างสุดคือเท่าใด (g = 10 m/s²)`,
+          given: [ { s: 'm', v: m, unit: 'kg' }, { s: 'h', v: h, unit: 'm' }, { s: 's', v: s, unit: 'm' }, { s: '\\mu_{ k }', v: mu, unit: '' } ],
+          finds: [ { s: 'v', unit: 'm/s', value: v, positive: true } ],
+          ans: v, unit: 'm/s',
+          sol: {
+            analyze: 'พลังงานศักย์เริ่มต้นเปลี่ยนเป็นพลังงานจลน์และงานจากแรงเสียดทาน',
+            eqs: [ { eq: 'E_{ p } - W_{ f } = E_{ k }', why: 'กฎอนุรักษ์พลังงาน' } ],
+            solve: 'แทนค่า', subst: `mgh - \\mu_{ k }mg \\cos \\theta \\cdot s = \\frac{ 1 }{ 2 }mv^2`, calc: `v \\approx ${ v }`,
+            conclude: `ความเร็ว ${ v } m/s`
+          }
+        };
+      }
+    });
+
+    T({
+      id: 'phys-101-a10', topic: 101, sub: 'งานและพลังงาน', level: 'ประยุกต์', skills: ['พลังงานศักย์สปริง'],
+      desc: 'ปล่อยมวลตกใส่สปริง',
+      gen(R) {
+        const m = R.pick([1, 2]);
+        const h = R.pick([1.0, 2.0]);
+        const k = R.pick([200, 400]);
+        const g = 10;
+        // mg(h+x) = 1/2 k x^2 -> 1/2 k x^2 - mgx - mgh = 0
+        const a = 0.5 * k;
+        const b = -m * g;
+        const c = -m * g * h;
+        const x = Number(((-b + Math.sqrt(b * b - 4 * a * c)) / (2 * a)).toFixed(2));
+        return {
+          stem: `ปล่อยมวล ${ m } kg จากที่สูง ${ h } m เหนือปลายสปริงที่ตั้งในแนวดิ่ง (ค่านิจ ${ k } N/m) สปริงจะถูกหดลงไปมากที่สุดกี่เมตร (g = 10 m/s²)`,
+          given: [ { s: 'm', v: m, unit: 'kg' }, { s: 'h', v: h, unit: 'm' }, { s: 'k', v: k, unit: 'N/m' } ],
+          finds: [ { s: 'x', unit: 'm', value: x, positive: true } ],
+          ans: x, unit: 'm',
+          sol: {
+            analyze: 'ที่จุดหดมากที่สุด ความเร็วเป็นศูนย์ พลังงานศักย์โน้มถ่วงเปลี่ยนเป็นพลังงานศักย์สปริงทั้งหมด',
+            eqs: [ { eq: 'mg(h + x) = \\frac{ 1 }{ 2 }kx^2', why: 'อนุรักษ์พลังงาน' } ],
+            solve: 'แทนค่า', subst: `(${ m })(10)(${ h } + x) = \\frac{ 1 }{ 2 }(${ k })x^2`, calc: `x \\approx ${ x }`,
+            conclude: `สปริงหด ${ x } m`
+          }
+        };
+      }
+    });
+
+    T({
+      id: 'phys-101-a11', topic: 101, sub: 'โมเมนตัม', level: 'ประยุกต์', skills: ['การชนแบบไม่ยืดหยุ่น'],
+      desc: 'การชนแบบติดกันไป',
+      gen(R) {
+        const m1 = R.pick([1000, 1500]);
+        const v1 = R.pick([10, 20]);
+        const m2 = R.pick([500, 1000]);
+        const v = Number(((m1 * v1) / (m1 + m2)).toFixed(2));
+        return {
+          stem: `รถยนต์มวล ${ m1 } kg วิ่งด้วยความเร็ว ${ v1 } m/s ชนกับรถยนต์มวล ${ m2 } kg ที่จอดนิ่งอยู่ หลังชนรถทั้งสองติดกันไป จะมีความเร็วกี่ m/s`,
+          given: [ { s: 'm_{ 1 }', v: m1, unit: 'kg' }, { s: 'u_{ 1 }', v: v1, unit: 'm/s' }, { s: 'm_{ 2 }', v: m2, unit: 'kg' } ],
+          finds: [ { s: 'v', unit: 'm/s', value: v, positive: true } ],
+          ans: v, unit: 'm/s',
+          sol: {
+            analyze: 'การชนแบบติดกันไป โมเมนตัมรวมก่อนชนเท่ากับโมเมนตัมรวมหลังชน',
+            eqs: [ { eq: 'm_{ 1 }u_{ 1 } = (m_{ 1 } + m_{ 2 })v', why: 'อนุรักษ์โมเมนตัม' } ],
+            solve: 'แทนค่า', subst: `(${ m1 })(${ v1 }) = (${ m1 } + ${ m2 })v`, calc: `v = \\frac{ ${ m1 * v1 } }{ ${ m1 + m2 } } = ${ v }`,
+            conclude: `ความเร็ว ${ v } m/s`
+          }
+        };
+      }
+    });
+
+    T({
+      id: 'phys-101-a12', topic: 101, sub: 'สมดุลกล', level: 'ประยุกต์', skills: ['บันไดพิงกำแพง'],
+      desc: 'หาแรงเสียดทานต่ำสุดที่พื้นเพื่อให้บันไดไม่ลื่น',
+      gen(R) {
+        const m = R.pick([10, 20]);
+        const theta = R.pick([53, 60]);
+        const rad = theta * Math.PI / 180;
+        const g = 10;
+        // sum T_floor = 0 => N_wall * L sin = mg (L/2) cos => N_wall = mg / (2 tan)
+        // mu_min = N_wall / N_floor = (mg / 2tan) / mg = 1 / (2 tan)
+        const mu = Number((1 / (2 * Math.tan(rad))).toFixed(2));
+        return {
+          stem: `บันไดสม่ำเสมอมวล ${ m } kg วางพิงกำแพงลื่น โดยทำมุม ${ theta }° กับพื้นราบที่ฝืด สัมประสิทธิ์ความเสียดทานสถิตระหว่างพื้นกับบันไดต้องมีค่าอย่างน้อยเท่าใด บันไดจึงไม่ไถลลงมา (g = 10 m/s²)`,
+          given: [ { s: 'm', v: m, unit: 'kg' }, { s: '\\theta', v: theta, unit: '°' } ],
+          finds: [ { s: '\\mu_{ s }', unit: '', value: mu, positive: true } ],
+          ans: mu, unit: '',
+          sol: {
+            analyze: 'ใช้สมดุลของแรงและโมเมนต์ที่จุดสัมผัสพื้น',
+            eqs: [ { eq: '\\mu_{ s } = \\frac{ 1 }{ 2 \\tan \\theta }', why: 'สมดุลบันไดพิงกำแพงลื่น' } ],
+            solve: 'แทนค่า', subst: `\\mu_{ s } = \\frac{ 1 }{ 2 \\tan ${ theta }^\\circ }`, calc: `\\mu_{ s } = ${ mu }`,
+            conclude: `สัมประสิทธิ์อย่างน้อย ${ mu }`
+          }
+        };
+      }
+    });
+
+    T({
+      id: 'phys-101-a13', topic: 101, sub: 'สมดุลกล', level: 'ประยุกต์', skills: ['จุดศูนย์กลางมวล'],
+      desc: 'หาพิกัดศูนย์กลางมวล 1 มิติ',
+      gen(R) {
+        const m1 = R.pick([2, 4]);
+        const x1 = R.pick([0, 1]);
+        const m2 = R.pick([6, 8]);
+        const x2 = R.pick([5, 10]);
+        const xcm = Number(((m1 * x1 + m2 * x2) / (m1 + m2)).toFixed(2));
+        return {
+          stem: `มวล ${ m1 } kg และ ${ m2 } kg อยู่ที่พิกัด x = ${ x1 } m และ x = ${ x2 } m ตามลำดับ จงหาพิกัดจุดศูนย์กลางมวล (CM) ของระบบ`,
+          given: [ { s: 'm_{ 1 }', v: m1, unit: 'kg' }, { s: 'x_{ 1 }', v: x1, unit: 'm' }, { s: 'm_{ 2 }', v: m2, unit: 'kg' }, { s: 'x_{ 2 }', v: x2, unit: 'm' } ],
+          finds: [ { s: 'x_{ cm }', unit: 'm', value: xcm, positive: true } ],
+          ans: xcm, unit: 'm',
+          sol: {
+            analyze: 'พิกัด CM หาจากค่าเฉลี่ยถ่วงน้ำหนักของพิกัดมวล',
+            eqs: [ { eq: 'x_{ cm } = \\frac{ m_{ 1 }x_{ 1 } + m_{ 2 }x_{ 2 } }{ m_{ 1 } + m_{ 2 } }', why: 'นิยามศูนย์กลางมวล' } ],
+            solve: 'แทนค่า', subst: `x_{ cm } = \\frac{ (${ m1 })(${ x1 }) + (${ m2 })(${ x2 }) }{ ${ m1 } + ${ m2 } }`, calc: `x_{ cm } = ${ xcm }`,
+            conclude: `พิกัด x = ${ xcm } m`
+          }
+        };
+      }
+    });
+
+    T({
+      id: 'phys-101-a14', topic: 101, sub: 'แรงโน้มถ่วง', level: 'ประยุกต์', skills: ['ความเร็วโคจร'],
+      desc: 'อัตราเร็วของดาวเทียม',
+      gen(R) {
+        const m = 6e24; // Earth mass approx
+        const r = R.pick([7000e3, 8000e3]); // Radius from center
+        const G = 6.67e-11;
+        const v = Math.sqrt((G * m) / r);
+        const v_sci = v.toExponential(2);
+        return {
+          stem: `ดาวเทียมโคจรรอบดาวเคราะห์มวล 6 x 10²⁴ kg ที่ระยะห่างจากจุดศูนย์กลาง ${ (r / 1000) } km อัตราเร็วของดาวเทียมคือเท่าใด (G = 6.67 x 10⁻¹¹ N·m²/kg²)`,
+          given: [ { s: 'M', v: 6e24, unit: 'kg' }, { s: 'r', v: r, unit: 'm' } ],
+          finds: [ { s: 'v', unit: 'm/s', value: v, positive: true } ],
+          ans: v, unit: 'm/s',
+          sol: {
+            analyze: 'แรงดึงดูดระหว่างมวลทำหน้าที่เป็นแรงสู่ศูนย์กลาง',
+            eqs: [ { eq: '\\frac{ mv^2 }{ r } = G\\frac{ Mm }{ r^2 }', why: 'สมดุลแรงโคจร' } ],
+            solve: 'แทนค่า', subst: `v = \\sqrt{ \\frac{ GM }{ r } }`, calc: `v \\approx ${ v_sci }`,
+            conclude: `ความเร็ว ${ v_sci } m/s`
+          }
+        };
+      }
+    });
+
+    // IJSO (Advanced) - 10 items
+    T({
+      id: 'phys-101-i5', topic: 101, sub: 'การเคลื่อนที่ 2 มิติ', level: 'IJSO', skills: ['ความเร็วสัมพัทธ์'],
+      desc: 'ความเร็วข้ามกระแสน้ำ',
+      gen(R) {
+        const v_river = R.pick([3, 4]);
+        const v_boat = R.pick([5, 6]);
+        const w = R.pick([100, 200]);
+        // To cross directly, v_x = 0 -> boat must angle upstream. v_y = sqrt(v_boat^2 - v_river^2)
+        const v_y = Math.sqrt(v_boat * v_boat - v_river * v_river);
+        const t = Number((w / v_y).toFixed(2));
+        return {
+          stem: `กระแสน้ำไหลด้วยอัตราเร็ว ${ v_river } m/s เรือมีความเร็วในน้ำนิ่ง ${ v_boat } m/s หากต้องการขับเรือให้ข้ามแม่น้ำกว้าง ${ w } m ไปยังจุดฝั่งตรงข้ามพอดี จะต้องใช้เวลาอย่างน้อยกี่วินาที`,
+          given: [ { s: 'v_{ r }', v: v_river, unit: 'm/s' }, { s: 'v_{ b }', v: v_boat, unit: 'm/s' }, { s: 'w', v: w, unit: 'm' } ],
+          finds: [ { s: 't', unit: 's', value: t, positive: true } ],
+          ans: t, unit: 's',
+          sol: {
+            analyze: 'ต้องพายทวนน้ำเพื่อให้ความเร็วลัพธ์ตั้งฉากกับฝั่ง ความเร็วข้ามฝั่ง v_y = sqrt(v_b² - v_r²)',
+            eqs: [ { eq: 'v_{ y } = \\sqrt{ v_{ b }^2 - v_{ r }^2 }', why: 'ความเร็วลัพธ์ตั้งฉาก' } ],
+            solve: 'แทนค่า', subst: `v_{ y } = \\sqrt{ ${ v_boat }^2 - ${ v_river }^2 }`, calc: `t = \\frac{ ${ w } }{ v_{ y } } = ${ t }`,
+            conclude: `ใช้เวลา ${ t } s`
+          }
+        };
+      }
+    });
+
+    T({
+      id: 'phys-101-i6', topic: 101, sub: 'แรงและกฎของนิวตัน', level: 'IJSO', skills: ['กรอบอ้างอิงเฉื่อย'],
+      desc: 'วัตถุบนลิ่มลื่น',
+      gen(R) {
+        const theta = R.pick([30, 45, 60]);
+        const rad = theta * Math.PI / 180;
+        const g = 10;
+        const a = Number((g * Math.tan(rad)).toFixed(2));
+        return {
+          stem: `กล่องวางอยู่บนผิวลื่นของลิ่มที่ทำมุม ${ theta }° กับแนวระดับ จะต้องผลักลิ่มให้มีความเร่งไปทางซ้ายเท่าใด กล่องจึงจะอยู่นิ่งเมื่อเทียบกับลิ่ม (g = 10 m/s²)`,
+          given: [ { s: '\\theta', v: theta, unit: '°' } ],
+          finds: [ { s: 'a', unit: 'm/s²', value: a, positive: true } ],
+          ans: a, unit: 'm/s²',
+          sol: {
+            analyze: 'แรงลัพธ์ที่กระทำต่อกล่องในกรอบอ้างอิงพื้นต้องทำให้กล่องมีความเร่ง a เดียวกับลิ่ม (N sinθ = ma, N cosθ = mg)',
+            eqs: [ { eq: 'a = g \\tan \\theta', why: 'อยู่นิ่งบนลิ่มลื่น' } ],
+            solve: 'แทนค่า', subst: `a = (10)\\tan ${ theta }^\\circ`, calc: `a = ${ a }`,
+            conclude: `ความเร่ง ${ a } m/s²`
+          }
+        };
+      }
+    });
+
+    T({
+      id: 'phys-101-i7', topic: 101, sub: 'การเคลื่อนที่แบบวงกลม', level: 'IJSO', skills: ['วงกลมแนวดิ่ง'],
+      desc: 'ความเร็วต่ำสุดที่จุดสูงสุดของลูป',
+      gen(R) {
+        const r = R.pick([2, 5, 10]);
+        const g = 10;
+        const v = Number(Math.sqrt(g * r).toFixed(2));
+        return {
+          stem: `รถไฟเหาะตีลังกาเคลื่อนที่ผ่านจุดสูงสุดของรางวงกลมรัศมี ${ r } m โดยไม่ร่วงหล่น อัตราเร็วของรถไฟที่จุดสูงสุดต้องมีค่าอย่างน้อยกี่ m/s (g = 10 m/s²)`,
+          given: [ { s: 'R', v: r, unit: 'm' } ],
+          finds: [ { s: 'v_{ min }', unit: 'm/s', value: v, positive: true } ],
+          ans: v, unit: 'm/s',
+          sol: {
+            analyze: 'ที่จุดสูงสุด แรงปฏิกิริยา N เป็นศูนย์ แรงโน้มถ่วงทำหน้าที่เป็นแรงสู่ศูนย์กลางพอดี',
+            eqs: [ { eq: 'mg = \\frac{ mv^2 }{ R }', why: 'ความเร็ววิกฤตที่จุดสูงสุด' } ],
+            solve: 'แทนค่า', subst: `v = \\sqrt{ gR } = \\sqrt{ (10)(${ r }) }`, calc: `v = ${ v }`,
+            conclude: `อัตราเร็วต่ำสุด ${ v } m/s`
+          }
+        };
+      }
+    });
+
+    T({
+      id: 'phys-101-i8', topic: 101, sub: 'งานและพลังงาน', level: 'IJSO', skills: ['กำลังเครื่องยนต์'],
+      desc: 'กำลังรถยนต์ขึ้นเนินฝืด',
+      gen(R) {
+        const m = R.pick([1000, 1500]);
+        const v = R.pick([10, 20]);
+        const theta = R.pick([30]);
+        const rad = theta * Math.PI / 180;
+        const g = 10;
+        const mu = 0.1;
+        // P = F v = (mg sin + mu mg cos) v
+        const f = m * g * Math.sin(rad) + mu * m * g * Math.cos(rad);
+        const p = Number((f * v).toFixed(2));
+        return {
+          stem: `รถยนต์มวล ${ m } kg วิ่งขึ้นเนินทำมุม ${ theta }° ด้วยความเร็วคงที่ ${ v } m/s ถ้าระบบมีสัมประสิทธิ์ความเสียดทานจลน์ ${ mu } เครื่องยนต์ต้องทำงานด้วยกำลังกี่วัตต์ (g = 10 m/s²)`,
+          given: [ { s: 'm', v: m, unit: 'kg' }, { s: 'v', v: v, unit: 'm/s' }, { s: '\\theta', v: theta, unit: '°' } ],
+          finds: [ { s: 'P', unit: 'W', value: p, positive: true } ],
+          ans: p, unit: 'W',
+          sol: {
+            analyze: 'ความเร็วคงที่ แรงขับเท่ากับแรงต้าน (mg sinθ + f_k) กำลังคือ P = Fv',
+            eqs: [ { eq: 'P = (mg \\sin \\theta + \\mu_{ k }mg \\cos \\theta)v', why: 'สมการกำลัง' } ],
+            solve: 'แทนค่า', subst: `P = ((${ m })(10)(\\frac{ 1 }{ 2 }) + (0.1)(${ m })(10)(\\frac{ \\sqrt{ 3 } }{ 2 }))(${ v })`, calc: `P = ${ p }`,
+            conclude: `กำลัง ${ p } W`
+          }
+        };
+      }
+    });
+
+    T({
+      id: 'phys-101-i9', topic: 101, sub: 'โมเมนตัม', level: 'IJSO', skills: ['การชนยืดหยุ่นสมบูรณ์'],
+      desc: 'การชน 1 มิติแบบยืดหยุ่นสมบูรณ์',
+      gen(R) {
+        const m1 = R.pick([2, 4]);
+        const m2 = R.pick([1, 3]);
+        const u1 = R.pick([4, 6]);
+        const u2 = 0; // Target at rest
+        // v1 = ((m1-m2)/(m1+m2))u1, v2 = (2m1/(m1+m2))u1
+        const v2 = Number(((2 * m1 * u1) / (m1 + m2)).toFixed(2));
+        return {
+          stem: `วัตถุมวล ${ m1 } kg วิ่งด้วยความเร็ว ${ u1 } m/s เข้าชนวัตถุมวล ${ m2 } kg ที่อยู่นิ่งแบบยืดหยุ่นสมบูรณ์ในแนวตรง จงหาความเร็วของวัตถุมวล ${ m2 } kg หลังชน`,
+          given: [ { s: 'm_{ 1 }', v: m1, unit: 'kg' }, { s: 'u_{ 1 }', v: u1, unit: 'm/s' }, { s: 'm_{ 2 }', v: m2, unit: 'kg' } ],
+          finds: [ { s: 'v_{ 2 }', unit: 'm/s', value: v2, positive: true } ],
+          ans: v2, unit: 'm/s',
+          sol: {
+            analyze: 'ใช้สมการลัดสำหรับการชนยืดหยุ่นเป้าอยู่นิ่ง: v2 = (2m1/(m1+m2))u1',
+            eqs: [ { eq: 'v_{ 2 } = \\frac{ 2m_{ 1 } }{ m_{ 1 } + m_{ 2 } }u_{ 1 }', why: 'การชนยืดหยุ่นสมบูรณ์' } ],
+            solve: 'แทนค่า', subst: `v_{ 2 } = \\frac{ 2(${ m1 }) }{ ${ m1 } + ${ m2 } }(${ u1 })`, calc: `v_{ 2 } = ${ v2 }`,
+            conclude: `ความเร็ว ${ v2 } m/s`
+          }
+        };
+      }
+    });
+
+    T({
+      id: 'phys-101-i10', topic: 101, sub: 'โมเมนตัม', level: 'IJSO', skills: ['การระเบิด'],
+      desc: 'การระเบิดเป็นสองส่วน',
+      gen(R) {
+        const m1 = R.pick([2, 3]);
+        const v1 = R.pick([10, 15]);
+        const m2 = R.pick([4, 5]);
+        const e = 0.5 * m1 * v1 * v1 + 0.5 * m2 * (m1 * v1 / m2) * (m1 * v1 / m2);
+        const ek_tot = Number(e.toFixed(2));
+        return {
+          stem: `วัตถุอยู่นิ่งเกิดการระเบิดแยกเป็น 2 ส่วน มวล ${ m1 } kg และ ${ m2 } kg โดยมวล ${ m1 } kg กระเด็นไปด้วยความเร็ว ${ v1 } m/s พลังงานจลน์รวมหลังระเบิดมีค่ากี่จูล`,
+          given: [ { s: 'm_{ 1 }', v: m1, unit: 'kg' }, { s: 'm_{ 2 }', v: m2, unit: 'kg' }, { s: 'v_{ 1 }', v: v1, unit: 'm/s' } ],
+          finds: [ { s: 'E_{ k,tot }', unit: 'J', value: ek_tot, positive: true } ],
+          ans: ek_tot, unit: 'J',
+          sol: {
+            analyze: 'โมเมนตัมรวมเป็นศูนย์ v2 = (m1/m2)v1 หาพลังงานจลน์รวม E = E_1 + E_2',
+            eqs: [ { eq: 'm_{ 1 }v_{ 1 } = m_{ 2 }v_{ 2 }', why: 'อนุรักษ์โมเมนตัม' } ],
+            solve: 'แทนค่า', subst: `v_{ 2 } = \\frac{ (${ m1 })(${ v1 }) }{ ${ m2 } }`, calc: `E_{ k,tot } = \\frac{ 1 }{ 2 }m_{ 1 }v_{ 1 }^2 + \\frac{ 1 }{ 2 }m_{ 2 }v_{ 2 }^2 = ${ ek_tot }`,
+            conclude: `พลังงานรวม ${ ek_tot } J`
+          }
+        };
+      }
+    });
+
+    T({
+      id: 'phys-101-i11', topic: 101, sub: 'สมดุลกล', level: 'IJSO', skills: ['ทฤษฎีลามี'],
+      desc: 'เชือกสองเส้นแขวนมวล',
+      gen(R) {
+        const m = R.pick([5, 10]);
+        const g = 10;
+        // theta1 = 30, theta2 = 60 from vertical.
+        // T1 sin30 = T2 sin60 -> T1 = T2 sqrt(3)
+        // T1 cos30 + T2 cos60 = mg
+        // T2(sqrt(3)*sqrt(3)/2 + 1/2) = mg -> T2(3/2 + 1/2) = mg -> 2 T2 = mg -> T2 = mg/2. T1 = mg sqrt(3)/2
+        const t1 = Number(((m * g * Math.sqrt(3)) / 2).toFixed(2));
+        return {
+          stem: `มวล ${ m } kg แขวนด้วยเชือก 2 เส้นที่ผูกติดเพดาน โดยเชือกเส้นแรกทำมุม 30° กับแนวดิ่ง และเส้นที่สองทำมุม 60° กับแนวดิ่ง จงหาแรงตึงในเชือกเส้นแรก (เส้นที่ทำมุม 30°)`,
+          given: [ { s: 'm', v: m, unit: 'kg' } ],
+          finds: [ { s: 'T_{ 1 }', unit: 'N', value: t1, positive: true } ],
+          ans: t1, unit: 'N',
+          sol: {
+            analyze: 'ใช้ทฤษฎีลามี หรือแตกแรงเข้าแกน x, y มุมระหว่างเชือกทั้งสองคือ 90 องศา',
+            eqs: [ { eq: 'T_{ 1 } = mg \\cos 30^\\circ', why: 'สมดุลแนวดิ่งและราบ' } ],
+            solve: 'แทนค่า', subst: `T_{ 1 } = (${ m })(10)(\\frac{ \\sqrt{ 3 } }{ 2 })`, calc: `T_{ 1 } = ${ t1 }`,
+            conclude: `แรงตึงเชือก ${ t1 } N`
+          }
+        };
+      }
+    });
+
+    T({
+      id: 'phys-101-i12', topic: 101, sub: 'การหมุน', level: 'IJSO', skills: ['ทรงกระบอกกลิ้ง'],
+      desc: 'ทรงกระบอกตันกลิ้งลงพื้นเอียง',
+      gen(R) {
+        const theta = R.pick([30, 45]);
+        const rad = theta * Math.PI / 180;
+        const g = 10;
+        // a = g sin(theta) / (1 + I/mr^2). For solid cylinder I = 1/2 mr^2
+        // a = g sin(theta) / 1.5 = 2/3 g sin(theta)
+        const a = Number(((2 / 3) * g * Math.sin(rad)).toFixed(2));
+        return {
+          stem: `ทรงกระบอกตัน (I = 1/2 mR²) กลิ้งลงมาตามพื้นเอียงทำมุม ${ theta }° กับแนวระดับโดยไม่ไถล จงหาความเร่งเชิงเส้นของจุดศูนย์กลางมวล (g = 10 m/s²)`,
+          given: [ { s: '\\theta', v: theta, unit: '°' } ],
+          finds: [ { s: 'a', unit: 'm/s²', value: a, positive: true } ],
+          ans: a, unit: 'm/s²',
+          sol: {
+            analyze: 'สมการกลิ้งโดยไม่ไถล: mg sinθ - f = ma และ fR = Iα = (1/2 mR²)(a/R) => f = 1/2 ma',
+            eqs: [ { eq: 'a = \\frac{ g \\sin \\theta }{ 1 + k }', why: 'ความเร่งกลิ้งไม่ไถล' } ],
+            solve: 'แทนค่า', subst: `a = \\frac{ 10 \\sin ${ theta }^\\circ }{ 1 + 0.5 }`, calc: `a = \\frac{ 2 }{ 3 }(10) \\sin ${ theta }^\\circ = ${ a }`,
+            conclude: `ความเร่ง ${ a } m/s²`
+          }
+        };
+      }
+    });
+
+    T({
+      id: 'phys-101-i13', topic: 101, sub: 'แรงโน้มถ่วง', level: 'IJSO', skills: ['ความเร็วหลุดพ้น'],
+      desc: 'หาความเร็วหลุดพ้นจากดาวเคราะห์',
+      gen(R) {
+        const m = 6e24; // Earth mass
+        const r = R.pick([6400e3, 3200e3]); // Radius
+        const G = 6.67e-11;
+        const v = Math.sqrt((2 * G * m) / r);
+        const v_sci = v.toExponential(2);
+        return {
+          stem: `ดาวเคราะห์ดวงหนึ่งมีมวล 6 x 10²⁴ kg และมีรัศมี ${ r / 1000 } km จงหาความเร็วหลุดพ้นจากผิวดาวเคราะห์ดวงนี้ (G = 6.67 x 10⁻¹¹ N·m²/kg²)`,
+          given: [ { s: 'M', v: 6e24, unit: 'kg' }, { s: 'R', v: r, unit: 'm' } ],
+          finds: [ { s: 'v_{ esc }', unit: 'm/s', value: v, positive: true } ],
+          ans: v, unit: 'm/s',
+          sol: {
+            analyze: 'พลังงานรวมที่ผิวดาวบวกพลังงานจลน์หลุดพ้นเท่ากับศูนย์ที่อนันต์',
+            eqs: [ { eq: 'v_{ esc } = \\sqrt{ \\frac{ 2GM }{ R } }', why: 'ความเร็วหลุดพ้น' } ],
+            solve: 'แทนค่า', subst: `v_{ esc } = \\sqrt{ \\frac{ 2(6.67 \\times 10^{-11})(6 \\times 10^{24}) }{ ${ r } } }`, calc: `v_{ esc } \\approx ${ v_sci }`,
+            conclude: `ความเร็วหลุดพ้น ${ v_sci } m/s`
+          }
+        };
+      }
+    });
+
+    T({
+      id: 'phys-101-i14', topic: 101, sub: 'ของไหล', level: 'IJSO', skills: ['แรงลอยตัว'],
+      desc: 'น้ำหนักปรากฏในของไหล',
+      gen(R) {
+        const m = R.pick([2, 5]);
+        const rho_obj = R.pick([2000, 4000]); // denser than water
+        const rho_fluid = 1000;
+        const g = 10;
+        const vol = m / rho_obj;
+        const f_b = rho_fluid * vol * g;
+        const w_app = m * g - f_b;
+        return {
+          stem: `นำวัตถุมวล ${ m } kg ความหนาแน่น ${ rho_obj } kg/m³ ไปผูกกับตาชั่งสปริงแล้วหย่อนให้จมมิดในน้ำ (ความหนาแน่นน้ำ 1000 kg/m³) ตาชั่งสปริงจะอ่านค่าได้กี่นิวตัน (g = 10 m/s²)`,
+          given: [ { s: 'm', v: m, unit: 'kg' }, { s: '\\rho_{ obj }', v: rho_obj, unit: 'kg/m³' } ],
+          finds: [ { s: 'W_{ app }', unit: 'N', value: w_app, positive: true } ],
+          ans: w_app, unit: 'N',
+          sol: {
+            analyze: 'น้ำหนักปรากฏ = น้ำหนักจริง - แรงลอยตัว (W_app = mg - ρ_fluid V g)',
+            eqs: [ { eq: 'W_{ app } = mg - \\rho_{ f }(\\frac{ m }{ \\rho_{ obj } })g', why: 'แรงลอยตัว' } ],
+            solve: 'แทนค่า', subst: `W_{ app } = (${ m })(10) - (1000)(\\frac{ ${ m } }{ ${ rho_obj } })(10)`, calc: `W_{ app } = ${ m * 10 } - ${ f_b } = ${ w_app }`,
+            conclude: `น้ำหนักที่อ่านได้ ${ w_app } N`
+          }
+        };
+      }
+    });
+
 
 </script>
 <!-- แถบเปลี่ยนแอปในเครือคลังโจทย์ (ไฟล์ร่วม ../apps.js) — หาไม่เจอก็ไม่เป็นไร แอปทำงานปกติ -->
