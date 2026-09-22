@@ -19315,7 +19315,7 @@ applyAppIcon();
         const a = R.pick([2, 4, 5]);
         const s = R.pick([50, 100]);
         const v2 = u * u + 2 * a * s;
-        const v = R.round(Math.sqrt(v2), 2);
+        const v = Number((Math.sqrt(v2)).toFixed(2));
         return {
           stem: `รถคันหนึ่งเริ่มต้นด้วยความเร็ว ${ u } m/s มีความเร่งคงที่ ${ a } m/s² เมื่อเคลื่อนที่ได้ระยะทาง ${ s } m จะมีความเร็วเท่าใด`,
           given: [ { s: 'u', v: u, unit: 'm/s' }, { s: 'a', v: a, unit: 'm/s²' }, { s: 's', v: s, unit: 'm' } ],
@@ -19525,7 +19525,7 @@ applyAppIcon();
         return {
           stem: `วัตถุมวล ${ m1 } kg และ ${ m2 } kg วางห่างกัน ${ r } m จะมีแรงดึงดูดระหว่างมวลกี่นิวตัน (G = 6.67 x 10⁻¹¹ N·m²/kg²)`,
           given: [ { s: 'm_{ 1 }', v: m1, unit: 'kg' }, { s: 'm_{ 2 }', v: m2, unit: 'kg' }, { s: 'r', v: r, unit: 'm' } ],
-          finds: [ { s: 'F_{ G }', unit: 'N', value: f, positive: true } ],
+          finds: [ { s: 'F_{ G }', unit: 'N', value: f } ],
           ans: f, unit: 'N',
           sol: {
             analyze: 'ใช้กฎแรงดึงดูดระหว่างมวลของนิวตัน',
@@ -19551,7 +19551,7 @@ applyAppIcon();
           finds: [ { s: 'v_{ BA }', unit: 'km/hr', value: v_rel, positive: true } ],
           ans: v_rel, unit: 'km/hr',
           sol: {
-            analyze: 'ความเร็วสัมพัทธ์ v_{BA} = v_B - v_A เป็นการลบเวกเตอร์ที่ตั้งฉากกัน',
+            analyze: 'ความเร็วสัมพัทธ์ v_{ BA } = v_B - v_A เป็นการลบเวกเตอร์ที่ตั้งฉากกัน',
             eqs: [ { eq: '|\\vec{ v }_{ BA }| = \\sqrt{ v_{ B }^2 + v_{ A }^2 }', why: 'พีทาโกรัส' } ],
             solve: 'แทนค่า', subst: `|\\vec{ v }_{ BA }| = \\sqrt{ ${ vy }^2 + ${ vx }^2 }`, calc: `|\\vec{ v }_{ BA }| = ${ v_rel }`,
             conclude: `ความเร็วสัมพัทธ์ ${ v_rel } km/hr`
