@@ -21,6 +21,11 @@
     if (s === 'minimal') document.documentElement.setAttribute('data-theme-style', 'minimal');
     } catch(e) {  }
   })();
+
+    
+    
+
+
 </script>
 <!-- ไอคอนตั้งต้นฝังมาในไฟล์เลย ไม่ใช่ปล่อย href ว่างไว้รอโค้ดเติมตอนมีโลโก้โรงเรียน
      เครื่องที่ยังไม่ได้ใส่โลโก้ เบราว์เซอร์จะไปขอ /favicon.ico แล้วได้ 404 ทุกครั้งที่เปิดแอป
@@ -3619,7 +3624,7 @@ function solutionHTML(p, open) {
        '👁️ ซ่อนข้อความ (เว้นบรรทัดไว้เขียน)</button></div>';
 
   for (let i = 0; i < 7; i++) {
-    const blockId = WORK_BLOCKS[i].id;
+    const blockId = WORK_BLOCKS[i] ? WORK_BLOCKS[i].id : null;
     const count = L[blockId] || 0;
     const linesHTML = count > 0 ? '<div class="sol-lines" style="display:none; padding: 6px 0;">' + 
                       new Array(count + 1).join('<div class="wl"></div>') + 
@@ -18577,8 +18582,732 @@ applyAppIcon();
       }
     });
 
+
+    
+    
+
+
+
+
+
+
+    
+
+
+
+    
+
+
+
+    
+
+
+
+    
+
+
+
+    // ----------------------------------------------------------------------
+    // PHYSICS: 30 NEW TEMPLATES (10 B, 10 A, 10 I)
+    // ----------------------------------------------------------------------
+
+    // Topic 101 - Mechanics
+    T({
+      id: 'phys-101-b5', topic: 101, sub: 'นิวตัน', level: 'พื้นฐาน', skills: ['แรง'],
+      desc: 'กฎข้อที่ 2 ของนิวตัน หาความเร่ง',
+      gen(R) {
+        const m = R.pick([2, 4, 5, 10]);
+        const f = R.pick([10, 20, 30, 40]);
+        const a = f / m;
+        return {
+          stem: `ออกแรง ${ f } N ผลักวัตถุมวล ${ m } kg บนพื้นลื่น วัตถุจะมีความเร่งเท่าใด`,
+          given: [ { s: 'F', v: f, unit: 'N' }, { s: 'm', v: m, unit: 'kg' } ],
+          finds: [ { s: 'a', unit: 'm/s²', value: a, positive: true } ],
+          ans: a, unit: 'm/s²',
+          sol: {
+            analyze: 'หาความเร่งจากกฎของนิวตัน เมื่อไม่มีแรงเสียดทาน F_net = F',
+            eqs: [ { eq: '\\Sigma F = ma', why: 'กฎข้อที่ 2 ของนิวตัน' } ],
+            solve: 'ย้ายข้างและแทนค่า', subst: `${ f } = ${ m } a`, calc: `a = \\frac{${ f }}{${ m }} = ${ a }`,
+            conclude: `วัตถุมีความเร่ง ${ a } m/s²`
+          }
+        };
+      }
+    });
+
+    T({
+      id: 'phys-101-b6', topic: 101, sub: 'กราฟการเคลื่อนที่', level: 'พื้นฐาน', skills: ['กราฟ'],
+      desc: 'หาการกระจัดจากพื้นที่ใต้กราฟ v-t',
+      gen(R) {
+        const v = R.pick([10, 15, 20]);
+        const t = R.pick([4, 6, 8]);
+        const s = 0.5 * t * v;
+        let fig = '<line x1="30" y1="30" x2="30" y2="130" stroke="#333" stroke-width="2"/>';
+        fig += '<line x1="30" y1="130" x2="200" y2="130" stroke="#333" stroke-width="2"/>';
+        fig += '<polygon points="30,130 150,130 150,50" fill="#bae6fd" stroke="#0ea5e9" stroke-width="2" opacity="0.5"/>';
+        fig += svgTxt(15, 50, v, 'end', false);
+        fig += svgTxt(150, 145, t, 'middle', false);
+        fig += svgTxt(20, 15, 'v (m/s)', 'middle', false);
+        fig += svgTxt(215, 135, 't (s)', 'middle', false);
+        return {
+          stem: `จากกราฟความเร็ว-เวลาของรถยนต์คันหนึ่ง จงหาระยะทางที่รถเคลื่อนที่ได้ใน ${ t } วินาที`,
+          figure: svgWrap(240, 160, fig),
+          given: [ { s: 'v_{ max }', v: v, unit: 'm/s' }, { s: 't', v: t, unit: 's' } ],
+          finds: [ { s: 's', unit: 'm', value: s, positive: true } ],
+          ans: s, unit: 'm',
+          sol: {
+            analyze: 'การกระจัด s คือพื้นที่ใต้กราฟ v-t (รูปสามเหลี่ยม)',
+            eqs: [ { eq: 's = \\frac{1}{2} \\times \\text{ฐาน} \\times \\text{สูง}', why: 'พื้นที่ใต้กราฟ' } ],
+            solve: 'แทนค่าจากกราฟ', subst: `s = \\frac{1}{2} \\times ${ t } \\times ${ v }`, calc: `s = ${ s }`,
+            conclude: `ระยะทางที่รถเคลื่อนที่ได้คือ ${ s } m`
+          }
+        };
+      }
+    });
+
+    T({
+      id: 'phys-101-b7', topic: 101, sub: 'โมเมนตัม', level: 'พื้นฐาน', skills: ['โมเมนตัม'],
+      desc: 'หาโมเมนตัม P = mv',
+      gen(R) {
+        const m = R.pick([0.5, 1.2, 2.0]);
+        const v = R.pick([10, 20, 50]);
+        const p = Number((m * v).toFixed(2));
+        return {
+          stem: `วัตถุมวล ${ m } kg เคลื่อนที่ด้วยความเร็ว ${ v } m/s จะมีโมเมนตัมเท่าใด`,
+          given: [ { s: 'm', v: m, unit: 'kg' }, { s: 'v', v: v, unit: 'm/s' } ],
+          finds: [ { s: 'p', unit: 'kg m/s', value: p, positive: true } ],
+          ans: p, unit: 'kg m/s',
+          sol: {
+            analyze: 'หาโมเมนตัมจากผลคูณของมวลและความเร็ว',
+            eqs: [ { eq: 'p = mv', why: 'นิยามโมเมนตัม' } ],
+            solve: 'แทนค่า', subst: `p = ${ m } \\times ${ v }`, calc: `p = ${ p }`,
+            conclude: `วัตถุมีโมเมนตัม ${ p } kg m/s`
+          }
+        };
+      }
+    });
+
+    T({
+      id: 'phys-101-a5', topic: 101, sub: 'การชน', level: 'ประยุกต์', skills: ['โมเมนตัม'],
+      desc: 'การชนแบบไม่ยืดหยุ่น (ติดกันไป)',
+      gen(R) {
+        const m1 = R.pick([2, 4]);
+        const v1 = R.pick([3, 5, 6]);
+        const m2 = R.pick([1, 2]);
+        const vf = Number(((m1 * v1) / (m1 + m2)).toFixed(2));
+        return {
+          stem: `รถมวล ${ m1 } kg วิ่งด้วยความเร็ว ${ v1 } m/s เข้าชนรถมวล ${ m2 } kg ที่จอดนิ่งอยู่ หลังชนรถทั้งสองติดกันไป จงหาความเร็วหลังชน`,
+          given: [ { s: 'm_{ 1 }', v: m1, unit: 'kg' }, { s: 'v_{ 1 }', v: v1, unit: 'm/s' }, { s: 'm_{ 2 }', v: m2, unit: 'kg' }, { s: 'v_{ 2 }', v: 0, unit: 'm/s' } ],
+          finds: [ { s: 'v_{ f }', unit: 'm/s', value: vf, positive: true } ],
+          ans: vf, unit: 'm/s',
+          sol: {
+            analyze: 'ชนแล้วติดกันไป ใช้กฎอนุรักษ์โมเมนตัม มวลรวมกันหลังชน',
+            eqs: [ { eq: 'm_{ 1 }v_{ 1 } + m_{ 2 }v_{ 2 } = (m_{ 1 } + m_{ 2 })v_{ f }', why: 'อนุรักษ์โมเมนตัม' } ],
+            solve: 'แทนค่า (v2 = 0)', subst: `(${ m1 })(${ v1 }) + 0 = (${ m1 } + ${ m2 })v_{ f }`, calc: `v_{ f } = \\frac{${ m1 * v1 }}{${ m1 + m2 }} = ${ vf }`,
+            conclude: `ความเร็วหลังชนคือ ${ vf } m/s`
+          }
+        };
+      }
+    });
+
+    T({
+      id: 'phys-101-a6', topic: 101, sub: 'โปรเจกไทล์', level: 'ประยุกต์', skills: ['โปรเจกไทล์'],
+      desc: 'หาระยะตกสูงสุด x',
+      gen(R) {
+        const u = R.pick([20, 40]);
+        const theta = 45; // fixed to 45 for sin2th = 1
+        const g = 10;
+        const sx = (u * u * 1) / g;
+        return {
+          stem: `เตะลูกบอลด้วยความเร็วเริ่มต้น ${ u } m/s ทำมุม 45 องศากับแนวระดับ ลูกบอลจะตกไกลจากจุดเตะกี่เมตร (g = 10 m/s²)`,
+          given: [ { s: 'u', v: u, unit: 'm/s' }, { s: '\\theta', v: theta, unit: '^\\circ' } ],
+          finds: [ { s: 'S_{ x }', unit: 'm', value: sx, positive: true } ],
+          ans: sx, unit: 'm',
+          sol: {
+            analyze: 'หาระยะตกไกลสุดตามแนวราบ',
+            eqs: [ { eq: 'S_{ x } = \\frac{ u^2 \\sin 2\\theta }{ g }', why: 'สมการโปรเจกไทล์' } ],
+            solve: 'แทนค่า theta = 45 ทำให้ sin(90) = 1', subst: `S_{ x } = \\frac{${ u }^2 \\sin 90^\\circ}{10}`, calc: `S_{ x } = \\frac{${ u * u }}{10} = ${ sx }`,
+            conclude: `ลูกบอลตกไกล ${ sx } m`
+          }
+        };
+      }
+    });
+
+    T({
+      id: 'phys-101-a7', topic: 101, sub: 'วงกลม', level: 'ประยุกต์', skills: ['แรงสู่ศูนย์กลาง'],
+      desc: 'หาแรงสู่ศูนย์กลางเชือกแกว่ง',
+      gen(R) {
+        const m = R.pick([0.5, 1, 2]);
+        const v = R.pick([4, 6]);
+        const r = R.pick([0.5, 1, 2]);
+        const fc = (m * v * v) / r;
+        return {
+          stem: `ผูกวัตถุมวล ${ m } kg ด้วยเชือกยาว ${ r } m แล้วเหวี่ยงให้เคลื่อนที่เป็นวงกลมในระนาบระดับด้วยความเร็ว ${ v } m/s จงหาแรงดึงของเชือก`,
+          given: [ { s: 'm', v: m, unit: 'kg' }, { s: 'r', v: r, unit: 'm' }, { s: 'v', v: v, unit: 'm/s' } ],
+          finds: [ { s: 'T', unit: 'N', value: fc, positive: true } ],
+          ans: fc, unit: 'N',
+          sol: {
+            analyze: 'แรงดึงเชือกทำหน้าที่เป็นแรงสู่ศูนย์กลาง',
+            eqs: [ { eq: 'F_{ c } = \\frac{ mv^2 }{ r }', why: 'แรงสู่ศูนย์กลาง' } ],
+            solve: 'แทนค่า', subst: `T = \\frac{${ m } \\times ${ v }^2}{${ r }}`, calc: `T = ${ fc }`,
+            conclude: `แรงดึงเชือกเท่ากับ ${ fc } N`
+          }
+        };
+      }
+    });
+
+    T({
+      id: 'phys-101-a8', topic: 101, sub: 'รอกพื้นเอียง', level: 'ประยุกต์', skills: ['นิวตัน'],
+      desc: 'หาระยะกระจัดและแรงตึง',
+      gen(R) {
+        const m = R.pick([2, 5]);
+        const mu = R.pick([0.1, 0.2]);
+        const g = 10;
+        const fk = mu * m * g;
+        return {
+          stem: `ดึงวัตถุมวล ${ m } kg ให้เคลื่อนที่บนพื้นราบด้วยความเร็วคงที่ ถ้าสัมประสิทธิ์ความเสียดทานคือ ${ mu } จงหาแรงที่ใช้ดึง (g = 10 m/s²)`,
+          given: [ { s: 'm', v: m, unit: 'kg' }, { s: '\\mu_{ k }', v: mu, unit: '' } ],
+          finds: [ { s: 'F', unit: 'N', value: fk, positive: true } ],
+          ans: fk, unit: 'N',
+          sol: {
+            analyze: 'เคลื่อนที่ด้วยความเร็วคงที่ แปลว่าความเร่งเป็น 0 แรงลัพธ์เป็น 0 แรงดึงเท่ากับแรงเสียดทาน',
+            eqs: [ { eq: 'F = f_{ k } = \\mu_{ k } N = \\mu_{ k } mg', why: 'สมดุลแรง' } ],
+            solve: 'แทนค่า', subst: `F = ${ mu } \\times ${ m } \\times 10`, calc: `F = ${ fk }`,
+            conclude: `แรงดึงเท่ากับ ${ fk } N`
+          }
+        };
+      }
+    });
+
+    T({
+      id: 'phys-101-i5', topic: 101, sub: 'โปรเจกไทล์', level: 'IJSO', skills: ['วิเคราะห์มุม'],
+      desc: 'หาเวลาในอากาศของโปรเจกไทล์',
+      gen(R) {
+        const u = R.pick([20, 30, 40]);
+        const g = 10;
+        const t = Number(((2 * u * 0.5) / g).toFixed(2)); // theta=30, sin30=0.5
+        return {
+          stem: `ขว้างวัตถุด้วยความเร็วต้น ${ u } m/s ทำมุม 30 องศากับแนวระดับ วัตถุจะอยู่ในอากาศนานเท่าใดก่อนตกถึงพื้น (g = 10 m/s², sin 30° = 0.5)`,
+          given: [ { s: 'u', v: u, unit: 'm/s' }, { s: '\\sin 30^\\circ', v: 0.5, unit: '' } ],
+          finds: [ { s: 't', unit: 's', value: t, positive: true } ],
+          ans: t, unit: 's',
+          sol: {
+            analyze: 'หาเวลาจากความเร็วต้นในแนวดิ่ง (u_y) ระยะขจัดในแนวดิ่งคือ 0 เมื่อตกถึงระดับเดิม',
+            eqs: [ { eq: 't = \\frac{2u \\sin \\theta}{ g }', why: 'เวลาในอากาศ' } ],
+            solve: 'แทนค่า', subst: `t = \\frac{2(${ u })(0.5)}{10}`, calc: `t = ${ t }`,
+            conclude: `วัตถุอยู่ในอากาศ ${ t } s`
+          }
+        };
+      }
+    });
+
+    T({
+      id: 'phys-101-i6', topic: 101, sub: 'โมเมนตัม', level: 'IJSO', skills: ['แรงดล'],
+      desc: 'หาแรงดลเฉลี่ย',
+      gen(R) {
+        const m = R.pick([0.1, 0.2, 0.5]);
+        const u = R.pick([10, 20]);
+        const v = R.pick([10, 20]);
+        const t = R.pick([0.01, 0.05]);
+        const f = Number(((m * (v - (-u))) / t).toFixed(2));
+        return {
+          stem: `ลูกบอลมวล ${ m } kg พุ่งชนกำแพงด้วยความเร็ว ${ u } m/s และสะท้อนกลับในทิศเดิมด้วยความเร็ว ${ v } m/s ถ้าลูกบอลกระทบกำแพงนาน ${ t } s จงหาแรงดลเฉลี่ย`,
+          given: [ { s: 'm', v: m, unit: 'kg' }, { s: 'u', v: -u, unit: 'm/s' }, { s: 'v', v: v, unit: 'm/s' }, { s: 't', v: t, unit: 's' } ],
+          finds: [ { s: 'F', unit: 'N', value: f, positive: true } ],
+          ans: f, unit: 'N',
+          sol: {
+            analyze: 'แรงดลเฉลี่ยคืออัตราการเปลี่ยนแปลงโมเมนตัม (ทิศทางสะท้อนกลับ ความเร็วต้นกับปลายมีเครื่องหมายตรงข้ามกัน)',
+            eqs: [ { eq: 'F = \\frac{\\Delta p}{ \\Delta t } = \\frac{ m(v - u) }{ \\Delta t }', why: 'แรงดล' } ],
+            solve: 'ให้ทิศสะท้อนออกมาเป็นบวก u จะติดลบ', subst: `F = \\frac{${ m }(${ v } - (-${ u }))}{${ t }}`, calc: `F = ${ f }`,
+            conclude: `แรงดลเฉลี่ยที่กำแพงกระทำคือ ${ f } N`
+          }
+        };
+      }
+    });
+
+    T({
+      id: 'phys-101-i7', topic: 101, sub: 'การหมุน', level: 'IJSO', skills: ['โมเมนต์ความเฉื่อย'],
+      desc: 'พลังงานจลน์ของการหมุน',
+      gen(R) {
+        const I = R.pick([2, 4, 5]);
+        const w = R.pick([10, 20]);
+        const ek = 0.5 * I * w * w;
+        return {
+          stem: `ล้อมีโมเมนต์ความเฉื่อย ${ I } kg m² กำลังหมุนด้วยความเร็วเชิงมุม ${ w } rad/s จงหาพลังงานจลน์ของการหมุน`,
+          given: [ { s: 'I', v: I, unit: 'kg\\cdot m^2' }, { s: '\\omega', v: w, unit: 'rad/s' } ],
+          finds: [ { s: 'E_{ k }', unit: 'J', value: ek, positive: true } ],
+          ans: ek, unit: 'J',
+          sol: {
+            analyze: 'หาพลังงานจลน์เนื่องจากการหมุนรอบแกนคงที่',
+            eqs: [ { eq: 'E_{ k } = \\frac{1}{2}I\\omega^2', why: 'พลังงานจลน์การหมุน' } ],
+            solve: 'แทนค่า', subst: `E_{ k } = \\frac{1}{2}(${ I })(${ w }^2)`, calc: `E_{ k } = ${ ek }`,
+            conclude: `พลังงานจลน์ของการหมุนคือ ${ ek } J`
+          }
+        };
+      }
+    });
+
+    // Topic 102 - Work, Energy, Fluids, Heat
+    T({
+      id: 'phys-102-b5', topic: 102, sub: 'งาน', level: 'พื้นฐาน', skills: ['งาน'],
+      desc: 'หางานของแรง',
+      gen(R) {
+        const f = R.pick([50, 100]);
+        const s = R.pick([2, 4, 5]);
+        const w = f * s;
+        return {
+          stem: `ออกแรง ${ f } N ดึงกล่องให้เคลื่อนที่ไปตามแนวราบได้ระยะทาง ${ s } m จงหางานของแรงดึงนี้`,
+          given: [ { s: 'F', v: f, unit: 'N' }, { s: 's', v: s, unit: 'm' } ],
+          finds: [ { s: 'W', unit: 'J', value: w, positive: true } ],
+          ans: w, unit: 'J',
+          sol: {
+            analyze: 'งานคือผลคูณของแรงและระยะกระจัดในแนวเดียวกัน',
+            eqs: [ { eq: 'W = F \\times s', why: 'นิยามของงาน' } ],
+            solve: 'แทนค่าแรงและระยะทาง', subst: `W = ${ f } \\times ${ s }`, calc: `W = ${ w }`,
+            conclude: `เกิดงาน ${ w } J`
+          }
+        };
+      }
+    });
+
+    T({
+      id: 'phys-102-b6', topic: 102, sub: 'พลังงานสปริง', level: 'พื้นฐาน', skills: ['พลังงาน'],
+      desc: 'หาพลังงานศักย์ยืดหยุ่น',
+      gen(R) {
+        const k = R.pick([100, 200, 500]);
+        const x_cm = R.pick([10, 20]);
+        const x = x_cm / 100;
+        const e = 0.5 * k * x * x;
+        return {
+          stem: `สปริงตัวหนึ่งมีค่านิจ ${ k } N/m ถูกดึงให้ยืดออก ${ x_cm } cm สปริงจะสะสมพลังงานศักย์ยืดหยุ่นกี่จูล`,
+          given: [ { s: 'k', v: k, unit: 'N/m' }, { s: 'x', v: x, unit: 'm' } ],
+          finds: [ { s: 'E_{ p }', unit: 'J', value: e, positive: true } ],
+          ans: e, unit: 'J',
+          sol: {
+            analyze: 'หาพลังงานศักย์ยืดหยุ่น (ระวังเปลี่ยนระยะยืดเป็นหน่วยเมตร)',
+            eqs: [ { eq: 'E_{ p } = \\frac{1}{2}kx^2', why: 'พลังงานศักย์สปริง' } ],
+            solve: 'แทนค่า x เป็นเมตร', subst: `E_{ p } = \\frac{1}{2}(${ k })(${ x }^2)`, calc: `E_{ p } = ${ e }`,
+            conclude: `พลังงานศักย์ยืดหยุ่นคือ ${ e } J`
+          }
+        };
+      }
+    });
+
+    T({
+      id: 'phys-102-b7', topic: 102, sub: 'ความร้อน', level: 'พื้นฐาน', skills: ['ความร้อน'],
+      desc: 'หาความร้อน Q=mcT',
+      gen(R) {
+        const m = R.pick([0.5, 1, 2]);
+        const dt = R.pick([20, 50, 80]);
+        const c = 4186; // น้ำ
+        const q = m * c * dt;
+        return {
+          stem: `ต้องให้ความร้อนกี่จูล แก่น้ำมวล ${ m } kg เพื่อให้อุณหภูมิสูงขึ้น ${ dt } °C (ความจุความร้อนจำเพาะของน้ำ = 4186 J/kg·K)`,
+          given: [ { s: 'm', v: m, unit: 'kg' }, { s: '\\Delta T', v: dt, unit: '^\\circ C' }, { s: 'c', v: c, unit: 'J/kg\\cdot K' } ],
+          finds: [ { s: 'Q', unit: 'J', value: q, positive: true } ],
+          ans: q, unit: 'J',
+          sol: {
+            analyze: 'หาพลังงานความร้อนที่ทำให้อุณหภูมิเปลี่ยน',
+            eqs: [ { eq: 'Q = mc\\Delta T', why: 'สมการความร้อน' } ],
+            solve: 'แทนค่าอุณหภูมิที่เปลี่ยน', subst: `Q = ${ m } \\times 4186 \\times ${ dt }`, calc: `Q = ${ q }`,
+            conclude: `ต้องให้ความร้อน ${ q } J`
+          }
+        };
+      }
+    });
+
+    T({
+      id: 'phys-102-b8', topic: 102, sub: 'ความดัน', level: 'พื้นฐาน', skills: ['ของไหล'],
+      desc: 'หาความดัน P=F/A',
+      gen(R) {
+        const m = R.pick([50, 100]);
+        const a = R.pick([0.1, 0.5]);
+        const f = m * 10;
+        const p = f / a;
+        return {
+          stem: `มวล ${ m } kg วางทับอยู่บนพื้นที่ ${ a } m² จะทำให้เกิดความดันกี่พาสคัล (g = 10 m/s²)`,
+          given: [ { s: 'F', v: f, unit: 'N' }, { s: 'A', v: a, unit: 'm^2' } ],
+          finds: [ { s: 'P', unit: 'Pa', value: p, positive: true } ],
+          ans: p, unit: 'Pa',
+          sol: {
+            analyze: 'หาความดันจากแรงกดทับต่อหนึ่งหน่วยพื้นที่ แรงกดทับคือมวลคูณค่า g',
+            eqs: [ { eq: 'P = \\frac{ F }{ A } = \\frac{ mg }{ A }', why: 'นิยามความดัน' } ],
+            solve: 'แทนค่าแรงน้ำหนักพื้นที่', subst: `P = \\frac{${ m } \\times 10}{${ a }}`, calc: `P = ${ p }`,
+            conclude: `เกิดความดัน ${ p } Pa`
+          }
+        };
+      }
+    });
+
+    T({
+      id: 'phys-102-a5', topic: 102, sub: 'พลังงาน', level: 'ประยุกต์', skills: ['กฎอนุรักษ์'],
+      desc: 'พลังงานจลน์เปลี่ยนเป็นศักย์สปริง',
+      gen(R) {
+        const m = R.pick([1, 2]);
+        const v = R.pick([4, 6]);
+        const k = R.pick([100, 200, 400]);
+        const x = Number((Math.sqrt((m * v * v) / k)).toFixed(2));
+        return {
+          stem: `กล่องมวล ${ m } kg เคลื่อนที่ด้วยความเร็ว ${ v } m/s บนพื้นราบลื่น เข้าชนสปริงซึ่งมีค่านิจ ${ k } N/m สปริงจะหดตัวเข้าไปได้ไกลที่สุดเท่าใด`,
+          given: [ { s: 'm', v: m, unit: 'kg' }, { s: 'v', v: v, unit: 'm/s' }, { s: 'k', v: k, unit: 'N/m' } ],
+          finds: [ { s: 'x', unit: 'm', value: x, positive: true } ],
+          ans: x, unit: 'm',
+          sol: {
+            analyze: 'พลังงานจลน์ตอนเริ่มเปลี่ยนเป็นพลังงานศักย์ยืดหยุ่นตอนหยุดสนิท',
+            eqs: [ { eq: '\\frac{1}{2}mv^2 = \\frac{1}{2}kx^2', why: 'อนุรักษ์พลังงาน' } ],
+            solve: 'ย้ายข้างหาระยะหด x', subst: `${ m }(${ v }^2) = ${ k }(x^2)`, calc: `x = \\sqrt{ \\frac{${ m * v * v }}{${ k }} } = ${ x }`,
+            conclude: `สปริงหดตัวเข้าไป ${ x } m`
+          }
+        };
+      }
+    });
+
+    T({
+      id: 'phys-102-a6', topic: 102, sub: 'แรงพยุง', level: 'ประยุกต์', skills: ['ของไหล'],
+      desc: 'หาปริมาตรส่วนที่จม',
+      gen(R) {
+        const ro = R.pick([600, 800]);
+        const rf = 1000;
+        const v = R.pick([0.5, 1, 2]);
+        const vs = Number(((ro * v) / rf).toFixed(2));
+        return {
+          stem: `ท่อนไม้มวลหนาแน่น ${ ro } kg/m³ ปริมาตร ${ v } m³ ลอยอยู่ในน้ำ (ความหนาแน่น 1000 kg/m³) ปริมาตรส่วนที่จมน้ำคือเท่าใด`,
+          given: [ { s: '\\rho_{ o }', v: ro, unit: 'kg/m^3' }, { s: 'V_{ o }', v: v, unit: 'm^3' }, { s: '\\rho_{ w }', v: rf, unit: 'kg/m^3' } ],
+          finds: [ { s: 'V_{ sub }', unit: 'm^3', value: vs, positive: true } ],
+          ans: vs, unit: 'm³',
+          sol: {
+            analyze: 'วัตถุลอย น้ำหนักวัตถุเท่ากับแรงพยุง',
+            eqs: [ { eq: '\\rho_{ o } V_{ o } g = \\rho_{ w } V_{ sub } g', why: 'หลักของอาร์คิมิดีส' } ],
+            solve: 'แทนค่าความหนาแน่นและปริมาตร g ตัด g', subst: `${ ro } \\times ${ v } = 1000 \\times V_{ sub }`, calc: `V_{ sub } = \\frac{${ ro * v }}{1000} = ${ vs }`,
+            conclude: `ปริมาตรที่จมน้ำคือ ${ vs } m³`
+          }
+        };
+      }
+    });
+
+    T({
+      id: 'phys-102-a7', topic: 102, sub: 'แก๊ส', level: 'ประยุกต์', skills: ['สมการแก๊ส'],
+      desc: 'กฎของชาร์ล V1/T1 = V2/T2',
+      gen(R) {
+        const v1 = R.pick([10, 20]);
+        const t1 = R.pick([300, 400]);
+        const t2 = R.pick([600, 800]);
+        const v2 = (v1 * t2) / t1;
+        return {
+          stem: `แก๊สอุดมคติปริมาตร ${ v1 } ลิตร ที่อุณหภูมิ ${ t1 } K หากให้ความร้อนจนอุณหภูมิเพิ่มเป็น ${ t2 } K โดยความดันคงที่ แก๊สจะมีปริมาตรกี่ลิตร`,
+          given: [ { s: 'V_{ 1 }', v: v1, unit: 'L' }, { s: 'T_{ 1 }', v: t1, unit: 'K' }, { s: 'T_{ 2 }', v: t2, unit: 'K' } ],
+          finds: [ { s: 'V_{ 2 }', unit: 'L', value: v2, positive: true } ],
+          ans: v2, unit: 'L',
+          sol: {
+            analyze: 'ความดันและจำนวนโมลคงที่ ปริมาตรแปรผันตรงกับอุณหภูมิสัมบูรณ์ (กฎของชาร์ล)',
+            eqs: [ { eq: '\\frac{V_{ 1 }}{T_{ 1 }} = \\frac{V_{ 2 }}{T_{ 2 }}', why: 'กฎของชาร์ล' } ],
+            solve: 'แทนค่า', subst: `\\frac{${ v1 }}{${ t1 }} = \\frac{V_{ 2 }}{${ t2 }}`, calc: `V_{ 2 } = \\frac{${ v1 } \\times ${ t2 }}{${ t1 }} = ${ v2 }`,
+            conclude: `แก๊สมีปริมาตรใหม่ ${ v2 } ลิตร`
+          }
+        };
+      }
+    });
+
+    T({
+      id: 'phys-102-i5', topic: 102, sub: 'งาน', level: 'IJSO', skills: ['งานสูบน้ำ'],
+      desc: 'งานสูบน้ำออกจากบ่อ (จุดศูนย์กลางมวล)',
+      gen(R) {
+        const m = R.pick([500, 1000]);
+        const h = R.pick([4, 6, 8]);
+        const hc = h / 2;
+        const w = m * 10 * hc;
+        return {
+          stem: `บ่อน้ำลึก ${ h } m มีน้ำบรรจุอยู่เต็มบ่อมวลรวม ${ m } kg ถ้าต้องการสูบน้ำออกจนหมดบ่อพอดีถึงปากบ่อ ต้องทำงานกี่จูล (g=10)`,
+          given: [ { s: 'm', v: m, unit: 'kg' }, { s: 'h_{ cm }', v: hc, unit: 'm' } ],
+          finds: [ { s: 'W', unit: 'J', value: w, positive: true } ],
+          ans: w, unit: 'J',
+          sol: {
+            analyze: 'งานสูบน้ำคิดจากการยกจุดศูนย์กลางมวลของน้ำทั้งหมดขึ้นมา ซึ่งอยู่ลึก h/2',
+            eqs: [ { eq: 'W = mgh_{ cm }', why: 'งานดึงน้ำ' } ],
+            solve: 'จุดศูนย์กลางมวลอยู่กึ่งกลางบ่อ = ' + hc + ' m', subst: `W = ${ m } \\times 10 \\times ${ hc }`, calc: `W = ${ w }`,
+            conclude: `ต้องทำงาน ${ w } J`
+          }
+        };
+      }
+    });
+
+    T({
+      id: 'phys-102-i6', topic: 102, sub: 'อนุรักษ์พลังงาน', level: 'IJSO', skills: ['พลังงานจลน์'],
+      desc: 'จุดสูงสุดของลูกตุ้ม',
+      gen(R) {
+        const u = R.pick([10, 20]);
+        const g = 10;
+        const h = Number(((u * u) / (2 * g)).toFixed(2));
+        return {
+          stem: `โยนก้อนหินขึ้นในแนวดิ่งด้วยความเร็ว ${ u } m/s ก้อนหินจะขึ้นไปได้สูงสุดกี่เมตร (g = 10 m/s², ไม่คิดแรงต้านอากาศ)`,
+          given: [ { s: 'u', v: u, unit: 'm/s' } ],
+          finds: [ { s: 'h_{ max }', unit: 'm', value: h, positive: true } ],
+          ans: h, unit: 'm',
+          sol: {
+            analyze: 'พลังงานจลน์ที่จุดเริ่มต้นเปลี่ยนเป็นพลังงานศักย์โน้มถ่วงที่จุดสูงสุด (v=0)',
+            eqs: [ { eq: '\\frac{1}{2}mv^2 = mgh', why: 'อนุรักษ์พลังงาน' } ],
+            solve: 'มวลตัดกันได้', subst: `\\frac{1}{2}(${ u }^2) = (10)h`, calc: `h = \\frac{${ u * u }}{20} = ${ h }`,
+            conclude: `ก้อนหินขึ้นไปสูงสุด ${ h } m`
+          }
+        };
+      }
+    });
+
+    T({
+      id: 'phys-102-i7', topic: 102, sub: 'แบร์นูลลี', level: 'IJSO', skills: ['ของไหล'],
+      desc: 'อัตราการไหล',
+      gen(R) {
+        const a1 = R.pick([0.02, 0.04]);
+        const v1 = R.pick([5, 10]);
+        const a2 = R.pick([0.01, 0.02]);
+        const v2 = (a1 * v1) / a2;
+        return {
+          stem: `น้ำไหลผ่านท่อขนาดไม่สม่ำเสมอ หากท่อส่วนแรกมีพื้นที่หน้าตัด ${ a1 } m² น้ำมีความเร็ว ${ v1 } m/s เมื่อไหลไปยังท่อส่วนที่สองที่มีพื้นที่หน้าตัด ${ a2 } m² น้ำจะมีความเร็วกี่ m/s`,
+          given: [ { s: 'A_{ 1 }', v: a1, unit: 'm^2' }, { s: 'v_{ 1 }', v: v1, unit: 'm/s' }, { s: 'A_{ 2 }', v: a2, unit: 'm^2' } ],
+          finds: [ { s: 'v_{ 2 }', unit: 'm/s', value: v2, positive: true } ],
+          ans: v2, unit: 'm/s',
+          sol: {
+            analyze: 'ของไหลในอุดมคติ อัตราการไหลต้องคงที่',
+            eqs: [ { eq: 'A_{ 1 }v_{ 1 } = A_{ 2 }v_{ 2 }', why: 'สมการความต่อเนื่อง' } ],
+            solve: 'แทนค่าพื้นที่หน้าตัดและความเร็ว', subst: `(${ a1 })(${ v1 }) = (${ a2 })v_{ 2 }`, calc: `v_{ 2 } = \\frac{${ a1 * v1 }}{${ a2 }} = ${ v2 }`,
+            conclude: `ความเร็วในท่อส่วนที่สองคือ ${ v2 } m/s`
+          }
+        };
+      }
+    });
+
+    T({
+      id: 'phys-102-i8', topic: 102, sub: 'ความร้อน', level: 'IJSO', skills: ['ความร้อนแฝง'],
+      desc: 'น้ำแข็งละลาย',
+      gen(R) {
+        const m = R.pick([10, 20]);
+        const l = 333; // J/g
+        const q = m * l;
+        return {
+          stem: `ต้องใช้ความร้อนกี่จูล เพื่อหลอมเหลวน้ำแข็งมวล ${ m } กรัม ที่อุณหภูมิ 0 °C ให้กลายเป็นน้ำทั้งหมดพอดี (ความร้อนแฝงของการหลอมเหลว = 333 J/g)`,
+          given: [ { s: 'm', v: m, unit: 'g' }, { s: 'L', v: l, unit: 'J/g' } ],
+          finds: [ { s: 'Q', unit: 'J', value: q, positive: true } ],
+          ans: q, unit: 'J',
+          sol: {
+            analyze: 'หาความร้อนที่ใช้ในการเปลี่ยนสถานะโดยอุณหภูมิคงที่',
+            eqs: [ { eq: 'Q = mL', why: 'ความร้อนแฝง' } ],
+            solve: 'แทนค่า', subst: `Q = ${ m } \\times 333`, calc: `Q = ${ q }`,
+            conclude: `ต้องใช้ความร้อน ${ q } J`
+          }
+        };
+      }
+    });
+
+    // Topic 103 - Electricity, Light, Waves
+    T({
+      id: 'phys-103-b5', topic: 103, sub: 'โอห์ม', level: 'พื้นฐาน', skills: ['ไฟฟ้า'],
+      desc: 'วงจรอนุกรม หา I รวม',
+      gen(R) {
+        const v = R.pick([12, 24]);
+        const r1 = R.pick([2, 4]);
+        const r2 = R.pick([4, 8]);
+        const r = r1 + r2;
+        const i = Number((v / r).toFixed(2));
+        return {
+          stem: `นำตัวต้านทาน ${ r1 } โอห์ม และ ${ r2 } โอห์ม มาต่ออนุกรมกัน แล้วต่อเข้ากับแหล่งจ่ายไฟ ${ v } V จะมีกระแสไฟฟ้าไหลในวงจรกี่แอมแปร์`,
+          given: [ { s: 'R_{ 1 }', v: r1, unit: '\\Omega' }, { s: 'R_{ 2 }', v: r2, unit: '\\Omega' }, { s: 'V', v: v, unit: 'V' } ],
+          finds: [ { s: 'I', unit: 'A', value: i, positive: true } ],
+          ans: i, unit: 'A',
+          sol: {
+            analyze: 'ต่ออนุกรม ความต้านทานรวมคือ R1+R2 หา I จากกฎของโอห์ม',
+            eqs: [ { eq: 'I = \\frac{ V }{R_{ total }}', why: 'กฎของโอห์ม' } ],
+            solve: 'รวมความต้านทาน', subst: `I = \\frac{${ v }}{${ r1 } + ${ r2 }}`, calc: `I = \\frac{${ v }}{${ r }} = ${ i }`,
+            conclude: `มีกระแสไฟฟ้า ${ i } A`
+          }
+        };
+      }
+    });
+
+    T({
+      id: 'phys-103-b6', topic: 103, sub: 'สะท้อน', level: 'พื้นฐาน', skills: ['แสง'],
+      desc: 'กฎการสะท้อน',
+      gen(R) {
+        const t = R.pick([30, 45, 60]);
+        return {
+          stem: `แสงตกกระทบกระจกเงาราบ ทำมุมตกกระทบ ${ t } องศากับเส้นแนวฉาก แสงสะท้อนจะทำมุมสะท้อนกี่องศากับเส้นแนวฉาก`,
+          given: [ { s: '\\theta_{ in }', v: t, unit: '^\\circ' } ],
+          finds: [ { s: '\\theta_{ out }', unit: '^\\circ', value: t, positive: true } ],
+          ans: t, unit: 'องศา',
+          sol: {
+            analyze: 'กฎการสะท้อนของแสง',
+            eqs: [ { eq: '\\theta_{ out } = \\theta_{ in }', why: 'มุมตกกระทบ = มุมสะท้อน' } ],
+            solve: 'จากกฎการสะท้อน มุมสะท้อนย่อมเท่ากับมุมตกกระทบ', subst: `\\theta_{ out } = ${ t }^\\circ`, calc: `\\theta_{ out } = ${ t }`,
+            conclude: `มุมสะท้อนคือ ${ t } องศา`
+          }
+        };
+      }
+    });
+
+    T({
+      id: 'phys-103-b7', topic: 103, sub: 'คลื่น', level: 'พื้นฐาน', skills: ['คลื่น'],
+      desc: 'อัตราเร็วคลื่น',
+      gen(R) {
+        const f = R.pick([50, 100, 200]);
+        const lam = R.pick([2, 5, 10]);
+        const v = f * lam;
+        return {
+          stem: `แหล่งกำเนิดคลื่นสั่นด้วยความถี่ ${ f } Hz ทำให้เกิดคลื่นมีความยาวคลื่น ${ lam } m คลื่นนี้มีความเร็วกี่ m/s`,
+          given: [ { s: 'f', v: f, unit: 'Hz' }, { s: '\\lambda', v: lam, unit: 'm' } ],
+          finds: [ { s: 'v', unit: 'm/s', value: v, positive: true } ],
+          ans: v, unit: 'm/s',
+          sol: {
+            analyze: 'อัตราเร็วคลื่นเท่ากับผลคูณความถี่และความยาวคลื่น',
+            eqs: [ { eq: 'v = f\\lambda', why: 'สมการคลื่น' } ],
+            solve: 'แทนค่าความถี่และความยาวคลื่น', subst: `v = ${ f } \\times ${ lam }`, calc: `v = ${ v }`,
+            conclude: `คลื่นมีความเร็ว ${ v } m/s`
+          }
+        };
+      }
+    });
+
+    T({
+      id: 'phys-103-a5', topic: 103, sub: 'ไฟฟ้ากำลัง', level: 'ประยุกต์', skills: ['ไฟฟ้า'],
+      desc: 'หากำลังไฟฟ้า P=VI',
+      gen(R) {
+        const v = R.pick([220]);
+        const i = R.pick([2, 5, 10]);
+        const p = v * i;
+        return {
+          stem: `เตารีดไฟฟ้าต่อกับไฟบ้านความต่างศักย์ ${ v } V กระแสไฟฟ้าไหลผ่าน ${ i } A เตารีดเครื่องนี้ใช้กำลังไฟฟ้ากี่วัตต์`,
+          given: [ { s: 'V', v: v, unit: 'V' }, { s: 'I', v: i, unit: 'A' } ],
+          finds: [ { s: 'P', unit: 'W', value: p, positive: true } ],
+          ans: p, unit: 'W',
+          sol: {
+            analyze: 'กำลังไฟฟ้าหาได้จากผลคูณของความต่างศักย์และกระแสไฟฟ้า',
+            eqs: [ { eq: 'P = VI', why: 'สมการกำลังไฟฟ้า' } ],
+            solve: 'แทนค่า', subst: `P = ${ v } \\times ${ i }`, calc: `P = ${ p }`,
+            conclude: `ใช้กำลังไฟฟ้า ${ p } W`
+          }
+        };
+      }
+    });
+
+    T({
+      id: 'phys-103-a6', topic: 103, sub: 'หักเหแสง', level: 'ประยุกต์', skills: ['แสง'],
+      desc: 'กฎของสเนลล์ หาดัชนีหักเห',
+      gen(R) {
+        const n1 = 1;
+        const th1 = 30; // sin30 = 0.5
+        const n2 = R.pick([1.4, 1.5]);
+        const th2 = Number((Math.asin((n1 * 0.5)/n2) * 180 / Math.PI).toFixed(1));
+        return {
+          stem: `แสงเดินทางจากอากาศ (ดัชนีหักเห = 1) ทำมุมตกกระทบ 30 องศา เข้าสู่แก้วที่มีดัชนีหักเห ${ n2 } จงหามุมหักเหในแก้ว (sin 30° = 0.5, ตอบเป็นองศา)`,
+          given: [ { s: 'n_{ 1 }', v: 1, unit: '' }, { s: '\\theta_{ 1 }', v: 30, unit: '^\\circ' }, { s: 'n_{ 2 }', v: n2, unit: '' } ],
+          finds: [ { s: '\\theta_{ 2 }', unit: '^\\circ', value: th2, positive: true } ],
+          ans: th2, unit: 'องศา',
+          sol: {
+            analyze: 'ใช้กฎของสเนลล์ในการหาค่ามุมหักเห',
+            eqs: [ { eq: 'n_{ 1 }\\sin\\theta_{ 1 } = n_{ 2 }\\sin\\theta_{ 2 }', why: 'กฎของสเนลล์' } ],
+            solve: 'แทนค่าและย้ายข้างหา sin', subst: `1(0.5) = ${ n2 }\\sin\\theta_{ 2 }`, calc: `\\theta_{ 2 } = \\arcsin(\\frac{0.5}{${ n2 }}) \\approx ${ th2 }^\\circ`,
+            conclude: `มุมหักเหประมาณ ${ th2 } องศา`
+          }
+        };
+      }
+    });
+
+    T({
+      id: 'phys-103-a7', topic: 103, sub: 'คลื่นนิ่ง', level: 'ประยุกต์', skills: ['คลื่น'],
+      desc: 'คลื่นนิ่งในสายกีตาร์',
+      gen(R) {
+        const l = R.pick([0.5, 0.8, 1]);
+        const v = R.pick([100, 200, 300]);
+        const n = R.pick([1, 2, 3]);
+        const f = (n * v) / (2 * l);
+        return {
+          stem: `สายกีตาร์ยาว ${ l } m เมื่อดีดให้เกิดคลื่นนิ่งด้วยความเร็วคลื่น ${ v } m/s ความถี่ฮาร์มอนิกที่ ${ n } จะเป็นเท่าใด`,
+          given: [ { s: 'L', v: l, unit: 'm' }, { s: 'v', v: v, unit: 'm/s' }, { s: 'n', v: n, unit: '' } ],
+          finds: [ { s: 'f_{ n }', unit: 'Hz', value: f, positive: true } ],
+          ans: f, unit: 'Hz',
+          sol: {
+            analyze: 'สายกีตาร์ตรึงสองข้าง ความยาวคลื่นฮาร์มอนิกที่ n คือ 2L/n',
+            eqs: [ { eq: 'f_{ n } = \\frac{ nv }{ 2L }', why: 'ฮาร์มอนิกคลื่นเส้นเชือก' } ],
+            solve: 'แทนค่า', subst: `f_{ ${ n } } = \\frac{${ n } \\times ${ v }}{2(${ l })}`, calc: `f_{ ${ n } } = ${ f }`,
+            conclude: `ความถี่ฮาร์มอนิกที่ ${ n } คือ ${ f } Hz`
+          }
+        };
+      }
+    });
+
+    T({
+      id: 'phys-103-i5', topic: 103, sub: 'วงจรบริดจ์', level: 'IJSO', skills: ['ไฟฟ้า'],
+      desc: 'วงจรบริดจ์สมดุล',
+      gen(R) {
+        const r1 = R.pick([10, 20]);
+        const r2 = R.pick([30, 40]);
+        const r3 = R.pick([5, 10]);
+        const rx = (r2 * r3) / r1;
+        return {
+          stem: `ในวงจรวิทสโตนบริดจ์สมดุล (กัลวานอมิเตอร์อ่านค่าได้ศูนย์) ถ้าแขนต้านทาน 3 ข้างมีค่า R1 = ${ r1 } โอห์ม, R2 = ${ r2 } โอห์ม, และ R3 = ${ r3 } โอห์ม จงหาค่าความต้านทาน Rx ฝั่งตรงข้าม R1`,
+          given: [ { s: 'R_{ 1 }', v: r1, unit: '\\Omega' }, { s: 'R_{ 2 }', v: r2, unit: '\\Omega' }, { s: 'R_{ 3 }', v: r3, unit: '\\Omega' } ],
+          finds: [ { s: 'R_{ x }', unit: '\\Omega', value: rx, positive: true } ],
+          ans: rx, unit: 'โอห์ม',
+          sol: {
+            analyze: 'วงจรบริดจ์สมดุล อัตราส่วนความต้านทานแขนตรงข้ามคูณกันเท่ากัน',
+            eqs: [ { eq: 'R_{ 1 }R_{ x } = R_{ 2 }R_{ 3 }', why: 'บริดจ์สมดุล' } ],
+            solve: 'ย้ายข้างหา Rx', subst: `${ r1 } \\cdot R_{ x } = ${ r2 } \\times ${ r3 }`, calc: `R_{ x } = \\frac{${ r2 * r3 }}{${ r1 }} = ${ rx }`,
+            conclude: `ความต้านทาน Rx คือ ${ rx } โอห์ม`
+          }
+        };
+      }
+    });
+
+    T({
+      id: 'phys-103-i6', topic: 103, sub: 'ปรากฏการณ์ดอปเพลอร์', level: 'IJSO', skills: ['คลื่นเสียง'],
+      desc: 'หาความถี่เสียงผู้สังเกต',
+      gen(R) {
+        const v = 340;
+        const vs = R.pick([10, 20]);
+        const f = R.pick([500, 1000]);
+        const f_obs = Number((f * (v / (v - vs))).toFixed(1));
+        return {
+          stem: `รถพยาบาลเปิดไซเรนด้วยความถี่ ${ f } Hz กำลังวิ่งเข้าหาผู้สังเกตที่ยืนนิ่งด้วยความเร็ว ${ vs } m/s ผู้สังเกตจะได้ยินเสียงความถี่เท่าใด (ให้ความเร็วเสียงในอากาศ = 340 m/s)`,
+          given: [ { s: 'f_{ s }', v: f, unit: 'Hz' }, { s: 'v_{ s }', v: vs, unit: 'm/s' }, { s: 'v', v: 340, unit: 'm/s' } ],
+          finds: [ { s: 'f_{ L }', unit: 'Hz', value: f_obs, positive: true } ],
+          ans: f_obs, unit: 'Hz',
+          sol: {
+            analyze: 'แหล่งกำเนิดเคลื่อนที่เข้าหา ผู้สังเกตอยู่นิ่ง ความถี่จะสูงขึ้น',
+            eqs: [ { eq: 'f_{ L } = f_{ s } \\left( \\frac{ v }{v - v_{ s }} \\right)', why: 'ปรากฏการณ์ดอปเพลอร์' } ],
+            solve: 'แทนค่า', subst: `f_{ L } = ${ f } \\left( \\frac{340}{340 - ${ vs }} \\right)`, calc: `f_{ L } = ${ f } \\left( \\frac{340}{${ 340 - vs }} \\right) = ${ f_obs }`,
+            conclude: `ได้ยินเสียงความถี่ ${ f_obs } Hz`
+          }
+        };
+      }
+    });
+
+    T({
+      id: 'phys-103-i7', topic: 103, sub: 'เลนส์ประกอบ', level: 'IJSO', skills: ['แสง'],
+      desc: 'หาความยาวโฟกัสรวม',
+      gen(R) {
+        const f1 = R.pick([10, 20]);
+        const f2 = R.pick([15, 30]);
+        const f_tot = Number(((f1 * f2) / (f1 + f2)).toFixed(2));
+        return {
+          stem: `เลนส์นูน 2 อันมีความยาวโฟกัส ${ f1 } cm และ ${ f2 } cm นำมาวางประกบติดกัน ความยาวโฟกัสรวมของระบบจะเป็นเท่าใด`,
+          given: [ { s: 'f_{ 1 }', v: f1, unit: 'cm' }, { s: 'f_{ 2 }', v: f2, unit: 'cm' } ],
+          finds: [ { s: 'f_{ eq }', unit: 'cm', value: f_tot, positive: true } ],
+          ans: f_tot, unit: 'cm',
+          sol: {
+            analyze: 'เลนส์บางประกอบกัน กำลังเลนส์รวมเท่ากับผลบวกกำลังเลนส์ (1/f รวม = 1/f1 + 1/f2)',
+            eqs: [ { eq: '\\frac{1}{f_{ eq }} = \\frac{1}{f_{ 1 }} + \\frac{1}{f_{ 2 }}', why: 'เลนส์ประกอบ' } ],
+            solve: 'แทนค่าหาเศษส่วน', subst: `\\frac{1}{f_{ eq }} = \\frac{1}{${ f1 }} + \\frac{1}{${ f2 }}`, calc: `f_{ eq } = \\frac{${ f1 } \\times ${ f2 }}{${ f1 } + ${ f2 }} = ${ f_tot }`,
+            conclude: `ความยาวโฟกัสรวม ${ f_tot } cm`
+          }
+        };
+      }
+    });
+
 </script>
 <!-- แถบเปลี่ยนแอปในเครือคลังโจทย์ (ไฟล์ร่วม ../apps.js) — หาไม่เจอก็ไม่เป็นไร แอปทำงานปกติ -->
-<script src="../apps.js" defer></script>
+<script src="../apps.js" defer>
+    
+
+
+    
+
+</script>
 </body>
 </html>
