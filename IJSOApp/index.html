@@ -4931,7 +4931,9 @@ T({
         const v = u + g * t;
         let fig = '<rect x="60" y="20" width="80" height="180" fill="#e2e8f0" stroke="#64748b" stroke-width="2"/>';
         fig += '<circle cx="100" cy="30" r="10" fill="#f87171" stroke="#b91c1c" stroke-width="2"/>';
-        fig += svgArrow(100, 45, 100, 90, 'stroke:var(--blue);stroke-width:2', 'v = ?', 15, 5);
+        fig += '<line x1="100" y1="45" x2="100" y2="85" stroke="#3b82f6" stroke-width="2"/>';
+        fig += '<polygon points="100,90 95,80 105,80" fill="#3b82f6"/>';
+        fig += svgTxt(115, 75, 'v = ?', 'start', false);
         fig += svgHatch(20, 200, 180, 200, 15, 6);
         return {
           stem: `ปล่อยลูกบอลจากดาดฟ้าตึก (ความเร็วต้น 0 m/s) เมื่อเวลาผ่านไป ${ t } วินาที ลูกบอลจะมีความเร็วเท่าใด (g = 10 m/s²)`,
@@ -4962,6 +4964,7 @@ T({
         fig += '<rect x="105" y="180" width="30" height="40" fill="#fca5a5" stroke="#b91c1c" stroke-width="2"/>';
         fig += svgTxt(80, 155, m1 + ' kg', 'middle', false, 'fill:black;font-size:12px;');
         fig += svgTxt(120, 200, m2 + ' kg', 'middle', false, 'fill:black;font-size:12px;');
+        fig += '<line x1="50" y1="20" x2="150" y2="20" stroke="#333" stroke-width="3"/>';
         fig += svgHatch(60, 20, 140, 20, 8, -6);
         return {
           stem: `มวล ${ m1 } kg และ ${ m2 } kg แขวนผ่านรอกเดี่ยวตายตัวที่ไม่มีความฝืด ระบบนี้จะมีความเร่งกี่ m/s² (g = 10 m/s²)`,
@@ -4991,8 +4994,12 @@ T({
         fig += '<rect x="130" y="80" width="40" height="30" fill="#fca5a5" stroke="#b91c1c" stroke-width="2"/>';
         fig += svgTxt(35, 95, m1 + ' kg', 'middle', false, 'fill:black;font-size:12px;');
         fig += svgTxt(150, 95, 'm = ?', 'middle', false, 'fill:black;font-size:12px;');
-        fig += svgArrow(100, 150, 35, 150, 'stroke:#333', d1 + ' m', 0, 15);
-        fig += svgArrow(100, 150, 150, 150, 'stroke:#333', d2 + ' m', 0, 15);
+        fig += '<line x1="35" y1="150" x2="150" y2="150" stroke="#333" stroke-width="1.5"/>';
+        fig += '<line x1="35" y1="145" x2="35" y2="155" stroke="#333" stroke-width="1.5"/>';
+        fig += '<line x1="100" y1="145" x2="100" y2="155" stroke="#333" stroke-width="1.5"/>';
+        fig += '<line x1="150" y1="145" x2="150" y2="155" stroke="#333" stroke-width="1.5"/>';
+        fig += svgTxt(67, 165, d1 + ' m', 'middle', false);
+        fig += svgTxt(125, 165, d2 + ' m', 'middle', false);
         return {
           stem: `คานเบาอันหนึ่งวางบนจุดหมุน มีมวล ${ m1 } kg วางห่างจุดหมุน ${ d1 } เมตร จะต้องนำมวล m วางห่างจุดหมุน ${ d2 } เมตร เพื่อให้คานสมดุลพอดี มวล m มีค่ากี่กิโลกรัม`,
           figure: svgWrap(200, 180, fig),
@@ -5305,7 +5312,10 @@ T({
         let fig = '<path d="M 50 20 L 50 150 L 150 150 L 150 20" stroke="#333" stroke-width="4" fill="none"/>';
         fig += '<path d="M 52 60 L 148 60 L 148 148 L 52 148 Z" fill="#bae6fd" opacity="0.8"/>';
         fig += '<circle cx="100" cy="140" r="4" fill="#ef4444"/>';
-        fig += svgArrow(180, 60, 180, 140, 'stroke:#333', 'h = ' + h + ' m', 10, 0);
+        fig += '<line x1="180" y1="60" x2="180" y2="140" stroke="#333" stroke-width="1.5"/>';
+        fig += '<line x1="175" y1="60" x2="185" y2="60" stroke="#333" stroke-width="1.5"/>';
+        fig += '<line x1="175" y1="140" x2="185" y2="140" stroke="#333" stroke-width="1.5"/>';
+        fig += svgTxt(190, 105, 'h = ' + h + ' m', 'start', false);
         return {
           stem: `ถังน้ำบรรจุน้ำลึก ${ h } เมตร ความดันเกจที่ก้นถังมีค่ากี่พาสคัล (ความหนาแน่นน้ำ = 1000 kg/m³, g = 10 m/s²)`,
           figure: svgWrap(240, 180, fig),
@@ -5332,8 +5342,14 @@ T({
         fig += '<path d="M 41 80 L 59 80 L 59 160 A 21 21 0 0 0 101 160 L 101 100 L 119 100 L 119 160 A 39 39 0 0 1 41 160 Z" fill="#bae6fd"/>';
         fig += '<path d="M 41 40 L 59 40 L 59 80 L 41 80 Z" fill="#fcd34d"/>';
         fig += '<line x1="20" y1="80" x2="140" y2="80" stroke="#ef4444" stroke-dasharray="4"/>';
-        fig += svgArrow(25, 40, 25, 80, 'stroke:#333', 'h_{ 2 } = ?', -35, 0);
-        fig += svgArrow(135, 80, 135, 100, 'stroke:#333', 'h_{ 1 } = ' + h1 + ' cm', 10, 0);
+        fig += '<line x1="25" y1="40" x2="25" y2="80" stroke="#333" stroke-width="1.5"/>';
+        fig += '<line x1="20" y1="40" x2="30" y2="40" stroke="#333" stroke-width="1.5"/>';
+        fig += '<line x1="20" y1="80" x2="30" y2="80" stroke="#333" stroke-width="1.5"/>';
+        fig += svgTxt(15, 65, 'h_{ 2 } = ?', 'end', true);
+        fig += '<line x1="135" y1="80" x2="135" y2="100" stroke="#333" stroke-width="1.5"/>';
+        fig += '<line x1="130" y1="80" x2="140" y2="80" stroke="#333" stroke-width="1.5"/>';
+        fig += '<line x1="130" y1="100" x2="140" y2="100" stroke="#333" stroke-width="1.5"/>';
+        fig += svgTxt(145, 95, 'h_{ 1 } = ' + h1 + ' cm', 'start', true);
         return {
           stem: `หลอดแก้วรูปตัวยูบรรจุน้ำ (ความหนาแน่น 1000 kg/m³) จากนั้นเติมน้ำมัน (ความหนาแน่น 800 kg/m³) ลงในขาข้างหนึ่ง พบว่าระดับน้ำในอีกข้างสูงกว่ารอยต่อ ${ h1 } cm น้ำมันลำนี้สูงกี่ cm`,
           figure: svgWrap(240, 220, fig),
@@ -5360,8 +5376,14 @@ T({
         const h_sub = 60 * (pct / 100);
         const y_top = 80 - (60 - h_sub);
         fig += `<rect x="70" y="${ y_top }" width="60" height="60" fill="#fca5a5" stroke="#b91c1c" stroke-width="2"/>`;
-        fig += svgArrow(20, y_top, 20, y_top + 60, 'stroke:#333', 'V_{ total }', -10, 0);
-        fig += svgArrow(180, 80, 180, 80 + h_sub, 'stroke:#333', pct + '% V', 10, 0);
+        fig += '<line x1="20" y1="' + y_top + '" x2="20" y2="' + (y_top + 60) + '" stroke="#333" stroke-width="1.5"/>';
+        fig += '<line x1="15" y1="' + y_top + '" x2="25" y2="' + y_top + '" stroke="#333" stroke-width="1.5"/>';
+        fig += '<line x1="15" y1="' + (y_top + 60) + '" x2="25" y2="' + (y_top + 60) + '" stroke="#333" stroke-width="1.5"/>';
+        fig += svgTxt(15, y_top + 35, 'V_{ total }', 'end', true);
+        fig += '<line x1="180" y1="80" x2="180" y2="' + (80 + h_sub) + '" stroke="#333" stroke-width="1.5"/>';
+        fig += '<line x1="175" y1="80" x2="185" y2="80" stroke="#333" stroke-width="1.5"/>';
+        fig += '<line x1="175" y1="' + (80 + h_sub) + '" x2="185" y2="' + (80 + h_sub) + '" stroke="#333" stroke-width="1.5"/>';
+        fig += svgTxt(190, 80 + h_sub/2 + 5, pct + '% V', 'start', false);
         return {
           stem: `วัตถุลอยในน้ำ (ความหนาแน่น 1000 kg/m³) โดยปริมาตรส่วนที่จมคิดเป็น ${ pct }% ของปริมาตรทั้งหมด วัตถุมีความหนาแน่นกี่ kg/m³`,
           figure: svgWrap(240, 180, fig),
@@ -5660,11 +5682,11 @@ T({
         const radIn = (180 - angle) * Math.PI / 180;
         const xIn = 100 + 80 * Math.cos(radIn);
         const yIn = 120 - 80 * Math.sin(radIn);
-        fig += svgArrow(xIn, yIn, 100, 120, 'stroke:#dc2626;stroke-width:2', '', 0, 0);
+        fig += svgArrow(xIn, yIn, 100, 120, 'frc', '', 0, 0);
         const radOut = angle * Math.PI / 180;
         const xOut = 100 + 80 * Math.cos(radOut);
         const yOut = 120 - 80 * Math.sin(radOut);
-        fig += svgArrow(100, 120, xOut, yOut, 'stroke:#3b82f6;stroke-width:2', '', 0, 0);
+        fig += svgArrow(100, 120, xOut, yOut, 'frc', '', 0, 0);
         fig += `<path d="M 70 120 A 30 30 0 0 1 85 95" fill="none" stroke="#333"/>`;
         fig += svgTxt(55, 110, angle + '^{\\circ}', 'middle', true);
         return {
@@ -5688,11 +5710,19 @@ T({
         const f = R.pick([10, 15, 20]);
         const u = f * 2;
         const v_img = 1 / ((1/f) - (1/u));
+        const scale = 2.5;
+        const df = f * scale;
+        const du = u * scale;
         let fig = '<line x1="20" y1="100" x2="220" y2="100" stroke="#64748b" stroke-dasharray="4"/>';
-        fig += '<path d="M 120 40 Q 135 100 120 160 Q 105 100 120 40 Z" fill="#bae6fd" stroke="#0ea5e9" stroke-width="2" opacity="0.7"/>';
-        fig += svgArrow(120 - u, 100, 120 - u, 50, 'stroke:#dc2626;stroke-width:3', 'O', -10, -10);
-        fig += '<circle cx="' + (120 - f) + '" cy="100" r="3" fill="#333"/>';
-        fig += svgTxt(120 - f, 115, 'F', 'middle', false);
+        fig += '<path d="M 120 30 Q 128 100 120 170 Q 112 100 120 30 Z" fill="#bae6fd" stroke="#0ea5e9" stroke-width="2" opacity="0.7"/>';
+        const ox = 120 - du;
+        fig += '<line x1="' + ox + '" y1="100" x2="' + ox + '" y2="40" stroke="#dc2626" stroke-width="3"/>';
+        fig += '<polygon points="' + ox + ',35 ' + (ox-5) + ',45 ' + (ox+5) + ',45" fill="#dc2626"/>';
+        fig += svgTxt(ox, 25, 'O', 'middle', false);
+        fig += '<circle cx="' + (120 - df) + '" cy="100" r="3" fill="#333"/>';
+        fig += svgTxt(120 - df, 118, 'F', 'middle', false);
+        fig += '<circle cx="' + (120 + df) + '" cy="100" r="3" fill="#333"/>';
+        fig += svgTxt(120 + df, 118, 'F', 'middle', false);
         return {
           stem: `วางวัตถุไว้หน้าเลนส์นูนความยาวโฟกัส ${ f } cm เป็นระยะ ${ u } cm จะเกิดภาพที่ระยะกี่ cm จากเลนส์`,
           figure: svgWrap(240, 200, fig),
@@ -5722,11 +5752,16 @@ T({
         fig += '<line x1="200" y1="20" x2="200" y2="180" stroke="#64748b" stroke-width="4"/>';
         fig += '<rect x="38" y="80" width="4" height="10" fill="#fff"/>';
         fig += '<rect x="38" y="110" width="4" height="10" fill="#fff"/>';
-        fig += svgArrow(45, 100, 200, 100, 'stroke:#94a3b8;stroke-dasharray:4', 'L = ' + l_m + ' m', 0, -10);
+        fig += '<line x1="45" y1="100" x2="200" y2="100" stroke="#64748b" stroke-width="1.5" stroke-dasharray="4"/>';
+        fig += '<polygon points="200,100 192,95 192,105" fill="#64748b"/>';
+        fig += svgTxt(122, 90, 'L = ' + l_m + ' m', 'middle', false);
         fig += svgTxt(35, 100, 'd', 'end', true, 'font-size:16px');
         fig += '<path d="M 200 100 Q 220 85 200 70" fill="none" stroke="#ef4444" stroke-width="2"/>';
         fig += '<path d="M 200 70 Q 220 55 200 40" fill="none" stroke="#ef4444" stroke-width="2"/>';
-        fig += svgArrow(225, 100, 225, 70, 'stroke:#333', 'y = ?', 15, 5);
+        fig += '<line x1="225" y1="70" x2="225" y2="100" stroke="#333" stroke-width="1.5"/>';
+        fig += '<line x1="220" y1="70" x2="230" y2="70" stroke="#333" stroke-width="1.5"/>';
+        fig += '<line x1="220" y1="100" x2="230" y2="100" stroke="#333" stroke-width="1.5"/>';
+        fig += svgTxt(235, 90, 'y = ?', 'start', false);
         return {
           stem: `ฉายแสงความยาวคลื่น ${ wl } nm ผ่านสลิตคู่ที่มีระยะห่างช่อง ${ d_um } \\mu m แถบสว่างลำดับที่ 1 บนฉากซึ่งอยู่ห่างออกไป ${ l_m } เมตร จะอยู่ห่างจากแนวกลางกี่เซนติเมตร`,
           figure: svgWrap(280, 200, fig),
