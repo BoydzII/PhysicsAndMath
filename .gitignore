@@ -128,3 +128,20 @@ Physics2App/simulations/*
 WorkDesk/*
 !WorkDesk/index.html
 !WorkDesk/README-workdesk.md
+
+# ---- แอป IJSO ----
+!IJSOApp/
+IJSOApp/*
+!IJSOApp/index.html
+!IJSOApp/style.css
+!IJSOApp/app.js
+!IJSOApp/main_equations.js
+!IJSOApp/draw.js
+!IJSOApp/data.js
+
+# ---- คลังโจทย์ IJSO ----
+!IJSOAutoSheet/
+IJSOAutoSheet/*
+!IJSOAutoSheet/ijso.html
+!IJSOAutoSheet/index.html
+!IJSOAutoSheet/README-ijso.md
