@@ -5392,7 +5392,7 @@ T({
         return {
           stem: `วัตถุลอยในน้ำ (ความหนาแน่น 1000 kg/m³) โดยปริมาตรส่วนที่จมคิดเป็น ${ pct }% ของปริมาตรทั้งหมด วัตถุมีความหนาแน่นกี่ kg/m³`,
           figure: svgWrap(240, 180, fig),
-          given: [ { s: '\\%V_{ sub }', v: pct, unit: '\\%' }, { s: '\\rho_{ fluid }', v: rho_fluid, unit: 'kg/m³' } ],
+          given: [ { s: '\\%V_{ sub }', v: pct, unit: '%' }, { s: '\\rho_{ fluid }', v: rho_fluid, unit: 'kg/m³' } ],
           finds: [ { s: '\\rho_{ obj }', unit: 'kg/m³', value: rho_obj, positive: true } ],
           ans: rho_obj, unit: 'kg/m³',
           sol: {
@@ -5697,9 +5697,9 @@ T({
         return {
           stem: `ลำแสงตกกระทบทำมุม ${ angle } องศา กับพื้นผิวกระจกเงาราบ มุมสะท้อนจะมีค่ากี่องศา`,
           figure: svgWrap(200, 160, fig),
-          given: [ { s: '\\theta_{ surface }', v: angle, unit: '^{\\circ}' } ],
-          finds: [ { s: '\\theta_{ refl }', unit: '^{\\circ}', value: reflection, positive: true } ],
-          ans: reflection, unit: '^{\\circ}',
+          given: [ { s: '\\theta_{ surface }', v: angle, unit: '°' } ],
+          finds: [ { s: '\\theta_{ refl }', unit: '°', value: reflection, positive: true } ],
+          ans: reflection, unit: '°',
           sol: {
             analyze: 'มุมตกกระทบวัดจากเส้นปกติ (ตั้งฉากกับผิว) และมุมสะท้อนเท่ากับมุมตกกระทบ',
             eqs: [ { eq: '\\theta_{ in } = 90 - \\theta_{ surface }', why: 'มุมตกกระทบ' } ],
@@ -5768,9 +5768,9 @@ T({
         fig += '<line x1="220" y1="100" x2="230" y2="100" stroke="#333" stroke-width="1.5"/>';
         fig += svgTxt(235, 90, 'y = ?', 'start', false);
         return {
-          stem: `ฉายแสงความยาวคลื่น ${ wl } nm ผ่านสลิตคู่ที่มีระยะห่างช่อง ${ d_um } \\mu m แถบสว่างลำดับที่ 1 บนฉากซึ่งอยู่ห่างออกไป ${ l_m } เมตร จะอยู่ห่างจากแนวกลางกี่เซนติเมตร`,
+          stem: `ฉายแสงความยาวคลื่น ${ wl } nm ผ่านสลิตคู่ที่มีระยะห่างช่อง ${ d_um } μm แถบสว่างลำดับที่ 1 บนฉากซึ่งอยู่ห่างออกไป ${ l_m } เมตร จะอยู่ห่างจากแนวกลางกี่เซนติเมตร`,
           figure: svgWrap(280, 200, fig),
-          given: [ { s: '\\lambda', v: wl, unit: 'nm' }, { s: 'd', v: d_um, unit: '\\mu m' }, { s: 'L', v: l_m, unit: 'm' } ],
+          given: [ { s: '\\lambda', v: wl, unit: 'nm' }, { s: 'd', v: d_um, unit: 'μm' }, { s: 'L', v: l_m, unit: 'm' } ],
           finds: [ { s: 'y', unit: 'cm', value: y_cm, positive: true } ],
           ans: y_cm, unit: 'cm',
           sol: {
@@ -17340,7 +17340,7 @@ function buildDoc(kind, opt) {
             '<div>' + 'ก.ข.ค.ง.'.substr(k * 2, 2) + ' ' + c.text + '</div>').join('') + '</div>';
           } else if (p.choices) {
           h += '<div style="margin:4px 0 0 18px">' + p.choices.map((c, k) =>
-            'ก.ข.ค.ง.'.substr(k * 2, 2) + ' ' + fmt(c.value) + (p.finds[0].unit ? ' ' + p.finds[0].unit : '')
+            'ก.ข.ค.ง.'.substr(k * 2, 2) + ' ' + fmt(c.value) + (p.finds[0].unit ? ' ' + p.finds[0].unit: '')
           ).join(' &nbsp;&nbsp; ') + '</div>';
           }
         // ระดับ "แน่น" ตัดหัวข้อของแต่ละขั้นออก เหลือเป็นบรรทัดเปล่า จะได้ลงได้ 3 ข้อต่อหน้า
@@ -17907,7 +17907,7 @@ applyAppIcon();
         const r = sa / v;
         return {
           stem: `เซลล์ทรงลูกบาศก์มีความยาวด้านละ ${ s } ไมโครเมตร อัตราส่วนพื้นที่ผิวต่อปริมาตรเป็นเท่าใด`,
-          given: [ { s: 's', v: s, unit: '\\mu m' } ],
+          given: [ { s: 's', v: s, unit: 'μm' } ],
           finds: [ { s: 'R', unit: '', value: r, positive: true } ],
           ans: r, unit: '',
           sol: {
@@ -17928,9 +17928,9 @@ applyAppIcon();
         const d2 = (d1 * m1) / m2;
         return {
           stem: `ถ้าใช้เลนส์ ${ m1 }X วัดเส้นผ่านศูนย์กลางจอภาพได้ ${ d1 } ไมโครเมตร หากเปลี่ยนเป็น ${ m2 }X จะได้เส้นผ่านศูนย์กลางเท่าใด`,
-          given: [ { s: 'D_1', v: d1, unit: '\\mu m' }, { s: 'M_1', v: m1, unit: 'X' }, { s: 'M_2', v: m2, unit: 'X' } ],
-          finds: [ { s: 'D_2', unit: '\\mu m', value: d2, positive: true } ],
-          ans: d2, unit: '\\mu m',
+          given: [ { s: 'D_1', v: d1, unit: 'μm' }, { s: 'M_1', v: m1, unit: 'X' }, { s: 'M_2', v: m2, unit: 'X' } ],
+          finds: [ { s: 'D_2', unit: 'μm', value: d2, positive: true } ],
+          ans: d2, unit: 'μm',
           sol: {
             analyze: 'เส้นผ่านศูนย์กลางแปลผกผันกับกำลังขยาย',
             eqs: [ { eq: 'M_1 D_1 = M_2 D_2', why: 'ความสัมพันธ์' } ],
@@ -18221,8 +18221,8 @@ applyAppIcon();
         const g = 50 - a;
         return {
           stem: `DNA สายคู่มีเบสอะดีนีน (A) ${ a }% จะมีเบสกวานีน (G) ร้อยละเท่าใด`,
-          given: [ { s: '\\%A', v: a, unit: '\\%' } ],
-          finds: [ { s: '\\%G', unit: '\\%', value: g, positive: true } ],
+          given: [ { s: '\\%A', v: a, unit: '%' } ],
+          finds: [ { s: '\\%G', unit: '%', value: g, positive: true } ],
           ans: g, unit: '%',
           sol: {
             analyze: '%A + %G = 50%',
@@ -18240,7 +18240,7 @@ applyAppIcon();
         return {
           stem: `ถั่วผสมระหว่าง Aa x Aa โอกาสได้ลูกที่มีจีโนไทป์ aa เป็นร้อยละเท่าใด`,
           given: [ { s: 'Cross', v: 'Aa x Aa', unit: '' } ],
-          finds: [ { s: 'P(aa)', unit: '\\%', value: pct, positive: true } ],
+          finds: [ { s: 'P(aa)', unit: '%', value: pct, positive: true } ],
           ans: pct, unit: '%',
           sol: {
             analyze: 'ตารางพันเนตต์ให้สัดส่วน 1AA : 2Aa : 1aa',
@@ -18338,7 +18338,7 @@ applyAppIcon();
         return {
           stem: `ความถี่ของคนเป็นโรค (q²) เท่ากับ ${ q2 } จงหาเปอร์เซ็นต์ของประชากรที่เป็นพาหะ (2pq)`,
           given: [ { s: 'q²', v: q2, unit: '' } ],
-          finds: [ { s: '2pq', unit: '\\%', value: pct, positive: true } ],
+          finds: [ { s: '2pq', unit: '%', value: pct, positive: true } ],
           ans: pct, unit: '%',
           sol: {
             analyze: 'หา q และ p แล้วเข้าสูตร 2pq',
@@ -18356,8 +18356,8 @@ applyAppIcon();
         const at = 100 - (g * 2);
         return {
           stem: `DNA สายคู่มี G อยู่ ${ g }% จะมีสัดส่วนของเบส A รวมกับ T ร้อยละเท่าใด`,
-          given: [ { s: '\\%G', v: g, unit: '\\%' } ],
-          finds: [ { s: '\\%AT', unit: '\\%', value: at, positive: true } ],
+          given: [ { s: '\\%G', v: g, unit: '%' } ],
+          finds: [ { s: '\\%AT', unit: '%', value: at, positive: true } ],
           ans: at, unit: '%',
           sol: {
             analyze: '%G = %C ดังนั้นเบสคู่ G-C รวมกันเป็น 2เท่าของ G ที่เหลือคือ A-T',
@@ -18377,7 +18377,7 @@ applyAppIcon();
         return {
           stem: `ผสม AaBb x AaBb โอกาสที่ลูกจะเป็น aabb มีกี่เปอร์เซ็นต์`,
           given: [ { s: 'Cross', v: 'AaBb x AaBb', unit: '' } ],
-          finds: [ { s: 'P', unit: '\\%', value: pct, positive: true } ],
+          finds: [ { s: 'P', unit: '%', value: pct, positive: true } ],
           ans: pct, unit: '%',
           sol: {
             analyze: 'ความน่าจะเป็นที่ลูกได้ aa คือ 1/4 และ bb คือ 1/4 (กฎการคูณ)',
@@ -18445,7 +18445,7 @@ applyAppIcon();
         const m = (pct * v) / 100;
         return {
           stem: `การเตรียมน้ำเกลือ Normal Saline สำหรับให้ทางหลอดเลือดต้องมีความเข้มข้น ${ pct }% w/v หากต้องการเตรียม ${ v } mL ต้องใช้เกลือ NaCl กี่กรัม`,
-          given: [ { s: '\\%w/v', v: pct, unit: '\\%' }, { s: 'V', v: v, unit: 'mL' } ],
+          given: [ { s: '\\%w/v', v: pct, unit: '%' }, { s: 'V', v: v, unit: 'mL' } ],
           finds: [ { s: 'm', unit: 'g', value: m, positive: true } ],
           ans: m, unit: 'g',
           sol: {
@@ -18487,7 +18487,7 @@ applyAppIcon();
         const work = (cal * eff) / 100;
         return {
           stem: `กลูโคส ${ m } กรัม ให้พลังงานกรัมละ 4 kcal ถ้าร่างกายเปลี่ยนพลังงานนี้เป็นงานทางกลด้วยประสิทธิภาพ ${ eff }% จะได้งานกี่ kcal`,
-          given: [ { s: 'm', v: m, unit: 'g' }, { s: 'eff', v: eff, unit: '\\%' } ],
+          given: [ { s: 'm', v: m, unit: 'g' }, { s: 'eff', v: eff, unit: '%' } ],
           finds: [ { s: 'W', unit: 'kcal', value: work, positive: true } ],
           ans: work, unit: 'kcal',
           sol: {
@@ -18549,10 +18549,10 @@ applyAppIcon();
         const dt = R.pick([2, 3]);
         const q = m * c * dt;
         return {
-          stem: `ถ้าร่างกายคนมวล ${ m } kg ดูดซับความร้อน ${ q } kcal โดยร่างกายมีความจุความร้อนจำเพาะ ${ c } kcal/(kg \\cdot ^{\\circ}C) อุณหภูมิร่างกายจะสูงขึ้นกี่องศาเซลเซียส`,
-          given: [ { s: 'm', v: m, unit: 'kg' }, { s: 'Q', v: q, unit: 'kcal' }, { s: 'c', v: c, unit: 'kcal/(kg^{\\circ}C)' } ],
-          finds: [ { s: '\\Delta T', unit: '^{\\circ}C', value: dt, positive: true } ],
-          ans: dt, unit: '^{\\circ}C',
+          stem: `ถ้าร่างกายคนมวล ${ m } kg ดูดซับความร้อน ${ q } kcal โดยร่างกายมีความจุความร้อนจำเพาะ ${ c } kcal/(kg · °C) อุณหภูมิร่างกายจะสูงขึ้นกี่องศาเซลเซียส`,
+          given: [ { s: 'm', v: m, unit: 'kg' }, { s: 'Q', v: q, unit: 'kcal' }, { s: 'c', v: c, unit: 'kcal/(kg°C)' } ],
+          finds: [ { s: '\\Delta T', unit: '°C', value: dt, positive: true } ],
+          ans: dt, unit: '°C',
           sol: {
             analyze: 'ความร้อนทำให้เกิดการเปลี่ยนแปลงอุณหภูมิตามมวลและความจุความร้อนจำเพาะ',
             eqs: [ { eq: 'Q = mc\\Delta T', why: 'กฎอุณหพลศาสตร์' } ],
@@ -18719,7 +18719,7 @@ applyAppIcon();
         const sx = (u * u * 1) / g;
         return {
           stem: `เตะลูกบอลด้วยความเร็วเริ่มต้น ${ u } m/s ทำมุม 45 องศากับแนวระดับ ลูกบอลจะตกไกลจากจุดเตะกี่เมตร (g = 10 m/s²)`,
-          given: [ { s: 'u', v: u, unit: 'm/s' }, { s: '\\theta', v: theta, unit: '^\\circ' } ],
+          given: [ { s: 'u', v: u, unit: 'm/s' }, { s: '\\theta', v: theta, unit: '°' } ],
           finds: [ { s: 'S_{ x }', unit: 'm', value: sx, positive: true } ],
           ans: sx, unit: 'm',
           sol: {
@@ -18833,7 +18833,7 @@ applyAppIcon();
         const ek = 0.5 * I * w * w;
         return {
           stem: `ล้อมีโมเมนต์ความเฉื่อย ${ I } kg m² กำลังหมุนด้วยความเร็วเชิงมุม ${ w } rad/s จงหาพลังงานจลน์ของการหมุน`,
-          given: [ { s: 'I', v: I, unit: 'kg\\cdot m^2' }, { s: '\\omega', v: w, unit: 'rad/s' } ],
+          given: [ { s: 'I', v: I, unit: 'kg· m²' }, { s: '\\omega', v: w, unit: 'rad/s' } ],
           finds: [ { s: 'E_{ k }', unit: 'J', value: ek, positive: true } ],
           ans: ek, unit: 'J',
           sol: {
@@ -18902,7 +18902,7 @@ applyAppIcon();
         const q = m * c * dt;
         return {
           stem: `ต้องให้ความร้อนกี่จูล แก่น้ำมวล ${ m } kg เพื่อให้อุณหภูมิสูงขึ้น ${ dt } °C (ความจุความร้อนจำเพาะของน้ำ = 4186 J/kg·K)`,
-          given: [ { s: 'm', v: m, unit: 'kg' }, { s: '\\Delta T', v: dt, unit: '^\\circ C' }, { s: 'c', v: c, unit: 'J/kg\\cdot K' } ],
+          given: [ { s: 'm', v: m, unit: 'kg' }, { s: '\\Delta T', v: dt, unit: '°C' }, { s: 'c', v: c, unit: 'J/kg· K' } ],
           finds: [ { s: 'Q', unit: 'J', value: q, positive: true } ],
           ans: q, unit: 'J',
           sol: {
@@ -18925,7 +18925,7 @@ applyAppIcon();
         const p = f / a;
         return {
           stem: `มวล ${ m } kg วางทับอยู่บนพื้นที่ ${ a } m² จะทำให้เกิดความดันกี่พาสคัล (g = 10 m/s²)`,
-          given: [ { s: 'F', v: f, unit: 'N' }, { s: 'A', v: a, unit: 'm^2' } ],
+          given: [ { s: 'F', v: f, unit: 'N' }, { s: 'A', v: a, unit: 'm²' } ],
           finds: [ { s: 'P', unit: 'Pa', value: p, positive: true } ],
           ans: p, unit: 'Pa',
           sol: {
@@ -18971,8 +18971,8 @@ applyAppIcon();
         const vs = Number(((ro * v) / rf).toFixed(2));
         return {
           stem: `ท่อนไม้มวลหนาแน่น ${ ro } kg/m³ ปริมาตร ${ v } m³ ลอยอยู่ในน้ำ (ความหนาแน่น 1000 kg/m³) ปริมาตรส่วนที่จมน้ำคือเท่าใด`,
-          given: [ { s: '\\rho_{ o }', v: ro, unit: 'kg/m^3' }, { s: 'V_{ o }', v: v, unit: 'm^3' }, { s: '\\rho_{ w }', v: rf, unit: 'kg/m^3' } ],
-          finds: [ { s: 'V_{ sub }', unit: 'm^3', value: vs, positive: true } ],
+          given: [ { s: '\\rho_{ o }', v: ro, unit: 'kg/m³' }, { s: 'V_{ o }', v: v, unit: 'm³' }, { s: '\\rho_{ w }', v: rf, unit: 'kg/m³' } ],
+          finds: [ { s: 'V_{ sub }', unit: 'm³', value: vs, positive: true } ],
           ans: vs, unit: 'm³',
           sol: {
             analyze: 'วัตถุลอย น้ำหนักวัตถุเท่ากับแรงพยุง',
@@ -19062,7 +19062,7 @@ applyAppIcon();
         const v2 = (a1 * v1) / a2;
         return {
           stem: `น้ำไหลผ่านท่อขนาดไม่สม่ำเสมอ หากท่อส่วนแรกมีพื้นที่หน้าตัด ${ a1 } m² น้ำมีความเร็ว ${ v1 } m/s เมื่อไหลไปยังท่อส่วนที่สองที่มีพื้นที่หน้าตัด ${ a2 } m² น้ำจะมีความเร็วกี่ m/s`,
-          given: [ { s: 'A_{ 1 }', v: a1, unit: 'm^2' }, { s: 'v_{ 1 }', v: v1, unit: 'm/s' }, { s: 'A_{ 2 }', v: a2, unit: 'm^2' } ],
+          given: [ { s: 'A_{ 1 }', v: a1, unit: 'm²' }, { s: 'v_{ 1 }', v: v1, unit: 'm/s' }, { s: 'A_{ 2 }', v: a2, unit: 'm²' } ],
           finds: [ { s: 'v_{ 2 }', unit: 'm/s', value: v2, positive: true } ],
           ans: v2, unit: 'm/s',
           sol: {
@@ -19109,7 +19109,7 @@ applyAppIcon();
         const i = Number((v / r).toFixed(2));
         return {
           stem: `นำตัวต้านทาน ${ r1 } โอห์ม และ ${ r2 } โอห์ม มาต่ออนุกรมกัน แล้วต่อเข้ากับแหล่งจ่ายไฟ ${ v } V จะมีกระแสไฟฟ้าไหลในวงจรกี่แอมแปร์`,
-          given: [ { s: 'R_{ 1 }', v: r1, unit: '\\Omega' }, { s: 'R_{ 2 }', v: r2, unit: '\\Omega' }, { s: 'V', v: v, unit: 'V' } ],
+          given: [ { s: 'R_{ 1 }', v: r1, unit: 'Ω' }, { s: 'R_{ 2 }', v: r2, unit: 'Ω' }, { s: 'V', v: v, unit: 'V' } ],
           finds: [ { s: 'I', unit: 'A', value: i, positive: true } ],
           ans: i, unit: 'A',
           sol: {
@@ -19129,8 +19129,8 @@ applyAppIcon();
         const t = R.pick([30, 45, 60]);
         return {
           stem: `แสงตกกระทบกระจกเงาราบ ทำมุมตกกระทบ ${ t } องศากับเส้นแนวฉาก แสงสะท้อนจะทำมุมสะท้อนกี่องศากับเส้นแนวฉาก`,
-          given: [ { s: '\\theta_{ in }', v: t, unit: '^\\circ' } ],
-          finds: [ { s: '\\theta_{ out }', unit: '^\\circ', value: t, positive: true } ],
+          given: [ { s: '\\theta_{ in }', v: t, unit: '°' } ],
+          finds: [ { s: '\\theta_{ out }', unit: '°', value: t, positive: true } ],
           ans: t, unit: 'องศา',
           sol: {
             analyze: 'กฎการสะท้อนของแสง',
@@ -19196,8 +19196,8 @@ applyAppIcon();
         const th2 = Number((Math.asin((n1 * 0.5)/n2) * 180 / Math.PI).toFixed(1));
         return {
           stem: `แสงเดินทางจากอากาศ (ดัชนีหักเห = 1) ทำมุมตกกระทบ 30 องศา เข้าสู่แก้วที่มีดัชนีหักเห ${ n2 } จงหามุมหักเหในแก้ว (sin 30° = 0.5, ตอบเป็นองศา)`,
-          given: [ { s: 'n_{ 1 }', v: 1, unit: '' }, { s: '\\theta_{ 1 }', v: 30, unit: '^\\circ' }, { s: 'n_{ 2 }', v: n2, unit: '' } ],
-          finds: [ { s: '\\theta_{ 2 }', unit: '^\\circ', value: th2, positive: true } ],
+          given: [ { s: 'n_{ 1 }', v: 1, unit: '' }, { s: '\\theta_{ 1 }', v: 30, unit: '°' }, { s: 'n_{ 2 }', v: n2, unit: '' } ],
+          finds: [ { s: '\\theta_{ 2 }', unit: '°', value: th2, positive: true } ],
           ans: th2, unit: 'องศา',
           sol: {
             analyze: 'ใช้กฎของสเนลล์ในการหาค่ามุมหักเห',
@@ -19242,8 +19242,8 @@ applyAppIcon();
         const rx = (r2 * r3) / r1;
         return {
           stem: `ในวงจรวิทสโตนบริดจ์สมดุล (กัลวานอมิเตอร์อ่านค่าได้ศูนย์) ถ้าแขนต้านทาน 3 ข้างมีค่า R1 = ${ r1 } โอห์ม, R2 = ${ r2 } โอห์ม, และ R3 = ${ r3 } โอห์ม จงหาค่าความต้านทาน Rx ฝั่งตรงข้าม R1`,
-          given: [ { s: 'R_{ 1 }', v: r1, unit: '\\Omega' }, { s: 'R_{ 2 }', v: r2, unit: '\\Omega' }, { s: 'R_{ 3 }', v: r3, unit: '\\Omega' } ],
-          finds: [ { s: 'R_{ x }', unit: '\\Omega', value: rx, positive: true } ],
+          given: [ { s: 'R_{ 1 }', v: r1, unit: 'Ω' }, { s: 'R_{ 2 }', v: r2, unit: 'Ω' }, { s: 'R_{ 3 }', v: r3, unit: 'Ω' } ],
+          finds: [ { s: 'R_{ x }', unit: 'Ω', value: rx, positive: true } ],
           ans: rx, unit: 'โอห์ม',
           sol: {
             analyze: 'วงจรบริดจ์สมดุล อัตราส่วนความต้านทานแขนตรงข้ามคูณกันเท่ากัน',
