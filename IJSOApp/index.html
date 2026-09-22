@@ -4922,6 +4922,93 @@ T({
     }
   });
 
+    T({
+      id: 'phys-101-b4', topic: 101, sub: 'กลศาสตร์', level: 'พื้นฐาน', skills: ['การตกอิสระ'],
+      gen(R) {
+        const u = 0;
+        const t = R.pick([2, 3, 4, 5]);
+        const g = 10;
+        const v = u + g * t;
+        let fig = '<rect x="60" y="20" width="80" height="180" fill="#e2e8f0" stroke="#64748b" stroke-width="2"/>';
+        fig += '<circle cx="100" cy="30" r="10" fill="#f87171" stroke="#b91c1c" stroke-width="2"/>';
+        fig += svgArrow(100, 45, 100, 90, 'stroke:var(--blue);stroke-width:2', 'v = ?', 15, 5);
+        fig += svgHatch(20, 200, 180, 200, 15, 6);
+        return {
+          stem: `ปล่อยลูกบอลจากดาดฟ้าตึก (ความเร็วต้น 0 m/s) เมื่อเวลาผ่านไป ${ t } วินาที ลูกบอลจะมีความเร็วเท่าใด (g = 10 m/s^2)`,
+          figure: svgWrap(200, 220, fig),
+          given: [ { s: 'u', v: u, unit: 'm/s' }, { s: 't', v: t, unit: 's' }, { s: 'g', v: g, unit: 'm/s^2' } ],
+          finds: [ { s: 'v', unit: 'm/s', value: v, positive: true } ],
+          ans: v, unit: 'm/s',
+          sol: {
+            analyze: 'ใช้สมการการเคลื่อนที่แนวตรงด้วยความเร่งคงที่',
+            eqs: [ { eq: 'v = u + gt', why: 'สมการความเร็ว' } ],
+            solve: 'แทนค่าเวลาและความเร่ง', subst: `v = ${ u } + (${ g })(${ t })`, calc: `v = ${ v }`,
+            conclude: `ลูกบอลมีความเร็ว ${ v } m/s`
+          }
+        };
+      }
+    });
+    T({
+      id: 'phys-101-a4', topic: 101, sub: 'กลศาสตร์', level: 'ประยุกต์', skills: ['รอกเดี่ยว'],
+      gen(R) {
+        const m1 = R.pick([2, 3]);
+        const m2 = R.pick([5, 6, 7]);
+        const g = 10;
+        const a = ((m2 - m1) * g) / (m1 + m2);
+        let fig = '<line x1="100" y1="20" x2="100" y2="50" stroke="#333" stroke-width="2"/>';
+        fig += '<circle cx="100" cy="70" r="20" fill="#e2e8f0" stroke="#64748b" stroke-width="2"/>';
+        fig += '<path d="M 80 70 L 80 140 M 120 70 L 120 180" stroke="#333" stroke-width="2" fill="none"/>';
+        fig += '<rect x="65" y="140" width="30" height="30" fill="#fca5a5" stroke="#b91c1c" stroke-width="2"/>';
+        fig += '<rect x="105" y="180" width="30" height="40" fill="#fca5a5" stroke="#b91c1c" stroke-width="2"/>';
+        fig += svgTxt(80, 155, m1 + ' kg', 'middle', false, 'fill:black;font-size:12px;');
+        fig += svgTxt(120, 200, m2 + ' kg', 'middle', false, 'fill:black;font-size:12px;');
+        fig += svgHatch(60, 20, 140, 20, 8, -6);
+        return {
+          stem: `มวล ${ m1 } kg และ ${ m2 } kg แขวนผ่านรอกเดี่ยวตายตัวที่ไม่มีความฝืด ระบบนี้จะมีความเร่งกี่ m/s^2 (g = 10 m/s^2)`,
+          figure: svgWrap(200, 250, fig),
+          given: [ { s: 'm_{ 1 }', v: m1, unit: 'kg' }, { s: 'm_{ 2 }', v: m2, unit: 'kg' }, { s: 'g', v: g, unit: 'm/s^2' } ],
+          finds: [ { s: 'a', unit: 'm/s^2', value: a, positive: true } ],
+          ans: a, unit: 'm/s^2',
+          sol: {
+            analyze: 'ใช้กฎข้อที่สองของนิวตันกับระบบรวม',
+            eqs: [ { eq: 'a = \\frac{(m_{ 2 } - m_{ 1 })g}{m_{ 1 } + m_{ 2 }}', why: 'ความเร่งระบบรอก' } ],
+            solve: 'แทนค่ามวล', subst: `a = \\frac{(${ m2 } - ${ m1 })(10)}{${ m1 } + ${ m2 }}`, calc: `a = ${ a }`,
+            conclude: `ระบบมีความเร่ง ${ a } m/s^2`
+          }
+        };
+      }
+    });
+    T({
+      id: 'phys-101-i4', topic: 101, sub: 'กลศาสตร์', level: 'IJSO', skills: ['โมเมนต์'],
+      gen(R) {
+        const m1 = R.pick([4, 6]);
+        const d1 = R.pick([3, 5]);
+        const d2 = 2;
+        const m2 = (m1 * d1) / d2;
+        let fig = '<polygon points="100,120 90,140 110,140" fill="#64748b"/>';
+        fig += '<rect x="20" y="110" width="160" height="10" fill="#cbd5e1" stroke="#475569" stroke-width="2"/>';
+        fig += '<rect x="20" y="80" width="30" height="30" fill="#fca5a5" stroke="#b91c1c" stroke-width="2"/>';
+        fig += '<rect x="130" y="80" width="40" height="30" fill="#fca5a5" stroke="#b91c1c" stroke-width="2"/>';
+        fig += svgTxt(35, 95, m1 + ' kg', 'middle', false, 'fill:black;font-size:12px;');
+        fig += svgTxt(150, 95, 'm = ?', 'middle', false, 'fill:black;font-size:12px;');
+        fig += svgArrow(100, 150, 35, 150, 'stroke:#333', d1 + ' m', 0, 15);
+        fig += svgArrow(100, 150, 150, 150, 'stroke:#333', d2 + ' m', 0, 15);
+        return {
+          stem: `คานเบาอันหนึ่งวางบนจุดหมุน มีมวล ${ m1 } kg วางห่างจุดหมุน ${ d1 } เมตร จะต้องนำมวล m วางห่างจุดหมุน ${ d2 } เมตร เพื่อให้คานสมดุลพอดี มวล m มีค่ากี่กิโลกรัม`,
+          figure: svgWrap(200, 180, fig),
+          given: [ { s: 'm_{ 1 }', v: m1, unit: 'kg' }, { s: 'd_{ 1 }', v: d1, unit: 'm' }, { s: 'd_{ 2 }', v: d2, unit: 'm' } ],
+          finds: [ { s: 'm_{ 2 }', unit: 'kg', value: m2, positive: true } ],
+          ans: m2, unit: 'kg',
+          sol: {
+            analyze: 'เมื่อสมดุล โมเมนต์ทวนเข็มนาฬิกาเท่ากับโมเมนต์ตามเข็มนาฬิกา',
+            eqs: [ { eq: 'm_{ 1 } g d_{ 1 } = m_{ 2 } g d_{ 2 }', why: 'สมดุลการหมุน' } ],
+            solve: 'แทนค่า (ตัด g ทิ้ง)', subst: `(${ m1 })(${ d1 }) = (m_{ 2 })(${ d2 })`, calc: `m_{ 2 } = \\frac{${m1 * d1}}{${ d2 }} = ${ m2 }`,
+            conclude: `ต้องใช้มวล ${ m2 } kg`
+          }
+        };
+      }
+    });
+
 
 
 /* ==================== พลังงาน: พื้นฐาน ==================== */
@@ -5208,6 +5295,89 @@ T({
     }
   });
 
+    T({
+      id: 'phys-102-b4', topic: 102, sub: 'ความร้อน', level: 'พื้นฐาน', skills: ['ความดันเกจ'],
+      gen(R) {
+        const h = R.pick([4, 5, 8]);
+        const rho = 1000;
+        const g = 10;
+        const p = rho * g * h;
+        let fig = '<path d="M 50 20 L 50 150 L 150 150 L 150 20" stroke="#333" stroke-width="4" fill="none"/>';
+        fig += '<path d="M 52 60 L 148 60 L 148 148 L 52 148 Z" fill="#bae6fd" opacity="0.8"/>';
+        fig += '<circle cx="100" cy="140" r="4" fill="#ef4444"/>';
+        fig += svgArrow(180, 60, 180, 140, 'stroke:#333', 'h = ' + h + ' m', 10, 0);
+        return {
+          stem: `ถังน้ำบรรจุน้ำลึก ${ h } เมตร ความดันเกจที่ก้นถังมีค่ากี่พาสคัล (ความหนาแน่นน้ำ = 1000 kg/m^3, g = 10 m/s^2)`,
+          figure: svgWrap(240, 180, fig),
+          given: [ { s: 'h', v: h, unit: 'm' }, { s: '\\rho', v: rho, unit: 'kg/m^3' }, { s: 'g', v: g, unit: 'm/s^2' } ],
+          finds: [ { s: 'P', unit: 'Pa', value: p, positive: true } ],
+          ans: p, unit: 'Pa',
+          sol: {
+            analyze: 'ความดันเกจคำนวณจากความลึกและความหนาแน่น',
+            eqs: [ { eq: 'P = \\rho g h', why: 'ความดันของเหลว' } ],
+            solve: 'แทนค่า', subst: `P = (1000)(10)(${ h })`, calc: `P = ${ p }`,
+            conclude: `ความดันเกจคือ ${ p } Pa`
+          }
+        };
+      }
+    });
+    T({
+      id: 'phys-102-a4', topic: 102, sub: 'ความร้อน', level: 'ประยุกต์', skills: ['หลอดตัวยู'],
+      gen(R) {
+        const rho1 = 1000;
+        const h1 = R.pick([8, 10]);
+        const rho2 = 800;
+        const h2 = (rho1 * h1) / rho2;
+        let fig = '<path d="M 40 20 L 40 160 A 40 40 0 0 0 120 160 L 120 20 M 60 20 L 60 160 A 20 20 0 0 0 100 160 L 100 20" stroke="#333" stroke-width="2" fill="none"/>';
+        fig += '<path d="M 41 80 L 59 80 L 59 160 A 21 21 0 0 0 101 160 L 101 100 L 119 100 L 119 160 A 39 39 0 0 1 41 160 Z" fill="#bae6fd"/>';
+        fig += '<path d="M 41 40 L 59 40 L 59 80 L 41 80 Z" fill="#fcd34d"/>';
+        fig += '<line x1="20" y1="80" x2="140" y2="80" stroke="#ef4444" stroke-dasharray="4"/>';
+        fig += svgArrow(25, 40, 25, 80, 'stroke:#333', 'h_{ 2 } = ?', -35, 0);
+        fig += svgArrow(135, 80, 135, 100, 'stroke:#333', 'h_{ 1 } = ' + h1 + ' cm', 10, 0);
+        return {
+          stem: `หลอดแก้วรูปตัวยูบรรจุน้ำ (ความหนาแน่น 1000 kg/m^3) จากนั้นเติมน้ำมัน (ความหนาแน่น 800 kg/m^3) ลงในขาข้างหนึ่ง พบว่าระดับน้ำในอีกข้างสูงกว่ารอยต่อ ${ h1 } cm น้ำมันลำนี้สูงกี่ cm`,
+          figure: svgWrap(240, 220, fig),
+          given: [ { s: '\\rho_{ 1 }', v: rho1, unit: 'kg/m^3' }, { s: 'h_{ 1 }', v: h1, unit: 'cm' }, { s: '\\rho_{ 2 }', v: rho2, unit: 'kg/m^3' } ],
+          finds: [ { s: 'h_{ 2 }', unit: 'cm', value: h2, positive: true } ],
+          ans: h2, unit: 'cm',
+          sol: {
+            analyze: 'ความดันที่รอยต่อระดับเดียวกันต้องเท่ากัน',
+            eqs: [ { eq: '\\rho_{ 1 } h_{ 1 } = \\rho_{ 2 } h_{ 2 }', why: 'สมดุลหลอดตัวยู' } ],
+            solve: 'แทนค่า (น้ำ = 1, น้ำมัน = 2)', subst: `(1000)(${ h1 }) = (800)h_{ 2 }`, calc: `h_{ 2 } = ${ h2 }`,
+            conclude: `น้ำมันลำนี้สูง ${ h2 } cm`
+          }
+        };
+      }
+    });
+    T({
+      id: 'phys-102-i4', topic: 102, sub: 'ความร้อน', level: 'IJSO', skills: ['แรงพยุง'],
+      gen(R) {
+        const pct = R.pick([60, 75, 80]);
+        const rho_fluid = 1000;
+        const rho_obj = (pct / 100) * rho_fluid;
+        let fig = '<path d="M 40 50 L 40 160 L 160 160 L 160 50" stroke="#333" stroke-width="3" fill="none"/>';
+        fig += '<path d="M 42 80 L 158 80 L 158 158 L 42 158 Z" fill="#bae6fd" opacity="0.6"/>';
+        const h_sub = 60 * (pct / 100);
+        const y_top = 80 - (60 - h_sub);
+        fig += `<rect x="70" y="${ y_top }" width="60" height="60" fill="#fca5a5" stroke="#b91c1c" stroke-width="2"/>`;
+        fig += svgArrow(20, y_top, 20, y_top + 60, 'stroke:#333', 'V_{ total }', -10, 0);
+        fig += svgArrow(180, 80, 180, 80 + h_sub, 'stroke:#333', pct + '% V', 10, 0);
+        return {
+          stem: `วัตถุลอยในน้ำ (ความหนาแน่น 1000 kg/m^3) โดยปริมาตรส่วนที่จมคิดเป็น ${ pct }% ของปริมาตรทั้งหมด วัตถุมีความหนาแน่นกี่ kg/m^3`,
+          figure: svgWrap(240, 180, fig),
+          given: [ { s: '\\%V_{ sub }', v: pct, unit: '\\%' }, { s: '\\rho_{ fluid }', v: rho_fluid, unit: 'kg/m^3' } ],
+          finds: [ { s: '\\rho_{ obj }', unit: 'kg/m^3', value: rho_obj, positive: true } ],
+          ans: rho_obj, unit: 'kg/m^3',
+          sol: {
+            analyze: 'วัตถุลอย น้ำหนักวัตถุเท่ากับแรงพยุง',
+            eqs: [ { eq: '\\rho_{ obj } V_{ obj } g = \\rho_{ fluid } V_{ sub } g', why: 'แรงพยุงอาร์คิมิดีส' } ],
+            solve: 'ย้ายข้างและแทนสัดส่วน V จม', subst: `\\rho_{ obj } = 1000 \\times \\frac{${ pct }}{100}`, calc: `\\rho_{ obj } = ${ rho_obj }`,
+            conclude: `วัตถุมีความหนาแน่น ${ rho_obj } kg/m^3`
+          }
+        };
+      }
+    });
+
 
 
 /* ==================== ไฟฟ้าและคลื่น: พื้นฐาน ==================== */
@@ -5477,6 +5647,101 @@ T({
       };
     }
   });
+
+    T({
+      id: 'phys-103-b4', topic: 103, sub: 'คลื่น', level: 'พื้นฐาน', skills: ['การสะท้อนแสง'],
+      gen(R) {
+        const angle = R.pick([30, 40, 50, 60]);
+        const incidence = 90 - angle;
+        const reflection = incidence;
+        let fig = '<line x1="30" y1="120" x2="170" y2="120" stroke="#333" stroke-width="4"/>';
+        fig += svgHatch(30, 120, 170, 120, 15, 6);
+        fig += '<line x1="100" y1="120" x2="100" y2="20" stroke="#94a3b8" stroke-dasharray="5"/>';
+        const radIn = (180 - angle) * Math.PI / 180;
+        const xIn = 100 + 80 * Math.cos(radIn);
+        const yIn = 120 - 80 * Math.sin(radIn);
+        fig += svgArrow(xIn, yIn, 100, 120, 'stroke:#dc2626;stroke-width:2', '', 0, 0);
+        const radOut = angle * Math.PI / 180;
+        const xOut = 100 + 80 * Math.cos(radOut);
+        const yOut = 120 - 80 * Math.sin(radOut);
+        fig += svgArrow(100, 120, xOut, yOut, 'stroke:#3b82f6;stroke-width:2', '', 0, 0);
+        fig += `<path d="M 70 120 A 30 30 0 0 1 85 95" fill="none" stroke="#333"/>`;
+        fig += svgTxt(55, 110, angle + '^{\\circ}', 'middle', true);
+        return {
+          stem: `ลำแสงตกกระทบทำมุม ${ angle } องศา กับพื้นผิวกระจกเงาราบ มุมสะท้อนจะมีค่ากี่องศา`,
+          figure: svgWrap(200, 160, fig),
+          given: [ { s: '\\theta_{ surface }', v: angle, unit: '^{\\circ}' } ],
+          finds: [ { s: '\\theta_{ refl }', unit: '^{\\circ}', value: reflection, positive: true } ],
+          ans: reflection, unit: '^{\\circ}',
+          sol: {
+            analyze: 'มุมตกกระทบวัดจากเส้นปกติ (ตั้งฉากกับผิว) และมุมสะท้อนเท่ากับมุมตกกระทบ',
+            eqs: [ { eq: '\\theta_{ in } = 90 - \\theta_{ surface }', why: 'มุมตกกระทบ' } ],
+            solve: 'หามุมตกกระทบก่อน แล้วใช้กฎการสะท้อน', subst: `\\theta_{ in } = 90 - ${ angle } = ${ incidence }`, calc: `\\theta_{ refl } = ${ reflection }`,
+            conclude: `มุมสะท้อนคือ ${ reflection } องศา`
+          }
+        };
+      }
+    });
+    T({
+      id: 'phys-103-a4', topic: 103, sub: 'คลื่น', level: 'ประยุกต์', skills: ['เลนส์นูน'],
+      gen(R) {
+        const f = R.pick([10, 15, 20]);
+        const u = f * 2;
+        const v_img = 1 / ((1/f) - (1/u));
+        let fig = '<line x1="20" y1="100" x2="220" y2="100" stroke="#64748b" stroke-dasharray="4"/>';
+        fig += '<path d="M 120 40 Q 135 100 120 160 Q 105 100 120 40 Z" fill="#bae6fd" stroke="#0ea5e9" stroke-width="2" opacity="0.7"/>';
+        fig += svgArrow(120 - u, 100, 120 - u, 50, 'stroke:#dc2626;stroke-width:3', 'O', -10, -10);
+        fig += '<circle cx="' + (120 - f) + '" cy="100" r="3" fill="#333"/>';
+        fig += svgTxt(120 - f, 115, 'F', 'middle', false);
+        return {
+          stem: `วางวัตถุไว้หน้าเลนส์นูนความยาวโฟกัส ${ f } cm เป็นระยะ ${ u } cm จะเกิดภาพที่ระยะกี่ cm จากเลนส์`,
+          figure: svgWrap(240, 200, fig),
+          given: [ { s: 'f', v: f, unit: 'cm' }, { s: 'u', v: u, unit: 'cm' } ],
+          finds: [ { s: 'v', unit: 'cm', value: v_img, positive: true } ],
+          ans: v_img, unit: 'cm',
+          sol: {
+            analyze: 'คำนวณตำแหน่งภาพจากสูตรเลนส์',
+            eqs: [ { eq: '\\frac{1}{ f } = \\frac{1}{ u } + \\frac{1}{ v }', why: 'สูตรเลนส์' } ],
+            solve: 'ย้ายข้างและแทนค่า', subst: `\\frac{1}{ v } = \\frac{1}{${ f }} - \\frac{1}{${ u }}`, calc: `v = ${ v_img }`,
+            conclude: `เกิดภาพที่ระยะ ${ v_img } cm`
+          }
+        };
+      }
+    });
+    T({
+      id: 'phys-103-i4', topic: 103, sub: 'คลื่น', level: 'IJSO', skills: ['สลิตคู่'],
+      gen(R) {
+        const wl = R.pick([500, 600]);
+        const wl_m = wl * 1e-9;
+        const d_um = 100;
+        const d_m = d_um * 1e-6;
+        const l_m = 2;
+        const y_m = (l_m * wl_m) / d_m;
+        const y_cm = y_m * 100;
+        let fig = '<line x1="40" y1="20" x2="40" y2="180" stroke="#333" stroke-width="4"/>';
+        fig += '<line x1="200" y1="20" x2="200" y2="180" stroke="#64748b" stroke-width="4"/>';
+        fig += '<rect x="38" y="80" width="4" height="10" fill="#fff"/>';
+        fig += '<rect x="38" y="110" width="4" height="10" fill="#fff"/>';
+        fig += svgArrow(45, 100, 200, 100, 'stroke:#94a3b8;stroke-dasharray:4', 'L = ' + l_m + ' m', 0, -10);
+        fig += svgTxt(35, 100, 'd', 'end', true, 'font-size:16px');
+        fig += '<path d="M 200 100 Q 220 85 200 70" fill="none" stroke="#ef4444" stroke-width="2"/>';
+        fig += '<path d="M 200 70 Q 220 55 200 40" fill="none" stroke="#ef4444" stroke-width="2"/>';
+        fig += svgArrow(225, 100, 225, 70, 'stroke:#333', 'y = ?', 15, 5);
+        return {
+          stem: `ฉายแสงความยาวคลื่น ${ wl } nm ผ่านสลิตคู่ที่มีระยะห่างช่อง ${ d_um } \\mu m แถบสว่างลำดับที่ 1 บนฉากซึ่งอยู่ห่างออกไป ${ l_m } เมตร จะอยู่ห่างจากแนวกลางกี่เซนติเมตร`,
+          figure: svgWrap(280, 200, fig),
+          given: [ { s: '\\lambda', v: wl, unit: 'nm' }, { s: 'd', v: d_um, unit: '\\mu m' }, { s: 'L', v: l_m, unit: 'm' } ],
+          finds: [ { s: 'y', unit: 'cm', value: y_cm, positive: true } ],
+          ans: y_cm, unit: 'cm',
+          sol: {
+            analyze: 'แถบสว่างแรกใช้สูตรการแทรกสอดสลิตคู่ (มุมเล็ก: sin(th) = tan(th) = y/L)',
+            eqs: [ { eq: 'd \\frac{ y }{ L } = n \\lambda', why: 'สลิตคู่แถบสว่าง' } ],
+            solve: 'แทนค่าในหน่วย SI แล้วแปลงเป็น cm', subst: `(${ d_um } \\times 10^{-6}) \\frac{ y }{${ l_m }} = (1)(${ wl } \\times 10^{-9})`, calc: `y = ${ y_cm }`,
+            conclude: `ห่างจากแนวกลาง ${ y_cm } cm`
+          }
+        };
+      }
+    });
 
 
 
