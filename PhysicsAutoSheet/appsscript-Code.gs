@@ -202,7 +202,7 @@ var LOCK_MINUTES = 10;
    เพิ่มวิชาใหม่ในอนาคต แค่เติมชื่อลงในรายการนี้
    ⚠ ต้องเติมก่อนเปิดใช้เสมอ ถ้าลืม normSubject_ จะตกกลับไปเป็นวิชาเริ่มต้น
      แล้วข้อมูลของวิชาใหม่จะถูกบันทึกปนกับฟิสิกส์โดยไม่มีอะไรฟ้อง           */
-var SUBJECTS = ['physics', 'math', 'physci'];
+var SUBJECTS = ['physics', 'math', 'physci', 'ijso'];
 var DEFAULT_SUBJECT = 'physics';
 function normSubject_(v) {
   var s = String(v == null ? '' : v).trim().toLowerCase();
