@@ -1215,6 +1215,11 @@ table td,table th,.num,.xpstat b,.tick,
 /* ใบเฉลยมีวิธีทำยาว บางข้อกินเกินหนึ่งหน้า ถ้าห้ามแบ่งกลางข้อจะเกิดหน้าว่างคั่นแทน */
 #printarea.keydoc .pitem{page-break-inside:auto  }
 </style>
+
+<!-- KaTeX for symbolic rendering -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
 </head>
 <body>
 
@@ -20323,6 +20328,44 @@ applyAppIcon();
         };
       }
     });
+
+
+  // === KaTeX Auto-Render Observer ===
+  window.addEventListener('load', () => {
+    if (typeof renderMathInElement === 'function') {
+      const opts = {
+        delimiters: [
+          {left: '$$', right: '$$', display: true},
+          {left: '$', right: '$', display: false}
+        ],
+        throwOnError: false,
+        strict: false
+      };
+      renderMathInElement(document.body, opts);
+      let timeout;
+      const observer = new MutationObserver((mutations) => {
+        let shouldRender = false;
+        for (const m of mutations) {
+          if (m.type === 'childList') {
+            for (const n of m.addedNodes) {
+              if (n.nodeType === 1 && !n.classList.contains('katex') && !n.classList.contains('katex-html')) {
+                shouldRender = true;
+              }
+            }
+          } else if (m.type === 'characterData') {
+            shouldRender = true;
+          }
+        }
+        if (shouldRender) {
+          clearTimeout(timeout);
+          timeout = setTimeout(() => {
+            renderMathInElement(document.body, opts);
+          }, 50);
+        }
+      });
+      observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+    }
+  });
 </script>
 <!-- แถบเปลี่ยนแอปในเครือคลังโจทย์ (ไฟล์ร่วม ../apps.js) — หาไม่เจอก็ไม่เป็นไร แอปทำงานปกติ -->
 <script src="../apps.js" defer>
