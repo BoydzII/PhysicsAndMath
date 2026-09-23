@@ -2937,7 +2937,11 @@ const BOXES  = ['กล่อง', 'ลังไม้', 'กระสอบข�
      _1 หรือ _{max  } → ตัวห้อย       ^2 หรือ ^{-2  } → ตัวยก
    -------------------------------------------------------------------------- */
 function M(s) {
-  return '<span class="eq">' + mInner(String(s)) + '</span>';
+  const str = String(s);
+  if (str.includes('\\')) {
+    return '<span class="eq">$' + str + '$</span>';
+  }
+  return '<span class="eq">' + mInner(str) + '</span>';
   }
 /** แปลงข้อความสมการหนึ่งชิ้น (ยังไม่ห่อ .eq) — เรียกซ้อนตัวเองได้ จึงใส่เศษส่วนในรากได้
     เขียนได้ว่า  frac(3,4)  ·  sqrt(2)  ·  sqrt3(27) รากที่สาม  ·  pi  ·  vec(F) เวกเตอร์
@@ -5355,7 +5359,7 @@ T({
         fig += '<line x1="25" y1="40" x2="25" y2="80" stroke="#333" stroke-width="1.5"/>';
         fig += '<line x1="20" y1="40" x2="30" y2="40" stroke="#333" stroke-width="1.5"/>';
         fig += '<line x1="20" y1="80" x2="30" y2="80" stroke="#333" stroke-width="1.5"/>';
-        fig += svgTxt(15, 65, 'h_{ 2 } = ?', 'end', true);
+        fig += svgTxt(35, 65, 'h2 = ?', 'start', false);
         fig += '<line x1="135" y1="80" x2="135" y2="100" stroke="#333" stroke-width="1.5"/>';
         fig += '<line x1="130" y1="80" x2="140" y2="80" stroke="#333" stroke-width="1.5"/>';
         fig += '<line x1="130" y1="100" x2="140" y2="100" stroke="#333" stroke-width="1.5"/>';
@@ -5389,7 +5393,7 @@ T({
         fig += '<line x1="20" y1="' + y_top + '" x2="20" y2="' + (y_top + 60) + '" stroke="#333" stroke-width="1.5"/>';
         fig += '<line x1="15" y1="' + y_top + '" x2="25" y2="' + y_top + '" stroke="#333" stroke-width="1.5"/>';
         fig += '<line x1="15" y1="' + (y_top + 60) + '" x2="25" y2="' + (y_top + 60) + '" stroke="#333" stroke-width="1.5"/>';
-        fig += svgTxt(15, y_top + 35, 'V_{ total }', 'end', true);
+        fig += svgTxt(35, y_top + 35, 'V', 'end', false);
         fig += '<line x1="180" y1="80" x2="180" y2="' + (80 + h_sub) + '" stroke="#333" stroke-width="1.5"/>';
         fig += '<line x1="175" y1="80" x2="185" y2="80" stroke="#333" stroke-width="1.5"/>';
         fig += '<line x1="175" y1="' + (80 + h_sub) + '" x2="185" y2="' + (80 + h_sub) + '" stroke="#333" stroke-width="1.5"/>';
@@ -18649,7 +18653,7 @@ applyAppIcon();
         let fig = '<line x1="30" y1="30" x2="30" y2="130" stroke="#333" stroke-width="2"/>';
         fig += '<line x1="30" y1="130" x2="200" y2="130" stroke="#333" stroke-width="2"/>';
         fig += '<polygon points="30,130 150,130 150,50" fill="#bae6fd" stroke="#0ea5e9" stroke-width="2" opacity="0.5"/>';
-        fig += svgTxt(15, 50, v, 'end', false);
+        fig += svgTxt(25, 50, v, 'end', false);
         fig += svgTxt(150, 145, t, 'middle', false);
         fig += svgTxt(35, 15, 'v (m/s)', 'middle', false);
         fig += svgTxt(215, 135, 't (s)', 'middle', false);
