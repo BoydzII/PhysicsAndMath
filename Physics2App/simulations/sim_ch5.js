@@ -403,7 +403,10 @@ window.initPotentialSimulation = function() {
     var ref = 'floor';          // 'floor' | 'table'
     var TABLE = 1.2, MAXH = 4;
     var ball = { y: 3, vy: 0, falling: false, fromY: 3 };
-    var spr = { x: 0.3, v: 0, free: false };   // x > 0 = ยืด, < 0 = หด (m)
+    var spr = { x: 0.3, v: 0, free: false, e0: 0 };   // x > 0 = ยืด, < 0 = หด (m)
+    var slow = 0.2;     // ภาพช้าลง 5 เท่า ให้นักเรียนสังเกตทัน
+    var zeta = 0.08;    // อัตราส่วนการหน่วง (0 = ไม่มีแรงต้าน)
+    function sprEnergy() { return 0.5 * k * spr.x * spr.x + 0.5 * m * spr.v * spr.v; }
     var drag = null;
 
     var geo = {};
@@ -441,12 +444,15 @@ window.initPotentialSimulation = function() {
         }
     });
 
-    E.addSlider({ label: 'มวล m', min: 0.5, max: 5, step: 0.5, value: m, unit: 'kg', onInput: function(v) { m = v; } });
-    E.addSlider({ label: 'ค่านิจสปริง k', min: 50, max: 400, step: 10, value: k, unit: 'N/m', onInput: function(v) { k = v; } });
+    E.addSlider({ label: 'มวล m', min: 0.5, max: 5, step: 0.5, value: m, unit: 'kg', onInput: function(v) { m = v; spr.e0 = sprEnergy(); } });
+    E.addSlider({ label: 'ค่านิจสปริง k', min: 50, max: 400, step: 10, value: k, unit: 'N/m', onInput: function(v) { k = v; spr.e0 = sprEnergy(); } });
     E.addSegment([{ v: 'floor', t: 'พื้น' }, { v: 'table', t: 'โต๊ะ (1.2 m)' }], ref, function(v) { ref = v; }, { label: 'ระดับอ้างอิง h = 0 :' });
+    var row2 = E.addRow();
+    E.addSegment([{ v: 0.2, t: 'ช้า 5 เท่า' }, { v: 0.5, t: 'ช้า 2 เท่า' }, { v: 1, t: 'ตามจริง' }], slow, function(v) { slow = v; }, { label: 'ความเร็วภาพ :', row: row2 });
+    E.addSegment([{ v: 0, t: 'ไม่มี' }, { v: 0.08, t: 'น้อย' }, { v: 0.2, t: 'มาก' }], zeta, function(v) { zeta = v; }, { label: 'แรงต้าน (หน่วง) :', row: row2 });
     var row = E.addRow();
     E.addButton('⬇ ปล่อยลูกบอล', function() { if (ball.y > 0.01) { ball.falling = true; ball.vy = 0; ball.fromY = ball.y; } }, { primary: true, row: row });
-    E.addButton('↔ ปล่อยสปริง', function() { spr.free = !spr.free; }, { primary: true, row: row });
+    E.addButton('↔ ปล่อยสปริง', function() { spr.free = !spr.free; if (spr.free) spr.e0 = sprEnergy(); }, { primary: true, row: row });
     E.addButton('↺ เริ่มใหม่', function() { ball.y = 3; ball.falling = false; spr.x = 0.3; spr.v = 0; spr.free = false; }, { row: row });
 
     E.start(function(dt) {
@@ -460,9 +466,13 @@ window.initPotentialSimulation = function() {
             }
         }
         if (spr.free && !drag) {
-            // F⃗ = −k x⃗  (อินทิเกรตแบบ semi-implicit)
-            var steps = 4, h = dt / steps;
-            for (var i = 0; i < steps; i++) { spr.v += (-k * spr.x / m) * h; spr.x += spr.v * h; }
+            // ΣF⃗ = −k x⃗ − b v⃗  (อินทิเกรตแบบ semi-implicit) เวลาในซิมช้าลงตาม slow
+            var steps = 6, hs = dt * slow / steps, b = 2 * zeta * Math.sqrt(k * m);
+            for (var i = 0; i < steps; i++) { spr.v += ((-k * spr.x - b * spr.v) / m) * hs; spr.x += spr.v * hs; }
+            if (zeta > 0 && Math.abs(spr.x) < 0.002 && Math.abs(spr.v) < 0.02) {
+                spr.x = 0; spr.v = 0; spr.free = false;
+                E.toast('หยุดนิ่งแล้ว — พลังงานกลกลายเป็นความร้อนจากแรงต้าน', '#b45309');
+            }
         }
     }, function(ctx) {
         layout();
@@ -553,7 +563,8 @@ window.initPotentialSimulation = function() {
             { t: '= ½(' + k + ')(' + fmt(spr.x, 2) + ')²', s: 12, c: '#475569' },
             { t: '= ' + fmt(Eps, 1) + ' J', b: true, s: 15, c: '#047857' },
             { t: spr.free ? 'Ek = ' + fmt(Eks, 1) + ' J · รวม ' + fmt(Eps + Eks, 1) + ' J' : 'ลากกล่องเพื่อยืด/หด', s: 12, c: '#475569' }
-        ]);
+        ].concat(spr.free && zeta > 0 ? [{ t: 'เสียให้แรงต้าน ' + fmt(Math.max(0, spr.e0 - Eps - Eks), 1) + ' J', s: 12, c: '#b45309', b: true }] : []));
+        if (spr.free && slow < 1) E.text('⏱ ภาพช้าลง ' + Math.round(1 / slow) + ' เท่า', w - 12, h - 12, { size: 12, weight: 'bold', color: '#64748b', align: 'right' });
     });
 };
 
