@@ -12172,8 +12172,12 @@ function renderMake() {
     esc(tFold ? topicFoldSummary(c) : 'เลือกได้มากกว่าหนึ่งเรื่อง') + '</span>' +
     '<button class="sm" id="btnTopicFold" style="margin-left:auto">' +
     (tFold ? '▾ ขยาย' : '▴ ย่อ') + '</button></h3>' +
-    '<div class="row" style="margin-bottom:11px"><button class="sm" id="btnAllTopic">เลือกทุกบท</button>' +
-    '<button class="sm" id="btnCoreTopic">เลือกทุกบท</button></div>' +
+    '<div class="row" style="margin-bottom:11px; flex-wrap: wrap; gap: 5px;">' +
+    '<button class="sm" id="btnAllTopic">เลือกทุกบท</button>' +
+    '<button class="sm" id="btnCoreTopic">เลือกบทหลัก</button>' +
+    '<button class="sm" id="btnPhysTopic">เลือกฟิสิกส์</button>' +
+    '<button class="sm" id="btnChemTopic">เลือกเคมี</button>' +
+    '<button class="sm" id="btnBioTopic">เลือกชีววิทยา</button></div>' +
     '<div class="gridcards">';
   TOPICS.forEach(t => {
     const on = c.topics.indexOf(t.id) >= 0;
@@ -12395,6 +12399,9 @@ function renderMake() {
   if (bTF) bTF.addEventListener('click', () => { topicFoldSet(!topicFolded(mkCfg())); renderMake();   });
   $('#btnAllTopic').addEventListener('click', () => setTopics(ALL_TOPIC_IDS.slice()));
   $('#btnCoreTopic').addEventListener('click', () => setTopics(TOPICS.filter(t => !t.exam).map(t => t.id)));
+  const btnPhys = $('#btnPhysTopic'); if (btnPhys) btnPhys.addEventListener('click', () => setTopics(TOPICS.filter(t => t.id >= 100 && t.id < 200).map(t => t.id)));
+  const btnChem = $('#btnChemTopic'); if (btnChem) btnChem.addEventListener('click', () => setTopics(TOPICS.filter(t => t.id >= 200 && t.id < 300).map(t => t.id)));
+  const btnBio = $('#btnBioTopic'); if (btnBio) btnBio.addEventListener('click', () => setTopics(TOPICS.filter(t => t.id >= 300 && t.id < 400).map(t => t.id)));
   $$('[data-topic]').forEach(cb => cb.addEventListener('change', e => {
     const id = Number(e.target.dataset.topic);
     const i = c.topics.indexOf(id);
