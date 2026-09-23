@@ -460,10 +460,10 @@ function renderApp() {
   const theoryContainer = document.getElementById('theoryContainer');
   if (theoryContainer) {
     theoryContainer.innerHTML = data.theory || '';
-    // นิยามของเรื่อง (ไทยตาม สสวท. + อังกฤษจากตำรา) วางต่อจากย่อหน้านำ ก่อนสมการตั้งต้น
+    // นิยามของเรื่อง (ไทยตาม สสวท. + อังกฤษจากตำรา) วางใต้หัวเรื่อง ส่วนย่อหน้านำ (มุมมองดอทเวกเตอร์) อยู่ติดสมการตั้งต้น
     const defs = typeof definitionsHTML === 'function' ? definitionsHTML(currentTopic) : '';
     const lead = theoryContainer.querySelector('.lead');
-    if (defs && lead) lead.insertAdjacentHTML('afterend', defs);
+    if (defs && lead) lead.insertAdjacentHTML('beforebegin', defs);
   }
 
   // 2. Render Right Panel (Problems)
