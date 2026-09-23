@@ -954,3 +954,29 @@ select#topicSelector {
 /* แบบฝึกหัดท้ายบท: ล็อกระดับความยาก เลือกไม่ได้ */
 .level-switch.locked { opacity: 0.55; }
 .level-switch.locked .toggle-btn { cursor: not-allowed; }
+
+/* นิยามของเรื่อง: ไทย (สสวท.) + อังกฤษ (ตำรา) — มาก่อนสมการตั้งต้น */
+.defs { margin: 0 0 30px; }
+.defs-head {
+  display: flex; align-items: baseline; gap: 10px;
+  padding: 0 0 8px; border-bottom: 2px solid var(--ink);
+}
+.defs-title { font-size: 1.12rem; font-weight: 700; color: var(--ink); }
+.defs-sub { font-family: 'Times New Roman', Times, serif; font-style: italic; font-size: 1.05rem; color: var(--ink-3); }
+.defs dl { margin: 0; }
+.def { padding: 12px 0 11px; border-bottom: 1px solid var(--line); }
+.def dt { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 10px; row-gap: 2px; }
+.def-th { font-size: 1.04rem; font-weight: 700; color: var(--ink); }
+.def-en { font-family: 'Times New Roman', Times, serif; font-size: 1.1rem; font-weight: 700; color: var(--core); }
+.def-sym { margin-left: auto; font-size: 0.9rem; color: var(--ink-3); }
+.def dd { margin: 0; }
+.def-text { margin-top: 4px !important; font-size: 0.97rem; color: var(--ink-2); text-wrap: pretty; }
+.def-text b { color: var(--ink); }
+.def-text-en {
+  margin-top: 6px !important; padding-left: 12px; border-left: 2px solid #e0def5;
+  font-family: 'Times New Roman', Times, serif; font-size: 1.04rem; line-height: 1.5;
+  color: var(--ink-3); text-wrap: pretty;
+}
+.defs-src { margin: 10px 0 0; font-size: 0.8rem; line-height: 1.65; color: var(--ink-3); }
+.defs-src i { font-family: 'Times New Roman', Times, serif; font-size: 0.9rem; }
+

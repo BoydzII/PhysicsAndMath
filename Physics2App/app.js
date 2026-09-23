@@ -458,7 +458,13 @@ function renderApp() {
 
   // 1. Render Left Panel (Theory)
   const theoryContainer = document.getElementById('theoryContainer');
-  if (theoryContainer) theoryContainer.innerHTML = data.theory || '';
+  if (theoryContainer) {
+    theoryContainer.innerHTML = data.theory || '';
+    // นิยามของเรื่อง (ไทยตาม สสวท. + อังกฤษจากตำรา) วางต่อจากย่อหน้านำ ก่อนสมการตั้งต้น
+    const defs = typeof definitionsHTML === 'function' ? definitionsHTML(currentTopic) : '';
+    const lead = theoryContainer.querySelector('.lead');
+    if (defs && lead) lead.insertAdjacentHTML('afterend', defs);
+  }
 
   // 2. Render Right Panel (Problems)
   const notebookContainer = document.getElementById('notebookContainer');
