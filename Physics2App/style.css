@@ -956,7 +956,7 @@ select#topicSelector {
 .level-switch.locked .toggle-btn { cursor: not-allowed; }
 
 /* นิยามของเรื่อง: ไทย (สสวท.) + อังกฤษ (ตำรา) — มาก่อนสมการตั้งต้น */
-.defs { margin: 0 0 30px; }
+.defs { margin: 6px 0 24px; }
 .defs-head {
   display: flex; align-items: baseline; gap: 10px;
   padding: 0 0 8px; border-bottom: 2px solid var(--ink);
