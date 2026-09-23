@@ -1045,7 +1045,7 @@ table td,table th,.num,.xpstat b,.tick,
    *** ห้ามลบบรรทัดเครื่องหมาย @@BUILTIN@@ ทั้งสองอัน ตัวสร้างไฟล์ใช้หาตำแหน่ง ***
    ========================================================================== */
 /* @@BUILTIN@@ */
-const BUILTIN = {"url":"","studentOnly":false,"lockCloud":false,"logo":"","header":null,"about":null,"build":"2026-09-23 20:31","ver":"v8.219","books":[{"url":"https://script.google.com/macros/s/AKfycbxVa8BYYQeIhBDmg85w2UBwsIqt6a2YudehUfCbyMny9T-5TTh1UfFxsJjTk9HLNuFc/exec","name":"ชีตวิทยาศาสตร์กายภาพ"},{"url":"https://script.google.com/macros/s/AKfycbzuuRbnE_oB7a9vx7zZizyPVEKao31ERDTU82DvydMuRTDqVoQvgns9EsjTIzpbBjuM/exec","name":"ชีตฟิสิกส์"}]};
+const BUILTIN = {"url":"","studentOnly":false,"lockCloud":false,"logo":"","header":null,"about":null,"build":"2026-09-24 01:12","ver":"v8.220","books":[{"url":"https://script.google.com/macros/s/AKfycbxVa8BYYQeIhBDmg85w2UBwsIqt6a2YudehUfCbyMny9T-5TTh1UfFxsJjTk9HLNuFc/exec","name":"ชีตวิทยาศาสตร์กายภาพ"},{"url":"https://script.google.com/macros/s/AKfycbzuuRbnE_oB7a9vx7zZizyPVEKao31ERDTU82DvydMuRTDqVoQvgns9EsjTIzpbBjuM/exec","name":"ชีตฟิสิกส์"}]};
 /* @@BUILTIN-END@@ */
 
 /* ถ่ายภาพซอร์สของหน้านี้ไว้ตั้งแต่สคริปต์เพิ่งเริ่มทำงาน
@@ -2898,9 +2898,36 @@ function ansTxt(f) {
 
 /** อ่านคำตอบที่นักเรียนพิมพ์ รองรับ 1,200 · +5 · 2.5x10^3 · 3/4 · -2/5 · 1 1/2
     คืน { v, n, d } โดย n/d มีค่าเฉพาะเมื่อพิมพ์มาเป็นเศษส่วน (ใช้ตรวจว่าย่ออย่างต่ำหรือยัง) */
+/* ทำความสะอาดคำตอบก่อนอ่านเป็นตัวเลข — นักเรียนพิมพ์มาหลายแบบ ไม่ควรเสียคะแนนเพราะรูปแบบการพิมพ์
+   · เลขไทย ๐–๙ → 0–9 · เครื่องหมายลบแบบยูนิโค้ด (− – —) → - · ×10⁵ → ×10^5
+   · จุลภาคคั่นหลักพัน (1,000 · 12,345.6) ตัดทิ้ง ส่วนจุลภาคแบบอื่น เช่น 3,5 กำกวม (3.5 หรือ 35?)
+     จึงปล่อยไว้ให้อ่านไม่ผ่าน แล้วให้ ansIssue() บอกนักเรียนว่าให้ใช้จุดทศนิยม
+     (เดิมตัดจุลภาคทิ้งหมด 3,5 จึงกลายเป็น 35 โดยไม่มีใครรู้)
+   · หน่วยที่พิมพ์ต่อท้ายตัวเลข (5 m/s · 20 นิวตัน) ตัดทิ้ง เพราะหน่วยของช่องกำหนดไว้ข้างช่องแล้ว */
+function ansClean(raw) {
+  if (raw == null) return '';
+  var SUP = '⁰¹²³⁴⁵⁶⁷⁸⁹';
+  var s = String(raw).trim()
+    .replace(/[\u0E50-\u0E59]/g, function (c) { return String(c.charCodeAt(0) - 0x0E50); })
+    .replace(/[\u2212\u2012\u2013\u2014\uFE63\uFF0D]/g, '-')
+    .replace(/10\s*([⁻⁺]?)([⁰¹²³⁴⁵⁶⁷⁸⁹]+)/g, function (m, sg, d) {
+      return '10^' + (sg === '⁻' ? '-' : '') + d.replace(/./g, function (c) { return SUP.indexOf(c); });
+    })
+    .replace(/(\d),(?=\d{3}(?!\d))/g, '$1');
+  var m = s.match(/^([-+]?(?:\d[\d,]*\.?\d*|\.\d+)(?:\s*(?:[eE]|[×xX*]\s*10\s*\^?)\s*[-+]?\d+)?)\s*(.*)$/);
+  if (m && m[2] && /^[A-Za-zµμΩ°℃%\u0E01-\u0E4F]/.test(m[2])) s = m[1];
+  return s;
+}
+/** เหตุที่อ่านคำตอบเป็นตัวเลขไม่ได้ — ใช้บอกนักเรียนแทนการนับเป็นช่องว่าง */
+function ansIssue(raw) {
+  var s = ansClean(raw);
+  if (!s) return '';
+  if (/,/.test(s)) return 'ใช้จุด (.) เป็นจุดทศนิยม เช่น 3.5 ไม่ใช่ 3,5';
+  return 'อ่านเป็นตัวเลขไม่ได้ — พิมพ์ตัวเลขอย่างเดียว เช่น 12.5 · -3 · 3/4 · 2.4x10^-3';
+}
 function parseAns(raw) {
   if (raw == null) return null;
-  let s = String(raw).trim().replace(/,/g, '').replace(/^\+/, '');
+  let s = ansClean(raw).replace(/^\+/, '');
   if (s === '') return null;
   // จำนวนคละ เช่น 1 1/2 หรือ -2 3/4
   let m = s.match(/^(-?\d+)\s+(\d+)\s*\/\s*(\d+)$/);
@@ -7207,10 +7234,17 @@ function checkCurrent() {
     score = p.choices[it.pick].correct ? 1 : 0;
   } else {
     let blank = 0, hit = 0;
+    const unread = [];   // กรอกแล้วแต่อ่านเป็นตัวเลขไม่ได้
     p.finds.forEach((f, k) => {
-      if (parseNum(it.raw[k]) == null) blank++;
+      if (parseNum(it.raw[k]) == null) { if (String(it.raw[k] == null ? '' : it.raw[k]).trim()) unread.push(k); else blank++; }
       else if (checkAns(it.raw[k], f)) hit++;
     });
+    /* เดิมช่องที่อ่านไม่ได้ถูกนับเป็นช่องว่าง ข้อหลายช่องจึงได้ 0 เงียบ ๆ และแบบฝึกหัดล็อกคะแนนครั้งแรกไปแล้ว
+       ตอนนี้บอกให้แก้ก่อน และยังไม่นับเป็นการตรวจ */
+    if (unread.length) {
+      toast((p.finds.length > 1 ? 'ช่องที่ ' + unread.map(k => k + 1).join(', ') + ' — ' : '') + ansIssue(it.raw[unread[0]]), 'bad');
+      return;
+    }
     if (blank === p.finds.length) { toast('กรอกคำตอบก่อน', 'bad'); return; }
     score = hit / p.finds.length;
   }

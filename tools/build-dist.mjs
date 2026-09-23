@@ -111,6 +111,16 @@ const TARGETS = [
     builtin: { url: PSCI_APPS_URL, studentOnly: false, lockCloud: true, logo: '', header: null, about: null }
   },
   {
+    /* IJSO สอวน. ม.ต้น — ต้นฉบับอยู่ IJSOAutoSheet/ แต่พอร์ทัลและแถบเปลี่ยนแอปเปิด IJSOApp/
+       เดิมสองไฟล์ถูกแก้ด้วยมือคู่กันทุกครั้ง พอแก้ฝั่งเดียว หน้าที่นักเรียนเปิดจริงก็ไม่ได้ของใหม่
+       ตอนนี้ IJSOApp/index.html สร้างจากต้นฉบับเท่านั้น ห้ามแก้ตรง
+       ค่าตั้งคงไว้ตามที่ใช้อยู่เดิม: ต่อชีตใบเดียวกับวิทย์กายภาพ (ชีตแยกวิชาด้วยคอลัมน์ subject)
+       ครูลงชื่อเป็นผู้ดูแลได้ และยังไม่ล็อกการตัดการเชื่อมต่อ */
+    src: 'IJSOAutoSheet/ijso.html',
+    out: 'IJSOApp/index.html',
+    builtin: { url: PSCI_APPS_URL, studentOnly: false, lockCloud: false, logo: '', header: null, about: null }
+  },
+  {
     src: 'EquilibriumLab/equilibrium.html',
     out: 'EquilibriumLab/index.html',
     // ห้องเรียนสมดุลกลใช้ชีตของตัวเองคนละใบกับสี่วิชาข้างบน (คนละ Apps Script)
