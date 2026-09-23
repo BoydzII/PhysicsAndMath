@@ -1045,7 +1045,7 @@ table td,table th,.num,.xpstat b,.tick,
    *** ห้ามลบบรรทัดเครื่องหมาย @@BUILTIN@@ ทั้งสองอัน ตัวสร้างไฟล์ใช้หาตำแหน่ง ***
    ========================================================================== */
 /* @@BUILTIN@@ */
-const BUILTIN = {"url":"","studentOnly":true,"lockCloud":false,"logo":"","header":null,"about":null,"build":"2026-09-19 14:41","ver":"v8.159","books":[{"url":"https://script.google.com/macros/s/AKfycbxVa8BYYQeIhBDmg85w2UBwsIqt6a2YudehUfCbyMny9T-5TTh1UfFxsJjTk9HLNuFc/exec","name":"ชีตวิทยาศาสตร์กายภาพ"},{"url":"https://script.google.com/macros/s/AKfycbzuuRbnE_oB7a9vx7zZizyPVEKao31ERDTU82DvydMuRTDqVoQvgns9EsjTIzpbBjuM/exec","name":"ชีตฟิสิกส์"}]};
+const BUILTIN = {"url":"","studentOnly":true,"lockCloud":false,"logo":"","header":null,"about":null,"build":"2026-09-23 16:19","ver":"v8.217","books":[{"url":"https://script.google.com/macros/s/AKfycbxVa8BYYQeIhBDmg85w2UBwsIqt6a2YudehUfCbyMny9T-5TTh1UfFxsJjTk9HLNuFc/exec","name":"ชีตวิทยาศาสตร์กายภาพ"},{"url":"https://script.google.com/macros/s/AKfycbzuuRbnE_oB7a9vx7zZizyPVEKao31ERDTU82DvydMuRTDqVoQvgns9EsjTIzpbBjuM/exec","name":"ชีตฟิสิกส์"}]};
 /* @@BUILTIN-END@@ */
 
 /* ถ่ายภาพซอร์สของหน้านี้ไว้ตั้งแต่สคริปต์เพิ่งเริ่มทำงาน
@@ -10424,10 +10424,13 @@ function buildDoc(kind, opt) {
     // คอลัมน์คุมสอบขึ้นเฉพาะเมื่อมีคนในชุดนี้ถูกคุมสอบจริง ไม่งั้นรายงานปกติจะรกขึ้นมาเปล่า ๆ
     const showOut = rows.some(x => x.r.nOut || x.r.autoBy);
     const showRoomInReport = !filterNorm && rows.some(x => attemptRoom(x.a));
+    // วันที่ส่ง: ครูเลือกได้ในแท็บพิมพ์ว่าจะพิมพ์ช่องนี้หรือไม่ (ค่าเริ่มต้นพิมพ์)
+    const showDate = o.showDate !== false;
     h += '<b>ผลรายคน</b><table style="margin:5px 0 10px"><thead><tr>' +
       (showRoomInReport ? '<th>ห้อง</th>' : '') +
       '<th>เลขที่</th><th>เลขประจำตัว</th>' +
       '<th>ชื่อ-นามสกุล</th><th>คะแนน</th><th>ร้อยละ</th><th>ผล</th>' +
+      (showDate ? '<th>วันที่ส่ง</th>' : '') +
       (showOut ? '<th>ออกจากแอป</th>' : '') +
       '<th>หัวข้อที่ต่ำกว่าเกณฑ์</th></tr></thead><tbody>' +
       byNo.map(x => {
@@ -10440,6 +10443,7 @@ function buildDoc(kind, opt) {
           '<td>' + esc(wi.name) + '</td>' +
           '<td>' + fmt(x.r.got) + '/' + x.r.max + '</td><td>' + Math.round(x.r.pct) + '</td>' +
           '<td>' + (x.r.pct >= DB.settings.passPct ? 'ผ่าน' : 'ไม่ผ่าน') + '</td>' +
+          (showDate ? '<td style="white-space:nowrap">' + thDateTime(x.a.finishedAt) + '</td>' : '') +
           (showOut ? '<td>' + (x.r.nOut ? x.r.nOut + ' ครั้ง (' + mmss(x.r.secOut) + ')' : '—') +
             (x.r.autoBy ? ' · ระบบส่งให้ (' + esc(x.r.autoBy) + ')' : '') + '</td>' : '') +
           '<td>' + (weak.length ? esc(weak.join(', ')) : '—') + '</td></tr>';
@@ -10538,6 +10542,11 @@ function renderPrint() {
       h += '</div>';
     }
   }
+  if (kind === 'classreport' && DB.quizzes.length) {
+    h += '<div class="row" style="margin-top:11px">' +
+      '<label class="chk" style="min-height:auto"><input type="checkbox" id="crDate"' + (DB.cur.crDate !== false ? ' checked' : '') + '>' +
+      '<span><span class="t">พิมพ์วันที่ส่ง</span><span class="d">เพิ่มช่องวันและเวลาที่ผู้เรียนส่งแบบทดสอบ ในตารางผลรายคน</span></span></label></div>';
+  }
   if (kind === 'worksheet' || kind === 'answerkey') {
     h += '<div class="row" style="margin-top:11px"><label>ความหนาแน่น</label>' +
       '<div class="segbtn" style="max-width:300px">' + DENSITY.map(d =>
@@ -10592,7 +10601,7 @@ function renderPrint() {
   $('#printarea').innerHTML = buildDoc(kind, {
     quizId: DB.cur.printQuizId, attemptId: DB.cur.printAtId,
     withSteps: DB.cur.wsSteps, onePer: DB.cur.wsOne, density: DB.cur.printDens,
-    room: DB.cur.printRoom
+    room: DB.cur.printRoom, showDate: DB.cur.crDate !== false
   });
   // คลาสความหนาแน่นคุมขนาดรูปและความสูงบรรทัด · keydoc ปล่อยให้ใบเฉลยแบ่งกลางข้อได้
   $('#printarea').className = 'dn-' + dens.k + (kind === 'answerkey' ? ' keydoc' : '');
@@ -10608,6 +10617,7 @@ function renderPrint() {
   const pa = $('#pAt'); if (pa) pa.addEventListener('change', e => { DB.cur.printAtId = e.target.value; save(); renderPrint(); });
   const ws = $('#wsSteps'); if (ws) ws.addEventListener('change', e => { DB.cur.wsSteps = e.target.checked; save(); renderPrint(); });
   const gw = $('#goSetWork'); if (gw) gw.addEventListener('click', () => setTab('setting'));
+  const cd = $('#crDate'); if (cd) cd.addEventListener('change', e => { DB.cur.crDate = e.target.checked; save(); renderPrint(); });
   const wo = $('#wsOne'); if (wo) wo.addEventListener('change', e => { DB.cur.wsOne = e.target.checked; save(); renderPrint(); });
   $$('[data-dens]').forEach(b => b.addEventListener('click', () => {
     DB.cur.printDens = b.getAttribute('data-dens'); save(); renderPrint();
