@@ -18027,7 +18027,7 @@ applyAppIcon();
         // R1/R2 = sqrt(M2/M1) = sqrt(16/4) = 2 => R1 = 2*R2 => R2 = R1/2
         const r2 = r1 / 2;
         return {
-          stem: `แก๊ส He (M=4) มีอัตราการแพร่ ${ r1 } mL/s แก๊ส CH4 (M=16) จะมีอัตราการแพร่กี่ mL/s`,
+          stem: `แก๊ส $\\mathrm{ He }$ (M=4) มีอัตราการแพร่ ${ r1 } mL/s แก๊ส $\\mathrm{ CH }_4$ (M=16) จะมีอัตราการแพร่กี่ mL/s`,
           given: [ { s: 'R_1', v: r1, unit: 'mL/s' } ],
           finds: [ { s: 'R_2', unit: 'mL/s', value: r2, positive: true } ],
           ans: r2, unit: 'mL/s',
@@ -18213,7 +18213,7 @@ applyAppIcon();
         const cap = 1.34;
         const o2 = hb * cap;
         return {
-          stem: `เลือดมีฮีโมโกลบิน ${ hb } g/dL ฮีโมโกลบิน 1 g จับ O2 ได้ ${ cap } mL เลือด 1 dL จะจับ O2 ได้สูงสุดกี่ mL`,
+          stem: `เลือดมีฮีโมโกลบิน ${ hb } g/dL ฮีโมโกลบิน 1 g จับ $\\mathrm{ O }_2$ ได้ ${ cap } mL เลือด 1 dL จะจับ $\\mathrm{ O }_2$ ได้สูงสุดกี่ mL`,
           given: [ { s: 'Hb', v: hb, unit: 'g/dL' } ],
           finds: [ { s: 'O_2', unit: 'mL', value: o2, positive: true } ],
           ans: o2, unit: 'mL',
@@ -18460,7 +18460,7 @@ applyAppIcon();
         const v = R.pick([500, 1000]);
         const m = (pct * v) / 100;
         return {
-          stem: `การเตรียมน้ำเกลือ Normal Saline สำหรับให้ทางหลอดเลือดต้องมีความเข้มข้น ${ pct }% w/v หากต้องการเตรียม ${ v } mL ต้องใช้เกลือ NaCl กี่กรัม`,
+          stem: `การเตรียมน้ำเกลือ Normal Saline สำหรับให้ทางหลอดเลือดต้องมีความเข้มข้น ${ pct }% w/v หากต้องการเตรียม ${ v } mL ต้องใช้เกลือ $\\mathrm{ NaCl }$ กี่กรัม`,
           given: [ { s: '\\%w/v', v: pct, unit: '%' }, { s: 'V', v: v, unit: 'mL' } ],
           finds: [ { s: 'm', unit: 'g', value: m, positive: true } ],
           ans: m, unit: 'g',
@@ -18584,7 +18584,7 @@ applyAppIcon();
         const mol_co2 = R.pick([12, 24]);
         const mol_glu = mol_co2 / 6;
         return {
-          stem: `จากสมการ 6CO2 + 6H2O -> C6H12O6 + 6O2 ถ้าพืชใช้แก๊สคาร์บอนไดออกไซด์ไป ${ mol_co2 } โมล จะผลิตกลูโคสได้กี่โมล`,
+          stem: `จากสมการ $\\mathrm{ 6CO }_2 + \\mathrm{ 6H }_2\\mathrm{ O } \\rightarrow \\mathrm{ C }_6\\mathrm{ H }_{ 12 }\\mathrm{ O }_6 + 6\\mathrm{ O }_2$ ถ้าพืชใช้แก๊สคาร์บอนไดออกไซด์ไป ${ mol_co2 } โมล จะผลิตกลูโคสได้กี่โมล`,
           given: [ { s: 'n_{ CO_2 }', v: mol_co2, unit: 'mol' } ],
           finds: [ { s: 'n_{ glu }', unit: 'mol', value: mol_glu, positive: true } ],
           ans: mol_glu, unit: 'mol',
