@@ -1045,7 +1045,7 @@ table td,table th,.num,.xpstat b,.tick,
    *** ห้ามลบบรรทัดเครื่องหมาย @@BUILTIN@@ ทั้งสองอัน ตัวสร้างไฟล์ใช้หาตำแหน่ง ***
    ========================================================================== */
 /* @@BUILTIN@@ */
-const BUILTIN = {"url":"","studentOnly":true,"lockCloud":false,"logo":"","header":null,"about":null,"build":"2026-09-23 16:19","ver":"v8.217","books":[{"url":"https://script.google.com/macros/s/AKfycbxVa8BYYQeIhBDmg85w2UBwsIqt6a2YudehUfCbyMny9T-5TTh1UfFxsJjTk9HLNuFc/exec","name":"ชีตวิทยาศาสตร์กายภาพ"},{"url":"https://script.google.com/macros/s/AKfycbzuuRbnE_oB7a9vx7zZizyPVEKao31ERDTU82DvydMuRTDqVoQvgns9EsjTIzpbBjuM/exec","name":"ชีตฟิสิกส์"}]};
+const BUILTIN = {"url":"","studentOnly":true,"lockCloud":false,"logo":"","header":null,"about":null,"build":"2026-09-23 20:31","ver":"v8.219","books":[{"url":"https://script.google.com/macros/s/AKfycbxVa8BYYQeIhBDmg85w2UBwsIqt6a2YudehUfCbyMny9T-5TTh1UfFxsJjTk9HLNuFc/exec","name":"ชีตวิทยาศาสตร์กายภาพ"},{"url":"https://script.google.com/macros/s/AKfycbzuuRbnE_oB7a9vx7zZizyPVEKao31ERDTU82DvydMuRTDqVoQvgns9EsjTIzpbBjuM/exec","name":"ชีตฟิสิกส์"}]};
 /* @@BUILTIN-END@@ */
 
 /* ถ่ายภาพซอร์สของหน้านี้ไว้ตั้งแต่สคริปต์เพิ่งเริ่มทำงาน
@@ -7439,6 +7439,8 @@ function renderResult() {
     '<div class="stat"><div class="v">' + Math.round(res.pct) + '%</div><div class="k">คิดเป็นร้อยละ</div></div>' +
     '<div class="stat"><div class="v">' + (res.pct >= DB.settings.passPct ? 'ผ่าน' : 'ไม่ผ่าน') +
       '</div><div class="k">เกณฑ์ ' + DB.settings.passPct + '%</div></div>' +
+    (a.finishedAt ? '<div class="stat"><div class="v" style="font-size:1.15rem">' + thDate(a.finishedAt) +
+      '</div><div class="k">วันที่ส่ง · ' + thDateTime(a.finishedAt).split(' ').pop() + ' น.</div></div>' : '') +
     '<div class="stat"><div class="v">' + mmss(res.sec) + '</div><div class="k">เวลาที่ใช้ทั้งหมด</div></div>' +
     '<div class="stat"><div class="v">' + mmss(res.n ? res.sec / res.n : 0) + '</div><div class="k">เฉลี่ยต่อข้อ</div></div>' +
     '<div class="stat"><div class="v">' + res.revealed + '</div><div class="k">ข้อที่เปิดดูวิธีทำ</div></div>' +
@@ -7732,7 +7734,7 @@ function renderStats() {
     (showRoomCol ? '<th class="num">ห้อง</th>' : '') +
     (showId ? '<th class="num">เลขที่</th><th class="num">เลขประจำตัว</th>' : '') +
     '<th>ชื่อ</th><th class="num">คะแนน</th><th class="num">ร้อยละ</th>' +
-    '<th>ผล</th><th class="num">เวลา</th>' +
+    '<th>ผล</th><th class="num">เวลา</th><th>วันที่ส่ง</th>' +
     // คอลัมน์นี้ขึ้นเฉพาะเมื่อมีคนในชุดนี้ถูกคุมสอบจริง ไม่งั้นตารางจะรกขึ้นมาเปล่า ๆ
     (rows.some(x => x.r.nOut || x.r.autoBy) ? '<th class="num">ออกจากแอป</th>' : '') +
     '<th>จุดที่ต้องพัฒนา</th></tr></thead><tbody>';
@@ -7749,6 +7751,7 @@ function renderStats() {
       '<td>' + (x.r.pct >= DB.settings.passPct ? '<span style="color:var(--ok)">ผ่าน</span>'
         : '<span style="color:var(--bad)">ไม่ผ่าน</span>') + '</td>' +
       '<td class="num">' + mmss(x.r.sec) + '</td>' +
+      '<td style="white-space:nowrap">' + thDateTime(x.a.finishedAt) + '</td>' +
       (rows.some(y => y.r.nOut || y.r.autoBy)
         ? '<td class="num">' + (x.r.nOut ? '<b>' + x.r.nOut + '</b> (' + mmss(x.r.secOut) + ')' : '—') +
           (x.r.autoBy ? ' ⚠' : '') + '</td>' : '') +

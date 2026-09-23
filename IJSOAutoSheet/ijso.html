@@ -14151,6 +14151,8 @@ function renderResult() {
     '<div class="stat"><div class="v">' + Math.round(res.pct) + '%</div><div class="k">คิดเป็นร้อยละ</div></div>' +
     '<div class="stat"><div class="v">' + (res.pct >= DB.settings.passPct ? 'ผ่าน' : 'ไม่ผ่าน') +
       '</div><div class="k">เกณฑ์ ' + DB.settings.passPct + '%</div></div>' +
+    (a.finishedAt ? '<div class="stat"><div class="v" style="font-size:1.15rem">' + thDate(a.finishedAt) +
+      '</div><div class="k">วันที่ส่ง · ' + thDateTime(a.finishedAt).split(' ').pop() + ' น.</div></div>' : '') +
     '<div class="stat"><div class="v">' + mmss(res.sec) + '</div><div class="k">เวลาที่ใช้ทั้งหมด</div></div>' +
     '<div class="stat"><div class="v">' + mmss(res.n ? res.sec / res.n : 0) + '</div><div class="k">เฉลี่ยต่อข้อ</div></div>' +
     '<div class="stat"><div class="v">' + res.revealed + '</div><div class="k">ข้อที่เปิดดูวิธีทำ</div></div>' +
@@ -14468,7 +14470,7 @@ function renderStats() {
     (showRoomCol ? '<th class="num">ห้อง</th>' : '') +
     (showId ? '<th class="num">เลขที่</th><th class="num">เลขประจำตัว</th>' : '') +
     '<th>ชื่อ</th><th class="num">คะแนน</th><th class="num">ร้อยละ</th>' +
-    '<th>ผล</th><th class="num">เวลา</th>' +
+    '<th>ผล</th><th class="num">เวลา</th><th>วันที่ส่ง</th>' +
     // คอลัมน์นี้ขึ้นเฉพาะเมื่อมีคนในชุดนี้ถูกคุมสอบจริง ไม่งั้นตารางจะรกขึ้นมาเปล่า ๆ
     (rows.some(x => x.r.nOut || x.r.autoBy) ? '<th class="num">ออกจากแอป</th>' : '') +
     '<th>จุดที่ต้องพัฒนา</th></tr></thead><tbody>';
@@ -14485,6 +14487,7 @@ function renderStats() {
       '<td>' + (x.r.pct >= DB.settings.passPct ? '<span style="color:var(--ok)">ผ่าน</span>'
         : '<span style="color:var(--bad)">ไม่ผ่าน</span>') + '</td>' +
       '<td class="num">' + mmss(x.r.sec) + '</td>' +
+      '<td style="white-space:nowrap">' + thDateTime(x.a.finishedAt) + '</td>' +
       (rows.some(y => y.r.nOut || y.r.autoBy)
         ? '<td class="num">' + (x.r.nOut ? '<b>' + x.r.nOut + '</b> (' + mmss(x.r.secOut) + ')' : '—') +
           (x.r.autoBy ? ' ⚠' : '') + '</td>' : '') +
