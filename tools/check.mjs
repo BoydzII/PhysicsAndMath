@@ -13,6 +13,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { checkAll as assembledMismatch } from './assemble.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -98,6 +99,16 @@ for (const rel of FILES) {
   else console.log('✓  ' + rel + '  (' + parts.length + ' สคริปต์ · ' +
     (html.length / 1024).toFixed(0) + ' KB)');
 }
+
+/* ไฟล์ครูต้องตรงกับผลประกอบจาก core/ + subjects/ (ยกเว้นบล็อก BUILTIN)
+   ถ้าไม่ตรง แปลว่ามีคนแก้ไฟล์ครูตรง ๆ งานนั้นจะหายตอน build ครั้งถัดไป */
+try {
+  for (const b of assembledMismatch()) {
+    console.error('✗  ' + b.out + '  : ไม่ตรงกับชิ้นส่วนใน core/ + subjects/' + b.key + '/ (ต่างตั้งแต่บรรทัด ' + b.line +
+      ') — ห้ามแก้ไฟล์ครูตรง ให้แก้ที่ core/ หรือ subjects/ แล้วสั่ง node tools/build-dist.mjs');
+    fail++;
+  }
+} catch (e) { console.error('✗  ประกอบไฟล์ครูไม่ได้ — ' + e.message); fail++; }
 
 for (const [a, b] of PAIRS) {
   const pa = path.join(ROOT, a), pb = path.join(ROOT, b);

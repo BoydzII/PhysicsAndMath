@@ -1,0 +1,66 @@
+{
+  "physics": {
+    "out": "PhysicsAutoSheet/physics.html",
+    "parts": [
+      "subjects/physics/1-top.html",
+      "core/00-util.js",
+      "subjects/physics/3-rest.html"
+    ]
+  },
+  "physci": {
+    "out": "PhysicalScienceAutoSheet/physci.html",
+    "parts": [
+      "subjects/physci/1-top.html",
+      "core/00-util.js",
+      "subjects/physci/3-rest.html"
+    ]
+  },
+  "ijso": {
+    "out": "IJSOAutoSheet/ijso.html",
+    "parts": [
+      "subjects/ijso/1-top.html",
+      "core/00-util.js",
+      "subjects/ijso/3-rest.html"
+    ]
+  },
+  "chem": {
+    "out": "ChemistryAutoSheet/chem.html",
+    "parts": [
+      "subjects/chem/1-top.html",
+      "core/00-util.js",
+      "subjects/chem/3-rest.html"
+    ]
+  },
+  "math": {
+    "out": "MathAutoSheet/math.html",
+    "parts": [
+      "subjects/math/1-top.html",
+      "core/00-util.js",
+      "subjects/math/3-rest.html"
+    ]
+  },
+  "science": {
+    "out": "ScienceAutoSheet/science.html",
+    "parts": [
+      "subjects/science/1-top.html",
+      "core/00-util.js",
+      "subjects/science/3-rest.html"
+    ]
+  },
+  "bio": {
+    "out": "BiologyAutoSheet/bio.html",
+    "parts": [
+      "subjects/bio/1-top.html",
+      "core/00-util.js",
+      "subjects/bio/3-rest.html"
+    ]
+  },
+  "foundation": {
+    "out": "PhysicsFoundation/foundation.html",
+    "parts": [
+      "subjects/foundation/1-top.html",
+      "core/00-util.js",
+      "subjects/foundation/3-rest.html"
+    ]
+  }
+}

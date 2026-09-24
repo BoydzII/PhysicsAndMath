@@ -21,6 +21,7 @@ import fs from 'fs';
 import path from 'path';
 import { execFileSync } from 'child_process';
 import { fileURLToPath } from 'url';
+import { writeAll as assembleAll } from './assemble.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -134,6 +135,17 @@ const TARGETS = [
 const RE = /\/\* @@BUILTIN@@ \*\/[\s\S]*?\/\* @@BUILTIN-END@@ \*\//;
 
 let fail = 0;
+
+/* ขั้นแรกเสมอ: ประกอบไฟล์ครู (physics.html ฯลฯ) จาก core/ + subjects/ ตาม subjects/manifest.json
+   ไฟล์ครูจึงเป็นไฟล์ที่สร้างอัตโนมัติ งานที่แก้ตรงในไฟล์ครูจะถูกเขียนทับตรงนี้ */
+try {
+  const done = assembleAll();
+  console.log('✓ ประกอบไฟล์ครูจาก core/ + subjects/ แล้ว ' + done.length + ' วิชา');
+} catch (e) {
+  console.error('✗ ประกอบไฟล์ครูไม่สำเร็จ — ' + e.message);
+  process.exit(1);
+}
+
 for (const t of TARGETS) {
   // วิชาที่ต้องต่อชีต ถ้ายังไม่ได้ใส่ที่อยู่เว็บแอป อย่าสร้างไฟล์ให้เด็ดขาด
   // ไม่งั้นจะได้ไฟล์ที่เปิดใช้ได้ตามปกติแต่คะแนนไม่ขึ้นชีต ซึ่งกว่าจะรู้ตัวก็สอบไปแล้ว

@@ -1,0 +1,1055 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="คณิต ม.ต้น">
+<meta name="application-name" content="คณิต ม.ต้น">
+<meta name="theme-color" content="#2563eb">
+<meta name="description" content="คลังโจทย์ชีววิทยา ม.4 — สุ่มโจทย์ แสดงวิธีคิดเป็นขั้น ตรวจคำตอบ วิเคราะห์ผู้เรียน และพิมพ์เป็น PDF">
+<!-- ไอคอนหน้าจอโฮม: ใส่ค่าจริงตอนโหลดด้วย applyAppIcon() ซึ่งจะใช้โลโก้โรงเรียนถ้ามี -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@300..700&family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+<script>
+(function() {
+  try {
+    var s = localStorage.getItem('ui_theme_style') || 'vibrant';
+    if (s === 'minimal') document.documentElement.setAttribute('data-theme-style', 'minimal');
+  } catch(e) {}
+})();
+</script>
+<!-- ไอคอนตั้งต้นฝังมาในไฟล์เลย ไม่ใช่ปล่อย href ว่างไว้รอโค้ดเติมตอนมีโลโก้โรงเรียน
+     เครื่องที่ยังไม่ได้ใส่โลโก้ เบราว์เซอร์จะไปขอ /favicon.ico แล้วได้ 404 ทุกครั้งที่เปิดแอป
+     ซึ่งไม่ได้พังอะไร แต่ทำให้คอนโซลมีข้อผิดพลาดค้างอยู่ตลอด จนตอนไล่บั๊กจริงแยกไม่ออก -->
+<link rel="apple-touch-icon" id="linkAppIcon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232563eb'/%3E%3Ccircle cx='16' cy='16' r='3.4' fill='%23fff'/%3E%3Cg fill='none' stroke='%23fff' stroke-width='1.9'%3E%3Cellipse cx='16' cy='16' rx='12' ry='5.2'/%3E%3Cellipse cx='16' cy='16' rx='12' ry='5.2' transform='rotate(60 16 16)'/%3E%3Cellipse cx='16' cy='16' rx='12' ry='5.2' transform='rotate(120 16 16)'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="icon" id="linkFavicon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232563eb'/%3E%3Ccircle cx='16' cy='16' r='3.4' fill='%23fff'/%3E%3Cg fill='none' stroke='%23fff' stroke-width='1.9'%3E%3Cellipse cx='16' cy='16' rx='12' ry='5.2'/%3E%3Cellipse cx='16' cy='16' rx='12' ry='5.2' transform='rotate(60 16 16)'/%3E%3Cellipse cx='16' cy='16' rx='12' ry='5.2' transform='rotate(120 16 16)'/%3E%3C/g%3E%3C/svg%3E">
+<title>คลังโจทย์ชีววิทยา ม.4</title>
+<style>
+/* ============================================================
+   ธีมและตัวแปรสี — ชุดเดียวกับ gradebook.html
+   ============================================================ */
+/* ============================================================
+   Modern Design System (Vibrant EdTech & Minimal Focus Mode)
+   ============================================================ */
+:root {
+  --font-sans: 'Anuphan', -apple-system, BlinkMacSystemFont, 'Leelawadee UI', 'Segoe UI', Tahoma, sans-serif;
+  /* หน้าพิมพ์ใช้ Sarabun ซึ่งเป็นแบบที่เอกสารไทยใช้กันจนคุ้นตา
+     บนกระดาษตัวมีหัวอ่านง่ายกว่า ส่วนบนจอ Anuphan ที่ไม่มีหัวคมกว่า */
+  --font-print: 'Sarabun', 'Anuphan', 'Leelawadee UI', Tahoma, sans-serif;
+
+  /* น้ำหนักสามค่า ห่างกันจริง — 600 คู่ 700 สายตาอ่านว่าพลาด ไม่ใช่ลำดับชั้น
+     เลือก 400 คู่ 700 ไม่ใช่ 300 คู่ 800 เพราะแอปนี้เด็กอ่านบนไอแพดรวม
+     ความอ่านง่ายสำคัญกว่าความดราม่า ส่วน 300 ใช้เฉพาะข้อความที่ใหญ่พอ */
+  --w-quiet: 300;
+  --w-body: 400;
+  --w-loud: 700;
+  
+  /* Vibrant Theme Tokens (Default: Style 2) */
+  --bg: #f8fafc;
+  --bg-gradient: radial-gradient(at 0% 0%, rgba(37, 99, 235, 0.05) 0px, transparent 50%),
+                 radial-gradient(at 100% 100%, rgba(6, 182, 212, 0.05) 0px, transparent 50%);
+  --panel: #ffffff;
+  --panel2: #f8fafc;
+  --panel-glass: rgba(255, 255, 255, 0.88);
+  --ink: #0f172a;
+  --muted: #64748b;
+  --line: #e2e8f0;
+  --line2: #f1f5f9;
+  
+  /* Brand Subject Gradients */
+  --brand: #059669;
+  --brand-gradient: linear-gradient(135deg, #059669 0%, #10b981 100%);
+  --brand-ink: #ffffff;
+  --brand-glow: 0 4px 14px rgba(5, 150, 105, 0.35);
+  
+  /* Semantics */
+  --ok: #059669; --ok-bg: #ecfdf5; --ok-line: #a7f3d0;
+  --bad: #e11d48; --bad-bg: #fff1f2; --bad-line: #fecdd3;
+  --warn: #d97706; --warn-bg: #fffbeb; --warn-line: #fde68a;
+  --group: #7c3aed; --group-bg: #f5f3ff; --group-line: #ddd6fe;
+
+  --lv1: #059669; --lv2: #d97706; --lv3: #e11d48;
+
+  /* สีของกราฟ แยกจาก --brand เพราะ --brand เป็นสีเดียวกันทั้งโหมดสว่างและมืด
+     บนพื้นมืดสีน้ำเงินกลางจะจมพื้น โหมดมืดจึงต้องเลือกขั้นที่สว่างขึ้นเอง
+     ตรวจอัตราคอนทราสต์กับพื้นจริงของแอปแล้วทั้งสองโหมด ผ่านเกณฑ์ 3:1 */
+  --chart: #2563eb;
+  --chart-soft: rgba(37, 99, 235, .13);
+
+  /* Elevation & Curves */
+  --r-sm: 8px;
+  --r: 14px;
+  --r-lg: 18px;
+  --r-pill: 9999px;
+  --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.05), 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.06), 0 2px 6px -1px rgba(15, 23, 42, 0.03);
+  --shadow-lg: 0 12px 32px -4px rgba(15, 23, 42, 0.08), 0 4px 12px -2px rgba(15, 23, 42, 0.03);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #090d16;
+    --bg-gradient: radial-gradient(at 0% 0%, rgba(37, 99, 235, 0.08) 0px, transparent 50%),
+                   radial-gradient(at 100% 100%, rgba(6, 182, 212, 0.08) 0px, transparent 50%);
+    --panel: #131b2a;
+    --panel2: #1b263b;
+    --panel-glass: rgba(19, 27, 42, 0.88);
+    --ink: #f8fafc;
+    --muted: #94a3b8;
+    --line: #233047;
+    --line2: #1e293b;
+    --brand: #059669;
+    --brand-gradient: linear-gradient(135deg, #059669 0%, #10b981 100%);
+    --brand-ink: #ffffff;
+    --brand-glow: 0 4px 14px rgba(5, 150, 105, 0.35);
+    
+    --ok: #10b981; --ok-bg: #06281e; --ok-line: #064e3b;
+    --bad: #f43f5e; --bad-bg: #350d17; --bad-line: #881337;
+    --warn: #f59e0b; --warn-bg: #351f05; --warn-line: #78350f;
+    --group: #a78bfa; --group-bg: #22143d; --group-line: #4c1d95;
+    
+    --lv1: #10b981; --lv2: #f59e0b; --lv3: #f43f5e;
+    --chart: #60a5fa;
+    --chart-soft: rgba(96, 165, 250, .16);
+    --shadow-sm: 0 1px 3px rgba(0,0,0,.3);
+    --shadow: 0 4px 20px -2px rgba(0,0,0,.45), 0 2px 6px -1px rgba(0,0,0,.25);
+    --shadow-lg: 0 14px 36px -4px rgba(0,0,0,.6);
+  }
+}
+
+/* ============================================================
+   Style 1: Clean Minimal Focus Mode (data-theme-style="minimal")
+   ============================================================ */
+html[data-theme-style="minimal"] {
+  --bg: #f8fafc;
+  --bg-gradient: none !important;
+  --panel: #ffffff;
+  --panel2: #f8fafc;
+  --panel-glass: #ffffff;
+  --ink: #0f172a;
+  --muted: #475569;
+  --line: #cbd5e1;
+  --line2: #e2e8f0;
+  --brand: #1e293b;
+  --brand-gradient: none !important;
+  --brand-ink: #ffffff;
+  --brand-glow: none !important;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+  --shadow: 0 2px 8px rgba(0,0,0,0.06);
+  --shadow-lg: 0 8px 20px rgba(0,0,0,0.08);
+  --r: 10px;
+  --r-lg: 12px;
+}
+
+@media (prefers-color-scheme: dark) {
+  html[data-theme-style="minimal"] {
+    --bg: #0f172a;
+    --bg-gradient: none !important;
+    --panel: #1e293b;
+    --panel2: #0f172a;
+    --panel-glass: #1e293b;
+    --ink: #f8fafc;
+    --muted: #94a3b8;
+    --line: #334155;
+    --line2: #1e293b;
+    --brand: #f8fafc;
+    --brand-gradient: none !important;
+    --brand-ink: #0f172a;
+    --brand-glow: none !important;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+    --shadow: 0 2px 8px rgba(0,0,0,0.4);
+    --shadow-lg: 0 8px 20px rgba(0,0,0,0.5);
+  }
+}
+
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  background-color:var(--bg);
+  background-image:var(--bg-gradient);
+  background-attachment:fixed;
+  color:var(--ink);
+  font-family:var(--font-sans);
+  font-size:16px;
+  /* ไทยมีสระซ้อนขึ้นสองชั้นและลงล่างหนึ่งชั้น ที่ 1.6 วรรณยุกต์บรรทัดล่าง
+     ไปแตะสระบรรทัดบน เห็นชัดที่สุดในโจทย์ยาว ๆ และคำอธิบายวิธีทำ */
+  line-height:1.75;
+  font-weight:var(--w-body);
+  text-wrap:pretty;
+  padding-left:env(safe-area-inset-left);
+  padding-right:env(safe-area-inset-right);
+  -webkit-tap-highlight-color:transparent;
+  -webkit-font-smoothing:antialiased;
+}
+button,input,select,textarea{font-family:inherit;font-size:15px;color:inherit;touch-action:manipulation}
+/* ระหว่างสอบ ห้ามให้หน้าจอดึงเกินขอบได้ — บนไอแพด การปัดลงจากบนสุด
+   คือคำสั่ง "โหลดหน้าใหม่" ของ Safari ถ้าโดนกลางคันจะหลุดจากเต็มหน้าจอ
+   นาฬิกาเดินต่อโดยไม่มีใครดู และนักเรียนตกใจว่าคำตอบหาย (จริง ๆ ไม่หาย)
+   ใส่เฉพาะตอนสอบ เวลาอื่นยังเลื่อนได้ตามปกติทุกอย่าง */
+body.examlock{overscroll-behavior:none;overscroll-behavior-y:none}
+
+/* ---------- แถบบนสุด (Sticky Frosted Header) ---------- */
+.stickytop{
+  position:sticky; top:0; z-index:50;
+  background:var(--panel-glass);
+  backdrop-filter:blur(16px);
+  -webkit-backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--line);
+  box-shadow:var(--shadow-sm);
+  padding-top:env(safe-area-inset-top);
+  transition:all .2s ease;
+}
+.topbar{
+  padding:10px 16px;
+  display:flex; flex-wrap:wrap; gap:10px; align-items:center;
+  max-width:1280px; margin:0 auto;
+}
+.brand{
+  font-weight:700; font-size:17.5px; letter-spacing:-0.02em;
+  white-space:nowrap; display:flex; align-items:center; gap:8px;
+}
+.brand .dot{
+  width:12px; height:12px; border-radius:4px;
+  background:var(--brand-gradient, var(--brand));
+  display:inline-block;
+  box-shadow:var(--brand-glow);
+}
+.who{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--muted);flex-wrap:wrap}
+.spacer{flex:1 1 auto}
+
+/* Cloud Sync Live Pulse */
+.savestate{
+  font-size:12.5px; color:var(--muted); white-space:nowrap;
+  display:inline-flex; align-items:center; gap:6px; font-weight:500;
+  min-width:74px; text-align:right; justify-content:flex-end;
+}
+.savestate::before{
+  content:''; width:7px; height:7px; border-radius:50%; background:var(--muted);
+  display:inline-block; transition:all .2s ease;
+}
+.savestate.on{color:var(--ok)}
+.savestate.on::before{
+  background:var(--ok);
+  box-shadow:0 0 0 3px var(--ok-line);
+}
+
+/* User Identity Chip */
+.user-chip{
+  display:inline-flex; align-items:center; gap:8px;
+  background:var(--panel2); border:1px solid var(--line);
+  padding:4px 10px; border-radius:var(--r-pill); font-size:13.5px;
+}
+
+/* Theme Style Switcher */
+.btn-theme-toggle{
+  display:inline-flex; align-items:center; gap:5px;
+  background:var(--panel2); border:1px solid var(--line);
+  border-radius:var(--r-pill); padding:5px 12px;
+  font-size:13px; font-weight:700; cursor:pointer;
+  transition:all .2s ease;
+}
+.btn-theme-toggle:hover{
+  background:var(--panel); border-color:var(--brand);
+}
+
+/* ---------- Pill Navigation Tabs ---------- */
+.tabs{
+  display:flex; gap:6px; padding:4px 16px 8px;
+  max-width:1280px; margin:0 auto;
+  overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none;
+}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{
+  border:1px solid transparent; background:transparent;
+  border-radius:var(--r-pill); padding:7px 15px;
+  color:var(--muted); font-weight:700; min-height:38px; font-size:14px;
+  transition:all .18s cubic-bezier(0.4, 0, 0.2, 1);
+  display:flex; align-items:center; gap:6px; white-space:nowrap;
+}
+.tabs button:hover{
+  color:var(--ink); background:var(--panel2);
+}
+.tabs button.active{
+  color:#ffffff;
+  background:var(--brand-gradient, var(--brand));
+  box-shadow:var(--brand-glow);
+  font-weight:700;
+}
+html[data-theme-style="minimal"] .tabs button.active{
+  background:var(--brand); color:var(--brand-ink); box-shadow:none;
+}
+
+main{padding:20px 16px 60px; max-width:1240px; margin:0 auto}
+section.tabpane{display:none}
+section.tabpane.active{display:block}
+
+/* ---------- Bento Cards & Content ---------- */
+.card{
+  background:var(--panel); border:1px solid var(--line);
+  border-radius:var(--r-lg); padding:20px;
+  box-shadow:var(--shadow); margin-bottom:16px;
+  transition:transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+  position:relative; overflow:hidden;
+}
+html:not([data-theme-style="minimal"]) .card::before{
+  content:''; position:absolute; top:0; left:0; right:0; height:3px;
+  background:var(--brand-gradient, var(--brand)); opacity:0.85;
+}
+.card>h3{
+  margin:0 0 14px; font-size:17px; font-weight:700;
+  letter-spacing:-0.015em; display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+}
+.card>h3 .sub{font-weight:500; color:var(--muted); font-size:13.5px}
+
+/* การ์ดที่ย่อไว้ — ซ่อนทุกอย่างยกเว้นหัวเรื่อง หัวเรื่องยังบอกสรุปว่าเลือกอะไรไว้ */
+.card.tfold>*:not(h3){display:none}
+.card.tfold>h3{margin-bottom:0}
+/* ปุ่มย่อ — เล็กและจางไว้ ไม่ควรแข่งกับหัวเรื่องหรือปุ่มทำงานในกล่อง
+   ชิดขวาสุดเสมอด้วย margin-left:auto จึงหาได้ที่เดิมทุกกล่อง */
+.foldbtn{margin-left:auto;padding:2px 9px;font-size:13px;line-height:1.5;
+  color:var(--muted);background:transparent;border-color:transparent}
+@media (hover:hover){.foldbtn:hover{color:var(--ink);border-color:var(--line);background:var(--panel2)}}
+.card.tfold>h3 .sub{display:inline}
+
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.grow{flex:1 1 auto}
+.hint{font-size:13.5px;color:var(--muted)}
+
+/* Notices & Callouts */
+.notice{
+  border-radius:var(--r); padding:12px 16px; margin-bottom:14px; font-size:14.5px;
+  display:flex; align-items:flex-start; gap:10px; line-height:1.55;
+}
+.notice.bad{background:var(--bad-bg); color:var(--bad); border:1px solid var(--bad-line)}
+.notice.warn{background:var(--warn-bg); color:var(--warn); border:1px solid var(--warn-line)}
+.notice.info{background:var(--panel2); border:1px solid var(--line); color:var(--muted)}
+.notice.ok{background:var(--ok-bg); color:var(--ok); border:1px solid var(--ok-line)}
+
+/* ---------- ตาราง ---------- */
+.tablewrap{overflow:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);border-radius:var(--r)}
+table{border-collapse:collapse;width:100%;font-size:14.5px}
+th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line2);white-space:nowrap}
+th{background:var(--panel2);position:sticky;top:0;font-weight:700;font-size:13px;color:var(--muted);z-index:1;text-transform:uppercase;letter-spacing:0.03em}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+tbody tr:hover td{background:rgba(37,99,235,0.02)}
+tbody tr:last-child td{border-bottom:none}
+
+/* ---------- Bento Stat Grid ---------- */
+.statgrid{
+  display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:12px;
+}
+.stat{
+  background:var(--panel2); border:1px solid var(--line);
+  border-radius:var(--r); padding:14px 16px;
+  transition:transform .15s ease;
+}
+.stat:hover{transform:translateY(-2px)}
+.stat .v{
+  font-size:26px; font-weight:700; font-variant-numeric:tabular-nums;
+  letter-spacing:-0.02em; color:var(--brand);
+}
+html[data-theme-style="minimal"] .stat .v{color:var(--ink)}
+.stat .k{
+  font-size:12px; font-weight:700; color:var(--muted);
+  text-transform:uppercase; letter-spacing:0.04em; margin-top:3px;
+}
+.bar{height:9px;border-radius:5px;background:var(--line2);overflow:hidden}
+.bar>i{display:block;height:100%;background:var(--brand);transition:width .25s}
+.bar.ok>i{background:var(--ok)} .bar.warn>i{background:var(--warn)} .bar.bad>i{background:var(--bad)}
+
+/* ---------- ป้ายระดับ / เรื่อง ---------- */
+.tag{
+  display:inline-flex; align-items:center; gap:4px;
+  padding:2px 10px; border-radius:var(--r-pill); font-size:12px; font-weight:700;
+  border:1px solid currentColor; white-space:nowrap;
+}
+.tag.l0{color:var(--group); background:var(--group-bg); border-color:var(--group-line)}
+.tag.l1{color:var(--lv1); background:var(--ok-bg); border-color:var(--ok-line)}
+.tag.l2{color:var(--lv2); background:var(--warn-bg); border-color:var(--warn-line)}
+.tag.l3{color:var(--lv3); background:var(--bad-bg); border-color:var(--bad-line)}
+.tag.t{color:var(--muted); font-weight:500; border-color:var(--line); background:var(--panel2)}
+
+/* ---------- Buttons & Inputs ---------- */
+button{
+  background:var(--panel); color:var(--ink); border:1px solid var(--line);
+  border-radius:var(--r-sm); padding:8px 16px; cursor:pointer;
+  white-space:nowrap; min-height:40px; font-weight:700; font-size:14px;
+  transition:all .18s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow:var(--shadow-sm); display:inline-flex; align-items:center; justify-content:center; gap:6px;
+}
+button:active{transform:scale(0.97)}
+button.primary{
+  background:var(--brand-gradient, var(--brand));
+  color:var(--brand-ink); border:none;
+  box-shadow:var(--brand-glow, var(--shadow-sm));
+}
+button.primary:hover{filter:brightness(1.08); transform:translateY(-1px)}
+html[data-theme-style="minimal"] button.primary{
+  background:var(--brand); color:var(--brand-ink); box-shadow:none;
+}
+button.danger{color:var(--bad);border-color:var(--bad-line);background:var(--bad-bg)}
+button.ghost{background:transparent;border-color:transparent;box-shadow:none}
+button.ghost:hover{background:var(--panel2)}
+button.sm{padding:5px 12px;font-size:13px;border-radius:7px;min-height:34px}
+button:disabled{opacity:.45;cursor:not-allowed}
+
+select,input[type=text],input[type=number],textarea{
+  background:var(--panel); border:1.5px solid var(--line); border-radius:var(--r-sm);
+  padding:9px 12px; outline:none; max-width:100%; font-size:15px; color:var(--ink);
+  transition:border-color .15s ease, box-shadow .15s ease;
+}
+select:focus,input:focus,textarea:focus{
+  border-color:var(--brand);
+  box-shadow:0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+/* ---------- โมดัล ---------- */
+.modal-bg{
+  position:fixed;inset:0;background:rgba(10,16,26,.55);
+  backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
+  display:flex;align-items:center;justify-content:center;z-index:100;padding:14px;
+}
+.modal{
+  background:var(--panel);border-radius:var(--r-lg);box-shadow:var(--shadow-lg);
+  width:100%;max-width:640px;max-height:92vh;display:flex;flex-direction:column;
+  border:1px solid var(--line);
+}
+.modal header{padding:14px 18px;border-bottom:1px solid var(--line);font-weight:700;font-size:16.5px;display:flex;align-items:center}
+.modal .body{padding:18px;overflow:auto;flex:1 1 auto}
+.modal footer{padding:14px 18px;border-top:1px solid var(--line);display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.modal .x{margin-left:auto;background:none;border:none;font-size:24px;line-height:1;padding:0 4px;color:var(--muted);min-height:auto;box-shadow:none}
+
+/* ---------- Toasts ---------- */
+#toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);z-index:200;
+       display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none}
+.toast{background:#1e293b;color:#fff;padding:11px 20px;border-radius:var(--r-pill);
+       box-shadow:var(--shadow-lg);font-size:14px;font-weight:500;animation:tin .2s ease;max-width:88vw;text-align:center}
+.toast.bad{background:var(--bad)} .toast.ok{background:var(--ok)} .toast.warn{background:var(--warn)}
+@keyframes tin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* Gate / Login Screen */
+.gate{display:none;position:fixed;inset:0;z-index:150;background:var(--bg);
+  overflow:auto;padding:24px 16px calc(24px + env(safe-area-inset-bottom))}
+.gate .box{max-width:430px;margin:6vh auto;background:var(--panel);border:1px solid var(--line);
+  border-radius:var(--r-lg);padding:24px;box-shadow:var(--shadow-lg)}
+.gate .glogo{display:block;margin:0 auto 12px;max-height:110px;max-width:150px;object-fit:contain}
+.gate .credit{margin-top:16px;text-align:center;font-size:12px;color:var(--muted);line-height:1.7}
+.brandlogo{height:30px;width:auto;max-width:44px;object-fit:contain;margin-right:8px;vertical-align:middle;flex:none}
+.logopick{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.logobox{width:96px;height:96px;border:1px dashed var(--line);border-radius:var(--r);
+  display:flex;align-items:center;justify-content:center;background:var(--panel2);flex:none;overflow:hidden}
+.logobox img{max-width:88px;max-height:88px;object-fit:contain}
+.credit-print{margin-top:14px;padding-top:8px;border-top:1px solid #ccc;
+  font-size:9pt;color:#555;text-align:center;line-height:1.6}
+.gate h2{margin:0 0 4px;font-size:21px;font-weight:700;letter-spacing:-0.02em}
+.gate .lead{color:var(--muted);font-size:13.5px;margin-bottom:16px;line-height:1.7}
+.gate label.f{display:block;font-size:13px;color:var(--muted);margin:11px 0 4px}
+.gate input{width:100%;font-size:16px}
+.gate .actions{margin-top:16px;display:flex;gap:9px;flex-wrap:wrap}
+.gate .alt{margin-top:15px;padding-top:13px;border-top:1px solid var(--line);
+  font-size:13px;color:var(--muted)}
+.gate-tabs{display:flex;gap:6px;margin-bottom:16px;background:var(--panel2);padding:4px;border-radius:10px;border:1px solid var(--line)}
+.gate-tab{flex:1;padding:8px 10px;font-size:13.5px;font-weight:700;border:1px solid transparent;border-radius:7px;background:transparent;color:var(--muted);cursor:pointer;transition:all .15s;text-align:center;box-shadow:none}
+.gate-tab.active{background:var(--panel);color:var(--ink);border-color:var(--line);box-shadow:var(--shadow-sm)}
+.gate .msg{margin-top:12px}
+
+/* ============================================================
+   ส่วนของโจทย์และวิธีทำ
+   ============================================================ */
+.qhead{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+.qno{font-weight:700;font-size:17px}
+.stem{font-size:17px;line-height:1.75;margin:8px 0}
+.fig{margin:14px 0;text-align:center}
+.fig svg{max-width:100%;height:auto;display:inline-block}
+svg .ln{stroke:var(--ink);fill:none;stroke-width:1.6}
+svg .ln2{stroke:var(--muted);fill:none;stroke-width:1.2}
+svg .dash{stroke:var(--muted);fill:none;stroke-width:1.2;stroke-dasharray:4 3}
+svg .frc{stroke:var(--brand);fill:none;stroke-width:2}
+svg .bdy{fill:var(--line2);stroke:var(--ink);stroke-width:1.6}
+svg .hat{fill:var(--muted)}
+/* paint-order ทำให้วาดเส้นขอบก่อนแล้วค่อยทับด้วยตัวอักษร
+   ได้ผลเป็น "ขอบสีพื้นหลัง" รอบตัวเลข ทำให้อ่านออกเสมอแม้ตัวเลขจะพาดทับเส้นแรง */
+svg text{fill:var(--ink);font-size:14.5px;font-family:inherit;
+  paint-order:stroke fill;stroke:var(--panel);stroke-width:3.4px;stroke-linejoin:round;
+  stroke-linecap:round;font-weight:500}
+svg text.mut{fill:var(--muted);font-size:13px;stroke-width:3px}
+svg .arh{fill:var(--brand);stroke:none}
+svg .arh2{fill:var(--ink);stroke:none}
+
+/* ── กราฟข้อมูล ────────────────────────────────────────────────────────
+   แยกคลาสจากรูปฟิสิกส์โดยตั้งใจ ของเดิมยืม .bdy ที่ตั้งไว้ให้เป็นก้อนวัตถุ
+   (เทาอ่อน ตัดขอบหมึกหนา 1.6) แท่งกราฟจึงแข่งกับเส้นขอบของตัวเอง
+   หลักที่ใช้ — แท่งบางไม่ตัดขอบ · เส้นตารางบางกว่าหมึกหนึ่งขั้น ·
+   เว้นช่องสีพื้นระหว่างแท่ง 2px แทนการตีเส้นแบ่ง · จุดใหญ่พอกดโดน */
+svg .cbar{fill:var(--chart);stroke:none}
+svg .cgrid{stroke:var(--line);fill:none;stroke-width:1}      /* เส้นตารางบาง ไม่ประ */
+svg .caxis{stroke:var(--line);fill:none;stroke-width:1}
+svg .cthr{stroke:var(--bad);fill:none;stroke-width:1.4;stroke-dasharray:5 4;opacity:.75}
+svg .cline{stroke:var(--chart);fill:none;stroke-width:2;
+           stroke-linejoin:round;stroke-linecap:round}
+svg .carea{fill:var(--chart-soft);stroke:none}
+svg .cdot{fill:var(--chart);stroke:var(--panel);stroke-width:2}   /* วงแหวนสีพื้น 2px */
+svg text.cnum{fill:var(--muted);font-size:12px;font-weight:400;stroke-width:2.6px;
+              font-variant-numeric:tabular-nums}
+svg text.clab{fill:var(--muted);font-size:12.5px;font-weight:400;stroke-width:2.6px}
+svg text.cthrlab{fill:var(--bad);font-size:12px;font-weight:700;stroke-width:2.6px}
+/* คลาสของรูปคณิตศาสตร์ — ขึ้นต้นด้วย f ทุกตัวเพื่อไม่ให้ชนกับคลาสของหน้าเว็บ
+   (เบราว์เซอร์ถือ width/height ของ SVG เป็นสมบัติ CSS ด้วย ถ้าชนกับ .bar ของ
+   แถบสถิติ ความสูงของแท่งกราฟจะถูกทับจนกลายเป็นขีดสั้น ๆ ลอยอยู่กลางอากาศ) */
+svg .fbox{fill:none;stroke:var(--ink);stroke-width:1.5}
+svg .ffil{fill:var(--brand);opacity:.3;stroke:none}
+svg .fgrd{stroke:var(--line);fill:none;stroke-width:1}
+svg .fbar{fill:var(--brand);opacity:.72;stroke:none}
+svg .fpt{fill:var(--brand);stroke:var(--panel);stroke-width:1.8}
+
+/* สมการ */
+.eq{font-family:"Times New Roman","Cambria Math",Georgia,serif;font-size:18px;
+    font-style:italic;white-space:nowrap;display:inline-block}
+.eq .u{font-style:normal}            /* หน่วยและตัวเลข ไม่เอียง */
+
+/* ประโยคที่มีสมการปนอยู่ต้องพับบรรทัดได้
+   ของเดิมตั้ง white-space:nowrap ไว้ทั้งก้อน .eq ซึ่งถูกสำหรับ "สูตรเดี่ยว"
+   แต่โจทย์อัตนัยกับตัวเลือกเป็นประโยคเต็มที่ผ่านตัวจัดรูปเดียวกัน
+   ยาวหน่อยก็ล้นออกนอกกรอบไปทางขวาแทนที่จะขึ้นบรรทัดใหม่
+   ของที่ห้ามฉีกกลางคือ "ก้อนสูตร" ซึ่งกันไว้ในตัวเองแล้วด้วย inline-flex
+   และ inline-block (เศษส่วน ราก สัญลักษณ์นิวเคลียร์) จึงไม่มีทางแตกกลางสูตร */
+.eq{white-space:normal}
+/* บรรทัดสมการแบบบล็อกยังไม่ให้พับ ถ้ากว้างเกินกรอบให้เลื่อนในกรอบของตัวเอง
+   ดีกว่าปล่อยให้ดันหน้าทั้งหน้ากว้างออกไป */
+.eqblk{overflow-x:auto}
+.eqblk .eq{white-space:nowrap}
+
+/* ---------- ตัวหนาและสีในโจทย์ที่ครูสร้างเอง ---------- */
+/* ใช้ชื่อแท็กสั้น ๆ แทน span+style เพื่อไม่ต้องเปิดให้ใส่แอตทริบิวต์อะไรก็ได้
+   ซึ่งจะกลายเป็นช่องฝัง HTML แปลกปลอมลงคลังข้อสอบ
+   สีอ้างจากโทเคนของแอป จึงเปลี่ยนตามโหมดสว่าง-มืดเองและคอนทราสต์ผ่านทั้งสองโหมด */
+red,blue,green,orange,hl{font-style:inherit;font-weight:inherit}
+red{color:var(--bad)}
+blue{color:var(--brand)}
+green{color:var(--ok)}
+orange{color:var(--warn)}
+hl{background:var(--warn-bg);border-radius:4px;padding:0 3px}
+.eqblk{margin:5px 0 5px 8px}
+.eqblk .eq{font-size:18.5px}
+/* เศษส่วนซ้อนสองชั้น — เขียนแบบเดียวกับที่นักเรียนเขียนในสมุด */
+.frac{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;
+      margin:0 2px;font-style:normal;font-size:.9em;line-height:1.1}
+.frac .fn{padding:0 4px 1px}
+.frac .fd{padding:1px 4px 0;border-top:1.4px solid currentColor}
+/* เวกเตอร์ vec(F) — ลูกศรเหนือตัวแปร ยาวตามเนื้อใน
+   วาดด้วยเส้นขอบ ไม่ใช่ตัวอักษร → จึงยืดได้ตามความยาว พิมพ์ติดทุกเครื่อง และเปลี่ยนสีตามตัวอักษร
+   ขยับลูกศรไปทางขวาเล็กน้อยให้ตรงกับตัวเอียงที่เอนไปทางขวา */
+.vec{position:relative;display:inline-block;padding-top:.34em;margin-right:.1em;line-height:1.05;white-space:nowrap}
+/* ลูกศรยื่นเลยขวาของตัวอักษรเล็กน้อย ตัวแปรตัวเดียวอย่าง F จะได้เห็นเป็นเส้นมีหัว ไม่ใช่เห็นแต่หัวลูกศร */
+.vec::before{content:'';position:absolute;left:.04em;right:0;top:.12em;border-top:.075em solid currentColor}
+.vec::after{content:'';position:absolute;right:-.16em;top:.015em;
+  border-left:.3em solid currentColor;border-top:.14em solid transparent;border-bottom:.14em solid transparent}
+/* ── การ์ดโปรไฟล์และเลเวลของผู้เรียน ─────────────────────────────────── */
+.xpcard{background:linear-gradient(135deg,var(--panel2),var(--panel));border:1px solid var(--line)}
+.xprow{display:flex;align-items:center;gap:13px}
+.xpav{position:relative;width:62px;height:62px;flex:0 0 auto;border-radius:50%;
+      display:flex;align-items:center;justify-content:center;font-size:36px;
+      background:var(--panel);border:2px solid var(--brand)}
+.xpav .xpgear{position:absolute;right:-4px;bottom:-2px;font-size:20px;
+              background:var(--panel);border-radius:50%;padding:1px 2px;line-height:1}
+.xpname{font-size:17px;font-weight:700}
+.xpname .sub{margin-left:7px;font-size:12.5px;font-weight:700;color:var(--muted)}
+.xplv{font-size:13.5px;margin-top:2px}
+.xpbar{height:9px;border-radius:99px;background:var(--panel2);overflow:hidden;margin-top:6px;
+       border:1px solid var(--line)}
+.xpbar i{display:block;height:100%;background:linear-gradient(90deg,var(--brand),var(--ok));
+         transition:width .4s ease}
+.xpstat{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:11px;text-align:center}
+.xpstat div{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:7px 4px}
+.xpstat b{display:block;font-size:19px;line-height:1.2}
+.xpstat span{font-size:11.5px;color:var(--muted)}
+.xpgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:7px;margin-top:6px}
+.xppick{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 4px;
+        border:1px solid var(--line);border-radius:11px;background:var(--panel);cursor:pointer}
+.xppick.sel{border-color:var(--brand);background:var(--panel2);box-shadow:inset 0 0 0 1px var(--brand)}
+.xppick.lock{opacity:.45;cursor:not-allowed}
+.xppick .xpe{font-size:27px;line-height:1.1}
+.xppick .xpn{font-size:11.5px;color:var(--muted)}
+.xppick .xplock{font-size:10.5px;color:var(--muted)}
+.xpbtabs{display:flex;gap:7px;margin-bottom:11px}
+.xpbrow{display:flex;align-items:center;gap:10px;padding:7px 10px;margin-bottom:6px;
+        border:1px solid var(--line);border-radius:12px;background:var(--panel)}
+.xpbrow.me{border-color:var(--brand);background:var(--panel2);box-shadow:inset 0 0 0 1px var(--brand)}
+.xpbrk{min-width:32px;text-align:center;font-size:17px;font-weight:700}
+.xpbav{position:relative;width:40px;height:40px;flex:0 0 auto;border-radius:50%;
+       display:flex;align-items:center;justify-content:center;font-size:23px;
+       background:var(--panel2);border:1px solid var(--line)}
+.xpbav .xpgear{position:absolute;right:-3px;bottom:-2px;font-size:13px;
+               background:var(--panel);border-radius:50%;padding:1px;line-height:1}
+.xpbnm{font-size:14.5px;font-weight:700}
+.xpbnm .sub{margin-left:7px;font-size:12px;font-weight:700;color:var(--muted)}
+.xpbme{font-size:11px;font-weight:700;color:var(--brand)}
+.xpblv{text-align:right;min-width:66px}
+.xpblv b{display:block;font-size:19px;line-height:1.15}
+.xpblv span{font-size:11px;color:var(--muted)}
+.xpbgap{text-align:center;color:var(--muted);letter-spacing:3px;margin:2px 0 6px}
+
+/* รากที่สองและรากที่สาม */
+.sqrt{display:inline-block;font-style:normal;white-space:nowrap}
+.sqrt .sg{margin-right:0}
+.sqrt .sr{border-top:1.3px solid currentColor;padding:0 3px 0 1px;margin-left:-1px}
+.sqrt .si{font-size:.62em;vertical-align:.55em;margin-right:-3px}
+
+/* กล่องวิธีทำ 7 ขั้น */
+.sol{border:1px solid var(--line);border-radius:var(--r);overflow:hidden;margin-top:12px}
+.solstep{border-bottom:1px solid var(--line2)}
+.solstep:last-child{border-bottom:none}
+.solstep>.h{display:flex;gap:9px;align-items:center;padding:9px 12px;background:var(--panel2);
+            cursor:pointer;font-weight:700;font-size:14.5px;user-select:none}
+.solstep>.h .n{background:var(--brand);color:var(--brand-ink);width:23px;height:23px;border-radius:50%;
+               display:flex;align-items:center;justify-content:center;font-size:13px;flex:0 0 auto}
+.solstep>.h .cv{margin-left:auto;color:var(--muted);font-size:13px;font-weight:400}
+.solstep>.b{padding:11px 13px 13px 44px}
+.solstep.closed>.b{display:none}
+.solstep .why{color:var(--muted);font-size:14px;margin-top:3px}
+
+/* ตารางสิ่งที่กำหนดให้ */
+table.given{width:auto;font-size:15px;border:1px solid var(--line);border-radius:8px}
+table.given td{border-bottom:1px solid var(--line2);padding:5px 11px;white-space:nowrap}
+table.given td.s{font-family:"Times New Roman","Cambria Math",Georgia,serif;font-style:italic;
+                 font-size:17px;text-align:right;padding-right:2px}
+table.given td.e{padding:0 3px;color:var(--muted)}
+table.given td.v{font-variant-numeric:tabular-nums;font-weight:700}
+table.given td.d{color:var(--muted);font-size:13.5px}
+
+/* ---------- ช่องตอบ ---------- */
+.ansbox{margin-top:14px;padding:13px;border:1px solid var(--line);border-radius:var(--r);background:var(--panel2)}
+.ansrow{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+.ansrow label{font-size:15px;min-width:150px}
+.ansrow .lab .eq{font-size:17px}
+input.numin{width:150px;text-align:right;font-variant-numeric:tabular-nums;font-size:17px}
+input.numin.ok{border-color:var(--ok);background:var(--ok-bg)}
+input.numin.bad{border-color:var(--bad);background:var(--bad-bg)}
+.unit{color:var(--muted);font-size:15px;min-width:64px}
+.choices{display:grid;gap:9px;grid-template-columns:1fr 1fr}
+@media (max-width:620px){.choices{grid-template-columns:1fr}}
+.choices.txt{grid-template-columns:1fr}
+.choices.txt .choice{align-items:flex-start}
+.choices.txt .choice>span:last-child{white-space:normal;line-height:1.6}
+.whylist{display:flex;flex-direction:column;gap:7px}
+.whyrow{border-left:3px solid var(--line);padding:4px 0 4px 10px;font-size:14.5px}
+.whyrow.ok{border-left-color:var(--ok)}
+.whyrow.no{border-left-color:var(--bad)}
+.whyrow .wk{font-weight:700;color:var(--muted);margin-right:5px}
+.whyrow .wm{font-weight:700;margin-left:6px;font-size:13px}
+.whyrow.ok .wm{color:var(--ok)} .whyrow.no .wm{color:var(--bad)}
+.whyrow .wd{color:var(--muted);font-size:13.5px;line-height:1.6;margin-top:2px}
+#printarea .whyrow{border-left:2px solid #666} #printarea .whyrow .wd{color:#444}
+.choice{display:flex;gap:10px;align-items:center;padding:11px 13px;border:1px solid var(--line);
+        border-radius:var(--r);background:var(--panel);cursor:pointer;text-align:left;min-height:52px;width:100%}
+.choice .k{font-weight:700;color:var(--muted);flex:0 0 auto}
+/* ตัวเลือกต้องเริ่มที่ขอบซ้ายเดียวกันทุกข้อ
+   ของเดิมสืบ justify-content:center มาจากสไตล์ปุ่ม ทำให้ทั้งก้อนลอยกลางกล่อง
+   วัดจริงแล้วขอบซ้ายของสี่ตัวเลือกอยู่ที่ 522 470 509 413 คนละที่กันหมด
+   ตาจึงต้องไล่หาจุดเริ่มของแต่ละตัวเลือกใหม่ทุกครั้ง อ่านช้ากว่าที่ควร
+   เรื่องนี้เป็นความเร็วในการอ่าน ไม่ใช่ความสวย */
+.choice{justify-content:flex-start}
+.choice .k{min-width:1.7em}      /* ป้าย ก ข ค ง กว้างเท่ากัน ข้อความจึงตรงกันทุกบรรทัด */
+.choice.sel{border-color:var(--brand);box-shadow:0 0 0 3px rgba(31,111,235,.15)}
+.choice.ok{border-color:var(--ok);background:var(--ok-bg)}
+.choice.bad{border-color:var(--bad);background:var(--bad-bg)}
+.verdict{font-weight:700;margin-top:9px}
+.verdict.ok{color:var(--ok)} .verdict.bad{color:var(--bad)}
+
+/* ---------- แถบความคืบหน้าข้อ ---------- */
+.qnav{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.qnav button{width:40px;height:40px;min-height:40px;padding:0;border-radius:9px;font-weight:700;font-size:14px}
+.qnav button.cur{border-color:var(--brand);box-shadow:0 0 0 3px rgba(31,111,235,.15)}
+.qnav button.ok{background:var(--ok-bg);border-color:var(--ok);color:var(--ok)}
+.qnav button.bad{background:var(--bad-bg);border-color:var(--bad);color:var(--bad)}
+.qnav button.half{background:var(--warn-bg);border-color:var(--warn);color:var(--warn)}
+
+/* ---------- ตัวเลือกในแท็บสร้างชุด ---------- */
+.chk{display:flex;gap:9px;align-items:flex-start;padding:9px 11px;border:1px solid var(--line);
+     border-radius:var(--r);background:var(--panel2);cursor:pointer;min-height:44px}
+.chk.on{border-color:var(--brand);background:rgba(31,111,235,.07)}
+.chk input{margin:3px 0 0;width:19px;height:19px;flex:0 0 auto;min-height:auto}
+.chk .t{font-weight:700;font-size:15px}
+.chk .d{font-size:13px;color:var(--muted)}
+.gridcards{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px}
+.subgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:7px;
+         margin:9px 0 0 6px;padding-left:12px;border-left:2px solid var(--line)}
+.subchk{display:flex;gap:7px;align-items:center;font-size:14px;padding:5px 0;cursor:pointer;min-height:34px}
+.subchk input{width:17px;height:17px;min-height:auto}
+
+/* ---------- การ์ดเลือกบท ---------- */
+.topiccard{align-self:start}
+.topiccard .chk{position:relative;flex-direction:column;align-items:stretch;padding-right:38px}
+.topiccard .chk>span{display:block}
+.topiccard .chk input{position:absolute;top:11px;right:11px;margin:0}
+.chk .ch{display:inline-block;font-size:11.5px;font-weight:700;letter-spacing:.3px;
+  color:var(--brand);background:rgba(31,111,235,.12);border-radius:5px;padding:1px 7px;margin-bottom:5px}
+.topiccard.exam .chk{border-color:var(--group)}
+.topiccard.exam .chk.on{background:var(--group-bg)}
+.topiccard.exam .ch{color:var(--group);background:var(--group-bg)}
+/* หัวข้อคั่นกลุ่มระดับชั้นในหน้าเลือกเรื่อง */
+.gradehead{display:flex;align-items:center;gap:8px;margin:16px 0 8px;font-weight:700;font-size:15px}
+.gradehead:first-of-type{margin-top:2px}
+.gradehead .gb{color:var(--brand);background:rgba(31,111,235,.12);border-radius:999px;
+  padding:2px 12px;font-size:13px;font-weight:700;letter-spacing:.3px}
+.gradehead .gn{color:var(--muted);font-weight:500;font-size:13px}
+.lvdots{display:flex;gap:5px;flex-wrap:wrap;margin:6px 0 3px}
+.lvdot{font-size:11.5px;font-weight:700;padding:0 7px;border-radius:20px;border:1px solid currentColor;white-space:nowrap}
+.lvdot.l0{color:var(--group)}
+.lvdot.l1{color:var(--lv1)} .lvdot.l2{color:var(--lv2)} .lvdot.l3{color:var(--lv3)}
+.fxbtn{margin:6px 0 0 2px;font-size:12.5px;padding:3px 10px;min-height:30px;
+  border-radius:7px;background:transparent;color:var(--muted)}
+@media (hover:hover){.fxbtn:hover{color:var(--brand);border-color:var(--brand)}}
+/* แถบเปิดหัวข้อย่อย — อยู่ใต้ชื่อบท กดแล้วรายการของบทนั้นค่อยกางออก
+   ด้านขวาบอกไว้ว่าเลือกไว้กี่หัวข้อ จะได้ไม่ต้องกางเพื่อดูว่าค้างอะไรไว้ */
+.subtog{display:flex;align-items:center;gap:9px;width:100%;margin:7px 0 0;
+  justify-content:flex-start;white-space:normal;text-align:left;
+  font-size:13px;font-weight:700;padding:6px 11px;border-radius:8px;
+  background:var(--panel2);color:var(--muted)}
+.subtog .n{margin-left:auto;font-weight:500;font-size:12.5px}
+@media (hover:hover){.subtog:hover{color:var(--brand);border-color:var(--brand)}}
+
+/* ---------- เรียนรู้ไปพร้อมกัน (ช่วงเรียนในคาบ) ---------- */
+.fclock{font-variant-numeric:tabular-nums;font-weight:700;font-size:40px;line-height:1.1;
+  letter-spacing:-0.01em}
+.fclock.away{color:var(--warn)}
+.fstat{display:flex;gap:22px;flex-wrap:wrap;margin-top:10px}
+.fstat>div{min-width:74px}
+.fstat b{display:block;font-size:19px;font-variant-numeric:tabular-nums;line-height:1.3}
+.fstat span{font-size:12.5px;color:var(--muted)}
+.fev{margin-top:11px;border-top:1px solid var(--line);max-height:190px;overflow:auto}
+.fevrow{display:flex;gap:10px;align-items:baseline;padding:6px 2px;border-bottom:1px solid var(--line2);
+  font-size:13px}
+.fevrow .w{font-weight:700;flex:0 0 auto}
+.fevrow .t{color:var(--muted);margin-left:auto;font-variant-numeric:tabular-nums}
+/* แถบลอยมุมจอ — เห็นนาฬิกาได้ทุกแท็บ ไม่ต้องกลับมาหน้าเดิมเพื่อดูว่ายังเดินอยู่ไหม */
+#focusBar{position:fixed;right:14px;bottom:calc(14px + env(safe-area-inset-bottom));z-index:70;
+  display:none;align-items:center;gap:11px;padding:9px 13px;border-radius:var(--r-pill,999px);
+  background:var(--panel);border:1px solid var(--brand);
+  box-shadow:0 4px 18px rgba(16,30,54,.18);font-size:14px}
+#focusBar.on{display:flex}
+#focusBar.paused{border-color:var(--warn)}
+#focusBar .fbt{font-weight:700;font-variant-numeric:tabular-nums;font-size:16px}
+#focusBar .fbw{color:var(--warn);font-weight:700}
+#focusBar button{min-height:34px;padding:4px 12px;font-size:13px}
+@media print{#focusBar{display:none!important}}
+
+/* ปุ่ม ! บนหัวการ์ด — เปิดคำอธิบายความหมายของสีและป้าย */
+.ibtn{width:23px;height:23px;min-height:23px;padding:0;border-radius:50%;flex:0 0 auto;
+  font-weight:700;font-size:13px;line-height:1;
+  color:var(--brand);border-color:var(--brand);background:transparent}
+@media (hover:hover){.ibtn:hover{background:var(--brand);color:var(--brand-ink)}}
+/* ป้ายจำนวนข้อในคอลัมน์ระดับ — ไม่มีคำกำกับแล้ว จึงต้องกว้างเท่ากันทุกใบ
+   ไม่งั้นเลขหลักเดียวกับสองหลักทำให้แถวขยับไปมาจนอ่านยาก */
+.tag.lvn{min-width:32px;justify-content:center;padding:2px 7px;
+  font-variant-numeric:tabular-nums}
+.lgdh{font-weight:700;font-size:14.5px;margin:15px 0 6px}
+.lgd>.lgdh:first-child{margin-top:0}
+.lgdrow{display:flex;gap:10px;align-items:flex-start;padding:4px 0;font-size:13.5px;line-height:1.6}
+.lgdrow>span:last-child{flex:1 1 auto}
+.lgdbdg{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;
+  width:20px;height:20px;border-radius:50%;color:#fff;font-weight:bold;font-size:12px}
+
+/* ---------- ชุดลัด: หนึ่งจุดโฟกัส แล้วที่เหลือเงียบ ----------
+   ของเดิมเป็นการ์ดห้าใบขนาดเท่ากัน ทุกใบตะโกนเท่ากันจนไม่รู้ว่าควรกดอันไหน
+   แบบนี้ให้ตัวที่ใช้บ่อยที่สุดใหญ่จริงหนึ่งตัว ที่เหลือถอยไปเป็นบรรทัดเล็ก
+   เปลี่ยนตัวหลักได้ที่ค่า PRESET_HERO ในโค้ด ไม่ต้องแก้หน้าตา          */
+.phero{display:flex;align-items:center;gap:16px;width:100%;text-align:left;
+  padding:18px 20px;border-radius:var(--r-lg);background:var(--panel2);
+  border:1px solid var(--line);white-space:normal}
+.phero .pi{font-size:34px;line-height:1;flex:0 0 auto}
+.phero .pt{display:block;font-weight:700;font-size:21px;line-height:1.3}
+.phero .pd{display:block;font-size:13.5px;color:var(--muted);line-height:1.55;margin-top:3px}
+.phero .pgo{flex:0 0 auto;font-weight:700;font-size:14.5px;color:var(--brand-ink);
+  background:var(--brand);background-image:var(--brand-gradient);
+  padding:10px 20px;border-radius:var(--r-pill)}
+@media (hover:hover){.phero:hover{border-color:var(--brand)}}
+@media (max-width:560px){.phero{flex-wrap:wrap;gap:11px}.phero .pgo{width:100%;text-align:center}}
+
+/* ที่เหลือ — เส้นบางคั่น ไม่ใช่การ์ดซ้อนการ์ด */
+.plist{margin-top:14px;border-top:1px solid var(--line)}
+.prow{display:flex;align-items:baseline;gap:12px;width:100%;text-align:left;
+  padding:13px 4px;border:0;border-bottom:1px solid var(--line);border-radius:0;
+  background:transparent;white-space:normal}
+.prow .pi{font-size:17px;line-height:1.3;flex:0 0 auto}
+.prow .pt{font-weight:700;font-size:14.5px;flex:0 0 auto}
+.prow .pd{font-size:13px;color:var(--muted);line-height:1.55;flex:1 1 auto}
+.prow .pgo{flex:0 0 auto;color:var(--muted);font-size:17px}
+@media (hover:hover){.prow:hover{background:var(--panel2)}.prow:hover .pgo{color:var(--brand)}}
+@media (max-width:560px){.prow{flex-wrap:wrap;gap:4px 10px}.prow .pd{flex-basis:100%}}
+
+/* ---------- ปุ่มชุดลัด (แบบเดิม เก็บไว้เผื่อย้อนกลับ) ---------- */
+.presetbtn{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;
+  padding:12px 14px;height:100%;white-space:normal;border-radius:var(--r);background:var(--panel2)}
+.presetbtn .pi{font-size:22px;line-height:1.2}
+.presetbtn .pt{font-weight:700;font-size:15px}
+.presetbtn .pd{font-size:12.5px;color:var(--muted);line-height:1.5}
+.presetbtn.hot{border-color:var(--group);background:var(--group-bg)}
+.presetbtn.hot .pt{color:var(--group)}
+@media (hover:hover){.presetbtn:hover{border-color:var(--brand);transform:translateY(-1px)}}
+.presetbtn{transition:transform .12s,border-color .12s}
+
+/* ---------- ใบสรุปสูตร ---------- */
+.fxhead{font-weight:700;font-size:15.5px;margin:0 0 8px;padding-bottom:5px;border-bottom:2px solid var(--line)}
+.fxlist{display:flex;flex-direction:column;gap:8px}
+.fxrow{border-left:3px solid var(--brand);padding:2px 0 2px 11px}
+.fxrow .fxe{font-size:16px}
+.fxrow .fxd{font-size:13px;color:var(--muted);line-height:1.55;margin-top:2px}
+#printarea .fxhead{border-bottom:1.5px solid #000;font-size:13pt;margin-top:6px}
+#printarea .fxrow{border-left:2px solid #666}
+#printarea .fxrow .fxd{color:#444;font-size:10pt}
+
+.segbtn{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+.segbtn button{border:none;border-radius:0;border-right:1px solid var(--line);background:var(--panel2);flex:1 1 auto}
+.segbtn button:last-child{border-right:none}
+.segbtn button.on{background:var(--brand);color:var(--brand-ink);font-weight:700}
+
+/* ============================================================
+   หน้าเอกสารสำหรับพิมพ์
+   ============================================================ */
+
+/* ── ชั้นตัวอักษร (web-design-craft) ───────────────────────────────────────
+   แก้เฉพาะชั้นตัวอักษร ไม่แตะสี ไม่แตะตรรกะ ย้อนกลับได้ด้วยการลบบล็อกนี้
+   วางไว้ก่อนกฎของหน้าพิมพ์ กฎหน้าพิมพ์จะได้ยังชนะเหมือนเดิม            */
+
+/* ข้อความประกอบใช้น้ำหนักบางลงหนึ่งขั้น ให้ต่างจากหัวเรื่องชัดขึ้น
+   ใส่เฉพาะที่ขนาด 14px ขึ้นไป ต่ำกว่านั้นน้ำหนัก 300 บางจนอ่านยากบนไอแพด */
+.hint{font-weight:var(--w-body)}
+.card>h3 .sub{font-weight:var(--w-quiet)}
+.topiccard .d{font-weight:var(--w-quiet)}
+
+/* หัวเรื่องกับตัวเลขเด่น — ใช้ค่าสูงสุดของสามค่า ไม่มีอะไรอยู่ตรงกลาง */
+.card>h3,h1,h2,h3{font-weight:var(--w-loud)}
+/* ไทยห้ามบีบช่องไฟ หัวตัวอักษรจะขาดจากกัน จึงจัดที่ท้ายบรรทัดแทน */
+.card>h3,h1,h2{letter-spacing:0;text-wrap:balance}
+
+/* ตัวเลขในตารางและคะแนนต้องกว้างเท่ากัน ไม่งั้นขยับซ้ายขวาตอนค่าเปลี่ยน
+   หน้าคะแนนกับหน้าสถิติชั้นเรียนเห็นผลข้อนี้ชัดที่สุด */
+table td,table th,.num,.xpstat b,.tick,
+.xpblv b,.xpbrk,.pill,.tag{font-variant-numeric:tabular-nums lining-nums}
+
+/* ระยะระหว่างหัวเรื่องกับเนื้อความของมัน ต้องน้อยกว่าระยะระหว่างบล็อกชัด ๆ
+   ไม่งั้นสายตาแยกไม่ออกว่าอะไรเป็นพวกกับอะไร */
+.card>h3{margin-bottom:10px}
+.card>h3+.hint,.card>h3+.row{margin-top:0}
+
+#printarea{display:none;font-family:var(--font-print)}
+.docpreview #printarea{display:block;background:#fff;color:#000;padding:16px;
+                       border:1px solid var(--line);border-radius:var(--r)}
+
+@media print{
+  @page{size:A4 portrait; margin:15mm 14mm}
+  html,body{background:#fff !important;color:#000 !important;font-size:12.5pt}
+  .stickytop,.tabs,.topbar,#toast,#modal-root,.noprint,main{display:none !important}
+  #printarea{display:block !important;padding:0;border:none;color:#000}
+  #printarea *{color:#000 !important}
+  /* สีในโจทย์ต้องรอดมาถึงกระดาษ กฎบรรทัดบนบังคับดำทั้งหมด จึงต้องเจาะเป็นราย ๆ ไป
+     และทำตัวหนาให้ด้วย เพราะถ้าครูพิมพ์ขาวดำ สีจะกลายเป็นเทาที่แยกไม่ออก */
+  #printarea red{color:#c0242a !important;font-weight:700}
+  #printarea blue{color:#14509b !important;font-weight:700}
+  #printarea green{color:#0d6b45 !important;font-weight:700}
+  #printarea orange{color:#a35a06 !important;font-weight:700}
+  #printarea hl{background:#ffe9a8 !important;color:#000 !important}
+  #printarea svg .ln,#printarea svg .ln2,#printarea svg .dash,#printarea svg .frc{stroke:#000}
+  #printarea svg .bdy{fill:#e8e8e8;stroke:#000}
+  /* กราฟบนกระดาษ — แท่งเทาเข้มพออ่านออกตอนพิมพ์ขาวดำ เส้นตารางจางลง */
+  #printarea svg .cbar{fill:#8a8a8a}
+  #printarea svg .cline{stroke:#000}
+  #printarea svg .cdot{fill:#000;stroke:#fff}
+  #printarea svg .cgrid,#printarea svg .caxis{stroke:#bbb}
+  #printarea svg .cthr{stroke:#000}
+  #printarea svg .carea{fill:#eee}
+  #printarea svg text.cnum,#printarea svg text.clab{fill:#444;stroke:#fff}
+  #printarea svg text.cthrlab{fill:#000;stroke:#fff}
+  #printarea svg .arh,#printarea svg .arh2{fill:#000}
+  #printarea svg text{fill:#000;stroke:#fff;stroke-width:3px;paint-order:stroke fill}
+  .pg{page-break-after:always}
+  .pg:last-child{page-break-after:auto}
+  .pitem{page-break-inside:avoid}
+  a[href]:after{content:none !important}
+}
+
+/* สไตล์เอกสาร ใช้ทั้งตอนพิมพ์และตอนดูตัวอย่าง */
+/* ตัวแปรความหนาแน่นของเอกสาร — เปลี่ยนพร้อมกันทีเดียวจากคลาส dn-* ที่ใส่ให้ #printarea
+   ทำให้ "จำนวนข้อต่อหน้า" กับ "ขนาดรูปและช่องเขียน" ขยับไปทางเดียวกันเสมอ */
+#printarea{font-size:12.5pt;line-height:1.65;
+  --figw:81mm; --wlh:23px; --pgap:11px; --wcap:8.5pt}
+/* ขยายรูปในใบงานที่พิมพ์ขึ้นอีก 35% จากเดิม (96/60/42 → 130/81/57 มม.)
+   ครูแจ้งว่ารูปที่พิมพ์ออกมายังเล็กเกินไปจนนักเรียนดูรายละเอียดไม่ออก
+   กว้างสุด 130 มม. ยังพอดีในพื้นที่พิมพ์จริงของ A4 ซึ่งกว้าง 182 มม.
+   จำนวนข้อต่อหน้าไม่ต้องแก้ตาม เพราะ paginatePrint() วัดความสูงจริงหลังจัดวางเสมอ */
+#printarea.dn-airy  {--figw:130mm; --wlh:28px; --pgap:16px; --wcap:9.5pt}
+#printarea.dn-normal{--figw:81mm; --wlh:23px; --pgap:11px; --wcap:8.5pt}
+#printarea.dn-tight {--figw:57mm; --wlh:19px; --pgap:9px;  --wcap:8pt;
+                     font-size:11.5pt;line-height:1.5}
+#printarea .phead{text-align:center;margin-bottom:10px}
+#printarea .phead .plogo{display:block;margin:0 auto 5px;height:64px;width:auto;max-width:110px;object-fit:contain}
+#printarea .phead .t1{font-size:15pt;font-weight:700}
+#printarea .phead .t2{font-size:12pt}
+#printarea .phead .t3{font-size:10.5pt}
+#printarea .prule{border:none;border-top:1.5px solid #000;margin:8px 0 12px}
+#printarea .pfields{display:flex;gap:18px;flex-wrap:wrap;font-size:11.5pt;margin-bottom:12px}
+#printarea .pitem{margin-bottom:var(--pgap)}
+#printarea .pitem .pq{display:flex;gap:8px;align-items:baseline}
+#printarea .pitem .pn{font-weight:700;flex:0 0 auto}
+#printarea .work{border:1px solid #999;border-radius:4px;margin-top:6px}
+#printarea .work .wl{border-bottom:1px dotted #aaa;height:var(--wlh)}
+#printarea .work .wl:last-child{border-bottom:none}
+#printarea .work .wcap{font-size:var(--wcap);color:#555;padding:1px 6px;line-height:1.25;
+  border-bottom:1px solid #ccc;background:#f4f4f4}
+#printarea table{font-size:11pt;border-collapse:collapse;width:100%}
+#printarea table th,#printarea table td{border:1px solid #888;padding:3px 6px;white-space:normal}
+#printarea table th{background:#eee;position:static}
+#printarea .sol{border:1px solid #999;margin-top:8px;border-radius:4px}
+#printarea .solstep>.h{background:#f0f0f0;cursor:default;padding:5px 9px;font-size:11pt}
+#printarea .solstep>.h .n{background:#333;color:#fff;width:19px;height:19px;font-size:10pt}
+#printarea .solstep>.h .cv{display:none}
+#printarea .solstep>.b{display:block !important;padding:7px 9px 9px 33px}
+#printarea .sign{margin-top:26px;display:flex;gap:40px;justify-content:flex-end;font-size:11pt;text-align:center}
+#printarea .sign div{min-width:190px}
+#printarea .sign .sl{border-bottom:1px dotted #000;height:30px;margin-bottom:3px}
+#printarea .tag{border:1px solid #666;color:#000}
+#printarea .fig{margin:6px 0;text-align:center}
+/* svgWrap() ใส่ max-width เป็นพิกเซลไว้ในแอตทริบิวต์ style ของ SVG เอง ซึ่งชนะกฎในสไตล์ชีต
+   ตอนพิมพ์จึงต้องใช้ !important ทับ ไม่งั้นรูปจะกว้างเกือบเต็มหน้ากระดาษทุกใบ */
+#printarea .fig svg{width:100% !important;max-width:var(--figw) !important;height:auto}
+/* ใบเฉลยมีวิธีทำยาว บางข้อกินเกินหนึ่งหน้า ถ้าห้ามแบ่งกลางข้อจะเกิดหน้าว่างคั่นแทน */
+#printarea.keydoc .pitem{page-break-inside:auto}
+</style>
+</head>
+<body>
+
+<div class="stickytop noprint">
+<header class="topbar">
+  <div class="brand" id="brandBox"><span class="dot"></span>คลังโจทย์ชีววิทยา ม.4</div>
+  <div class="who" id="whoBar"></div>
+  <div class="spacer"></div>
+  <button class="btn-theme-toggle sm" id="btnThemeStyle" title="สลับสไตล์: โหมดสีสันสดใส / โหมดโฟกัสคลีนมินิมอล">✨ <span class="theme-label">สีสันสดใส</span></button>
+  <!-- เลขรุ่นเติมจาก APP_VERSION ตอนเริ่มทำงาน จะได้ไม่มีเลขเขียนตายไว้ในหน้า HTML -->
+  <button class="sm" id="btnAppVer" title="คลิกเพื่อตรวจสอบและอัปเดตเวอร์ชัน" style="font-weight:700;border-radius:12px;cursor:pointer">v8</button>
+  <!-- ปุ่มสำรอง/กู้คืนย้ายไปแท็บตั้งค่า หัวข้อ "ข้อมูลในเครื่อง"
+       แถบบนเหลือเฉพาะของที่กดทุกวัน ส่วนของที่ใช้ปีละครั้งไม่ควรอยู่ตรงนี้ -->
+  <button class="sm" id="btnLogout" style="display:none">ออกจากระบบ</button>
+  <div class="savestate" id="saveState"></div>
+</header>
+<nav class="tabs" id="tabs">
+  <button data-tab="make">สร้างชุดโจทย์</button>
+  <button data-tab="do">ทำแบบฝึกหัด</button>
+  <button data-tab="result">ผลและวิเคราะห์</button>
+  <button data-tab="stats">สถิติชั้นเรียน</button>
+  <button data-tab="print">พิมพ์ / PDF</button>
+  <button data-tab="setting">ตั้งค่า</button>
+</nav>
+</div>
+
+<main>
+  <div id="storageWarn"></div>
+  <section class="tabpane" id="pane-make"></section>
+  <section class="tabpane" id="pane-do"></section>
+  <section class="tabpane" id="pane-result"></section>
+  <section class="tabpane" id="pane-stats"></section>
+  <section class="tabpane" id="pane-print"></section>
+  <section class="tabpane" id="pane-setting"></section>
+</main>
+
+<div id="gate" class="gate noprint"></div>
+<div id="printarea"></div>
+<div id="modal-root"></div>
+<div id="toast"></div>
+
+<script>
+/* กันหน้าขาว — ถ้าสคริปต์หลักตายกลางคัน หน้าจอจะไม่มีอะไรขึ้นเลยและไม่มีทางรู้สาเหตุ
+   สคริปต์ก้อนนี้จึงต้องอยู่ "ก่อน" สคริปต์หลัก เพื่อดักข้อผิดพลาดได้ตั้งแต่บรรทัดแรก
+
+   แยกความรุนแรงเป็นสองระดับ เพราะไม่ใช่ทุกข้อผิดพลาดที่ทำให้ใช้งานต่อไม่ได้
+     error                → โปรแกรมหยุดจริง แสดงเต็มจอพร้อมปุ่มล้างข้อมูล
+     unhandledrejection   → คำสั่งที่รอผลล้มเหลว ส่วนใหญ่หน้ายังใช้งานได้
+                            จึงขึ้นเป็นแถบด้านบนที่ปิดได้ ไม่บังเนื้อหา */
+(function () {
+  var fatalShown = false, barShown = false;
+
+  function detail(msg, err) {
+    var s = String(msg || 'เกิดข้อผิดพลาด');
+    if (err && err.stack) s += '\n\n' + String(err.stack).split('\n').slice(0, 6).join('\n');
+    return s;
+  }
+
+  function fatal(text) {
+    if (fatalShown || !document.body) return;
+    fatalShown = true;
+    var d = document.createElement('div');
+    d.setAttribute('style', 'position:fixed;inset:0;z-index:99999;overflow:auto;padding:22px;' +
+      'background:#fff;color:#111;font:15px/1.65 system-ui,-apple-system,"Segoe UI",sans-serif');
+    d.innerHTML =
+      '<h2 style="margin:0 0 10px;font-size:20px">เปิดแอปไม่สำเร็จ</h2>' +
+      '<p style="margin:0 0 14px">ตัวโปรแกรมหยุดทำงานกลางคัน ' +
+      'ส่วนใหญ่เกิดจากข้อมูลเก่าที่ค้างอยู่ในเครื่อง กดปุ่มด้านล่างเพื่อล้างข้อมูล' +
+      '<b>เฉพาะวิชานี้</b>แล้วเปิดใหม่ได้เลย วิชาอื่นไม่กระทบ</p>' +
+      '<pre id="__errbox" style="white-space:pre-wrap;word-break:break-word;background:#f5f5f5;' +
+      'border:1px solid #ddd;border-radius:8px;padding:10px;font-size:12.5px;margin:0"></pre>' +
+      '<button id="__wipe" style="margin-top:14px;padding:11px 18px;font-size:15px;border-radius:9px;' +
+      'border:1px solid #999;background:#fff;cursor:pointer">ล้างข้อมูลของวิชานี้แล้วเปิดใหม่</button>' +
+      '<p style="margin:14px 0 0;font-size:13px;color:#666">ถ้ายังไม่หาย ' +
+      'ช่วยถ่ายภาพข้อความในกรอบเทาส่งให้ผู้ดูแลด้วย</p>';
+    document.body.appendChild(d);
+    d.querySelector('#__errbox').textContent = text;
+    d.querySelector('#__wipe').onclick = function () {
+      try { if (window.__LSKEY) localStorage.removeItem(window.__LSKEY); } catch (e) {}
+      location.reload();
+    };
+  }
+
+  function bar(text) {
+    if (barShown || !document.body) return;
+    barShown = true;
+    var d = document.createElement('div');
+    d.setAttribute('style', 'position:fixed;left:0;right:0;top:0;z-index:99998;max-height:45vh;overflow:auto;' +
+      'padding:10px 14px;background:#fff3f3;border-bottom:2px solid #d33;color:#111;' +
+      'font:13px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif');
+    d.innerHTML =
+      '<b>มีคำสั่งเบื้องหลังทำงานไม่สำเร็จ</b> — หน้าจอยังใช้งานได้ตามปกติ ' +
+      '<button id="__barx" style="float:right;border:1px solid #b00;background:#fff;border-radius:7px;' +
+      'padding:3px 10px;cursor:pointer">ปิด</button>' +
+      '<pre id="__errbox" style="white-space:pre-wrap;word-break:break-word;margin:8px 0 0;font-size:12px"></pre>';
+    document.body.appendChild(d);
+    d.querySelector('#__errbox').textContent = text;
+    d.querySelector('#__barx').onclick = function () { d.remove(); };
+  }
+
+  window.addEventListener('error', function (e) {
+    fatal(detail((e.message || 'เกิดข้อผิดพลาด') + '\n' + (e.filename || '') +
+      ' บรรทัดที่ ' + (e.lineno || '?') + ' คอลัมน์ ' + (e.colno || '?'), e.error));
+  });
+  window.addEventListener('unhandledrejection', function (e) {
+    var r = e.reason;
+    bar(detail(r && r.message ? r.message : String(r), r));
+  });
+})();
+</script>
+<script>
+"use strict";
+
+/* ============================================================================
+   ค่าที่ฝังมากับตัวไฟล์
+   ----------------------------------------------------------------------------
+   ปกติการเชื่อมต่อ Google Sheet เก็บอยู่ใน localStorage ซึ่งเป็นของแต่ละเครื่อง
+   ก๊อปไฟล์ไปเครื่องอื่นจึงเหมือนเครื่องใหม่ ต้องกรอก URL เองทุกครั้ง
+   บล็อกนี้จึงมีไว้ให้ "ฝัง" ค่าตั้งต้นลงในตัวไฟล์ได้เลย
+   ครูกดปุ่ม "สร้างไฟล์สำหรับแจกนักเรียน" ในแท็บตั้งค่า แล้วแอพจะเขียนบล็อกนี้
+   ทับด้วยค่าปัจจุบัน แล้วให้ดาวน์โหลดออกมาเป็นไฟล์ใหม่
+   *** ห้ามลบบรรทัดเครื่องหมาย @@BUILTIN@@ ทั้งสองอัน ตัวสร้างไฟล์ใช้หาตำแหน่ง ***
+   ========================================================================== */
+/* @@BUILTIN@@ */
+const BUILTIN = {"url":"","studentOnly":false,"lockCloud":false,"logo":"","header":null,"about":null,"build":"2026-09-24 01:12","ver":"v8.220","books":[{"url":"https://script.google.com/macros/s/AKfycbxVa8BYYQeIhBDmg85w2UBwsIqt6a2YudehUfCbyMny9T-5TTh1UfFxsJjTk9HLNuFc/exec","name":"ชีตวิทยาศาสตร์กายภาพ"},{"url":"https://script.google.com/macros/s/AKfycbzuuRbnE_oB7a9vx7zZizyPVEKao31ERDTU82DvydMuRTDqVoQvgns9EsjTIzpbBjuM/exec","name":"ชีตฟิสิกส์"}]};
+/* @@BUILTIN-END@@ */
+
+/* ถ่ายภาพซอร์สของหน้านี้ไว้ตั้งแต่สคริปต์เพิ่งเริ่มทำงาน
+   ตอนนี้ทุก <section> ยังว่างและยังไม่มีไอคอนถูกใส่เข้าไป จึงได้ไฟล์สะอาดตรงต้นฉบับ
+   ใช้เป็นทางสำรองเวลาเปิดจากไฟล์ในเครื่อง (file://) ซึ่ง fetch ตัวเองไม่ได้ */
+const PRISTINE_HTML = '<!doctype html>\n' + document.documentElement.outerHTML;
+

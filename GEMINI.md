@@ -66,16 +66,19 @@
 
 ## 5. ไฟล์ต้นฉบับกับไฟล์ที่สร้างอัตโนมัติ (ห้ามแก้ไฟล์ที่สร้างอัตโนมัติโดยตรง)
 
-แอปคลังโจทย์ทุกวิชาแก้ที่ **ไฟล์ต้นฉบับของครู** เท่านั้น แล้วสั่ง `node tools/build-dist.mjs` เพื่อสร้างไฟล์ขึ้นเว็บ
-ไฟล์ขึ้นเว็บที่แก้ด้วยมือจะถูกเขียนทับทั้งไฟล์ในการ build ครั้งถัดไป
+แอปคลังโจทย์ 8 วิชากำลังรวมโค้ดเป็น **แกนเดียว** — ไฟล์ HTML ของครูและของนักเรียน **สร้างอัตโนมัติทั้งคู่**
+แก้ที่ `core/` (ของที่ใช้ร่วมกันทุกวิชา) หรือ `subjects/<วิชา>/` (ของเฉพาะวิชา) แล้วสั่ง `node tools/build-dist.mjs`
+ลำดับชิ้นส่วนของแต่ละวิชาอยู่ใน `subjects/manifest.json` · ไฟล์ HTML ที่แก้ด้วยมือจะถูกเขียนทับทั้งไฟล์ในการ build ครั้งถัดไป
 
-| วิชา | แก้ที่ (ต้นฉบับ) | ห้ามแก้ตรง (สร้างอัตโนมัติ) |
+| วิชา | แก้ที่ | ห้ามแก้ตรง (สร้างอัตโนมัติ) |
 |---|---|---|
-| ฟิสิกส์ ม.4 | `PhysicsAutoSheet/physics.html` | `PhysicsAutoSheet/index.html` |
-| วิทยาศาสตร์กายภาพ ม.5 | `PhysicalScienceAutoSheet/physci.html` | `PhysicalScienceAutoSheet/index.html` |
-| IJSO สอวน. ม.ต้น | `IJSOAutoSheet/ijso.html` | `IJSOApp/index.html` |
-| คณิต · วิทย์ · เคมี · ชีวะ · ปรับพื้นฐานฟิสิกส์ | `math.html` `science.html` `chem.html` `bio.html` `foundation.html` | `index.html` ในโฟลเดอร์เดียวกัน |
+| ทุกวิชา — ของที่ใช้ร่วมกัน (ตอนนี้: ส่วน 0 UTIL) | `core/` | — |
+| ฟิสิกส์ ม.4 | `subjects/physics/` | `PhysicsAutoSheet/physics.html` `PhysicsAutoSheet/index.html` |
+| วิทยาศาสตร์กายภาพ ม.5 | `subjects/physci/` | `PhysicalScienceAutoSheet/physci.html` `PhysicalScienceAutoSheet/index.html` |
+| IJSO สอวน. ม.ต้น | `subjects/ijso/` | `IJSOAutoSheet/ijso.html` `IJSOApp/index.html` |
+| คณิต · วิทย์ · เคมี · ชีวะ · ปรับพื้นฐานฟิสิกส์ | `subjects/math/` `science/` `chem/` `bio/` `foundation/` | ไฟล์ .html ในโฟลเดอร์วิชาเดิม |
 
 - **อย่าคัดลอกไฟล์แอปวิชาหนึ่งไปทับอีกวิชา** — เคยเกิดแล้วสองครั้ง: `Physics2App/index.html` กลายเป็นหน้าวิทย์กายภาพ และ `IJSOAutoSheet/index.html` เป็นสำเนาวิทย์กายภาพที่ใช้คีย์ข้อมูลของวิชาอื่น
 - `Physics2App/` เป็นแอปคนละตัวกับวิทยาศาสตร์กายภาพ งานของวิทย์กายภาพไม่ต้องแตะโฟลเดอร์นี้
-- ก่อน commit ทุกครั้ง: `node tools/build-dist.mjs` แล้ว `node tools/check.mjs` ต้องขึ้น "ผ่านทั้งหมด" (สคริปต์นี้ตรวจแล้วว่าทุกไฟล์ในแต่ละโฟลเดอร์เป็นแอปของโฟลเดอร์นั้นจริง)
+- ก่อน commit ทุกครั้ง: `node tools/build-dist.mjs` แล้ว `node tools/check.mjs` ต้องขึ้น "ผ่านทั้งหมด" (ตรวจว่าไฟล์ HTML ตรงกับชิ้นส่วนใน core/ + subjects/ และทุกไฟล์เป็นแอปของโฟลเดอร์นั้นจริง)
+- แตะเอนจินหรือแม่แบบ: `node tools/golden.mjs --diff` ต้องไม่เปลี่ยน นอกจากที่ตั้งใจ (ถ่ายภาพก่อนแก้ด้วย `--save`)
