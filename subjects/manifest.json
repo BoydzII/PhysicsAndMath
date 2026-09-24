@@ -4,6 +4,8 @@
     "parts": [
       "subjects/physics/1-top.html",
       "core/00-util.js",
+      "subjects/physics/2-subject.js",
+      "core/10-base.js",
       "subjects/physics/3-rest.html"
     ]
   },
@@ -12,6 +14,8 @@
     "parts": [
       "subjects/physci/1-top.html",
       "core/00-util.js",
+      "subjects/physci/2-subject.js",
+      "core/10-base.js",
       "subjects/physci/3-rest.html"
     ]
   },
@@ -20,6 +24,8 @@
     "parts": [
       "subjects/ijso/1-top.html",
       "core/00-util.js",
+      "subjects/ijso/2-subject.js",
+      "core/10-base.js",
       "subjects/ijso/3-rest.html"
     ]
   },
@@ -28,6 +34,8 @@
     "parts": [
       "subjects/chem/1-top.html",
       "core/00-util.js",
+      "subjects/chem/2-subject.js",
+      "core/10-base.js",
       "subjects/chem/3-rest.html"
     ]
   },
@@ -36,6 +44,8 @@
     "parts": [
       "subjects/math/1-top.html",
       "core/00-util.js",
+      "subjects/math/2-subject.js",
+      "core/10-base.js",
       "subjects/math/3-rest.html"
     ]
   },
@@ -44,6 +54,8 @@
     "parts": [
       "subjects/science/1-top.html",
       "core/00-util.js",
+      "subjects/science/2-subject.js",
+      "core/10-base.js",
       "subjects/science/3-rest.html"
     ]
   },
@@ -52,6 +64,8 @@
     "parts": [
       "subjects/bio/1-top.html",
       "core/00-util.js",
+      "subjects/bio/2-subject.js",
+      "core/10-base.js",
       "subjects/bio/3-rest.html"
     ]
   },
@@ -60,6 +74,8 @@
     "parts": [
       "subjects/foundation/1-top.html",
       "core/00-util.js",
+      "subjects/foundation/2-subject.js",
+      "core/10-base.js",
       "subjects/foundation/3-rest.html"
     ]
   }

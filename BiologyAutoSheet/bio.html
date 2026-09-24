@@ -1045,7 +1045,7 @@ table td,table th,.num,.xpstat b,.tick,
    *** ห้ามลบบรรทัดเครื่องหมาย @@BUILTIN@@ ทั้งสองอัน ตัวสร้างไฟล์ใช้หาตำแหน่ง ***
    ========================================================================== */
 /* @@BUILTIN@@ */
-const BUILTIN = {"url":"","studentOnly":false,"lockCloud":false,"logo":"","header":null,"about":null,"build":"2026-09-24 17:13","ver":"v8.222","books":[{"url":"https://script.google.com/macros/s/AKfycbxVa8BYYQeIhBDmg85w2UBwsIqt6a2YudehUfCbyMny9T-5TTh1UfFxsJjTk9HLNuFc/exec","name":"ชีตวิทยาศาสตร์กายภาพ"},{"url":"https://script.google.com/macros/s/AKfycbzuuRbnE_oB7a9vx7zZizyPVEKao31ERDTU82DvydMuRTDqVoQvgns9EsjTIzpbBjuM/exec","name":"ชีตฟิสิกส์"}]};
+const BUILTIN = {"url":"","studentOnly":false,"lockCloud":false,"logo":"","header":null,"about":null,"build":"2026-09-24 17:22","ver":"v8.224","books":[{"url":"https://script.google.com/macros/s/AKfycbxVa8BYYQeIhBDmg85w2UBwsIqt6a2YudehUfCbyMny9T-5TTh1UfFxsJjTk9HLNuFc/exec","name":"ชีตวิทยาศาสตร์กายภาพ"},{"url":"https://script.google.com/macros/s/AKfycbzuuRbnE_oB7a9vx7zZizyPVEKao31ERDTU82DvydMuRTDqVoQvgns9EsjTIzpbBjuM/exec","name":"ชีตฟิสิกส์"}]};
 /* @@BUILTIN-END@@ */
 
 /* ถ่ายภาพซอร์สของหน้านี้ไว้ตั้งแต่สคริปต์เพิ่งเริ่มทำงาน
@@ -1251,15 +1251,15 @@ document.addEventListener('keydown', e => {
 });
 
 /* ============================================================================
+   ค่าเฉพาะวิชา — subjects/bio/2-subject.js
+   ส่วนอื่นของแอปอยู่ใน core/ ใช้ร่วมกันทุกวิชา · แก้ที่นี่แล้วสั่ง node tools/build-dist.mjs
+   ========================================================================== */
+/** ชื่อวิชาที่ขึ้นบนแถบหัว หน้าเข้าใช้ ไอคอนหน้าจอโฮม และท้ายเอกสาร */
+const SUBJECT_INFO = { "title": "คลังโจทย์ชีววิทยา ม.4", "short": "ชีวะ ม.4", "dept": "กลุ่มสาระการเรียนรู้วิทยาศาสตร์และเทคโนโลยี" };
+/* ============================================================================
    1) STORE — สถานะและการบันทึกลง localStorage
    ========================================================================== */
 const LS_KEY = 'bioquiz.v1';
-window.__LSKEY = LS_KEY;   // ให้ตัวดักหน้าขาวรู้ว่าต้องล้างข้อมูลของวิชาไหน
-/* ชื่อวิชาที่แนบไปกับทุกคำสั่งที่ยิงขึ้นชีต
-   ชีตเดียวเก็บได้หลายวิชา ฝั่งชีตใช้ค่านี้แยกใบงานและผลของแต่ละวิชาออกจากกัน */
-/* สคริปต์ในชีตที่แอปรุ่นนี้ต้องการ — ใช้เตือนตอนทดสอบการเชื่อมต่อ
-   ขยับเลขนี้ทุกครั้งที่เพิ่มคำสั่งใหม่ในไฟล์ appsscript-Code.gs */
-const GS_VERSION = 16;
 const SUBJECT = 'bio';
 /* ────────────────────────────────────────────────────────────────────────────
    สารบัญเรื่อง — จุดเดียวที่ต้องแก้เมื่อจะ "เพิ่มบทใหม่"
@@ -1280,9 +1280,10 @@ const TOPICS = [
   { id: 412, grade: 4, ch: 2, icon: '🧬', name: 'เคมีที่เป็นพื้นฐานของสิ่งมีชีวิต', short: 'เคมีของชีวิต' },
   { id: 413, grade: 4, ch: 3, icon: '🦠', name: 'เซลล์และการทำงานของเซลล์', short: 'เซลล์' }
 ];
-
-
-
+/* ระดับของโจทย์ — "ทฤษฎี" คือโจทย์ปรนัยเชิงแนวคิด ไม่ต้องคำนวณ
+   วางไว้ลำดับแรกเพราะใช้ตรวจความเข้าใจก่อนลงมือคำนวณ และทำให้ข้อทฤษฎีขึ้นต้นใบงาน */
+const LEVELS = ['ทฤษฎี', 'ง่าย', 'ปานกลาง', 'ยาก'];
+const LEVEL_CLS = { 'ทฤษฎี': 'l0', 'ง่าย': 'l1', 'ปานกลาง': 'l2', 'ยาก': 'l3' };
 /* ภาคเรียน — ใช้จัดกลุ่มการ์ดเลือกเรื่อง และใช้เป็นขอบเขตของชุดลัด
    ตอนนี้มีเฉพาะภาคเรียนที่ 1 · แถบเลือกภาคเรียนจะโผล่เองเมื่อเพิ่มเทอม 2 เข้ามา */
 const GRADES = [
@@ -1290,23 +1291,15 @@ const GRADES = [
   { id: 5, key: 'g5', label: 'ม.4 เทอม 2', name: 'ชั้นมัธยมศึกษาปีที่ 4 ภาคเรียนที่ 2' },
   { id: 0, key: 'ex', label: '🎓', name: 'แนวข้อสอบเข้ามหาวิทยาลัย' }
 ];
-/** ระดับชั้นของเรื่องหนึ่ง — หมวดพิเศษ (แนวข้อสอบ) นับเป็น 0 */
-function gradeOf(t) { const o = typeof t === 'object' ? t : topicOf(t); return o ? (o.exam ? 0 : (o.grade || 0)) : 0; }
-/** เฉพาะระดับชั้นที่มีเรื่องอยู่จริง — หน้าเลือกเรื่องจะไม่ขึ้นหัวข้อว่างเปล่า */
-function gradesInUse() { return GRADES.filter(g => TOPICS.some(t => gradeOf(t) === g.id)); }
-/* ระดับของโจทย์ — "ทฤษฎี" คือโจทย์ปรนัยเชิงแนวคิด ไม่ต้องคำนวณ
-   วางไว้ลำดับแรกเพราะใช้ตรวจความเข้าใจก่อนลงมือคำนวณ และทำให้ข้อทฤษฎีขึ้นต้นใบงาน */
-const LEVELS = ['ทฤษฎี', 'ง่าย', 'ปานกลาง', 'ยาก'];
-const LEVEL_CLS = { 'ทฤษฎี': 'l0', 'ง่าย': 'l1', 'ปานกลาง': 'l2', 'ยาก': 'l3' };
-const THEORY_LEVEL = 'ทฤษฎี';
+function chLabel(t) { return !t ? '?' : t.exam ? 'แนวข้อสอบ' : 'ม.' + t.grade + ' บทที่ ' + t.ch; }
 
-/* ค่า π ที่ใช้ในโจทย์วงกลม ทรงกระบอก กรวย ทรงกลม
-   ครูเลือกได้ในแท็บตั้งค่า และชุดโจทย์แต่ละชุดจำค่าที่ใช้ตอนสร้างไว้
-   จึงพิมพ์ใบเฉลยย้อนหลังได้ตรงกับใบงานเสมอ */
-const PI_MODES = { '3.14': 3.14, '22/7': 22 / 7 };
-function piVal(mode) { return PI_MODES[mode] || 3.14; }
-/** ข้อความของ π สำหรับเขียนในเฉลย — '22/7' เขียนเป็นเศษส่วน ไม่ใช่ 3.14 */
-function piTxt(mode) { return PI_MODES[mode] ? mode : '3.14'; }
+window.__LSKEY = LS_KEY;   // ให้ตัวดักหน้าขาวรู้ว่าต้องล้างข้อมูลของวิชาไหน
+/* ชื่อวิชาที่แนบไปกับทุกคำสั่งที่ยิงขึ้นชีต
+   ชีตเดียวเก็บได้หลายวิชา ฝั่งชีตใช้ค่านี้แยกใบงานและผลของแต่ละวิชาออกจากกัน */
+/* สคริปต์ในชีตที่แอปรุ่นนี้ต้องการ — ใช้เตือนตอนทดสอบการเชื่อมต่อ
+   ขยับเลขนี้ทุกครั้งที่เพิ่มคำสั่งใหม่ในไฟล์ appsscript-Code.gs */
+const GS_VERSION = 17;
+const THEORY_LEVEL = 'ทฤษฎี';
 const ALL_TOPIC_IDS = TOPICS.map(t => t.id);
 
 /* ค้นเรื่องจาก id ให้เร็ว และรู้ลำดับบทเพื่อใช้เรียงข้อในใบงาน
@@ -1315,9 +1308,9 @@ const ALL_TOPIC_IDS = TOPICS.map(t => t.id);
 const TOPIC_BY_ID = {};
 TOPICS.forEach(t => { TOPIC_BY_ID[t.id] = t; });
 function topicOf(id) { return TOPIC_BY_ID[id] || null; }
-/** ลำดับบทสำหรับการเรียง — เรื่องพิเศษ (แนวข้อสอบ) ไปอยู่ท้ายสุดเสมอ */
+/** ลำดับบทสำหรับการเรียง — เรื่องพิเศษ (แนวข้อสอบ) ไปอยู่ท้ายสุดเสมอ
+    วิชาที่แบ่งบทตามระดับชั้น (มี grade) เรียง ม.1 → ม.3 ก่อน แล้วค่อยเรียงตามบท */
 function chOf(id) { const t = topicOf(id); return t ? (t.exam ? 9999 : (t.grade || 0) * 100 + t.ch) : 9998; }
-function chLabel(t) { return !t ? '?' : t.exam ? 'แนวข้อสอบ' : 'ม.' + t.grade + ' บทที่ ' + t.ch; }
 
 /* เลขประจำตัวนักเรียน = ชื่อผู้ใช้ตอนลงชื่อเข้าใช้
    บังคับให้เป็นตัวเลขล้วนไม่เกิน 5 หลัก เพื่อให้พิมพ์บนไอแพดง่ายและไม่สับสน */
@@ -1346,13 +1339,15 @@ function defaultDB() {
     classes: [],
     students: [],
     settings: {
-      piMode: '3.14',         // ค่า π ที่ใช้ในโจทย์วงกลม ทรงกระบอก กรวย ทรงกลม — '3.14' หรือ '22/7'
+      g: 9.8,                 // ค่า g ในโจทย์ฟิสิกส์ (วิชาที่ไม่มีโจทย์ใช้ g ไม่อ่านค่านี้)
       tolPct: 1,
+      easyG10: true,          // ระดับง่ายบังคับใช้ g = 10 ให้คิดเลขในใจได้
+      piMode: '3.14',         // ค่า π ที่ใช้ในโจทย์วงกลม ทรงกระบอก กรวย ทรงกลม — '3.14' หรือ '22/7'
       header: { school: 'โรงเรียนปากช่อง จังหวัดนครราชสีมา', teacher: '', term: '' },
       logo: '',               // โลโก้โรงเรียนเป็น data URI (ผู้ใช้อัปโหลดเอง)
       about: {
         dev: 'นายรังสรรค์ กรีกูล',
-        dept: 'กลุ่มสาระการเรียนรู้วิทยาศาสตร์และเทคโนโลยี',
+        dept: SUBJECT_INFO.dept,
         school: 'โรงเรียนปากช่อง จังหวัดนครราชสีมา'
       },
       showCredit: true,       // แสดงชื่อผู้พัฒนาท้ายเอกสารที่พิมพ์
@@ -1363,7 +1358,8 @@ function defaultDB() {
          ค่าพวกนี้เป็นแค่ค่าตั้งต้นของกล่องสร้างแบบทดสอบ กติกาจริงติดไปกับตัวชุดโจทย์ */
       examMin: 0,             // เวลาทำแบบทดสอบ (นาที) 0 = ไม่จำกัดเวลา
       examMaxOut: 0,          // ออกจากแอปได้กี่ครั้งก่อนถูกส่งอัตโนมัติ
-      examMaxOutSec: 0        // ออกจากแอปได้รวมกี่วินาทีก่อนถูกส่งอัตโนมัติ
+      examMaxOutSec: 0,       // ออกจากแอปได้รวมกี่วินาทีก่อนถูกส่งอัตโนมัติ
+      devLockHr: 2            // เครื่องที่เข้าใช้แล้ว ห้ามเข้าในชื่อคนอื่นกี่ชั่วโมง (0 = ปิด)
     },
     quizzes: [],
     attempts: [],
@@ -1374,7 +1370,7 @@ function defaultDB() {
     deviceId: '',
     // สถิติการเข้าใช้งานของเครื่องนี้
     usage: { first: 0, last: 0, sessions: 0, days: {}, quizzes: 0, items: 0 },
-    cur: { quizId: null, attemptId: null, classId: null, studentId: null, i: 0, pg: 'all' }
+    cur: { quizId: null, attemptId: null, classId: null, studentId: null, i: 0, statRoom: '', printRoom: '', pg: 'all' }
   };
 }
 let DB = defaultDB();
@@ -1407,6 +1403,7 @@ function loadDB() {
   if (!Array.isArray(DB.focus.log)) DB.focus.log = [];
   if (DB.settings.examMaxOut == null) DB.settings.examMaxOut = 0;
   if (DB.settings.examMaxOutSec == null) DB.settings.examMaxOutSec = 0;
+  if (DB.settings.devLockHr == null) DB.settings.devLockHr = 2;
   try {
     localStorage.setItem(LS_KEY + '.probe', '1');
     localStorage.removeItem(LS_KEY + '.probe');
@@ -1432,6 +1429,129 @@ function save(immediate) {
   if (el) { el.textContent = 'กำลังบันทึก…'; el.className = 'savestate'; }
   clearTimeout(saveTimer);
   saveTimer = setTimeout(doIt, 350);
+}
+
+/** แถบเตือนว่ากำลังดูแบบนักเรียนอยู่ — ต้องเห็นชัดตลอดเวลา
+    ไม่งั้นครูลืมว่าอยู่ในโหมดทดลอง แล้วงงว่าทำไมเครื่องมือของครูหายไปหมด */
+function renderPreviewBar() {
+  const el = $('#previewBar');
+  if (!el) return;
+  /* โหมดทดลองมีสองแบบ ต้องแยกให้ออกจากกันด้วยสีและข้อความ
+     แบบดูเฉย ๆ ไม่แตะชีตเลย · แบบนักเรียนตัวอย่างส่งผลขึ้นชีตจริง
+     ถ้าเขียนเหมือนกันครูจะเผลอส่งผลทดสอบปนกับผลจริงโดยไม่รู้ตัว */
+  const asSmp = previewSample();
+  el.innerHTML = !previewOn() ? '' :
+    '<div class="notice ' + (asSmp ? 'bad' : 'warn') +
+    '" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
+    '<b>' + (asSmp ? '🧪 กำลังทดสอบในชื่อนักเรียนตัวอย่าง' : '👀 กำลังดูแบบนักเรียน') + '</b>' +
+    '<span>ชั้น <b>' + esc(PREVIEW.cls || '(ไม่ระบุชั้น)') + '</b></span>' +
+    (asSmp ? '<span>ชื่อ <b>' + esc(PREVIEW.smpName || PREVIEW.smpSid) + '</b></span>' : '') +
+    '<span class="hint grow">' + (asSmp
+      ? 'ส่งงานแล้ว<b>ผลขึ้นชีตจริง</b>ในชื่อนักเรียนตัวอย่าง ใช้ตรวจได้ทั้งวงจร ' +
+        'แล้วกดลบผลทดสอบทิ้งได้เมื่อเสร็จ'
+      : 'เห็นเหมือนที่นักเรียนห้องนี้เห็นจริง · ทำข้อสอบได้ตามปกติแต่<b>จะไม่ส่งคะแนนขึ้นชีต</b>') +
+    '</span>' +
+    (asSmp ? '<button class="sm" id="btnSampleClear">🗑️ ลบผลทดสอบ</button>' : '') +
+    '<button class="sm primary" id="btnPreviewOff">ออกจากโหมดทดลอง</button></div>';
+  const bc = $('#btnSampleClear');
+  if (bc) bc.addEventListener('click', sampleClearBox);
+  const b = $('#btnPreviewOff');
+  if (b) b.addEventListener('click', function () {
+    PREVIEW = null;
+    MYA = { list: null, loading: false, err: '' };
+    renderPreviewBar();
+    renderGate();
+    render();
+    toast('กลับมาเป็นผู้ดูแลแล้ว', 'ok');
+  });
+}
+
+/** ผู้ดูแลเลือกชั้นแล้วดูหน้าจอแบบนักเรียนห้องนั้น */
+async function previewAsStudent() {
+  let cls = [];
+  try {
+    const r = await api('ping', {}, { noToken: true });
+    cls = Object.keys(r.classes || {}).map(function (n) { return { name: n, n: r.classes[n] }; });
+  } catch (e) {}
+  /* เรียงตามระดับชั้นแล้วห้อง ไม่ใช่เรียงตามตัวอักษร
+     ไม่งั้น ม.0 กับ ชุมนุม จะขึ้นมาก่อน ม.1 เสมอ */
+  const ord = function (n) {
+    const m = String(n).match(/(\d+)\s*\/\s*(\d+)/);
+    return m ? Number(m[1]) * 1000 + Number(m[2]) : 999999;
+  };
+  cls.sort(function (a, b) { return ord(a.name) - ord(b.name) || (a.name < b.name ? -1 : 1); });
+  if (!cls.length) { toast('ยังอ่านรายชื่อห้องจากชีตไม่ได้ — ตรวจการเชื่อมต่อก่อน', 'bad'); return; }
+  // ถามชีตว่านักเรียนตัวอย่างคือใคร ชีตรุ่นเก่ายังไม่รู้จักคำสั่งนี้ ให้เงียบไว้
+  let smp = null;
+  try { smp = await api('sampleInfo', {}); } catch (e) { smp = null; }
+  const hasSmp = !!(smp && smp.sid);
+  openModal({
+    title: 'ทดลองดูแบบนักเรียน',
+    bodyHTML:
+      '<div class="hint" style="margin-bottom:11px">เลือกห้องที่จะจำลอง แล้วหน้าจอจะเปลี่ยนเป็น' +
+      'แบบที่นักเรียนห้องนั้นเห็นจริง ใช้ตรวจว่า<b>ใบงานที่แจกไปขึ้นหรือยัง</b>ได้ทันที ' +
+      'โดยไม่ต้องยืมเลขประจำตัวนักเรียนมาล็อกอิน</div>' +
+      '<label class="hint" for="pvCls">ห้อง</label><br>' +
+      '<select id="pvCls" style="max-width:100%">' +
+      cls.map(function (c) {
+        return '<option value="' + esc(c.name) + '">' + esc(c.name) + ' (' + c.n + ' คน)</option>';
+      }).join('') + '</select>' +
+      /* สองโหมดนี้ต่างกันมากพอที่จะต้องเลือกเอง ไม่ควรเดาให้
+         ดูเฉย ๆ = ปลอดภัย ไม่แตะชีต · ทดสอบจริง = ผลขึ้นชีต ต้องลบทีหลัง */
+      '<div style="margin-top:15px;display:flex;flex-direction:column;gap:9px">' +
+      '<label style="display:flex;gap:9px;align-items:flex-start">' +
+      '<input type="radio" name="pvMode" value="look" checked style="margin-top:5px">' +
+      '<span><b>ดูเฉย ๆ</b><br><span class="hint">ทำข้อสอบได้ แต่คะแนน' +
+      '<b>ไม่ถูกส่งขึ้นชีต</b> ไม่ปนกับผลจริงของนักเรียน</span></span></label>' +
+      '<label style="display:flex;gap:9px;align-items:flex-start' +
+      (hasSmp ? '' : ';opacity:.5') + '">' +
+      '<input type="radio" name="pvMode" value="sample"' + (hasSmp ? '' : ' disabled') +
+      ' style="margin-top:5px">' +
+      '<span><b>ทดสอบจริงในชื่อนักเรียนตัวอย่าง</b><br><span class="hint">' +
+      (hasSmp
+        ? 'ส่งงานแล้ว<b>ผลขึ้นชีตจริง</b>ในชื่อ <b>' + esc(smp.name || smp.sid) + '</b> (' +
+          esc(smp.cls) + ') ตรวจได้ทั้งวงจรตั้งแต่ทำ ส่ง จนถึงดึงผล ' +
+          'แล้วกดลบผลทดสอบทิ้งได้' +
+          (smp.works ? '<br><b>ตอนนี้มีผลทดสอบค้างอยู่ ' + smp.works + ' ฉบับ</b>' : '')
+        : esc((smp && smp.hint) || 'ชีตยังไม่รองรับ — ต้องอัปเดตสคริปต์ชีตก่อน')) +
+      '</span></span></label></div>',
+    buttons: [
+      { label: 'ยกเลิก' },
+      { label: 'เริ่มโหมดทดลอง', cls: 'primary', act: function (close, root) {
+          const mode = (root.querySelector('input[name=pvMode]:checked') || {}).value || 'look';
+          PREVIEW = { cls: $('#pvCls', root).value || '', sample: mode === 'sample' };
+          if (PREVIEW.sample && hasSmp) { PREVIEW.smpSid = smp.sid; PREVIEW.smpName = smp.name; }
+          MYA = { list: null, loading: false, err: '' };
+          close();
+          renderPreviewBar();
+          renderGate();
+          setTab('make');
+          render();
+          loadMyAssignments(true);
+        } }
+    ]
+  });
+}
+
+/** ลบผลทดสอบของนักเรียนตัวอย่างทั้งหมด — ถามยืนยันก่อนเพราะย้อนกลับไม่ได้ */
+async function sampleClearBox() {
+  let info = null;
+  try { info = await api('sampleInfo', {}); } catch (e) {
+    toast('อ่านข้อมูลนักเรียนตัวอย่างไม่ได้ — ' + ((e && e.message) || ''), 'bad'); return;
+  }
+  if (!info || !info.sid) { toast(info && info.hint ? info.hint : 'ยังไม่มีนักเรียนตัวอย่าง', 'bad'); return; }
+  if (!info.works) { toast('ยังไม่มีผลทดสอบให้ลบ', 'ok'); return; }
+  const ok = await confirmBox('ลบผลทดสอบ',
+    'ลบผลทั้งหมด <b>' + info.works + ' ฉบับ</b> ของ <b>' + esc(info.name || info.sid) + '</b> (' +
+    esc(info.cls) + ')<br><span class="hint">ลบเฉพาะแถวของนักเรียนตัวอย่างเท่านั้น ' +
+    'ผลของนักเรียนจริงไม่ถูกแตะ · ย้อนกลับไม่ได้</span>', 'ลบผลทดสอบ');
+  if (!ok) return;
+  try {
+    const r = await api('sampleClear', {});
+    toast('ลบผลทดสอบแล้ว ' + r.removed + ' ฉบับ', 'ok');
+    renderPreviewBar();
+    render();
+  } catch (e) { toast('ลบไม่สำเร็จ — ' + ((e && e.message) || ''), 'bad'); }
 }
 
 function renderStorageWarn() {
@@ -1577,7 +1697,7 @@ function buildAppIcon(size) {
       g.fillStyle = '#fff';
       g.textAlign = 'center'; g.textBaseline = 'middle';
       g.font = '600 ' + Math.round(bh * 0.52) + 'px "Noto Sans Thai","Sarabun",system-ui,sans-serif';
-      g.fillText('คณิต ม.ต้น', S / 2, S - bh / 2 + 1);
+      g.fillText(SUBJECT_INFO.short, S / 2, S - bh / 2 + 1);
       res(cv.toDataURL('image/png'));
     };
     if (DB.settings.logo) {
@@ -1619,7 +1739,7 @@ function renderBrand() {
   if (!el) return;
   el.innerHTML = (DB.settings.logo
     ? '<img src="' + DB.settings.logo + '" alt="ตราโรงเรียน" class="brandlogo">'
-    : '<span class="dot"></span>') + 'คลังโจทย์ชีววิทยา ม.4';
+    : '<span class="dot"></span>') + SUBJECT_INFO.title;
 }
 
 /* --- สถิติการเข้าใช้งาน --------------------------------------------------- */
@@ -1701,6 +1821,76 @@ function makeCode(n) {
   for (let i = 0; i < a.length; i++) s += CODE_ALPHABET[a[i] % CODE_ALPHABET.length];
   return s;
 }
+/* ── ล็อกเครื่องหลังเข้าใช้ กันการทำข้อสอบให้กัน ────────────────────────
+   เก็บแยกคีย์จากข้อมูลแอป เพื่อไม่ให้การกู้คืนไฟล์สำรองหรือล้างข้อมูลแอป
+   กลายเป็นปุ่มปลดล็อกที่หาเจอง่าย
+   กันได้แค่การหยิบเครื่องมาทำต่อแบบตรงไปตรงมา — ล้างข้อมูลเว็บไซต์ในเครื่อง
+   แล้วล็อกหลุด ต้องบอกครูตามนี้ ห้ามให้ครูเข้าใจว่าเป็นด่านที่กันได้จริง  */
+const DEVLOCK_KEY = LS_KEY + '.devlock';
+function devLockRead() {
+  try { return JSON.parse(localStorage.getItem(DEVLOCK_KEY) || 'null'); } catch (e) { return null; }
+}
+function devLockWrite(v) {
+  try {
+    if (v) localStorage.setItem(DEVLOCK_KEY, JSON.stringify(v));
+    else localStorage.removeItem(DEVLOCK_KEY);
+  } catch (e) {}
+}
+function devLockMs() { return Math.max(0, Math.round(Number(DB.settings.devLockHr) || 0)) * 3600000; }
+/** เหลืออีกกี่วินาทีที่เครื่องนี้ยังผูกกับคนเดิม — 0 = เข้าได้ · ส่ง sid ว่างมา = ถามเฉย ๆ */
+function devLockLeft(sid) {
+  const ms = devLockMs(); if (!ms) return 0;
+  const L = devLockRead(); if (!L || !L.sid) return 0;
+  if (sid && String(L.sid) === String(sid)) return 0;    // คนเดิมเข้าได้เสมอ
+  return Math.max(0, Math.round((L.at + ms - Date.now()) / 1000));
+}
+/** เวลาที่เหลือแบบคนอ่านรู้เรื่อง — mmss() ให้ "120:00" ซึ่งอ่านผิดเป็น 120 นาทีได้ง่าย */
+function devLockText(sec) {
+  const m = Math.ceil(Math.max(0, sec) / 60);
+  if (m < 60) return m + ' นาที';
+  const h = Math.floor(m / 60), r = m % 60;
+  return h + ' ชั่วโมง' + (r ? ' ' + r + ' นาที' : '');
+}
+/** ผูกเครื่องกับคนที่เพิ่งเข้าใช้ — เรียกทุกครั้งที่เข้าสำเร็จ ให้เวลานับใหม่ */
+function devLockSet(sid, name) {
+  if (!devLockMs()) return;
+  devLockWrite({ sid: String(sid || ''), name: String(name || ''), at: Date.now() });
+}
+
+/** กล่องให้ครูปลดล็อกเครื่อง — ตรวจรหัสผู้ดูแลกับชีตจริง
+    ต้องมีทางนี้เสมอ ไอแพดที่ใช้ร่วมกันหลายคาบจะติดล็อกแน่นอน */
+function devLockUnlockBox() {
+  openModal({
+    title: 'ครูปลดล็อกเครื่องนี้',
+    bodyHTML:
+      '<div class="hint" style="margin-bottom:11px">เครื่องนี้เพิ่งใช้เข้าสอบในชื่อ <b>' +
+      esc((devLockRead() || {}).name || '—') + '</b> จึงยังเข้าใช้ในชื่อคนอื่นไม่ได้<br>' +
+      'ถ้าเป็นเครื่องที่ใช้ร่วมกัน ให้ครูใส่รหัสผู้ดูแลเพื่อปลดล็อก</div>' +
+      '<label class="hint" for="dlPass">รหัสผู้ดูแล</label>' +
+      '<input type="password" id="dlPass" style="width:100%;font-size:16px" autocomplete="current-password">' +
+      '<div id="dlMsg" style="margin-top:10px"></div>',
+    buttons: [
+      { label: 'ยกเลิก' },
+      { label: 'ปลดล็อก', cls: 'primary', act: async (close, root) => {
+          const msg = $('#dlMsg', root);
+          msg.innerHTML = '<div class="hint">กำลังตรวจรหัส…</div>';
+          try {
+            // ตรวจกับชีตจริง ไม่ใช่รหัสที่ฝังไว้ในหน้าเว็บซึ่งใครก็เปิดดูได้
+            await api('adminLogin', { user: '', pass: $('#dlPass', root).value || '' }, { noToken: true });
+            devLockWrite(null);
+            // renderGate() ไม่วาดซ้ำถ้าโหมดเดิม กล่องเตือนเก่าจะค้างอยู่ ต้องล้างธงก่อน
+            GATE.shown = '';
+            close(); renderGate();
+            toast('ปลดล็อกเครื่องนี้แล้ว', 'ok');
+          } catch (e) {
+            msg.innerHTML = '<div class="notice bad">' + esc(e.message) + '</div>';
+          }
+        } }
+    ],
+    onMount: root => { const p = $('#dlPass', root); if (p) p.focus(); }
+  });
+}
+
 function deviceId() {
   if (!DB.deviceId) { DB.deviceId = uid(); save(); }
   return DB.deviceId;
@@ -1708,9 +1898,49 @@ function deviceId() {
 function cloudOn() { return !!(DB.cloud && DB.cloud.url); }
 function authValid() { return !!(DB.auth && DB.auth.token && DB.auth.exp > Date.now()); }
 function isAdmin()   { return authValid() && DB.auth.role === 'admin'; }
-function isSubAdmin() { return isAdmin() && !!(DB.auth && DB.auth.profile && DB.auth.profile.sub); }
+/* วิชาที่ชีตใบนี้เก็บอยู่ ใช้แสดงเป็นตัวเลือกตอนตั้งสิทธิ์ครูผู้สอนเท่านั้น
+   ตัวบังคับจริงคือ SUBJECTS ในไฟล์ appsscript-Code.gs
+   เพิ่มวิชาใหม่ต้องเติมทั้งสองที่ ถ้าเติมแต่ฝั่งชีต วิชานั้นจะไม่ขึ้นให้ติ๊ก */
+const SHEET_SUBJECTS = [
+  { id: 'physics', name: 'ฟิสิกส์' },
+  { id: 'physci', name: 'วิทยาศาสตร์กายภาพ' },
+  { id: 'ijso', name: 'IJSO สอวน. ม.ต้น' },
+  { id: 'math', name: 'คณิตศาสตร์' }
+];
+function subjectName(id) {
+  const s = SHEET_SUBJECTS.find(x => x.id === id);
+  return s ? s.name : id;
+}
+/** ชื่อวิชาที่ครูคนนี้สอน — ว่าง = ทุกวิชา */
+function mySubjects() {
+  const p = DB.auth && DB.auth.profile;
+  return (p && p.subjects && p.subjects.length) ? p.subjects : null;
+}
+/* ── ครูผู้สอน (แอดมินรอง) ───────────────────────────────────────────────
+   ขอบเขตชั้นเรียนที่เห็นตรงนี้ใช้สำหรับ "ปรับหน้าจอ" เท่านั้น
+   ตัวบังคับจริงอยู่ฝั่งชีต ซึ่งอ่านขอบเขตจากโทเคนที่เซ็นไว้ แก้จากเบราว์เซอร์ไม่ได้ */
+function isSubAdmin() { return isAdmin() && !!(DB.auth.profile && DB.auth.profile.sub); }
 function isMainAdmin() { return isAdmin() && !isSubAdmin(); }
-function isStudent() { return authValid() && DB.auth.role === 'student'; }
+/** ชั้นที่ครูคนนี้ดูแล — null = ผู้ดูแลหลัก ดูแลทุกชั้น */
+function myClasses() {
+  const p = DB.auth && DB.auth.profile;
+  return (p && p.classes && p.classes.length) ? p.classes : null;
+}
+/* ── โหมดทดลองเป็นนักเรียน (สำหรับผู้ดูแล) ──────────────────────────────
+   ครูต้องรู้ให้ได้ว่า "แจกไปแล้วนักเรียนเห็นไหม" ก่อนถึงคาบสอน
+   ของเดิมต้องยืมเลขประจำตัวนักเรียนมาล็อกอินจริง ซึ่งลำบาก และยังไปติดล็อกเครื่อง
+   สองชั่วโมงของระบบกันทำข้อสอบให้กันอีก กว่าจะกลับมาเป็นครูได้
+   โหมดนี้พลิกหน้าจอให้เป็นแบบนักเรียนโดยไม่แตะการลงชื่อเข้าใช้เลย
+   รายการใบงานดึงด้วยสิทธิ์ครู (assignList) แล้วกรองด้วยกติกาเดียวกับฝั่งชีต
+   เก็บไว้ในหน่วยความจำอย่างเดียว ปิดหน้าแล้วหาย และห้ามส่งคำตอบขึ้นชีตเด็ดขาด */
+let PREVIEW = null;
+function previewOn() { return !!PREVIEW; }
+/* กำลังทดสอบในชื่อนักเรียนตัวอย่างอยู่หรือไม่ — ต่างจากการดูเฉย ๆ ที่ไม่แตะชีต
+   ต้องมีเลขประจำตัวของนักเรียนตัวอย่างจริงถึงจะนับ ไม่ใช่แค่ติ๊กช่องไว้ */
+function previewSample() { return !!(PREVIEW && PREVIEW.sample && PREVIEW.smpSid); }
+function isStudent() {
+  return previewOn() || (authValid() && DB.auth.role === 'student');
+}
 /** ออฟไลน์ล้วน = ยังไม่ได้เชื่อมชีต ให้ใช้งานได้ทุกอย่างเหมือนเดิม */
 function offlineMode() { return !cloudOn(); }
 /** ไฟล์ที่แจกนักเรียนถูกฝังธงนี้ไว้ ทำให้ไม่มีทางเข้าถึงส่วนของผู้ดูแลได้เลย
@@ -1719,7 +1949,10 @@ function studentOnlyBuild() { return !!BUILTIN.studentOnly; }
 /** ไฟล์ที่วางบนเว็บ — ห้ามตัดการเชื่อมต่อชีต แต่ยัง "ลงชื่อเข้าใช้เป็นผู้ดูแล" ได้
     แยกจาก studentOnly เพราะเดิมสองเรื่องนี้ถูกมัดรวมกัน ทำให้ครูเข้าหน้าผู้ดูแลจากเว็บไม่ได้เลย */
 function lockCloudBuild() { return !!BUILTIN.lockCloud; }
-function canManage() { return !studentOnlyBuild() && (offlineMode() || isAdmin()); }
+function canManage() {
+  // อยู่ในโหมดทดลอง ต้องไม่เห็นเครื่องมือของครูเลย ไม่งั้นดูไม่ออกว่านักเรียนเห็นอะไรจริง
+  return !previewOn() && !studentOnlyBuild() && (offlineMode() || isAdmin());
+}
 
 class ApiError extends Error {
   constructor(msg, isAuth) { super(msg); this.isAuth = !!isAuth; }
@@ -1771,30 +2004,43 @@ async function api(action, params, opt) {
 
 /** รับช่วงการลงชื่อเข้าใช้จากหน้าพอร์ทัล (index.html หน้าแรกของเว็บ)
     พอร์ทัลกับแอพวางอยู่โดเมนเดียวกัน จึงอ่าน localStorage ก้อนเดียวกันได้
-    นักเรียนลงชื่อที่พอร์ทัลครั้งเดียว เข้ามาที่นี่แล้วไม่ต้องลงชื่อซ้ำ
-    และได้ทั้งชื่อ ชั้น เลขที่ มาเติมให้เอง ไม่ต้องพิมพ์ตอนพิมพ์เอกสาร
+    นักเรียนลงชื่อที่พอร์ทัลครั้งเดียว เข้ามาที่นี่แล้วไม่ต้องลงชื่อซ้ำอีก
 
-    จุดสำคัญ: ถ้า "ไม่มี" การลงชื่อเข้าใช้ที่ยังไม่หมดอายุ จะตัดการเชื่อมต่อชีตทิ้ง
-    เพื่อให้แอพกลับไปเป็นออฟไลน์ล้วน หน้าเข้าใช้จะได้ไม่โผล่มาขวางนักเรียน
-    ที่แค่กดปุ่ม "เข้าชีววิทยาเลย" จากหน้าแรกโดยไม่ลงชื่อ */
+    แอปที่ผูกชีตของวิชาไว้ (BUILTIN.url) กับแอปที่ไม่ได้ผูก ทำงานต่างกันสองจุด
+    · ไม่ได้มาจากพอร์ทัล: แอปที่ผูกชีตไม่ทำอะไร หน้าเข้าใช้เดิมทำงานตามปกติ
+      แอปที่ไม่ได้ผูกชีต ตัดการเชื่อมต่อทิ้งให้กลับเป็นออฟไลน์ล้วน หน้าเข้าใช้จะได้ไม่โผล่มาขวาง
+      นักเรียนที่แค่กด "เข้าเลย" จากหน้าแรกโดยไม่ลงชื่อ (ยกเว้นคนที่ลงชื่อในแอปนี้เองไว้และยังไม่หมดอายุ)
+    · ที่อยู่ชีต: แอปที่ผูกชีตรับเฉพาะโทเคนของชีตตัวเอง และไม่เขียนทับที่อยู่ที่ตั้งไว้แล้ว
+      แอปที่ไม่ได้ผูกชีต ใช้ชีตเดียวกับพอร์ทัลเสมอ */
 function adoptPortalSession() {
   let s = null;
   try { s = JSON.parse(localStorage.getItem('pcportal.v1') || 'null'); } catch (e) { s = null; }
   const live = s && s.v === 1 && s.token && s.exp && s.exp > Date.now();
-
   if (!live) {
-    // ไม่ได้มาจากพอร์ทัล หรือหมดอายุแล้ว — คืนแอพกลับเป็นออฟไลน์
-    // (ยกเว้นคนที่ลงชื่อเข้าใช้ในแอพนี้เองไว้ และยังไม่หมดอายุ)
-    if (DB.cloud.url && !authValid()) { DB.cloud.url = ''; clearAuth(); save(true); }
+    if (!BUILTIN.url && DB.cloud.url && !authValid()) { DB.cloud.url = ''; clearAuth(); save(true); }
     return;
   }
+  /* แต่ละวิชามีชีตของตัวเอง ส่วนพอร์ทัลลงชื่อเข้าใช้กับชีตใบเดียว
+     โทเคนที่ออกจากชีตอีกใบใช้กับชีตนี้ไม่ได้ เพราะคนละกุญแจกัน
+     รับมาก็จะเด้งออกตอนเรียกคำสั่งแรก แล้วขึ้นข้อความที่ไม่บอกสาเหตุ
+     ถ้าไม่ใช่ชีตเดียวกัน ให้ข้ามไปเฉย ๆ หน้าเข้าใช้ของแอปจะทำงานตามปกติ */
+  /* พอร์ทัลรุ่นใหม่ลงชื่อกับชีตทุกใบ แล้วเก็บโทเคนแยกตามชีตไว้ใน s.tokens
+     แอปนี้ต้องหยิบใบที่ตรงกับชีตของตัวเองเท่านั้น ใบอื่นใช้ที่นี่ไม่ได้
+     ถ้าเป็นพอร์ทัลรุ่นเก่าที่มีโทเคนใบเดียว ก็ยังใช้ของเดิมได้เหมือนเคย */
+  let pTok = s.token, pUrl = s.url;
+  if (BUILTIN.url && s.tokens && s.tokens[BUILTIN.url]) {
+    pTok = s.tokens[BUILTIN.url];
+    pUrl = BUILTIN.url;
+  }
+  if (BUILTIN.url && pUrl && pUrl !== BUILTIN.url) return;
   // ไฟล์ที่แจกนักเรียนไม่รับสิทธิ์ผู้ดูแลจากพอร์ทัล กันการเข้าถึงส่วนของครูโดยไม่ตั้งใจ
   if (studentOnlyBuild() && s.role === 'admin') return;
-
   let touched = false;
-  if (s.url && DB.cloud.url !== s.url) { DB.cloud.url = s.url; touched = true; }
+  if (BUILTIN.url) { if (pUrl && !DB.cloud.url) { DB.cloud.url = pUrl; touched = true; } }
+  else if (pUrl && DB.cloud.url !== pUrl) { DB.cloud.url = pUrl; touched = true; }
+  // ในเครื่องยังลงชื่อค้างอยู่และยังไม่หมดอายุ ให้ของเดิมมาก่อน
   if (!authValid()) {
-    DB.auth = { role: s.role, token: s.token, profile: s.profile || null, exp: s.exp };
+    DB.auth = { role: s.role, token: pTok, profile: s.profile || null, exp: s.exp };
     touched = true;
     const p = s.profile || {};
     if (s.role === 'student' && p.sid) {
@@ -1916,25 +2162,40 @@ function renderGate() {
   const ab = DB.settings.about || {};
   el.innerHTML = '<div class="box">' +
     (DB.settings.logo ? '<img class="glogo" src="' + DB.settings.logo + '" alt="ตราโรงเรียน">' : '') +
-    '<h2>' + (stu ? 'ลงชื่อเข้าใช้' : 'เข้าใช้สำหรับผู้ดูแล') + '</h2>' +
-    '<div class="lead">คลังโจทย์ชีววิทยา ม.4<br>' +
+    (!studentOnlyBuild() ?
+      '<div class="gate-tabs">' +
+      '<button type="button" class="gate-tab' + (stu ? ' active' : '') + '" id="tabGateStu">👨‍🎓 สำหรับนักเรียน</button>' +
+      '<button type="button" class="gate-tab' + (!stu ? ' active' : '') + '" id="tabGateAdm">👩‍🏫 สำหรับครู / ผู้ดูแล</button>' +
+      '</div>' : '') +
+    '<h2>' + (stu ? 'ลงชื่อเข้าใช้ (นักเรียน)' : 'เข้าใช้สำหรับครูและผู้ดูแล') + '</h2>' +
+    '<div class="lead">' + SUBJECT_INFO.title + '<br>' +
       (stu ? 'ใช้<b>เลขประจำตัวนักเรียน</b>เป็นชื่อผู้ใช้ ' +
-             'ถ้ายังไม่เคยเปลี่ยนรหัส ให้ใช้รหัสตั้งต้นที่ครูแจ้ง'
-           : 'ผู้ดูแลมีได้คนเดียว ใช้จัดการรายชื่อ มอบหมายใบงาน และดูผลทั้งหมด') + '</div>' +
+             'ถ้ายังไม่เคยเปลี่ยนรหัส ให้ใช้รหัสตั้งต้นที่ครูแจ้ง (1111)'
+           : '<b>ครูผู้สอน (แอดมินรอง):</b> กรอกชื่อผู้ใช้และรหัสผ่านที่คุณได้รับ<br>' +
+             '<b>ผู้ดูแลหลัก:</b> เว้นว่างช่องชื่อผู้ใช้ แล้วใส่รหัสผ่านผู้ดูแล') + '</div>' +
     (stu
       ? '<label class="f" for="gSid">เลขประจำตัวนักเรียน <span class="hint">(ตัวเลขไม่เกิน ' +
           SID_MAX + ' หลัก)</span></label>' +
         '<input type="text" id="gSid" inputmode="numeric" pattern="[0-9]*" maxlength="' + SID_MAX +
           '" autocomplete="username" placeholder="เช่น 30201">' +
+        '<div id="gSidHint" style="display:none;margin-top:6px;font-size:12.5px;color:var(--bad);line-height:1.5"></div>' +
         '<label class="f" for="gPass">รหัสผ่าน</label>' +
         '<input type="password" id="gPass" autocomplete="current-password">'
-      : '<label class="f" for="gPass">รหัสผ่านผู้ดูแล</label>' +
+      : '<label class="f" for="gUser">ชื่อผู้ใช้ <span class="hint">(ครูผู้สอนกรอกที่นี่ · ผู้ดูแลหลักเว้นว่างได้)</span></label>' +
+        '<input type="text" id="gUser" autocomplete="username" placeholder="เช่น kruaom (ผู้ดูแลหลักไม่ต้องกรอก)">' +
+        '<label class="f" for="gPass">รหัสผ่าน</label>' +
         '<input type="password" id="gPass" autocomplete="current-password">' +
-        '<div class="hint" style="margin-top:7px">เข้าไม่ได้? เปิดชีต → ส่วนขยาย → Apps Script → ' +
-        'เลือกฟังก์ชัน <code>resetAdminPassword</code> → กดเรียกใช้ ' +
-        'แล้วรหัสจะกลับเป็นค่าที่ตั้งไว้ในสคริปต์</div>') +
-    '<div class="actions"><button class="primary grow" id="gGo">เข้าใช้งาน</button></div>' +
+        '<div class="hint" style="margin-top:7px">เข้าไม่ได้? ' +
+        'หากเป็นครูผู้สอนให้แจ้งผู้ดูแลหลักเพื่อรีเซ็ตรหัส · ผู้ดูแลหลักให้เปิดชีต → ส่วนขยาย → Apps Script → ' +
+        'เลือกฟังก์ชัน <code>resetAdminPassword</code> → กดเรียกใช้</div>') +
+    '<div class="actions"><button class="primary grow" id="gGo">' +
+      (stu ? 'เข้าสู่ระบบนักเรียน' : 'เข้าสู่ระบบครู / ผู้ดูแล') + '</button></div>' +
     '<div class="msg" id="gateMsg"></div>' +
+    /* บอกตั้งแต่ก่อนกรอกว่าเครื่องนี้ยังผูกกับใครอยู่ ดีกว่าให้กรอกจนเสร็จแล้วค่อยถูกปฏิเสธ */
+    (stu && devLockLeft('') ? '<div class="notice warn" style="margin-top:9px">' +
+      'เครื่องนี้เพิ่งใช้เข้าสอบในชื่อ <b>' + esc((devLockRead() || {}).name || '—') + '</b><br>' +
+      'จะเข้าใช้ในชื่อคนอื่นได้อีกครั้งในอีก <b>' + devLockText(devLockLeft('')) + '</b> ' +
+      '<a href="#" id="gUnlock">ครูปลดล็อกให้</a></div>' : '') +
     // ลิงก์ท้ายหน้าเข้าใช้ คุมแยกกันสองอัน
     //   gSwap    สลับไปหน้าผู้ดูแล — ซ่อนเฉพาะไฟล์ studentOnly (ต้องใส่รหัสอยู่ดี จึงไม่อันตราย)
     //   gOffline ตัดการเชื่อมต่อชีต — ซ่อนทั้งไฟล์ studentOnly และไฟล์ที่วางบนเว็บ
@@ -1943,7 +2204,7 @@ function renderGate() {
       const links = [];
       if (!studentOnlyBuild()) {
         links.push('<a href="#" id="gSwap">' +
-          (stu ? 'เข้าใช้ในฐานะผู้ดูแล' : 'กลับไปหน้าเข้าใช้ของนักเรียน') + '</a>');
+          (stu ? 'สลับไปหน้าเข้าใช้ของครู / ผู้ดูแล' : 'กลับไปหน้าเข้าใช้ของนักเรียน') + '</a>');
         if (!lockCloudBuild()) {
           links.push('<a href="#" id="gOffline">ใช้งานแบบออฟไลน์ (ตัดการเชื่อมต่อชีต)</a>');
         }
@@ -1954,6 +2215,43 @@ function renderGate() {
       esc(ab.dept || ''), esc(ab.school || '')].filter(Boolean).join('<br>') + '</div>' +
     '</div>';
 
+  const un = $('#gUnlock');
+  if (un) un.addEventListener('click', e => { e.preventDefault(); devLockUnlockBox(); });
+
+  const tStu = $('#tabGateStu');
+  if (tStu) tStu.addEventListener('click', () => { if (GATE.mode !== 'student') { GATE.mode = 'student'; renderGate(); } });
+  const tAdm = $('#tabGateAdm');
+  if (tAdm) tAdm.addEventListener('click', () => { if (GATE.mode !== 'admin') { GATE.mode = 'admin'; renderGate(); } });
+
+  const sidEl = $('#gSid');
+  if (sidEl) {
+    const chkSid = () => {
+      const v = sidEl.value || '';
+      const hEl = $('#gSidHint');
+      if (!hEl) return;
+      if (/[a-zA-Z]/.test(v)) {
+        hEl.style.display = 'block';
+        hEl.innerHTML = 'ตรวจพบตัวอักษร — หากคุณเป็นครูผู้สอน <a href="#" id="gSidSwitch" style="font-weight:700;text-decoration:underline">กดที่นี่เพื่อสลับไปหน้าครู</a>';
+        const swBtn = $('#gSidSwitch');
+        if (swBtn) swBtn.onclick = (e) => {
+          e.preventDefault();
+          GATE.mode = 'admin';
+          GATE.initUser = v.trim();
+          renderGate();
+        };
+      } else {
+        hEl.style.display = 'none'; hEl.innerHTML = '';
+      }
+    };
+    sidEl.addEventListener('input', chkSid);
+  }
+
+  if (!stu && GATE.initUser) {
+    const uEl = $('#gUser');
+    if (uEl) { uEl.value = GATE.initUser; }
+    GATE.initUser = '';
+  }
+
   const go = async () => {
     if (GATE.busy) return;
     GATE.busy = true;
@@ -1961,30 +2259,67 @@ function renderGate() {
     gateMsg('');
     try {
       if (stu) {
-        const sid = normSid($('#gSid').value);
+        const rawSid = ($('#gSid').value || '').trim();
+        if (/[a-zA-Z]/.test(rawSid)) {
+          throw new ApiError('เลขประจำตัวนักเรียนต้องเป็นตัวเลขเท่านั้น — หากคุณเป็นครูผู้สอน กรุณาเลือกแท็บ "ครูผู้สอน / ผู้ดูแล" ด้านบน');
+        }
+        const sid = normSid(rawSid);
         const pass = $('#gPass').value || '';
         if (!sid) throw new ApiError('กรอกเลขประจำตัวเป็นตัวเลข ไม่เกิน ' + SID_MAX + ' หลัก');
-        const r = await api('login', { sid: sid, pass: pass }, { noToken: true });
+        /* กันการทำข้อสอบให้กัน — เครื่องที่เพิ่งใช้สอบ ยังเข้าในชื่อคนอื่นไม่ได้
+           ตรวจก่อนยิงไปที่ชีต จะได้ไม่เปลืองรอบและไม่ไปนับรหัสผิดให้เขา */
+        const lockLeft = devLockLeft(sid);
+        if (lockLeft) {
+          throw new ApiError('เครื่องนี้เพิ่งใช้เข้าสอบในชื่อ ' +
+            ((devLockRead() || {}).name || '—') + ' จึงยังเข้าใช้ในชื่ออื่นไม่ได้ ' +
+            'เหลืออีก ' + devLockText(lockLeft) + ' — ถ้าเป็นเครื่องที่ใช้ร่วมกัน ให้ครูปลดล็อกให้');
+        }
+        const r = await hubAuth('login', { sid: sid, pass: pass });
         setAuth('student', r.token, r.profile);
         // ผูกโปรไฟล์ในเครื่องให้ตรงกับบัญชี เพื่อให้เอกสารและผลลัพธ์แสดงชื่อถูก
         DB.mode = 'solo';
         DB.profile = { name: r.profile.name || '', room: normCls(r.profile.cls || ''),
                        no: String(r.profile.no || ''), sid: String(r.profile.sid || '') };
         save(true);
+        devLockSet(r.profile.sid || sid, r.profile.name || '');
         renderGate(); render();
         if (r.mustChange) forceChangePass();
         else toast('ยินดีต้อนรับ ' + (r.profile.name || ''), 'ok');
       } else {
-        const r = await api('adminLogin', { pass: $('#gPass').value || '' }, { noToken: true });
-        setAuth('admin', r.token, { name: 'ผู้ดูแล' });
+        const uEl = $('#gUser');
+        const userVal = ((uEl ? uEl.value : '') || '').trim();
+        let r;
+        try {
+          r = await hubAuth('adminLogin', { user: userVal, pass: $('#gPass').value || '' });
+        } catch (err) {
+          if (userVal && (err.message || '').indexOf('รหัสผู้ดูแลไม่ถูกต้อง') >= 0) {
+            throw new Error('เข้าใช้งานไม่สำเร็จ: รหัสผ่านไม่ถูกต้อง หรือ Google Apps Script บน Google Drive ยังเป็นเวอร์ชันเก่า (ยังไม่รองรับครูผู้สอน) — ให้ผู้ดูแลหลักนำ appsscript-Code.gs รุ่นล่าสุดไป Deploy เป็นเวอร์ชันใหม่ใน Apps Script');
+          }
+          throw err;
+        }
+        const isSub = r.role === 'sub';
+        /* ครูที่ถูกจำกัดวิชาไว้ ต้องรู้ตั้งแต่ตอนนี้ว่าเข้าผิดวิชา
+           ไม่งั้นจะเข้าได้แต่กดอะไรก็ถูกปฏิเสธทีละคำสั่งจนงง */
+        const mySub = isSub ? (r.subjects || []) : [];
+        if (mySub.length && mySub.indexOf(SUBJECT) < 0) {
+          throw new Error('บัญชีนี้สอน' + mySub.map(subjectName).join(' และ ') +
+            ' จึงเข้าใช้วิชานี้ไม่ได้ — เปิดแอปของวิชาที่สอนแทน');
+        }
+        setAuth('admin', r.token, {
+          name: isSub ? (r.name || 'ครูผู้สอน') : 'ผู้ดูแล',
+          sub: isSub ? (r.user || '') : '', classes: isSub ? (r.classes || []) : null,
+          subjects: mySub
+        });
         renderGate(); render();
-        toast('เข้าใช้ในฐานะผู้ดูแลแล้ว', 'ok');
+        if (isSub && r.mustChange) forceChangePass();
+        else toast(isSub ? ('เข้าใช้ในฐานะครูผู้สอน · ดูแล ' + (r.classes || []).join(', '))
+                         : 'เข้าใช้ในฐานะผู้ดูแลแล้ว', 'ok');
       }
     } catch (e) {
       gateMsg(esc(e.message || String(e)));
     } finally {
       GATE.busy = false;
-      const b = $('#gGo'); if (b) { b.disabled = false; b.textContent = 'เข้าใช้งาน'; }
+      const b = $('#gGo'); if (b) { b.disabled = false; b.textContent = stu ? 'เข้าสู่ระบบนักเรียน' : 'เข้าสู่ระบบครู / ผู้ดูแล'; }
     }
   };
 
@@ -2007,6 +2342,92 @@ function renderGate() {
   if (first) first.focus();
 }
 
+/* ── รหัสเดียวทุกชีต (ชีตรุ่น 18) ──────────────────────────────────────────
+   ชีตใบแรกใน BUILTIN.books (วิทยาศาสตร์กายภาพ) เป็นศูนย์กลาง ตรวจรหัสที่นั่นที่เดียว
+   ได้ "บัตรผ่าน" อายุสิบนาที แล้วเอาไปแลกเป็นการเข้าใช้ของชีตวิชานี้ โดยชีตนี้ไม่ถามรหัสซ้ำ
+   รหัสจึงเหลือชุดเดียว เปลี่ยนที่วิชาไหนก็มีผลทุกวิชา
+
+   ถอยกลับไปตรวจรหัสกับชีตวิชานี้แบบเดิม เมื่อ
+     - ชีตยังไม่ได้ตั้งกุญแจร่วม หรือยังเป็นรุ่นเก่า (ไม่รู้จักคำสั่ง)
+     - คนนี้ไม่มีชื่อในชีตศูนย์กลาง (เช่นเรียนแค่วิชาเดียว)
+     - ต่อชีตศูนย์กลางไม่ได้ชั่วคราว
+   แต่ถ้าชีตศูนย์กลางบอกว่า "รหัสผิด" คือจบ ไม่เอารหัสเดียวกันไปลองกับชีตอื่นอีก
+
+   ลงชื่อสำเร็จแล้วเก็บโทเคนของทุกชีตลงก้อนเดียวกับหน้าปก (pcportal.v1)
+   เปิดวิชาอื่นต่อจึงไม่ต้องลงชื่อซ้ำ และการเปลี่ยนรหัสตามไปถึงชีตศูนย์กลางได้ */
+function hubBooks() { return ((typeof BUILTIN !== 'undefined' && BUILTIN.books) || []).filter(b => b && b.url); }
+function hubUrl() { const b = hubBooks(); return b.length ? b[0].url : ''; }
+/** ข้อผิดพลาดที่แปลว่า "ทางศูนย์กลางใช้ไม่ได้ ให้กลับไปทางเดิม" */
+function hubSoft(e) {
+  return /^HUB:|ไม่รู้จักคำสั่ง|ไม่พบเลขประจำตัว|ไม่พบชื่อผู้ใช้|เชื่อมต่อ|อินเทอร์เน็ต|ไม่ถูกรูปแบบ/
+    .test(String((e && e.message) || e || ''));
+}
+async function hubAuth(action, params) {
+  const own = DB.cloud.url, hub = hubUrl();
+  let h = null;
+  if (hub) {
+    try { h = await api(action, params, { url: hub, noToken: true }); }
+    catch (e) {
+      /* ศูนย์กลางที่เชื่อมแล้วบอกว่ารหัสผิด (ข้อความติดคำว่า "ชีตศูนย์กลาง") คือจบ ไม่ลองซ้ำกับชีตอื่น
+         ถ้ายังไม่ได้เชื่อม รหัสของชีตวิชานี้อาจเป็นคนละชุด จึงยังต้องลองกับชีตวิชานี้ตามเดิม */
+      if (hub === own || /ชีตศูนย์กลาง/.test(e.message || '')) throw e;
+      h = null;
+    }
+  }
+  let r = null;
+  if (h && hub === own) r = h;
+  else if (h && h.hub) {
+    try {
+      r = await api('hubLogin', { hub: h.hub }, { noToken: true });
+      r.mustChange = !!h.mustChange;      // ต้องตั้งรหัสใหม่หรือไม่ ศูนย์กลางเป็นคนรู้
+    } catch (e) {
+      if (!hubSoft(e)) throw e;
+      r = null;
+    }
+  }
+  if (!r) r = await api(action, params, { noToken: true });
+  hubRemember(action === 'login' ? 'student' : 'admin', r, h, own, hub);
+  return r;
+}
+/** รวมโทเคนลงก้อนเดียวกับหน้าปก — ถ้าในเครื่องมีคนอื่นลงชื่อค้างอยู่ เริ่มก้อนใหม่ ไม่ปนกัน */
+function hubPortalPut(role, prof, tokens) {
+  try {
+    let s = null;
+    try { s = JSON.parse(localStorage.getItem('pcportal.v1') || 'null'); } catch (e) { s = null; }
+    const sp = (s && s.profile) || {};
+    const same = s && s.v === 1 && s.exp > Date.now() && s.role === role &&
+      String(sp.sid || '') === String(prof.sid || '') && String(sp.sub || '') === String(prof.sub || '');
+    const n = same ? s : { v: 1, role: role, profile: prof, tokens: {} };
+    n.tokens = Object.assign({}, n.tokens || {}, tokens);
+    const hub = hubUrl();
+    // คีย์เดิม (url · token) ที่แอปรุ่นเก่าอ่าน — ชี้ไปที่ชีตศูนย์กลางถ้ามีโทเคนของใบนั้น
+    n.url = hub && n.tokens[hub] ? hub : Object.keys(n.tokens)[0];
+    n.token = n.tokens[n.url];
+    n.profile = n.profile || prof;
+    n.exp = Date.now() + 11.5 * 3600 * 1000;
+    localStorage.setItem('pcportal.v1', JSON.stringify(n));
+  } catch (e) {}
+}
+function hubRemember(role, r, h, own, hub) {
+  const prof = role === 'student' ? Object.assign({}, r.profile || {}) : {
+    name: r.role === 'sub' ? (r.name || 'ครูผู้สอน') : 'ผู้ดูแลหลัก',
+    sub: r.role === 'sub' ? (r.user || '') : '', classes: r.classes || null, subjects: r.subjects || null
+  };
+  const tk = {};
+  if (r && r.token && own) tk[own] = r.token;
+  if (h && h.token && hub) tk[hub] = h.token;
+  hubPortalPut(role, prof, tk);
+  // แลกบัตรกับชีตสมาชิกที่เหลือไว้ล่วงหน้า เปิดวิชาอื่นต่อจะได้เข้าได้ทันที — ไม่รอ ไม่เตือนถ้าพลาด
+  if (h && h.hub) {
+    hubBooks().forEach(function (b) {
+      if (b.url === own || b.url === hub) return;
+      api('hubLogin', { hub: h.hub }, { url: b.url, noToken: true })
+        .then(function (x) { if (x && x.token) { const o = {}; o[b.url] = x.token; hubPortalPut(role, prof, o); } })
+        .catch(function () {});
+    });
+  }
+}
+
 /** บังคับตั้งรหัสใหม่ตอนเข้าใช้ครั้งแรก — ปิดหน้าต่างนี้ไม่ได้จนกว่าจะตั้งเสร็จ */
 function forceChangePass(optional) {
   const m = openModal({
@@ -2015,7 +2436,7 @@ function forceChangePass(optional) {
       (optional ? '' :
         '<div class="notice warn" style="margin-bottom:11px">รหัสตั้งต้นเหมือนกันทุกคน ' +
         'ถ้าไม่เปลี่ยน เพื่อนจะเข้าใช้ในชื่อของคุณได้ กรุณาตั้งรหัสใหม่ก่อน</div>') +
-      '<label class="hint" for="cpA">รหัสผ่านใหม่ (อย่างน้อย 4 ตัว)</label>' +
+      '<label class="hint" for="cpA">รหัสผ่านใหม่ (อย่างน้อย ' + (isSubAdmin() ? 6 : 4) + ' ตัว)</label>' +
       '<input type="password" id="cpA" style="width:100%;font-size:16px">' +
       '<label class="hint" for="cpB" style="display:block;margin-top:9px">พิมพ์ซ้ำอีกครั้ง</label>' +
       '<input type="password" id="cpB" style="width:100%;font-size:16px">' +
@@ -2024,12 +2445,15 @@ function forceChangePass(optional) {
       { label: 'บันทึกรหัสใหม่', cls: 'primary', act: async (close, root) => {
           const a = $('#cpA', root).value || '', b = $('#cpB', root).value || '';
           const msg = $('#cpMsg', root);
-          if (a.length < 4) { msg.innerHTML = '<div class="notice bad">รหัสสั้นเกินไป</div>'; return; }
+          const least = isSubAdmin() ? 6 : 4;
+          if (a.length < least) { msg.innerHTML = '<div class="notice bad">รหัสสั้นเกินไป</div>'; return; }
           if (a !== b) { msg.innerHTML = '<div class="notice bad">รหัสสองช่องไม่ตรงกัน</div>'; return; }
           try {
-            await api('changePass', { newPass: a });
+            // ครูผู้สอนเปลี่ยนรหัสของตัวเองผ่านคำสั่งของฝั่งผู้ดูแล ไม่ใช่ของนักเรียน
+            const act = isSubAdmin() ? 'adminPass' : 'changePass';
+            await api(act, { newPass: a });
             // ตั้งให้ตรงกันทุกชีตในคราวเดียว ไม่งั้นวิชาที่อยู่คนละชีตจะเข้าไม่ได้
-            const syn = await passSyncOthers('changePass', a);
+            const syn = await passSyncOthers(act, a);
             close();
             toast('เปลี่ยนรหัสผ่านเรียบร้อย' +
               (syn.done ? ' · ตั้งให้ตรงกันอีก ' + syn.done + ' ชีต' : '') +
@@ -2072,7 +2496,11 @@ async function doLogout() {
   if (!await confirmBox('ออกจากระบบ', 'ออกจากระบบตอนนี้?' +
     (DB.outbox.length ? '<br><b>ยังมีผลค้างส่ง ' + DB.outbox.length + ' รายการ</b> ควรส่งให้เสร็จก่อน' : ''),
     'ออกจากระบบ')) return;
-  clearAuth(); renderGate(); render();
+  clearAuth();
+  /* ลงชื่อครั้งเดียวใช้ได้ทุกวิชา ออกก็ต้องออกทุกวิชาด้วย
+     ไม่งั้นเปิดแอปใหม่ ระบบจะหยิบการลงชื่อที่ค้างอยู่ในก้อนของหน้าปกกลับมาให้เอง */
+  try { localStorage.removeItem('pcportal.v1'); } catch (e) {}
+  renderGate(); render();
 }
 
 /* ============================================================================
@@ -2103,45 +2531,6 @@ function setTab(t) {
   render();
   window.scrollTo(0, 0);
 }
-/* ============================================================
-   UI Theme Style Controller (Vibrant EdTech & Minimal Focus Mode)
-   ============================================================ */
-function getThemeStyle() {
-  try { return localStorage.getItem('ui_theme_style') || 'vibrant'; } catch(e) { return 'vibrant'; }
-}
-
-function applyThemeStyle(style) {
-  if (style === 'minimal') {
-    document.documentElement.setAttribute('data-theme-style', 'minimal');
-  } else {
-    document.documentElement.removeAttribute('data-theme-style');
-  }
-  try { localStorage.setItem('ui_theme_style', style); } catch(e) {}
-  updateThemeSwitcherUI();
-}
-
-function toggleThemeStyle() {
-  const cur = getThemeStyle();
-  const next = cur === 'minimal' ? 'vibrant' : 'minimal';
-  applyThemeStyle(next);
-  toast(next === 'minimal' ? '🎯 เปิดโหมดโฟกัส (คลีนมินิมอล)' : '✨ เปิดโหมดสีสันสดใส (Modern EdTech)', 'ok');
-}
-
-function updateThemeSwitcherUI() {
-  const btn = $('#btnThemeStyle');
-  if (!btn) return;
-  const cur = getThemeStyle();
-  if (cur === 'minimal') {
-    btn.innerHTML = '🎯 <span class="theme-label">มินิมอล</span>';
-    btn.title = 'คลิกเพื่อสลับเป็นโหมดสีสันสดใส (Modern EdTech)';
-    btn.classList.add('on');
-  } else {
-    btn.innerHTML = '✨ <span class="theme-label">สีสันสดใส</span>';
-    btn.title = 'คลิกเพื่อสลับเป็นโหมดโฟกัสคลีนมินิมอล';
-    btn.classList.remove('on');
-  }
-}
-
 /* ── ย่อ/ขยายได้ทุกกล่อง ───────────────────────────────────────────────
    ของเดิมมีปุ่มย่อแค่กล่องเลือกเรื่อง กล่องอื่นย่อไม่ได้เลย
    ตัวนี้เดินหากล่องที่มีหัวเรื่องหลังวาดหน้าเสร็จ แล้วแปะปุ่มให้เอง
@@ -2217,6 +2606,54 @@ function render() {
   if (TAB === 'print')   renderPrint();
   if (TAB === 'setting') renderSetting();
   foldify();                 // แปะปุ่มย่อให้กล่องที่เพิ่งวาดเสร็จ
+}
+
+/* ── ตัวช่วยที่เดิมมีเฉพาะกลุ่มคณิต (ค่า π · ระดับชั้น · สลับธีม) ใช้ร่วมกันทุกวิชาแล้ว ── */
+/* ค่า π ที่ใช้ในโจทย์วงกลม ทรงกระบอก กรวย ทรงกลม
+   ครูเลือกได้ในแท็บตั้งค่า และชุดโจทย์แต่ละชุดจำค่าที่ใช้ตอนสร้างไว้
+   จึงพิมพ์ใบเฉลยย้อนหลังได้ตรงกับใบงานเสมอ */
+const PI_MODES = { '3.14': 3.14, '22/7': 22 / 7 };
+function piVal(mode) { return PI_MODES[mode] || 3.14; }
+/** ข้อความของ π สำหรับเขียนในเฉลย — '22/7' เขียนเป็นเศษส่วน ไม่ใช่ 3.14 */
+function piTxt(mode) { return PI_MODES[mode] ? mode : '3.14'; }
+/** ระดับชั้นของเรื่องหนึ่ง — หมวดพิเศษ (แนวข้อสอบ) นับเป็น 0 */
+function gradeOf(t) { const o = typeof t === 'object' ? t : topicOf(t); return o ? (o.exam ? 0 : (o.grade || 0)) : 0; }
+/** เฉพาะระดับชั้นที่มีเรื่องอยู่จริง — หน้าเลือกเรื่องจะไม่ขึ้นหัวข้อว่างเปล่า */
+function gradesInUse() { return GRADES.filter(g => TOPICS.some(t => gradeOf(t) === g.id)); }
+/* ============================================================
+   UI Theme Style Controller (Vibrant EdTech & Minimal Focus Mode)
+   ============================================================ */
+function getThemeStyle() {
+  try { return localStorage.getItem('ui_theme_style') || 'vibrant'; } catch(e) { return 'vibrant'; }
+}
+function applyThemeStyle(style) {
+  if (style === 'minimal') {
+    document.documentElement.setAttribute('data-theme-style', 'minimal');
+  } else {
+    document.documentElement.removeAttribute('data-theme-style');
+  }
+  try { localStorage.setItem('ui_theme_style', style); } catch(e) {}
+  updateThemeSwitcherUI();
+}
+function toggleThemeStyle() {
+  const cur = getThemeStyle();
+  const next = cur === 'minimal' ? 'vibrant' : 'minimal';
+  applyThemeStyle(next);
+  toast(next === 'minimal' ? '🎯 เปิดโหมดโฟกัส (คลีนมินิมอล)' : '✨ เปิดโหมดสีสันสดใส (Modern EdTech)', 'ok');
+}
+function updateThemeSwitcherUI() {
+  const btn = $('#btnThemeStyle');
+  if (!btn) return;
+  const cur = getThemeStyle();
+  if (cur === 'minimal') {
+    btn.innerHTML = '🎯 <span class="theme-label">มินิมอล</span>';
+    btn.title = 'คลิกเพื่อสลับเป็นโหมดสีสันสดใส (Modern EdTech)';
+    btn.classList.add('on');
+  } else {
+    btn.innerHTML = '✨ <span class="theme-label">สีสันสดใส</span>';
+    btn.title = 'คลิกเพื่อสลับเป็นโหมดโฟกัสคลีนมินิมอล';
+    btn.classList.remove('on');
+  }
 }
 
 /* ============================================================================

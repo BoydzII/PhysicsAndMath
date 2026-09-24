@@ -1335,7 +1335,7 @@ table td,table th,.num,.xpstat b,.tick,
    *** ห้ามลบบรรทัดเครื่องหมาย @@BUILTIN@@ ทั้งสองอัน ตัวสร้างไฟล์ใช้หาตำแหน่ง ***
    ========================================================================== */
 /* @@BUILTIN@@ */
-const BUILTIN = {"url":"https://script.google.com/macros/s/AKfycbxVa8BYYQeIhBDmg85w2UBwsIqt6a2YudehUfCbyMny9T-5TTh1UfFxsJjTk9HLNuFc/exec","studentOnly":false,"lockCloud":true,"logo":"","header":null,"about":null,"build":"2026-09-24 17:13","ver":"v8.222","books":[{"url":"https://script.google.com/macros/s/AKfycbxVa8BYYQeIhBDmg85w2UBwsIqt6a2YudehUfCbyMny9T-5TTh1UfFxsJjTk9HLNuFc/exec","name":"ชีตวิทยาศาสตร์กายภาพ"},{"url":"https://script.google.com/macros/s/AKfycbzuuRbnE_oB7a9vx7zZizyPVEKao31ERDTU82DvydMuRTDqVoQvgns9EsjTIzpbBjuM/exec","name":"ชีตฟิสิกส์"}]};
+const BUILTIN = {"url":"https://script.google.com/macros/s/AKfycbxVa8BYYQeIhBDmg85w2UBwsIqt6a2YudehUfCbyMny9T-5TTh1UfFxsJjTk9HLNuFc/exec","studentOnly":false,"lockCloud":true,"logo":"","header":null,"about":null,"build":"2026-09-24 17:22","ver":"v8.224","books":[{"url":"https://script.google.com/macros/s/AKfycbxVa8BYYQeIhBDmg85w2UBwsIqt6a2YudehUfCbyMny9T-5TTh1UfFxsJjTk9HLNuFc/exec","name":"ชีตวิทยาศาสตร์กายภาพ"},{"url":"https://script.google.com/macros/s/AKfycbzuuRbnE_oB7a9vx7zZizyPVEKao31ERDTU82DvydMuRTDqVoQvgns9EsjTIzpbBjuM/exec","name":"ชีตฟิสิกส์"}]};
 /* @@BUILTIN-END@@ */
 
 /* ถ่ายภาพซอร์สของหน้านี้ไว้ตั้งแต่สคริปต์เพิ่งเริ่มทำงาน
@@ -1541,15 +1541,15 @@ document.addEventListener('keydown', e => {
 });
 
 /* ============================================================================
+   ค่าเฉพาะวิชา — subjects/physci/2-subject.js
+   ส่วนอื่นของแอปอยู่ใน core/ ใช้ร่วมกันทุกวิชา · แก้ที่นี่แล้วสั่ง node tools/build-dist.mjs
+   ========================================================================== */
+/** ชื่อวิชาที่ขึ้นบนแถบหัว หน้าเข้าใช้ ไอคอนหน้าจอโฮม และท้ายเอกสาร */
+const SUBJECT_INFO = { "title": "คลังโจทย์วิทยาศาสตร์กายภาพ ม.5", "short": "วิทย์กายภาพ", "dept": "กลุ่มสาระการเรียนรู้วิทยาศาสตร์และเทคโนโลยี" };
+/* ============================================================================
    1) STORE — สถานะและการบันทึกลง localStorage
    ========================================================================== */
 const LS_KEY = 'physciquiz.v1';
-window.__LSKEY = LS_KEY;   // ให้ตัวดักหน้าขาวรู้ว่าต้องล้างข้อมูลของวิชาไหน
-/* ชื่อวิชาที่แนบไปกับทุกคำสั่งที่ยิงขึ้นชีต
-   ชีตเดียวเก็บได้หลายวิชา ฝั่งชีตใช้ค่านี้แยกใบงานและผลของแต่ละวิชาออกจากกัน */
-/* สคริปต์ในชีตที่แอปรุ่นนี้ต้องการ — ใช้เตือนตอนทดสอบการเชื่อมต่อ
-   ขยับเลขนี้ทุกครั้งที่เพิ่มคำสั่งใหม่ในไฟล์ appsscript-Code.gs */
-const GS_VERSION = 17;
 const SUBJECT = 'physci';
 /* ────────────────────────────────────────────────────────────────────────────
    สารบัญเรื่อง — จุดเดียวที่ต้องแก้เมื่อจะ "เพิ่มบทใหม่"
@@ -1576,6 +1576,16 @@ const TOPICS = [
    วางไว้ลำดับแรกเพราะใช้ตรวจความเข้าใจก่อนลงมือคำนวณ และทำให้ข้อทฤษฎีขึ้นต้นใบงาน */
 const LEVELS = ['ทฤษฎี', 'ง่าย', 'ปานกลาง', 'ยาก'];
 const LEVEL_CLS = { 'ทฤษฎี': 'l0', 'ง่าย': 'l1', 'ปานกลาง': 'l2', 'ยาก': 'l3' };
+function chLabel(t) { return t && t.exam ? 'พิเศษ' : 'บทที่ ' + (t ? t.ch : '?'); }
+/** วิชานี้ไม่ได้แบ่งเรื่องตามระดับชั้น */
+const GRADES = [];
+
+window.__LSKEY = LS_KEY;   // ให้ตัวดักหน้าขาวรู้ว่าต้องล้างข้อมูลของวิชาไหน
+/* ชื่อวิชาที่แนบไปกับทุกคำสั่งที่ยิงขึ้นชีต
+   ชีตเดียวเก็บได้หลายวิชา ฝั่งชีตใช้ค่านี้แยกใบงานและผลของแต่ละวิชาออกจากกัน */
+/* สคริปต์ในชีตที่แอปรุ่นนี้ต้องการ — ใช้เตือนตอนทดสอบการเชื่อมต่อ
+   ขยับเลขนี้ทุกครั้งที่เพิ่มคำสั่งใหม่ในไฟล์ appsscript-Code.gs */
+const GS_VERSION = 17;
 const THEORY_LEVEL = 'ทฤษฎี';
 const ALL_TOPIC_IDS = TOPICS.map(t => t.id);
 
@@ -1585,9 +1595,9 @@ const ALL_TOPIC_IDS = TOPICS.map(t => t.id);
 const TOPIC_BY_ID = {};
 TOPICS.forEach(t => { TOPIC_BY_ID[t.id] = t; });
 function topicOf(id) { return TOPIC_BY_ID[id] || null; }
-/** ลำดับบทสำหรับการเรียง — เรื่องพิเศษ (แนวข้อสอบ) ไปอยู่ท้ายสุดเสมอ */
-function chOf(id) { const t = topicOf(id); return t ? (t.exam ? 99 : t.ch) : 98; }
-function chLabel(t) { return t && t.exam ? 'พิเศษ' : 'บทที่ ' + (t ? t.ch : '?'); }
+/** ลำดับบทสำหรับการเรียง — เรื่องพิเศษ (แนวข้อสอบ) ไปอยู่ท้ายสุดเสมอ
+    วิชาที่แบ่งบทตามระดับชั้น (มี grade) เรียง ม.1 → ม.3 ก่อน แล้วค่อยเรียงตามบท */
+function chOf(id) { const t = topicOf(id); return t ? (t.exam ? 9999 : (t.grade || 0) * 100 + t.ch) : 9998; }
 
 /* เลขประจำตัวนักเรียน = ชื่อผู้ใช้ตอนลงชื่อเข้าใช้
    บังคับให้เป็นตัวเลขล้วนไม่เกิน 5 หลัก เพื่อให้พิมพ์บนไอแพดง่ายและไม่สับสน */
@@ -1616,14 +1626,15 @@ function defaultDB() {
     classes: [],
     students: [],
     settings: {
-      g: 9.8,
+      g: 9.8,                 // ค่า g ในโจทย์ฟิสิกส์ (วิชาที่ไม่มีโจทย์ใช้ g ไม่อ่านค่านี้)
       tolPct: 1,
       easyG10: true,          // ระดับง่ายบังคับใช้ g = 10 ให้คิดเลขในใจได้
+      piMode: '3.14',         // ค่า π ที่ใช้ในโจทย์วงกลม ทรงกระบอก กรวย ทรงกลม — '3.14' หรือ '22/7'
       header: { school: 'โรงเรียนปากช่อง จังหวัดนครราชสีมา', teacher: '', term: '' },
       logo: '',               // โลโก้โรงเรียนเป็น data URI (ผู้ใช้อัปโหลดเอง)
       about: {
         dev: 'นายรังสรรค์ กรีกูล',
-        dept: 'กลุ่มสาระการเรียนรู้วิทยาศาสตร์และเทคโนโลยี',
+        dept: SUBJECT_INFO.dept,
         school: 'โรงเรียนปากช่อง จังหวัดนครราชสีมา'
       },
       showCredit: true,       // แสดงชื่อผู้พัฒนาท้ายเอกสารที่พิมพ์
@@ -1646,7 +1657,7 @@ function defaultDB() {
     deviceId: '',
     // สถิติการเข้าใช้งานของเครื่องนี้
     usage: { first: 0, last: 0, sessions: 0, days: {}, quizzes: 0, items: 0 },
-    cur: { quizId: null, attemptId: null, classId: null, studentId: null, i: 0, statRoom: '', printRoom: '' }
+    cur: { quizId: null, attemptId: null, classId: null, studentId: null, i: 0, statRoom: '', printRoom: '', pg: 'all' }
   };
 }
 let DB = defaultDB();
@@ -1973,7 +1984,7 @@ function buildAppIcon(size) {
       g.fillStyle = '#fff';
       g.textAlign = 'center'; g.textBaseline = 'middle';
       g.font = '600 ' + Math.round(bh * 0.52) + 'px "Noto Sans Thai","Sarabun",system-ui,sans-serif';
-      g.fillText('วิทย์กายภาพ', S / 2, S - bh / 2 + 1);
+      g.fillText(SUBJECT_INFO.short, S / 2, S - bh / 2 + 1);
       res(cv.toDataURL('image/png'));
     };
     if (DB.settings.logo) {
@@ -2015,7 +2026,7 @@ function renderBrand() {
   if (!el) return;
   el.innerHTML = (DB.settings.logo
     ? '<img src="' + DB.settings.logo + '" alt="ตราโรงเรียน" class="brandlogo">'
-    : '<span class="dot"></span>') + 'คลังโจทย์วิทยาศาสตร์กายภาพ ม.5';
+    : '<span class="dot"></span>') + SUBJECT_INFO.title;
 }
 
 /* --- สถิติการเข้าใช้งาน --------------------------------------------------- */
@@ -2180,6 +2191,7 @@ function isAdmin()   { return authValid() && DB.auth.role === 'admin'; }
 const SHEET_SUBJECTS = [
   { id: 'physics', name: 'ฟิสิกส์' },
   { id: 'physci', name: 'วิทยาศาสตร์กายภาพ' },
+  { id: 'ijso', name: 'IJSO สอวน. ม.ต้น' },
   { id: 'math', name: 'คณิตศาสตร์' }
 ];
 function subjectName(id) {
@@ -2280,11 +2292,21 @@ async function api(action, params, opt) {
 /** รับช่วงการลงชื่อเข้าใช้จากหน้าพอร์ทัล (index.html หน้าแรกของเว็บ)
     พอร์ทัลกับแอพวางอยู่โดเมนเดียวกัน จึงอ่าน localStorage ก้อนเดียวกันได้
     นักเรียนลงชื่อที่พอร์ทัลครั้งเดียว เข้ามาที่นี่แล้วไม่ต้องลงชื่อซ้ำอีก
-    ถ้าไม่ได้มาจากพอร์ทัล ฟังก์ชันนี้ไม่ทำอะไรเลย หน้าเข้าใช้เดิมยังทำงานตามปกติ */
+
+    แอปที่ผูกชีตของวิชาไว้ (BUILTIN.url) กับแอปที่ไม่ได้ผูก ทำงานต่างกันสองจุด
+    · ไม่ได้มาจากพอร์ทัล: แอปที่ผูกชีตไม่ทำอะไร หน้าเข้าใช้เดิมทำงานตามปกติ
+      แอปที่ไม่ได้ผูกชีต ตัดการเชื่อมต่อทิ้งให้กลับเป็นออฟไลน์ล้วน หน้าเข้าใช้จะได้ไม่โผล่มาขวาง
+      นักเรียนที่แค่กด "เข้าเลย" จากหน้าแรกโดยไม่ลงชื่อ (ยกเว้นคนที่ลงชื่อในแอปนี้เองไว้และยังไม่หมดอายุ)
+    · ที่อยู่ชีต: แอปที่ผูกชีตรับเฉพาะโทเคนของชีตตัวเอง และไม่เขียนทับที่อยู่ที่ตั้งไว้แล้ว
+      แอปที่ไม่ได้ผูกชีต ใช้ชีตเดียวกับพอร์ทัลเสมอ */
 function adoptPortalSession() {
   let s = null;
-  try { s = JSON.parse(localStorage.getItem('pcportal.v1') || 'null'); } catch (e) { return; }
-  if (!s || s.v !== 1 || !s.token || !s.exp || s.exp < Date.now()) return;
+  try { s = JSON.parse(localStorage.getItem('pcportal.v1') || 'null'); } catch (e) { s = null; }
+  const live = s && s.v === 1 && s.token && s.exp && s.exp > Date.now();
+  if (!live) {
+    if (!BUILTIN.url && DB.cloud.url && !authValid()) { DB.cloud.url = ''; clearAuth(); save(true); }
+    return;
+  }
   /* แต่ละวิชามีชีตของตัวเอง ส่วนพอร์ทัลลงชื่อเข้าใช้กับชีตใบเดียว
      โทเคนที่ออกจากชีตอีกใบใช้กับชีตนี้ไม่ได้ เพราะคนละกุญแจกัน
      รับมาก็จะเด้งออกตอนเรียกคำสั่งแรก แล้วขึ้นข้อความที่ไม่บอกสาเหตุ
@@ -2301,7 +2323,8 @@ function adoptPortalSession() {
   // ไฟล์ที่แจกนักเรียนไม่รับสิทธิ์ผู้ดูแลจากพอร์ทัล กันการเข้าถึงส่วนของครูโดยไม่ตั้งใจ
   if (studentOnlyBuild() && s.role === 'admin') return;
   let touched = false;
-  if (pUrl && !DB.cloud.url) { DB.cloud.url = pUrl; touched = true; }
+  if (BUILTIN.url) { if (pUrl && !DB.cloud.url) { DB.cloud.url = pUrl; touched = true; } }
+  else if (pUrl && DB.cloud.url !== pUrl) { DB.cloud.url = pUrl; touched = true; }
   // ในเครื่องยังลงชื่อค้างอยู่และยังไม่หมดอายุ ให้ของเดิมมาก่อน
   if (!authValid()) {
     DB.auth = { role: s.role, token: pTok, profile: s.profile || null, exp: s.exp };
@@ -2432,7 +2455,7 @@ function renderGate() {
       '<button type="button" class="gate-tab' + (!stu ? ' active' : '') + '" id="tabGateAdm">👩‍🏫 สำหรับครู / ผู้ดูแล</button>' +
       '</div>' : '') +
     '<h2>' + (stu ? 'ลงชื่อเข้าใช้ (นักเรียน)' : 'เข้าใช้สำหรับครูและผู้ดูแล') + '</h2>' +
-    '<div class="lead">คลังโจทย์วิทยาศาสตร์กายภาพ ม.5<br>' +
+    '<div class="lead">' + SUBJECT_INFO.title + '<br>' +
       (stu ? 'ใช้<b>เลขประจำตัวนักเรียน</b>เป็นชื่อผู้ใช้ ' +
              'ถ้ายังไม่เคยเปลี่ยนรหัส ให้ใช้รหัสตั้งต้นที่ครูแจ้ง (1111)'
            : '<b>ครูผู้สอน (แอดมินรอง):</b> กรอกชื่อผู้ใช้และรหัสผ่านที่คุณได้รับ<br>' +
@@ -2870,6 +2893,54 @@ function render() {
   if (TAB === 'print')   renderPrint();
   if (TAB === 'setting') renderSetting();
   foldify();                 // แปะปุ่มย่อให้กล่องที่เพิ่งวาดเสร็จ
+}
+
+/* ── ตัวช่วยที่เดิมมีเฉพาะกลุ่มคณิต (ค่า π · ระดับชั้น · สลับธีม) ใช้ร่วมกันทุกวิชาแล้ว ── */
+/* ค่า π ที่ใช้ในโจทย์วงกลม ทรงกระบอก กรวย ทรงกลม
+   ครูเลือกได้ในแท็บตั้งค่า และชุดโจทย์แต่ละชุดจำค่าที่ใช้ตอนสร้างไว้
+   จึงพิมพ์ใบเฉลยย้อนหลังได้ตรงกับใบงานเสมอ */
+const PI_MODES = { '3.14': 3.14, '22/7': 22 / 7 };
+function piVal(mode) { return PI_MODES[mode] || 3.14; }
+/** ข้อความของ π สำหรับเขียนในเฉลย — '22/7' เขียนเป็นเศษส่วน ไม่ใช่ 3.14 */
+function piTxt(mode) { return PI_MODES[mode] ? mode : '3.14'; }
+/** ระดับชั้นของเรื่องหนึ่ง — หมวดพิเศษ (แนวข้อสอบ) นับเป็น 0 */
+function gradeOf(t) { const o = typeof t === 'object' ? t : topicOf(t); return o ? (o.exam ? 0 : (o.grade || 0)) : 0; }
+/** เฉพาะระดับชั้นที่มีเรื่องอยู่จริง — หน้าเลือกเรื่องจะไม่ขึ้นหัวข้อว่างเปล่า */
+function gradesInUse() { return GRADES.filter(g => TOPICS.some(t => gradeOf(t) === g.id)); }
+/* ============================================================
+   UI Theme Style Controller (Vibrant EdTech & Minimal Focus Mode)
+   ============================================================ */
+function getThemeStyle() {
+  try { return localStorage.getItem('ui_theme_style') || 'vibrant'; } catch(e) { return 'vibrant'; }
+}
+function applyThemeStyle(style) {
+  if (style === 'minimal') {
+    document.documentElement.setAttribute('data-theme-style', 'minimal');
+  } else {
+    document.documentElement.removeAttribute('data-theme-style');
+  }
+  try { localStorage.setItem('ui_theme_style', style); } catch(e) {}
+  updateThemeSwitcherUI();
+}
+function toggleThemeStyle() {
+  const cur = getThemeStyle();
+  const next = cur === 'minimal' ? 'vibrant' : 'minimal';
+  applyThemeStyle(next);
+  toast(next === 'minimal' ? '🎯 เปิดโหมดโฟกัส (คลีนมินิมอล)' : '✨ เปิดโหมดสีสันสดใส (Modern EdTech)', 'ok');
+}
+function updateThemeSwitcherUI() {
+  const btn = $('#btnThemeStyle');
+  if (!btn) return;
+  const cur = getThemeStyle();
+  if (cur === 'minimal') {
+    btn.innerHTML = '🎯 <span class="theme-label">มินิมอล</span>';
+    btn.title = 'คลิกเพื่อสลับเป็นโหมดสีสันสดใส (Modern EdTech)';
+    btn.classList.add('on');
+  } else {
+    btn.innerHTML = '✨ <span class="theme-label">สีสันสดใส</span>';
+    btn.title = 'คลิกเพื่อสลับเป็นโหมดโฟกัสคลีนมินิมอล';
+    btn.classList.remove('on');
+  }
 }
 
 /* ============================================================================
@@ -8731,44 +8802,9 @@ const ES_SYMS = [
 ];
 
 
-/* ============================================================
-   UI Theme Style Controller (Vibrant EdTech & Minimal Focus Mode)
-   ============================================================ */
-function getThemeStyle() {
-  try { return localStorage.getItem('ui_theme_style') || 'vibrant'; } catch(e) { return 'vibrant'; }
-}
 
-function applyThemeStyle(style) {
-  if (style === 'minimal') {
-    document.documentElement.setAttribute('data-theme-style', 'minimal');
-  } else {
-    document.documentElement.removeAttribute('data-theme-style');
-  }
-  try { localStorage.setItem('ui_theme_style', style); } catch(e) {}
-  updateThemeSwitcherUI();
-}
 
-function toggleThemeStyle() {
-  const cur = getThemeStyle();
-  const next = cur === 'minimal' ? 'vibrant' : 'minimal';
-  applyThemeStyle(next);
-  toast(next === 'minimal' ? '🎯 เปิดโหมดโฟกัส (คลีนมินิมอล)' : '✨ เปิดโหมดสีสันสดใส (Modern EdTech)', 'ok');
-}
 
-function updateThemeSwitcherUI() {
-  const btn = $('#btnThemeStyle');
-  if (!btn) return;
-  const cur = getThemeStyle();
-  if (cur === 'minimal') {
-    btn.innerHTML = '🎯 <span class="theme-label">มินิมอล</span>';
-    btn.title = 'คลิกเพื่อสลับเป็นโหมดสีสันสดใส (Modern EdTech)';
-    btn.classList.add('on');
-  } else {
-    btn.innerHTML = '✨ <span class="theme-label">สีสันสดใส</span>';
-    btn.title = 'คลิกเพื่อสลับเป็นโหมดโฟกัสคลีนมินิมอล';
-    btn.classList.remove('on');
-  }
-}
 
 /* ============================================================
    In-App PDF Viewer Engine (Open-Book Notes Reader)
