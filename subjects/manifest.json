@@ -6,7 +6,11 @@
       "core/00-util.js",
       "subjects/physics/2-subject.js",
       "core/10-base.js",
-      "subjects/physics/3-rest.html"
+      "core/30-engine.js",
+      "subjects/physics/4-helpers.js",
+      "subjects/physics/5-rest.html",
+      "core/80-selftest.js",
+      "subjects/physics/9-boot.html"
     ]
   },
   "physci": {
@@ -16,7 +20,11 @@
       "core/00-util.js",
       "subjects/physci/2-subject.js",
       "core/10-base.js",
-      "subjects/physci/3-rest.html"
+      "core/30-engine.js",
+      "subjects/physci/4-helpers.js",
+      "subjects/physci/5-rest.html",
+      "core/80-selftest.js",
+      "subjects/physci/9-boot.html"
     ]
   },
   "ijso": {
@@ -26,7 +34,11 @@
       "core/00-util.js",
       "subjects/ijso/2-subject.js",
       "core/10-base.js",
-      "subjects/ijso/3-rest.html"
+      "core/30-engine.js",
+      "subjects/ijso/4-helpers.js",
+      "subjects/ijso/5-rest.html",
+      "core/80-selftest.js",
+      "subjects/ijso/9-boot.html"
     ]
   },
   "chem": {
@@ -36,7 +48,11 @@
       "core/00-util.js",
       "subjects/chem/2-subject.js",
       "core/10-base.js",
-      "subjects/chem/3-rest.html"
+      "core/30-engine.js",
+      "subjects/chem/4-helpers.js",
+      "subjects/chem/5-rest.html",
+      "core/80-selftest.js",
+      "subjects/chem/9-boot.html"
     ]
   },
   "math": {
@@ -46,7 +62,11 @@
       "core/00-util.js",
       "subjects/math/2-subject.js",
       "core/10-base.js",
-      "subjects/math/3-rest.html"
+      "core/30-engine.js",
+      "subjects/math/4-helpers.js",
+      "subjects/math/5-rest.html",
+      "core/80-selftest.js",
+      "subjects/math/9-boot.html"
     ]
   },
   "science": {
@@ -56,7 +76,11 @@
       "core/00-util.js",
       "subjects/science/2-subject.js",
       "core/10-base.js",
-      "subjects/science/3-rest.html"
+      "core/30-engine.js",
+      "subjects/science/4-helpers.js",
+      "subjects/science/5-rest.html",
+      "core/80-selftest.js",
+      "subjects/science/9-boot.html"
     ]
   },
   "bio": {
@@ -66,7 +90,11 @@
       "core/00-util.js",
       "subjects/bio/2-subject.js",
       "core/10-base.js",
-      "subjects/bio/3-rest.html"
+      "core/30-engine.js",
+      "subjects/bio/4-helpers.js",
+      "subjects/bio/5-rest.html",
+      "core/80-selftest.js",
+      "subjects/bio/9-boot.html"
     ]
   },
   "foundation": {
@@ -76,7 +104,11 @@
       "core/00-util.js",
       "subjects/foundation/2-subject.js",
       "core/10-base.js",
-      "subjects/foundation/3-rest.html"
+      "core/30-engine.js",
+      "subjects/foundation/4-helpers.js",
+      "subjects/foundation/5-rest.html",
+      "core/80-selftest.js",
+      "subjects/foundation/9-boot.html"
     ]
   }
 }

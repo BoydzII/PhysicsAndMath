@@ -166,7 +166,8 @@ export function snapshot(file) {
 /* ---------- คำสั่ง ---------- */
 const args = process.argv.slice(2);
 const mode = args[0];
-if (import.meta.url === 'file://' + process.argv[1].replace(/\\/g, '/') || mode) {
+// ทำงานแบบคำสั่งเฉพาะตอนรันไฟล์นี้ตรง ๆ — ถ้าถูก import ไปใช้ snapshot() ต้องไม่ทำอะไร
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   if (!['--save', '--diff', '--show'].includes(mode)) {
     console.log('ใช้: node tools/golden.mjs --save | --diff | --show <วิชา> <คีย์>  [ชื่อวิชา ...]');
     process.exit(2);

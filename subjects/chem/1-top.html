@@ -651,6 +651,12 @@ hl{background:var(--warn-bg);border-radius:4px;padding:0 3px}
 .solstep>.h .cv{margin-left:auto;color:var(--muted);font-size:13px;font-weight:400}
 .solstep>.b{padding:11px 13px 13px 44px}
 .solstep.closed>.b{display:none}
+.sol.hide-steps .solstep > .b > .sol-text { display: none; }
+.sol.hide-steps .solstep > .b > .sol-lines { display: block !important; }
+.sol.hide-steps .solstep.closed > .b { display: block !important; }
+.sol.hide-steps .solstep > .h .cv { display: none; }
+.sol-lines .wl { border-bottom: 1px dotted var(--line2); height: 26px; }
+.sol-lines .wl:last-child { border-bottom: none; }
 .solstep .why{color:var(--muted);font-size:14px;margin-top:3px}
 
 /* ตารางสิ่งที่กำหนดให้ */

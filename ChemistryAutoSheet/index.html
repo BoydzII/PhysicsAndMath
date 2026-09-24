@@ -651,6 +651,12 @@ hl{background:var(--warn-bg);border-radius:4px;padding:0 3px}
 .solstep>.h .cv{margin-left:auto;color:var(--muted);font-size:13px;font-weight:400}
 .solstep>.b{padding:11px 13px 13px 44px}
 .solstep.closed>.b{display:none}
+.sol.hide-steps .solstep > .b > .sol-text { display: none; }
+.sol.hide-steps .solstep > .b > .sol-lines { display: block !important; }
+.sol.hide-steps .solstep.closed > .b { display: block !important; }
+.sol.hide-steps .solstep > .h .cv { display: none; }
+.sol-lines .wl { border-bottom: 1px dotted var(--line2); height: 26px; }
+.sol-lines .wl:last-child { border-bottom: none; }
 .solstep .why{color:var(--muted);font-size:14px;margin-top:3px}
 
 /* ตารางสิ่งที่กำหนดให้ */
@@ -1334,7 +1340,7 @@ table td,table th,.num,.xpstat b,.tick,
    *** ห้ามลบบรรทัดเครื่องหมาย @@BUILTIN@@ ทั้งสองอัน ตัวสร้างไฟล์ใช้หาตำแหน่ง ***
    ========================================================================== */
 /* @@BUILTIN@@ */
-const BUILTIN = {"url":"","studentOnly":true,"lockCloud":false,"logo":"","header":null,"about":null,"build":"2026-09-24 17:22","ver":"v8.224","books":[{"url":"https://script.google.com/macros/s/AKfycbxVa8BYYQeIhBDmg85w2UBwsIqt6a2YudehUfCbyMny9T-5TTh1UfFxsJjTk9HLNuFc/exec","name":"ชีตวิทยาศาสตร์กายภาพ"},{"url":"https://script.google.com/macros/s/AKfycbzuuRbnE_oB7a9vx7zZizyPVEKao31ERDTU82DvydMuRTDqVoQvgns9EsjTIzpbBjuM/exec","name":"ชีตฟิสิกส์"}]};
+const BUILTIN = {"url":"","studentOnly":true,"lockCloud":false,"logo":"","header":null,"about":null,"build":"2026-09-24 17:40","ver":"v8.225","books":[{"url":"https://script.google.com/macros/s/AKfycbxVa8BYYQeIhBDmg85w2UBwsIqt6a2YudehUfCbyMny9T-5TTh1UfFxsJjTk9HLNuFc/exec","name":"ชีตวิทยาศาสตร์กายภาพ"},{"url":"https://script.google.com/macros/s/AKfycbzuuRbnE_oB7a9vx7zZizyPVEKao31ERDTU82DvydMuRTDqVoQvgns9EsjTIzpbBjuM/exec","name":"ชีตฟิสิกส์"}]};
 /* @@BUILTIN-END@@ */
 
 /* ถ่ายภาพซอร์สของหน้านี้ไว้ตั้งแต่สคริปต์เพิ่งเริ่มทำงาน
@@ -2979,23 +2985,21 @@ function rng(seed) {
   };
   return R;
 }
-
 /* ชื่อและวัตถุสำหรับแต่งโจทย์ให้ไม่ซ้ำซาก */
 const NAMES  = ['สมชาย', 'มานี', 'ปิติ', 'ชูใจ', 'วีระ', 'อารีย์', 'ธนา', 'กมล', 'สุดา', 'ไพศาล'];
-/* คำและสิ่งของสำหรับแต่งโจทย์ปัญหา — เปลี่ยนทุกครั้งที่สุ่ม โจทย์จึงไม่ซ้ำซาก */
-const GOODS  = ['สมุด', 'ปากกา', 'ดินสอ', 'ไม้บรรทัด', 'ยางลบ', 'แฟ้ม'];
-const FRUITS = ['ส้ม', 'มะม่วง', 'กล้วย', 'เงาะ', 'ลำไย', 'ฝรั่ง'];
-const SHOPS  = ['ร้านสหกรณ์โรงเรียน', 'ร้านเครื่องเขียน', 'ตลาดนัด', 'ร้านค้าชุมชน'];
-const PLACES = ['ห้องสมุด', 'สนามกีฬา', 'โรงอาหาร', 'หอประชุม', 'อาคารเรียน'];
-const SUBJ   = ['เคมี', 'ชีววิทยา', 'ฟิสิกส์', 'คณิตศาสตร์', 'วิทยาศาสตร์'];
-
 /* --- 3.2 การจัดรูปสมการ ---------------------------------------------------
    เขียนสมการเป็นข้อความธรรมดา แล้วให้ M() จัดรูปให้:
      ตัวแปรภาษาอังกฤษ → ตัวเอียง   ตัวเลข/ภาษาไทย/หน่วยใน `...` → ตัวตรง
      _1 หรือ _{max} → ตัวห้อย       ^2 หรือ ^{-2} → ตัวยก
    -------------------------------------------------------------------------- */
 function M(s) {
-  return '<span class="eq">' + mInner(String(s)) + '</span>';
+  const str = String(s);
+  /* วิชาที่ตั้ง SUBJECT_INFO.katex (ตอนนี้คือ IJSO ซึ่งโหลด KaTeX ไว้) เขียนสมการแบบ LaTeX ได้
+     ข้อความที่มี \\ หรือ _{ ^{ และไม่มีภาษาไทย ส่งให้ KaTeX เรนเดอร์แทน mInner */
+  if (SUBJECT_INFO.katex && (str.includes('\\') || str.includes('_{') || str.includes('^{')) && !/[\u0E00-\u0E7F]/.test(str)) {
+    return '<span class="eq">$' + str + '$</span>';
+  }
+  return '<span class="eq">' + mInner(str) + '</span>';
 }
 /** แปลงข้อความสมการหนึ่งชิ้น (ยังไม่ห่อ .eq) — เรียกซ้อนตัวเองได้ จึงใส่เศษส่วนในรากได้
     เขียนได้ว่า  frac(3,4)  ·  sqrt(2)  ·  sqrt3(27) รากที่สาม  ·  pi  ·  vec(F) เวกเตอร์
@@ -3048,9 +3052,11 @@ function mInner(raw, box) {
   h = h.replace(/\^\{([^}]*)\}/g, (m, a) => '<sup>' + a + '</sup>')
        .replace(/\^(-?[\w°]+)/g, (m, a) => '<sup>' + a + '</sup>');
   /* ตัวห้อยยาวกว่าหนึ่งตัวอักษรก็ได้ เช่น v_x  F_net  a_max
-     ของเดิมรับตัวเดียว F_net จึงกลายเป็น F ห้อย n แล้วตามด้วย et ลอย ๆ */
+     ของเดิมรับตัวเดียว F_net จึงกลายเป็น F ห้อย n แล้วตามด้วย et ลอย ๆ
+     แต่คณิต วิทย์ ชีวะ และปรับพื้นฐาน เขียน H_2O  R_1R_2 โดยหมายถึงห้อยตัวเดียว
+     วิชาพวกนั้นตั้ง SUBJECT_INFO.longSub = false (ห้อยยาวต้องเขียน _{...} เอง) */
   h = h.replace(/_\{([^}]*)\}/g, (m, a) => '<sub>' + a + '</sub>')
-       .replace(/_(-?\w+)/g, (m, a) => '<sub>' + a + '</sub>');
+       .replace(SUBJECT_INFO.longSub === false ? /_(-?\w)/g : /_(-?\w+)/g, (m, a) => '<sub>' + a + '</sub>');
   h = h.replace(/`([^`]*)`/g, (m, a) => '<span class="u">' + a + '</span>');
   // ข้อความไทยเป็นตัวตรง — รวมคำย่อที่มีจุดคั่นอย่าง ห.ร.ม. และ ค.ร.น. ไว้เป็นก้อนเดียว
   h = h.replace(/([฀-๿]+(?:\.[฀-๿]+)*\.?)/g, '<span class="u">$1</span>');
@@ -3128,7 +3134,6 @@ function S(tmpl, vals, dp) {
 }
 /** แทนค่าแล้วคืนเป็นบรรทัดสมการเลย */
 function SEQ(tmpl, vals, dp) { return EQ(S(tmpl, vals, dp)); }
-
 /* --- 3.3 ตัวช่วยวาดรูป SVG ------------------------------------------------ */
 function n1(x) { return (Math.round(x * 10) / 10).toString(); }
 /** ครอบ SVG ให้ยืดตามความกว้างที่มี แต่ไม่โตเกินจนดูเทอะทะ
@@ -3143,7 +3148,6 @@ function cBar(x, y, w, h, r) {
     'h' + n1(w - rr * 2) + 'q' + n1(rr) + ' 0 ' + n1(rr) + ' ' + n1(rr) +
     'V' + n1(y + h) + 'Z"/>';
 }
-
 function svgWrap(w, h, inner) {
   // ขยายรูปบนหน้าจอขึ้นอีก 30% จากเดิม (1.55 → 2.0 และเพดาน 640 → 830 พิกเซล)
   // ครูแจ้งว่ารูปเดิมเล็กเกินไปจนดูรายละเอียดยาก
@@ -3182,7 +3186,470 @@ function svgHatch(x1, y1, x2, y2, n, len) {
   }
   return s;
 }
+/* --- 3.4 สร้างโจทย์จากแม่แบบ ---------------------------------------------
+   ตรวจว่าตัวเลขที่สุ่มออกมา "สวย" พอจะให้นักเรียนคิดได้ ถ้าไม่สวยจะสุ่มใหม่
+   -------------------------------------------------------------------------- */
+const TPL = [];                 // คลังแม่แบบ เติมในส่วนถัดไป
+const TPL_BY_ID = {};
+function niceProblem(p) {
+  if (!p || !p.finds || !p.finds.length) return false;
+  for (const f of p.finds) {
+    if (typeof f.value !== 'number' || !isFinite(f.value)) return false;
+    // คำตอบติดรูทไม่มีทางเป็นทศนิยมสองตำแหน่ง ต้องข้ามด่านนี้ ไม่งั้นถูกตีตกทุกเมล็ด
+    if (f.sur) continue;
+    if (Math.abs(f.value) > 1e6 && f.kind !== 'sci') return false;
+    const kind = f.kind || 'num';
+    // เศษส่วน: ตัวส่วนต้องไม่ใหญ่จนนักเรียนอ่านและพิมพ์ไม่ไหว และต้องย่ออย่างต่ำมาแล้ว
+    if (kind === 'frac') {
+      if (!f.den || f.den < 1 || f.den > 24) return false;
+      if (typeof f.num !== 'number' || !isFinite(f.num)) return false;
+      const rd = reduceFrac(f.num, f.den);
+      if (rd[0] !== f.num || rd[1] !== f.den) return false;
+      continue;
+    }
+    if (kind === 'int') { if (Math.abs(f.value - Math.round(f.value)) > 1e-9) return false; continue; }
+    if (kind === 'exact') continue;
+    if (kind === 'sci') {
+      if (!isFinite(f.man) || !isFinite(f.exp) || Math.abs(f.man) < 1 || Math.abs(f.man) >= 10) return false;
+      if (dpOf(f.man, 4) > 2) return false;
+      continue;
+    }
+    if (f.value !== 0 && Math.abs(f.value) < 0.01) return false;
+    if (dpOf(f.value, 4) > 2) return false;
+  }
+  return true;
+}
+/* ── คำตอบติดรูท ───────────────────────────────────────────────────────
+   แม่แบบเขียนไว้ว่า  finds: [{ ..., value: 28.2842, sur: [20, 2, 1] }]
+   หมายถึงคำตอบคือ 20√2 ⁄ 1 · ช่อง value ยังต้องมีไว้ให้ที่อื่นใช้คำนวณต่อ
+   นักเรียนกรอกสามช่อง แล้วตรวจจากรูปอย่างง่าย ไม่ใช่จากค่าทศนิยม        */
+function surdGcd(a, b) { a = Math.abs(a); b = Math.abs(b); while (b) { const t = a % b; a = b; b = t; } return a || 1; }
+/** ย่อ a√b ⁄ c ให้เป็นรูปอย่างง่าย แล้วคืนเป็นข้อความไว้เทียบกันตรง ๆ
+    ตั้งใจให้ 10√8 กับ 20√2 ผ่านทั้งคู่ เพราะเป็นจำนวนเดียวกัน แค่ยังไม่ลดรูป
+    สิ่งที่ตั้งใจกันคือการตอบเป็นทศนิยม ซึ่งไม่ใช่การตอบติดรูท
+    ถ้าครูอยากบังคับให้ลดรูปด้วย ให้เทียบ a กับ b ตรง ๆ แทนการเทียบรูปย่อ */
+function surdCanon(a, b, c) {
+  a = Math.round(Number(a)); b = Math.round(Number(b)); c = Math.round(Number(c) || 1);
+  if (!isFinite(a) || !isFinite(b) || !isFinite(c) || b < 1 || !c) return null;
+  if (c < 0) { a = -a; c = -c; }
+  for (let d = 2; d * d <= b; d++) { while (b % (d * d) === 0) { b = b / (d * d); a = a * d; } }
+  const g = surdGcd(a, c);
+  return (a / g) + '√' + b + '/' + (c / g);
+}
+/** อ่านค่าที่นักเรียนกรอกจากสามช่อง เก็บรวมไว้เป็นข้อความ "a|b|c" ในช่องเดิม */
+function parseSurd(raw) {
+  const p = String(raw == null ? '' : raw).split('|');
+  const a = p[0] === '' || p[0] == null ? NaN : Number(p[0]);
+  const b = p[1] === '' || p[1] == null ? NaN : Number(p[1]);
+  const c = p[2] === '' || p[2] == null ? 1 : Number(p[2]);
+  if (![a, b, c].every(x => isFinite(x) && Math.abs(x - Math.round(x)) < 1e-9)) return null;
+  if (b < 1 || !c) return null;
+  return { a: a, b: b, c: c };
+}
+function surdOK(raw, sur) {
+  const u = parseSurd(raw);
+  if (!u) return false;
+  const x = surdCanon(u.a, u.b, u.c), y = surdCanon(sur[0], sur[1], sur[2] == null ? 1 : sur[2]);
+  return !!x && x === y;
+}
+/** เขียนคำตอบติดรูทเป็นสูตรให้ M() เรนเดอร์ */
+function surdExpr(sur) {
+  const a = Math.round(sur[0]), b = Math.round(sur[1]), c = Math.round(sur[2] == null ? 1 : sur[2]);
+  const top = (b === 1) ? String(a) : (a === 1 ? 'sqrt(' + b + ')' :
+              (a === -1 ? '-sqrt(' + b + ')' : a + ' sqrt(' + b + ')'));
+  return c === 1 ? top : 'frac(' + top + ',' + c + ')';
+}
+/** ข้อความคำตอบของช่องหนึ่ง — ติดรูทก็แสดงเป็นรูท ไม่ใช่ทศนิยมยาว ๆ */
+function ansExpr(f) { return f.sur ? surdExpr(f.sur) : fmtq(f.value); }
+/** สร้างโจทย์หนึ่งข้อจาก tplId + seed — ผลลัพธ์เหมือนเดิมทุกครั้งที่เรียกด้วยค่าเดิม */
+function buildProblem(tplId, seed, cfg) {
+  const tpl = TPL_BY_ID[tplId];
+  if (!tpl) return null;
+  const c = cfg || {};
+  // ฟิสิกส์ใช้ g (ระดับง่ายบังคับ g = 10 ถ้าตั้งไว้) · คณิตใช้ π — ส่งให้แม่แบบทั้งคู่ แม่แบบอ่านเฉพาะค่าที่ใช้
+  const g = (tpl.level === 'ง่าย' && c.easyG10) ? 10 : (c.g != null ? c.g : 9.8);
+  const piMode = c.piMode || '3.14';
+  const pi = piVal(piMode);
+  let last = null;
+  // แม่แบบที่เงื่อนไขเลขสวยรัดกุมมาก (เช่น ต้องได้รากที่สองลงตัว) อาจต้องสุ่มหลายรอบ
+  // ลูปนี้ออกทันทีที่เจอชุดตัวเลขที่ใช้ได้ จำนวนรอบสูงสุดจึงไม่มีผลกับความเร็วในกรณีปกติ
+  for (let k = 0; k < 400; k++) {
+    const R = rng((seed >>> 0) + k * 7919);
+    let p = null;
+    try { p = tpl.gen(R, { g: g, pi: pi, piMode: piMode }); } catch (e) { continue; }
+    if (!p) continue;
+    last = p;
+    // โจทย์ทฤษฎีไม่มีคำตอบเป็นตัวเลข จึงข้ามการคัดกรองเลขสวยไปได้เลย
+    if (tpl.level === THEORY_LEVEL || niceProblem(p)) { return finishProblem(p, tpl, seed, g, piMode); }
+  }
+  // สุ่มจนครบแล้วยังไม่ได้เลขสวย — ยอมรับรอบสุดท้ายแล้วปัดเป็นทศนิยม 2 ตำแหน่ง
+  if (last) { last.rough = true; return finishProblem(last, tpl, seed, g, piMode); }
+  return null;
+}
+function finishProblem(p, tpl, seed, g, piMode) {
+  p.tplId = tpl.id; p.seed = seed; p.topic = tpl.topic; p.level = tpl.level;
+  p.sub = tpl.sub; p.skills = tpl.skills || []; p.g = g; p.piMode = piMode;
+  if (tpl.level === THEORY_LEVEL) {
+    // โจทย์ทฤษฎี: ตัวเลือกเป็นข้อความ แม่แบบสร้างมาให้ครบแล้ว ไม่มีตารางกำหนดให้/สิ่งที่ต้องหา
+    p.theory = true; p.given = p.given || []; p.finds = p.finds || [];
+    return p;
+  }
+  // ปัดเศษเฉพาะคำตอบชนิดทศนิยม — เศษส่วนและคำตอบที่ต้องตรงเป๊ะห้ามแตะ
+  p.finds.forEach(f => {
+    if (!f.kind || f.kind === 'num') f.value = round2(f.value);
+    if (f.kind === 'sci') f.value = f.man * Math.pow(10, f.exp);
+  });
+  // ระดับง่ายตอบแบบปรนัย — สร้างตัวเลือกจากตัวลวงที่แม่แบบให้มา
+  if (tpl.level === 'ง่าย' && p.finds.length === 1) {
+    p.choices = makeChoices(p, rng(((seed >>> 0) ^ 0x5bf03635) >>> 0));
+  }
+  return p;
+}
+/** สร้างตัวเลือก 4 ตัว: คำตอบถูก + ตัวลวงจากความเข้าใจผิด (เติมด้วยตัวลวงทั่วไปถ้าไม่พอ) */
+function makeChoices(p, R) {
+  if ((p.finds[0].kind || 'num') === 'frac') return makeFracChoices(p, R);
+  if (p.finds[0].kind === 'sci') return makeSciChoices(p, R);
+  const ans = round2(p.finds[0].value);
+  const pool = [];
+  const push = v => {
+    if (typeof v !== 'number' || !isFinite(v)) return;
+    const r = round2(v);
+    if (Math.abs(r - ans) < 0.005) return;                 // ซ้ำกับคำตอบถูก
+    if (r < 0 && ans > 0 && p.finds[0].positive) return;   // ค่าที่เป็นไปไม่ได้ในบริบทของโจทย์
+    if (pool.some(x => Math.abs(x - r) < 0.005)) return;   // ซ้ำกันเอง
+    if (dpOf(r, 4) > 2) return;
+    pool.push(r);
+  };
+  (p.distract || []).forEach(push);
+  // แม่แบบที่คำตอบมีค่าได้จำกัด (เช่น จตุภาคที่ 1-4) ตั้ง exactDistract ไว้
+  // จะได้ไม่มีตัวลวงอัตโนมัติที่เป็นไปไม่ได้โผล่มา เช่น "จตุภาคที่ 8"
+  /* SUBJECT_INFO.legacyChoices: วิทย์กายภาพเคยใช้เอนจินที่ไม่รู้จัก exactDistract
+     ชุดโจทย์ที่มอบหมายไปแล้วสร้างตัวเลือกใหม่จาก tplId + seed ทุกครั้งที่เปิด และคำตอบที่เลือกเก็บเป็นลำดับตัวเลือก
+     ถ้าเปลี่ยนวิธีสร้างตัวเลือก ผลที่ส่งไปแล้วจะชี้ไปผิดตัว จึงคงแบบเดิมไว้ให้วิชานั้น */
+  if (!p.exactDistract || SUBJECT_INFO.legacyChoices) {
+    const gen = [ans * 2, ans / 2, ans + Math.max(1, Math.round(Math.abs(ans) * 0.2)),
+                 ans - Math.max(1, Math.round(Math.abs(ans) * 0.2)), ans * 1.5, ans / 4, ans * 10];
+    for (const v of gen) { if (pool.length >= 6) break; push(v); }
+  }
+  const picked = R.shuffle(pool).slice(0, 3);
+  const all = R.shuffle(picked.concat([ans]));
+  return all.map(v => ({ value: v, correct: Math.abs(v - ans) < 0.005 }));
+}
+/* --- 3.5 การตรวจคำตอบ ----------------------------------------------------- */
+/** อ่านตัวเลขจากสิ่งที่นักเรียนพิมพ์ รองรับ 1,200 / +5 / 2.5x10^3 / 2.5e3 */
+/* ทำความสะอาดคำตอบก่อนอ่านเป็นตัวเลข — นักเรียนพิมพ์มาหลายแบบ ไม่ควรเสียคะแนนเพราะรูปแบบการพิมพ์
+   · เลขไทย ๐–๙ → 0–9 · เครื่องหมายลบแบบยูนิโค้ด (− – —) → - · ×10⁵ → ×10^5
+   · จุลภาคคั่นหลักพัน (1,000 · 12,345.6) ตัดทิ้ง ส่วนจุลภาคแบบอื่น เช่น 3,5 กำกวม (3.5 หรือ 35?)
+     จึงปล่อยไว้ให้อ่านไม่ผ่าน แล้วให้ ansIssue() บอกนักเรียนว่าให้ใช้จุดทศนิยม
+     (เดิมตัดจุลภาคทิ้งหมด 3,5 จึงกลายเป็น 35 โดยไม่มีใครรู้)
+   · หน่วยที่พิมพ์ต่อท้ายตัวเลข (5 m/s · 20 นิวตัน) ตัดทิ้ง เพราะหน่วยของช่องกำหนดไว้ข้างช่องแล้ว */
+function ansClean(raw) {
+  if (raw == null) return '';
+  var SUP = '⁰¹²³⁴⁵⁶⁷⁸⁹';
+  var s = String(raw).trim()
+    .replace(/[\u0E50-\u0E59]/g, function (c) { return String(c.charCodeAt(0) - 0x0E50); })
+    .replace(/[\u2212\u2012\u2013\u2014\uFE63\uFF0D]/g, '-')
+    .replace(/10\s*([⁻⁺]?)([⁰¹²³⁴⁵⁶⁷⁸⁹]+)/g, function (m, sg, d) {
+      return '10^' + (sg === '⁻' ? '-' : '') + d.replace(/./g, function (c) { return SUP.indexOf(c); });
+    })
+    .replace(/(\d),(?=\d{3}(?!\d))/g, '$1');
+  var m = s.match(/^([-+]?(?:\d[\d,]*\.?\d*|\.\d+)(?:\s*(?:[eE]|[×xX*]\s*10\s*\^?)\s*[-+]?\d+)?)\s*(.*)$/);
+  if (m && m[2] && /^[A-Za-zµμΩ°℃%\u0E01-\u0E4F]/.test(m[2])) s = m[1];
+  return s;
+}
+/** เหตุที่อ่านคำตอบเป็นตัวเลขไม่ได้ — ใช้บอกนักเรียนแทนการนับเป็นช่องว่าง */
+function ansIssue(raw) {
+  var s = ansClean(raw);
+  if (!s) return '';
+  if (/,/.test(s)) return 'ใช้จุด (.) เป็นจุดทศนิยม เช่น 3.5 ไม่ใช่ 3,5';
+  return 'อ่านเป็นตัวเลขไม่ได้ — พิมพ์ตัวเลขอย่างเดียว เช่น 12.5 · -3 · 3/4 · 2.4x10^-3';
+}
+/** เอาเฉพาะค่าตัวเลข — ใช้ตรวจว่านักเรียนกรอกช่องนี้แล้วหรือยัง */
+function parseNum(raw) { const a = parseAns(raw); return a ? a.v : null; }
+/** ของเดิม เก็บไว้ให้โค้ดส่วนที่เทียบตัวเลขล้วนยังเรียกได้ */
+function checkNum(user, target, tolPct) { return checkAns(user, { value: target, kind: 'num' }, tolPct); }
+/** ตารางสิ่งที่โจทย์กำหนดให้ + สิ่งที่ต้องหา (สร้างอัตโนมัติจากข้อมูลโจทย์) */
+function givenTable(p) {
+  let h = '<table class="given"><tbody>';
+  p.given.forEach(gv => {
+    h += '<tr><td class="s">' + M(gv.s) + '</td><td class="e">=</td>' +
+      '<td class="v">' + (typeof gv.v === 'number' ? fmt(gv.v) : gv.v) + '</td>' +
+      '<td class="d">' + (gv.unit ? esc(gv.unit) : '') + (gv.d ? ' &nbsp;(' + esc(gv.d) + ')' : '') + '</td></tr>';
+  });
+  p.finds.forEach(f => {
+    h += '<tr><td class="s">' + M(f.s) + '</td><td class="e">=</td>' +
+      '<td class="v" style="color:var(--muted)">?</td>' +
+      '<td class="d">' + (f.unit ? esc(f.unit) : '') + (f.d ? ' &nbsp;(' + esc(f.d) + ')' : '') + '</td></tr>';
+  });
+  return h + '</tbody></table>';
+}
+function stepBodies(p) {
+  if (p.theory) return [p.idea, choiceWhyHTML(p), p.why];
+  const s = p.sol;
+  const eqHtml = (s.eqs || []).map(e =>
+    '<div>' + EQ(e.eq) + (e.why ? '<div class="why">' + e.why + '</div>' : '') + '</div>').join('');
+  const lines = a => (Array.isArray(a) ? a : [a]).filter(Boolean).join('');
+  return [
+    s.analyze,
+    givenTable(p),
+    eqHtml,
+    lines(s.solve),
+    lines(s.subst),
+    lines(s.calc),
+    s.conclude
+  ];
+}
+/** กล่องอธิบายของโจทย์ทฤษฎี — แนวคิดหลัก + เหตุผลรายตัวเลือก + ข้อสรุปที่ต้องจำ */
+function theorySolutionHTML(p, open) {
+  const rows = [
+    { n: 1, t: 'แนวคิดที่ใช้ตอบ', b: p.idea },
+    { n: 2, t: 'ทำไมข้อนี้ถูก และข้ออื่นผิดตรงไหน', b: choiceWhyHTML(p) },
+    { n: 3, t: 'สิ่งที่ต้องจำไปใช้ต่อ', b: p.why }
+  ];
+  let h = '<div class="sol">';
+  rows.forEach(r => {
+    h += '<div class="solstep' + (open ? '' : ' closed') + '" data-step="' + (r.n - 1) + '">' +
+      '<div class="h"><span class="n">' + r.n + '</span>' + r.t +
+      (open ? '' : '<span class="cv">แตะเพื่อดู</span>') + '</div>' +
+      '<div class="b">' + (r.b || '<span class="hint">—</span>') + '</div></div>';
+  });
+  return h + '</div>';
+}
+/** ไล่อธิบายทีละตัวเลือกว่าถูกหรือผิดเพราะอะไร */
+function choiceWhyHTML(p) {
+  return '<div class="whylist">' + (p.choices || []).map((c, k) =>
+    '<div class="whyrow ' + (c.correct ? 'ok' : 'no') + '">' +
+    '<span class="wk">' + 'กขคง'[k] + '.</span>' +
+    '<span class="wt">' + c.text + '</span>' +
+    '<span class="wm">' + (c.correct ? '✓ ถูก' : '✗ ผิด') + '</span>' +
+    (c.why ? '<div class="wd">' + c.why + '</div>' : '') + '</div>').join('') + '</div>';
+}
+/** โหมด open=true จะกางทุกขั้น (ใช้ตอนพิมพ์) */
+function solutionHTML(p, open) {
+  if (p.theory) return theorySolutionHTML(p, open);
+  const b = stepBodies(p);
+  const L = workLines(1);
+  let h = '<div class="sol">';
+  
+  h += '<div class="row noprint" style="justify-content:flex-end; margin-bottom: 8px;">' +
+       '<button class="sm" type="button" onclick="this.closest(\'.sol\').classList.toggle(\'hide-steps\'); ' +
+       'this.innerHTML = this.closest(\'.sol\').classList.contains(\'hide-steps\') ? \'👁️ แสดงวิธีทำทั้งหมด\' : \'👁️ ซ่อนข้อความ (เว้นบรรทัดไว้เขียน)\'">' +
+       '👁️ ซ่อนข้อความ (เว้นบรรทัดไว้เขียน)</button></div>';
 
+  for (let i = 0; i < 7; i++) {
+    const blockId = WORK_BLOCKS[i] ? WORK_BLOCKS[i].id : null;
+    const count = L[blockId] || 0;
+    const linesHTML = count > 0 ? '<div class="sol-lines" style="display:none; padding: 6px 0;">' + 
+                      new Array(count + 1).join('<div class="wl"></div>') + 
+                      '</div>' : '<div class="sol-lines" style="display:none"><div class="hint" style="margin-top:8px">— ไม่มีบรรทัดในช่องนี้ —</div></div>';
+
+    h += '<div class="solstep' + (open ? '' : ' closed') + '" data-step="' + i + '">' +
+      '<div class="h"><span class="n">' + (i + 1) + '</span>' + STEP_TITLES[i] +
+      (open ? '' : '<span class="cv">แตะเพื่อดู</span>') + '</div>' +
+      '<div class="b"><div class="sol-text">' + (b[i] || '<span class="hint">—</span>') + '</div>' +
+      linesHTML + '</div></div>';
+  }
+  return h + '</div>';
+}
+/** ผูกให้แตะหัวข้อแล้วพับ/กางได้ */
+function bindSolutionToggle(root) {
+  $$('.solstep>.h', root).forEach(h => {
+    h.addEventListener('click', () => {
+      const st = h.parentElement;
+      st.classList.toggle('closed');
+      const cv = $('.cv', h);
+      if (cv) cv.textContent = st.classList.contains('closed') ? 'แตะเพื่อดู' : 'แตะเพื่อซ่อน';
+    });
+  });
+}
+/* --- 3.7 วาดตัวโจทย์ ------------------------------------------------------ */
+function topicName(id) { const t = topicOf(id); return t ? t.name : ''; }
+function problemHead(p, no) {
+  const t = topicOf(p.topic);
+  return '<div class="qhead">' +
+    (no ? '<span class="qno">ข้อ ' + no + '</span>' : '') +
+    '<span class="tag ' + LEVEL_CLS[p.level] + '">' + p.level + '</span>' +
+    (t ? '<span class="tag t">' + (t.exam ? '🎓 ' : '') + chLabel(t) + ' ' + esc(t.name) + '</span>' : '') +
+    '<span class="tag t">' + esc(p.sub) + '</span>' +
+    '</div>';
+}
+function problemBody(p) {
+  return '<div class="stem">' + p.stem + '</div>' + (p.figure ? '<div class="fig">' + p.figure + '</div>' : '');
+}
+/** ตัวเลือกปรนัยที่คำตอบเป็นเศษส่วน — ตัวลวงมาจาก p.distractFrac ซึ่งเป็นคู่ [เศษ, ส่วน]
+    เทียบกันด้วยรูปอย่างต่ำ ตัวเลือกจึงไม่มีทางเป็นค่าเดียวกัน เช่น 3/4 กับ 6/8 */
+function makeFracChoices(p, R) {
+  const f0 = p.finds[0];
+  const an = f0.num, ad = f0.den;
+  const key = (n, d) => { const r = reduceFrac(n, d); return r[0] + '/' + r[1]; };
+  const seen = {};
+  seen[key(an, ad)] = 1;
+  const pool = [];
+  const push = pr => {
+    if (!pr || !pr[1] || !isFinite(pr[0]) || !isFinite(pr[1])) return;
+    const r = reduceFrac(pr[0], pr[1]);
+    if (Math.abs(r[1]) > 40 || seen[key(r[0], r[1])]) return;
+    seen[key(r[0], r[1])] = 1;
+    pool.push(r);
+  };
+  (p.distractFrac || []).forEach(push);
+  // ตัวลวงสำรอง ใช้ต่อเมื่อของที่แม่แบบตั้งใจใส่มายังไม่พอ 6 ตัว
+  // (เรียงตามความพลาดที่พบบ่อย: บวกผิดที่ · กลับเศษกับส่วน · ลืมย่อ)
+  for (const pr of [[an + 1, ad], [an, ad + 1], [ad, an], [an * 2, ad], [an, ad * 2], [an - 1, ad]]) {
+    if (pool.length >= 6) break;
+    if (pr[0] === 0) continue;                       // 0 เป็นตัวลวงที่ตัดทิ้งได้ง่ายเกินไป
+    push(pr);
+  }
+  const picked = R.shuffle(pool).slice(0, 3);
+  const all = R.shuffle(picked.concat([[an, ad]]));
+  return all.map(pr => ({
+    value: pr[0] / pr[1], text: fracTxt(pr[0], pr[1]),
+    correct: pr[0] === an && pr[1] === ad
+  }));
+}
+/* --- 3.5 การตรวจคำตอบ -----------------------------------------------------
+   คณิตต่างจากฟิสิกส์ตรงที่คำตอบไม่ได้เป็นทศนิยมเสมอไป แม่แบบจึงระบุชนิดคำตอบไว้ที่
+   finds[].kind ได้ 4 แบบ
+     'num'   (ค่าเริ่มต้น) ทศนิยมทั่วไป ยอมคลาดเคลื่อนตาม tolPct
+     'int'   จำนวนเต็ม ต้องตรงเป๊ะ
+     'frac'  เศษส่วน ต้องส่ง num/den มาคู่กัน · ถ้า lowest:true ต้องตอบเป็นเศษส่วนอย่างต่ำ
+     'exact' ต้องตรงเป๊ะ ไม่ยอมคลาดเคลื่อน
+   -------------------------------------------------------------------------- */
+function gcd(a, b) { a = Math.abs(a); b = Math.abs(b); while (b) { const t = a % b; a = b; b = t; } return a || 1; }
+/** ย่อเศษส่วนให้อยู่ในรูปอย่างต่ำ ตัวส่วนเป็นบวกเสมอ คืน [เศษ, ส่วน] */
+function reduceFrac(n, d) {
+  if (!d) return [n, d];
+  if (d < 0) { n = -n; d = -d; }
+  const g = gcd(n, d);
+  return [n / g, d / g];
+}
+/** เขียนเศษส่วนเป็นข้อความสำหรับส่งให้ M() โดย<b>ย่ออย่างต่ำ</b>ก่อน
+    ใช้กับคำตอบและตัวเลือก ซึ่งต้องอยู่ในรูปอย่างต่ำเสมอ */
+function fracTxt(n, d) { const r = reduceFrac(n, d); return fracRaw(r[0], r[1]); }
+/** เขียนเศษส่วน <b>ตามที่ให้มา</b> ไม่ย่อ — ใช้กับตัวเลขในโจทย์ เพราะบางข้อ
+    ตั้งใจให้เห็นรูปที่ยังไม่ย่อ เช่น เทียบ 3/6 กับ 3/12 ที่ตัวเศษเท่ากัน */
+function fracRaw(n, d) {
+  if (d < 0) { n = -n; d = -d; }
+  if (d === 1) return String(n);
+  return (n < 0 ? '-' : '') + 'frac(' + Math.abs(n) + ',' + d + ')';
+}
+/** คำแนะนำเหนือช่องกรอกคำตอบ — เปลี่ยนตามชนิดคำตอบที่แม่แบบกำหนด
+    เพราะโจทย์เศษส่วน โจทย์จำนวนเต็ม และโจทย์ทศนิยม มีกติกาการตอบคนละแบบ */
+function ansHintHTML(p) {
+  const kinds = p.finds.map(f => f.kind || 'num');
+  let tip;
+  if (kinds.indexOf('frac') >= 0)
+    tip = 'พิมพ์เศษส่วนได้เลย เช่น <b>3/4</b> หรือจำนวนคละ <b>1 1/2</b>' +
+      (p.finds.some(f => f.lowest) ? ' · ข้อนี้ต้องตอบเป็น<b>เศษส่วนอย่างต่ำ</b>' : '');
+  else if (kinds.indexOf('sci') >= 0)
+    tip = 'ตอบในรูป <b>a × 10ⁿ</b> พิมพ์ได้เลย เช่น <b>3.2x10^-5</b> หรือ <b>3.2e-5</b> · ยอมคลาดเคลื่อนได้ ±' + fmt(Math.max(1, DB.settings.tolPct)) + '%';
+  else if (kinds.every(k => k === 'int' || k === 'exact'))
+    tip = 'ตอบให้ตรงเป๊ะ ไม่มีการปัดเศษ · ใส่เครื่องหมายลบด้วยถ้าคำตอบเป็นจำนวนลบ';
+  else
+    tip = 'ไม่ต้องพิมพ์หน่วย · ยอมคลาดเคลื่อนได้ ±' + fmt(DB.settings.tolPct) + '%';
+  return '<div style="margin-bottom:9px"><b>กรอกคำตอบ</b> <span class="hint">(' + tip + ')</span></div>';
+}
+/** ข้อความคำตอบสำหรับแสดงผล — เศษส่วนแสดงเป็นเศษส่วน ไม่ใช่ทศนิยมยาว ๆ */
+function ansTxt(f) {
+  if (f.kind === 'sci') return sciTxt(f.man, f.exp);
+  return (f.kind === 'frac' && f.den) ? fracTxt(f.num, f.den) : fmtq(f.value);
+}
+function parseAns(raw) {
+  if (raw == null) return null;
+  let s = ansClean(raw).replace(/^\+/, '');
+  if (s === '') return null;
+  // จำนวนคละ เช่น 1 1/2 หรือ -2 3/4
+  let m = s.match(/^(-?\d+)\s+(\d+)\s*\/\s*(\d+)$/);
+  if (m) {
+    const w = Number(m[1]), n = Number(m[2]), d = Number(m[3]);
+    if (!d) return null;
+    const sign = m[1].charAt(0) === '-' ? -1 : 1;
+    const num = Math.abs(w) * d + n;
+    return { v: sign * num / d, n: sign * num, d: d };
+  }
+  // เศษส่วนล้วน เช่น 3/4 หรือ -2/5
+  m = s.replace(/\s+/g, '').match(/^(-?\d+)\/(-?\d+)$/);
+  if (m) {
+    const n = Number(m[1]), d = Number(m[2]);
+    if (!d) return null;
+    return { v: n / d, n: n, d: d };
+  }
+  s = s.replace(/\s+/g, '').replace(/[×xX*]10\^?/, 'e').replace(/E/, 'e').replace(/−/g, '-');
+  if (!/^-?(\d+\.?\d*|\.\d+)(e[-+]?\d+)?$/.test(s)) return null;
+  const v = Number(s);
+  return isFinite(v) ? { v: v, n: null, d: null } : null;
+}
+/** เทียบคำตอบตามชนิดที่แม่แบบกำหนดไว้ใน find */
+function checkAns(raw, f, tolPct) {
+  const a = parseAns(raw);
+  if (!a) return false;
+  const kind = (f && f.kind) || 'num';
+  const target = f.value;
+  if (kind === 'frac') {
+    if (Math.abs(a.v - target) > 1e-9) return false;
+    if (!f.lowest) return true;
+    // โจทย์สั่ง "ตอบเป็นเศษส่วนอย่างต่ำ" — พิมพ์ทศนิยมมาถือว่ายังไม่ตรงรูปที่โจทย์ขอ
+    if (a.d == null) return Math.abs(target - Math.round(target)) < 1e-9;
+    const r = reduceFrac(a.n, a.d);
+    return r[0] === a.n && r[1] === a.d;
+  }
+  if (kind === 'int' || kind === 'exact') return Math.abs(a.v - target) < 1e-9;
+  if (kind === 'sci') {
+    const pc = Math.max(1, tolPct == null ? DB.settings.tolPct : tolPct) / 100;
+    return Math.abs(a.v - target) <= Math.abs(target) * pc + 1e-300;
+  }
+  const pct = (tolPct == null ? DB.settings.tolPct : tolPct) / 100;
+  const tol = Math.max(Math.abs(target) * pct, 0.005);
+  return Math.abs(a.v - target) <= tol + 1e-9;
+}
+/** ตัวเลือกปรนัยที่คำตอบเป็นสัญกรณ์วิทยาศาสตร์ — ตัวลวงมาจาก p.distractSci เป็นคู่ [ตัวหน้า, เลขชี้กำลัง]
+    ตัวลวงที่ดีคือเลขชี้กำลังผิด (ลืมกลับเครื่องหมาย บวกแทนลบ) เพราะนั่นคือจุดที่นักเรียนพลาดจริง */
+function makeSciChoices(p, R) {
+  const f0 = p.finds[0];
+  const key = (m, e) => { const o = sciNorm(m * Math.pow(10, e)); return o.m + 'e' + o.e; };
+  const seen = {};
+  seen[key(f0.man, f0.exp)] = 1;
+  const pool = [];
+  const push = pr => {
+    if (!pr || !isFinite(pr[0]) || !isFinite(pr[1]) || !pr[0]) return;
+    const o = sciNorm(pr[0] * Math.pow(10, pr[1]));
+    if (dpOf(o.m, 4) > 2 || seen[key(o.m, o.e)]) return;
+    if (o.m < 0 && f0.man > 0 && f0.positive) return;
+    seen[key(o.m, o.e)] = 1;
+    pool.push([o.m, o.e]);
+  };
+  (p.distractSci || []).forEach(push);
+  for (const pr of [[f0.man, f0.exp + 1], [f0.man, f0.exp - 1], [f0.man, -f0.exp], [f0.man * 2, f0.exp], [f0.man, f0.exp + 2]]) {
+    if (pool.length >= 6) break;
+    push(pr);
+  }
+  const picked = R.shuffle(pool).slice(0, 3);
+  const all = R.shuffle(picked.concat([[f0.man, f0.exp]]));
+  return all.map(pr => ({ value: pr[0] * Math.pow(10, pr[1]), text: sciTxt(pr[0], pr[1]),
+                          correct: pr[0] === f0.man && pr[1] === f0.exp }));
+}
+/** แยกค่าเป็น ตัวหน้า × 10^เลขชี้กำลัง โดย 1 ≤ |ตัวหน้า| < 10 และตัวหน้าปัดเป็นเลขนัยสำคัญ 3 ตัว */
+function sciNorm(v) {
+  if (!v || !isFinite(v)) return { m: 0, e: 0 };
+  let e = Math.floor(Math.log10(Math.abs(v)));
+  let m = Number((v / Math.pow(10, e)).toPrecision(3));
+  if (Math.abs(m) >= 10) { m = Number((m / 10).toPrecision(3)); e += 1; }
+  return { m: m, e: e };
+}
+/** ข้อความ a × 10^n สำหรับส่งให้ M() */
+function sciTxt(m, e) { return fmtq(m) + ' × 10^{' + e + '}'; }
+
+/* ============================================================================
+   ตัวช่วยเฉพาะวิชา — subjects/chem/4-helpers.js
+   ตัววาดรูปประกอบโจทย์ (fig*) คลังคำที่แม่แบบใช้สุ่ม และชื่อขั้นของวิธีทำ 7 ขั้น (STEP_TITLES)
+   เอนจินสุ่มโจทย์อยู่ใน core/30-engine.js ใช้ร่วมกันทุกวิชา
+   ========================================================================== */
+/* คำและสิ่งของสำหรับแต่งโจทย์ปัญหา — เปลี่ยนทุกครั้งที่สุ่ม โจทย์จึงไม่ซ้ำซาก */
+const GOODS  = ['สมุด', 'ปากกา', 'ดินสอ', 'ไม้บรรทัด', 'ยางลบ', 'แฟ้ม'];
+const FRUITS = ['ส้ม', 'มะม่วง', 'กล้วย', 'เงาะ', 'ลำไย', 'ฝรั่ง'];
+const SHOPS  = ['ร้านสหกรณ์โรงเรียน', 'ร้านเครื่องเขียน', 'ตลาดนัด', 'ร้านค้าชุมชน'];
+const PLACES = ['ห้องสมุด', 'สนามกีฬา', 'โรงอาหาร', 'หอประชุม', 'อาคารเรียน'];
+const SUBJ   = ['เคมี', 'ชีววิทยา', 'ฟิสิกส์', 'คณิตศาสตร์', 'วิทยาศาสตร์'];
 /* --- 3.3ข รูปประกอบโจทย์เคมี ------------------------------------------------
    ทุกฟังก์ชันคืนสตริง SVG ที่ยืดตามความกว้างของกล่องที่ใส่ลงไป
    ใช้สีจากตัวแปรธีม จึงอ่านออกทั้งโหมดสว่างและโหมดมืด
@@ -3205,7 +3672,6 @@ function txtW(t) {
   }
   return w;
 }
-
 /** แผนภูมิแท่ง  o:{ labels:[], values:[], step, unit } */
 function figBar(o) {
   const vals = o.values || [], n = vals.length;
@@ -3235,7 +3701,6 @@ function figBar(o) {
   if (o.unit) s += svgTxt(padL - 6, padT - 14, esc(o.unit), 'end', true);
   return svgWrap(W, H, s);
 }
-
 /** อุปกรณ์วัดปริมาตรพร้อมสเกล ใช้กับเรื่องเลขนัยสำคัญและการอ่านค่า
     o:{ cap:ความจุ, minor:ค่าต่อขีดเล็ก, read:ระดับของเหลว, unit, name } */
 function figLabGlass(o) {
@@ -3272,7 +3737,6 @@ function figLabGlass(o) {
   s += svgTxt(x0 + wBody / 2, yBot + 38, 'ขีดเล็กละ ' + fmt(minor) + ' ' + esc(o.unit || 'mL'), 'middle', true);
   return svgWrap(W, H, s);
 }
-
 /** แบบจำลองอะตอมแบบวงโคจร  o:{ sym, p, n, shells:[2,8,1] } */
 function figAtomShell(o) {
   const sh = o.shells || [];
@@ -3301,7 +3765,6 @@ function figAtomShell(o) {
   s += svgTxt(W - 10, 42, sh.join(' , '), 'end');
   return svgWrap(W, H, s);
 }
-
 /** ตารางธาตุย่อ 20 ธาตุแรก  o:{ mark:['Na','Cl'], trend:'ขนาดอะตอมเพิ่ม' , arrow:'right'|'down' } */
 const PT20 = [
   ['H', 1, 1], ['He', 18, 1],
@@ -3345,7 +3808,6 @@ function figPeriodicMini(o) {
   }
   return svgWrap(W, H, s);
 }
-
 /** โครงสร้างลิวอิสอย่างง่าย — อะตอมกลางหนึ่งตัว ล้อมด้วยอะตอมรอบ ๆ ไม่เกิน 4 ตัว
     o:{ center, lone:จำนวนคู่โดดเดี่ยวของอะตอมกลาง,
         around:[{ sym, order:1|2|3, lone }] , dirs:['up','down','left','right'] } */
@@ -3385,7 +3847,6 @@ function figLewis(o) {
   if (o.caption) s += svgTxt(W / 2, H - 14, esc(o.caption), 'middle', true);
   return svgWrap(W, H, s);
 }
-
 /** รูปร่างโมเลกุลตามทฤษฎี VSEPR
     o:{ shape:'linear'|'bent'|'trigonal'|'pyramid'|'tetra', center, outer, deg, caption } */
 const VSEPR_DIR = {
@@ -3429,7 +3890,6 @@ function figShape(o) {
   if (o.caption) s += svgTxt(W / 2, H - 14, esc(o.caption), 'middle', true);
   return svgWrap(W, H, s);
 }
-
 /** การถ่ายโอนอิเล็กตรอนของพันธะไอออนิก
     o:{ a:{sym, shells}, b:{sym, shells}, moved, ionA, ionB } */
 function figIonic(o) {
@@ -3456,365 +3916,9 @@ function figIonic(o) {
   s += svgTxt(200, H - 16, esc(o.caption || 'โลหะให้อิเล็กตรอน อโลหะรับอิเล็กตรอน'), 'middle', true);
   return svgWrap(W, H, s);
 }
-/* --- 3.4 สร้างโจทย์จากแม่แบบ ---------------------------------------------
-   ตรวจว่าตัวเลขที่สุ่มออกมา "สวย" พอจะให้นักเรียนคิดได้ ถ้าไม่สวยจะสุ่มใหม่
-   -------------------------------------------------------------------------- */
-const TPL = [];                 // คลังแม่แบบ เติมในส่วนถัดไป
-const TPL_BY_ID = {};
-
-function niceProblem(p) {
-  if (!p || !p.finds || !p.finds.length) return false;
-  for (const f of p.finds) {
-    if (typeof f.value !== 'number' || !isFinite(f.value)) return false;
-    if (Math.abs(f.value) > 1e6) return false;
-    const kind = f.kind || 'num';
-    // เศษส่วน: ตัวส่วนต้องไม่ใหญ่จนนักเรียนอ่านและพิมพ์ไม่ไหว และต้องย่ออย่างต่ำมาแล้ว
-    if (kind === 'frac') {
-      if (!f.den || f.den < 1 || f.den > 24) return false;
-      if (typeof f.num !== 'number' || !isFinite(f.num)) return false;
-      const rd = reduceFrac(f.num, f.den);
-      if (rd[0] !== f.num || rd[1] !== f.den) return false;
-      continue;
-    }
-    if (kind === 'int') { if (Math.abs(f.value - Math.round(f.value)) > 1e-9) return false; continue; }
-    if (kind === 'exact') continue;
-    if (f.value !== 0 && Math.abs(f.value) < 0.01) return false;
-    if (dpOf(f.value, 4) > 2) return false;
-  }
-  return true;
-}
-
-/** สร้างโจทย์หนึ่งข้อจาก tplId + seed — ผลลัพธ์เหมือนเดิมทุกครั้งที่เรียกด้วยค่าเดิม */
-function buildProblem(tplId, seed, cfg) {
-  const tpl = TPL_BY_ID[tplId];
-  if (!tpl) return null;
-  const c = cfg || {};
-  const piMode = c.piMode || '3.14';
-  const pi = piVal(piMode);
-  let last = null;
-  // แม่แบบที่เงื่อนไขเลขสวยรัดกุมมาก (เช่น ต้องได้รากที่สองลงตัว) อาจต้องสุ่มหลายรอบ
-  // ลูปนี้ออกทันทีที่เจอชุดตัวเลขที่ใช้ได้ จำนวนรอบสูงสุดจึงไม่มีผลกับความเร็วในกรณีปกติ
-  for (let k = 0; k < 400; k++) {
-    const R = rng((seed >>> 0) + k * 7919);
-    let p = null;
-    try { p = tpl.gen(R, { pi: pi, piMode: piMode }); } catch (e) { continue; }
-    if (!p) continue;
-    last = p;
-    // โจทย์ทฤษฎีไม่มีคำตอบเป็นตัวเลข จึงข้ามการคัดกรองเลขสวยไปได้เลย
-    if (tpl.level === THEORY_LEVEL || niceProblem(p)) { return finishProblem(p, tpl, seed, piMode); }
-  }
-  // สุ่มจนครบแล้วยังไม่ได้เลขสวย — ยอมรับรอบสุดท้ายแล้วปัดเป็นทศนิยม 2 ตำแหน่ง
-  if (last) { last.rough = true; return finishProblem(last, tpl, seed, piMode); }
-  return null;
-}
-
-function finishProblem(p, tpl, seed, piMode) {
-  p.tplId = tpl.id; p.seed = seed; p.topic = tpl.topic; p.level = tpl.level;
-  p.sub = tpl.sub; p.skills = tpl.skills || []; p.piMode = piMode;
-  if (tpl.level === THEORY_LEVEL) {
-    // โจทย์ทฤษฎี: ตัวเลือกเป็นข้อความ แม่แบบสร้างมาให้ครบแล้ว ไม่มีตารางกำหนดให้/สิ่งที่ต้องหา
-    p.theory = true; p.given = p.given || []; p.finds = p.finds || [];
-    return p;
-  }
-  // ปัดเศษเฉพาะคำตอบชนิดทศนิยม — เศษส่วนและคำตอบที่ต้องตรงเป๊ะห้ามแตะ
-  p.finds.forEach(f => { if (!f.kind || f.kind === 'num') f.value = round2(f.value); });
-  // ระดับง่ายตอบแบบปรนัย — สร้างตัวเลือกจากตัวลวงที่แม่แบบให้มา
-  if (tpl.level === 'ง่าย' && p.finds.length === 1) {
-    p.choices = makeChoices(p, rng(((seed >>> 0) ^ 0x5bf03635) >>> 0));
-  }
-  return p;
-}
-
-/** สร้างตัวเลือก 4 ตัว: คำตอบถูก + ตัวลวงจากความเข้าใจผิด (เติมด้วยตัวลวงทั่วไปถ้าไม่พอ) */
-function makeChoices(p, R) {
-  if ((p.finds[0].kind || 'num') === 'frac') return makeFracChoices(p, R);
-  const ans = round2(p.finds[0].value);
-  const pool = [];
-  const push = v => {
-    if (typeof v !== 'number' || !isFinite(v)) return;
-    const r = round2(v);
-    if (Math.abs(r - ans) < 0.005) return;                 // ซ้ำกับคำตอบถูก
-    if (r < 0 && ans > 0 && p.finds[0].positive) return;   // ค่าที่เป็นไปไม่ได้ในบริบทของโจทย์
-    if (pool.some(x => Math.abs(x - r) < 0.005)) return;   // ซ้ำกันเอง
-    if (dpOf(r, 4) > 2) return;
-    pool.push(r);
-  };
-  (p.distract || []).forEach(push);
-  // แม่แบบที่คำตอบมีค่าได้จำกัด (เช่น จตุภาคที่ 1-4) ตั้ง exactDistract ไว้
-  // จะได้ไม่มีตัวลวงอัตโนมัติที่เป็นไปไม่ได้โผล่มา เช่น "จตุภาคที่ 8"
-  if (!p.exactDistract) {
-    const gen = [ans * 2, ans / 2, ans + Math.max(1, Math.round(Math.abs(ans) * 0.2)),
-                 ans - Math.max(1, Math.round(Math.abs(ans) * 0.2)), ans * 1.5, ans / 4, ans * 10];
-    for (const v of gen) { if (pool.length >= 6) break; push(v); }
-  }
-  const picked = R.shuffle(pool).slice(0, 3);
-  const all = R.shuffle(picked.concat([ans]));
-  return all.map(v => ({ value: v, correct: Math.abs(v - ans) < 0.005 }));
-}
-
-/** ตัวเลือกปรนัยที่คำตอบเป็นเศษส่วน — ตัวลวงมาจาก p.distractFrac ซึ่งเป็นคู่ [เศษ, ส่วน]
-    เทียบกันด้วยรูปอย่างต่ำ ตัวเลือกจึงไม่มีทางเป็นค่าเดียวกัน เช่น 3/4 กับ 6/8 */
-function makeFracChoices(p, R) {
-  const f0 = p.finds[0];
-  const an = f0.num, ad = f0.den;
-  const key = (n, d) => { const r = reduceFrac(n, d); return r[0] + '/' + r[1]; };
-  const seen = {};
-  seen[key(an, ad)] = 1;
-  const pool = [];
-  const push = pr => {
-    if (!pr || !pr[1] || !isFinite(pr[0]) || !isFinite(pr[1])) return;
-    const r = reduceFrac(pr[0], pr[1]);
-    if (Math.abs(r[1]) > 40 || seen[key(r[0], r[1])]) return;
-    seen[key(r[0], r[1])] = 1;
-    pool.push(r);
-  };
-  (p.distractFrac || []).forEach(push);
-  // ตัวลวงสำรอง ใช้ต่อเมื่อของที่แม่แบบตั้งใจใส่มายังไม่พอ 6 ตัว
-  // (เรียงตามความพลาดที่พบบ่อย: บวกผิดที่ · กลับเศษกับส่วน · ลืมย่อ)
-  for (const pr of [[an + 1, ad], [an, ad + 1], [ad, an], [an * 2, ad], [an, ad * 2], [an - 1, ad]]) {
-    if (pool.length >= 6) break;
-    if (pr[0] === 0) continue;                       // 0 เป็นตัวลวงที่ตัดทิ้งได้ง่ายเกินไป
-    push(pr);
-  }
-  const picked = R.shuffle(pool).slice(0, 3);
-  const all = R.shuffle(picked.concat([[an, ad]]));
-  return all.map(pr => ({
-    value: pr[0] / pr[1], text: fracTxt(pr[0], pr[1]),
-    correct: pr[0] === an && pr[1] === ad
-  }));
-}
-
-/* --- 3.5 การตรวจคำตอบ -----------------------------------------------------
-   คณิตต่างจากฟิสิกส์ตรงที่คำตอบไม่ได้เป็นทศนิยมเสมอไป แม่แบบจึงระบุชนิดคำตอบไว้ที่
-   finds[].kind ได้ 4 แบบ
-     'num'   (ค่าเริ่มต้น) ทศนิยมทั่วไป ยอมคลาดเคลื่อนตาม tolPct
-     'int'   จำนวนเต็ม ต้องตรงเป๊ะ
-     'frac'  เศษส่วน ต้องส่ง num/den มาคู่กัน · ถ้า lowest:true ต้องตอบเป็นเศษส่วนอย่างต่ำ
-     'exact' ต้องตรงเป๊ะ ไม่ยอมคลาดเคลื่อน
-   -------------------------------------------------------------------------- */
-function gcd(a, b) { a = Math.abs(a); b = Math.abs(b); while (b) { const t = a % b; a = b; b = t; } return a || 1; }
-
-/** ย่อเศษส่วนให้อยู่ในรูปอย่างต่ำ ตัวส่วนเป็นบวกเสมอ คืน [เศษ, ส่วน] */
-function reduceFrac(n, d) {
-  if (!d) return [n, d];
-  if (d < 0) { n = -n; d = -d; }
-  const g = gcd(n, d);
-  return [n / g, d / g];
-}
-
-/** เขียนเศษส่วนเป็นข้อความสำหรับส่งให้ M() โดย<b>ย่ออย่างต่ำ</b>ก่อน
-    ใช้กับคำตอบและตัวเลือก ซึ่งต้องอยู่ในรูปอย่างต่ำเสมอ */
-function fracTxt(n, d) { const r = reduceFrac(n, d); return fracRaw(r[0], r[1]); }
-/** เขียนเศษส่วน <b>ตามที่ให้มา</b> ไม่ย่อ — ใช้กับตัวเลขในโจทย์ เพราะบางข้อ
-    ตั้งใจให้เห็นรูปที่ยังไม่ย่อ เช่น เทียบ 3/6 กับ 3/12 ที่ตัวเศษเท่ากัน */
-function fracRaw(n, d) {
-  if (d < 0) { n = -n; d = -d; }
-  if (d === 1) return String(n);
-  return (n < 0 ? '-' : '') + 'frac(' + Math.abs(n) + ',' + d + ')';
-}
-
-/** คำแนะนำเหนือช่องกรอกคำตอบ — เปลี่ยนตามชนิดคำตอบที่แม่แบบกำหนด
-    เพราะโจทย์เศษส่วน โจทย์จำนวนเต็ม และโจทย์ทศนิยม มีกติกาการตอบคนละแบบ */
-function ansHintHTML(p) {
-  const kinds = p.finds.map(f => f.kind || 'num');
-  let tip;
-  if (kinds.indexOf('frac') >= 0)
-    tip = 'พิมพ์เศษส่วนได้เลย เช่น <b>3/4</b> หรือจำนวนคละ <b>1 1/2</b>' +
-      (p.finds.some(f => f.lowest) ? ' · ข้อนี้ต้องตอบเป็น<b>เศษส่วนอย่างต่ำ</b>' : '');
-  else if (kinds.every(k => k === 'int' || k === 'exact'))
-    tip = 'ตอบให้ตรงเป๊ะ ไม่มีการปัดเศษ · ใส่เครื่องหมายลบด้วยถ้าคำตอบเป็นจำนวนลบ';
-  else
-    tip = 'ไม่ต้องพิมพ์หน่วย · ยอมคลาดเคลื่อนได้ ±' + fmt(DB.settings.tolPct) + '%';
-  return '<div style="margin-bottom:9px"><b>กรอกคำตอบ</b> <span class="hint">(' + tip + ')</span></div>';
-}
-
-/** ข้อความคำตอบสำหรับแสดงผล — เศษส่วนแสดงเป็นเศษส่วน ไม่ใช่ทศนิยมยาว ๆ */
-function ansTxt(f) {
-  return (f.kind === 'frac' && f.den) ? fracTxt(f.num, f.den) : fmtq(f.value);
-}
-
-/** อ่านคำตอบที่นักเรียนพิมพ์ รองรับ 1,200 · +5 · 2.5x10^3 · 3/4 · -2/5 · 1 1/2
-    คืน { v, n, d } โดย n/d มีค่าเฉพาะเมื่อพิมพ์มาเป็นเศษส่วน (ใช้ตรวจว่าย่ออย่างต่ำหรือยัง) */
-/* ทำความสะอาดคำตอบก่อนอ่านเป็นตัวเลข — นักเรียนพิมพ์มาหลายแบบ ไม่ควรเสียคะแนนเพราะรูปแบบการพิมพ์
-   · เลขไทย ๐–๙ → 0–9 · เครื่องหมายลบแบบยูนิโค้ด (− – —) → - · ×10⁵ → ×10^5
-   · จุลภาคคั่นหลักพัน (1,000 · 12,345.6) ตัดทิ้ง ส่วนจุลภาคแบบอื่น เช่น 3,5 กำกวม (3.5 หรือ 35?)
-     จึงปล่อยไว้ให้อ่านไม่ผ่าน แล้วให้ ansIssue() บอกนักเรียนว่าให้ใช้จุดทศนิยม
-     (เดิมตัดจุลภาคทิ้งหมด 3,5 จึงกลายเป็น 35 โดยไม่มีใครรู้)
-   · หน่วยที่พิมพ์ต่อท้ายตัวเลข (5 m/s · 20 นิวตัน) ตัดทิ้ง เพราะหน่วยของช่องกำหนดไว้ข้างช่องแล้ว */
-function ansClean(raw) {
-  if (raw == null) return '';
-  var SUP = '⁰¹²³⁴⁵⁶⁷⁸⁹';
-  var s = String(raw).trim()
-    .replace(/[\u0E50-\u0E59]/g, function (c) { return String(c.charCodeAt(0) - 0x0E50); })
-    .replace(/[\u2212\u2012\u2013\u2014\uFE63\uFF0D]/g, '-')
-    .replace(/10\s*([⁻⁺]?)([⁰¹²³⁴⁵⁶⁷⁸⁹]+)/g, function (m, sg, d) {
-      return '10^' + (sg === '⁻' ? '-' : '') + d.replace(/./g, function (c) { return SUP.indexOf(c); });
-    })
-    .replace(/(\d),(?=\d{3}(?!\d))/g, '$1');
-  var m = s.match(/^([-+]?(?:\d[\d,]*\.?\d*|\.\d+)(?:\s*(?:[eE]|[×xX*]\s*10\s*\^?)\s*[-+]?\d+)?)\s*(.*)$/);
-  if (m && m[2] && /^[A-Za-zµμΩ°℃%\u0E01-\u0E4F]/.test(m[2])) s = m[1];
-  return s;
-}
-/** เหตุที่อ่านคำตอบเป็นตัวเลขไม่ได้ — ใช้บอกนักเรียนแทนการนับเป็นช่องว่าง */
-function ansIssue(raw) {
-  var s = ansClean(raw);
-  if (!s) return '';
-  if (/,/.test(s)) return 'ใช้จุด (.) เป็นจุดทศนิยม เช่น 3.5 ไม่ใช่ 3,5';
-  return 'อ่านเป็นตัวเลขไม่ได้ — พิมพ์ตัวเลขอย่างเดียว เช่น 12.5 · -3 · 3/4 · 2.4x10^-3';
-}
-function parseAns(raw) {
-  if (raw == null) return null;
-  let s = ansClean(raw).replace(/^\+/, '');
-  if (s === '') return null;
-  // จำนวนคละ เช่น 1 1/2 หรือ -2 3/4
-  let m = s.match(/^(-?\d+)\s+(\d+)\s*\/\s*(\d+)$/);
-  if (m) {
-    const w = Number(m[1]), n = Number(m[2]), d = Number(m[3]);
-    if (!d) return null;
-    const sign = m[1].charAt(0) === '-' ? -1 : 1;
-    const num = Math.abs(w) * d + n;
-    return { v: sign * num / d, n: sign * num, d: d };
-  }
-  // เศษส่วนล้วน เช่น 3/4 หรือ -2/5
-  m = s.replace(/\s+/g, '').match(/^(-?\d+)\/(-?\d+)$/);
-  if (m) {
-    const n = Number(m[1]), d = Number(m[2]);
-    if (!d) return null;
-    return { v: n / d, n: n, d: d };
-  }
-  s = s.replace(/\s+/g, '').replace(/[×xX]10\^?/, 'e').replace(/E/, 'e');
-  if (!/^-?(\d+\.?\d*|\.\d+)(e[-+]?\d+)?$/.test(s)) return null;
-  const v = Number(s);
-  return isFinite(v) ? { v: v, n: null, d: null } : null;
-}
-/** เอาเฉพาะค่าตัวเลข — ใช้ตรวจว่านักเรียนกรอกช่องนี้แล้วหรือยัง */
-function parseNum(raw) { const a = parseAns(raw); return a ? a.v : null; }
-
-/** เทียบคำตอบตามชนิดที่แม่แบบกำหนดไว้ใน find */
-function checkAns(raw, f, tolPct) {
-  const a = parseAns(raw);
-  if (!a) return false;
-  const kind = (f && f.kind) || 'num';
-  const target = f.value;
-  if (kind === 'frac') {
-    if (Math.abs(a.v - target) > 1e-9) return false;
-    if (!f.lowest) return true;
-    // โจทย์สั่ง "ตอบเป็นเศษส่วนอย่างต่ำ" — พิมพ์ทศนิยมมาถือว่ายังไม่ตรงรูปที่โจทย์ขอ
-    if (a.d == null) return Math.abs(target - Math.round(target)) < 1e-9;
-    const r = reduceFrac(a.n, a.d);
-    return r[0] === a.n && r[1] === a.d;
-  }
-  if (kind === 'int' || kind === 'exact') return Math.abs(a.v - target) < 1e-9;
-  const pct = (tolPct == null ? DB.settings.tolPct : tolPct) / 100;
-  const tol = Math.max(Math.abs(target) * pct, 0.005);
-  return Math.abs(a.v - target) <= tol + 1e-9;
-}
-/** ของเดิม เก็บไว้ให้โค้ดส่วนที่เทียบตัวเลขล้วนยังเรียกได้ */
-function checkNum(user, target, tolPct) { return checkAns(user, { value: target, kind: 'num' }, tolPct); }
-
 /* --- 3.6 วาดวิธีทำ 7 ขั้น ------------------------------------------------- */
 const STEP_TITLES = ['วิเคราะห์โจทย์', 'สิ่งที่โจทย์กำหนด', 'หลักการและสูตรที่ใช้',
                      'ตั้งสมการและจัดรูป', 'แทนค่า / ดำเนินการ', 'คำนวณ', 'สรุปคำตอบและตรวจสอบ'];
-
-/** ตารางสิ่งที่โจทย์กำหนดให้ + สิ่งที่ต้องหา (สร้างอัตโนมัติจากข้อมูลโจทย์) */
-function givenTable(p) {
-  let h = '<table class="given"><tbody>';
-  p.given.forEach(gv => {
-    h += '<tr><td class="s">' + M(gv.s) + '</td><td class="e">=</td>' +
-      '<td class="v">' + (typeof gv.v === 'number' ? fmt(gv.v) : gv.v) + '</td>' +
-      '<td class="d">' + (gv.unit ? esc(gv.unit) : '') + (gv.d ? ' &nbsp;(' + esc(gv.d) + ')' : '') + '</td></tr>';
-  });
-  p.finds.forEach(f => {
-    h += '<tr><td class="s">' + M(f.s) + '</td><td class="e">=</td>' +
-      '<td class="v" style="color:var(--muted)">?</td>' +
-      '<td class="d">' + (f.unit ? esc(f.unit) : '') + (f.d ? ' &nbsp;(' + esc(f.d) + ')' : '') + '</td></tr>';
-  });
-  return h + '</tbody></table>';
-}
-
-function stepBodies(p) {
-  if (p.theory) return [p.idea, choiceWhyHTML(p), p.why];
-  const s = p.sol;
-  const eqHtml = (s.eqs || []).map(e =>
-    '<div>' + EQ(e.eq) + (e.why ? '<div class="why">' + e.why + '</div>' : '') + '</div>').join('');
-  const lines = a => (Array.isArray(a) ? a : [a]).filter(Boolean).join('');
-  return [
-    s.analyze,
-    givenTable(p),
-    eqHtml,
-    lines(s.solve),
-    lines(s.subst),
-    lines(s.calc),
-    s.conclude
-  ];
-}
-
-/** กล่องอธิบายของโจทย์ทฤษฎี — แนวคิดหลัก + เหตุผลรายตัวเลือก + ข้อสรุปที่ต้องจำ */
-function theorySolutionHTML(p, open) {
-  const rows = [
-    { n: 1, t: 'แนวคิดที่ใช้ตอบ', b: p.idea },
-    { n: 2, t: 'ทำไมข้อนี้ถูก และข้ออื่นผิดตรงไหน', b: choiceWhyHTML(p) },
-    { n: 3, t: 'สิ่งที่ต้องจำไปใช้ต่อ', b: p.why }
-  ];
-  let h = '<div class="sol">';
-  rows.forEach(r => {
-    h += '<div class="solstep' + (open ? '' : ' closed') + '" data-step="' + (r.n - 1) + '">' +
-      '<div class="h"><span class="n">' + r.n + '</span>' + r.t +
-      (open ? '' : '<span class="cv">แตะเพื่อดู</span>') + '</div>' +
-      '<div class="b">' + (r.b || '<span class="hint">—</span>') + '</div></div>';
-  });
-  return h + '</div>';
-}
-/** ไล่อธิบายทีละตัวเลือกว่าถูกหรือผิดเพราะอะไร */
-function choiceWhyHTML(p) {
-  return '<div class="whylist">' + (p.choices || []).map((c, k) =>
-    '<div class="whyrow ' + (c.correct ? 'ok' : 'no') + '">' +
-    '<span class="wk">' + 'กขคง'[k] + '.</span>' +
-    '<span class="wt">' + c.text + '</span>' +
-    '<span class="wm">' + (c.correct ? '✓ ถูก' : '✗ ผิด') + '</span>' +
-    (c.why ? '<div class="wd">' + c.why + '</div>' : '') + '</div>').join('') + '</div>';
-}
-
-/** โหมด open=true จะกางทุกขั้น (ใช้ตอนพิมพ์) */
-function solutionHTML(p, open) {
-  if (p.theory) return theorySolutionHTML(p, open);
-  const b = stepBodies(p);
-  let h = '<div class="sol">';
-  for (let i = 0; i < 7; i++) {
-    h += '<div class="solstep' + (open ? '' : ' closed') + '" data-step="' + i + '">' +
-      '<div class="h"><span class="n">' + (i + 1) + '</span>' + STEP_TITLES[i] +
-      (open ? '' : '<span class="cv">แตะเพื่อดู</span>') + '</div>' +
-      '<div class="b">' + (b[i] || '<span class="hint">—</span>') + '</div></div>';
-  }
-  return h + '</div>';
-}
-
-/** ผูกให้แตะหัวข้อแล้วพับ/กางได้ */
-function bindSolutionToggle(root) {
-  $$('.solstep>.h', root).forEach(h => {
-    h.addEventListener('click', () => {
-      const st = h.parentElement;
-      st.classList.toggle('closed');
-      const cv = $('.cv', h);
-      if (cv) cv.textContent = st.classList.contains('closed') ? 'แตะเพื่อดู' : 'แตะเพื่อซ่อน';
-    });
-  });
-}
-
-/* --- 3.7 วาดตัวโจทย์ ------------------------------------------------------ */
-function topicName(id) { const t = topicOf(id); return t ? t.name : ''; }
-function problemHead(p, no) {
-  const t = topicOf(p.topic);
-  return '<div class="qhead">' +
-    (no ? '<span class="qno">ข้อ ' + no + '</span>' : '') +
-    '<span class="tag ' + LEVEL_CLS[p.level] + '">' + p.level + '</span>' +
-    (t ? '<span class="tag t">' + (t.exam ? '🎓 ' : '') + chLabel(t) + ' ' + esc(t.name) + '</span>' : '') +
-    '<span class="tag t">' + esc(p.sub) + '</span>' +
-    '</div>';
-}
-function problemBody(p) {
-  return '<div class="stem">' + p.stem + '</div>' + (p.figure ? '<div class="fig">' + p.figure + '</div>' : '');
-}
 
 /* @@SECTION-ENGINE-END@@ */
 
@@ -18555,7 +18659,7 @@ function renderPrint() {
 /* @@SECTION-PRINT-END@@ */
 
 /* ============================================================================
-   8) ชุดทดสอบตัวเอง — เปิดด้วย physics.html?selftest=1
+   8) ชุดทดสอบตัวเอง — เปิดด้วย <ไฟล์ครู>.html?selftest=1
    วนสร้างทุกแม่แบบหลาย seed แล้วตรวจว่าโจทย์และเฉลยไม่มีอะไรพัง
    ========================================================================== */
 function runSelfTest(seeds) {
@@ -18564,7 +18668,7 @@ function runSelfTest(seeds) {
   const bad = s => typeof s === 'string' && /\bundefined\b|\bNaN\b|\bInfinity\b|\{[a-zA-Z_]\w*\}/.test(s);
   TPL.forEach(tpl => {
     for (let s = 1; s <= N; s++) {
-      const p = buildProblem(tpl.id, s * 104729, { piMode: DB.settings.piMode });
+      const p = buildProblem(tpl.id, s * 104729, { g: DB.settings.g, easyG10: DB.settings.easyG10, piMode: DB.settings.piMode });
       if (!p) { fails.push(tpl.id + ' seed=' + s + ': สร้างโจทย์ไม่ได้'); continue; }
       p.finds.forEach((f, k) => {
         const kd = f.kind || 'num';
@@ -18573,6 +18677,8 @@ function runSelfTest(seeds) {
           fails.push(tpl.id + ' seed=' + s + ': คำตอบ[' + k + '] เป็นเศษส่วนที่ยังไม่อย่างต่ำ หรือตัวส่วนเกิน 24 (' + f.num + '/' + f.den + ')');
         else if (kd === 'int' && Math.abs(f.value - Math.round(f.value)) > 1e-9)
           fails.push(tpl.id + ' seed=' + s + ': คำตอบ[' + k + '] ควรเป็นจำนวนเต็ม (' + f.value + ')');
+        else if (kd === 'sci' && (!(Math.abs(f.man) >= 1 && Math.abs(f.man) < 10) || dpOf(f.man, 4) > 2 || f.exp !== Math.round(f.exp)))
+          fails.push(tpl.id + ' seed=' + s + ': คำตอบ[' + k + '] สัญกรณ์วิทยาศาสตร์ไม่อยู่ในรูป a × 10^n (' + f.man + ', ' + f.exp + ')');
         else if (kd === 'num' && dpOf(f.value, 4) > 2) fails.push(tpl.id + ' seed=' + s + ': คำตอบ[' + k + '] ทศนิยมเกิน 2 (' + f.value + ')');
         else if (f.positive && f.value <= 0) fails.push(tpl.id + ' seed=' + s + ': คำตอบ[' + k + '] ควรเป็นบวก (' + f.value + ')');
       });
@@ -18634,7 +18740,7 @@ function runSelfTest(seeds) {
       ? '<div class="notice bad" style="margin-top:12px"><b>พบข้อผิดพลาด</b><br>' +
         uniq.slice(0, 50).map(esc).join('<br>') + (uniq.length > 50 ? '<br>… อีก ' + (uniq.length - 50) + ' รายการ' : '') + '</div>'
       : '<div class="notice info" style="margin-top:12px">ผ่านทั้งหมด — ทุกแม่แบบสร้างโจทย์ได้ ' +
-        'คำตอบอยู่ในรูปที่กำหนดไว้ (จำนวนเต็ม ทศนิยมไม่เกิน 2 ตำแหน่ง หรือเศษส่วนอย่างต่ำ) ' +
+        'คำตอบอยู่ในรูปที่กำหนดไว้ (จำนวนเต็ม ทศนิยมไม่เกิน 2 ตำแหน่ง เศษส่วนอย่างต่ำ หรือ a × 10ⁿ) ' +
         'วิธีทำครบ 7 ขั้น และตัวเลือกปรนัยถูกต้อง</div>') +
     '<div class="row" style="margin-top:12px"><button class="primary" id="stBack">กลับสู่หน้าปกติ</button></div></div>';
   $('#stBack').addEventListener('click', () => { location.href = location.pathname; });
