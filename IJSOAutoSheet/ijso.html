@@ -1345,7 +1345,7 @@ table td,table th,.num,.xpstat b,.tick,
    *** ห้ามลบบรรทัดเครื่องหมาย @@BUILTIN@@ ทั้งสองอัน ตัวสร้างไฟล์ใช้หาตำแหน่ง ***
    ========================================================================== */
 /* @@BUILTIN@@ */
-const BUILTIN = {"url":"https://script.google.com/macros/s/AKfycbxVa8BYYQeIhBDmg85w2UBwsIqt6a2YudehUfCbyMny9T-5TTh1UfFxsJjTk9HLNuFc/exec","studentOnly":false,"lockCloud":false,"logo":"","header":null,"about":null,"build":"2026-09-24 17:40","ver":"v8.225","books":[{"url":"https://script.google.com/macros/s/AKfycbxVa8BYYQeIhBDmg85w2UBwsIqt6a2YudehUfCbyMny9T-5TTh1UfFxsJjTk9HLNuFc/exec","name":"ชีตวิทยาศาสตร์กายภาพ"},{"url":"https://script.google.com/macros/s/AKfycbzuuRbnE_oB7a9vx7zZizyPVEKao31ERDTU82DvydMuRTDqVoQvgns9EsjTIzpbBjuM/exec","name":"ชีตฟิสิกส์"}]};
+const BUILTIN = {"url":"https://script.google.com/macros/s/AKfycbxVa8BYYQeIhBDmg85w2UBwsIqt6a2YudehUfCbyMny9T-5TTh1UfFxsJjTk9HLNuFc/exec","studentOnly":false,"lockCloud":false,"logo":"","header":null,"about":null,"build":"2026-09-24 17:57","ver":"v8.226","books":[{"url":"https://script.google.com/macros/s/AKfycbxVa8BYYQeIhBDmg85w2UBwsIqt6a2YudehUfCbyMny9T-5TTh1UfFxsJjTk9HLNuFc/exec","name":"ชีตวิทยาศาสตร์กายภาพ"},{"url":"https://script.google.com/macros/s/AKfycbzuuRbnE_oB7a9vx7zZizyPVEKao31ERDTU82DvydMuRTDqVoQvgns9EsjTIzpbBjuM/exec","name":"ชีตฟิสิกส์"}]};
 /* @@BUILTIN-END@@ */
 
 /* ถ่ายภาพซอร์สของหน้านี้ไว้ตั้งแต่สคริปต์เพิ่งเริ่มทำงาน
@@ -3557,10 +3557,13 @@ function ansHintHTML(p) {
     tip = 'ตอบให้ตรงเป๊ะ ไม่มีการปัดเศษ · ใส่เครื่องหมายลบด้วยถ้าคำตอบเป็นจำนวนลบ';
   else
     tip = 'ไม่ต้องพิมพ์หน่วย · ยอมคลาดเคลื่อนได้ ±' + fmt(DB.settings.tolPct) + '%';
-  return '<div style="margin-bottom:9px"><b>กรอกคำตอบ</b> <span class="hint">(' + tip + ')</span></div>';
+  // คำตอบทศนิยมล้วน (รวมข้อติดรูทของฟิสิกส์) ใช้หัวข้อเดิม "กรอกคำตอบเป็นตัวเลข"
+  const head = kinds.every(k => k === 'num') ? 'กรอกคำตอบเป็นตัวเลข' : 'กรอกคำตอบ';
+  return '<div style="margin-bottom:9px"><b>' + head + '</b> <span class="hint">(' + tip + ')</span></div>';
 }
 /** ข้อความคำตอบสำหรับแสดงผล — เศษส่วนแสดงเป็นเศษส่วน ไม่ใช่ทศนิยมยาว ๆ */
 function ansTxt(f) {
+  if (f.sur) return surdExpr(f.sur);          // คำตอบติดรูท (ฟิสิกส์)
   if (f.kind === 'sci') return sciTxt(f.man, f.exp);
   return (f.kind === 'frac' && f.den) ? fracTxt(f.num, f.den) : fmtq(f.value);
 }

@@ -72,9 +72,11 @@
 
 | วิชา | แก้ที่ | ห้ามแก้ตรง (สร้างอัตโนมัติ) |
 |---|---|---|
-| ทุกวิชา — ของที่ใช้ร่วมกัน (ตอนนี้: ส่วน 0–3 และ 8 — ตัวช่วย ที่เก็บข้อมูล แบรนด์ การเชื่อมชีต แท็บ เอนจินสุ่มโจทย์ ชุดทดสอบตัวเอง) | `core/` | — |
+| ทุกวิชา — ของที่ใช้ร่วมกัน (ทุกส่วนยกเว้นคลังแม่แบบ — ตัวช่วย ที่เก็บข้อมูล การเชื่อมชีต เอนจิน หน้าจอทุกแท็บ เอกสารพิมพ์ ชุดทดสอบ · IJSO ยังใช้ส่วน 5–9 ของตัวเอง) | `core/` | — |
 | ค่าเฉพาะวิชา (ชื่อ คีย์ข้อมูล บท ระดับ) | `subjects/<วิชา>/2-subject.js` | — |
 | ตัววาดรูปประกอบโจทย์ (fig*) คลังคำ ชื่อขั้นวิธีทำ | `subjects/<วิชา>/4-helpers.js` | — |
+| คลังแม่แบบโจทย์ (ส่วน 4) | `subjects/<วิชา>/5-rest.html` | — |
+| ใบสรุปสูตร ชุดลัด ช่องวิธีทำ ค่าคงที่ คำนำหน้ารหัส | `subjects/<วิชา>/6-content.js` | — |
 | ฟิสิกส์ ม.4 | `subjects/physics/` | `PhysicsAutoSheet/physics.html` `PhysicsAutoSheet/index.html` |
 | วิทยาศาสตร์กายภาพ ม.5 | `subjects/physci/` | `PhysicalScienceAutoSheet/physci.html` `PhysicalScienceAutoSheet/index.html` |
 | IJSO สอวน. ม.ต้น | `subjects/ijso/` | `IJSOAutoSheet/ijso.html` `IJSOApp/index.html` |

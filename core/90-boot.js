@@ -61,7 +61,6 @@ setInterval(procTick, 1000);
   const left = procSecLeft(a);
   if (left != null && left <= 0) doFinish('หมดเวลา');
 })();
-
 if (/[?&]selftest=1/.test(location.search)) {
   setTab('make');
   runSelfTest(200);
@@ -90,8 +89,3 @@ renderOutboxBadge();
 markSession();
 renderBrand();
 applyAppIcon();
-</script>
-<!-- แถบเปลี่ยนแอปในเครือคลังโจทย์ (ไฟล์ร่วม ../apps.js) — หาไม่เจอก็ไม่เป็นไร แอปทำงานปกติ -->
-<script src="../apps.js" defer></script>
-</body>
-</html>

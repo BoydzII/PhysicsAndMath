@@ -1335,7 +1335,7 @@ table td,table th,.num,.xpstat b,.tick,
    *** ห้ามลบบรรทัดเครื่องหมาย @@BUILTIN@@ ทั้งสองอัน ตัวสร้างไฟล์ใช้หาตำแหน่ง ***
    ========================================================================== */
 /* @@BUILTIN@@ */
-const BUILTIN = {"url":"https://script.google.com/macros/s/AKfycbxVa8BYYQeIhBDmg85w2UBwsIqt6a2YudehUfCbyMny9T-5TTh1UfFxsJjTk9HLNuFc/exec","studentOnly":false,"lockCloud":false,"logo":"","header":null,"about":null,"build":"2026-09-24 17:40","ver":"v8.225","books":[{"url":"https://script.google.com/macros/s/AKfycbxVa8BYYQeIhBDmg85w2UBwsIqt6a2YudehUfCbyMny9T-5TTh1UfFxsJjTk9HLNuFc/exec","name":"ชีตวิทยาศาสตร์กายภาพ"},{"url":"https://script.google.com/macros/s/AKfycbzuuRbnE_oB7a9vx7zZizyPVEKao31ERDTU82DvydMuRTDqVoQvgns9EsjTIzpbBjuM/exec","name":"ชีตฟิสิกส์"}]};
+const BUILTIN = {"url":"https://script.google.com/macros/s/AKfycbxVa8BYYQeIhBDmg85w2UBwsIqt6a2YudehUfCbyMny9T-5TTh1UfFxsJjTk9HLNuFc/exec","studentOnly":false,"lockCloud":false,"logo":"","header":null,"about":null,"build":"2026-09-24 17:57","ver":"v8.226","books":[{"url":"https://script.google.com/macros/s/AKfycbxVa8BYYQeIhBDmg85w2UBwsIqt6a2YudehUfCbyMny9T-5TTh1UfFxsJjTk9HLNuFc/exec","name":"ชีตวิทยาศาสตร์กายภาพ"},{"url":"https://script.google.com/macros/s/AKfycbzuuRbnE_oB7a9vx7zZizyPVEKao31ERDTU82DvydMuRTDqVoQvgns9EsjTIzpbBjuM/exec","name":"ชีตฟิสิกส์"}]};
 /* @@BUILTIN-END@@ */
 
 /* ถ่ายภาพซอร์สของหน้านี้ไว้ตั้งแต่สคริปต์เพิ่งเริ่มทำงาน
@@ -1545,7 +1545,19 @@ document.addEventListener('keydown', e => {
    ส่วนอื่นของแอปอยู่ใน core/ ใช้ร่วมกันทุกวิชา · แก้ที่นี่แล้วสั่ง node tools/build-dist.mjs
    ========================================================================== */
 /** ชื่อวิชาที่ขึ้นบนแถบหัว หน้าเข้าใช้ ไอคอนหน้าจอโฮม และท้ายเอกสาร */
-const SUBJECT_INFO = { "title": "คลังโจทย์วิทยาศาสตร์กายภาพ ม.5", "short": "วิทย์กายภาพ", "dept": "กลุ่มสาระการเรียนรู้วิทยาศาสตร์และเทคโนโลยี", "legacyChoices": true };
+const SUBJECT_INFO = {
+  "title": "คลังโจทย์วิทยาศาสตร์กายภาพ ม.5",
+  "short": "วิทย์กายภาพ",
+  "dept": "กลุ่มสาระการเรียนรู้วิทยาศาสตร์และเทคโนโลยี",
+  "legacyChoices": true,
+  "backupName": "สำรองคลังโจทย์วิทย์กายภาพ",
+  "evidence": "หลักฐานการเรียนรู้ รายวิชาวิทยาศาสตร์กายภาพ",
+  "fxAllTitle": "📘 สรุปหลักการทุกบท",
+  "fxWord": "สรุปสูตร",
+  "roomEx": "ม.5/1",
+  "coreBtn": "เฉพาะบทเรียน",
+  "gradeWord": "ชั้น"
+};
 /* ============================================================================
    1) STORE — สถานะและการบันทึกลง localStorage
    ========================================================================== */
@@ -3537,10 +3549,13 @@ function ansHintHTML(p) {
     tip = 'ตอบให้ตรงเป๊ะ ไม่มีการปัดเศษ · ใส่เครื่องหมายลบด้วยถ้าคำตอบเป็นจำนวนลบ';
   else
     tip = 'ไม่ต้องพิมพ์หน่วย · ยอมคลาดเคลื่อนได้ ±' + fmt(DB.settings.tolPct) + '%';
-  return '<div style="margin-bottom:9px"><b>กรอกคำตอบ</b> <span class="hint">(' + tip + ')</span></div>';
+  // คำตอบทศนิยมล้วน (รวมข้อติดรูทของฟิสิกส์) ใช้หัวข้อเดิม "กรอกคำตอบเป็นตัวเลข"
+  const head = kinds.every(k => k === 'num') ? 'กรอกคำตอบเป็นตัวเลข' : 'กรอกคำตอบ';
+  return '<div style="margin-bottom:9px"><b>' + head + '</b> <span class="hint">(' + tip + ')</span></div>';
 }
 /** ข้อความคำตอบสำหรับแสดงผล — เศษส่วนแสดงเป็นเศษส่วน ไม่ใช่ทศนิยมยาว ๆ */
 function ansTxt(f) {
+  if (f.sur) return surdExpr(f.sur);          // คำตอบติดรูท (ฟิสิกส์)
   if (f.kind === 'sci') return sciTxt(f.man, f.exp);
   return (f.kind === 'frac' && f.den) ? fracTxt(f.num, f.den) : fmtq(f.value);
 }
@@ -6900,6 +6915,141 @@ T({
 });
 
 /* ============================================================================
+   เนื้อหาเฉพาะวิชา — subjects/physci/6-content.js
+   ใบสรุปสูตร (FORMULAS) ชุดลัด (PRESETS) ช่องเขียนวิธีทำในใบงาน (WORK_BLOCKS) คำเฉพาะในข้อสอบอัตนัย (ES_WORDS)
+   การ์ดค่าคงที่ในหน้าตั้งค่า (constCardHTML) และชื่อใบสรุปสูตร — หน้าจอทั้งหมดอยู่ใน core/50-ui.js
+   ========================================================================== */
+/** ชื่อใบสรุปสูตรที่พิมพ์ (บรรทัดรองบนหัวกระดาษ) */
+function fxSheetTitle() { return 'ใบสรุปหลักการ วิทยาศาสตร์กายภาพ (ฟิสิกส์) ระดับชั้นมัธยมศึกษาปีที่ 5'; }
+/* --- 5.2ข สรุปสูตรประจำบท ------------------------------------------------
+   เปิดดูได้จากปุ่มบนการ์ดเลือกเรื่อง และพิมพ์เป็นใบสรุปสูตรแจกนักเรียนได้
+   เพิ่มบทใหม่เมื่อไร ให้เติมสูตรของบทนั้นที่นี่ด้วย โดยใช้ id ของเรื่องเป็นคีย์
+   -------------------------------------------------------------------------- */
+/* ใบสรุปหลักการของแต่ละบท — คีย์ตรงกับ id ใน TOPICS */
+const FORMULAS = {
+  1: [
+    { e: 'v = f λ', d: 'สมการคลื่น ใช้ได้กับคลื่นทุกชนิด · ตรวจหน่วยเสมอ Hz × m = m/s' },
+    { e: 'f = frac(1,T)  ,  T = frac(1,f)', d: 'ความถี่กับคาบเป็นส่วนกลับกัน · ความถี่สูง คาบสั้น' },
+    { e: 'v = frac(λ,T)', d: 'ในเวลาหนึ่งคาบ คลื่นเคลื่อนที่ได้พอดีหนึ่งความยาวคลื่น' },
+    { e: 'ข้ามตัวกลาง — <b>f คงที่เสมอ</b> ส่วน v และ λ เปลี่ยนไปด้วยกัน', d: 'ความถี่ถูกกำหนดโดยแหล่งกำเนิด ไม่ใช่โดยตัวกลาง · น้ำตื้น v ลด λ สั้นลง' },
+    { e: 'frac(sin θ_1,sin θ_2) = frac(v_1,v_2) = frac(λ_1,λ_2)', d: 'กฎการหักเหของคลื่น · มุมทุกมุมวัดจาก<b>แนวฉาก</b> ไม่ใช่จากผิวรอยต่อ' },
+    { e: 'ปฏิบัพ (เสริมกัน) — Δd = n λ', d: 'ผลต่างระยะทางเป็นจำนวนเต็มเท่าของ λ (0, λ, 2λ, …) จุดนั้นสั่นแรงที่สุด' },
+    { e: 'บัพ (หักล้างกัน) — Δd = (n - frac(1,2)) λ', d: 'ผลต่างระยะทางเป็น 0.5λ 1.5λ 2.5λ … จุดนั้นแทบไม่สั่นเลย' },
+    { e: 'การเลี้ยวเบนเห็นชัดเมื่อ<b>ช่องเปิดกว้างใกล้เคียงหรือน้อยกว่า λ</b>', d: 'เสียงอ้อมประตูได้เพราะ λ ระดับเมตร · แสงดูเหมือนวิ่งตรงเพราะ λ เล็กมาก' },
+    { e: 'คลื่นกลต้องมีตัวกลาง · คลื่นแม่เหล็กไฟฟ้าไม่ต้องมี', d: 'เสียง คลื่นน้ำ คลื่นในเชือก = คลื่นกล · แสง วิทยุ ไมโครเวฟ รังสีเอกซ์ = คลื่นแม่เหล็กไฟฟ้า' }
+  ],
+  2: [
+    { e: 'v = 331 + 0.6 t', d: 'อัตราเร็วเสียงในอากาศ (m/s) เมื่อ t เป็นอุณหภูมิหน่วย °C · ที่ 25 °C ได้ 346 m/s' },
+    { e: 'v = frac(s,t)  ,  เสียงสะท้อน s = frac(v t,2)', d: 'เสียงสะท้อนเดินทาง<b>ไปและกลับ</b> ระยะถึงผนังจึงเป็นครึ่งหนึ่งของระยะทางทั้งหมด' },
+    { e: 'λ = frac(v,f)', d: 'เสียงความถี่สูงมีความยาวคลื่นสั้น · เปลี่ยนอุณหภูมิ v เปลี่ยน λ จึงเปลี่ยนตาม แต่ f คงเดิม' },
+    { e: 'I = frac(P,4 pi r^2)', d: 'ความเข้มเสียง (W/m²) · ระยะเพิ่มเป็น 2 เท่า ความเข้มลดเหลือ 1 ใน 4' },
+    { e: 'β = 10 log frac(I,I_0)  ,  I_0 = 10^{-12} `W/m`^2', d: 'ระดับความเข้มเสียง หน่วยเดซิเบล · ความเข้มเพิ่ม 10 เท่า ระดับเพิ่มขึ้น 10 dB' },
+    { e: 'f_{บีต} = |f_1 - f_2|', d: 'เกิดเมื่อความถี่ต่างกันเล็กน้อย ได้ยินเสียงดัง-ค่อยสลับกัน ใช้ตั้งสายเครื่องดนตรี' },
+    { e: 'อัตราเร็วเสียง — <b>ของแข็ง > ของเหลว > แก๊ส</b>', d: 'ตัวกลางยิ่งยืดหยุ่นและอนุภาคยิ่งชิดกัน เสียงยิ่งเดินทางเร็ว · สุญญากาศไม่มีเสียง' },
+    { e: 'ความถี่ → ระดับเสียง (สูง-ต่ำ) · แอมพลิจูด → ความดัง', d: 'หูคนได้ยินราว 20–20,000 Hz · เกิน 85 dB นาน ๆ ทำให้ประสาทหูเสื่อมถาวร' }
+  ],
+  3: [
+    { e: 'c = f λ  ,  c = 3 × 10^8 `m/s`', d: 'อัตราเร็วแสงในสุญญากาศ · แสงที่ตาเห็นมี λ ราว 400–700 nm (1 nm = 10⁻⁹ m)' },
+    { e: 'n = frac(c,v)', d: 'ดรรชนีหักเห — บอกว่าแสงช้าลงกี่เท่าในตัวกลางนั้น · น้ำ 1.33 · แก้ว 1.5 · เพชร 2.42' },
+    { e: 'n_1 sin θ_1 = n_2 sin θ_2', d: 'กฎของสเนลล์ · เข้าสู่ตัวกลางที่หนาแน่นกว่า แสงเบน<b>เข้าหา</b>แนวฉาก' },
+    { e: 'λ_{ตัวกลาง} = frac(λ_0,n)', d: 'ความยาวคลื่นสั้นลงในตัวกลาง แต่<b>ความถี่คงเดิม</b> สีที่เห็นจึงไม่เปลี่ยน' },
+    { e: 'sin θ_c = frac(n_2,n_1)', d: 'มุมวิกฤต ใช้ได้เมื่อแสงเดินจากตัวกลางหนาแน่นกว่าไปยังที่หนาแน่นน้อยกว่า · เกินมุมนี้เกิดการสะท้อนกลับหมด' },
+    { e: 'แสงสีปฐมภูมิ — <b>แดง เขียว น้ำเงิน</b>', d: 'แดง+เขียว = เหลือง · แดง+น้ำเงิน = มาเจนตา · เขียว+น้ำเงิน = ไซแอน · ครบสามสี = ขาว' },
+    { e: 'สีของวัตถุ = สีที่วัตถุ<b>สะท้อน</b>ออกมา', d: 'วัตถุสีแดงสะท้อนเฉพาะแสงสีแดง เมื่อส่องด้วยแสงสีเขียวจึงเห็นเป็น<b>สีดำ</b>' },
+    { e: 'การกระจายแสง — ม่วงหักเหมากที่สุด แดงหักเหน้อยที่สุด', d: 'เพราะดรรชนีหักเหของแสงม่วงสูงกว่า · เป็นที่มาของรุ้งกินน้ำและแถบสีจากปริซึม' },
+    { e: 'สเปกตรัมคลื่นแม่เหล็กไฟฟ้า เรียงความยาวคลื่นจากมากไปน้อย', d: 'วิทยุ → ไมโครเวฟ → อินฟราเรด → แสงที่ตาเห็น → อัลตราไวโอเลต → รังสีเอกซ์ → รังสีแกมมา' }
+  ],
+  4: [
+    { e: 'v = frac(s,t)', d: 'อัตราเร็วเฉลี่ย (m/s) = ระยะทางที่เคลื่อนที่ได้ในหนึ่งหน่วยเวลา' },
+    { e: 'vec(v) = frac(vec(s),t)', d: 'ความเร็วเฉลี่ย (m/s) = การกระจัดในหนึ่งหน่วยเวลา (มีทิศทาง)' },
+    { e: 'a = frac(Δ v,t) = frac(v - u,t)', d: 'ความเร่ง (m/s²) = ความเร็วที่เปลี่ยนไปในหนึ่งหน่วยเวลา' },
+    { e: 'Σ vec(F) = 0', d: 'กฎข้อที่ 1 ของนิวตัน (ความเฉื่อย) — วัตถุจะหยุดนิ่งหรือเคลื่อนที่ด้วยความเร็วคงตัวเมื่อแรงลัพธ์เป็นศูนย์' },
+    { e: 'Σ vec(F) = m vec(a)', d: 'กฎข้อที่ 2 ของนิวตัน — เมื่อแรงลัพธ์ไม่เป็นศูนย์ วัตถุจะเคลื่อนที่ด้วยความเร่งในทิศเดียวกับแรงลัพธ์' },
+    { e: 'vec(F)_{action} = -vec(F)_{reaction}', d: 'กฎข้อที่ 3 ของนิวตัน — ทุกแรงกิริยามีแรงปฏิกิริยาขนาดเท่ากันแต่ทิศตรงข้าม' },
+    { e: 'v_x = คงตัว  ,  a_y = g', d: 'การเคลื่อนที่แบบโพรเจกไทล์ — แกน X เคลื่อนที่ด้วยความเร็วคงตัว แกน Y ตกอย่างอิสระ' },
+    { e: 'a_c = frac(v^2,r)', d: 'ความเร่งเข้าสู่ศูนย์กลาง — ทิศชี้เข้าหาจุดศูนย์กลางเสมอ' }
+  ],
+  5: [
+    { e: 'F = G frac(m_1 m_2,r^2)', d: 'แรงโน้มถ่วง — ดึงดูดกันเสมอแปรผกผันกับระยะห่างกำลังสอง' },
+    { e: 'W = mg', d: 'น้ำหนัก (N) คือแรงโน้มถ่วงที่โลกกระทำต่อวัตถุ' },
+    { e: 'F = k frac(q_1 q_2,r^2)', d: 'แรงไฟฟ้า — ประจุเหมือนกันผลักกัน ประจุต่างกันดูดกัน' },
+    { e: 'F = qvB sin \	heta', d: 'แรงแม่เหล็กกระทำต่อประจุที่เคลื่อนที่ — ใช้กฎมือขวาหาทิศทางของแรง' },
+    { e: 'แรงเข้ม (Strong force)', d: 'แรงที่ยึดเหนี่ยวควาร์ก หรือนิวคลีออนในนิวเคลียส มีระยะส่งแรงสั้นมาก' },
+    { e: 'แรงอ่อน (Weak force)', d: 'แรงที่เกี่ยวข้องกับการสลายให้อนุภาคบีตาในนิวเคลียส' }
+  ],
+  6: [
+    { e: 'E_k = frac(1,2) m v^2', d: 'พลังงานจลน์ — พลังงานของวัตถุที่กำลังเคลื่อนที่' },
+    { e: 'E_p = mgh', d: 'พลังงานศักย์โน้มถ่วง — ขึ้นอยู่กับความสูงจากระดับอ้างอิง' },
+    { e: 'E_k + E_p = คงตัว', d: 'กฎการอนุรักษ์พลังงานกล — พลังงานไม่สูญหายแต่เปลี่ยนรูปได้ (เมื่อไม่มีแรงเสียดทาน)' },
+    { e: 'E = mc^2', d: 'พลังงานมวลสาร (สมการไอน์สไตน์) — ใช้คำนวณพลังงานจากปฏิกิริยานิวเคลียร์' }
+  ],
+  7: [
+    { e: 'c = f λ', d: 'คลื่นแม่เหล็กไฟฟ้าทุกชนิดเดินทางในสุญญากาศด้วยอัตราเร็วเท่าแสง (c)' },
+    { e: 'แอนะล็อก vs ดิจิทัล', d: 'สัญญาณแอนะล็อกเปลี่ยนแปลงต่อเนื่อง (ถูกรบกวนง่าย) · ดิจิทัลมีแค่ 0 กับ 1 (ทนการรบกวนได้ดีกว่า)' },
+    { e: 'การสื่อสารด้วยคลื่นแม่เหล็กไฟฟ้า', d: 'วิทยุ AM (สะท้อนบรรยากาศชั้นไอโอโนสเฟียร์ได้) · วิทยุ FM และไมโครเวฟ (ทะลุชั้นบรรยากาศได้ ต้องมีสถานีทวนสัญญาณหรือดาวเทียม)' }
+  ]
+};
+/* --- 5.2ค ชุดลัด — กดปุ่มเดียวได้ชุดโจทย์พร้อมใช้ ------------------------ */
+const PRESETS = [
+  { key: 'concept', icon: '💡', name: 'เช็กความเข้าใจ 15 ข้อ', scope: 'core', kind: 'practice',
+    counts: { 'ทฤษฎี': 15 },
+    desc: 'ปรนัยเชิงแนวคิดล้วน ไม่ต้องคำนวณ เฉลยบอกด้วยว่าตัวเลือกอื่นผิดตรงไหน' },
+  { key: 'quick', icon: '⚡', name: 'ฝึกเร็ว 10 ข้อ', scope: 'core', kind: 'practice',
+    counts: { 'ทฤษฎี': 2, 'ง่าย': 3, 'ปานกลาง': 3, 'ยาก': 2 },
+    desc: 'คละทุกบทเรียนและทุกระดับ เหมาะกับการอุ่นเครื่องก่อนเรียน' },
+  { key: 'review', icon: '📚', name: 'ทบทวนทั้งเล่ม 20 ข้อ', scope: 'core', kind: 'practice',
+    counts: { 'ทฤษฎี': 4, 'ง่าย': 4, 'ปานกลาง': 7, 'ยาก': 5 },
+    desc: 'ครอบคลุมทั้งสามบท เน้นระดับปานกลาง เหมาะกับการทบทวนก่อนสอบ' },
+  { key: 'exam', icon: '📝', name: 'ชุดสอบ 20 ข้อ (ไม่มีเฉลย)', scope: 'all', kind: 'test',
+    counts: { 'ทฤษฎี': 4, 'ง่าย': 5, 'ปานกลาง': 7, 'ยาก': 4 },
+    desc: 'คละทั้งสามบท ไม่บอกถูกผิดจนกว่าจะกดส่ง ใช้วัดผลจริงได้' }
+];
+/* ช่องเขียนวิธีทำในใบงาน — ยุบขั้นที่ทำต่อเนื่องกันเข้าเป็นช่องเดียว
+   เพื่อให้นักเรียนเขียนได้ลื่นขึ้นและใบงานไม่ยาวเกินไป
+   (ใบเฉลยและหน้าจอในแอพยังแยกครบทั้ง 7 ขั้นตามเดิม) */
+const WORK_BLOCKS = [
+  { id: 'analyze',  t: 'วิเคราะห์โจทย์ / โจทย์กำหนด', n: 3, d: 'รวมขั้นที่ 1-2' },
+  { id: 'equation', t: 'สมการที่ใช้ / การแก้สมการ',   n: 4, d: 'รวมขั้นที่ 3-4' },
+  { id: 'subst',    t: 'แทนค่าลงในสมการ',            n: 1, d: 'ขั้นที่ 5' },
+  { id: 'calc',     t: 'คำนวณ',                      n: 3, d: 'ขั้นที่ 6' },
+  { id: 'conclude', t: 'สรุปคำตอบ',                  n: 1, d: 'ขั้นที่ 7' }
+];
+/* ชื่อตัวแปรที่ยาวกว่าหนึ่งตัวอักษร — วิชานี้ยังไม่มี จึงอ่านทีละตัวอักษรตามเดิม
+   ถ้าจะเพิ่ม ให้เติมในอาเรย์นี้ (ดูตัวอย่างในไฟล์เคมี) */
+const ES_WORDS = [];
+/* --- 6.3 แท็บตั้งค่า ------------------------------------------------------ */
+/** การ์ด "ค่าคงที่และเกณฑ์" — ใช้ทั้งฝั่งครูและฝั่งนักเรียน */
+function constCardHTML() {
+  const st = DB.settings;
+  return '<div class="card"><h3>ค่าคงที่และเกณฑ์</h3><div class="row" style="gap:18px;align-items:flex-end;flex-wrap:wrap">' +
+    '<div><label class="hint" for="setexmin">เวลาสอบเริ่มต้น (นาที)</label><br>' +
+    '<input type="number" id="setexmin" min="0" max="300" step="5" value="' + (st.examMin || 0) +
+    '" style="width:100px" inputmode="numeric"></div>' +
+    '<div><label class="hint" for="setexout">ออกจากแอปได้ (ครั้ง)</label><br>' +
+    '<input type="number" id="setexout" min="0" max="20" value="' + (st.examMaxOut || 0) +
+    '" style="width:100px" inputmode="numeric"></div>' +
+    '<div><label class="hint" for="setdevlock">ล็อกเครื่องหลังเข้าใช้ (ชั่วโมง)</label><br>' +
+    '<input type="number" id="setdevlock" min="0" max="24" step="1" value="' + (st.devLockHr || 0) +
+    '" style="width:100px" inputmode="numeric"></div>' +
+    '<div><label class="hint" for="setexsec">รวมเวลานอกแอปไม่เกิน (วินาที)</label><br>' +
+    '<input type="number" id="setexsec" min="0" max="3600" step="10" value="' + (st.examMaxOutSec || 0) +
+    '" style="width:100px" inputmode="numeric"></div>' +
+    '<div><label class="hint" for="settol">ยอมคลาดเคลื่อน (%)</label><br>' +
+    '<input type="number" id="settol" min="0" max="10" step="0.5" value="' + st.tolPct + '" style="width:90px" inputmode="decimal"></div>' +
+    '<div><label class="hint" for="setpass">เกณฑ์ผ่าน (%)</label><br>' +
+    '<input type="number" id="setpass" min="0" max="100" value="' + st.passPct + '" style="width:90px" inputmode="numeric"></div>' +
+    '</div>' +
+    '<div class="hint" style="margin-top:7px">' +
+    '<b>ค่าคุมสอบใช้กับชุดที่เป็นแบบทดสอบเท่านั้น</b> ใส่ 0 = ไม่จำกัด · ' +
+    'กติกาจะติดไปกับชุดที่สร้าง<b>หลังจากนี้</b> ชุดเดิมยังใช้กติกาที่ตั้งไว้ตอนสร้าง<br>' +
+    'ระบบจับได้เฉพาะการสลับแอปหรือล็อกจอ<b>บนเครื่องเดียวกัน</b> ' +
+    'ถ้านักเรียนเปิดอีกเครื่องหรือแคปหน้าจอ ระบบไม่รู้ — ใช้เป็นหลักฐานประกอบ ไม่ใช่คำตัดสิน' +
+    '</div></div>';
+}
+/** คำนำหน้ารหัสชุดโจทย์ของวิชานี้ (ห้ามเปลี่ยน — รหัสที่แจกไปแล้วและแอปรุ่นเก่าในเครื่องนักเรียนอ้างอยู่) */
+const QCODE_PREFIX = 'PHYSQ1:';
+
+/* ============================================================================
    5) แท็บสร้างชุดโจทย์ และแท็บทำแบบฝึกหัด
    ========================================================================== */
 
@@ -6923,7 +7073,6 @@ function mkCfg() {
   if (!c.topics.length) c.topics = ALL_TOPIC_IDS.slice();
   return c;
 }
-
 /** สร้างชุดโจทย์ใหม่ — เก็บแค่ tplId กับ seed ทำให้สร้างโจทย์เดิมกลับมาได้เสมอ */
 function createQuiz(o) {
   const R = rng(o.seed >>> 0);
@@ -6955,11 +7104,10 @@ function createQuiz(o) {
     limitSec: o.kind === 'test' ? Math.round((DB.settings.examMin || 0) * 60) : 0,
     maxOut: o.kind === 'test' ? Math.round(DB.settings.examMaxOut || 0) : 0,
     maxOutSec: o.kind === 'test' ? Math.round(DB.settings.examMaxOutSec || 0) : 0,
-    g: DB.settings.g, easyG10: !!DB.settings.easyG10,
+    g: DB.settings.g, easyG10: !!DB.settings.easyG10, piMode: DB.settings.piMode || '3.14',
     items: items.map(it => ({ tplId: it.tplId, seed: it.seed }))
   };
 }
-
 /* ── ใบตอบสำหรับข้อสอบกระดาษ ────────────────────────────────────────────
    ครูมีข้อสอบเป็นกระดาษหรือ PDF อยู่แล้ว แอปเก็บแค่จำนวนข้อกับเฉลย
    ไม่เก็บตัวโจทย์ ไม่แกะไฟล์ นักเรียนอ่านโจทย์จากกระดาษแล้วมาแตะตอบในแอป
@@ -6998,7 +7146,6 @@ function essayScore(max, rub, nSteps) {
   const d = Math.max(1, Number(nSteps) || ESSAY_STEPS.length);
   return Math.max(0, Number(max) || 0) * Math.min(n, d) / d;
 }
-
 /* ── การตรวจแต่ละขั้นของข้อแบบทำทีละขั้น ───────────────────────────────
    ทุกขั้นตรวจได้ด้วยเครื่อง ยกเว้นขั้นสรุปที่ตรวจแบบผ่อนปรน
    คือดูว่าพิมพ์ตัวเลขคำตอบและหน่วยมาครบไหม ครูแก้คะแนนทับได้เสมอ  */
@@ -7121,7 +7268,6 @@ function quizKeyItems(q) {
     return !isEssayItem(it) && !isMcItem(it);
   });
 }
-
 function quizChoiceItems(q) {
   return ((q && q.items) || []).filter(function (it) { return !isEssayItem(it); });
 }
@@ -7183,7 +7329,6 @@ function paperStyle(q) {
   return PAPER_STYLES[st] ? st : 'th';
 }
 function paperLabel(style, k) { return (PAPER_STYLES[style] || PAPER_STYLES.th)[k] || '?'; }
-
 /** แปลงข้อความเฉลยเป็นรายการเลขตัวเลือก พร้อมเดารูปแบบที่ครูใช้
     รับได้ทั้ง "1.ก 2.ข" · "กขคงข" · "334122342" · "1) 3" ทีละบรรทัด · a b c d
     คืน { keys, style } — style คือรูปแบบที่จะเอาไปแสดงบนกระดาษคำตอบ */
@@ -7217,7 +7362,6 @@ function parsePaperKeys(text) {
   });
   return { keys: nums, style: 'num' };
 }
-
 /* แคชโจทย์ที่สร้างแล้ว เพื่อไม่ต้องคำนวณซ้ำทุกครั้งที่วาดหน้าจอ */
 const PCACHE = {};
 /** seedShift ทำให้แบบทดสอบใช้แม่แบบและระดับความยากชุดเดิมเป๊ะ แต่ตัวเลขในโจทย์ต่างออกไป
@@ -7234,7 +7378,7 @@ function problemsOf(quiz) {
   const key = quiz.id + ':' + sh;
   if (PCACHE[key]) return PCACHE[key];
   const arr = quiz.items.map(it =>
-    buildProblem(it.tplId, ((it.seed + sh) >>> 0), { g: quiz.g, easyG10: quiz.easyG10 }));
+    buildProblem(it.tplId, ((it.seed + sh) >>> 0), { g: quiz.g, easyG10: quiz.easyG10, piMode: quiz.piMode }));
   PCACHE[key] = arr;
   return arr;
 }
@@ -7242,7 +7386,6 @@ function problemsOf(quiz) {
 function quizMaxScore(quiz) {
   return ((quiz && quiz.items) || []).reduce(function (s, it) { return s + itemMax(it); }, 0);
 }
-
 /** สร้างแบบทดสอบจากแบบฝึกหัดชุดหนึ่ง — แม่แบบ/หัวข้อ/ระดับเหมือนเดิมทุกข้อ แต่ตัวเลขคนละชุด */
 function makeTestFrom(quiz, title) {
   let sh = 0;
@@ -7254,11 +7397,10 @@ function makeTestFrom(quiz, title) {
     kind: 'test', seedShift: sh, fromQuizId: quiz.id,
     seed: quiz.seed, topics: (quiz.topics || []).slice(), subs: (quiz.subs || []).slice(),
     counts: Object.assign({}, quiz.counts),
-    g: quiz.g, easyG10: !!quiz.easyG10,
+    g: quiz.g, easyG10: !!quiz.easyG10, piMode: quiz.piMode,
     items: quiz.items.map(it => ({ tplId: it.tplId, seed: it.seed }))
   };
 }
-
 /* --- 5.1 แถบระบุผู้เรียนด้านบน ------------------------------------------- */
 function renderWho() {
   const el = $('#whoBar');
@@ -7305,7 +7447,6 @@ function renderWho() {
     $('#selStd').addEventListener('change', e => { DB.cur.studentId = e.target.value || null; save(); render(); });
   }
 }
-
 /* --- 5.2 แท็บสร้างชุดโจทย์ ------------------------------------------------ */
 /* --- 5.2ก แท็บ "ใบงานของฉัน" สำหรับนักเรียนที่ลงชื่อเข้าใช้ ---------------- */
 /* ── แต้มสะสม เลเวล และโปรไฟล์ของผู้เรียน ───────────────────────────────
@@ -7347,17 +7488,14 @@ function xpAvatar(id) {
   return XP_AVATARS.find(function (a) { return a.id === id; }) || XP_AVATARS[0];
 }
 function xpGear(id) { return XP_GEARS.find(function (g) { return g.id === id; }) || XP_GEARS[0]; }
-
 let XPME = null;           // โปรไฟล์ล่าสุดจากชีต · null = ยังไม่ได้โหลดหรือชีตยังไม่รองรับ
 let XPBUSY = false;
-
 /** ชื่อที่แสดงต่อคนอื่น — ใช้นามแฝงถ้าตั้งไว้ หรือเลือกไม่เปิดเผยชื่อ */
 function xpDisplayName(p) {
   if (!p) return '';
   if (p.alias) return p.alias;
   return p.showName ? (p.name || '') : 'ไม่เปิดเผยชื่อ';
 }
-
 /** โหลดโปรไฟล์จากชีต — ให้แต้มเข้าใช้ประจำวันไปในตัว
     ชีตรุ่นเก่ายังไม่รู้จักคำสั่งนี้ ให้เงียบไว้ ไม่ต้องรบกวนนักเรียน */
 async function xpLoad(afterWork) {
@@ -7373,7 +7511,6 @@ async function xpLoad(afterWork) {
   } catch (e) { XPME = null; }
   finally { XPBUSY = false; renderMyAssignments(); }
 }
-
 /** บอกชีตว่าวันนี้ฝึกเองไปกี่ข้อ — ชีตเป็นคนตัดสินว่าจะให้แต้มหรือไม่ */
 async function xpPractice(n) {
   if (!isStudent() || !cloudOn() || !(n > 0)) return;
@@ -7387,7 +7524,6 @@ async function xpPractice(n) {
     renderMyAssignments();
   } catch (e) {}
 }
-
 /** ฉลองตอนเลเวลขึ้น พร้อมบอกว่าปลดล็อกอะไรใหม่บ้าง */
 function xpLevelUp(from, to) {
   const newA = XP_AVATARS.filter(function (a) { return a.lv > from && a.lv <= to; });
@@ -7409,7 +7545,6 @@ function xpLevelUp(from, to) {
     buttons: [{ label: 'เยี่ยม!', cls: 'primary' }]
   });
 }
-
 /** การ์ดโปรไฟล์ของผู้เรียน — หน้าตา เลเวล ความคืบหน้า และสถิติการใช้งาน */
 function xpCardHTML() {
   if (!XPME) return '';
@@ -7450,17 +7585,14 @@ function xpCardHTML() {
         ' · กด<b>เริ่มช่วงเรียน</b>ตอนครูสอน ได้ 5 แต้มทุก 10 นาทีที่อยู่กับบทเรียน') +
     '</div></div>';
 }
-
 /* ── อันดับเลเวล ──────────────────────────────────────────────────────
    ชีตส่งมาแค่สิบอันดับแรก บวกแถวของเราเองถ้าหลุดสิบอันดับ
    จึงเบาพอ ๆ กันไม่ว่าจะดูห้องเดียวหรือทั้งโรงเรียนสามร้อยกว่าคน
    ชื่อที่เห็นเป็นชื่อที่เจ้าตัวเลือกเปิดเผยเอง ชีตเป็นคนตัดสินให้แล้ว   */
 let XPBOARD = { scope: 'class', data: null, err: '', busy: false };
-
 function xpMedal(rank) {
   return rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : String(rank);
 }
-
 function xpBoardRow(r, showCls) {
   const av = xpAvatar(r.avatar), ge = xpGear(r.gear);
   return '<div class="xpbrow' + (r.me ? ' me' : '') + '">' +
@@ -7474,7 +7606,6 @@ function xpBoardRow(r, showCls) {
     '<div class="xpblv"><b>' + r.level + '</b><span>' + r.xp + ' แต้ม</span></div>' +
     '</div>';
 }
-
 function xpBoardHTML() {
   const b = XPBOARD;
   const tabs = '<div class="xpbtabs">' +
@@ -7497,7 +7628,6 @@ function xpBoardHTML() {
   }
   return tabs + body;
 }
-
 async function xpBoardLoad(root) {
   const wrap = $('#xpbWrap', root);
   XPBOARD.data = null; XPBOARD.err = '';
@@ -7510,7 +7640,6 @@ async function xpBoardLoad(root) {
   const w2 = $('#xpbWrap', root);
   if (w2) w2.innerHTML = xpBoardHTML();
 }
-
 function xpBoardBox() {
   if (!XPME) return;
   const m = openModal({
@@ -7532,7 +7661,6 @@ function xpBoardBox() {
   });
   return m;
 }
-
 /** กล่องแต่งตัว — เลือกหน้าตา ของแต่งตัว นามแฝง และจะเปิดเผยชื่อหรือไม่ */
 function xpSkinBox() {
   if (!XPME) return;
@@ -7597,9 +7725,7 @@ function xpSkinBox() {
     }
   });
 }
-
 let MYA = { list: null, loading: false, err: '' };
-
 async function loadMyAssignments(force) {
   if (MYA.loading) return;
   if (MYA.list && !force) return;
@@ -7626,9 +7752,7 @@ async function loadMyAssignments(force) {
   catch (e) { MYA.err = e.message; }
   finally { MYA.loading = false; renderMyAssignments(); }
 }
-
 function renderMyAssignments() { renderMake(); }
-
 function myAssignmentsHTML() {
   const done = {};
   DB.attempts.filter(a => a.finishedAt && a.assignCode).forEach(a => { done[a.assignCode] = a; });
@@ -7687,13 +7811,11 @@ function bindMyAssignments() {
   const fb = $('#myaFlush'); if (fb) fb.addEventListener('click', () => flushOutbox(true));
   $$('[data-take]').forEach(b => b.addEventListener('click', () => takeAssignment(b.dataset.take)));
 }
-
 /** อ่านเฉพาะ id ของชุดโจทย์จากสเปก โดยไม่ต้องถอดทั้งชุด */
 function decodeQuizId(spec) {
   const q = decodeQuiz(spec);
   return q ? q.id : null;
 }
-
 /** รับใบงานตามรหัสแล้วเริ่มทำทันที */
 async function takeAssignment(code) {
   try {
@@ -7706,7 +7828,6 @@ async function takeAssignment(code) {
     startQuiz(q.id, a.code);
   } catch (e) { toast(e.message, 'bad'); }
 }
-
 function takeByCode() {
   openModal({
     title: 'กรอกรหัสใบงาน',
@@ -7731,76 +7852,6 @@ function takeByCode() {
     onMount: root => $('#tcCode', root).focus()
   });
 }
-
-/* --- 5.2ข สรุปสูตรประจำบท ------------------------------------------------
-   เปิดดูได้จากปุ่มบนการ์ดเลือกเรื่อง และพิมพ์เป็นใบสรุปสูตรแจกนักเรียนได้
-   เพิ่มบทใหม่เมื่อไร ให้เติมสูตรของบทนั้นที่นี่ด้วย โดยใช้ id ของเรื่องเป็นคีย์
-   -------------------------------------------------------------------------- */
-/* ใบสรุปหลักการของแต่ละบท — คีย์ตรงกับ id ใน TOPICS */
-const FORMULAS = {
-  1: [
-    { e: 'v = f λ', d: 'สมการคลื่น ใช้ได้กับคลื่นทุกชนิด · ตรวจหน่วยเสมอ Hz × m = m/s' },
-    { e: 'f = frac(1,T)  ,  T = frac(1,f)', d: 'ความถี่กับคาบเป็นส่วนกลับกัน · ความถี่สูง คาบสั้น' },
-    { e: 'v = frac(λ,T)', d: 'ในเวลาหนึ่งคาบ คลื่นเคลื่อนที่ได้พอดีหนึ่งความยาวคลื่น' },
-    { e: 'ข้ามตัวกลาง — <b>f คงที่เสมอ</b> ส่วน v และ λ เปลี่ยนไปด้วยกัน', d: 'ความถี่ถูกกำหนดโดยแหล่งกำเนิด ไม่ใช่โดยตัวกลาง · น้ำตื้น v ลด λ สั้นลง' },
-    { e: 'frac(sin θ_1,sin θ_2) = frac(v_1,v_2) = frac(λ_1,λ_2)', d: 'กฎการหักเหของคลื่น · มุมทุกมุมวัดจาก<b>แนวฉาก</b> ไม่ใช่จากผิวรอยต่อ' },
-    { e: 'ปฏิบัพ (เสริมกัน) — Δd = n λ', d: 'ผลต่างระยะทางเป็นจำนวนเต็มเท่าของ λ (0, λ, 2λ, …) จุดนั้นสั่นแรงที่สุด' },
-    { e: 'บัพ (หักล้างกัน) — Δd = (n - frac(1,2)) λ', d: 'ผลต่างระยะทางเป็น 0.5λ 1.5λ 2.5λ … จุดนั้นแทบไม่สั่นเลย' },
-    { e: 'การเลี้ยวเบนเห็นชัดเมื่อ<b>ช่องเปิดกว้างใกล้เคียงหรือน้อยกว่า λ</b>', d: 'เสียงอ้อมประตูได้เพราะ λ ระดับเมตร · แสงดูเหมือนวิ่งตรงเพราะ λ เล็กมาก' },
-    { e: 'คลื่นกลต้องมีตัวกลาง · คลื่นแม่เหล็กไฟฟ้าไม่ต้องมี', d: 'เสียง คลื่นน้ำ คลื่นในเชือก = คลื่นกล · แสง วิทยุ ไมโครเวฟ รังสีเอกซ์ = คลื่นแม่เหล็กไฟฟ้า' }
-  ],
-  2: [
-    { e: 'v = 331 + 0.6 t', d: 'อัตราเร็วเสียงในอากาศ (m/s) เมื่อ t เป็นอุณหภูมิหน่วย °C · ที่ 25 °C ได้ 346 m/s' },
-    { e: 'v = frac(s,t)  ,  เสียงสะท้อน s = frac(v t,2)', d: 'เสียงสะท้อนเดินทาง<b>ไปและกลับ</b> ระยะถึงผนังจึงเป็นครึ่งหนึ่งของระยะทางทั้งหมด' },
-    { e: 'λ = frac(v,f)', d: 'เสียงความถี่สูงมีความยาวคลื่นสั้น · เปลี่ยนอุณหภูมิ v เปลี่ยน λ จึงเปลี่ยนตาม แต่ f คงเดิม' },
-    { e: 'I = frac(P,4 pi r^2)', d: 'ความเข้มเสียง (W/m²) · ระยะเพิ่มเป็น 2 เท่า ความเข้มลดเหลือ 1 ใน 4' },
-    { e: 'β = 10 log frac(I,I_0)  ,  I_0 = 10^{-12} `W/m`^2', d: 'ระดับความเข้มเสียง หน่วยเดซิเบล · ความเข้มเพิ่ม 10 เท่า ระดับเพิ่มขึ้น 10 dB' },
-    { e: 'f_{บีต} = |f_1 - f_2|', d: 'เกิดเมื่อความถี่ต่างกันเล็กน้อย ได้ยินเสียงดัง-ค่อยสลับกัน ใช้ตั้งสายเครื่องดนตรี' },
-    { e: 'อัตราเร็วเสียง — <b>ของแข็ง > ของเหลว > แก๊ส</b>', d: 'ตัวกลางยิ่งยืดหยุ่นและอนุภาคยิ่งชิดกัน เสียงยิ่งเดินทางเร็ว · สุญญากาศไม่มีเสียง' },
-    { e: 'ความถี่ → ระดับเสียง (สูง-ต่ำ) · แอมพลิจูด → ความดัง', d: 'หูคนได้ยินราว 20–20,000 Hz · เกิน 85 dB นาน ๆ ทำให้ประสาทหูเสื่อมถาวร' }
-  ],
-  3: [
-    { e: 'c = f λ  ,  c = 3 × 10^8 `m/s`', d: 'อัตราเร็วแสงในสุญญากาศ · แสงที่ตาเห็นมี λ ราว 400–700 nm (1 nm = 10⁻⁹ m)' },
-    { e: 'n = frac(c,v)', d: 'ดรรชนีหักเห — บอกว่าแสงช้าลงกี่เท่าในตัวกลางนั้น · น้ำ 1.33 · แก้ว 1.5 · เพชร 2.42' },
-    { e: 'n_1 sin θ_1 = n_2 sin θ_2', d: 'กฎของสเนลล์ · เข้าสู่ตัวกลางที่หนาแน่นกว่า แสงเบน<b>เข้าหา</b>แนวฉาก' },
-    { e: 'λ_{ตัวกลาง} = frac(λ_0,n)', d: 'ความยาวคลื่นสั้นลงในตัวกลาง แต่<b>ความถี่คงเดิม</b> สีที่เห็นจึงไม่เปลี่ยน' },
-    { e: 'sin θ_c = frac(n_2,n_1)', d: 'มุมวิกฤต ใช้ได้เมื่อแสงเดินจากตัวกลางหนาแน่นกว่าไปยังที่หนาแน่นน้อยกว่า · เกินมุมนี้เกิดการสะท้อนกลับหมด' },
-    { e: 'แสงสีปฐมภูมิ — <b>แดง เขียว น้ำเงิน</b>', d: 'แดง+เขียว = เหลือง · แดง+น้ำเงิน = มาเจนตา · เขียว+น้ำเงิน = ไซแอน · ครบสามสี = ขาว' },
-    { e: 'สีของวัตถุ = สีที่วัตถุ<b>สะท้อน</b>ออกมา', d: 'วัตถุสีแดงสะท้อนเฉพาะแสงสีแดง เมื่อส่องด้วยแสงสีเขียวจึงเห็นเป็น<b>สีดำ</b>' },
-    { e: 'การกระจายแสง — ม่วงหักเหมากที่สุด แดงหักเหน้อยที่สุด', d: 'เพราะดรรชนีหักเหของแสงม่วงสูงกว่า · เป็นที่มาของรุ้งกินน้ำและแถบสีจากปริซึม' },
-    { e: 'สเปกตรัมคลื่นแม่เหล็กไฟฟ้า เรียงความยาวคลื่นจากมากไปน้อย', d: 'วิทยุ → ไมโครเวฟ → อินฟราเรด → แสงที่ตาเห็น → อัลตราไวโอเลต → รังสีเอกซ์ → รังสีแกมมา' }
-  ],
-  4: [
-    { e: 'v = frac(s,t)', d: 'อัตราเร็วเฉลี่ย (m/s) = ระยะทางที่เคลื่อนที่ได้ในหนึ่งหน่วยเวลา' },
-    { e: 'vec(v) = frac(vec(s),t)', d: 'ความเร็วเฉลี่ย (m/s) = การกระจัดในหนึ่งหน่วยเวลา (มีทิศทาง)' },
-    { e: 'a = frac(Δ v,t) = frac(v - u,t)', d: 'ความเร่ง (m/s²) = ความเร็วที่เปลี่ยนไปในหนึ่งหน่วยเวลา' },
-    { e: 'Σ vec(F) = 0', d: 'กฎข้อที่ 1 ของนิวตัน (ความเฉื่อย) — วัตถุจะหยุดนิ่งหรือเคลื่อนที่ด้วยความเร็วคงตัวเมื่อแรงลัพธ์เป็นศูนย์' },
-    { e: 'Σ vec(F) = m vec(a)', d: 'กฎข้อที่ 2 ของนิวตัน — เมื่อแรงลัพธ์ไม่เป็นศูนย์ วัตถุจะเคลื่อนที่ด้วยความเร่งในทิศเดียวกับแรงลัพธ์' },
-    { e: 'vec(F)_{action} = -vec(F)_{reaction}', d: 'กฎข้อที่ 3 ของนิวตัน — ทุกแรงกิริยามีแรงปฏิกิริยาขนาดเท่ากันแต่ทิศตรงข้าม' },
-    { e: 'v_x = คงตัว  ,  a_y = g', d: 'การเคลื่อนที่แบบโพรเจกไทล์ — แกน X เคลื่อนที่ด้วยความเร็วคงตัว แกน Y ตกอย่างอิสระ' },
-    { e: 'a_c = frac(v^2,r)', d: 'ความเร่งเข้าสู่ศูนย์กลาง — ทิศชี้เข้าหาจุดศูนย์กลางเสมอ' }
-  ],
-  5: [
-    { e: 'F = G frac(m_1 m_2,r^2)', d: 'แรงโน้มถ่วง — ดึงดูดกันเสมอแปรผกผันกับระยะห่างกำลังสอง' },
-    { e: 'W = mg', d: 'น้ำหนัก (N) คือแรงโน้มถ่วงที่โลกกระทำต่อวัตถุ' },
-    { e: 'F = k frac(q_1 q_2,r^2)', d: 'แรงไฟฟ้า — ประจุเหมือนกันผลักกัน ประจุต่างกันดูดกัน' },
-    { e: 'F = qvB sin \	heta', d: 'แรงแม่เหล็กกระทำต่อประจุที่เคลื่อนที่ — ใช้กฎมือขวาหาทิศทางของแรง' },
-    { e: 'แรงเข้ม (Strong force)', d: 'แรงที่ยึดเหนี่ยวควาร์ก หรือนิวคลีออนในนิวเคลียส มีระยะส่งแรงสั้นมาก' },
-    { e: 'แรงอ่อน (Weak force)', d: 'แรงที่เกี่ยวข้องกับการสลายให้อนุภาคบีตาในนิวเคลียส' }
-  ],
-  6: [
-    { e: 'E_k = frac(1,2) m v^2', d: 'พลังงานจลน์ — พลังงานของวัตถุที่กำลังเคลื่อนที่' },
-    { e: 'E_p = mgh', d: 'พลังงานศักย์โน้มถ่วง — ขึ้นอยู่กับความสูงจากระดับอ้างอิง' },
-    { e: 'E_k + E_p = คงตัว', d: 'กฎการอนุรักษ์พลังงานกล — พลังงานไม่สูญหายแต่เปลี่ยนรูปได้ (เมื่อไม่มีแรงเสียดทาน)' },
-    { e: 'E = mc^2', d: 'พลังงานมวลสาร (สมการไอน์สไตน์) — ใช้คำนวณพลังงานจากปฏิกิริยานิวเคลียร์' }
-  ],
-  7: [
-    { e: 'c = f λ', d: 'คลื่นแม่เหล็กไฟฟ้าทุกชนิดเดินทางในสุญญากาศด้วยอัตราเร็วเท่าแสง (c)' },
-    { e: 'แอนะล็อก vs ดิจิทัล', d: 'สัญญาณแอนะล็อกเปลี่ยนแปลงต่อเนื่อง (ถูกรบกวนง่าย) · ดิจิทัลมีแค่ 0 กับ 1 (ทนการรบกวนได้ดีกว่า)' },
-    { e: 'การสื่อสารด้วยคลื่นแม่เหล็กไฟฟ้า', d: 'วิทยุ AM (สะท้อนบรรยากาศชั้นไอโอโนสเฟียร์ได้) · วิทยุ FM และไมโครเวฟ (ทะลุชั้นบรรยากาศได้ ต้องมีสถานีทวนสัญญาณหรือดาวเทียม)' }
-  ]
-};
-
 function formulaHTML(topicId) {
   const t = topicOf(topicId), list = FORMULAS[topicId] || [];
   if (!list.length) return '<div class="hint">ยังไม่มีสรุปสูตรของบทนี้</div>';
@@ -7808,23 +7859,21 @@ function formulaHTML(topicId) {
     '<div class="fxrow"><div class="fxe">' + M(f.e) + '</div>' +
     (f.d ? '<div class="fxd">' + f.d + '</div>' : '') + '</div>').join('') +
     '</div><div class="hint" style="margin-top:10px">' +
-    (t && t.exam ? 'หมวดนี้เป็น<b>เทคนิคการทำข้อสอบ</b> ใช้ควบคู่กับสูตรของบทที่ 1–7'
-                 : 'ทบทวนสูตรให้แม่นก่อนลงมือทำโจทย์ จะช่วยให้เลือกสมการได้เร็วขึ้นมาก') + '</div>';
+    (t && t.exam ? 'หมวดนี้เป็น<b>เทคนิคการทำข้อสอบ</b> ใช้ควบคู่กับสูตรของบทเรียนปกติ'
+                 : 'ทบทวนสูตรให้แม่นก่อนลงมือทำโจทย์ จะช่วยให้เลือกวิธีได้เร็วขึ้นมาก') + '</div>';
 }
-
 function showFormulas(topicId) {
   const t = topicOf(topicId);
   openModal({
     title: (t ? (t.icon || '') + ' สรุปสูตร ' + chLabel(t) + ' ' + t.name : 'สรุปสูตร'),
     bodyHTML: formulaHTML(topicId),
     buttons: [{ label: 'ปิด' },
-              { label: 'ดูสรุปสูตรทุกบท', act: (close) => { close(); showAllFormulas(); } }]
+              { label: 'ดู' + SUBJECT_INFO.fxWord + 'ทุกบท', act: (close) => { close(); showAllFormulas(); } }]
   });
 }
-
 function showAllFormulas() {
   openModal({
-    title: '📘 สรุปหลักการทุกบท',
+    title: SUBJECT_INFO.fxAllTitle,
     bodyHTML: TOPICS.map(t =>
       '<div class="fxhead">' + (t.icon || '') + ' ' + chLabel(t) + ' &nbsp;' + esc(t.name) + '</div>' +
       formulaHTML(t.id)).join('<div style="height:14px"></div>'),
@@ -7832,14 +7881,13 @@ function showAllFormulas() {
               { label: 'พิมพ์ใบสรุปสูตร', cls: 'primary', act: (close) => { close(); printFormulas(); } }]
   });
 }
-
 /** สร้างใบสรุปสูตรลงพื้นที่พิมพ์ แล้วเปิดกล่องพิมพ์ของเครื่อง */
 function printFormulas() {
   const hd = DB.settings.header || {};
   let h = '<div class="phead">' +
     (DB.settings.logo ? '<img class="plogo" src="' + DB.settings.logo + '" alt="">' : '') +
     '<div class="t1">' + esc(hd.school || '') + '</div>' +
-    '<div class="t2">ใบสรุปหลักการ วิทยาศาสตร์กายภาพ (ฟิสิกส์) ระดับชั้นมัธยมศึกษาปีที่ 5</div>' +
+    '<div class="t2">' + fxSheetTitle() + '</div>' +
     '<div class="t3">' + esc(hd.term || '') + (hd.teacher ? ' &nbsp;·&nbsp; ครูผู้สอน ' + esc(hd.teacher) : '') + '</div>' +
     '</div><hr class="prule">';
   TOPICS.forEach(t => {
@@ -7854,7 +7902,6 @@ function printFormulas() {
   $('#printarea').innerHTML = h;
   setTimeout(() => window.print(), 60);
 }
-
 /* --- 5.2ข ใบตอบจากข้อสอบกระดาษ ------------------------------------------
    ครูกรอกแค่จำนวนข้อกับเฉลย แล้วได้ใบตอบที่ตรวจอัตโนมัติ
    ระบบคุมสอบ จับเวลา ส่งขึ้นชีต และรายงานชั้นเรียน ใช้ของเดิมทั้งหมด      */
@@ -7864,13 +7911,11 @@ function printFormulas() {
    จึงได้ระบบคุมสอบ จับเวลา ส่งขึ้นชีต และรายงานชั้นเรียนมาครบโดยไม่ต้องเขียนใหม่
    ส่ง quiz มาถ้าเป็นการแก้ชุดเดิม                                        */
 const MC_CH_MIN = 2, MC_CH_MAX = 5, MC_MAX_Q = 60;
-
 function mcBlank(nCh) {
   const cs = [];
   for (let k = 0; k < nCh; k++) cs.push('');
   return { stem: '', cs: cs, ans: 0, why: '', img: '' };
 }
-
 function mcDialog(quiz) {
   const nCh0 = clamp(Math.round(Number((quiz && quiz.paper && quiz.paper.ch) || 4)),
                      MC_CH_MIN, MC_CH_MAX);
@@ -8072,7 +8117,6 @@ function mcDialog(quiz) {
     }
   });
 }
-
 /** กล่องสร้างหรือแก้ใบตอบ — ส่ง quiz มาถ้าเป็นการแก้เฉลยของชุดเดิม */
 function paperDialog(quiz) {
   const cur = quiz && quiz.paper ? quiz.paper : { ch: 4, topic: null };
@@ -8212,7 +8256,6 @@ function paperDialog(quiz) {
     }
   });
 }
-
 function isPickMatch(pick, target) {
   if (pick == null || target == null) return false;
   if (Number(pick) === Number(target)) return true;
@@ -8226,7 +8269,6 @@ function isPickMatch(pick, target) {
   if (tIdx >= 0 && Number(pick) === tIdx) return true;
   return false;
 }
-
 /** หน้าต่างเลือกห้องและเกณฑ์การตรวจคะแนนใหม่เมื่อครูแก้เฉลยกระดาษคำตอบ */
 function rescorePaperDialog(quiz, oldItems, newItems, pp, title, lim, changedKeys) {
   const attempts = DB.attempts.filter(a => a.quizId === quiz.id);
@@ -8419,7 +8461,6 @@ function rescorePaperDialog(quiz, oldItems, newItems, pp, title, lim, changedKey
     }
   });
 }
-
 /** ตรวจคำตอบใหม่และประมวลผลคะแนนใหม่สำหรับชุดกระดาษคำตอบที่แก้เฉลย */
 function rescorePaperAttempts(quiz) {
   if (!quiz || !isPaper(quiz)) return 0;
@@ -8450,7 +8491,6 @@ function rescorePaperAttempts(quiz) {
   });
   return count;
 }
-
 /* --- 5.2ง ข้อสอบอัตนัย ---------------------------------------------------
    ครูพิมพ์โจทย์และเฉลยเองทีละข้อ แล้วให้คะแนนด้วยเกณฑ์ 5 ขั้น          */
 
@@ -8464,7 +8504,6 @@ function essayWorkBox(max) {
       new Array(per + 1).join('<div class="wl"></div>');
   }).join('') + '</div>';
 }
-
 /* ── คลังข้อสอบอัตนัย: หน้าจอ ──────────────────────────────────────────
    สองทางเข้า — หยิบจากคลังตอนออกข้อสอบ และการ์ดจัดการในแท็บสร้างชุดโจทย์ */
 
@@ -8485,7 +8524,6 @@ function esBankRow(r, opts) {
     (o.manage ? '<button class="sm danger" data-bdel="' + r.id + '">ลบ</button>' : '') +
     '</label>';
 }
-
 /** ถามบทและคำค้นก่อนเก็บเข้าคลัง — สองอย่างนี้คือสิ่งที่ทำให้หาเจอทีหลัง
     ถ้าไม่ถามตอนนี้ ครูจะไม่ย้อนกลับมาใส่ แล้วคลังจะกลายเป็นกองที่ค้นไม่ได้ */
 function esBankSaveBox(x) {
@@ -8515,7 +8553,6 @@ function esBankSaveBox(x) {
     onMount: function (root) { $('#bsTags', root).focus(); }
   });
 }
-
 /** กล่องหยิบข้อจากคลังมาใส่ในชุดที่กำลังทำ — เลือกได้หลายข้อพร้อมกัน */
 function esBankPick(onPick) {
   const all = esBankAll();
@@ -8582,7 +8619,6 @@ function esBankPick(onPick) {
     }
   });
 }
-
 /** การ์ดจัดการคลัง — ดูทั้งหมด ลบ ส่งออกเป็นไฟล์ และนำเข้ากลับ */
 function esBankCardHTML() {
   const all = esBankAll();
@@ -8609,8 +8645,6 @@ function esBankCardHTML() {
                  (ESSYNC.busy ? 'กำลังซิงก์…' : '🔄 ซิงก์กับชีต') + '</button>' : '') +
     '</div><div style="margin-top:7px">' + esBankSyncLine() + '</div></div>';
 }
-
-
 /** สร้างโจทย์อัตนัยใหม่ลงคลังทีละข้อ */
 /* ── ปุ่มตัวหนาและสี ─────────────────────────────────────────────────────
    ครูเลือกข้อความในช่องแล้วกดปุ่ม ระบบครอบแท็กให้เอง ไม่ต้องพิมพ์แท็ก
@@ -8650,7 +8684,6 @@ function esFmtWrap(fld, tag) {
   try { fld.setSelectionRange(from, to); } catch (e) {}
   fld.dispatchEvent(new Event('input', { bubbles: true }));
 }
-
 function esNewQuestionDialog() {
   const item = {
     stem: '',
@@ -8763,7 +8796,6 @@ function esNewQuestionDialog() {
     }
   });
 }
-
 /** ดาวน์โหลดแม่แบบตารางสำหรับนำเข้าโจทย์ */
 function esDownloadExcelTemplate() {
   const csv = '\uFEFF"โจทย์","คะแนน","เฉลยวิธีทำ","คำตอบสุดท้าย","หน่วย","รูปภาพURL"\n' +
@@ -8772,7 +8804,6 @@ function esDownloadExcelTemplate() {
   download(new Blob([csv], { type: 'text/csv;charset=utf-8;' }), 'แม่แบบนำเข้าโจทย์ข้อสอบ_' + SUBJECT + '.csv');
   toast('ดาวน์โหลดแม่แบบเรียบร้อย สามารถเปิดแก้ไขใน Excel ได้เลย', 'ok');
 }
-
 /** หน้าต่างจัดการคลัง */
 function esBankManage() {
   const draw = function (root) {
@@ -8816,7 +8847,6 @@ function esBankManage() {
     }
   });
 }
-
 /** ส่งออกคลังเป็นไฟล์ — ใช้ย้ายเครื่องและสำรองไว้ */
 function esBankExport() {
   const all = esBankAll();
@@ -8828,7 +8858,6 @@ function esBankExport() {
     { type: 'application/json' }), name);
   toast('ส่งออก ' + all.length + ' ข้อแล้ว', 'ok');
 }
-
 /** นำเข้าคลังจากไฟล์ — รองรับทั้ง JSON, Excel (.xlsx) และ CSV */
 async function esBankImport() {
   const f = await pickFile('.json,.xlsx,.csv,application/json,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv');
@@ -8921,7 +8950,6 @@ async function esBankImport() {
     esBankSync(false);        // ส่งข้อที่เพิ่งนำเข้าขึ้นชีตให้เครื่องอื่นเห็นด้วย
   }
 }
-
 /* ── กล่องที่ครูใช้ออกข้อสอบทีละขั้น ─────────────────────────────────── */
 
 /* สัญลักษณ์ที่ครูกดแทรกได้ — ยกกำลังและตัวห้อยใส่อักขระจริง ไม่ต้องพิมพ์ ^ หรือ _
@@ -8961,12 +8989,6 @@ const ES_SYMS = [
   { lab: '±', ins: ' ± ', t: 'บวกลบ' },
   { lab: '→', ins: ' → ', t: 'ลูกศร' }
 ];
-
-
-
-
-
-
 /* ============================================================
    In-App PDF Viewer Engine (Open-Book Notes Reader)
    ============================================================ */
@@ -8976,7 +8998,6 @@ var PDF_STATE = {
   url: '',
   fileName: ''
 };
-
 function togglePdfViewer() {
   const wrap = $('#examSplitWrap');
   const pane = $('#pdfPane');
@@ -8992,7 +9013,6 @@ function togglePdfViewer() {
   if (btn) btn.classList.toggle('primary', PDF_STATE.visible);
   window.dispatchEvent(new Event('resize'));
 }
-
 function togglePdfMode() {
   const wrap = $('#examSplitWrap');
   const pane = $('#pdfPane');
@@ -9014,7 +9034,6 @@ function togglePdfMode() {
   }
   window.dispatchEvent(new Event('resize'));
 }
-
 function bindPdfEvents() {
   const btnTog = $('#btnTogglePDF');
   if (btnTog && !btnTog._b) {
@@ -9063,12 +9082,10 @@ function bindPdfEvents() {
     });
   }
 }
-
 /* ============================================================
    Digital Handwriting Pad Engine (iPad & Apple Pencil 100%)
    ============================================================ */
 var HW_INSTANCES = {};
-
 /* ── ลายมือที่เดินทางไปถึงครูได้จริง ─────────────────────────────────────
    หน้าจอนักเรียนเขียนว่า "ภาพจะถูกบันทึกให้ครูตรวจโดยอัตโนมัติ"
    แต่ตอนส่งขึ้นชีตส่งไปแค่คะแนน จำนวนครั้ง เวลา และตัวเลือกที่กด
@@ -9085,7 +9102,6 @@ var HW_INSTANCES = {};
 var HW_HOLD_MS = 550;
 var HW_ROOM_BELOW = 360;
 var HW_SIZES = [{ id: 'บาง', v: 1.6 }, { id: 'กลาง', v: 2.8 }, { id: 'หนา', v: 4.5 }];
-
 function hwNum(n) { n = Math.round(n); return (n < 0 ? '-' : '') + Math.abs(n).toString(36); }
 /** step > 1 = เก็บจุดเว้นจุด ใช้ตอนงานใหญ่เกินที่ชีตรับได้ ปลายเส้นเก็บไว้เสมอ */
 function hwEncode(strokes, step) {
@@ -9206,7 +9222,6 @@ function hwFromRow(a) {
   if (a && a.h) o.strokes = hwDecode(a.h);
   return o;
 }
-
 function initHandwritingPad(k, canvasEl, wrapEl, initialStrokes, onSave) {
   if (!canvasEl || !wrapEl) return null;
   const ctx = canvasEl.getContext('2d');
@@ -9498,7 +9513,6 @@ function initHandwritingPad(k, canvasEl, wrapEl, initialStrokes, onSave) {
   setTimeout(function () { resize(); fitToBackground(); }, 40);
   return pad;
 }
-
 /* บนไอแพด แป้นพิมพ์เด้งขึ้นหรือยุบลงจะยิง resize ทุกครั้ง
    ถ้าปรับขนาดผืนผ้าใบใหม่ทุกรอบ ลายมือจะถูกวาดใหม่และหน้าจอกระตุกตามไปด้วย
    ทั้งที่ความกว้างเท่าเดิม ปรับเฉพาะตอนความกว้างเปลี่ยนจริงเท่านั้น */
@@ -9510,7 +9524,6 @@ window.addEventListener('resize', () => {
     if (HW_INSTANCES[k] && HW_INSTANCES[k].resize) HW_INSTANCES[k].resize();
   });
 });
-
 /* ── คลังข้อสอบอัตนัย ───────────────────────────────────────────────────
    เก็บ "รายข้อ" ไม่ใช่รายชุด เพราะครูหยิบทีละข้อมาประกอบชุดใหม่
    คีย์ผูกกับ LS_KEY ของวิชา คลังจึงแยกกันเองโดยไม่ต้องเขียนตัวกรอง
@@ -9603,7 +9616,6 @@ function esBankUsed(ids) {
 const ESBANK_TOMB_KEY = LS_KEY + '.esbanktomb';
 const ESBANK_PULL_BATCH = 15;        // ขอเนื้อข้อสอบทีละกี่ข้อต่อการเรียกหนึ่งครั้ง
 let ESSYNC = { busy: false, at: 0, msg: '', err: '' };
-
 /** ทะเบียนข้อที่ลบไปแล้ว {id: เวลาที่ลบ} — เก็บไว้ให้เครื่องอื่นรู้ว่าควรลบตาม */
 function esBankTombs() {
   try {
@@ -9619,7 +9631,6 @@ function esBankTombAdd(id) {
   o[id] = Date.now();
   esBankTombWrite(o);
 }
-
 /** แปลงข้อในคลังเป็นรูปที่ส่งขึ้นชีต — เนื้อข้อสอบทั้งก้อนเป็นข้อความชิ้นเดียว */
 function esBankToWire(r) {
   return {
@@ -9642,7 +9653,6 @@ function esBankFromWire(w) {
     it: it
   };
 }
-
 /** ซิงก์สองทาง — เรียกเองด้วยปุ่ม หรือเรียกเงียบ ๆ ตอนครูเปิดแอป */
 async function esBankSync(loud) {
   if (ESSYNC.busy) return;
@@ -9734,7 +9744,6 @@ async function esBankSync(loud) {
     renderMake();
   }
 }
-
 /** บรรทัดสถานะใต้ปุ่มซิงก์ — บอกตรง ๆ ว่าคลังนี้ตามกับชีตแล้วหรือยัง */
 function esBankSyncLine() {
   if (!cloudOn()) {
@@ -9750,7 +9759,6 @@ function esBankSyncLine() {
   }
   return '<span class="hint">คลังนี้ซิงก์กับชีตได้ เปิดเครื่องไหนก็เจอข้อเดียวกัน</span>';
 }
-
 /** ข้อความสั้น ๆ ที่ใช้แทนชื่อข้อในรายการ — ตัดจากโจทย์ให้พออ่านออก */
 function esBankLabel(r) {
   const s = String((r.it && r.it.stem) || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
@@ -9764,7 +9772,6 @@ function esBankMatch(r, q) {
                ((r.it && r.it.key) || '') + ' ' + (tp ? tp.name : '')).toLowerCase();
   return q.toLowerCase().split(/\s+/).filter(Boolean).every(function (w) { return hay.indexOf(w) >= 0; });
 }
-
 /* ── ร่างข้อสอบที่ยังพิมพ์ไม่เสร็จ ───────────────────────────────────────
    เก็บคนละคีย์กับข้อมูลแอป เพื่อไม่ให้การกู้คืนไฟล์สำรองหรือล้างข้อมูลลบร่างทิ้ง
    เก็บแยกตามกล่อง — 'new' คือกล่องสร้างใหม่ · ที่เหลือคือ id ของชุดที่กำลังแก้ */
@@ -9787,7 +9794,6 @@ function esHasWork(title, list) {
            (x.chips || []).length || (x.eqs || []).length || x.img;
   });
 }
-
 /* ── คลังรูปจากห้องวาดรูปโจทย์ (FigureLab) ────────────────────────────────
    ทั้งสองแอปอยู่โดเมนเดียวกันบน GitHub Pages จึงอ่าน localStorage ก้อนเดียวกันได้ตรง ๆ
    ไม่ต้องมีเซิร์ฟเวอร์ ไม่ต้องคัดลอกไฟล์ ครูวาดเสร็จกดบันทึกลงคลัง แล้วมาเลือกที่นี่ได้ทันที
@@ -9800,7 +9806,6 @@ function esHasWork(title, list) {
 const FIGLAB_KEY = 'figlab.lib.v1';
 const FIG_SUBJECTS = { physics: 'ฟิสิกส์', math: 'คณิตศาสตร์', chem: 'เคมี', other: 'อื่น ๆ' };
 let figLibExtra = null;              /* คลังที่นำเข้าจากไฟล์ในรอบการใช้งานนี้ */
-
 function figLibAll() {
   if (figLibExtra) return figLibExtra;
   try {
@@ -9818,7 +9823,6 @@ function figB64(str) {
   return btoa(bin);
 }
 function figUrl(svg) { return 'data:image/svg+xml;base64,' + figB64(svg); }
-
 /** กล่องเลือกรูปจากคลัง — onPick(dataUrl, ชื่อรูป) · onUpload() คือทางเลือกอัปโหลดเอง */
 function figPicker(onPick, onUpload) {
   let sub = 'all', topic = '', q = '';
@@ -9957,7 +9961,6 @@ function figPicker(onPick, onUpload) {
     }
   });
 }
-
 /** ย่อรูปก่อนเก็บ — รหัสใบงานที่ส่งขึ้นชีตมีเพดานประมาณห้าหมื่นตัวอักษร
     รูปถ่ายจากมือถือขนาดเต็มทำให้เกินเพดานทันที จึงย่อให้อัตโนมัติเสมอ */
 function essayShrinkImage(file, cb) {
@@ -9996,7 +9999,6 @@ function essayShrinkImage(file, cb) {
   fr.onerror = function () { cb('', 0, 0); };
   fr.readAsDataURL(file);
 }
-
 /** ดึงชื่อตัวแปรจากสมการ เช่น "v = u + at" ได้ v u a t
     ตัดคำที่เป็นฟังก์ชันหรือหน่วยออก แล้วให้ครูแก้รายการได้เองอยู่ดี */
 /* ตัวห้อยเป็นส่วนหนึ่งของชื่อตัวแปร (s₁ คนละตัวกับ s₂) ส่วนตัวยกเป็นเลขชี้กำลัง ไม่ใช่ชื่อ
@@ -10009,9 +10011,6 @@ const ES_SUB = '₀₁₂₃₄₅₆₇₈₉₊₋ₙ';
    (Σ อยู่กลางช่วง Α-Ω พอดี ต้องเขียนช่วงข้ามมันเป็น Α-Ρ กับ Τ-Ω) */
 const ES_PRE = 'ΔΣ';
 const ES_BASE = 'A-Za-zα-ωΑ-ΡΤ-Ωϕ';
-/* ชื่อตัวแปรที่ยาวกว่าหนึ่งตัวอักษร — วิชานี้ยังไม่มี จึงอ่านทีละตัวอักษรตามเดิม
-   ถ้าจะเพิ่ม ให้เติมในอาเรย์นี้ (ดูตัวอย่างในไฟล์เคมี) */
-const ES_WORDS = [];
 /** รูปแบบของชื่อตัวแปรหนึ่งตัว — ตัวอักษรหนึ่งตัว ตามด้วยตัวห้อย (ถ้ามี) */
 function esVarRe(flags) {
   /* ตัวห้อยยาวกว่าหนึ่งตัวอักษรก็ได้ เช่น v_x  F_net  a_max
@@ -10040,7 +10039,6 @@ const ES_ANGNUM = '-?\\d+(?:\\.\\d+)?';
    ต้องลองแบบ "เลขแล้วตามด้วยสัญลักษณ์" ก่อน ไม่งั้น sin2θ จะได้แค่ sin2 แล้ว θ หลุดเป็นตัวแปรลอย */
 const ES_TRIG_RE = new RegExp('\\b(sin|cos|tan)\\s*(' +
   ES_ANGNUM + '\\s*' + ES_ANGSYM + '|' + ES_ANGNUM + '|' + ES_ANGSYM + ')\\s*°?', 'g');
-
 function essayVarsFrom(eqText) {
   let t = String(eqText || '');
   /* ดึงมุมออกมาเป็นตัวแปรก่อน แล้วเอาออกจากข้อความ
@@ -10076,7 +10074,6 @@ function essayVarsFrom(eqText) {
   (t.match(esVarRe('g')) || []).forEach(take);
   return out;
 }
-
 /** วาดรายการข้อในกล่องพิมพ์ข้อสอบใหม่ทุกครั้งที่เพิ่มหรือลบข้อ */
 function essayRows(list, root) {
   const box = $('#esList', root);
@@ -10314,7 +10311,6 @@ function essayRows(list, root) {
   });
   list.forEach(function (x, i) { roleBtns(i, 'chips'); roleBtns(i, 'eqs'); varRows(i); });
 }
-
 /** กล่องสร้างหรือแก้ข้อสอบอัตนัย — ส่ง quiz มาถ้าเป็นการแก้ของเดิม */
 function essayDialog(quiz) {
   const list = quiz ? quiz.items.filter(isEssayItem).map(function (it) {
@@ -10573,7 +10569,6 @@ function essayDialog(quiz) {
     }
   });
 }
-
 /** สรุปสิ่งที่นักเรียนเลือกในแต่ละขั้น — ครูจะได้เห็นว่าพลาดตรงไหน ไม่ใช่เห็นแค่ผ่านหรือไม่ผ่าน */
 function esGuideSummary(pp, x) {
   const it = pp.it, gs = esGS(x);
@@ -10596,7 +10591,6 @@ function esGuideSummary(pp, x) {
   return '<div class="hint" style="margin-top:6px;line-height:1.8">' +
     parts.map(esc).join('<br>') + '</div>';
 }
-
 /** หน้าให้คะแนนอัตนัย — ครูติ๊กเกณฑ์ 5 ขั้นต่อข้อ ทีละคน */
 function essayGradeBox(quizId) {
   const q = DB.quizzes.find(x => x.id === quizId);
@@ -10683,7 +10677,6 @@ function essayGradeBox(quizId) {
     onMount: root => draw(root)
   });
 }
-
 /** ใบตอบเป็นแบบทดสอบเสมอ และประทับกติกาคุมสอบเหมือนชุดที่สุ่มจากแม่แบบ */
 function createPaperQuiz(title, pp, items, lim) {
   return {
@@ -10695,29 +10688,15 @@ function createPaperQuiz(title, pp, items, lim) {
     items: items
   };
 }
-
-/* --- 5.2ค ชุดลัด — กดปุ่มเดียวได้ชุดโจทย์พร้อมใช้ ------------------------ */
-const PRESETS = [
-  { key: 'concept', icon: '💡', name: 'เช็กความเข้าใจ 15 ข้อ', scope: 'core', kind: 'practice',
-    counts: { 'ทฤษฎี': 15 },
-    desc: 'ปรนัยเชิงแนวคิดล้วน ไม่ต้องคำนวณ เฉลยบอกด้วยว่าตัวเลือกอื่นผิดตรงไหน' },
-  { key: 'quick', icon: '⚡', name: 'ฝึกเร็ว 10 ข้อ', scope: 'core', kind: 'practice',
-    counts: { 'ทฤษฎี': 2, 'ง่าย': 3, 'ปานกลาง': 3, 'ยาก': 2 },
-    desc: 'คละทุกบทเรียนและทุกระดับ เหมาะกับการอุ่นเครื่องก่อนเรียน' },
-  { key: 'review', icon: '📚', name: 'ทบทวนทั้งเล่ม 20 ข้อ', scope: 'core', kind: 'practice',
-    counts: { 'ทฤษฎี': 4, 'ง่าย': 4, 'ปานกลาง': 7, 'ยาก': 5 },
-    desc: 'ครอบคลุมทั้งสามบท เน้นระดับปานกลาง เหมาะกับการทบทวนก่อนสอบ' },
-  { key: 'exam', icon: '📝', name: 'ชุดสอบ 20 ข้อ (ไม่มีเฉลย)', scope: 'all', kind: 'test',
-    counts: { 'ทฤษฎี': 4, 'ง่าย': 5, 'ปานกลาง': 7, 'ยาก': 4 },
-    desc: 'คละทั้งสามบท ไม่บอกถูกผิดจนกว่าจะกดส่ง ใช้วัดผลจริงได้' }
-];
-
 function presetTopics(scope) {
   if (Array.isArray(scope)) return scope.slice();
-  if (scope === 'core') return TOPICS.filter(t => !t.exam).map(t => t.id);
-  return ALL_TOPIC_IDS.slice();
+  const gs = GRADES.find(x => x.key === scope);
+  if (gs) return TOPICS.filter(t => gradeOf(t) === gs.id).map(t => t.id);
+  let list = scope === 'core' ? TOPICS.filter(t => !t.exam) : TOPICS.slice();
+  const pg = presetGrade();
+  if (pg) list = list.filter(t => gradeOf(t) === pg.id);   // เล็งเฉพาะชั้นที่ครูเลือกไว้
+  return list.map(t => t.id);
 }
-
 function runPreset(key) {
   const ps = PRESETS.find(p => p.key === key);
   if (!ps) return;
@@ -10729,7 +10708,9 @@ function runPreset(key) {
   c.mode = 'mix';
   c.counts = Object.assign({}, ps.counts);
   c.kind = ps.kind;
-  const title = ps.name.replace(/\s*\d+\s*ข้อ.*$/, '').trim() + ' — ' + thDate(Date.now());
+  const pg = presetGrade();
+  const title = ps.name.replace(/\s*\d+\s*ข้อ.*$/, '').trim() +
+    (pg && ps.scope !== 'ex' ? ' ' + pg.label : '') + ' — ' + thDate(Date.now());
   c.lastTitle = title;
   const q = createQuiz({
     title: title, topics: c.topics, subs: [], counts: c.counts, kind: ps.kind,
@@ -10742,19 +10723,54 @@ function runPreset(key) {
   toast('สร้าง' + ps.name + 'แล้ว — กดเริ่มทำได้เลย', 'ok');
   startQuiz(q.id);
 }
-
 /* ชุดที่อยากให้เป็นจุดโฟกัสของหน้า — เปลี่ยนคำเดียวก็ย้ายตัวหลักได้ */
 const PRESET_HERO = 'quick';
-
+/** ชุดลัดที่ยังไม่มีเรื่องรองรับ ไม่ต้องขึ้นปุ่มให้กดแล้วเจอ error */
+function presetsAvailable() { return PRESETS.filter(p => presetTopics(p.scope).length); }
+/** ข้อความช่วงชั้นบนหัวเอกสาร — เปลี่ยนตามระดับชั้นที่มีเรื่องอยู่จริงในไฟล์นี้
+    ไฟล์ที่มีแค่ ม.1 จะขึ้นว่า "ชั้นมัธยมศึกษาปีที่ 1" ไม่ใช่ ม.1–ม.3 ลอย ๆ */
+function gradeSpanText() {
+  if (SUBJECT_INFO.gradeSpan) return SUBJECT_INFO.gradeSpan;   // ปรับพื้นฐานฟิสิกส์ไม่ได้แบ่งตามชั้น
+  const gs = gradesInUse().filter(g => g.id).map(g => g.id);
+  if (!gs.length) return 'ระดับมัธยมศึกษาตอนต้น';
+  if (gs.length === 1) return 'ชั้นมัธยมศึกษาปีที่ ' + gs[0];
+  return 'ชั้นมัธยมศึกษาปีที่ ' + gs[0] + '–' + gs[gs.length - 1];
+}
+/** ระดับชั้นที่ชุดลัดกำลังเล็งอยู่ — 'all' คือคละทุกชั้น
+    เมื่อมีคลังโจทย์หลายระดับชั้น ปุ่ม "ฝึกเร็ว" ต้องรู้ว่าจะสุ่มจากชั้นไหน
+    ไม่งั้นเด็ก ม.1 จะได้โจทย์ ม.3 ปนมาโดยไม่รู้ตัว */
+function presetGrade() {
+  const k = (DB.cur && DB.cur.pg) || 'all';
+  if (k === 'all') return null;
+  const g = GRADES.find(x => x.key === k && x.id);
+  return g && TOPICS.some(t => gradeOf(t) === g.id) ? g : null;
+}
+/** แถบเลือกระดับชั้นของชุดลัด — ขึ้นเฉพาะเมื่อมีคลังโจทย์มากกว่าหนึ่งระดับชั้น */
+function presetGradeBarHTML() {
+  const gs = gradesInUse().filter(g => g.id);
+  if (gs.length < 2) return '';
+  const cur = (DB.cur && DB.cur.pg) || 'all';
+  const btn = (k, label) => '<button class="sm' + (cur === k ? ' on' : '') + '" data-pg="' + k + '">' +
+    esc(label) + '</button>';
+  return '<div class="row" style="margin-bottom:11px;align-items:center">' +
+    '<b style="font-size:13px">ชุดลัดของ' + SUBJECT_INFO.gradeWord + '</b>' +
+    gs.map(g => btn(g.key, g.label)).join('') + btn('all', 'คละทุก' + SUBJECT_INFO.gradeWord) +
+    '<span class="hint">' +
+    (cur === 'all' ? (SUBJECT_INFO.gradeWord === 'ช่วง' ? 'ตอนนี้สุ่มจากทุกช่วงรวมกัน' : 'ตอนนี้สุ่มจากทุกระดับชั้นรวมกัน') :
+      'ปุ่มด้านล่างจะสุ่มเฉพาะโจทย์ของ' + esc((GRADES.find(x => x.key === cur) || {}).name || '')) +
+    '</span></div>';
+}
 function presetsHTML() {
-  const hero = PRESETS.find(p => p.key === PRESET_HERO) || PRESETS[0];
-  const rest = PRESETS.filter(p => p !== hero);
+  const list = presetsAvailable();
+  const hero = list.find(p => p.key === PRESET_HERO) || list[0] || null;
+  const rest = hero ? list.filter(p => p !== hero) : list;
   return '<div class="card"><h3>เริ่มเร็วด้วยชุดลัด<span class="sub">กดปุ่มเดียวได้ชุดโจทย์พร้อมทำทันที</span></h3>' +
-    '<button class="phero" data-preset="' + hero.key + '">' +
+    presetGradeBarHTML() +
+    (hero ? '<button class="phero" data-preset="' + hero.key + '">' +
       '<span class="pi">' + hero.icon + '</span>' +
       '<span class="grow"><span class="pt">' + esc(hero.name) + '</span>' +
       '<span class="pd">' + esc(hero.desc) + '</span></span>' +
-      '<span class="pgo">เริ่มทำเลย</span></button>' +
+      '<span class="pgo">เริ่มทำเลย</span></button>' : '') +
     '<div class="plist">' + rest.map(p =>
       '<button class="prow" data-preset="' + p.key + '">' +
       '<span class="pi">' + p.icon + '</span>' +
@@ -10762,11 +10778,10 @@ function presetsHTML() {
       '<span class="pd">' + esc(p.desc) + '</span>' +
       '<span class="pgo">›</span></button>').join('') +
     '</div>' +
-    '<div class="row" style="margin-top:11px"><button class="sm" id="btnAllFx">📘 ดูสรุปสูตรทุกบท</button>' +
+    '<div class="row" style="margin-top:11px"><button class="sm" id="btnAllFx">📘 ดู' + SUBJECT_INFO.fxWord + 'ทุกบท</button>' +
     (isAdmin() ? '<button class="sm" id="btnBoard">🖥️ กระดานสอน</button>' : '') +
     '<span class="hint">หรือเลื่อนลงไปตั้งค่าชุดโจทย์เองได้ด้านล่าง</span></div></div>';
 }
-
 /* ── ย่อการ์ดเลือกเรื่อง ───────────────────────────────────────────────
    รายการบทยาวเป็นหน้าจอ ครูที่ตั้งเรื่องไว้แล้วต้องเลื่อนผ่านทุกครั้ง
    กว่าจะถึงขั้นเลือกจำนวนข้อ ย่อเก็บได้ แต่ยังต้องเห็นว่าเลือกอะไรค้างไว้ */
@@ -10793,7 +10808,6 @@ function topicFoldSummary(c) {
   return on.length + ' เรื่อง — ' + names.slice(0, 2).join(' · ') +
          (names.length > 2 ? ' และอีก ' + (names.length - 2) : '');
 }
-
 /* หัวข้อย่อยเปิดทีละบท
    ของเดิมกางหัวข้อย่อยของทุกบทที่ติ๊กไว้พร้อมกัน ติ๊กหลายบทแล้วรายการยาว
    เป็นหน้าจอ กว่าจะเลื่อนไปถึงขั้นเลือกจำนวนข้อต้องผ่านหัวข้อย่อยหลายสิบบรรทัด
@@ -10812,7 +10826,6 @@ function subOpenSet(id) {
     else localStorage.setItem(SUBOPEN_KEY, String(id));
   } catch (e) {}
 }
-
 /** ความหมายของสี ตัวเลข และป้ายในตารางชุดโจทย์
     คอลัมน์ระดับเหลือแค่ตัวเลขกับสีเพื่อให้ตารางไม่กว้างเกินจอ
     ความหมายจึงต้องหาได้ในที่เดียวที่แน่นอน ไม่ใช่ปล่อยให้เดาจากสี */
@@ -10853,7 +10866,6 @@ function quizLegend() {
     buttons: [{ label: 'เข้าใจแล้ว', cls: 'primary' }]
   });
 }
-
 /* ============================================================================
    เรียนรู้ไปพร้อมกัน — ช่วงเรียนในคาบ
    ----------------------------------------------------------------------------
@@ -10878,7 +10890,6 @@ const FOCUS_OUT_MIN = 1.5;     // ออกไปสั้นกว่านี�
 const FOCUS_EV_MAX = 60;       // เก็บบันทึกการออกต่อช่วงเรียนไม่เกินนี้
 let FTICK = null;              // ตัวเดินนาฬิกาบนหน้าจอ
 const FWIN = { w: 0, h: 0, split: false };
-
 /** จำไว้ว่านักเรียนคนนี้เลือกใช้โหมดตั้งใจเรียนหรือไม่ — ค่าตั้งต้นคือเปิด */
 function focusWantFull() {
   return DB.settings.focusFull !== false;
@@ -10918,7 +10929,6 @@ function focusMin(sec) {
   const m = Math.round(Math.max(0, sec) / 60);
   return m < 60 ? m + ' นาที' : Math.floor(m / 60) + ' ชม. ' + (m % 60) + ' นาที';
 }
-
 /* ── โหมดตั้งใจเรียน ─────────────────────────────────────────────────────
    สิ่งที่ทำได้จริงบนเว็บ — เต็มหน้าจอซ่อนแถบที่อยู่และแท็บอื่นไว้
    กันจอดับระหว่างที่ก้มอ่านหนังสือ และรู้ทันทีเมื่อหลุดออกจากเต็มหน้าจอ
@@ -10928,7 +10938,6 @@ function focusMin(sec) {
    จงใจไม่มีอะไรขึ้นจอฉาย ครูเห็นสรุปทีหลังในรายงานของตัวเองเท่านั้น
    การประจานหน้าห้องได้ผลระยะสั้นแต่แลกกับความไว้ใจ ซึ่งไม่คุ้ม        */
 const FMODE = { want: false, warned: false, wake: null };
-
 /** ข้อสอบคุมเวลาเป็นเจ้าของเต็มหน้าจออยู่แล้ว ช่วงเรียนต้องไม่ไปแย่ง */
 function focusExamBusy() {
   return typeof procCur === 'function' && !!procCur();
@@ -10975,7 +10984,6 @@ function focusWarnLeave() {
   FMODE.warned = true;
   toast('ออกจากโหมดตั้งใจเรียนแล้ว — นาฬิกาจะหยุดเดินตอนที่ไม่ได้อยู่กับบทเรียน', 'warn');
 }
-
 function focusStart(topicId, wantFull) {
   if (focusCur()) return;
   const t = topicId == null || topicId === '' ? null : topicOf(Number(topicId));
@@ -10997,7 +11005,6 @@ function focusStart(topicId, wantFull) {
   renderMake();
   toast('เริ่มจับเวลาช่วงเรียนแล้ว — นาฬิกาจะหยุดเองถ้าออกจากแอป', 'ok');
 }
-
 function focusTickOn() {
   if (FTICK || !focusCur()) return;
   FTICK = setInterval(focusTick, 1000);
@@ -11020,7 +11027,6 @@ function focusTick() {
   // บันทึกลงเครื่องเป็นระยะ เผื่อแอปถูกปิดกลางคาบ
   if (Math.floor(s.focusSec) % 15 === 0) save();
 }
-
 /** ออกจากบทเรียน — เปิดเหตุการณ์ค้างไว้ แล้วบันทึกทันทีเพราะเครื่องอาจดับตอนนี้ */
 function focusPause(why) {
   const s = focusCur();
@@ -11054,7 +11060,6 @@ function focusResume() {
           s.nOut + ' ครั้ง', 'warn');
   }
 }
-
 /** เปิดจอคู่ — หน้าต่างแคบลงมากแต่สูงเท่าเดิม ดูคำอธิบายที่หัวข้อด้านบน */
 function focusCheckSplit() {
   const s = focusCur();
@@ -11069,7 +11074,6 @@ function focusCheckSplit() {
   // ขนาดอ้างอิงอัปเดตเฉพาะตอนไม่ได้อยู่ในจอคู่ หมุนจอแล้วจึงเทียบกับขนาดใหม่
   FWIN.w = w; FWIN.h = h;
 }
-
 async function focusStop() {
   const s = focusCur();
   if (!s) return;
@@ -11094,7 +11098,6 @@ async function focusStop() {
   if (typeof nbSummaryPrompt === 'function') nbSummaryPrompt(s);
   await focusSend(s, true);
 }
-
 /** ส่งช่วงเรียนขึ้นชีต — ส่งไม่ได้ก็เก็บไว้ในเครื่องแล้วส่งใหม่รอบหน้า
     รหัสช่วงเรียนคงเดิม ฝั่งชีตจึงเขียนทับแถวเดิม ส่งซ้ำไม่เกิดแถวซ้ำ */
 async function focusSend(s, loud) {
@@ -11130,7 +11133,6 @@ async function focusFlush() {
   const pend = focusDB().log.filter(x => !x.sent && x.focusSec >= FOCUS_MIN_SEC).slice(0, 5);
   for (let i = 0; i < pend.length; i++) await focusSend(pend[i], false);
 }
-
 /* ---------- แถบลอยมุมจอ ---------- */
 function focusBarEl() {
   let el = $('#focusBar');
@@ -11153,7 +11155,6 @@ function focusPaintBar() {
   const b = $('#fbStop');
   if (b) b.addEventListener('click', focusStop);
 }
-
 /* ---------- การ์ดของนักเรียน ---------- */
 function focusCardHTML() {
   const s = focusCur(), f = focusDB();
@@ -11264,7 +11265,6 @@ function focusBind() {
     });
   });
 }
-
 /* ---------- รายงานของครู ---------- */
 let FREP = null;              // ผลที่ดึงมาล่าสุด เก็บไว้ไม่ให้ยิงซ้ำทุกครั้งที่วาดหน้า
 function focusReportCardHTML() {
@@ -11325,7 +11325,6 @@ function bindFocusReport() {
     }
   });
 }
-
 /* ---------- ผูกกับเหตุการณ์ของเบราว์เซอร์ (ครั้งเดียวตอนเปิดแอป) ---------- */
 function focusInit() {
   document.addEventListener('visibilitychange', function () {
@@ -11360,7 +11359,6 @@ function focusInit() {
   focusPaintBar();
   focusFlush();
 }
-
 /** ผูกแถบเครื่องมือของปากกาเข้ากับผืนผ้าใบหนึ่งผืน
     แยกออกมาจากหน้าข้อสอบอัตนัยเพื่อให้กระดานสอนใช้ตัวเดียวกันได้
     ถ้าปล่อยให้เขียนสองชุด วันหนึ่งเพิ่มเครื่องมือแล้วจะลืมแก้อีกที่แน่นอน */
@@ -11390,13 +11388,11 @@ var NB_ACT_T = {
   rotl: 'หมุนทวนเข็ม 15°', rotr: 'หมุนตามเข็ม 15°',
   front: 'ยกชิ้นที่เลือกขึ้นไว้บนสุด', del: 'ลบชิ้นที่เลือก (Delete)'
 };
-
 function nbId(s) {
   if (!s.id) s.id = 'o' + Date.now().toString(36).slice(-4) + Math.random().toString(36).slice(2, 7);
   return s.id;
 }
 function nbR1(v) { return Math.round((Number(v) || 0) * 10) / 10; }
-
 /** เก็บเฉพาะสิ่งที่ต้องใช้วาดกลับ — ตัดค่าที่คำนวณระหว่างใช้งาน (w h _pts _hide) ทิ้ง */
 function nbPack(strokes) {
   return (strokes || []).map(function (s) {
@@ -11424,7 +11420,6 @@ function nbPageSize(p) {
   p.h = parseInt(BOARD.cv.style.height, 10) || p.h || 0;
   p.up = Date.now();
 }
-
 /* ---------- เรขาคณิต ---------- */
 function nbTextLayout(ctx, s) {
   const fs = s.fs || 22;
@@ -11528,7 +11523,6 @@ function nbContentBottom(pad) {
   const b = nbUnion((pad.strokes || []).filter(function (s) { return s.tool !== 'eraser'; }));
   return b ? Math.ceil(b.y1 + 40) : 0;
 }
-
 /* ---------- วาด ---------- */
 function nbRoundRect(ctx, x, y, w, h, r) {
   ctx.beginPath();
@@ -11763,7 +11757,6 @@ function nbRender(ctx, strokes, opt) {
     return s.id && opt.sel.indexOf(s.id) >= 0;
   }));
 }
-
 /* ---------- ประวัติสำหรับปุ่มย้อน ----------
    เก็บแค่รายการอ้างอิงของชิ้นในหน้า ไม่ได้ก๊อปทั้งหน้าทุกครั้ง
    และทุกการแก้ชิ้นเดิม (ขยับ หมุน เปลี่ยนสี) จะแก้บนสำเนา ไม่แก้ตัวจริง
@@ -11797,7 +11790,6 @@ function nbRemoveIds(pad, ids) {
     return true;
   });
 }
-
 /* ---------- แปลงชิ้น ---------- */
 function nbShift(s, dx, dy) {
   if (s.tool === 'text') { s.x += dx; s.y += dy; return; }
@@ -11825,7 +11817,6 @@ function nbShapePts(kind, a, b) {
   }
   return [{ x: x0, y: y0 }, { x: x1, y: y0 }, { x: x1, y: y1 }, { x: x0, y: y1 }];
 }
-
 /* ---------- ช่องพิมพ์ข้อความ ---------- */
 function nbCloseEditor(pad) {
   /* เรียกตัวเก็บข้อความตรง ๆ ไม่อาศัยเหตุการณ์ blur อย่างเดียว
@@ -11901,7 +11892,6 @@ function nbEditText(pad, obj, p, box) {
   pad.nbCommit = commit;
   setTimeout(function () { try { ta.focus(); } catch (e) {} }, 0);
 }
-
 /* ---------- การแตะและลาก ---------- */
 function nbTol(e) { return e && e.pointerType === 'touch' ? 16 : 10; }
 function nbDoubleTap(pad, objs) {
@@ -12103,7 +12093,6 @@ function nbUp(pad, e) {
   }
   return true;
 }
-
 /* ---------- ปุ่มของที่เลือก ---------- */
 function nbClipOf(pad, objs) {
   const ids = {};
@@ -12204,7 +12193,6 @@ function nbKey(pad, e) {
   }
   return false;
 }
-
 /* ---------- แถบเครื่องมือแถวที่สอง ---------- */
 function nbBarHTML(k) {
   const tb = function (tool, lab, t, extra) {
@@ -12301,7 +12289,6 @@ function nbAttach(pad) {
   });
   pad.redraw();
 }
-
 /* ============================================================================
    สมุดหลายเล่ม และพิมพ์/บันทึก PDF ทั้งเล่ม
    ----------------------------------------------------------------------------
@@ -12316,7 +12303,6 @@ var NB_PAPERS = [
   { v: 'bg-lined', t: 'เส้นบรรทัด' }, { v: 'bg-grid', t: 'ตารางกราฟ' },
   { v: 'bg-blank', t: 'กระดาษขาว' }, { v: 'bg-cornell', t: 'คอร์เนลล์ (คำถาม · จดบันทึก · สรุป)' }
 ];
-
 /* ---------- เก็บพิกัดให้เล็กลง ----------
    พิกัดคูณสองแล้วปัดเป็นจำนวนเต็ม (ละเอียดครึ่งพิกเซล) เก็บเป็นส่วนต่างจากจุดก่อนหน้าในฐาน 36
    เล็กกว่าเก็บเป็น {"x":123.4,"y":56.7} ราวสามเท่า — สำคัญเพราะที่เก็บของเบราว์เซอร์
@@ -12348,7 +12334,6 @@ function nbUnpack(strokes) {
     return c;
   });
 }
-
 /* ---------- ชั้นหนังสือ ---------- */
 function nbBookId() { return 'b' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5); }
 function nbBooks() {
@@ -12394,7 +12379,6 @@ function nbWho() {
 function nbBookCount(bk) {
   return (bk.pages || []).filter(function (p) { return (p.strokes || []).length; }).length;
 }
-
 function nbShelf() {
   const books = nbBooks();
   const kb = nbStoreKB();
@@ -12531,7 +12515,6 @@ function nbBookDialog(bk) {
     }
   });
 }
-
 /* ---------- วาดหน้าเป็นรูป (พิมพ์ทั้งเล่ม · ครูเปิดดู) ---------- */
 /** พื้นกระดาษ — วาดให้ตรงกับที่เห็นบนจอ */
 function nbPaper(ctx, paper, w, h) {
@@ -12607,7 +12590,6 @@ async function nbPrintBook(bk, who) {
     }).join('');
   setTimeout(function () { window.print(); }, 150);
 }
-
 /* ============================================================================
    ส่งสมุดจดให้ครู และให้ครูเปิดดูทุกหน้า (ชีตรุ่น 17)
    ----------------------------------------------------------------------------
@@ -12617,7 +12599,6 @@ async function nbPrintBook(bk, who) {
    ========================================================================== */
 var NT_MAX = 1900000;         /* เพดานของชีตคือ 2,000,000 ตัวอักษร เผื่อหัวข้อมูลไว้ */
 let NTLIST = null;            /* รายการที่ครูดึงมาล่าสุด */
-
 function nbBookData(bk) {
   return JSON.stringify({
     v: 1, title: bk.title || '', paper: bk.paper || 'bg-lined', color: bk.color || '',
@@ -12681,7 +12662,6 @@ async function nbSendBook(bk) {
     ]
   });
 }
-
 /* ---------- ฝั่งครู ---------- */
 function nbTeacherCardHTML() {
   if (!isAdmin() || !cloudOn()) return '';
@@ -12786,13 +12766,11 @@ async function nbViewSent(id) {
     }
   });
 }
-
 /* ============================================================================
    สมุดจดเพื่อการเรียน — ความเห็นครู · ป้ายบทต่อหน้า · ทบทวนแบบคอร์เนลล์ · สรุปท้ายช่วงเรียน
    ========================================================================== */
 /* ตราประทับของครู — ต้องตรงกับ NT_STAMPS ในฝั่งชีต ชีตไม่รับคำอื่น */
 var NT_STAMPS = ['ดีมาก', 'ครบถ้วน', 'เรียบร้อย', 'ควรเพิ่มเติม', 'แก้แล้วส่งใหม่'];
-
 /* ---------- ความเห็นครู ---------- */
 function nbFbBadge(fb) {
   if (!fb || (!fb.stamp && !fb.text)) return '<span class="hint">—</span>';
@@ -12848,7 +12826,6 @@ function nbFbFormHTML(fb) {
     (fb && fb.at ? '<div class="hint">ให้ความเห็นล่าสุด ' + thDateTime(fb.at) + ' · ' + esc(fb.by || '') + '</div>' : '') +
     '</div>';
 }
-
 /* ---------- ป้ายบทของแต่ละหน้า ---------- */
 function nbTopicTitles() {
   return (typeof TOPICS !== 'undefined' ? TOPICS : []).map(function (t) { return chLabel(t) + ' ' + t.name; });
@@ -12882,7 +12859,6 @@ function nbTagDialog() {
     } }]
   });
 }
-
 /* ---------- ทบทวนแบบคอร์เนลล์ ----------
    ปิดช่องจดบันทึกไว้ เหลือแต่คำถามด้านซ้าย ให้นึกคำตอบก่อน แล้วแตะเพื่อเปิดทีละบรรทัด
    เป็นวิธีทบทวนดั้งเดิมของคอร์เนลล์ — การดึงความจำออกมาเองช่วยให้จำได้นานกว่าอ่านทวน */
@@ -12926,7 +12902,6 @@ function nbReviewPaint() {
   }
   cv.style.top = BOARD.revY + 'px';
 }
-
 /* ---------- ปุ่มเสริมบนแถบบนของสมุด ---------- */
 function nbBoardExtras() {
   if (!BOARD || BOARD.who === 'teach') return;
@@ -12941,7 +12916,6 @@ function nbBoardExtras() {
   BOARD.revY = 0;
   nbReviewPaint();
 }
-
 /* ---------- สรุปท้ายช่วงเรียน ---------- */
 /** ตัดข้อความให้พอดีความกว้าง — ภาษาไทยไม่เว้นวรรคระหว่างคำ จึงตัดตามคำด้วยตัวแบ่งคำของเบราว์เซอร์ */
 function nbWrapText(text, fs, maxW) {
@@ -13018,7 +12992,6 @@ function nbSummaryToBook(s, text) {
   boardOpen('note');
   toast('บันทึกสรุปลงสมุด "' + bk.title + '" หน้า ' + (idx + 1) + ' แล้ว — วาดหรือเขียนเพิ่มได้เลย', 'ok');
 }
-
 function hwBindTools(k, pad, wrapEl) {
       $$('[data-esk="' + k + '"][data-hwtool]').forEach(tb => {
         tb.addEventListener('click', () => {
@@ -13089,7 +13062,6 @@ function hwBindTools(k, pad, wrapEl) {
         });
       });
 }
-
 /* ============================================================================
    กระดานสอน และสมุดจดของนักเรียน
    ----------------------------------------------------------------------------
@@ -13108,7 +13080,6 @@ function hwBindTools(k, pad, wrapEl) {
    จึงไม่มีทางที่กระดานของครูกับสมุดของนักเรียนจะปนกัน
    ========================================================================== */
 const BOARD_MAX_PAGE = 12;      /* เกินนี้เก็บในเครื่องแล้วหนักเกินจำเป็น */
-
 function boardDB(who) {
   if (!DB.board || typeof DB.board !== 'object') DB.board = {};
   let b;
@@ -13124,9 +13095,7 @@ function boardDB(who) {
   if (!(b.cur >= 0 && b.cur < b.pages.length)) b.cur = 0;
   return b;
 }
-
 let BOARD = null;               /* กระดานที่เปิดอยู่ตอนนี้ */
-
 function boardOpen(who) {
   if (BOARD) return;
   const b = boardDB(who), teach = who === 'teach';
@@ -13225,7 +13194,6 @@ function boardOpen(who) {
   window.addEventListener('resize', boardFit);
   document.addEventListener('keydown', boardKey);
 }
-
 /** ตั้งความสูงผืนผ้าใบให้พอดีกับที่เหลือบนจอ แล้วให้ปากกาคำนวณขนาดใหม่
     วัดจากตำแหน่งจริงของกรอบเขียน ไม่ใช่เดาจากความสูงของแถบบน
     เพราะแถบเครื่องมือมีสองแถวและพับบรรทัดไม่เท่ากันในแต่ละจอ
@@ -13239,7 +13207,6 @@ function boardFit(minH) {
   BOARD.cv.style.height = Math.max(fit, Number(minH) || 0, need) + 'px';
   if (BOARD.pad && BOARD.pad.resize) BOARD.pad.resize();
 }
-
 function boardKey(e) {
   if (!BOARD) return;
   // มีของเลือกไว้ แป้นลัดของสมุด (ลบ ก๊อป วาง ย้อน ขยับด้วยลูกศร) มาก่อนการพลิกหน้า
@@ -13253,7 +13220,6 @@ function boardKey(e) {
     if (btn) btn.click();
   }
 }
-
 /** เปิดหน้าที่กำลังเลือก — ใช้ปากกาตัวเดียวตลอดการเปิดกระดาน สลับหน้าแค่เปลี่ยนเนื้อ
     ของเดิมสร้างปากกาใหม่ทุกครั้งที่เปลี่ยนหน้า แล้วผูกแถบเครื่องมือซ้ำทุกครั้ง
     ปุ่มแต่ละปุ่มจึงมีตัวฟังซ้อนกันเพิ่มขึ้นเรื่อย ๆ และเครื่องมือที่เลือกไว้หายทุกครั้งที่พลิกหน้า
@@ -13296,7 +13262,6 @@ function boardLoadPage() {
   boardFit(pg.h || 0);
   nbBoardExtras();
 }
-
 /** เก็บลายมือของหน้าที่กำลังเปิดก่อนสลับหน้า — ตัวปากกาบันทึกหน่วงไว้ 0.45 วินาที
     ถ้าสลับหน้าเร็วกว่านั้น เส้นสุดท้ายจะหาย จึงต้องดึงจากตัวปากกาตรง ๆ อีกครั้ง */
 function boardSavePage() {
@@ -13308,7 +13273,6 @@ function boardSavePage() {
   nbPageSize(p);
   save(true);
 }
-
 function boardClose() {
   if (!BOARD) return;
   boardSavePage();
@@ -13319,7 +13283,6 @@ function boardClose() {
   BOARD = null;
   render();
 }
-
 /** พิมพ์หน้าที่กำลังเปิด — แปลงผืนผ้าใบเป็นรูปแล้วส่งเข้าพื้นที่พิมพ์ของแอป
     หน้าอื่นไม่ได้ถูกวาดอยู่บนจอ จึงพิมพ์ได้ทีละหน้าตามที่เปิดอยู่ */
 function boardPrint() {
@@ -13342,7 +13305,6 @@ function boardPrint() {
     '<img src="' + img + '" style="width:100%;border:1px solid #999">';
   setTimeout(() => window.print(), 80);
 }
-
 function renderMake() {
   const c = mkCfg();
   const total = c.mode === 'mix' ? LEVELS.reduce((s, l) => s + (c.counts[l] || 0), 0) : c.n;
@@ -13352,6 +13314,7 @@ function renderMake() {
   // การ์ดช่วงเรียนอยู่บนสุดของหน้านักเรียน เพราะเป็นสิ่งที่กดตอนครูเริ่มสอน
   let h = isStudent() ? (focusCardHTML() + xpCardHTML() + myAssignmentsHTML())
                       : (focusAllowed() ? focusCardHTML() : '');
+  if (typeof pathCardHTML === 'function') h += pathCardHTML();   // เส้นทาง 12 ขั้น (เฉพาะปรับพื้นฐานฟิสิกส์)
   h += presetsHTML();
   const tFold = topicFolded(c);
   h += '<div class="card' + (tFold ? ' tfold' : '') + '"><h3>' + (isStudent() ? 'ฝึกเอง — ' : '') +
@@ -13360,9 +13323,19 @@ function renderMake() {
     '<button class="sm" id="btnTopicFold" style="margin-left:auto">' +
     (tFold ? '▾ ขยาย' : '▴ ย่อ') + '</button></h3>' +
     '<div class="row" style="margin-bottom:11px"><button class="sm" id="btnAllTopic">เลือกทุกบท</button>' +
-    '<button class="sm" id="btnCoreTopic">เลือกทุกบท</button></div>' +
-    '<div class="gridcards">';
-  TOPICS.forEach(t => {
+    /* วิชาที่แบ่งเรื่องตามระดับชั้น (GRADES) มีปุ่มเลือกทีละชั้น และจัดการ์ดเป็นกลุ่มตามชั้น
+       วิชาที่ไม่แบ่ง มีปุ่มเฉพาะบทเรียน / เฉพาะแนวข้อสอบ แล้วเรียงการ์ดกองเดียว */
+    (GRADES.length
+      ? gradesInUse().map(g => '<button class="sm" data-gsel="' + g.id + '">' +
+          (g.id ? 'เฉพาะ ' + g.label : '🎓 เฉพาะแนวข้อสอบ') + '</button>').join('')
+      : '<button class="sm" id="btnCoreTopic">' + SUBJECT_INFO.coreBtn + '</button>' +
+        (TOPICS.some(x => x.exam) ? '<button class="sm" id="btnEntTopic">🎓 เฉพาะแนวข้อสอบ</button>' : '')) +
+    '</div>';
+  (GRADES.length ? gradesInUse() : [null]).forEach(gr => {
+  if (gr) h += '<div class="gradehead"><span class="gb">' + gr.label + '</span>' +
+    '<span class="gn">' + esc(gr.name) + '</span></div>';
+  h += '<div class="gridcards">';
+  TOPICS.filter(x => !gr || gradeOf(x) === gr.id).forEach(t => {
     const on = c.topics.indexOf(t.id) >= 0;
     const subs = subsOf(t.id);
     const nTpl = TPL.filter(x => x.topic === t.id).length;
@@ -13396,7 +13369,9 @@ function renderMake() {
     }
     h += '</div>';
   });
-  h += '</div></div>';
+  h += '</div>';
+  });
+  h += '</div>';
 
   h += '<div class="card"><h3>2. เลือกระดับและจำนวนข้อ</h3>' +
     '<div class="segbtn" style="max-width:520px;margin-bottom:12px">' +
@@ -13567,6 +13542,10 @@ function renderMake() {
   const bBd = $('#btnBoard'); if (bBd) bBd.addEventListener('click', () => boardOpen('teach'));
   const bNb = $('#btnNote'); if (bNb) bNb.addEventListener('click', () => nbShelf());
   $$('[data-preset]').forEach(b => b.addEventListener('click', () => runPreset(b.dataset.preset)));
+  if (typeof pathBind === 'function') pathBind();
+  $$('[data-pg]').forEach(b => b.addEventListener('click', () => {
+    DB.cur.pg = b.dataset.pg; save(); renderMake();
+  }));
   $$('[data-fx]').forEach(b => b.addEventListener('click', () => showFormulas(Number(b.dataset.fx))));
   $('#btnAllFx').addEventListener('click', showAllFormulas);
   const bql = $('#btnQuizLegend');
@@ -13581,7 +13560,12 @@ function renderMake() {
   const bTF = $('#btnTopicFold');
   if (bTF) bTF.addEventListener('click', () => { topicFoldSet(!topicFolded(mkCfg())); renderMake(); });
   $('#btnAllTopic').addEventListener('click', () => setTopics(ALL_TOPIC_IDS.slice()));
-  $('#btnCoreTopic').addEventListener('click', () => setTopics(TOPICS.filter(t => !t.exam).map(t => t.id)));
+  const bCore = $('#btnCoreTopic'); if (bCore) bCore.addEventListener('click', () => setTopics(TOPICS.filter(t => !t.exam).map(t => t.id)));
+  const bEnt = $('#btnEntTopic'); if (bEnt) bEnt.addEventListener('click', () => setTopics(TOPICS.filter(t => t.exam).map(t => t.id)));
+  $$('[data-gsel]').forEach(b => b.addEventListener('click', () => {
+    const g = Number(b.dataset.gsel);
+    setTopics(TOPICS.filter(t => gradeOf(t) === g).map(t => t.id));
+  }));
   $$('[data-topic]').forEach(cb => cb.addEventListener('change', e => {
     const id = Number(e.target.dataset.topic);
     const i = c.topics.indexOf(id);
@@ -13654,7 +13638,6 @@ function renderMake() {
   $$('[data-publish]').forEach(b => b.addEventListener('click', () => publishQuiz(b.dataset.publish)));
   $('#btnPasteQuiz').addEventListener('click', pasteQuiz);
 }
-
 /** แสดงรหัสใบงานให้ครูคัดลอกไปส่งนักเรียน */
 function shareQuiz(quizId) {
   const q = DB.quizzes.find(x => x.id === quizId);
@@ -13669,7 +13652,8 @@ function shareQuiz(quizId) {
       '<textarea id="qShareBox" readonly style="width:100%;height:120px;font-family:ui-monospace,monospace;' +
       'font-size:12px;word-break:break-all">' + esc(code) + '</textarea>' +
       '<div class="hint" style="margin-top:7px">ความยาว ' + code.length + ' ตัวอักษร · ' +
-      q.items.length + ' ข้อ</div>',
+      q.items.length + ' ข้อ' + (SUBJECT_INFO.showG ? ' · g = ' + fmtq(q.g) + ' m/s²' : '') +
+      (SUBJECT_INFO.showPi ? ' · π = ' + piTxt(q.piMode) : '') + '</div>',
     buttons: [
       { label: 'ปิด' },
       { label: 'คัดลอกรหัส', cls: 'primary', act: async (close) => {
@@ -13681,7 +13665,6 @@ function shareQuiz(quizId) {
     onMount: root => { const t = $('#qShareBox', root); if (t) { t.focus(); t.select(); } }
   });
 }
-
 /** นักเรียนวางรหัสที่ครูให้มา แล้วสร้างชุดโจทย์เดียวกันขึ้นในเครื่อง */
 function pasteQuiz() {
   openModal({
@@ -13717,7 +13700,6 @@ function pasteQuiz() {
     onMount: root => { const t = $('#qPasteBox', root); if (t) t.focus(); }
   });
 }
-
 /** สร้างแบบทดสอบจากแบบฝึกหัดที่มีอยู่ — หัวข้อและระดับเหมือนเดิม แต่ตัวเลขคนละชุด */
 function makeTestDialog(quizId) {
   const q = DB.quizzes.find(x => x.id === quizId);
@@ -13758,7 +13740,6 @@ function makeTestDialog(quizId) {
     ]
   });
 }
-
 function doGenerate() {
   const c = mkCfg();
   if (!c.topics.length) { toast('เลือกอย่างน้อยหนึ่งเรื่องก่อน', 'bad'); return; }
@@ -13787,7 +13768,6 @@ function doGenerate() {
   toast('สร้าง' + QUIZ_KINDS[kind].name + ' ' + q.items.length + ' ข้อแล้ว', 'ok');
   renderMake();
 }
-
 /* --- 5.3 เริ่มทำแบบฝึกหัด ------------------------------------------------- */
 function currentLearner() {
   if (DB.mode === 'solo') {
@@ -13816,8 +13796,6 @@ function needLearnerName() {
   }
   return true;
 }
-
-
 // --- Exam Ping Logic ---
 let examPingTimer = null;
 function startExamPing() {
@@ -13841,7 +13819,6 @@ function stopExamPing() {
   examPingTimer = null;
   pingExamStatus();
 }
-
 function monitorExamDialog(code, cls) {
   let timer = null;
   openModal({
@@ -13892,7 +13869,6 @@ function monitorExamDialog(code, cls) {
    เดิมเขียน 'v8.0' ตายไว้ในทุกไฟล์ แก้ไปกี่รอบก็ยังเป็นเลขเดิม ครูจึงดูไม่ออกว่า
    เครื่องไหนโหลดของใหม่แล้ว และเวลาจะขยับรุ่นต้องไปตามแก้แปดที่ */
 const APP_VERSION = BUILTIN.ver || 'v8 · รุ่นพัฒนา';
-
 async function checkAppUpdate() {
   toast('กำลังตรวจสอบเวอร์ชัน…', 'info');
   const t0 = Date.now();
@@ -13968,7 +13944,6 @@ async function checkAppUpdate() {
     ]
   });
 }
-
 async function startQuiz(quizId, assignCode) {
   const q = DB.quizzes.find(x => x.id === quizId);
   if (!q) return;
@@ -14020,7 +13995,6 @@ async function startQuiz(quizId, assignCode) {
   save(true);
   setTab('do');
 }
-
 /* --- 5.4 แท็บทำแบบฝึกหัด -------------------------------------------------- */
 const QT = { i: -1, t0: 0 };   // จับเวลาต่อข้อ
 function stampTime() {
@@ -14028,7 +14002,6 @@ function stampTime() {
   if (a && QT.i >= 0 && a.answers[QT.i]) a.answers[QT.i].sec += (Date.now() - QT.t0) / 1000;
   QT.i = -1;
 }
-
 /* --- 5.4ก คุมสอบ: จับการออกจากแอป และนาฬิกาสอบ ---------------------------
    ใช้กับชุด kind='test' เท่านั้น · เก็บทุกอย่างไว้กับ attempt จึงรีเฟรชแล้วไม่หาย
    และผสานไฟล์สำรองจากเครื่องนักเรียนแล้วยังครบ
@@ -14042,7 +14015,6 @@ function stampTime() {
    -------------------------------------------------------------------------- */
 const PROC_MIN_SEC = 1.5;     // ออกไปสั้นกว่านี้ไม่นับ (แถบแจ้งเตือน · สลับพลาด)
 const PROC_MAX_EVENTS = 200;  // กันข้อมูลบวมเมื่อมีคนสลับแอปรัว ๆ
-
 /** ตั้งกติกาคุมสอบให้ครั้งที่เพิ่งเริ่ม — snapshot ไว้กับ attempt เลย
     ครูเปลี่ยนค่าตั้งกลางคันแล้วต้องไม่กระทบคนที่กำลังสอบอยู่ */
 /* ── โหมดสอบ: เต็มหน้าจอ · กันจอดับ · เตือนตอนออก ──────────────────────
@@ -14050,7 +14022,6 @@ const PROC_MAX_EVENTS = 200;  // กันข้อมูลบวมเมื�
    หน้าที่จริงคือ ลดการออกโดยไม่ตั้งใจ และทำให้คนที่ออกรู้ตัวว่ากำลังทำอะไรอยู่
    เบราว์เซอร์ที่ไม่รองรับต้องสอบต่อได้ตามปกติ ห้ามขวางทางเด็ดขาด        */
 const EXAM = { wake: null, wantFull: false, warning: false };
-
 function examFsOn() {
   const el = document.documentElement;
   const fn = el.requestFullscreen || el.webkitRequestFullscreen;
@@ -14082,7 +14053,6 @@ function examWakeOff() {
 }
 /** เลิกโหมดสอบทั้งชุด — เรียกตอนส่งข้อสอบเสร็จ ไม่ว่าจะส่งเองหรือระบบส่งให้ */
 function examModeOff() { EXAM.wantFull = false; examWakeOff(); examFsOff(); }
-
 /** เตือนตอนหลุดจากเต็มหน้าจอระหว่างสอบ
     ไม่บังคับกลับ เพราะบางเครื่องกดกลับไม่ได้ แต่ต้องบอกให้รู้ว่ากำลังออกจากหน้าจอสอบ */
 function examWarnLeave() {
@@ -14100,7 +14070,6 @@ function examWarnLeave() {
     ]
   });
 }
-
 /** กล่องเริ่มสอบของกระดาษคำตอบ — คืน 'full' · 'plain' · null(ยกเลิก)
     เรียกเต็มหน้าจอจากในปุ่มโดยตรง เพราะถ้ารอ Promise คืนค่าก่อน
     เบราว์เซอร์จะถือว่าไม่ได้มาจากการกดของผู้ใช้แล้วปฏิเสธ */
@@ -14128,7 +14097,6 @@ function askExamStart(q) {
     });
   });
 }
-
 function procInit(a, q) {
   if (!isTest(q)) return;
   const s = DB.settings;
@@ -14242,7 +14210,6 @@ document.addEventListener('touchmove', function (e) {
   if (e.touches[0].clientY - pullY < 12) return;         // ไม่ใช่การลากลง
   if (e.cancelable) e.preventDefault();
 }, { passive: false });
-
 function procTick() {
   syncExamLock();
   const a = procCur(); if (!a) return;
@@ -14274,7 +14241,6 @@ function gotoQ(i) {
   QT.i = DB.cur.i; QT.t0 = Date.now();
   save(); renderDo();
 }
-
 function renderDo() {
   const a = curAttempt(), q = curQuiz();
   if (!a || !q || a.quizId !== q.id) {
@@ -14538,13 +14504,14 @@ function renderDo() {
       if (it.checked && !T) { if (ch.correct) cls += ' ok'; else if (it.pick === k) cls += ' bad'; }
       h += '<button class="' + cls + '" data-pick="' + k + '"' + (it.checked && !T ? ' disabled' : '') + '>' +
         '<span class="k">' + 'กขคง'[k] + '.</span><span>' +
-        (p.theory ? ch.text : M(fmt(ch.value) + (p.finds[0].unit ? ' `' + p.finds[0].unit + '`' : ''))) +
+        (p.theory ? ch.text
+                  : M((ch.text != null ? ch.text : fmt(ch.value)) +
+                      (p.finds[0].unit ? ' `' + p.finds[0].unit + '`' : ''))) +
         '</span></button>';
     });
     h += '</div>';
   } else {
-    h += '<div style="margin-bottom:9px"><b>กรอกคำตอบเป็นตัวเลข</b> ' +
-      '<span class="hint">(ไม่ต้องพิมพ์หน่วย · ยอมคลาดเคลื่อนได้ ±' + fmt(DB.settings.tolPct) + '%)</span></div>';
+    h += ansHintHTML(p);
     p.finds.forEach((f, k) => {
       if (f.sur) {
         // ตอบติดรูท: กรอกสามช่อง a √b ⁄ c แล้วเก็บรวมเป็น "a|b|c" ในช่องเดิม
@@ -14566,9 +14533,10 @@ function renderDo() {
           '<b>อย่างง่าย</b> เช่น 20√2 ⁄ 1 · ไม่มีตัวส่วนให้ใส่ 1 · ไม่มีรากให้ใส่ 1 ในช่องราก</div>';
         return;
       }
-      const okc = (it.checked && !T) ? (checkNum(parseNum(it.raw[k]), f.value) ? ' ok' : ' bad') : '';
+      const okc = (it.checked && !T) ? (checkAns(it.raw[k], f) ? ' ok' : ' bad') : '';
       h += '<div class="ansrow"><label class="lab" for="in' + k + '">' + M(f.s) + ' <span class="hint">' + esc(f.d) + '</span></label>' +
-        '<input type="text" inputmode="decimal" class="numin' + okc + '" id="in' + k + '" data-in="' + k + '" value="' +
+        '<input type="text" inputmode="' + (f.kind === 'frac' || f.kind === 'sci' ? 'text' : 'decimal') + '" class="numin' + okc +
+        '" id="in' + k + '" data-in="' + k + '" value="' +
         esc(it.raw[k] == null ? '' : it.raw[k]) + '"' + (it.checked && !T ? ' disabled' : '') + '>' +
         '<span class="unit">' + esc(f.unit || '') + '</span></div>';
     });
@@ -14583,7 +14551,10 @@ function renderDo() {
     h += '<div class="verdict ' + (full ? 'ok' : 'bad') + '">' +
       (full ? '✓ ถูกต้อง' : part ? '◑ ถูกบางส่วน — ได้ ' + fmt(it.score) + ' คะแนน' : '✗ ยังไม่ถูก') +
       '</div><div class="hint">คำตอบที่ถูกคือ ' +
-      p.finds.map(f => M(f.s + ' = ' + ansExpr(f) + (f.unit ? ' `' + f.unit + '`' : ''))).join(' , ') + '</div>';
+      (p.theory
+        ? 'ข้อ ' + 'กขคง'[p.choices.findIndex(c => c.correct)] + '.'
+        : p.finds.map(f => M(f.s + ' = ' + ansTxt(f) + (f.unit ? ' `' + f.unit + '`' : ''))).join(' , ')) +
+      '</div>';
     h += '<div class="row" style="margin-top:10px"><button class="sm" id="btnRetry">ลองทำใหม่ (ไม่นับคะแนน)</button></div>';
   } else {
     h += '<div class="row" style="margin-top:11px"><button class="primary" id="btnCheck">ตรวจคำตอบ</button>' +
@@ -14639,7 +14610,6 @@ function renderDo() {
   const first = $('.numin:not([disabled])');
   if (first && (T || !it.checked)) first.focus();
 }
-
 /* ── หน้าจอทำข้อสอบอัตนัยทีละขั้น ───────────────────────────────────────
    แต่ละขั้นเป็นการ์ดของตัวเอง เปิดทีละขั้นตามลำดับ เพื่อไม่ให้นักเรียนกระโดดข้าม
    ขั้นก่อนหน้ายังกลับไปแก้ได้เสมอ และแป้นกดช่วยพิมพ์ตัวเลขบนไอแพด        */
@@ -14697,7 +14667,6 @@ function hwPadHTML(k, hidden, footer, bgImg, tall) {
     '<canvas class="hw-canvas" id="hwCanvas_' + k + '" data-esk="' + k + '"' + cvSty + '></canvas>' +
     '</div>' + (footer || '') + '</div>';
 }
-
 /** สมการที่แทนค่าแล้ว — ต้องกันชื่อฟังก์ชันไว้ก่อนแทนค่า
     ไม่งั้นตัว s ใน frac() จะโดนแทนค่าไปด้วย */
 function esSubstShow(it, gs) {
@@ -14719,7 +14688,6 @@ function esSubstShow(it, gs) {
     });
   return t.replace(/@@(\d+)@@/g, function (m, i) { return keep[Number(i)]; });
 }
-
 /** บรรทัดของ "วิธีทำ" ที่ก่อตัวขึ้นเรื่อย ๆ ตามที่นักเรียนกรอก
     ครูขอให้ฝั่งขวาแสดงเป็นวิธีทำจริง ไม่ใช่แค่ช่องกรอกซ้ำ */
 function esWorkLines(pp, x) {
@@ -14746,7 +14714,6 @@ function esWorkLines(pp, x) {
   }
   return out;
 }
-
 /** วิธีทำฝั่งขวา — แยกที่เครื่องหมายเท่ากับตัวแรก เพื่อให้ทุกบรรทัดเรียงตรงคอลัมน์เดียวกัน
     คำอธิบายชิดซ้าย ตามที่ครูขอ */
 function esWorkHTML(pp, x) {
@@ -14772,7 +14739,6 @@ function esWorkHTML(pp, x) {
   }
   return h + '</div>';
 }
-
 function essayGuideHTML(pp, x, k) {
   const it = pp.it, gs = esGS(x);
   const chips = it.chips || [], eqs = it.eqs || [], vs = esVars(it);
@@ -14932,7 +14898,6 @@ function essayGuideHTML(pp, x, k) {
 
   return h + '</div>';
 }
-
 /** ผูกเหตุการณ์ของหน้าจอทีละขั้น — เรียกหลังวาดหน้าจอเสร็จทุกครั้ง */
 function bindEssayGuide(a, probs) {
   const upd = function (k) {
@@ -15038,7 +15003,6 @@ function bindEssayGuide(a, probs) {
     });
   });
 }
-
 /** บันทึกคำตอบหนึ่งข้อบนใบตอบ — แตะซ้ำที่เดิมคือยกเลิกคำตอบ
     ให้คะแนนทันทีเหมือน checkCurrent เพื่อให้ทุกอย่างหลังจากนี้ทำงานเหมือนชุดปกติ
     ใบตอบเป็นแบบทดสอบเสมอ จึงไม่มีการล็อกคะแนนที่การตรวจครั้งแรก */
@@ -15057,7 +15021,6 @@ function setPaperAnswer(k, ci) {
     if (n % 5 === 0) sendAttempt(a, 'draft');
   }
 }
-
 /** ตรวจข้อปัจจุบัน — คะแนนจะถูกล็อกไว้ที่การตรวจครั้งแรกเพื่อให้สถิติสะท้อนความจริง */
 function checkCurrent() {
   const a = curAttempt(), q = curQuiz(); if (!a || !q) return;
@@ -15087,7 +15050,7 @@ function checkCurrent() {
       }
       const v = parseNum(it.raw[k]);
       if (v == null) { if (String(it.raw[k] == null ? '' : it.raw[k]).trim()) unread.push(k); else blank++; }
-      else if (checkNum(v, f.value)) hit++;
+      else if (checkAns(it.raw[k], f)) hit++;
     });
     /* เดิมช่องที่อ่านไม่ได้ถูกนับเป็นช่องว่าง ข้อหลายช่องจึงได้ 0 เงียบ ๆ และแบบฝึกหัดล็อกคะแนนครั้งแรกไปแล้ว
        ตอนนี้บอกให้แก้ก่อน และยังไม่นับเป็นการตรวจ */
@@ -15118,7 +15081,6 @@ function checkCurrent() {
     if (n % 3 === 0) sendAttempt(a, 'draft');
   }
 }
-
 async function finishAttempt() {
   const a = curAttempt(); if (!a) return;
   const q0 = curQuiz();
@@ -15134,7 +15096,6 @@ async function finishAttempt() {
   }
   doFinish('');
 }
-
 /** ปิดชุดจริง ๆ — why ว่าง = นักเรียนกดส่งเอง · มีข้อความ = ระบบส่งให้อัตโนมัติ
     ทั้งสองทางต้องผ่านฟังก์ชันนี้ตัวเดียว ไม่งั้นผลของการส่งอัตโนมัติจะไม่ขึ้นชีต
     แล้วกว่าครูจะรู้ก็สอบไปแล้ว */
@@ -15165,7 +15126,6 @@ async function doFinish(why) {
     xpPractice((a.answers || []).filter(function (x) { return x && x.checked; }).length);
   }
 }
-
 /* @@SECTION-TABS-END@@ */
 
 /* ============================================================================
@@ -15184,7 +15144,6 @@ function stdev(a) {
   return Math.sqrt(a.reduce((s, x) => s + (x - m) * (x - m), 0) / (a.length - 1));
 }
 function pctCls(p) { return p >= 80 ? 'ok' : p >= 60 ? '' : p >= 40 ? 'warn' : 'bad'; }
-
 /** วิเคราะห์ผลการทำหนึ่งครั้ง แยกตามเรื่อง ระดับ และทักษะ */
 function analyze(a) {
   const q = quizOf(a);
@@ -15228,7 +15187,6 @@ function analyze(a) {
     .forEach(o => o.pct = o.max ? o.got / o.max * 100 : 0);
   return res;
 }
-
 /** รวมผลหลายครั้งของผู้เรียนคนเดียว ใช้ทำ "สรุปผลการเรียนสะสม" */
 function analyzeMany(list) {
   const acc = { n: 0, got: 0, max: 0, byTopic: {}, byLevel: {}, bySkill: {}, bySub: {}, sec: 0 };
@@ -15249,7 +15207,6 @@ function analyzeMany(list) {
     Object.values(b).forEach(o => o.pct = o.max ? o.got / o.max * 100 : 0));
   return acc;
 }
-
 /** แถบเปอร์เซ็นต์แบบ HTML — พิมพ์ออกกระดาษได้ */
 function barRows(bag, labelFn) {
   const keys = Object.keys(bag);
@@ -15263,7 +15220,6 @@ function barRows(bag, labelFn) {
       '<div class="bar ' + pctCls(o.pct) + '"><i style="width:' + Math.max(1, Math.round(o.pct)) + '%"></i></div></div>';
   }).join('') + '</div>';
 }
-
 /** ข้อเสนอแนะอัตโนมัติจากผลการวิเคราะห์ */
 function advice(res) {
   const out = [];
@@ -15302,14 +15258,12 @@ function advice(res) {
     out.push({ k: 'warn', t: 'ใช้เวลาเฉลี่ยเพียงข้อละ ' + mmss(avg) + ' และคะแนนยังไม่ผ่าน — ลองอ่านโจทย์ให้ละเอียดและเขียนสิ่งที่กำหนดให้ครบก่อนคำนวณ' });
   return out;
 }
-
 /* --- 6.1 แท็บผลและวิเคราะห์ ----------------------------------------------- */
 function learnerAttempts() {
   const list = DB.attempts.filter(a => a.finishedAt);
   if (DB.mode === 'solo') return list.filter(a => !a.studentId);
   return list.filter(a => a.studentId === DB.cur.studentId);
 }
-
 function renderResult() {
   const mine = learnerAttempts().sort((x, y) => y.finishedAt - x.finishedAt);
   if (!mine.length) {
@@ -15445,13 +15399,12 @@ function renderResult() {
       title: 'ข้อ ' + (x.i + 1), wide: true,
       bodyHTML: problemHead(x.p) + problemBody(x.p) +
         '<div class="notice ' + (x.score >= 1 ? 'info' : 'bad') + '">คำตอบที่ถูก: ' +
-        x.p.finds.map(f => M(f.s + ' = ' + fmtq(f.value) + (f.unit ? ' `' + f.unit + '`' : ''))).join(' , ') + '</div>' +
+        x.p.finds.map(f => M(f.s + ' = ' + ansTxt(f) + (f.unit ? ' `' + f.unit + '`' : ''))).join(' , ') + '</div>' +
         solutionHTML(x.p, true)
     });
     bindSolutionToggle(m.root);
   }));
 }
-
 /** กราฟเส้นเล็ก ๆ แสดงแนวโน้มคะแนน */
 function sparkline(pcts) {
   // ขอบซ้ายต้องกว้างพอสำหรับป้าย "100%" ที่วาดชิดขวาที่ ox-6
@@ -15490,7 +15443,6 @@ function sparkline(pcts) {
   }
   return svgWrap(W, H, s);
 }
-
 /* --- 6.2 แท็บสถิติชั้นเรียน ----------------------------------------------- */
 /** การ์ดรวมไฟล์ผลจากนักเรียน — แสดงทั้งตอนมีและไม่มีข้อมูล เพราะตอนยังไม่มีคือตอนที่ต้องใช้ที่สุด */
 function cloudPullCardHTML() {
@@ -15505,7 +15457,6 @@ function bindCloudPullCard() {
   const a = $('#btnPullAll');    if (a) a.addEventListener('click', () => pullResults(''));
   const b = $('#btnAssignList'); if (b) b.addEventListener('click', manageAssignments);
 }
-
 function importCardHTML() {
   return '<div class="card noprint"><h3>รวมผลจากเครื่องนักเรียน</h3>' +
     '<div class="hint" style="margin-bottom:11px">ให้นักเรียนกด <b>สำรอง</b> ที่แถบบนของเครื่องตัวเอง ' +
@@ -15517,7 +15468,6 @@ function bindImportCard() {
   const b = $('#btnMergeFiles');
   if (b) b.addEventListener('click', mergeStudentFiles);
 }
-
 function renderStats() {
   const quizzes = DB.quizzes.filter(q => DB.attempts.some(a => a.quizId === q.id && a.finishedAt));
   if (!quizzes.length) {
@@ -15780,7 +15730,6 @@ function renderStats() {
     });
   });
 }
-
 /* ============================================================
    Student Item Comparison Modal (เปรียบเทียบการตอบและเฉลยรายข้อ)
    ============================================================ */
@@ -15795,7 +15744,6 @@ function previewImgBox(url) {
   });
 }
 window.previewImgBox = previewImgBox;
-
 function showStudentItemCompare(atId) {
   if (!atId) return;
   const a = DB.attempts.find(x => x.id === atId);
@@ -16006,7 +15954,6 @@ function showStudentItemCompare(atId) {
   });
 }
 window.showStudentItemCompare = showStudentItemCompare;
-
 /** ฮิสโทแกรมการกระจายคะแนนเป็นช่วงละ 10% */
 function histogram(pcts) {
   const bins = new Array(10).fill(0);
@@ -16041,37 +15988,6 @@ function histogram(pcts) {
   s += svgTxt(ox - 7, oy - h + 4, 'คน', 'end', false, 'clab');
   return svgWrap(W, H, s);
 }
-
-/* --- 6.3 แท็บตั้งค่า ------------------------------------------------------ */
-/** การ์ด "ค่าคงที่และเกณฑ์" — ใช้ทั้งฝั่งครูและฝั่งนักเรียน */
-function constCardHTML() {
-  const st = DB.settings;
-  return '<div class="card"><h3>ค่าคงที่และเกณฑ์</h3><div class="row" style="gap:18px;align-items:flex-end;flex-wrap:wrap">' +
-    '<div><label class="hint" for="setexmin">เวลาสอบเริ่มต้น (นาที)</label><br>' +
-    '<input type="number" id="setexmin" min="0" max="300" step="5" value="' + (st.examMin || 0) +
-    '" style="width:100px" inputmode="numeric"></div>' +
-    '<div><label class="hint" for="setexout">ออกจากแอปได้ (ครั้ง)</label><br>' +
-    '<input type="number" id="setexout" min="0" max="20" value="' + (st.examMaxOut || 0) +
-    '" style="width:100px" inputmode="numeric"></div>' +
-    '<div><label class="hint" for="setdevlock">ล็อกเครื่องหลังเข้าใช้ (ชั่วโมง)</label><br>' +
-    '<input type="number" id="setdevlock" min="0" max="24" step="1" value="' + (st.devLockHr || 0) +
-    '" style="width:100px" inputmode="numeric"></div>' +
-    '<div><label class="hint" for="setexsec">รวมเวลานอกแอปไม่เกิน (วินาที)</label><br>' +
-    '<input type="number" id="setexsec" min="0" max="3600" step="10" value="' + (st.examMaxOutSec || 0) +
-    '" style="width:100px" inputmode="numeric"></div>' +
-    '<div><label class="hint" for="settol">ยอมคลาดเคลื่อน (%)</label><br>' +
-    '<input type="number" id="settol" min="0" max="10" step="0.5" value="' + st.tolPct + '" style="width:90px" inputmode="decimal"></div>' +
-    '<div><label class="hint" for="setpass">เกณฑ์ผ่าน (%)</label><br>' +
-    '<input type="number" id="setpass" min="0" max="100" value="' + st.passPct + '" style="width:90px" inputmode="numeric"></div>' +
-    '</div>' +
-    '<div class="hint" style="margin-top:7px">' +
-    '<b>ค่าคุมสอบใช้กับชุดที่เป็นแบบทดสอบเท่านั้น</b> ใส่ 0 = ไม่จำกัด · ' +
-    'กติกาจะติดไปกับชุดที่สร้าง<b>หลังจากนี้</b> ชุดเดิมยังใช้กติกาที่ตั้งไว้ตอนสร้าง<br>' +
-    'ระบบจับได้เฉพาะการสลับแอปหรือล็อกจอ<b>บนเครื่องเดียวกัน</b> ' +
-    'ถ้านักเรียนเปิดอีกเครื่องหรือแคปหน้าจอ ระบบไม่รู้ — ใช้เป็นหลักฐานประกอบ ไม่ใช่คำตัดสิน' +
-    '</div></div>';
-}
-
 /** การ์ด "กรอบเขียนวิธีทำในใบงาน" — ใช้ทั้งฝั่งครูและฝั่งนักเรียน */
 function workLinesCardHTML() {
   const L = workLines();
@@ -16091,7 +16007,6 @@ function workLinesCardHTML() {
     '<div class="row" style="margin-top:11px"><button class="sm" id="wlReset">คืนค่าเริ่มต้น (3 · 4 · 1 · 3 · 1)</button>' +
     '<button class="sm" id="wlPrint">ดูตัวอย่างใบงาน</button></div></div>';
 }
-
 function renderSetting() {
   // นักเรียนตั้งค่าได้ 4 อย่างเท่านั้น เรียงตามนี้
   if (isStudent()) {
@@ -16106,7 +16021,6 @@ function renderSetting() {
   }
   return renderSettingFull();
 }
-
 function renderSettingFull() {
   const st = DB.settings;
   let h = '<div class="card"><h3>โหมดการใช้งาน</h3>' +
@@ -16128,14 +16042,14 @@ function renderSettingFull() {
       '<div><label class="hint" for="pfSid">เลขประจำตัว</label><br>' +
       '<input type="text" id="pfSid" style="width:130px" inputmode="numeric" value="' + esc(p.sid || '') + '"></div>' +
       '<div><label class="hint" for="pfRoom">ชั้น</label><br>' +
-      '<input type="text" id="pfRoom" style="width:120px" placeholder="ม.4/1" value="' + esc(p.room || '') + '"></div>' +
+      '<input type="text" id="pfRoom" style="width:120px" placeholder="' + SUBJECT_INFO.roomEx + '" value="' + esc(p.room || '') + '"></div>' +
       '</div><div class="hint" style="margin-top:9px">ใส่<b>เลขประจำตัว</b>ไว้ด้วยจะดีที่สุด — ' +
       'เวลาส่งไฟล์ผลให้ครู ระบบจะจับคู่กับรายชื่อห้องได้แม่นแม้พิมพ์ชื่อไม่ตรง</div></div>';
   }
 
   if (DB.mode === 'class') {
     h += '<div class="card"><h3>ชั้นเรียนและรายชื่อ</h3>' +
-      '<div class="row" style="margin-bottom:10px"><input type="text" id="newCls" placeholder="ชื่อชั้น เช่น ม.4/1" style="width:190px">' +
+      '<div class="row" style="margin-bottom:10px"><input type="text" id="newCls" placeholder="ชื่อชั้น เช่น ' + SUBJECT_INFO.roomEx + '" style="width:190px">' +
       '<button id="btnAddCls">เพิ่มชั้น</button></div>';
     if (!DB.classes.length) h += '<div class="hint">ยังไม่มีชั้นเรียน — เพิ่มชั้นก่อนแล้วจึงเพิ่มรายชื่อ</div>';
     DB.classes.forEach(c => {
@@ -16207,7 +16121,7 @@ function renderSettingFull() {
     '<div class="hint"><b>บนไอแพด/ไอโฟน</b> เปิดใน Safari → กดปุ่ม <b>แชร์</b> ' +
     '<span style="font-size:15px">&#x2191;</span> → เลื่อนหา <b>เพิ่มไปยังหน้าจอโฮม</b><br>' +
     '<b>บนแอนดรอยด์</b> เปิดใน Chrome → เมนูจุดสามจุด → <b>เพิ่มลงในหน้าจอหลัก</b><br><br>' +
-    'ไอคอนจะเป็นตราโรงเรียนที่ใส่ไว้ด้านบน พร้อมแถบชื่อ “วิทย์กายภาพ”</div>' +
+    'ไอคอนจะเป็นตราโรงเรียนที่ใส่ไว้ด้านบน พร้อมแถบชื่อ “' + SUBJECT_INFO.short + '”</div>' +
     '<div class="row" style="margin-top:12px;align-items:center">' +
     '<img id="iconPrev" alt="ตัวอย่างไอคอน" style="width:76px;height:76px;border-radius:17px;' +
     'border:1px solid var(--line);background:#fff">' +
@@ -16231,7 +16145,6 @@ function renderSettingFull() {
   $('#pane-setting').innerHTML = h;
   bindSettingHandlers();
 }
-
 /** ผูกเหตุการณ์ของทุกการ์ดในแท็บตั้งค่า
     ทุกอันตรวจก่อนว่ามีองค์ประกอบนั้นจริง เพราะหน้าของนักเรียนมีแค่ 4 การ์ด */
 /** ข้อมูลในเครื่อง — สำรองเป็นไฟล์และกู้คืนจากไฟล์
@@ -16248,7 +16161,6 @@ function dataCardHTML() {
     '<div class="hint" style="margin-top:8px"><b>การกู้คืนเขียนทับข้อมูลในเครื่องนี้ทั้งหมด</b> ' +
     'ถ้าไม่แน่ใจให้กดสำรองของเดิมเก็บไว้ก่อน</div></div>';
 }
-
 function bindSettingHandlers() {
   // การ์ดนี้ถูกวาดใหม่ทุกครั้งที่เปิดแท็บตั้งค่า จึงต้องผูกที่นี่ ไม่ใช่ผูกครั้งเดียวตอนเปิดแอป
   const bBk = $('#btnBackup'); if (bBk) bBk.addEventListener('click', backup);
@@ -16388,8 +16300,10 @@ function bindSettingHandlers() {
     Object.keys(PCACHE).forEach(k => delete PCACHE[k]);
     save(true); render(); toast('ล้างข้อมูลแล้ว');
   });
+  // ค่า π (วิชาที่มีโจทย์วงกลม ทรงกลม) — การ์ดค่าคงที่ของวิชานั้นมีช่อง #setpi
+  const ePi = $('#setpi');
+  if (ePi) ePi.addEventListener('change', e => { DB.settings.piMode = PI_MODES[e.target.value] ? e.target.value : '3.14'; save(true); });
 }
-
 /* ============================================================================
    อ่านไฟล์ตาราง — .xlsx / .csv / .txt  โดยไม่พึ่งไลบรารีภายนอก
    .xlsx คือไฟล์ ZIP ที่ข้างในเป็น XML จึงแกะ ZIP เองแล้วคลายบีบอัดด้วย
@@ -16428,7 +16342,6 @@ function unzipEntries(buf) {
   }
   return out;
 }
-
 async function inflateRaw(bytes) {
   if (typeof DecompressionStream !== 'function') {
     throw new Error('เบราว์เซอร์รุ่นนี้เปิดไฟล์ .xlsx ไม่ได้ — ให้บันทึกเป็น .csv แล้วลองใหม่');
@@ -16436,14 +16349,12 @@ async function inflateRaw(bytes) {
   const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
   return new Uint8Array(await new Response(stream).arrayBuffer());
 }
-
 async function zipText(zip, name) {
   const e = zip.get(name);
   if (!e) return null;
   const raw = e.method === 0 ? e.bytes : await inflateRaw(e.bytes);
   return new TextDecoder('utf-8').decode(raw);
 }
-
 /** อ่านแอตทริบิวต์โดยดูจากชื่อท้าย (เลี่ยงปัญหา namespace เช่น r:id) */
 function xmlAttr(el, localName) {
   for (let i = 0; i < el.attributes.length; i++) {
@@ -16466,7 +16377,6 @@ function colIndex(ref) {
   }
   return n - 1;
 }
-
 /** รายชื่อชีตในไฟล์ xlsx ตามลำดับที่เห็นในโปรแกรม Excel */
 async function xlsxSheets(zip) {
   const wbText = await zipText(zip, 'xl/workbook.xml');
@@ -16489,7 +16399,6 @@ async function xlsxSheets(zip) {
   if (!list.length) throw new Error('ไม่พบชีตข้อมูลในไฟล์นี้');
   return list;
 }
-
 /** อ่านชีตหนึ่งเป็นตาราง 2 มิติของข้อความ */
 async function xlsxRows(zip, path) {
   const shText = await zipText(zip, 'xl/sharedStrings.xml');
@@ -16522,7 +16431,6 @@ async function xlsxRows(zip, path) {
   });
   return rows;
 }
-
 /** อ่าน CSV/TSV — รองรับเครื่องหมายคำพูด คอมมาในชื่อ และ BOM */
 function parseDelimited(text) {
   let s = String(text || '').replace(/^﻿/, '');
@@ -16547,7 +16455,6 @@ function parseDelimited(text) {
   if (cell !== '' || row.length) { row.push(cell.trim()); rows.push(row); }
   return rows.filter(r => r.some(c => c !== ''));
 }
-
 /** อ่านไฟล์ที่ผู้ใช้เลือก คืน [{name, rows}] */
 async function readTableFile(file) {
   const nm = String(file.name || '').toLowerCase();
@@ -16563,7 +16470,6 @@ async function readTableFile(file) {
   for (const s of sheets) out.push({ name: s.name, rows: await xlsxRows(zip, s.path) });
   return out;
 }
-
 /* --- จับคู่คอลัมน์อัตโนมัติ ---------------------------------------------- */
 const COLKEYS = [
   { k: 'no',   label: 'เลขที่',        re: /^(เลขที่|ที่|ลำดับ(ที่)?|no\.?|number|order)$/i },
@@ -16620,7 +16526,6 @@ function guessLayout(rows) {
   }
   return { headRow: headRow, map: map };
 }
-
 /** อ่านรายชื่อหนึ่งบรรทัด คืน {no, sid, name} — รองรับทั้งที่วางจาก Excel และที่พิมพ์เอง */
 function parseRosterLine(line) {
   const s = String(line == null ? '' : line).replace(/ /g, ' ').trim();
@@ -16654,7 +16559,6 @@ function parseRosterLine(line) {
   }
   return { no: null, sid: '', name: s };
 }
-
 /** อ่านทั้งก้อน แล้วไล่เลขที่ให้บรรทัดที่ไม่ได้ระบุ */
 function parseRoster(text, startNo) {
   let next = startNo || 0;
@@ -16667,7 +16571,6 @@ function parseRoster(text, startNo) {
   });
   return rows;
 }
-
 /* --- 6.x มอบหมายใบงาน / ส่งคำตอบ / ดึงผล --------------------------------- */
 
 /** ผู้ดูแลมอบหมายชุดโจทย์ขึ้นชีต แล้วได้รหัส 6 ตัวไปบอกนักเรียน */
@@ -16750,7 +16653,7 @@ async function publishQuiz(quizId) {
             await api('assignSave', { assignment: {
               code: code, title: q.title, cls: $('#pbCls', root).value || '',
               spec: spec, baseSeed: q.seed || 0, perStudent: false,
-              g: q.g, easyG10: !!q.easyG10, openAt: '',
+              g: q.g, easyG10: !!q.easyG10, piMode: q.piMode || '3.14', openAt: '',
               closeAt: closeAt ? new Date(closeAt).toISOString() : '', active: true
             } });
             close();
@@ -16776,7 +16679,6 @@ async function publishQuiz(quizId) {
     ]
   });
 }
-
 /** รายการใบงานที่มอบหมายไว้ (ฝั่งผู้ดูแล) */
 async function manageAssignments() {
   let list;
@@ -16813,7 +16715,6 @@ async function manageAssignments() {
     }
   });
 }
-
 /** ดึงผลจากชีตแล้วแปลงเป็น attempts เพื่อให้สถิติและเอกสารพิมพ์เดิมใช้ได้ทันที */
 async function pullResults(code) {
   let rows, assigns;
@@ -16906,7 +16807,6 @@ async function pullResults(code) {
     'กด <b>ดึงรายชื่อจากชีต</b> ในแท็บตั้งค่าเพื่อให้ตรงกัน</span>';
   openModal({ title: 'ผลการดึงข้อมูล', bodyHTML: '<div style="line-height:1.9">' + m + '</div>' });
 }
-
 /* --- การส่งคำตอบขึ้นชีต พร้อมคิวสำรองเมื่อเน็ตหลุด ----------------------- */
 
 /* งานอัตนัยของทั้งชุดรวมกันอาจใหญ่เกินที่ช่องหนึ่งช่องในชีตรับได้
@@ -16931,7 +16831,6 @@ function answersForSheet(a) {
   }
   return out;
 }
-
 function attemptPayload(a, status) {
   const r = analyze(a);
   return {
@@ -16945,7 +16844,6 @@ function attemptPayload(a, status) {
     device: deviceId()
   };
 }
-
 async function sendAttempt(a, status) {
   /* โหมดดูเฉย ๆ ต้องไม่ปนกับผลจริงของนักเรียนในชีตเด็ดขาด
      แต่โหมดนักเรียนตัวอย่างต้องส่งจริง เพราะจุดประสงค์คือทดสอบทั้งวงจร
@@ -16972,7 +16870,6 @@ async function sendAttempt(a, status) {
     return false;
   }
 }
-
 async function flushOutbox(loud) {
   if (!isStudent() || !DB.outbox.length) {
     if (loud) toast('ไม่มีผลค้างส่ง', 'ok');
@@ -16993,7 +16890,6 @@ async function flushOutbox(loud) {
                : 'ยังส่งไม่ได้ ค้างอยู่ ' + keep.length + ' รายการ', sent ? 'ok' : 'bad');
   }
 }
-
 function renderOutboxBadge() {
   const el = $('#saveState');
   if (!el) return;
@@ -17003,7 +16899,6 @@ function renderOutboxBadge() {
     el.style.color = 'var(--warn)';
   } else { el.style.color = ''; }
 }
-
 /* --- 6.x สถิติการเข้าใช้งาน ----------------------------------------------- */
 function usageCardHTML() {
   const u = usageStats();
@@ -17031,7 +16926,6 @@ function usageCardHTML() {
     '</div></div>';
   return h;
 }
-
 function bindUsageCard() {
   const r = $('#btnUsageReset');
   if (r) r.addEventListener('click', async () => {
@@ -17044,7 +16938,6 @@ function bindUsageCard() {
   const c = $('#btnUsageClass');
   if (c) c.addEventListener('click', showClassUsage);
 }
-
 /** อธิบายว่าทำไมดึงรายชื่อมาได้ศูนย์คน แล้วขึ้นเป็นกล่องให้อ่านและลงมือแก้ได้
     ของเดิมขึ้นแค่ "ยังไม่มีรายชื่อในชีต" ซึ่งอ่านได้ว่าชีตว่างเปล่า
     แต่สาเหตุที่เจอจริงบ่อยกว่าคือครูผู้สอนดูแลชั้นที่ไม่ตรงกับชั้นที่ชีตมี
@@ -17088,7 +16981,6 @@ async function rosterEmptyBox() {
     buttons: [{ label: 'เข้าใจแล้ว', cls: 'primary' }]
   });
 }
-
 /** ผู้ดูแลดูว่าใครเข้าใช้ระบบแล้วบ้าง ใครยังไม่เคยเข้าเลย */
 async function showClassUsage() {
   let list;
@@ -17124,7 +17016,6 @@ async function showClassUsage() {
         '</td></tr>').join('') + '</tbody></table></div>'
   });
 }
-
 /* --- 6.x การเชื่อมต่อ Google Sheet --------------------------------------- */
 /** การ์ดจัดการครูผู้สอน — ขึ้นเฉพาะผู้ดูแลหลักที่เชื่อมชีตแล้ว */
 function teacherCardHTML() {
@@ -17141,7 +17032,6 @@ function teacherCardHTML() {
     '<button id="tcLoad">ดูรายชื่อครูผู้สอน</button></div>' +
     '<div id="tcList" style="margin-top:11px"></div></div>';
 }
-
 /** กล่องเพิ่ม/แก้ครูผู้สอนหนึ่งคน — ส่ง cur มาถ้าเป็นการแก้ของเดิม */
 function teacherDialog(cur) {
   const list = DB.classes.slice();
@@ -17192,7 +17082,6 @@ function teacherDialog(cur) {
     ]
   });
 }
-
 async function loadTeachers() {
   const box = $('#tcList');
   if (!box) return;
@@ -17228,7 +17117,6 @@ async function loadTeachers() {
     }));
   } catch (e) { box.innerHTML = '<div class="notice bad">' + esc(e.message) + '</div>'; }
 }
-
 function bindTeacherCard() {
   const a = $('#tcAdd'); if (a) a.addEventListener('click', () => teacherDialog(null));
   const l = $('#tcLoad'); if (l) l.addEventListener('click', loadTeachers);
@@ -17303,7 +17191,6 @@ function cloudCardHTML() {
   }
   return h + '</div>';
 }
-
 function bindCloudCard() {
   const buc = $('#btnCheckUpdateCard'); if (buc) buc.addEventListener('click', checkAppUpdate);
   const test = $('#btnCloudTest');
@@ -17384,7 +17271,6 @@ function bindCloudCard() {
   const pv = $('#btnPreview');    if (pv) pv.addEventListener('click', previewAsStudent);
   const ap = $('#btnAdminPass');  if (ap) ap.addEventListener('click', changeAdminPass);
 }
-
 /** วินิจฉัยว่าการเชื่อมต่อที่ช้า เกิดจากอะไร แล้วบอกวิธีแก้ให้ตรงจุด
     แยกด้วยการเทียบเวลารอบแรกกับรอบสอง เพราะสองสาเหตุนี้แก้คนละวิธีกันโดยสิ้นเชิง */
 function cloudSpeedNote(ms, ms2, r) {
@@ -17411,7 +17297,6 @@ function cloudSpeedNote(ms, ms2, r) {
   }
   return h;
 }
-
 /** ส่งรายชื่อในเครื่องขึ้นชีต — คนที่มีอยู่แล้วจะอัปเดตข้อมูล ไม่แตะรหัสผ่าน
     แบ่งส่งเป็นก้อนละ ROSTER_CHUNK คน เพื่อให้แต่ละรอบจบเร็วและไม่หมดเวลา */
 const ROSTER_CHUNK = 60;
@@ -17527,7 +17412,6 @@ async function pushRoster() {
       'หลังจากวางสคริปต์รุ่นล่าสุดแล้วหรือยัง</div>' });
   }
 }
-
 /** สร้างไฟล์สำหรับแจกนักเรียน — ฝัง URL/โลโก้/หัวกระดาษไว้ในตัวไฟล์ */
 async function makeStudentFile() {
   if (!DB.cloud.url) {
@@ -17574,7 +17458,6 @@ async function makeStudentFile() {
     'ใน Apps Script แล้ว<b>ที่อยู่เปลี่ยน</b> ต้องสร้างไฟล์นี้ใหม่แล้วอัปโหลดทับ ' +
     'ไม่งั้นเครื่องนักเรียนจะเชื่อมต่อไม่ได้</div>' });
 }
-
 /** ซ่อมโครงสร้างชีต — เติมหัวตารางที่หายไป และจัดคอลัมน์เป็น เลขที่ · เลขประจำตัว · ชื่อ */
 async function repairSheet(silent) {
   let ins;
@@ -17619,7 +17502,6 @@ async function repairSheet(silent) {
     return true;
   } catch (e) { toast(e.message, 'bad'); return false; }
 }
-
 /** ซ่อมชีตที่เคยอัพซ้ำ — เก็บแถวแรกของแต่ละเลขประจำตัว ที่เหลือลบทิ้ง */
 async function dedupeRoster() {
   let chk;
@@ -17645,7 +17527,6 @@ async function dedupeRoster() {
       '<div class="notice info">ลบไป <b>' + r.removed + ' แถว</b> · เหลือรายชื่อ <b>' + r.left + ' คน</b></div>' });
   } catch (e) { toast(e.message, 'bad'); }
 }
-
 /** ซ่อมแซมผลการทำเดิมที่ studentId เป็น null หรือไม่ตรงกับรายชื่อ ให้ผูกกับนักเรียนตาม sid หรือชื่อ */
 function healAttempts() {
   if (!DB.students || !DB.students.length || !DB.attempts || !DB.attempts.length) return 0;
@@ -17668,7 +17549,6 @@ function healAttempts() {
   });
   return healed;
 }
-
 async function pullRoster() {
   try {
     const list = await api('rosterList', {});
@@ -17700,7 +17580,6 @@ async function pullRoster() {
     toast('ดึงรายชื่อ ' + list.length + ' คนเรียบร้อย' + (h ? ' (เชื่อมคะแนนเดิม ' + h + ' รายการ)' : ''), 'ok');
   } catch (e) { toast(e.message, 'bad'); }
 }
-
 /* ── ปลดล็อกนักเรียนที่กรอกรหัสผิดหลายครั้ง ─────────────────────────────
    ระบบพักการเข้าใช้ไว้สิบนาทีเพื่อกันการเดารหัส แต่ในคาบสอนจริงเด็กที่จำรหัสตัวเอง
    ไม่ได้จะติดค้างจนหมดคาบ ครูต้องปลดให้ได้เองทันที ไม่ใช่ยืนรอ
@@ -17764,7 +17643,6 @@ async function unlockStudents() {
     }
   });
 }
-
 async function resetStudentPass() {
   let list;
   try { list = await api('rosterList', {}); }
@@ -17808,7 +17686,6 @@ async function resetStudentPass() {
     }
   });
 }
-
 function changeAdminPass() {
   openModal({
     title: 'เปลี่ยนรหัสผู้ดูแล',
@@ -17830,13 +17707,11 @@ function changeAdminPass() {
     ]
   });
 }
-
 /** นำเข้ารายชื่อจากไฟล์ Excel (.xlsx) หรือ CSV พร้อมให้เลือกชีตและจับคู่คอลัมน์เอง */
 async function importRosterFile(classId) {
   const f = await pickFile('.xlsx,.csv,.txt,.tsv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv');
   if (f) await importRosterFromFile(classId, f);
 }
-
 async function importRosterFromFile(classId, f) {
   let sheets;
   try { sheets = await readTableFile(f); }
@@ -17972,7 +17847,6 @@ async function importRosterFromFile(classId, f) {
     onMount: root => redraw(root)
   });
 }
-
 function addStudents(classId) {
   const cls = classById(classId);
   const startNo = studentsOf(classId).reduce((m, s) => Math.max(m, s.no || 0), 0);
@@ -18044,11 +17918,10 @@ function addStudents(classId) {
     }
   });
 }
-
 /* --- 6.4 สำรอง / กู้คืน ---------------------------------------------------- */
 function backup() {
   const d = new Date();
-  const name = 'สำรองคลังโจทย์วิทย์กายภาพ_' + d.getFullYear() + String(d.getMonth() + 1).padStart(2, '0') +
+  const name = SUBJECT_INFO.backupName + '_' + d.getFullYear() + String(d.getMonth() + 1).padStart(2, '0') +
     String(d.getDate()).padStart(2, '0') + '_' + String(d.getHours()).padStart(2, '0') + String(d.getMinutes()).padStart(2, '0') + '.json';
   download(new Blob([JSON.stringify(DB, null, 1)], { type: 'application/json' }), name);
   toast('ดาวน์โหลดไฟล์สำรองแล้ว', 'ok');
@@ -18069,18 +17942,17 @@ async function restore() {
   Object.keys(PCACHE).forEach(k => delete PCACHE[k]);
   save(true); render(); toast('กู้คืนข้อมูลเรียบร้อย', 'ok');
 }
-
 /* --- 6.x แชร์ใบงาน / รวมผลจากนักเรียน / ส่งออกคะแนน ----------------------
    ชุดโจทย์เก็บแค่ {tplId, seed} ต่อข้อ ทั้งใบจึงเล็กพอที่จะส่งเป็นข้อความได้
    ครูคัดลอก "รหัสใบงาน" ไปวางในไลน์กลุ่มหรือ Google Classroom
    นักเรียนวางรหัสลงแอพ แล้วไอแพดสร้างโจทย์เองในเครื่อง — ไม่ต้องมีเซิร์ฟเวอร์
    ------------------------------------------------------------------------ */
-const QCODE_PREFIX = 'PHYSQ1:';
-
+/* QCODE_PREFIX (คำนำหน้ารหัส) อยู่ใน subjects/<วิชา>/6-content.js — ฟิสิกส์/วิทย์กายภาพใช้ PHYSQ1: กลุ่มคณิตกับเคมีใช้ MATHQ1:
+   ต้องคงคำนำหน้าเดิมของแต่ละวิชาไว้ เครื่องนักเรียนที่ยังเปิดแอปรุ่นเก่าอยู่จะได้ถอดรหัสใหม่ได้ */
 function encodeQuiz(q) {
   const c = {
     i: q.id, t: q.title, s: q.seed, tp: q.topics, sb: q.subs || [],
-    c: q.counts, g: q.g, e: q.easyG10 ? 1 : 0,
+    c: q.counts, g: q.g, e: q.easyG10 ? 1 : 0, pm: q.piMode || '3.14',
     k: quizKind(q), sh: (q.seedShift || 0),
     lm: q.limitSec || 0, mo: q.maxOut || 0, ms: q.maxOutSec || 0,
     // ใบตอบข้อสอบกระดาษเก็บเฉลยแทนแม่แบบ ขึ้นต้นด้วย P เพื่อให้ฝั่งถอดรหัสแยกออก
@@ -18096,11 +17968,11 @@ function encodeQuiz(q) {
   };
   return QCODE_PREFIX + b64enc(JSON.stringify(c));
 }
-
 function decodeQuiz(code) {
   const s = String(code || '').trim().replace(/\s+/g, '');
   if (!s) return null;
-  const body = s.indexOf(QCODE_PREFIX) === 0 ? s.slice(QCODE_PREFIX.length) : s;
+  // รับรหัสได้ทุกคำนำหน้า (PHYSQ1: MATHQ1: …) ถ้าแม่แบบในรหัสไม่มีในวิชานี้ ด้านล่างจะคืน null เอง
+  const body = s.replace(/^[A-Z]+Q\d+:/, '');
   let c;
   try { c = JSON.parse(b64dec(body)); } catch (e) { return null; }
   if (!c || !Array.isArray(c.it) || !c.it.length) return null;
@@ -18136,7 +18008,7 @@ function decodeQuiz(code) {
   return {
     id: c.i || uid(), ts: Date.now(), title: c.t || 'ใบงาน', seed: Number(c.s) || 0,
     topics: Array.isArray(c.tp) ? c.tp : [], subs: Array.isArray(c.sb) ? c.sb : [],
-    counts: c.c || {}, g: Number(c.g) || 9.8, easyG10: !!c.e,
+    counts: c.c || {}, g: Number(c.g) || 9.8, easyG10: !!c.e, piMode: PI_MODES[c.pm] ? c.pm : '3.14',
     kind: paper ? 'test' : (c.k === 'test' ? 'test' : 'practice'), seedShift: Number(c.sh) || 0,
     paper: paper ? { ch: Number(paper.ch) || 4, topic: paper.tp === '' ? null : Number(paper.tp),
                      st: PAPER_STYLES[paper.st] ? paper.st : 'th' } : null,
@@ -18145,7 +18017,6 @@ function decodeQuiz(code) {
     items: items
   };
 }
-
 /** ผสานไฟล์สำรองของนักเรียนหนึ่งไฟล์เข้ากับข้อมูลในเครื่อง โดยไม่ทับของเดิม */
 function mergeBackup(o, st) {
   if (!o || !Array.isArray(o.quizzes) || !Array.isArray(o.attempts)) { st.bad++; return; }
@@ -18171,7 +18042,6 @@ function mergeBackup(o, st) {
     st.attempts++;
   });
 }
-
 async function mergeStudentFiles() {
   const files = await pickFiles('.json,application/json');
   if (!files.length) return;
@@ -18197,7 +18067,6 @@ async function mergeStudentFiles() {
   if (st.bad) msg += '<br><span style="color:var(--bad)">อ่านไม่ได้ ' + st.bad + ' ไฟล์</span>';
   openModal({ title: 'ผลการรวมไฟล์', bodyHTML: '<div style="line-height:1.9">' + msg + '</div>' });
 }
-
 /** แถวคะแนนของชุดโจทย์หนึ่ง เรียงตามเลขที่ เพื่อส่งออกไปยังโปรแกรมบันทึกคะแนน */
 function scoreRows(quizId, filterRoom) {
   const q = DB.quizzes.find(x => x.id === quizId);
@@ -18284,7 +18153,6 @@ function scoreRows(quizId, filterRoom) {
   }
   return { q: q, rows: rows, filterRoom: filterNorm, targetCls: targetCls };
 }
-
 async function exportScoreColumn(quizId, filterRoom) {
   const { q, rows, targetCls } = scoreRows(quizId, filterRoom);
   if (!q) return;
@@ -18302,7 +18170,6 @@ async function exportScoreColumn(quizId, filterRoom) {
     toast('คัดลอกคะแนน ' + inList.length + ' แถวแล้ว (' + rName + ') — ไปวางในช่องแรกของคอลัมน์คะแนนได้เลย', 'ok');
   }
 }
-
 function exportScoreCsv(quizId, filterRoom) {
   const { q, rows, targetCls } = scoreRows(quizId, filterRoom);
   if (!q) return;
@@ -18320,7 +18187,6 @@ function exportScoreCsv(quizId, filterRoom) {
     'คะแนน' + rSuffix.replace(/[\\/:*?"<>|]/g, '') + '_' + String(q.title).replace(/[\\/:*?"<>|]/g, '') + '.csv');
   toast('ดาวน์โหลดไฟล์ CSV แล้ว', 'ok');
 }
-
 /* @@SECTION-ANALYTICS-END@@ */
 
 /* ============================================================================
@@ -18338,7 +18204,6 @@ const DOCS = [
 /** เอกสารที่บทบาทปัจจุบันพิมพ์ได้ — ผู้เรียนพิมพ์ได้เฉพาะใบงาน */
 function docsAllowed() { return canManage() ? DOCS : DOCS.filter(d => d.stu); }
 function docAllowed(k) { return docsAllowed().some(d => d.k === k); }
-
 function docHead(title, sub2, sub3) {
   const hd = DB.settings.header;
   let h = '<div class="phead">';
@@ -18367,16 +18232,6 @@ function nameFields() {
     '<div>ชั้น ..................</div>' +
     '<div>วันที่ ......... / ......... / .........</div></div>';
 }
-/* ช่องเขียนวิธีทำในใบงาน — ยุบขั้นที่ทำต่อเนื่องกันเข้าเป็นช่องเดียว
-   เพื่อให้นักเรียนเขียนได้ลื่นขึ้นและใบงานไม่ยาวเกินไป
-   (ใบเฉลยและหน้าจอในแอพยังแยกครบทั้ง 7 ขั้นตามเดิม) */
-const WORK_BLOCKS = [
-  { id: 'analyze',  t: 'วิเคราะห์โจทย์ / โจทย์กำหนด', n: 3, d: 'รวมขั้นที่ 1-2' },
-  { id: 'equation', t: 'สมการที่ใช้ / การแก้สมการ',   n: 4, d: 'รวมขั้นที่ 3-4' },
-  { id: 'subst',    t: 'แทนค่าลงในสมการ',            n: 1, d: 'ขั้นที่ 5' },
-  { id: 'calc',     t: 'คำนวณ',                      n: 3, d: 'ขั้นที่ 6' },
-  { id: 'conclude', t: 'สรุปคำตอบ',                  n: 1, d: 'ขั้นที่ 7' }
-];
 const WORK_MAX = 12;
 /* ความหนาแน่นของเอกสารที่พิมพ์ — คุมสามอย่างให้ไปทางเดียวกัน
      plain = จำนวนข้อ "ปรนัย" ที่ตั้งใจให้ลงได้ในหนึ่งหน้า
@@ -18392,7 +18247,6 @@ const DENSITY = [
     d: 'รูปเล็ก ช่องเขียนเป็นบรรทัดเปล่า · ปรนัยราว 3-5 ข้อ/หน้า · ข้อแสดงวิธีทำ 3 ข้อ/หน้า' }
 ];
 function densityOf(k) { return DENSITY.find(d => d.k === k) || DENSITY[1]; }
-
 /** จำนวนบรรทัดของแต่ละช่องตามที่ครูตั้งไว้ (ยังไม่เคยตั้ง = ใช้ค่าเริ่มต้น)
     ส่ง scale มาเพื่อย่อ-ขยายตามความหนาแน่นที่เลือก — ช่องที่ครูตั้งไว้ว่า "ไม่ต้องมี" (0)
     ยังคงเป็น 0 เสมอ ไม่ว่าจะย่อขยายเท่าไร */
@@ -18420,12 +18274,10 @@ function workBox(steps, scale) {
     new Array(L[b.id] + 1).join('<div class="wl"></div>')
   ).join('') + '</div>';
 }
-
 /* กระดาษ A4 แนวตั้ง ขอบ 15mm บน-ล่าง และ 14mm ซ้าย-ขวา (ตรงกับ @page ในส่วน CSS)
    จึงเหลือพื้นที่พิมพ์จริง 182 × 267 มิลลิเมตร */
 const PAGE_W_MM = 182, PAGE_H_MM = 267;
 const PX_PER_MM = 96 / 25.4;
-
 /** จัดหน้าใบงานจาก<b>ความสูงจริง</b>ของแต่ละข้อ แทนการเดาจากจำนวนตัวอักษร
     ต้องเรียกหลังจากใส่ HTML ลง #printarea แล้ว เพราะต้องให้เบราว์เซอร์จัดวางก่อนจึงวัดได้
 
@@ -18467,7 +18319,6 @@ function paginatePrint(area, onePer) {
   });
   pg.replaceWith(frag);
 }
-
 function buildDoc(kind, opt) {
   const o = opt || {};
   // กันไว้อีกชั้น เผื่อมีทางเข้าถึงเอกสารที่ไม่ได้ผ่านหน้าจอเลือก
@@ -18517,7 +18368,7 @@ function buildDoc(kind, opt) {
     // การตัดหน้าทำทีหลังใน paginatePrint() ซึ่งวัดความสูงจริงของแต่ละข้อ
     // ตรงนี้จึงวางทุกข้อไว้ในกล่องเดียวก่อน
     let h = '<div class="pg">' + docHead(q.title, key ? '<b>เฉลยอย่างละเอียด</b>' : '',
-      'จำนวน ' + probs.length + ' ข้อ');
+      'จำนวน ' + probs.length + ' ข้อ' + (SUBJECT_INFO.showG ? ' &nbsp;·&nbsp; g = ' + fmtq(q.g) + ' m/s²' : ''));
     if (!key) h += nameFields();
     if (key) h += '<div class="t3" style="text-align:center;margin-bottom:10px">' +
       'ชุดนี้สร้างจากเลขสุ่ม (seed) ' + q.seed + ' — สร้างใบงานชุดเดิมซ้ำได้เสมอ</div>';
@@ -18536,7 +18387,7 @@ function buildDoc(kind, opt) {
           h += '<div style="margin:5px 0 3px"><b>คำตอบ:</b> ข้อ ' + 'กขคง'[ci] + '. ' + p.choices[ci].text + '</div>';
         } else {
           h += '<div style="margin:5px 0 3px"><b>คำตอบ:</b> ' +
-            p.finds.map(f => M(f.s + ' = ' + ansExpr(f) + (f.unit ? ' `' + f.unit + '`' : ''))).join(' , ') + '</div>';
+            p.finds.map(f => M(f.s + ' = ' + ansTxt(f) + (f.unit ? ' `' + f.unit + '`' : ''))).join(' , ') + '</div>';
         }
         h += solutionHTML(p, true);
       } else {
@@ -18546,7 +18397,9 @@ function buildDoc(kind, opt) {
             '<div>' + 'ก.ข.ค.ง.'.substr(k * 2, 2) + ' ' + c.text + '</div>').join('') + '</div>';
         } else if (p.choices) {
           h += '<div style="margin:4px 0 0 18px">' + p.choices.map((c, k) =>
-            'ก.ข.ค.ง.'.substr(k * 2, 2) + ' ' + fmt(c.value) + (p.finds[0].unit ? ' ' + p.finds[0].unit : '')
+            'ก.ข.ค.ง.'.substr(k * 2, 2) + ' ' +
+              // กลุ่มคณิตกับเคมีพิมพ์ตัวเลือกด้วยรูปแบบสมการ ฟิสิกส์พิมพ์ตัวเลขธรรมดา — คงแบบเดิมไว้ ไม่ให้การตัดหน้าเปลี่ยน
+              (c.text != null || SUBJECT_INFO.mChoices ? M(c.text != null ? c.text : fmt(c.value)) : fmt(c.value)) + (p.finds[0].unit ? ' ' + p.finds[0].unit : '')
           ).join(' &nbsp;&nbsp; ') + '</div>';
         }
         // ระดับ "แน่น" ตัดหัวข้อของแต่ละขั้นออก เหลือเป็นบรรทัดเปล่า จะได้ลงได้ 3 ข้อต่อหน้า
@@ -18570,7 +18423,7 @@ function buildDoc(kind, opt) {
     if (wi.cls) idBits.push('ชั้น ' + esc(wi.cls));
     if (wi.no) idBits.push('เลขที่ ' + esc(wi.no));
     if (wi.sid) idBits.push('เลขประจำตัว ' + esc(wi.sid));
-    let h = '<div class="pg">' + docHead('หลักฐานการเรียนรู้ รายวิชาวิทยาศาสตร์กายภาพ',
+    let h = '<div class="pg">' + docHead(SUBJECT_INFO.evidence,
       '<b>' + esc(who) + '</b>' + (idBits.length ? ' &nbsp; ' + idBits.join(' &nbsp;·&nbsp; ') : ''),
       'วันที่ทำ ' + thDateTime(a.finishedAt));
     h += '<table style="margin-bottom:10px"><tbody>' +
@@ -18730,7 +18583,6 @@ function buildDoc(kind, opt) {
   }
   return '';
 }
-
 function renderPrint() {
   // ผู้เรียนพิมพ์ได้เฉพาะใบงาน ถ้าเผลอค้างอยู่ที่เอกสารอื่นให้ดึงกลับมา
   if (!docAllowed(DB.cur.printKind || 'worksheet')) DB.cur.printKind = 'worksheet';
@@ -18876,8 +18728,6 @@ function renderPrint() {
   }));
   $('#btnDoPrint').addEventListener('click', () => window.print());
 }
-
-/* @@SECTION-PRINT-END@@ */
 
 /* ============================================================================
    8) ชุดทดสอบตัวเอง — เปิดด้วย <ไฟล์ครู>.html?selftest=1
@@ -19031,7 +18881,6 @@ setInterval(procTick, 1000);
   const left = procSecLeft(a);
   if (left != null && left <= 0) doFinish('หมดเวลา');
 })();
-
 if (/[?&]selftest=1/.test(location.search)) {
   setTab('make');
   runSelfTest(200);

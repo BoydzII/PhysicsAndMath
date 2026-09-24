@@ -592,10 +592,13 @@ function ansHintHTML(p) {
     tip = 'ตอบให้ตรงเป๊ะ ไม่มีการปัดเศษ · ใส่เครื่องหมายลบด้วยถ้าคำตอบเป็นจำนวนลบ';
   else
     tip = 'ไม่ต้องพิมพ์หน่วย · ยอมคลาดเคลื่อนได้ ±' + fmt(DB.settings.tolPct) + '%';
-  return '<div style="margin-bottom:9px"><b>กรอกคำตอบ</b> <span class="hint">(' + tip + ')</span></div>';
+  // คำตอบทศนิยมล้วน (รวมข้อติดรูทของฟิสิกส์) ใช้หัวข้อเดิม "กรอกคำตอบเป็นตัวเลข"
+  const head = kinds.every(k => k === 'num') ? 'กรอกคำตอบเป็นตัวเลข' : 'กรอกคำตอบ';
+  return '<div style="margin-bottom:9px"><b>' + head + '</b> <span class="hint">(' + tip + ')</span></div>';
 }
 /** ข้อความคำตอบสำหรับแสดงผล — เศษส่วนแสดงเป็นเศษส่วน ไม่ใช่ทศนิยมยาว ๆ */
 function ansTxt(f) {
+  if (f.sur) return surdExpr(f.sur);          // คำตอบติดรูท (ฟิสิกส์)
   if (f.kind === 'sci') return sciTxt(f.man, f.exp);
   return (f.kind === 'frac' && f.den) ? fracTxt(f.num, f.den) : fmtq(f.value);
 }
