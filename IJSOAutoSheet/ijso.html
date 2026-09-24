@@ -657,7 +657,7 @@ hl{background:var(--warn-bg);border-radius:4px;padding:0 3px  }
 .solstep>.b{padding:11px 13px 13px 44px  }
 .solstep.closed>.b{display:none  }
 .sol.hide-steps .solstep > .b > .sol-text { display: none;   }
-.sol.hide-steps .solstep > .b > .sol-lines { display: block;   }
+.sol.hide-steps .solstep > .b > .sol-lines { display: block !important; }
 .sol.hide-steps .solstep.closed > .b { display: block !important;   }
 .sol.hide-steps .solstep > .h .cv { display: none;   }
 .sol-lines .wl { border-bottom: 1px dotted var(--line2); height: 26px;   }
@@ -1345,7 +1345,7 @@ table td,table th,.num,.xpstat b,.tick,
    *** ห้ามลบบรรทัดเครื่องหมาย @@BUILTIN@@ ทั้งสองอัน ตัวสร้างไฟล์ใช้หาตำแหน่ง ***
    ========================================================================== */
 /* @@BUILTIN@@ */
-const BUILTIN = {"url":"https://script.google.com/macros/s/AKfycbxVa8BYYQeIhBDmg85w2UBwsIqt6a2YudehUfCbyMny9T-5TTh1UfFxsJjTk9HLNuFc/exec","studentOnly":false,"lockCloud":false,"logo":"","header":null,"about":null,"build":"2026-09-19 14:41","ver":"v8.159","books":[{"url":"https://script.google.com/macros/s/AKfycbxVa8BYYQeIhBDmg85w2UBwsIqt6a2YudehUfCbyMny9T-5TTh1UfFxsJjTk9HLNuFc/exec","name":"ชีตIJSO สอวน. ม.ต้น"  },{"url":"https://script.google.com/macros/s/AKfycbzuuRbnE_oB7a9vx7zZizyPVEKao31ERDTU82DvydMuRTDqVoQvgns9EsjTIzpbBjuM/exec","name":"ชีตฟิสิกส์"  }]  };
+const BUILTIN = {"url":"https://script.google.com/macros/s/AKfycbxVa8BYYQeIhBDmg85w2UBwsIqt6a2YudehUfCbyMny9T-5TTh1UfFxsJjTk9HLNuFc/exec","studentOnly":false,"lockCloud":false,"logo":"","header":null,"about":null,"build":"2026-09-24 17:57","ver":"v8.226","books":[{"url":"https://script.google.com/macros/s/AKfycbxVa8BYYQeIhBDmg85w2UBwsIqt6a2YudehUfCbyMny9T-5TTh1UfFxsJjTk9HLNuFc/exec","name":"ชีตวิทยาศาสตร์กายภาพ"},{"url":"https://script.google.com/macros/s/AKfycbzuuRbnE_oB7a9vx7zZizyPVEKao31ERDTU82DvydMuRTDqVoQvgns9EsjTIzpbBjuM/exec","name":"ชีตฟิสิกส์"}]};
 /* @@BUILTIN-END@@ */
 
 /* ถ่ายภาพซอร์สของหน้านี้ไว้ตั้งแต่สคริปต์เพิ่งเริ่มทำงาน
@@ -1363,9 +1363,9 @@ function esc(s) {
   return String(s == null ? '' : s)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-  }
-function uid() { return Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);   }
-function clamp(n, lo, hi) { return n < lo ? lo : n > hi ? hi : n;   }
+}
+function uid() { return Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4); }
+function clamp(n, lo, hi) { return n < lo ? lo : n > hi ? hi : n; }
 
 /** จัดรูปตัวเลขให้อ่านง่าย ตัดศูนย์ท้ายทศนิยม ใส่จุลภาคคั่นหลักพัน */
 function fmt(n, dp) {
@@ -1374,50 +1374,50 @@ function fmt(n, dp) {
   let s = Math.abs(n - Math.round(n)) < 1e-9 ? String(Math.round(n)) : n.toFixed(d).replace(/0+$/, '').replace(/\.$/, '');
   const neg = s[0] === '-'; if (neg) s = s.slice(1);
   const [i, f] = s.split('.');
-  s = i.replace(/\B(?=(\d{3  })+(?!\d))/g, ',') + (f ? '.' + f : '');
+  s = i.replace(/\B(?=(\d{3})+(?!\d))/g, ',') + (f ? '.' + f : '');
   return (neg ? '-' : '') + s;
-  }
+}
 /** เหมือน fmt แต่ไม่ใส่จุลภาค — ใช้ในสมการเพื่อไม่ให้สับสนกับเครื่องหมายคั่น */
 function fmtq(n, dp) {
   if (n == null || !isFinite(n)) return '—';
   const d = dp == null ? 2 : dp;
   if (Math.abs(n - Math.round(n)) < 1e-9) return String(Math.round(n));
   return n.toFixed(d).replace(/0+$/, '').replace(/\.$/, '');
-  }
-function round2(n) { return Math.round(n * 100) / 100;   }
+}
+function round2(n) { return Math.round(n * 100) / 100; }
 /** ใช้กับค่าคำตอบในแม่แบบโจทย์: ปัดเศษให้ก็ต่อเมื่อค่านั้น "สวย" อยู่แล้ว
     ถ้าไม่สวยจะคืนค่าดิบไว้ เพื่อให้ตัวคัดกรองปฏิเสธแล้วสุ่มพารามิเตอร์ใหม่
     (ถ้าปัดทิ้งไปเลย ค่าอย่าง 245.8333 จะกลายเป็น 245.83 แล้วผ่านการตรวจไปเงียบ ๆ) */
-function r2(n) { return dpOf(n, 4) <= 2 ? Math.round(n * 100) / 100 : n;   }
+function r2(n) { return dpOf(n, 4) <= 2 ? Math.round(n * 100) / 100 : n; }
 /** จำนวนตำแหน่งทศนิยมที่จำเป็นจริง ๆ (ใช้คุมให้โจทย์ออกเลขสวย) */
 function dpOf(n, max) {
   const m = max == null ? 6 : max;
   for (let d = 0; d <= m; d++) if (Math.abs(n - Number(n.toFixed(d))) < 1e-9) return d;
   return m + 1;
-  }
+}
 const THDATE = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
 const THMON = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
 function thDate(ts) {
   const d = new Date(ts);
   return d.getDate() + ' ' + THMON[d.getMonth()] + ' ' + (d.getFullYear() + 543);
-  }
+}
 function thDateTime(ts) {
   const d = new Date(ts);
   return thDate(ts) + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
-  }
+}
 function mmss(sec) {
   const s = Math.max(0, Math.round(sec));
   return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
-  }
+}
 
 function toast(msg, kind) {
   const t = document.createElement('div');
   t.className = 'toast' + (kind ? ' ' + kind : '');
   t.textContent = msg;
   $('#toast').appendChild(t);
-  setTimeout(() => { t.style.transition = 'opacity .3s'; t.style.opacity = '0';   }, 2400);
+  setTimeout(() => { t.style.transition = 'opacity .3s'; t.style.opacity = '0'; }, 2400);
   setTimeout(() => t.remove(), 2800);
-  }
+}
 
 function download(blob, filename) {
   const url = URL.createObjectURL(blob);
@@ -1425,7 +1425,7 @@ function download(blob, filename) {
   a.href = url; a.download = filename;
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 4000);
-  }
+}
 
 function pickFile(accept) {
   return new Promise(res => {
@@ -1433,10 +1433,10 @@ function pickFile(accept) {
     inp.type = 'file'; inp.accept = accept || '';
     inp.style.display = 'none';
     document.body.appendChild(inp);
-    inp.addEventListener('change', () => { const f = inp.files[0] || null; inp.remove(); res(f);   });
+    inp.addEventListener('change', () => { const f = inp.files[0] || null; inp.remove(); res(f); });
     inp.click();
-    });
-  }
+  });
+}
 
 /** เลือกได้หลายไฟล์พร้อมกัน — ใช้ตอนครูรวมไฟล์ผลจากนักเรียนทั้งห้อง */
 function pickFiles(accept) {
@@ -1447,16 +1447,16 @@ function pickFiles(accept) {
     document.body.appendChild(inp);
     inp.addEventListener('change', () => {
       const fs = Array.prototype.slice.call(inp.files); inp.remove(); res(fs);
-      });
-    inp.click();
     });
-  }
+    inp.click();
+  });
+}
 
 /** คัดลอกลงคลิปบอร์ด — Safari บนไอแพดบางรุ่นไม่มี navigator.clipboard จึงต้องมีทางสำรอง */
 async function copyText(str) {
   try {
-    if (navigator.clipboard && window.isSecureContext) { await navigator.clipboard.writeText(str); return true;   }
-    } catch (e) { /* ตกไปใช้ทางสำรองด้านล่าง */   }
+    if (navigator.clipboard && window.isSecureContext) { await navigator.clipboard.writeText(str); return true; }
+  } catch (e) { /* ตกไปใช้ทางสำรองด้านล่าง */ }
   try {
     const ta = document.createElement('textarea');
     ta.value = str;
@@ -1467,21 +1467,21 @@ async function copyText(str) {
     const ok = document.execCommand('copy');
     ta.remove();
     return ok;
-    } catch (e) { return false;   }
-  }
+  } catch (e) { return false; }
+}
 
 /* Base64 ที่รองรับภาษาไทย — btoa รับได้แค่ไบต์ ต้องแปลงผ่าน UTF-8 ก่อน */
 function b64enc(str) {
   const bytes = new TextEncoder().encode(str);
   let bin = '';
-  bytes.forEach(b => { bin += String.fromCharCode(b);   });
+  bytes.forEach(b => { bin += String.fromCharCode(b); });
   return btoa(bin);
-  }
+}
 function b64dec(s) {
   const bin = atob(String(s).trim());
   const bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
   return new TextDecoder().decode(bytes);
-  }
+}
 
 /* --- โมดัล --------------------------------------------------------------- */
 let modalStack = [];
@@ -1495,71 +1495,71 @@ function openModal(opts) {
       '<footer></footer>' +
     '</div>';
   const foot = $('footer', bg);
-  const close = () => { bg.remove(); modalStack = modalStack.filter(x => x !== bg);   };
+  const close = () => { bg.remove(); modalStack = modalStack.filter(x => x !== bg); };
   /* กล่องที่มีงานค้างส่ง opts.guard มา — คืน true เมื่อยังมีของที่ยังไม่ได้บันทึก
      แล้วการปิดทุกทางจะถามยืนยันก่อน กันเผลอแตะนอกกรอบทีเดียวแล้วงานหายหมด
      กล่องธรรมดาที่ไม่ส่ง guard มา ยังปิดทันทีเหมือนเดิม ไม่ต้องมาถามให้รำคาญ */
   bg.__tryClose = async () => {
     if (opts.guard) {
       let dirty = false;
-      try { dirty = !!opts.guard(bg);   } catch (e) { dirty = false;   }
+      try { dirty = !!opts.guard(bg); } catch (e) { dirty = false; }
       if (dirty) {
         const ok = await confirmBox('ปิดหน้าต่างนี้?',
           'ยังมีข้อมูลที่<b>ยังไม่ได้บันทึก</b> ถ้าปิดตอนนี้ข้อมูลที่กรอกไว้จะหายไป' +
           (opts.draftNote ? '<br><span class="hint">' + opts.draftNote + '</span>' : ''),
           'ปิดโดยไม่บันทึก');
         if (!ok) return;
-        }
       }
-    if (opts.onClose) { try { opts.onClose();   } catch (e) {  }   }
+    }
+    if (opts.onClose) { try { opts.onClose(); } catch (e) {} }
     close();
-    };
-  (opts.buttons || [{ label: 'ปิด'   }]).forEach(b => {
+  };
+  (opts.buttons || [{ label: 'ปิด' }]).forEach(b => {
     const btn = document.createElement('button');
     btn.textContent = b.label;
     if (b.cls) btn.className = b.cls;
     // ปุ่มที่ไม่มีงานของตัวเอง (เช่น ยกเลิก) ถือเป็นการปิด จึงต้องผ่านด่านถามยืนยันด้วย
-    btn.addEventListener('click', () => { if (b.act) b.act(close, bg); else bg.__tryClose();   });
+    btn.addEventListener('click', () => { if (b.act) b.act(close, bg); else bg.__tryClose(); });
     foot.appendChild(btn);
-    });
+  });
   bg.addEventListener('click', e => {
     if (e.target === bg || e.target.hasAttribute('data-close')) bg.__tryClose();
-    });
+  });
   $('#modal-root').appendChild(bg);
   modalStack.push(bg);
   if (opts.onMount) opts.onMount(bg, close);
-  return { root: bg, close   };
-  }
+  return { root: bg, close };
+}
 function confirmBox(title, msg, okLabel) {
   return new Promise(res => {
     openModal({
       title: title,
       bodyHTML: '<div>' + msg + '</div>',
       buttons: [
-        { label: 'ยกเลิก', act: c => { c(); res(false);   }   },
-        { label: okLabel || 'ตกลง', cls: 'primary', act: c => { c(); res(true);   }   }
+        { label: 'ยกเลิก', act: c => { c(); res(false); } },
+        { label: okLabel || 'ตกลง', cls: 'primary', act: c => { c(); res(true); } }
       ]
-      });
     });
-  }
+  });
+}
 document.addEventListener('keydown', e => {
   if (e.key !== 'Escape' || !modalStack.length) return;
   const top = modalStack[modalStack.length - 1];
   // ผ่านด่านเดียวกับการแตะนอกกรอบ ไม่งั้นกด Escape ทีเดียวงานก็หายอยู่ดี
-  if (top.__tryClose) { top.__tryClose(); return;   }
+  if (top.__tryClose) { top.__tryClose(); return; }
   top.remove(); modalStack.pop();
-  });
+});
 
+/* ============================================================================
+   ค่าเฉพาะวิชา — subjects/ijso/2-subject.js
+   ส่วนอื่นของแอปอยู่ใน core/ ใช้ร่วมกันทุกวิชา · แก้ที่นี่แล้วสั่ง node tools/build-dist.mjs
+   ========================================================================== */
+/** ชื่อวิชาที่ขึ้นบนแถบหัว หน้าเข้าใช้ ไอคอนหน้าจอโฮม และท้ายเอกสาร */
+const SUBJECT_INFO = { "title": "คลังโจทย์IJSO สอวน. ม.ต้น", "short": "IJSO ม.ต้น", "dept": "กลุ่มสาระการเรียนรู้วิทยาศาสตร์และเทคโนโลยี", "katex": true };
 /* ============================================================================
    1) STORE — สถานะและการบันทึกลง localStorage
    ========================================================================== */
 const LS_KEY = 'ijsoquiz.v1';
-window.__LSKEY = LS_KEY;   // ให้ตัวดักหน้าขาวรู้ว่าต้องล้างข้อมูลของวิชาไหน
-/* ชื่อวิชาที่แนบไปกับทุกคำสั่งที่ยิงขึ้นชีต
-   ชีตเดียวเก็บได้หลายวิชา ฝั่งชีตใช้ค่านี้แยกใบงานและผลของแต่ละวิชาออกจากกัน */
-/* สคริปต์ในชีตที่แอปรุ่นนี้ต้องการ — ใช้เตือนตอนทดสอบการเชื่อมต่อ
-   ขยับเลขนี้ทุกครั้งที่เพิ่มคำสั่งใหม่ในไฟล์ appsscript-Code.gs */
-const GS_VERSION = 17;
 const SUBJECT = 'ijso';
 /* ────────────────────────────────────────────────────────────────────────────
    สารบัญเรื่อง — จุดเดียวที่ต้องแก้เมื่อจะ "เพิ่มบทใหม่"
@@ -1596,58 +1596,69 @@ const TOPICS = [
    วางไว้ลำดับแรกเพราะใช้ตรวจความเข้าใจก่อนลงมือคำนวณ และทำให้ข้อทฤษฎีขึ้นต้นใบงาน */
 const LEVELS = ['พื้นฐาน', 'ประยุกต์', 'IJSO'];
 const LEVEL_CLS = { 'ทฤษฎี': 'l0', 'พื้นฐาน': 'l1', 'ประยุกต์': 'l2', 'IJSO': 'l3' };
+function chLabel(t) { return t && t.exam ? 'พิเศษ' : 'บทที่ ' + (t ? t.ch : '?');   }
+/** วิชานี้ไม่ได้แบ่งเรื่องตามระดับชั้น */
+const GRADES = [];
+
+window.__LSKEY = LS_KEY;   // ให้ตัวดักหน้าขาวรู้ว่าต้องล้างข้อมูลของวิชาไหน
+/* ชื่อวิชาที่แนบไปกับทุกคำสั่งที่ยิงขึ้นชีต
+   ชีตเดียวเก็บได้หลายวิชา ฝั่งชีตใช้ค่านี้แยกใบงานและผลของแต่ละวิชาออกจากกัน */
+/* สคริปต์ในชีตที่แอปรุ่นนี้ต้องการ — ใช้เตือนตอนทดสอบการเชื่อมต่อ
+   ขยับเลขนี้ทุกครั้งที่เพิ่มคำสั่งใหม่ในไฟล์ appsscript-Code.gs */
+const GS_VERSION = 17;
 const THEORY_LEVEL = 'ทฤษฎี';
 const ALL_TOPIC_IDS = TOPICS.map(t => t.id);
 
 /* ค้นเรื่องจาก id ให้เร็ว และรู้ลำดับบทเพื่อใช้เรียงข้อในใบงาน
    หมายเหตุ: id ของเรื่องเดิม (1,2,3) ห้ามเปลี่ยน เพราะชุดโจทย์เก่าอ้างถึงอยู่
    ลำดับที่นักเรียนเห็นจึงคุมด้วยฟิลด์ ch แทน ไม่ใช่ค่า id */
-const TOPIC_BY_ID = {  };
-TOPICS.forEach(t => { TOPIC_BY_ID[t.id] = t;   });
-function topicOf(id) { return TOPIC_BY_ID[id] || null;   }
-/** ลำดับบทสำหรับการเรียง — เรื่องพิเศษ (แนวข้อสอบ) ไปอยู่ท้ายสุดเสมอ */
-function chOf(id) { const t = topicOf(id); return t ? (t.exam ? 99 : t.ch) : 98;   }
-function chLabel(t) { return t && t.exam ? 'พิเศษ' : 'บทที่ ' + (t ? t.ch : '?');   }
+const TOPIC_BY_ID = {};
+TOPICS.forEach(t => { TOPIC_BY_ID[t.id] = t; });
+function topicOf(id) { return TOPIC_BY_ID[id] || null; }
+/** ลำดับบทสำหรับการเรียง — เรื่องพิเศษ (แนวข้อสอบ) ไปอยู่ท้ายสุดเสมอ
+    วิชาที่แบ่งบทตามระดับชั้น (มี grade) เรียง ม.1 → ม.3 ก่อน แล้วค่อยเรียงตามบท */
+function chOf(id) { const t = topicOf(id); return t ? (t.exam ? 9999 : (t.grade || 0) * 100 + t.ch) : 9998; }
 
 /* เลขประจำตัวนักเรียน = ชื่อผู้ใช้ตอนลงชื่อเข้าใช้
    บังคับให้เป็นตัวเลขล้วนไม่เกิน 5 หลัก เพื่อให้พิมพ์บนไอแพดง่ายและไม่สับสน */
 const SID_MAX = 5;
-function normSid(v) { return String(v == null ? '' : v).trim().replace(/[^\d]/g, '').slice(0, SID_MAX);   }
-function validSid(v) { return new RegExp('^\\d{1,' + SID_MAX + '  }$').test(String(v == null ? '' : v).trim());   }
+function normSid(v) { return String(v == null ? '' : v).trim().replace(/[^\d]/g, '').slice(0, SID_MAX); }
+function validSid(v) { return new RegExp('^\\d{1,' + SID_MAX + '}$').test(String(v == null ? '' : v).trim()); }
 
 /* ประเภทของชุดโจทย์
    practice = แบบฝึกหัด เปิดเฉลยได้ ตรวจทีละข้อทันที
    test     = แบบทดสอบ ไม่มีเฉลย บันทึกคำตอบแล้วค่อยรู้ผลตอนส่ง
               และตัวเลขในโจทย์ต่างจากแบบฝึกหัดด้วย seedShift */
 const QUIZ_KINDS = {
-  practice: { name: 'แบบฝึกหัด', short: 'ฝึก',   cls: 'l1'   },
-  test:     { name: 'แบบทดสอบ',  short: 'ทดสอบ', cls: 'l3'   }
-  };
-function quizKind(q) { return q && q.kind === 'test' ? 'test' : 'practice';   }
-function isTest(q) { return quizKind(q) === 'test';   }
+  practice: { name: 'แบบฝึกหัด', short: 'ฝึก',   cls: 'l1' },
+  test:     { name: 'แบบทดสอบ',  short: 'ทดสอบ', cls: 'l3' }
+};
+function quizKind(q) { return q && q.kind === 'test' ? 'test' : 'practice'; }
+function isTest(q) { return quizKind(q) === 'test'; }
 /** เฉลยเปิดดูได้เมื่อเป็นแบบฝึกหัด หรือผู้ใช้เป็นผู้ดูแล (ผู้ดูแลเห็นทุกอย่างเสมอ) */
-function canSeeSolution(q) { return !isTest(q) || canManage();   }
+function canSeeSolution(q) { return !isTest(q) || canManage(); }
 
 function defaultDB() {
   return {
     v: 1,
     mode: 'solo',
-    profile: { name: '', room: '', no: '', sid: ''   },
+    profile: { name: '', room: '', no: '', sid: '' },
     classes: [],
     students: [],
     settings: {
-      g: 9.8,
+      g: 9.8,                 // ค่า g ในโจทย์ฟิสิกส์ (วิชาที่ไม่มีโจทย์ใช้ g ไม่อ่านค่านี้)
       tolPct: 1,
       easyG10: true,          // ระดับง่ายบังคับใช้ g = 10 ให้คิดเลขในใจได้
-      header: { school: 'โรงเรียนปากช่อง จังหวัดนครราชสีมา', teacher: '', term: ''   },
+      piMode: '3.14',         // ค่า π ที่ใช้ในโจทย์วงกลม ทรงกระบอก กรวย ทรงกลม — '3.14' หรือ '22/7'
+      header: { school: 'โรงเรียนปากช่อง จังหวัดนครราชสีมา', teacher: '', term: '' },
       logo: '',               // โลโก้โรงเรียนเป็น data URI (ผู้ใช้อัปโหลดเอง)
       about: {
         dev: 'นายรังสรรค์ กรีกูล',
-        dept: 'กลุ่มสาระการเรียนรู้วิทยาศาสตร์และเทคโนโลยี',
+        dept: SUBJECT_INFO.dept,
         school: 'โรงเรียนปากช่อง จังหวัดนครราชสีมา'
-        },
+      },
       showCredit: true,       // แสดงชื่อผู้พัฒนาท้ายเอกสารที่พิมพ์
-      workLines: {  },          // จำนวนบรรทัดของแต่ละช่องในกรอบเขียนวิธีทำ
+      workLines: {},          // จำนวนบรรทัดของแต่ละช่องในกรอบเขียนวิธีทำ
       passPct: 60,
       autoDraft: true,        // ส่งความคืบหน้าขึ้นชีตอัตโนมัติระหว่างทำ
       /* คุมสอบ — มีผลเฉพาะชุดที่เป็น "แบบทดสอบ" เท่านั้น · 0 ทุกตัว = ปิดทั้งระบบ
@@ -1656,19 +1667,19 @@ function defaultDB() {
       examMaxOut: 0,          // ออกจากแอปได้กี่ครั้งก่อนถูกส่งอัตโนมัติ
       examMaxOutSec: 0,       // ออกจากแอปได้รวมกี่วินาทีก่อนถูกส่งอัตโนมัติ
       devLockHr: 2            // เครื่องที่เข้าใช้แล้ว ห้ามเข้าในชื่อคนอื่นกี่ชั่วโมง (0 = ปิด)
-      },
+    },
     quizzes: [],
     attempts: [],
     // การเชื่อมต่อ Google Sheet — ถ้า url ว่าง แอพทำงานแบบออฟไลน์ล้วนเหมือนเดิมทุกอย่าง
-    cloud: { url: '', lastSync: 0   },
-    auth: { role: '', token: '', profile: null, exp: 0   },
+    cloud: { url: '', lastSync: 0 },
+    auth: { role: '', token: '', profile: null, exp: 0 },
     outbox: [],              // ผลที่ส่งขึ้นชีตไม่สำเร็จ รอส่งใหม่
     deviceId: '',
     // สถิติการเข้าใช้งานของเครื่องนี้
-    usage: { first: 0, last: 0, sessions: 0, days: {  }, quizzes: 0, items: 0   },
-    cur: { quizId: null, attemptId: null, classId: null, studentId: null, i: 0, statRoom: '', printRoom: ''   }
-    };
-  }
+    usage: { first: 0, last: 0, sessions: 0, days: {}, quizzes: 0, items: 0 },
+    cur: { quizId: null, attemptId: null, classId: null, studentId: null, i: 0, statRoom: '', printRoom: '', pg: 'all' }
+  };
+}
 let DB = defaultDB();
 let storageOK = true;
 
@@ -1678,24 +1689,24 @@ function loadDB() {
     if (raw) {
       const o = JSON.parse(raw);
       DB = Object.assign(defaultDB(), o);
-      DB.settings = Object.assign(defaultDB().settings, o.settings || {  });
+      DB.settings = Object.assign(defaultDB().settings, o.settings || {});
       const d = defaultDB().settings;
-      DB.settings.header = Object.assign({  }, d.header, (o.settings || {  }).header || {  });
-      DB.settings.about  = Object.assign({  }, d.about,  (o.settings || {  }).about  || {  });
-      DB.usage = Object.assign(defaultDB().usage, o.usage || {  });
-      if (!DB.usage.days || typeof DB.usage.days !== 'object') DB.usage.days = {  };
-      DB.profile = Object.assign(defaultDB().profile, o.profile || {  });
-      DB.cloud = Object.assign(defaultDB().cloud, o.cloud || {  });
-      DB.auth = Object.assign(defaultDB().auth, o.auth || {  });
+      DB.settings.header = Object.assign({}, d.header, (o.settings || {}).header || {});
+      DB.settings.about  = Object.assign({}, d.about,  (o.settings || {}).about  || {});
+      DB.usage = Object.assign(defaultDB().usage, o.usage || {});
+      if (!DB.usage.days || typeof DB.usage.days !== 'object') DB.usage.days = {};
+      DB.profile = Object.assign(defaultDB().profile, o.profile || {});
+      DB.cloud = Object.assign(defaultDB().cloud, o.cloud || {});
+      DB.auth = Object.assign(defaultDB().auth, o.auth || {});
       DB.outbox = Array.isArray(o.outbox) ? o.outbox : [];
-      DB.cur = Object.assign(defaultDB().cur, o.cur || {  });
-      }
-    } catch (e) { console.warn('อ่านข้อมูลเดิมไม่ได้', e);   }
+      DB.cur = Object.assign(defaultDB().cur, o.cur || {});
+    }
+  } catch (e) { console.warn('อ่านข้อมูลเดิมไม่ได้', e); }
   /* ข้อมูลที่บันทึกไว้ก่อนมีระบบคุมสอบจะไม่มีคีย์พวกนี้ ต้องเติมให้ก่อนใช้งาน
      ไม่งั้นค่าจะเป็น undefined แล้วช่องกรอกในกล่องสร้างแบบทดสอบจะว่างเปล่า */
   if (DB.settings.examMin == null) DB.settings.examMin = 0;
   // ข้อมูลที่บันทึกไว้ก่อนมีระบบเรียนรู้ไปพร้อมกันจะไม่มีคีย์นี้
-  if (!DB.focus || typeof DB.focus !== 'object') DB.focus = { cur: null, log: []   };
+  if (!DB.focus || typeof DB.focus !== 'object') DB.focus = { cur: null, log: [] };
   if (!Array.isArray(DB.focus.log)) DB.focus.log = [];
   if (DB.settings.examMaxOut == null) DB.settings.examMaxOut = 0;
   if (DB.settings.examMaxOutSec == null) DB.settings.examMaxOutSec = 0;
@@ -1703,8 +1714,8 @@ function loadDB() {
   try {
     localStorage.setItem(LS_KEY + '.probe', '1');
     localStorage.removeItem(LS_KEY + '.probe');
-    } catch (e) { storageOK = false;   }
-  }
+  } catch (e) { storageOK = false; }
+}
 
 let saveTimer = null;
 function save(immediate) {
@@ -1712,20 +1723,20 @@ function save(immediate) {
     try {
       localStorage.setItem(LS_KEY, JSON.stringify(DB));
       const el = $('#saveState');
-      if (el) { el.textContent = 'บันทึกแล้ว'; el.className = 'savestate on';   }
-      } catch (e) {
+      if (el) { el.textContent = 'บันทึกแล้ว'; el.className = 'savestate on'; }
+    } catch (e) {
       storageOK = false;
       const el = $('#saveState');
-      if (el) { el.textContent = 'บันทึกไม่ได้'; el.className = 'savestate';   }
+      if (el) { el.textContent = 'บันทึกไม่ได้'; el.className = 'savestate'; }
       renderStorageWarn();
-      }
-    };
-  if (immediate) { clearTimeout(saveTimer); doIt(); return;   }
+    }
+  };
+  if (immediate) { clearTimeout(saveTimer); doIt(); return; }
   const el = $('#saveState');
-  if (el) { el.textContent = 'กำลังบันทึก…'; el.className = 'savestate';   }
+  if (el) { el.textContent = 'กำลังบันทึก…'; el.className = 'savestate'; }
   clearTimeout(saveTimer);
   saveTimer = setTimeout(doIt, 350);
-  }
+}
 
 /** แถบเตือนว่ากำลังดูแบบนักเรียนอยู่ — ต้องเห็นชัดตลอดเวลา
     ไม่งั้นครูลืมว่าอยู่ในโหมดทดลอง แล้วงงว่าทำไมเครื่องมือของครูหายไปหมด */
@@ -1754,32 +1765,32 @@ function renderPreviewBar() {
   const b = $('#btnPreviewOff');
   if (b) b.addEventListener('click', function () {
     PREVIEW = null;
-    MYA = { list: null, loading: false, err: ''   };
+    MYA = { list: null, loading: false, err: '' };
     renderPreviewBar();
     renderGate();
     render();
     toast('กลับมาเป็นผู้ดูแลแล้ว', 'ok');
-    });
-  }
+  });
+}
 
 /** ผู้ดูแลเลือกชั้นแล้วดูหน้าจอแบบนักเรียนห้องนั้น */
 async function previewAsStudent() {
   let cls = [];
   try {
-    const r = await api('ping', {  }, { noToken: true   });
-    cls = Object.keys(r.classes || {  }).map(function (n) { return { name: n, n: r.classes[n]   };   });
-    } catch (e) {  }
+    const r = await api('ping', {}, { noToken: true });
+    cls = Object.keys(r.classes || {}).map(function (n) { return { name: n, n: r.classes[n] }; });
+  } catch (e) {}
   /* เรียงตามระดับชั้นแล้วห้อง ไม่ใช่เรียงตามตัวอักษร
      ไม่งั้น ม.0 กับ ชุมนุม จะขึ้นมาก่อน ม.1 เสมอ */
   const ord = function (n) {
     const m = String(n).match(/(\d+)\s*\/\s*(\d+)/);
     return m ? Number(m[1]) * 1000 + Number(m[2]) : 999999;
-    };
-  cls.sort(function (a, b) { return ord(a.name) - ord(b.name) || (a.name < b.name ? -1 : 1);   });
-  if (!cls.length) { toast('ยังอ่านรายชื่อห้องจากชีตไม่ได้ — ตรวจการเชื่อมต่อก่อน', 'bad'); return;   }
+  };
+  cls.sort(function (a, b) { return ord(a.name) - ord(b.name) || (a.name < b.name ? -1 : 1); });
+  if (!cls.length) { toast('ยังอ่านรายชื่อห้องจากชีตไม่ได้ — ตรวจการเชื่อมต่อก่อน', 'bad'); return; }
   // ถามชีตว่านักเรียนตัวอย่างคือใคร ชีตรุ่นเก่ายังไม่รู้จักคำสั่งนี้ ให้เงียบไว้
   let smp = null;
-  try { smp = await api('sampleInfo', {  });   } catch (e) { smp = null;   }
+  try { smp = await api('sampleInfo', {}); } catch (e) { smp = null; }
   const hasSmp = !!(smp && smp.sid);
   openModal({
     title: 'ทดลองดูแบบนักเรียน',
@@ -1791,7 +1802,7 @@ async function previewAsStudent() {
       '<select id="pvCls" style="max-width:100%">' +
       cls.map(function (c) {
         return '<option value="' + esc(c.name) + '">' + esc(c.name) + ' (' + c.n + ' คน)</option>';
-        }).join('') + '</select>' +
+      }).join('') + '</select>' +
       /* สองโหมดนี้ต่างกันมากพอที่จะต้องเลือกเอง ไม่ควรเดาให้
          ดูเฉย ๆ = ปลอดภัย ไม่แตะชีต · ทดสอบจริง = ผลขึ้นชีต ต้องลบทีหลัง */
       '<div style="margin-top:15px;display:flex;flex-direction:column;gap:9px">' +
@@ -1812,66 +1823,66 @@ async function previewAsStudent() {
         : esc((smp && smp.hint) || 'ชีตยังไม่รองรับ — ต้องอัปเดตสคริปต์ชีตก่อน')) +
       '</span></span></label></div>',
     buttons: [
-      { label: 'ยกเลิก'   },
+      { label: 'ยกเลิก' },
       { label: 'เริ่มโหมดทดลอง', cls: 'primary', act: function (close, root) {
-          const mode = (root.querySelector('input[name=pvMode]:checked') || {  }).value || 'look';
-          PREVIEW = { cls: $('#pvCls', root).value || '', sample: mode === 'sample'   };
-          if (PREVIEW.sample && hasSmp) { PREVIEW.smpSid = smp.sid; PREVIEW.smpName = smp.name;   }
-          MYA = { list: null, loading: false, err: ''   };
+          const mode = (root.querySelector('input[name=pvMode]:checked') || {}).value || 'look';
+          PREVIEW = { cls: $('#pvCls', root).value || '', sample: mode === 'sample' };
+          if (PREVIEW.sample && hasSmp) { PREVIEW.smpSid = smp.sid; PREVIEW.smpName = smp.name; }
+          MYA = { list: null, loading: false, err: '' };
           close();
           renderPreviewBar();
           renderGate();
           setTab('make');
           render();
           loadMyAssignments(true);
-          }   }
+        } }
     ]
-    });
-  }
+  });
+}
 
 /** ลบผลทดสอบของนักเรียนตัวอย่างทั้งหมด — ถามยืนยันก่อนเพราะย้อนกลับไม่ได้ */
 async function sampleClearBox() {
   let info = null;
-  try { info = await api('sampleInfo', {  });   } catch (e) {
+  try { info = await api('sampleInfo', {}); } catch (e) {
     toast('อ่านข้อมูลนักเรียนตัวอย่างไม่ได้ — ' + ((e && e.message) || ''), 'bad'); return;
-    }
-  if (!info || !info.sid) { toast(info && info.hint ? info.hint : 'ยังไม่มีนักเรียนตัวอย่าง', 'bad'); return;   }
-  if (!info.works) { toast('ยังไม่มีผลทดสอบให้ลบ', 'ok'); return;   }
+  }
+  if (!info || !info.sid) { toast(info && info.hint ? info.hint : 'ยังไม่มีนักเรียนตัวอย่าง', 'bad'); return; }
+  if (!info.works) { toast('ยังไม่มีผลทดสอบให้ลบ', 'ok'); return; }
   const ok = await confirmBox('ลบผลทดสอบ',
     'ลบผลทั้งหมด <b>' + info.works + ' ฉบับ</b> ของ <b>' + esc(info.name || info.sid) + '</b> (' +
     esc(info.cls) + ')<br><span class="hint">ลบเฉพาะแถวของนักเรียนตัวอย่างเท่านั้น ' +
     'ผลของนักเรียนจริงไม่ถูกแตะ · ย้อนกลับไม่ได้</span>', 'ลบผลทดสอบ');
   if (!ok) return;
   try {
-    const r = await api('sampleClear', {  });
+    const r = await api('sampleClear', {});
     toast('ลบผลทดสอบแล้ว ' + r.removed + ' ฉบับ', 'ok');
     renderPreviewBar();
     render();
-    } catch (e) { toast('ลบไม่สำเร็จ — ' + ((e && e.message) || ''), 'bad');   }
-  }
+  } catch (e) { toast('ลบไม่สำเร็จ — ' + ((e && e.message) || ''), 'bad'); }
+}
 
 function renderStorageWarn() {
   $('#storageWarn').innerHTML = storageOK ? '' :
     '<div class="notice bad">เบราว์เซอร์นี้ไม่อนุญาตให้บันทึกข้อมูลอัตโนมัติ ' +
     '(localStorage ถูกปิด หรือเปิดในโหมดไม่ระบุตัวตน) — ผลการทำแบบฝึกหัดจะหายเมื่อปิดหน้านี้ ' +
     'ให้กด <b>สำรอง</b> เก็บไฟล์ไว้ก่อนปิด</div>';
-  }
+}
 
 /* --- ตัวช่วยเข้าถึงข้อมูล ------------------------------------------------ */
-function curQuiz()   { return DB.quizzes.find(q => q.id === DB.cur.quizId) || null;   }
-function curAttempt(){ return DB.attempts.find(a => a.id === DB.cur.attemptId) || null;   }
-function studentById(id) { return DB.students.find(s => s.id === id) || null;   }
-function classById(id)   { return DB.classes.find(c => c.id === id) || null;   }
+function curQuiz()   { return DB.quizzes.find(q => q.id === DB.cur.quizId) || null; }
+function curAttempt(){ return DB.attempts.find(a => a.id === DB.cur.attemptId) || null; }
+function studentById(id) { return DB.students.find(s => s.id === id) || null; }
+function classById(id)   { return DB.classes.find(c => c.id === id) || null; }
 function studentsOf(classId) {
   return DB.students.filter(s => s.classId === classId).sort((a, b) => (a.no || 0) - (b.no || 0));
-  }
+}
 /** ชื่อผู้ทำของ attempt — รองรับทั้งสองโหมด */
 function attemptWho(a) {
-  if (a.studentId) { const s = studentById(a.studentId); return s ? s.name : '(ลบแล้ว)';   }
+  if (a.studentId) { const s = studentById(a.studentId); return s ? s.name : '(ลบแล้ว)'; }
   return a.soloName || DB.profile.name || 'ผู้เรียน';
-  }
+}
 /** ระเบียนนักเรียนของผลการทำนี้ — คืน null ถ้าเป็นโหมดเดี่ยวหรือหาไม่เจอ */
-function studentOf(a) { return a && a.studentId ? studentById(a.studentId) : null;   }
+function studentOf(a) { return a && a.studentId ? studentById(a.studentId) : null; }
 /** แปลงชื่อห้องให้เป็นรูปแบบมาตรฐาน ม.X/Y และแก้กรณี Google Sheets แปลงเป็นวันที่ */
 function normCls(v) {
   if (v == null) return '';
@@ -1879,27 +1890,27 @@ function normCls(v) {
     if (!isNaN(v.getTime())) {
       var bkk = new Date(v.getTime() + 7 * 3600 * 1000);
       return 'ม.' + bkk.getUTCDate() + '/' + (bkk.getUTCMonth() + 1);
-      }
     }
+  }
   var s = String(v).trim();
   if (!s) return '';
-  if (/^\d{4  }-\d{2  }-\d{2  }T[\d:.]+Z?$/i.test(s)) {
+  if (/^\d{4}-\d{2}-\d{2}T[\d:.]+Z?$/i.test(s)) {
     var d = new Date(s);
     if (!isNaN(d.getTime())) {
       var bkk = new Date(d.getTime() + 7 * 3600 * 1000);
       return 'ม.' + bkk.getUTCDate() + '/' + (bkk.getUTCMonth() + 1);
-      }
     }
+  }
   var m = s.match(/^(?:ม\.?|ห้อง)\s*(\d+\/\d+)$/i);
   if (m) return 'ม.' + m[1];
   if (/^\d+\/\d+$/.test(s)) return 'ม.' + s;
   return s;
-  }
+}
 
 /** แปลงชื่อห้องให้เป็นรูปแบบมาตรฐานเพื่อเปรียบเทียบ เช่น 'ม.4/1' -> '4/1' */
 function normRoom(r) {
   return String(normCls(r) || '').replace(/\s+/g, '').replace(/^ห้อง/, '').replace(/^ม\./, '');
-  }
+}
 /** หาชื่อห้องของผลการทำแบบทดสอบ (attempt) */
 function attemptRoom(a) {
   if (!a) return '';
@@ -1908,28 +1919,28 @@ function attemptRoom(a) {
     const c = classById(s.classId);
     if (c && c.name) return c.name;
     if (s.cls) return s.cls;
-    }
+  }
   if (a.room) return String(a.room).trim();
   const wi = whoInfo(a);
   if (wi && wi.cls) return String(wi.cls).trim();
   return '';
-  }
-/** ข้อมูลประจำตัวสำหรับหัวเอกสาร: {name, no, sid, cls  } */
+}
+/** ข้อมูลประจำตัวสำหรับหัวเอกสาร: {name, no, sid, cls} */
 function whoInfo(a) {
   const s = studentOf(a);
   if (s) {
     const c = classById(s.classId);
-    return { name: s.name, no: s.no ? String(s.no) : '', sid: String(s.sid || ''), cls: c ? c.name : ''   };
-    }
+    return { name: s.name, no: s.no ? String(s.no) : '', sid: String(s.sid || ''), cls: c ? c.name : '' };
+  }
   // ไม่มีระเบียนนักเรียน (โหมดเดี่ยว หรือผลที่รวมมาแล้วจับคู่ไม่ได้) ใช้ค่าที่ติดมากับผล
   return {
     name: attemptWho(a),
     no: String((a && a.no) || ''),
     sid: String((a && a.sid) || ''),
     cls: String((a && a.room) || DB.profile.room || '')
-    };
-  }
-function quizOf(a) { return DB.quizzes.find(q => q.id === a.quizId) || null;   }
+  };
+}
+function quizOf(a) { return DB.quizzes.find(q => q.id === a.quizId) || null; }
 
 /* ============================================================================
    1.4) โลโก้โรงเรียน · ไอคอนหน้าจอโฮม · สถิติการเข้าใช้งาน
@@ -1950,17 +1961,17 @@ function shrinkImage(file, maxSide) {
       cv.getContext('2d').drawImage(img, 0, 0, w, h);
       URL.revokeObjectURL(url);
       // เก็บเป็น PNG เพื่อรักษาพื้นหลังโปร่งใสของตราโรงเรียน
-      res({ url: cv.toDataURL('image/png'), w: img.width, h: img.height   });
-      };
-    img.onerror = () => { URL.revokeObjectURL(url); rej(new Error('เปิดไฟล์รูปนี้ไม่ได้'));   };
+      res({ url: cv.toDataURL('image/png'), w: img.width, h: img.height });
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); rej(new Error('เปิดไฟล์รูปนี้ไม่ได้')); };
     img.src = url;
-    });
-  }
+  });
+}
 
 async function pickLogo() {
   const f = await pickFile('image/png,image/jpeg,image/webp,image/*');
   if (!f) return;
-  if (f.size > 8 * 1024 * 1024) { toast('ไฟล์ใหญ่เกินไป (เกิน 8 MB)', 'bad'); return;   }
+  if (f.size > 8 * 1024 * 1024) { toast('ไฟล์ใหญ่เกินไป (เกิน 8 MB)', 'bad'); return; }
   try {
     const r = await shrinkImage(f, 320);
     DB.settings.logo = r.url;
@@ -1968,8 +1979,8 @@ async function pickLogo() {
     applyAppIcon();
     renderSetting(); renderBrand();
     toast('ใส่โลโก้เรียบร้อย (ย่อจาก ' + r.w + '×' + r.h + ' พิกเซล)', 'ok');
-    } catch (e) { toast(e.message || 'ใส่โลโก้ไม่สำเร็จ', 'bad');   }
-  }
+  } catch (e) { toast(e.message || 'ใส่โลโก้ไม่สำเร็จ', 'bad'); }
+}
 
 /** สร้างไอคอนสี่เหลี่ยมจัตุรัสสำหรับหน้าจอโฮม — ไอคอนโปร่งใสจะดูแปลกบนไอแพด จึงใส่พื้นหลังให้ */
 function buildAppIcon(size) {
@@ -1993,9 +2004,9 @@ function buildAppIcon(size) {
       g.fillStyle = '#fff';
       g.textAlign = 'center'; g.textBaseline = 'middle';
       g.font = '600 ' + Math.round(bh * 0.52) + 'px "Noto Sans Thai","Sarabun",system-ui,sans-serif';
-      g.fillText('IJSO ม.ต้น', S / 2, S - bh / 2 + 1);
+      g.fillText(SUBJECT_INFO.short, S / 2, S - bh / 2 + 1);
       res(cv.toDataURL('image/png'));
-      };
+    };
     if (DB.settings.logo) {
       const img = new Image();
       img.onload = () => {
@@ -2004,10 +2015,10 @@ function buildAppIcon(size) {
         const w = img.width * sc, h = img.height * sc;
         g.drawImage(img, (S - w) / 2, (S * 0.74 - h) / 2 + S * 0.02, w, h);
         done();
-        };
+      };
       img.onerror = done;
       img.src = DB.settings.logo;
-      } else {
+    } else {
       // ไม่มีโลโก้ ใช้สัญลักษณ์แทน
       g.fillStyle = '#2563eb';
       g.textAlign = 'center'; g.textBaseline = 'middle';
@@ -2016,9 +2027,9 @@ function buildAppIcon(size) {
       g.strokeStyle = '#94a3b8'; g.lineWidth = Math.max(2, S * 0.014);
       g.beginPath(); g.arc(S / 2, S * 0.37, S * 0.29, -0.5, Math.PI + 0.9); g.stroke();
       done();
-      }
-    });
-  }
+    }
+  });
+}
 
 async function applyAppIcon() {
   try {
@@ -2026,8 +2037,8 @@ async function applyAppIcon() {
     const a = $('#linkAppIcon'), b = $('#linkFavicon');
     if (a) a.href = png;
     if (b) b.href = png;
-    } catch (e) { /* ไอคอนไม่ขึ้นไม่ใช่เรื่องคอขาดบาดตาย ปล่อยผ่านได้ */   }
-  }
+  } catch (e) { /* ไอคอนไม่ขึ้นไม่ใช่เรื่องคอขาดบาดตาย ปล่อยผ่านได้ */ }
+}
 
 /** โลโก้ + ชื่อระบบบนแถบบนสุด */
 function renderBrand() {
@@ -2035,14 +2046,14 @@ function renderBrand() {
   if (!el) return;
   el.innerHTML = (DB.settings.logo
     ? '<img src="' + DB.settings.logo + '" alt="ตราโรงเรียน" class="brandlogo">'
-    : '<span class="dot"></span>') + 'คลังโจทย์IJSO สอวน. ม.ต้น';
-  }
+    : '<span class="dot"></span>') + SUBJECT_INFO.title;
+}
 
 /* --- สถิติการเข้าใช้งาน --------------------------------------------------- */
 function dayKey(ts) {
   const d = new Date(ts == null ? Date.now() : ts);
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-  }
+}
 /** นับการเปิดใช้งานหนึ่งครั้ง เรียกตอนโหลดแอพ */
 function markSession() {
   const u = DB.usage;
@@ -2056,7 +2067,7 @@ function markSession() {
   const keys = Object.keys(u.days).sort();
   while (keys.length > 400) delete u.days[keys.shift()];
   save();
-  }
+}
 function usageStats() {
   const u = DB.usage, done = DB.attempts.filter(a => a.finishedAt);
   const sec = done.reduce((s, a) => s + a.answers.reduce((t, x) => t + (x.sec || 0), 0), 0);
@@ -2064,20 +2075,20 @@ function usageStats() {
   const correct = done.reduce((s, a) => s + a.answers.reduce((t, x) => t + (x.score || 0), 0), 0);
   return {
     first: u.first, last: u.last, sessions: u.sessions || 0,
-    activeDays: Object.keys(u.days || {  }).length,
+    activeDays: Object.keys(u.days || {}).length,
     quizzes: done.length, items: items, correct: correct,
     pct: items ? correct / items * 100 : 0,
-    sec: sec, days: u.days || {  }
-    };
-  }
+    sec: sec, days: u.days || {}
+  };
+}
 /** กราฟแท่งจำนวนครั้งที่เปิดใช้ ย้อนหลัง N วัน */
 function usageChart(days, n) {
   const N = n || 30;
   const arr = [];
   for (let i = N - 1; i >= 0; i--) {
     const d = new Date(); d.setDate(d.getDate() - i);
-    arr.push({ k: dayKey(d.getTime()), d: d, v: days[dayKey(d.getTime())] || 0   });
-    }
+    arr.push({ k: dayKey(d.getTime()), d: d, v: days[dayKey(d.getTime())] || 0 });
+  }
   const mx = Math.max(1, Math.max.apply(null, arr.map(x => x.v)));
   const W = 460, H = 150, ox = 30, oy = 112, w = W - ox - 12, h = 88;
   const bw = w / N;
@@ -2087,7 +2098,7 @@ function usageChart(days, n) {
   [mx, mx / 2].forEach(function (v) {
     const gy = oy - h * v / mx;
     s += '<line class="cgrid" x1="' + ox + '" y1="' + n1(gy) + '" x2="' + (ox + w) + '" y2="' + n1(gy) + '"/>';
-    });
+  });
   s += '<line class="caxis" x1="' + ox + '" y1="' + oy + '" x2="' + (ox + w) + '" y2="' + oy + '"/>';
   arr.forEach((x, i) => {
     if (!x.v) return;
@@ -2095,14 +2106,14 @@ function usageChart(days, n) {
     // เว้นช่อง 2px ระหว่างแท่งด้วยการหักความกว้าง ไม่ใช่ตีเส้นขอบ
     s += '<g><title>' + esc(thDate(x.d.getTime())) + ' — ' + x.v + ' ครั้ง</title>' +
       cBar(ox + i * bw + 1, oy - bh, Math.max(2, bw - 2), bh, 2.5) + '</g>';
-    });
+  });
   s += svgTxt(ox - 6, oy - h + 4, String(mx), 'end', false, 'cnum');
   s += svgTxt(ox - 6, oy + 4, '0', 'end', false, 'cnum');
   s += svgTxt(ox, oy + 17, thDate(arr[0].d.getTime()), 'start', false, 'clab');
   s += svgTxt(ox + w, oy + 17, 'วันนี้', 'end', false, 'clab');
   s += svgTxt(ox + w / 2, oy + 34, 'จำนวนครั้งที่เปิดใช้งานย้อนหลัง ' + N + ' วัน', 'middle', false, 'clab');
   return svgWrap(W, H, s);
-  }
+}
 
 /* ============================================================================
    1.5) เชื่อมต่อ Google Sheet ผ่าน Apps Script
@@ -2116,7 +2127,7 @@ function makeCode(n) {
   (crypto && crypto.getRandomValues) ? crypto.getRandomValues(a) : a.forEach((_, i) => a[i] = Math.random() * 1e9);
   for (let i = 0; i < a.length; i++) s += CODE_ALPHABET[a[i] % CODE_ALPHABET.length];
   return s;
-  }
+}
 /* ── ล็อกเครื่องหลังเข้าใช้ กันการทำข้อสอบให้กัน ────────────────────────
    เก็บแยกคีย์จากข้อมูลแอป เพื่อไม่ให้การกู้คืนไฟล์สำรองหรือล้างข้อมูลแอป
    กลายเป็นปุ่มปลดล็อกที่หาเจอง่าย
@@ -2124,34 +2135,34 @@ function makeCode(n) {
    แล้วล็อกหลุด ต้องบอกครูตามนี้ ห้ามให้ครูเข้าใจว่าเป็นด่านที่กันได้จริง  */
 const DEVLOCK_KEY = LS_KEY + '.devlock';
 function devLockRead() {
-  try { return JSON.parse(localStorage.getItem(DEVLOCK_KEY) || 'null');   } catch (e) { return null;   }
-  }
+  try { return JSON.parse(localStorage.getItem(DEVLOCK_KEY) || 'null'); } catch (e) { return null; }
+}
 function devLockWrite(v) {
   try {
     if (v) localStorage.setItem(DEVLOCK_KEY, JSON.stringify(v));
     else localStorage.removeItem(DEVLOCK_KEY);
-    } catch (e) {  }
-  }
-function devLockMs() { return Math.max(0, Math.round(Number(DB.settings.devLockHr) || 0)) * 3600000;   }
+  } catch (e) {}
+}
+function devLockMs() { return Math.max(0, Math.round(Number(DB.settings.devLockHr) || 0)) * 3600000; }
 /** เหลืออีกกี่วินาทีที่เครื่องนี้ยังผูกกับคนเดิม — 0 = เข้าได้ · ส่ง sid ว่างมา = ถามเฉย ๆ */
 function devLockLeft(sid) {
   const ms = devLockMs(); if (!ms) return 0;
   const L = devLockRead(); if (!L || !L.sid) return 0;
   if (sid && String(L.sid) === String(sid)) return 0;    // คนเดิมเข้าได้เสมอ
   return Math.max(0, Math.round((L.at + ms - Date.now()) / 1000));
-  }
+}
 /** เวลาที่เหลือแบบคนอ่านรู้เรื่อง — mmss() ให้ "120:00" ซึ่งอ่านผิดเป็น 120 นาทีได้ง่าย */
 function devLockText(sec) {
   const m = Math.ceil(Math.max(0, sec) / 60);
   if (m < 60) return m + ' นาที';
   const h = Math.floor(m / 60), r = m % 60;
   return h + ' ชั่วโมง' + (r ? ' ' + r + ' นาที' : '');
-  }
+}
 /** ผูกเครื่องกับคนที่เพิ่งเข้าใช้ — เรียกทุกครั้งที่เข้าสำเร็จ ให้เวลานับใหม่ */
 function devLockSet(sid, name) {
   if (!devLockMs()) return;
-  devLockWrite({ sid: String(sid || ''), name: String(name || ''), at: Date.now()   });
-  }
+  devLockWrite({ sid: String(sid || ''), name: String(name || ''), at: Date.now() });
+}
 
 /** กล่องให้ครูปลดล็อกเครื่อง — ตรวจรหัสผู้ดูแลกับชีตจริง
     ต้องมีทางนี้เสมอ ไอแพดที่ใช้ร่วมกันหลายคาบจะติดล็อกแน่นอน */
@@ -2160,67 +2171,68 @@ function devLockUnlockBox() {
     title: 'ครูปลดล็อกเครื่องนี้',
     bodyHTML:
       '<div class="hint" style="margin-bottom:11px">เครื่องนี้เพิ่งใช้เข้าสอบในชื่อ <b>' +
-      esc((devLockRead() || {  }).name || '—') + '</b> จึงยังเข้าใช้ในชื่อคนอื่นไม่ได้<br>' +
+      esc((devLockRead() || {}).name || '—') + '</b> จึงยังเข้าใช้ในชื่อคนอื่นไม่ได้<br>' +
       'ถ้าเป็นเครื่องที่ใช้ร่วมกัน ให้ครูใส่รหัสผู้ดูแลเพื่อปลดล็อก</div>' +
       '<label class="hint" for="dlPass">รหัสผู้ดูแล</label>' +
       '<input type="password" id="dlPass" style="width:100%;font-size:16px" autocomplete="current-password">' +
       '<div id="dlMsg" style="margin-top:10px"></div>',
     buttons: [
-      { label: 'ยกเลิก'   },
+      { label: 'ยกเลิก' },
       { label: 'ปลดล็อก', cls: 'primary', act: async (close, root) => {
           const msg = $('#dlMsg', root);
           msg.innerHTML = '<div class="hint">กำลังตรวจรหัส…</div>';
           try {
             // ตรวจกับชีตจริง ไม่ใช่รหัสที่ฝังไว้ในหน้าเว็บซึ่งใครก็เปิดดูได้
-            await api('adminLogin', { user: '', pass: $('#dlPass', root).value || ''   }, { noToken: true   });
+            await api('adminLogin', { user: '', pass: $('#dlPass', root).value || '' }, { noToken: true });
             devLockWrite(null);
             // renderGate() ไม่วาดซ้ำถ้าโหมดเดิม กล่องเตือนเก่าจะค้างอยู่ ต้องล้างธงก่อน
             GATE.shown = '';
             close(); renderGate();
             toast('ปลดล็อกเครื่องนี้แล้ว', 'ok');
-            } catch (e) {
+          } catch (e) {
             msg.innerHTML = '<div class="notice bad">' + esc(e.message) + '</div>';
-            }
-          }   }
+          }
+        } }
     ],
-    onMount: root => { const p = $('#dlPass', root); if (p) p.focus();   }
-    });
-  }
+    onMount: root => { const p = $('#dlPass', root); if (p) p.focus(); }
+  });
+}
 
 function deviceId() {
-  if (!DB.deviceId) { DB.deviceId = uid(); save();   }
+  if (!DB.deviceId) { DB.deviceId = uid(); save(); }
   return DB.deviceId;
-  }
-function cloudOn() { return !!(DB.cloud && DB.cloud.url);   }
-function authValid() { return !!(DB.auth && DB.auth.token && DB.auth.exp > Date.now());   }
-function isAdmin()   { return authValid() && DB.auth.role === 'admin';   }
+}
+function cloudOn() { return !!(DB.cloud && DB.cloud.url); }
+function authValid() { return !!(DB.auth && DB.auth.token && DB.auth.exp > Date.now()); }
+function isAdmin()   { return authValid() && DB.auth.role === 'admin'; }
 /* วิชาที่ชีตใบนี้เก็บอยู่ ใช้แสดงเป็นตัวเลือกตอนตั้งสิทธิ์ครูผู้สอนเท่านั้น
    ตัวบังคับจริงคือ SUBJECTS ในไฟล์ appsscript-Code.gs
    เพิ่มวิชาใหม่ต้องเติมทั้งสองที่ ถ้าเติมแต่ฝั่งชีต วิชานั้นจะไม่ขึ้นให้ติ๊ก */
 const SHEET_SUBJECTS = [
-  { id: 'physics', name: 'ฟิสิกส์'   },
-  { id: 'ijso', name: 'IJSO สอวน. ม.ต้น'   },
-  { id: 'math', name: 'คณิตศาสตร์'   }
+  { id: 'physics', name: 'ฟิสิกส์' },
+  { id: 'physci', name: 'วิทยาศาสตร์กายภาพ' },
+  { id: 'ijso', name: 'IJSO สอวน. ม.ต้น' },
+  { id: 'math', name: 'คณิตศาสตร์' }
 ];
 function subjectName(id) {
   const s = SHEET_SUBJECTS.find(x => x.id === id);
   return s ? s.name : id;
-  }
+}
 /** ชื่อวิชาที่ครูคนนี้สอน — ว่าง = ทุกวิชา */
 function mySubjects() {
   const p = DB.auth && DB.auth.profile;
   return (p && p.subjects && p.subjects.length) ? p.subjects : null;
-  }
+}
 /* ── ครูผู้สอน (แอดมินรอง) ───────────────────────────────────────────────
    ขอบเขตชั้นเรียนที่เห็นตรงนี้ใช้สำหรับ "ปรับหน้าจอ" เท่านั้น
    ตัวบังคับจริงอยู่ฝั่งชีต ซึ่งอ่านขอบเขตจากโทเคนที่เซ็นไว้ แก้จากเบราว์เซอร์ไม่ได้ */
-function isSubAdmin() { return isAdmin() && !!(DB.auth.profile && DB.auth.profile.sub);   }
-function isMainAdmin() { return isAdmin() && !isSubAdmin();   }
+function isSubAdmin() { return isAdmin() && !!(DB.auth.profile && DB.auth.profile.sub); }
+function isMainAdmin() { return isAdmin() && !isSubAdmin(); }
 /** ชั้นที่ครูคนนี้ดูแล — null = ผู้ดูแลหลัก ดูแลทุกชั้น */
 function myClasses() {
   const p = DB.auth && DB.auth.profile;
   return (p && p.classes && p.classes.length) ? p.classes : null;
-  }
+}
 /* ── โหมดทดลองเป็นนักเรียน (สำหรับผู้ดูแล) ──────────────────────────────
    ครูต้องรู้ให้ได้ว่า "แจกไปแล้วนักเรียนเห็นไหม" ก่อนถึงคาบสอน
    ของเดิมต้องยืมเลขประจำตัวนักเรียนมาล็อกอินจริง ซึ่งลำบาก และยังไปติดล็อกเครื่อง
@@ -2229,40 +2241,40 @@ function myClasses() {
    รายการใบงานดึงด้วยสิทธิ์ครู (assignList) แล้วกรองด้วยกติกาเดียวกับฝั่งชีต
    เก็บไว้ในหน่วยความจำอย่างเดียว ปิดหน้าแล้วหาย และห้ามส่งคำตอบขึ้นชีตเด็ดขาด */
 let PREVIEW = null;
-function previewOn() { return !!PREVIEW;   }
+function previewOn() { return !!PREVIEW; }
 /* กำลังทดสอบในชื่อนักเรียนตัวอย่างอยู่หรือไม่ — ต่างจากการดูเฉย ๆ ที่ไม่แตะชีต
    ต้องมีเลขประจำตัวของนักเรียนตัวอย่างจริงถึงจะนับ ไม่ใช่แค่ติ๊กช่องไว้ */
-function previewSample() { return !!(PREVIEW && PREVIEW.sample && PREVIEW.smpSid);   }
+function previewSample() { return !!(PREVIEW && PREVIEW.sample && PREVIEW.smpSid); }
 function isStudent() {
   return previewOn() || (authValid() && DB.auth.role === 'student');
-  }
+}
 /** ออฟไลน์ล้วน = ยังไม่ได้เชื่อมชีต ให้ใช้งานได้ทุกอย่างเหมือนเดิม */
-function offlineMode() { return !cloudOn();   }
+function offlineMode() { return !cloudOn(); }
 /** ไฟล์ที่แจกนักเรียนถูกฝังธงนี้ไว้ ทำให้ไม่มีทางเข้าถึงส่วนของผู้ดูแลได้เลย
     ตรวจที่นี่ที่เดียวก็คุมได้ทั้งระบบ เพราะทุกแท็บและทุกปุ่มของผู้ดูแลถามผ่านฟังก์ชันนี้ */
-function studentOnlyBuild() { return !!BUILTIN.studentOnly;   }
+function studentOnlyBuild() { return !!BUILTIN.studentOnly; }
 /** ไฟล์ที่วางบนเว็บ — ห้ามตัดการเชื่อมต่อชีต แต่ยัง "ลงชื่อเข้าใช้เป็นผู้ดูแล" ได้
     แยกจาก studentOnly เพราะเดิมสองเรื่องนี้ถูกมัดรวมกัน ทำให้ครูเข้าหน้าผู้ดูแลจากเว็บไม่ได้เลย */
-function lockCloudBuild() { return !!BUILTIN.lockCloud;   }
+function lockCloudBuild() { return !!BUILTIN.lockCloud; }
 function canManage() {
   // อยู่ในโหมดทดลอง ต้องไม่เห็นเครื่องมือของครูเลย ไม่งั้นดูไม่ออกว่านักเรียนเห็นอะไรจริง
   return !previewOn() && !studentOnlyBuild() && (offlineMode() || isAdmin());
-  }
+}
 
 class ApiError extends Error {
-  constructor(msg, isAuth) { super(msg); this.isAuth = !!isAuth;   }
-  }
+  constructor(msg, isAuth) { super(msg); this.isAuth = !!isAuth; }
+}
 
 async function api(action, params, opt) {
-  const o = opt || {  };
+  const o = opt || {};
   if (!cloudOn()) throw new ApiError('ยังไม่ได้เชื่อมต่อ Google Sheet');
-  const body = Object.assign({ action: action, subject: SUBJECT   }, params || {  });
+  const body = Object.assign({ action: action, subject: SUBJECT }, params || {});
   if (!o.noToken && DB.auth.token) body.token = DB.auth.token;
 
   const ctl = new AbortController();
   // งานที่แตะข้อมูลทั้งก้อนใช้เวลานานกว่าปกติ จึงให้เวลามากขึ้น
   const SLOW = { rosterSave: 90000, rosterList: 60000, rosterReset: 60000, rosterRemove: 60000,
-                 resultsList: 90000, assignList: 60000, myAssignments: 45000   };
+                 resultsList: 90000, assignList: 60000, myAssignments: 45000 };
   const timer = setTimeout(() => ctl.abort(), o.timeout || SLOW[action] || 30000);
   let res;
   try {
@@ -2272,39 +2284,49 @@ async function api(action, params, opt) {
       method: 'POST',
       // ต้องเป็น text/plain เท่านั้น ถ้าใช้ application/json เบราว์เซอร์จะยิง preflight
       // ซึ่ง Apps Script ตอบไม่ได้ แล้วจะเจอ CORS error ทันที
-      headers: { 'Content-Type': 'text/plain;charset=utf-8'   },
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify(body),
       redirect: 'follow',
       signal: ctl.signal
-      });
-    } catch (e) {
+    });
+  } catch (e) {
     throw new ApiError(e.name === 'AbortError'
       ? 'เชื่อมต่อนานเกินไป — ตรวจสัญญาณอินเทอร์เน็ตแล้วลองใหม่'
       : 'ต่ออินเทอร์เน็ตไม่ได้ หรือ URL ไม่ถูกต้อง');
-    } finally { clearTimeout(timer);   }
+  } finally { clearTimeout(timer); }
 
   const text = await res.text();
   let j;
-  try { j = JSON.parse(text);   }
+  try { j = JSON.parse(text); }
   catch (e) {
     throw new ApiError('ชีตตอบกลับมาไม่ถูกรูปแบบ — ตรวจว่าเผยแพร่เว็บแอปแบบ ' +
       '"ดำเนินการในชื่อ: ฉัน" และ "ผู้ที่มีสิทธิ์เข้าถึง: ทุกคน" แล้วหรือยัง');
-    }
-  if (!j.ok) {
-    if (j.auth) { clearAuth(); renderGate();   }
-    throw new ApiError(j.error || 'ชีตแจ้งข้อผิดพลาด', j.auth);
-    }
-  return j.data;
   }
+  if (!j.ok) {
+    if (j.auth) { clearAuth(); renderGate(); }
+    throw new ApiError(j.error || 'ชีตแจ้งข้อผิดพลาด', j.auth);
+  }
+  return j.data;
+}
 
 /** รับช่วงการลงชื่อเข้าใช้จากหน้าพอร์ทัล (index.html หน้าแรกของเว็บ)
     พอร์ทัลกับแอพวางอยู่โดเมนเดียวกัน จึงอ่าน localStorage ก้อนเดียวกันได้
     นักเรียนลงชื่อที่พอร์ทัลครั้งเดียว เข้ามาที่นี่แล้วไม่ต้องลงชื่อซ้ำอีก
-    ถ้าไม่ได้มาจากพอร์ทัล ฟังก์ชันนี้ไม่ทำอะไรเลย หน้าเข้าใช้เดิมยังทำงานตามปกติ */
+
+    แอปที่ผูกชีตของวิชาไว้ (BUILTIN.url) กับแอปที่ไม่ได้ผูก ทำงานต่างกันสองจุด
+    · ไม่ได้มาจากพอร์ทัล: แอปที่ผูกชีตไม่ทำอะไร หน้าเข้าใช้เดิมทำงานตามปกติ
+      แอปที่ไม่ได้ผูกชีต ตัดการเชื่อมต่อทิ้งให้กลับเป็นออฟไลน์ล้วน หน้าเข้าใช้จะได้ไม่โผล่มาขวาง
+      นักเรียนที่แค่กด "เข้าเลย" จากหน้าแรกโดยไม่ลงชื่อ (ยกเว้นคนที่ลงชื่อในแอปนี้เองไว้และยังไม่หมดอายุ)
+    · ที่อยู่ชีต: แอปที่ผูกชีตรับเฉพาะโทเคนของชีตตัวเอง และไม่เขียนทับที่อยู่ที่ตั้งไว้แล้ว
+      แอปที่ไม่ได้ผูกชีต ใช้ชีตเดียวกับพอร์ทัลเสมอ */
 function adoptPortalSession() {
   let s = null;
-  try { s = JSON.parse(localStorage.getItem('pcportal.v1') || 'null');   } catch (e) { return;   }
-  if (!s || s.v !== 1 || !s.token || !s.exp || s.exp < Date.now()) return;
+  try { s = JSON.parse(localStorage.getItem('pcportal.v1') || 'null'); } catch (e) { s = null; }
+  const live = s && s.v === 1 && s.token && s.exp && s.exp > Date.now();
+  if (!live) {
+    if (!BUILTIN.url && DB.cloud.url && !authValid()) { DB.cloud.url = ''; clearAuth(); save(true); }
+    return;
+  }
   /* แต่ละวิชามีชีตของตัวเอง ส่วนพอร์ทัลลงชื่อเข้าใช้กับชีตใบเดียว
      โทเคนที่ออกจากชีตอีกใบใช้กับชีตนี้ไม่ได้ เพราะคนละกุญแจกัน
      รับมาก็จะเด้งออกตอนเรียกคำสั่งแรก แล้วขึ้นข้อความที่ไม่บอกสาเหตุ
@@ -2316,25 +2338,26 @@ function adoptPortalSession() {
   if (BUILTIN.url && s.tokens && s.tokens[BUILTIN.url]) {
     pTok = s.tokens[BUILTIN.url];
     pUrl = BUILTIN.url;
-    }
+  }
   if (BUILTIN.url && pUrl && pUrl !== BUILTIN.url) return;
   // ไฟล์ที่แจกนักเรียนไม่รับสิทธิ์ผู้ดูแลจากพอร์ทัล กันการเข้าถึงส่วนของครูโดยไม่ตั้งใจ
   if (studentOnlyBuild() && s.role === 'admin') return;
   let touched = false;
-  if (pUrl && !DB.cloud.url) { DB.cloud.url = pUrl; touched = true;   }
+  if (BUILTIN.url) { if (pUrl && !DB.cloud.url) { DB.cloud.url = pUrl; touched = true; } }
+  else if (pUrl && DB.cloud.url !== pUrl) { DB.cloud.url = pUrl; touched = true; }
   // ในเครื่องยังลงชื่อค้างอยู่และยังไม่หมดอายุ ให้ของเดิมมาก่อน
   if (!authValid()) {
-    DB.auth = { role: s.role, token: pTok, profile: s.profile || null, exp: s.exp   };
+    DB.auth = { role: s.role, token: pTok, profile: s.profile || null, exp: s.exp };
     touched = true;
-    const p = s.profile || {  };
+    const p = s.profile || {};
     if (s.role === 'student' && p.sid) {
       DB.mode = 'solo';
       DB.profile = { name: p.name || '', room: normCls(p.cls || ''),
-                     no: String(p.no || ''), sid: String(p.sid || '')   };
-      }
+                     no: String(p.no || ''), sid: String(p.sid || '') };
     }
-  if (touched) save(true);
   }
+  if (touched) save(true);
+}
 
 /** เอาค่าที่ฝังมากับไฟล์มาใช้ตอนเปิดแอพ — เติมเฉพาะช่องที่ยังว่าง ไม่ทับของที่ผู้ใช้ตั้งเอง */
 function applyBuiltin() {
@@ -2342,9 +2365,9 @@ function applyBuiltin() {
   // ไฟล์ที่แจกนักเรียนต้องไม่ยอมรับ session ของผู้ดูแลที่ค้างอยู่ในเครื่องเดิม
   // (เกิดได้เวลาครูเปิดทดสอบบนเครื่องตัวเองซึ่งใช้พื้นที่เก็บข้อมูลร่วมกัน)
   if (studentOnlyBuild() && DB.auth && DB.auth.role === 'admin') {
-    DB.auth = { role: '', token: '', profile: null, exp: 0   };
+    DB.auth = { role: '', token: '', profile: null, exp: 0 };
     touched = true;
-    }
+  }
   /* ที่อยู่ชีตที่ฝังมากับไฟล์ ถือเป็นของจริงเสมอสำหรับไฟล์ที่ล็อกการเชื่อมต่อไว้
      เดิมเติมให้เฉพาะเครื่องที่ยังไม่เคยเก็บค่าไว้ เครื่องที่เคยเปิดแอปแล้วจึงค้างอยู่กับ
      ที่อยู่เดิมตลอดไป แม้ครูจะย้ายไปใช้ deployment ใหม่แล้วก็ตาม
@@ -2354,41 +2377,41 @@ function applyBuiltin() {
   const lockedUrl = BUILTIN.url && lockCloudBuild();
   if (BUILTIN.url && (lockedUrl ? DB.cloud.url !== BUILTIN.url : !DB.cloud.url)) {
     DB.cloud.url = BUILTIN.url; touched = true;
-    }
-  if (BUILTIN.logo && !DB.settings.logo) { DB.settings.logo = BUILTIN.logo; touched = true;   }
+  }
+  if (BUILTIN.logo && !DB.settings.logo) { DB.settings.logo = BUILTIN.logo; touched = true; }
   if (BUILTIN.header) {
     Object.keys(BUILTIN.header).forEach(k => {
       if (BUILTIN.header[k] && !String(DB.settings.header[k] || '').trim()) {
         DB.settings.header[k] = BUILTIN.header[k]; touched = true;
-        }
-      });
-    }
+      }
+    });
+  }
   if (BUILTIN.about) {
     Object.keys(BUILTIN.about).forEach(k => {
       if (BUILTIN.about[k] && !String(DB.settings.about[k] || '').trim()) {
         DB.settings.about[k] = BUILTIN.about[k]; touched = true;
-        }
-      });
-    }
-  if (touched) save(true);
+      }
+    });
   }
+  if (touched) save(true);
+}
 
 /** ดึงซอร์สของหน้านี้ — เปิดผ่านเว็บใช้ fetch ได้ตรง ๆ ถ้าเปิดจากไฟล์ในเครื่องใช้ภาพถ่ายที่เก็บไว้ */
 async function ownSource() {
   try {
     if (location.protocol === 'http:' || location.protocol === 'https:') {
-      const r = await fetch(location.href, { cache: 'no-store'   });
+      const r = await fetch(location.href, { cache: 'no-store' });
       const t = await r.text();
       if (t && t.indexOf('@@BUILTIN@@') >= 0) return t;
-      }
-    } catch (e) { /* ตกไปใช้ภาพถ่ายด้านล่าง */   }
+    }
+  } catch (e) { /* ตกไปใช้ภาพถ่ายด้านล่าง */ }
   return PRISTINE_HTML;
-  }
+}
 
 /** สร้างไฟล์สำหรับแจกนักเรียน โดยเขียนบล็อก BUILTIN ทับด้วยค่าปัจจุบัน */
 async function buildStudentFile() {
   const src = await ownSource();
-  const a = DB.settings.about || {  }, h = DB.settings.header || {  };
+  const a = DB.settings.about || {}, h = DB.settings.header || {};
   const cfg = {
     url: DB.cloud.url || '',
     // ไม่ล็อกเป็น studentOnly เพราะครูต้องเข้าหน้าผู้ดูแลจากลิงก์เว็บได้ด้วย
@@ -2397,34 +2420,34 @@ async function buildStudentFile() {
     studentOnly: false,
     lockCloud: true,
     logo: DB.settings.logo || '',
-    header: { school: h.school || '', teacher: h.teacher || '', term: h.term || ''   },
-    about: { dev: a.dev || '', dept: a.dept || '', school: a.school || ''   }
-    };
+    header: { school: h.school || '', teacher: h.teacher || '', term: h.term || '' },
+    about: { dev: a.dev || '', dept: a.dept || '', school: a.school || '' }
+  };
   // '<' ในข้อมูลอาจไปปิดแท็ก script กลางคัน จึงเขียนเป็นรหัสหนีแทน
   const json = JSON.stringify(cfg).replace(/</g, '\\u003c');
   const block = '/* @@BUILTIN@@ */\nconst BUILTIN = ' + json + ';\n/* @@BUILTIN-END@@ */';
   const re = /\/\* @@BUILTIN@@ \*\/[\s\S]*?\/\* @@BUILTIN-END@@ \*\//;
   if (!re.test(src)) throw new Error('หาบล็อกค่าที่ฝังไว้ในไฟล์ไม่เจอ — ไฟล์อาจถูกแก้ไขจนเครื่องหมายหาย');
   return src.replace(re, block);
-  }
+}
 
 function setAuth(role, token, profile) {
   DB.auth = { role: role, token: token, profile: profile || null,
-              exp: Date.now() + 11.5 * 3600 * 1000   };   // เผื่อไว้ให้สั้นกว่าฝั่งชีตเล็กน้อย
+              exp: Date.now() + 11.5 * 3600 * 1000 };   // เผื่อไว้ให้สั้นกว่าฝั่งชีตเล็กน้อย
   save(true);
-  }
+}
 function clearAuth() {
-  DB.auth = { role: '', token: '', profile: null, exp: 0   };
+  DB.auth = { role: '', token: '', profile: null, exp: 0 };
   save(true);
-  }
+}
 
 /* --- 1.6 หน้าเข้าใช้งาน --------------------------------------------------- */
-let GATE = { mode: 'student', busy: false, msg: ''   };
+let GATE = { mode: 'student', busy: false, msg: '' };
 
 function gateMsg(html, kind) {
   const el = $('#gateMsg');
   if (el) el.innerHTML = html ? '<div class="notice ' + (kind || 'bad') + '">' + html + '</div>' : '';
-  }
+}
 
 function renderGate() {
   const el = $('#gate');
@@ -2434,16 +2457,16 @@ function renderGate() {
   if (!cloudOn() || authValid()) {
     el.style.display = 'none'; el.innerHTML = ''; GATE.shown = '';
     return;
-    }
+  }
   // ไฟล์ที่แจกนักเรียนมีแต่หน้าเข้าใช้ของนักเรียนเท่านั้น
   if (studentOnlyBuild()) GATE.mode = 'student';
   // อย่าวาดซ้ำถ้าหน้าเดิมเปิดอยู่แล้ว ไม่งั้นข้อความที่ผู้ใช้กำลังพิมพ์จะหายไป
-  if (GATE.shown === GATE.mode) { el.style.display = 'block'; return;   }
+  if (GATE.shown === GATE.mode) { el.style.display = 'block'; return; }
   GATE.shown = GATE.mode;
   el.style.display = 'block';
 
   const stu = GATE.mode === 'student';
-  const ab = DB.settings.about || {  };
+  const ab = DB.settings.about || {};
   el.innerHTML = '<div class="box">' +
     (DB.settings.logo ? '<img class="glogo" src="' + DB.settings.logo + '" alt="ตราโรงเรียน">' : '') +
     (!studentOnlyBuild() ?
@@ -2452,7 +2475,7 @@ function renderGate() {
       '<button type="button" class="gate-tab' + (!stu ? ' active' : '') + '" id="tabGateAdm">👩‍🏫 สำหรับครู / ผู้ดูแล</button>' +
       '</div>' : '') +
     '<h2>' + (stu ? 'ลงชื่อเข้าใช้ (นักเรียน)' : 'เข้าใช้สำหรับครูและผู้ดูแล') + '</h2>' +
-    '<div class="lead">คลังโจทย์IJSO สอวน. ม.ต้น<br>' +
+    '<div class="lead">' + SUBJECT_INFO.title + '<br>' +
       (stu ? 'ใช้<b>เลขประจำตัวนักเรียน</b>เป็นชื่อผู้ใช้ ' +
              'ถ้ายังไม่เคยเปลี่ยนรหัส ให้ใช้รหัสตั้งต้นที่ครูแจ้ง (1111)'
            : '<b>ครูผู้สอน (แอดมินรอง):</b> กรอกชื่อผู้ใช้และรหัสผ่านที่คุณได้รับ<br>' +
@@ -2477,7 +2500,7 @@ function renderGate() {
     '<div class="msg" id="gateMsg"></div>' +
     /* บอกตั้งแต่ก่อนกรอกว่าเครื่องนี้ยังผูกกับใครอยู่ ดีกว่าให้กรอกจนเสร็จแล้วค่อยถูกปฏิเสธ */
     (stu && devLockLeft('') ? '<div class="notice warn" style="margin-top:9px">' +
-      'เครื่องนี้เพิ่งใช้เข้าสอบในชื่อ <b>' + esc((devLockRead() || {  }).name || '—') + '</b><br>' +
+      'เครื่องนี้เพิ่งใช้เข้าสอบในชื่อ <b>' + esc((devLockRead() || {}).name || '—') + '</b><br>' +
       'จะเข้าใช้ในชื่อคนอื่นได้อีกครั้งในอีก <b>' + devLockText(devLockLeft('')) + '</b> ' +
       '<a href="#" id="gUnlock">ครูปลดล็อกให้</a></div>' : '') +
     // ลิงก์ท้ายหน้าเข้าใช้ คุมแยกกันสองอัน
@@ -2491,21 +2514,21 @@ function renderGate() {
           (stu ? 'สลับไปหน้าเข้าใช้ของครู / ผู้ดูแล' : 'กลับไปหน้าเข้าใช้ของนักเรียน') + '</a>');
         if (!lockCloudBuild()) {
           links.push('<a href="#" id="gOffline">ใช้งานแบบออฟไลน์ (ตัดการเชื่อมต่อชีต)</a>');
-          }
         }
+      }
       return links.length ? '<div class="alt">' + links.join(' &nbsp;·&nbsp; ') + '</div>' : '';
-      })() +
+    })() +
     '<div class="credit">' + [ab.dev ? 'พัฒนาระบบโดย ' + esc(ab.dev) : '',
       esc(ab.dept || ''), esc(ab.school || '')].filter(Boolean).join('<br>') + '</div>' +
     '</div>';
 
   const un = $('#gUnlock');
-  if (un) un.addEventListener('click', e => { e.preventDefault(); devLockUnlockBox();   });
+  if (un) un.addEventListener('click', e => { e.preventDefault(); devLockUnlockBox(); });
 
   const tStu = $('#tabGateStu');
-  if (tStu) tStu.addEventListener('click', () => { if (GATE.mode !== 'student') { GATE.mode = 'student'; renderGate();   }   });
+  if (tStu) tStu.addEventListener('click', () => { if (GATE.mode !== 'student') { GATE.mode = 'student'; renderGate(); } });
   const tAdm = $('#tabGateAdm');
-  if (tAdm) tAdm.addEventListener('click', () => { if (GATE.mode !== 'admin') { GATE.mode = 'admin'; renderGate();   }   });
+  if (tAdm) tAdm.addEventListener('click', () => { if (GATE.mode !== 'admin') { GATE.mode = 'admin'; renderGate(); } });
 
   const sidEl = $('#gSid');
   if (sidEl) {
@@ -2522,19 +2545,19 @@ function renderGate() {
           GATE.mode = 'admin';
           GATE.initUser = v.trim();
           renderGate();
-          };
-        } else {
+        };
+      } else {
         hEl.style.display = 'none'; hEl.innerHTML = '';
-        }
-      };
+      }
+    };
     sidEl.addEventListener('input', chkSid);
-    }
+  }
 
   if (!stu && GATE.initUser) {
     const uEl = $('#gUser');
-    if (uEl) { uEl.value = GATE.initUser;   }
+    if (uEl) { uEl.value = GATE.initUser; }
     GATE.initUser = '';
-    }
+  }
 
   const go = async () => {
     if (GATE.busy) return;
@@ -2546,7 +2569,7 @@ function renderGate() {
         const rawSid = ($('#gSid').value || '').trim();
         if (/[a-zA-Z]/.test(rawSid)) {
           throw new ApiError('เลขประจำตัวนักเรียนต้องเป็นตัวเลขเท่านั้น — หากคุณเป็นครูผู้สอน กรุณาเลือกแท็บ "ครูผู้สอน / ผู้ดูแล" ด้านบน');
-          }
+        }
         const sid = normSid(rawSid);
         const pass = $('#gPass').value || '';
         if (!sid) throw new ApiError('กรอกเลขประจำตัวเป็นตัวเลข ไม่เกิน ' + SID_MAX + ' หลัก');
@@ -2555,32 +2578,32 @@ function renderGate() {
         const lockLeft = devLockLeft(sid);
         if (lockLeft) {
           throw new ApiError('เครื่องนี้เพิ่งใช้เข้าสอบในชื่อ ' +
-            ((devLockRead() || {  }).name || '—') + ' จึงยังเข้าใช้ในชื่ออื่นไม่ได้ ' +
+            ((devLockRead() || {}).name || '—') + ' จึงยังเข้าใช้ในชื่ออื่นไม่ได้ ' +
             'เหลืออีก ' + devLockText(lockLeft) + ' — ถ้าเป็นเครื่องที่ใช้ร่วมกัน ให้ครูปลดล็อกให้');
-          }
-        const r = await hubAuth('login', { sid: sid, pass: pass   });
+        }
+        const r = await hubAuth('login', { sid: sid, pass: pass });
         setAuth('student', r.token, r.profile);
         // ผูกโปรไฟล์ในเครื่องให้ตรงกับบัญชี เพื่อให้เอกสารและผลลัพธ์แสดงชื่อถูก
         DB.mode = 'solo';
         DB.profile = { name: r.profile.name || '', room: normCls(r.profile.cls || ''),
-                       no: String(r.profile.no || ''), sid: String(r.profile.sid || '')   };
+                       no: String(r.profile.no || ''), sid: String(r.profile.sid || '') };
         save(true);
         devLockSet(r.profile.sid || sid, r.profile.name || '');
         renderGate(); render();
         if (r.mustChange) forceChangePass();
         else toast('ยินดีต้อนรับ ' + (r.profile.name || ''), 'ok');
-        } else {
+      } else {
         const uEl = $('#gUser');
         const userVal = ((uEl ? uEl.value : '') || '').trim();
         let r;
         try {
-          r = await hubAuth('adminLogin', { user: userVal, pass: $('#gPass').value || ''   });
-          } catch (err) {
+          r = await hubAuth('adminLogin', { user: userVal, pass: $('#gPass').value || '' });
+        } catch (err) {
           if (userVal && (err.message || '').indexOf('รหัสผู้ดูแลไม่ถูกต้อง') >= 0) {
             throw new Error('เข้าใช้งานไม่สำเร็จ: รหัสผ่านไม่ถูกต้อง หรือ Google Apps Script บน Google Drive ยังเป็นเวอร์ชันเก่า (ยังไม่รองรับครูผู้สอน) — ให้ผู้ดูแลหลักนำ appsscript-Code.gs รุ่นล่าสุดไป Deploy เป็นเวอร์ชันใหม่ใน Apps Script');
-            }
-          throw err;
           }
+          throw err;
+        }
         const isSub = r.role === 'sub';
         /* ครูที่ถูกจำกัดวิชาไว้ ต้องรู้ตั้งแต่ตอนนี้ว่าเข้าผิดวิชา
            ไม่งั้นจะเข้าได้แต่กดอะไรก็ถูกปฏิเสธทีละคำสั่งจนงง */
@@ -2588,32 +2611,32 @@ function renderGate() {
         if (mySub.length && mySub.indexOf(SUBJECT) < 0) {
           throw new Error('บัญชีนี้สอน' + mySub.map(subjectName).join(' และ ') +
             ' จึงเข้าใช้วิชานี้ไม่ได้ — เปิดแอปของวิชาที่สอนแทน');
-          }
+        }
         setAuth('admin', r.token, {
           name: isSub ? (r.name || 'ครูผู้สอน') : 'ผู้ดูแล',
           sub: isSub ? (r.user || '') : '', classes: isSub ? (r.classes || []) : null,
           subjects: mySub
-          });
+        });
         renderGate(); render();
         if (isSub && r.mustChange) forceChangePass();
         else toast(isSub ? ('เข้าใช้ในฐานะครูผู้สอน · ดูแล ' + (r.classes || []).join(', '))
                          : 'เข้าใช้ในฐานะผู้ดูแลแล้ว', 'ok');
-        }
-      } catch (e) {
-      gateMsg(esc(e.message || String(e)));
-      } finally {
-      GATE.busy = false;
-      const b = $('#gGo'); if (b) { b.disabled = false; b.textContent = stu ? 'เข้าสู่ระบบนักเรียน' : 'เข้าสู่ระบบครู / ผู้ดูแล';   }
       }
-    };
+    } catch (e) {
+      gateMsg(esc(e.message || String(e)));
+    } finally {
+      GATE.busy = false;
+      const b = $('#gGo'); if (b) { b.disabled = false; b.textContent = stu ? 'เข้าสู่ระบบนักเรียน' : 'เข้าสู่ระบบครู / ผู้ดูแล'; }
+    }
+  };
 
   $('#gGo').addEventListener('click', go);
   el.querySelectorAll('input').forEach(i =>
-    i.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); go();   }   }));
+    i.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); go(); } }));
   const sw = $('#gSwap');
   if (sw) sw.addEventListener('click', e => {
     e.preventDefault(); GATE.mode = stu ? 'admin' : 'student'; renderGate();
-    });
+  });
   const off = $('#gOffline');
   if (off) off.addEventListener('click', async e => {
     e.preventDefault();
@@ -2621,13 +2644,13 @@ function renderGate() {
       'จะ<b>ตัดการเชื่อมต่อ Google Sheet</b> แล้วกลับไปใช้งานในเครื่องอย่างเดียว<br>' +
       'ข้อมูลในเครื่องยังอยู่ครบ และเชื่อมต่อใหม่ได้ทีหลังที่แท็บตั้งค่า', 'ตัดการเชื่อมต่อ')) return;
     DB.cloud.url = ''; clearAuth(); renderGate(); render();
-    });
+  });
   const first = $('#gSid') || $('#gPass');
   if (first) first.focus();
-  }
+}
 
 /* ── รหัสเดียวทุกชีต (ชีตรุ่น 18) ──────────────────────────────────────────
-   ชีตใบแรกใน BUILTIN.books (IJSO สอวน. ม.ต้น) เป็นศูนย์กลาง ตรวจรหัสที่นั่นที่เดียว
+   ชีตใบแรกใน BUILTIN.books (วิทยาศาสตร์กายภาพ) เป็นศูนย์กลาง ตรวจรหัสที่นั่นที่เดียว
    ได้ "บัตรผ่าน" อายุสิบนาที แล้วเอาไปแลกเป็นการเข้าใช้ของชีตวิชานี้ โดยชีตนี้ไม่ถามรหัสซ้ำ
    รหัสจึงเหลือชุดเดียว เปลี่ยนที่วิชาไหนก็มีผลทุกวิชา
 
@@ -2639,50 +2662,50 @@ function renderGate() {
 
    ลงชื่อสำเร็จแล้วเก็บโทเคนของทุกชีตลงก้อนเดียวกับหน้าปก (pcportal.v1)
    เปิดวิชาอื่นต่อจึงไม่ต้องลงชื่อซ้ำ และการเปลี่ยนรหัสตามไปถึงชีตศูนย์กลางได้ */
-function hubBooks() { return ((typeof BUILTIN !== 'undefined' && BUILTIN.books) || []).filter(b => b && b.url);   }
-function hubUrl() { const b = hubBooks(); return b.length ? b[0].url : '';   }
+function hubBooks() { return ((typeof BUILTIN !== 'undefined' && BUILTIN.books) || []).filter(b => b && b.url); }
+function hubUrl() { const b = hubBooks(); return b.length ? b[0].url : ''; }
 /** ข้อผิดพลาดที่แปลว่า "ทางศูนย์กลางใช้ไม่ได้ ให้กลับไปทางเดิม" */
 function hubSoft(e) {
   return /^HUB:|ไม่รู้จักคำสั่ง|ไม่พบเลขประจำตัว|ไม่พบชื่อผู้ใช้|เชื่อมต่อ|อินเทอร์เน็ต|ไม่ถูกรูปแบบ/
     .test(String((e && e.message) || e || ''));
-  }
+}
 async function hubAuth(action, params) {
   const own = DB.cloud.url, hub = hubUrl();
   let h = null;
   if (hub) {
-    try { h = await api(action, params, { url: hub, noToken: true   });   }
+    try { h = await api(action, params, { url: hub, noToken: true }); }
     catch (e) {
       /* ศูนย์กลางที่เชื่อมแล้วบอกว่ารหัสผิด (ข้อความติดคำว่า "ชีตศูนย์กลาง") คือจบ ไม่ลองซ้ำกับชีตอื่น
          ถ้ายังไม่ได้เชื่อม รหัสของชีตวิชานี้อาจเป็นคนละชุด จึงยังต้องลองกับชีตวิชานี้ตามเดิม */
       if (hub === own || /ชีตศูนย์กลาง/.test(e.message || '')) throw e;
       h = null;
-      }
     }
+  }
   let r = null;
   if (h && hub === own) r = h;
   else if (h && h.hub) {
     try {
-      r = await api('hubLogin', { hub: h.hub   }, { noToken: true   });
+      r = await api('hubLogin', { hub: h.hub }, { noToken: true });
       r.mustChange = !!h.mustChange;      // ต้องตั้งรหัสใหม่หรือไม่ ศูนย์กลางเป็นคนรู้
-      } catch (e) {
+    } catch (e) {
       if (!hubSoft(e)) throw e;
       r = null;
-      }
     }
-  if (!r) r = await api(action, params, { noToken: true   });
+  }
+  if (!r) r = await api(action, params, { noToken: true });
   hubRemember(action === 'login' ? 'student' : 'admin', r, h, own, hub);
   return r;
-  }
+}
 /** รวมโทเคนลงก้อนเดียวกับหน้าปก — ถ้าในเครื่องมีคนอื่นลงชื่อค้างอยู่ เริ่มก้อนใหม่ ไม่ปนกัน */
 function hubPortalPut(role, prof, tokens) {
   try {
     let s = null;
-    try { s = JSON.parse(localStorage.getItem('pcportal.v1') || 'null');   } catch (e) { s = null;   }
-    const sp = (s && s.profile) || {  };
+    try { s = JSON.parse(localStorage.getItem('pcportal.v1') || 'null'); } catch (e) { s = null; }
+    const sp = (s && s.profile) || {};
     const same = s && s.v === 1 && s.exp > Date.now() && s.role === role &&
       String(sp.sid || '') === String(prof.sid || '') && String(sp.sub || '') === String(prof.sub || '');
-    const n = same ? s : { v: 1, role: role, profile: prof, tokens: {  }   };
-    n.tokens = Object.assign({  }, n.tokens || {  }, tokens);
+    const n = same ? s : { v: 1, role: role, profile: prof, tokens: {} };
+    n.tokens = Object.assign({}, n.tokens || {}, tokens);
     const hub = hubUrl();
     // คีย์เดิม (url · token) ที่แอปรุ่นเก่าอ่าน — ชี้ไปที่ชีตศูนย์กลางถ้ามีโทเคนของใบนั้น
     n.url = hub && n.tokens[hub] ? hub : Object.keys(n.tokens)[0];
@@ -2690,14 +2713,14 @@ function hubPortalPut(role, prof, tokens) {
     n.profile = n.profile || prof;
     n.exp = Date.now() + 11.5 * 3600 * 1000;
     localStorage.setItem('pcportal.v1', JSON.stringify(n));
-    } catch (e) {  }
-  }
+  } catch (e) {}
+}
 function hubRemember(role, r, h, own, hub) {
-  const prof = role === 'student' ? Object.assign({  }, r.profile || {  }) : {
+  const prof = role === 'student' ? Object.assign({}, r.profile || {}) : {
     name: r.role === 'sub' ? (r.name || 'ครูผู้สอน') : 'ผู้ดูแลหลัก',
     sub: r.role === 'sub' ? (r.user || '') : '', classes: r.classes || null, subjects: r.subjects || null
-    };
-  const tk = {  };
+  };
+  const tk = {};
   if (r && r.token && own) tk[own] = r.token;
   if (h && h.token && hub) tk[hub] = h.token;
   hubPortalPut(role, prof, tk);
@@ -2705,12 +2728,12 @@ function hubRemember(role, r, h, own, hub) {
   if (h && h.hub) {
     hubBooks().forEach(function (b) {
       if (b.url === own || b.url === hub) return;
-      api('hubLogin', { hub: h.hub   }, { url: b.url, noToken: true   })
-        .then(function (x) { if (x && x.token) { const o = {  }; o[b.url] = x.token; hubPortalPut(role, prof, o);   }   })
-        .catch(function () {  });
-      });
-    }
+      api('hubLogin', { hub: h.hub }, { url: b.url, noToken: true })
+        .then(function (x) { if (x && x.token) { const o = {}; o[b.url] = x.token; hubPortalPut(role, prof, o); } })
+        .catch(function () {});
+    });
   }
+}
 
 /** บังคับตั้งรหัสใหม่ตอนเข้าใช้ครั้งแรก — ปิดหน้าต่างนี้ไม่ได้จนกว่าจะตั้งเสร็จ */
 function forceChangePass(optional) {
@@ -2725,17 +2748,17 @@ function forceChangePass(optional) {
       '<label class="hint" for="cpB" style="display:block;margin-top:9px">พิมพ์ซ้ำอีกครั้ง</label>' +
       '<input type="password" id="cpB" style="width:100%;font-size:16px">' +
       '<div id="cpMsg" style="margin-top:10px"></div>',
-    buttons: (optional ? [{ label: 'ยกเลิก'   }] : []).concat([
+    buttons: (optional ? [{ label: 'ยกเลิก' }] : []).concat([
       { label: 'บันทึกรหัสใหม่', cls: 'primary', act: async (close, root) => {
           const a = $('#cpA', root).value || '', b = $('#cpB', root).value || '';
           const msg = $('#cpMsg', root);
           const least = isSubAdmin() ? 6 : 4;
-          if (a.length < least) { msg.innerHTML = '<div class="notice bad">รหัสสั้นเกินไป</div>'; return;   }
-          if (a !== b) { msg.innerHTML = '<div class="notice bad">รหัสสองช่องไม่ตรงกัน</div>'; return;   }
+          if (a.length < least) { msg.innerHTML = '<div class="notice bad">รหัสสั้นเกินไป</div>'; return; }
+          if (a !== b) { msg.innerHTML = '<div class="notice bad">รหัสสองช่องไม่ตรงกัน</div>'; return; }
           try {
             // ครูผู้สอนเปลี่ยนรหัสของตัวเองผ่านคำสั่งของฝั่งผู้ดูแล ไม่ใช่ของนักเรียน
             const act = isSubAdmin() ? 'adminPass' : 'changePass';
-            await api(act, { newPass: a   });
+            await api(act, { newPass: a });
             // ตั้งให้ตรงกันทุกชีตในคราวเดียว ไม่งั้นวิชาที่อยู่คนละชีตจะเข้าไม่ได้
             const syn = await passSyncOthers(act, a);
             close();
@@ -2743,14 +2766,14 @@ function forceChangePass(optional) {
               (syn.done ? ' · ตั้งให้ตรงกันอีก ' + syn.done + ' ชีต' : '') +
               (syn.fail ? ' · อีก ' + syn.fail + ' ชีตยังไม่สำเร็จ' : ''),
               syn.fail ? 'warn' : 'ok');
-            } catch (e) {
+          } catch (e) {
             msg.innerHTML = '<div class="notice bad">' + esc(e.message) + '</div>';
-            }
-          }   }
+          }
+        } }
     ])
-    });
-  if (!optional) { const x = $('.x', m.root); if (x) x.remove();   }
-  }
+  });
+  if (!optional) { const x = $('.x', m.root); if (x) x.remove(); }
+}
 
 /** ตั้งรหัสใหม่ให้ตรงกันทุกชีต
     ชีตแต่ละใบเก็บรหัสแยกกัน และก็อปแฮชข้ามใบไม่ได้เพราะกุญแจของแต่ละใบไม่เหมือนกัน
@@ -2759,22 +2782,22 @@ function forceChangePass(optional) {
     และไม่ว่าจะพลาดใบไหน ก็ไม่ขวางการเปลี่ยนรหัสของวิชานี้ที่สำเร็จไปแล้ว */
 async function passSyncOthers(action, newPass) {
   let s = null;
-  try { s = JSON.parse(localStorage.getItem('pcportal.v1') || 'null');   } catch (e) { s = null;   }
-  const out = { done: 0, skip: 0, fail: 0   };
+  try { s = JSON.parse(localStorage.getItem('pcportal.v1') || 'null'); } catch (e) { s = null; }
+  const out = { done: 0, skip: 0, fail: 0 };
   if (!s || !s.tokens || !s.exp || s.exp < Date.now()) return out;
   const mine = DB.cloud.url;
   const urls = Object.keys(s.tokens).filter(u => u && u !== mine && s.tokens[u]);
   for (let i = 0; i < urls.length; i++) {
     try {
-      await api(action, { newPass: newPass, token: s.tokens[urls[i]]   },
-                { url: urls[i], noToken: true   });
+      await api(action, { newPass: newPass, token: s.tokens[urls[i]] },
+                { url: urls[i], noToken: true });
       out.done++;
-      } catch (e) {
+    } catch (e) {
       if (/ไม่พบ/.test(e.message || '')) out.skip++; else out.fail++;
-      }
     }
-  return out;
   }
+  return out;
+}
 
 async function doLogout() {
   if (!await confirmBox('ออกจากระบบ', 'ออกจากระบบตอนนี้?' +
@@ -2783,9 +2806,9 @@ async function doLogout() {
   clearAuth();
   /* ลงชื่อครั้งเดียวใช้ได้ทุกวิชา ออกก็ต้องออกทุกวิชาด้วย
      ไม่งั้นเปิดแอปใหม่ ระบบจะหยิบการลงชื่อที่ค้างอยู่ในก้อนของหน้าปกกลับมาให้เอง */
-  try { localStorage.removeItem('pcportal.v1');   } catch (e) {  }
+  try { localStorage.removeItem('pcportal.v1'); } catch (e) {}
   renderGate(); render();
-  }
+}
 
 /* ============================================================================
    2) แท็บและการวาดหน้าจอ
@@ -2793,7 +2816,7 @@ async function doLogout() {
 let TAB = 'make';
 /** แท็บที่แต่ละบทบาทเห็น — นักเรียนไม่ต้องเห็นการสร้างชุดโจทย์และสถิติทั้งห้อง */
 const STUDENT_TABS = ['make', 'do', 'result', 'print', 'setting'];
-function tabAllowed(t) { return canManage() ? true : STUDENT_TABS.indexOf(t) >= 0;   }
+function tabAllowed(t) { return canManage() ? true : STUDENT_TABS.indexOf(t) >= 0; }
 function applyTabVisibility() {
   const stu = isStudent();
   $$('#tabs button').forEach(b => {
@@ -2805,8 +2828,8 @@ function applyTabVisibility() {
     else if (t === 'stats') b.textContent = '📈 สถิติชั้นเรียน';
     else if (t === 'print') b.textContent = '🖨️ พิมพ์ / PDF';
     else if (t === 'setting') b.textContent = '⚙️ ตั้งค่า';
-    });
-  }
+  });
+}
 function setTab(t) {
   if (!tabAllowed(t)) t = 'make';
   TAB = t;
@@ -2814,7 +2837,7 @@ function setTab(t) {
   $$('section.tabpane').forEach(s => s.classList.toggle('active', s.id === 'pane-' + t));
   render();
   window.scrollTo(0, 0);
-  }
+}
 /* ── ย่อ/ขยายได้ทุกกล่อง ───────────────────────────────────────────────
    ของเดิมมีปุ่มย่อแค่กล่องเลือกเรื่อง กล่องอื่นย่อไม่ได้เลย
    ตัวนี้เดินหากล่องที่มีหัวเรื่องหลังวาดหน้าเสร็จ แล้วแปะปุ่มให้เอง
@@ -2826,15 +2849,15 @@ function setTab(t) {
    ถ้าไม่ตัดออก สถานะย่อจะหลุดทุกครั้งที่จำนวนเปลี่ยน                    */
 const FOLD_KEY = LS_KEY + '.folds';
 function foldRead() {
-  try { const o = JSON.parse(localStorage.getItem(FOLD_KEY) || '{  }');
-        return (o && typeof o === 'object') ? o : {  };   } catch (e) { return {  };   }
-  }
-function foldWrite(o) { try { localStorage.setItem(FOLD_KEY, JSON.stringify(o));   } catch (e) {  }   }
+  try { const o = JSON.parse(localStorage.getItem(FOLD_KEY) || '{}');
+        return (o && typeof o === 'object') ? o : {}; } catch (e) { return {}; }
+}
+function foldWrite(o) { try { localStorage.setItem(FOLD_KEY, JSON.stringify(o)); } catch (e) {} }
 function foldKeyOf(h3) {
   const c = h3.cloneNode(true);
-  c.querySelectorAll('.sub,button,.tag,.pill,.chip').forEach(function (e) { e.remove();   });
+  c.querySelectorAll('.sub,button,.tag,.pill,.chip').forEach(function (e) { e.remove(); });
   return c.textContent.replace(/[0-9๐-๙]+/g, '#').replace(/\s+/g, ' ').trim().slice(0, 44);
-  }
+}
 /** แปะปุ่มย่อให้ทุกกล่องที่ยังไม่มี แล้วคืนค่าสถานะที่จำไว้ */
 function foldify(root) {
   const st = foldRead();
@@ -2855,8 +2878,8 @@ function foldify(root) {
     b.textContent = on ? '▾' : '▴';
     b.title = on ? 'ขยายกล่องนี้' : 'ย่อกล่องนี้';
     h3.appendChild(b);
-    });
-  }
+  });
+}
 /* ดักที่กรอบนอกทีเดียว ปุ่มถูกสร้างใหม่ทุกครั้งที่วาดหน้า
    ถ้าผูกทีละปุ่มจะหลุดทันทีที่กล่องถูกวาดใหม่ */
 document.addEventListener('click', function (e) {
@@ -2872,13 +2895,13 @@ document.addEventListener('click', function (e) {
   if (card) card.classList.toggle('tfold', on);
   b.textContent = on ? '▾' : '▴';
   b.title = on ? 'ขยายกล่องนี้' : 'ย่อกล่องนี้';
-  });
+});
 
 function render() {
   renderStorageWarn();
   applyTabVisibility();
   renderGate();
-  if (!tabAllowed(TAB)) { setTab('make'); return;   }
+  if (!tabAllowed(TAB)) { setTab('make'); return; }
   renderWho();
   // ตัวอย่างเอกสารจะโชว์เฉพาะตอนอยู่แท็บพิมพ์เท่านั้น
   document.body.classList.toggle('docpreview', TAB === 'print');
@@ -2890,7 +2913,55 @@ function render() {
   if (TAB === 'print')   renderPrint();
   if (TAB === 'setting') renderSetting();
   foldify();                 // แปะปุ่มย่อให้กล่องที่เพิ่งวาดเสร็จ
+}
+
+/* ── ตัวช่วยที่เดิมมีเฉพาะกลุ่มคณิต (ค่า π · ระดับชั้น · สลับธีม) ใช้ร่วมกันทุกวิชาแล้ว ── */
+/* ค่า π ที่ใช้ในโจทย์วงกลม ทรงกระบอก กรวย ทรงกลม
+   ครูเลือกได้ในแท็บตั้งค่า และชุดโจทย์แต่ละชุดจำค่าที่ใช้ตอนสร้างไว้
+   จึงพิมพ์ใบเฉลยย้อนหลังได้ตรงกับใบงานเสมอ */
+const PI_MODES = { '3.14': 3.14, '22/7': 22 / 7 };
+function piVal(mode) { return PI_MODES[mode] || 3.14; }
+/** ข้อความของ π สำหรับเขียนในเฉลย — '22/7' เขียนเป็นเศษส่วน ไม่ใช่ 3.14 */
+function piTxt(mode) { return PI_MODES[mode] ? mode : '3.14'; }
+/** ระดับชั้นของเรื่องหนึ่ง — หมวดพิเศษ (แนวข้อสอบ) นับเป็น 0 */
+function gradeOf(t) { const o = typeof t === 'object' ? t : topicOf(t); return o ? (o.exam ? 0 : (o.grade || 0)) : 0; }
+/** เฉพาะระดับชั้นที่มีเรื่องอยู่จริง — หน้าเลือกเรื่องจะไม่ขึ้นหัวข้อว่างเปล่า */
+function gradesInUse() { return GRADES.filter(g => TOPICS.some(t => gradeOf(t) === g.id)); }
+/* ============================================================
+   UI Theme Style Controller (Vibrant EdTech & Minimal Focus Mode)
+   ============================================================ */
+function getThemeStyle() {
+  try { return localStorage.getItem('ui_theme_style') || 'vibrant'; } catch(e) { return 'vibrant'; }
+}
+function applyThemeStyle(style) {
+  if (style === 'minimal') {
+    document.documentElement.setAttribute('data-theme-style', 'minimal');
+  } else {
+    document.documentElement.removeAttribute('data-theme-style');
   }
+  try { localStorage.setItem('ui_theme_style', style); } catch(e) {}
+  updateThemeSwitcherUI();
+}
+function toggleThemeStyle() {
+  const cur = getThemeStyle();
+  const next = cur === 'minimal' ? 'vibrant' : 'minimal';
+  applyThemeStyle(next);
+  toast(next === 'minimal' ? '🎯 เปิดโหมดโฟกัส (คลีนมินิมอล)' : '✨ เปิดโหมดสีสันสดใส (Modern EdTech)', 'ok');
+}
+function updateThemeSwitcherUI() {
+  const btn = $('#btnThemeStyle');
+  if (!btn) return;
+  const cur = getThemeStyle();
+  if (cur === 'minimal') {
+    btn.innerHTML = '🎯 <span class="theme-label">มินิมอล</span>';
+    btn.title = 'คลิกเพื่อสลับเป็นโหมดสีสันสดใส (Modern EdTech)';
+    btn.classList.add('on');
+  } else {
+    btn.innerHTML = '✨ <span class="theme-label">สีสันสดใส</span>';
+    btn.title = 'คลิกเพื่อสลับเป็นโหมดโฟกัสคลีนมินิมอล';
+    btn.classList.remove('on');
+  }
+}
 
 /* ============================================================================
    3) ENGINE — เครื่องยนต์สุ่มโจทย์
@@ -2903,8 +2974,8 @@ function mulberry32(a) {
     let t = Math.imul(a ^ (a >>> 15), 1 | a);
     t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-    };
-  }
+  };
+}
 function rng(seed) {
   const f = mulberry32(seed >>> 0);
   const R = {
@@ -2917,32 +2988,29 @@ function rng(seed) {
     some: (arr, n) => R.shuffle(arr.slice()).slice(0, n),
     shuffle: arr => {
       const a = arr.slice();
-      for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(f() * (i + 1)); const t = a[i]; a[i] = a[j]; a[j] = t;   }
+      for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(f() * (i + 1)); const t = a[i]; a[i] = a[j]; a[j] = t; }
       return a;
-      },
+    },
     sign: () => (f() < 0.5 ? -1 : 1)
-    };
+  };
   return R;
-  }
-
+}
 /* ชื่อและวัตถุสำหรับแต่งโจทย์ให้ไม่ซ้ำซาก */
 const NAMES  = ['สมชาย', 'มานี', 'ปิติ', 'ชูใจ', 'วีระ', 'อารีย์', 'ธนา', 'กมล', 'สุดา', 'ไพศาล'];
-const CARS   = ['รถยนต์', 'รถจักรยานยนต์', 'รถบรรทุก', 'รถไฟ', 'รถจักรยาน'];
-const BALLS  = ['ลูกบอล', 'ก้อนหิน', 'ลูกเหล็ก', 'ผลมะม่วง', 'เหรียญ'];
-const BOXES  = ['กล่อง', 'ลังไม้', 'กระสอบข้าว', 'ตู้เย็น', 'โต๊ะ'];
-
 /* --- 3.2 การจัดรูปสมการ ---------------------------------------------------
    เขียนสมการเป็นข้อความธรรมดา แล้วให้ M() จัดรูปให้:
      ตัวแปรภาษาอังกฤษ → ตัวเอียง   ตัวเลข/ภาษาไทย/หน่วยใน `...` → ตัวตรง
-     _1 หรือ _{max  } → ตัวห้อย       ^2 หรือ ^{-2  } → ตัวยก
+     _1 หรือ _{max} → ตัวห้อย       ^2 หรือ ^{-2} → ตัวยก
    -------------------------------------------------------------------------- */
 function M(s) {
   const str = String(s);
-  if ((str.includes('\\') || str.includes('_{') || str.includes('^{')) && !/[\u0E00-\u0E7F]/.test(str)) {
+  /* วิชาที่ตั้ง SUBJECT_INFO.katex (ตอนนี้คือ IJSO ซึ่งโหลด KaTeX ไว้) เขียนสมการแบบ LaTeX ได้
+     ข้อความที่มี \\ หรือ _{ ^{ และไม่มีภาษาไทย ส่งให้ KaTeX เรนเดอร์แทน mInner */
+  if (SUBJECT_INFO.katex && (str.includes('\\') || str.includes('_{') || str.includes('^{')) && !/[\u0E00-\u0E7F]/.test(str)) {
     return '<span class="eq">$' + str + '$</span>';
   }
   return '<span class="eq">' + mInner(str) + '</span>';
-  }
+}
 /** แปลงข้อความสมการหนึ่งชิ้น (ยังไม่ห่อ .eq) — เรียกซ้อนตัวเองได้ จึงใส่เศษส่วนในรากได้
     เขียนได้ว่า  frac(3,4)  ·  sqrt(2)  ·  sqrt3(27) รากที่สาม  ·  pi  ·  vec(F) เวกเตอร์
     วิธีทำงาน: แปลงเศษส่วน/รากบนข้อความ "ดิบ" ก่อน แล้วพักผลลัพธ์ HTML ไว้ในกล่อง
@@ -2988,15 +3056,17 @@ function mInner(raw, box) {
       const deep = mDeep(t, box, stash);
       if (deep === t) break;
       t = deep;
-      }
     }
+  }
   let h = esc(t);
   h = h.replace(/\^\{([^}]*)\}/g, (m, a) => '<sup>' + a + '</sup>')
        .replace(/\^(-?[\w°]+)/g, (m, a) => '<sup>' + a + '</sup>');
   /* ตัวห้อยยาวกว่าหนึ่งตัวอักษรก็ได้ เช่น v_x  F_net  a_max
-     ของเดิมรับตัวเดียว F_net จึงกลายเป็น F ห้อย n แล้วตามด้วย et ลอย ๆ */
+     ของเดิมรับตัวเดียว F_net จึงกลายเป็น F ห้อย n แล้วตามด้วย et ลอย ๆ
+     แต่คณิต วิทย์ ชีวะ และปรับพื้นฐาน เขียน H_2O  R_1R_2 โดยหมายถึงห้อยตัวเดียว
+     วิชาพวกนั้นตั้ง SUBJECT_INFO.longSub = false (ห้อยยาวต้องเขียน _{...} เอง) */
   h = h.replace(/_\{([^}]*)\}/g, (m, a) => '<sub>' + a + '</sub>')
-       .replace(/_(-?\w+)/g, (m, a) => '<sub>' + a + '</sub>');
+       .replace(SUBJECT_INFO.longSub === false ? /_(-?\w)/g : /_(-?\w+)/g, (m, a) => '<sub>' + a + '</sub>');
   h = h.replace(/`([^`]*)`/g, (m, a) => '<span class="u">' + a + '</span>');
   // ข้อความไทยเป็นตัวตรง — รวมคำย่อที่มีจุดคั่นอย่าง ห.ร.ม. และ ค.ร.น. ไว้เป็นก้อนเดียว
   h = h.replace(/([฀-๿]+(?:\.[฀-๿]+)*\.?)/g, '<span class="u">$1</span>');
@@ -3009,13 +3079,13 @@ function mInner(raw, box) {
   h = h.split(/(<[^>]*>)/).map(function (seg, i) {
     return i % 2 ? seg : seg.replace(/(^|\s)([+\-−×÷=≠≤≥±≈⇒])(?=\s|$)/g,
       '$1<span class="u">$2</span>');
-    }).join('');
+  }).join('');
   // ชั้นในคืน HTML ที่ยังมีโทเคนอยู่ ให้ชั้นนอกสุดเป็นคนแทนกลับทีเดียว
   if (!top) return h;
   for (let k = 0; k < 20 && h.indexOf('\u0001') >= 0; k++)
     h = h.replace(/\u0001([\uE000-\uF8FF])\u0002/g, (m, c) => box[c.charCodeAt(0) - 0xE000]);
   return h;
-  }
+}
 /** ตัวสำรองอ่าน frac / sqrt / nuc ที่มีวงเล็บซ้อนอยู่ข้างใน
     ตัวจับด้วย regex ข้างบนรับเฉพาะเนื้อในที่ไม่มีวงเล็บ สมการอย่าง
     frac((m_1 - m_2) g, m_1 + m_2) จึงหลุดออกมาเป็นคำว่า frac ให้อ่าน
@@ -3035,9 +3105,9 @@ function mDeep(t, box, stash) {
       if (ch === '(') depth++;
       else if (ch === ')') {
         depth--;
-        if (!depth) { close = i; args.push(t.slice(start, i)); break;   }
-        } else if (ch === ',' && depth === 1) { args.push(t.slice(start, i)); start = i + 1;   }
-      }
+        if (!depth) { close = i; args.push(t.slice(start, i)); break; }
+      } else if (ch === ',' && depth === 1) { args.push(t.slice(start, i)); start = i + 1; }
+    }
     if (close < 0) continue;                       // วงเล็บไม่ครบ ไม่ใช่คำสั่ง
     const name = m[1];
     let html = null;
@@ -3055,28 +3125,27 @@ function mDeep(t, box, stash) {
       html = mVec(mInner(args[0], box));
     if (html == null) continue;                    // จำนวนช่องไม่ตรง ปล่อยเป็นข้อความ
     return t.slice(0, m.index) + stash(html) + t.slice(close + 1);
-    }
-  return t;
   }
+  return t;
+}
 /** ครอบเนื้อในด้วยลูกศรเวกเตอร์ — ตัวลูกศรวาดด้วย CSS ดูที่ .vec */
-function mVec(inner) { return '<span class="vec">' + inner + '</span>';   }
+function mVec(inner) { return '<span class="vec">' + inner + '</span>'; }
 /** บรรทัดสมการแบบบล็อก */
 function EQ() {
   return Array.from(arguments).filter(Boolean).map(s => '<div class="eqblk">' + M(s) + '</div>').join('');
-  }
-/** แทนค่าลงในแม่แบบสมการ: S('v = {u  } + ({a  })({t  })', {u:0,a:9.8,t:2.5  }) */
+}
+/** แทนค่าลงในแม่แบบสมการ: S('v = {u} + ({a})({t})', {u:0,a:9.8,t:2.5}) */
 function S(tmpl, vals, dp) {
   return String(tmpl).replace(/\{(\w+)\}/g, (m, k) => {
     if (!(k in vals)) return m;
     const v = vals[k];
     return typeof v === 'number' ? fmtq(v, dp == null ? 3 : dp) : String(v);
-    });
-  }
+  });
+}
 /** แทนค่าแล้วคืนเป็นบรรทัดสมการเลย */
-function SEQ(tmpl, vals, dp) { return EQ(S(tmpl, vals, dp));   }
-
+function SEQ(tmpl, vals, dp) { return EQ(S(tmpl, vals, dp)); }
 /* --- 3.3 ตัวช่วยวาดรูป SVG ------------------------------------------------ */
-function n1(x) { return (Math.round(x * 10) / 10).toString();   }
+function n1(x) { return (Math.round(x * 10) / 10).toString(); }
 /** ครอบ SVG ให้ยืดตามความกว้างที่มี แต่ไม่โตเกินจนดูเทอะทะ
     เดิมตรึงไว้ที่ความกว้างพิกเซลของ viewBox ทำให้รูปเล็กเกินไปบนจอกว้าง */
 /** แท่งกราฟที่มุมบนกลม ก้นแท่งชิดเส้นฐาน
@@ -3088,15 +3157,14 @@ function cBar(x, y, w, h, r) {
     'V' + n1(y + rr) + 'q0 ' + n1(-rr) + ' ' + n1(rr) + ' ' + n1(-rr) +
     'h' + n1(w - rr * 2) + 'q' + n1(rr) + ' 0 ' + n1(rr) + ' ' + n1(rr) +
     'V' + n1(y + h) + 'Z"/>';
-  }
-
+}
 function svgWrap(w, h, inner) {
   // ขยายรูปบนหน้าจอขึ้นอีก 30% จากเดิม (1.55 → 2.0 และเพดาน 640 → 830 พิกเซล)
   // ครูแจ้งว่ารูปเดิมเล็กเกินไปจนดูรายละเอียดยาก
   const maxw = Math.min(Math.round(w * 2.0), 830);
   return '<svg viewBox="0 0 ' + w + ' ' + h + '" style="width:100%;max-width:' + maxw + 'px" ' +
     'preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" role="img">' + inner + '</svg>';
-  }
+}
 /** ลูกศรแรง จาก (x1,y1) ไป (x2,y2) พร้อมป้ายกำกับ */
 function svgArrow(x1, y1, x2, y2, cls, lbl, lox, loy) {
   const a = Math.atan2(y2 - y1, x2 - x1), L = 10, W = 4.6;
@@ -3108,14 +3176,14 @@ function svgArrow(x1, y1, x2, y2, cls, lbl, lox, loy) {
     n1(bx + px * W) + ',' + n1(by + py * W) + ' ' + n1(bx - px * W) + ',' + n1(by - py * W) + '"/>';
   if (lbl) s += '<text x="' + n1(x2 + (lox || 0)) + '" y="' + n1(y2 + (loy || 0)) + '" text-anchor="middle">' + lbl + '</text>';
   return s;
-  }
+}
 function svgTxt(x, y, t, anchor, mut, cls) {
   // เปิดช่องรับชื่อคลาสเพิ่ม เพื่อให้กราฟใช้ตัวหนังสือของตัวเองได้
   // ของเดิมส่งมาห้าอาร์กิวเมนต์เหมือนเดิมทุกจุด จึงไม่กระทบรูปโจทย์
   const c = [mut ? 'mut' : '', cls || ''].filter(Boolean).join(' ');
   return '<text x="' + n1(x) + '" y="' + n1(y) + '"' + (anchor ? ' text-anchor="' + anchor + '"' : '') +
     (c ? ' class="' + c + '"' : '') + '>' + t + '</text>';
-  }
+}
 /** พื้นแบบขีดเฉียง (hatch) ใต้เส้นตรงจาก (x1,y1) ถึง (x2,y2) */
 function svgHatch(x1, y1, x2, y2, n, len) {
   const a = Math.atan2(y2 - y1, x2 - x1);
@@ -3125,10 +3193,473 @@ function svgHatch(x1, y1, x2, y2, n, len) {
     const t = i / N, x = x1 + (x2 - x1) * t, y = y1 + (y2 - y1) * t;
     s += '<line class="ln2" x1="' + n1(x) + '" y1="' + n1(y) + '" x2="' + n1(x - Math.cos(a - 0.9) * L) +
       '" y2="' + n1(y - Math.sin(a - 0.9) * L) + '"/>';
-    }
-  return s;
   }
+  return s;
+}
+/* --- 3.4 สร้างโจทย์จากแม่แบบ ---------------------------------------------
+   ตรวจว่าตัวเลขที่สุ่มออกมา "สวย" พอจะให้นักเรียนคิดได้ ถ้าไม่สวยจะสุ่มใหม่
+   -------------------------------------------------------------------------- */
+const TPL = [];                 // คลังแม่แบบ เติมในส่วนถัดไป
+const TPL_BY_ID = {};
+function niceProblem(p) {
+  if (!p || !p.finds || !p.finds.length) return false;
+  for (const f of p.finds) {
+    if (typeof f.value !== 'number' || !isFinite(f.value)) return false;
+    // คำตอบติดรูทไม่มีทางเป็นทศนิยมสองตำแหน่ง ต้องข้ามด่านนี้ ไม่งั้นถูกตีตกทุกเมล็ด
+    if (f.sur) continue;
+    if (Math.abs(f.value) > 1e6 && f.kind !== 'sci') return false;
+    const kind = f.kind || 'num';
+    // เศษส่วน: ตัวส่วนต้องไม่ใหญ่จนนักเรียนอ่านและพิมพ์ไม่ไหว และต้องย่ออย่างต่ำมาแล้ว
+    if (kind === 'frac') {
+      if (!f.den || f.den < 1 || f.den > 24) return false;
+      if (typeof f.num !== 'number' || !isFinite(f.num)) return false;
+      const rd = reduceFrac(f.num, f.den);
+      if (rd[0] !== f.num || rd[1] !== f.den) return false;
+      continue;
+    }
+    if (kind === 'int') { if (Math.abs(f.value - Math.round(f.value)) > 1e-9) return false; continue; }
+    if (kind === 'exact') continue;
+    if (kind === 'sci') {
+      if (!isFinite(f.man) || !isFinite(f.exp) || Math.abs(f.man) < 1 || Math.abs(f.man) >= 10) return false;
+      if (dpOf(f.man, 4) > 2) return false;
+      continue;
+    }
+    if (f.value !== 0 && Math.abs(f.value) < 0.01) return false;
+    if (dpOf(f.value, 4) > 2) return false;
+  }
+  return true;
+}
+/* ── คำตอบติดรูท ───────────────────────────────────────────────────────
+   แม่แบบเขียนไว้ว่า  finds: [{ ..., value: 28.2842, sur: [20, 2, 1] }]
+   หมายถึงคำตอบคือ 20√2 ⁄ 1 · ช่อง value ยังต้องมีไว้ให้ที่อื่นใช้คำนวณต่อ
+   นักเรียนกรอกสามช่อง แล้วตรวจจากรูปอย่างง่าย ไม่ใช่จากค่าทศนิยม        */
+function surdGcd(a, b) { a = Math.abs(a); b = Math.abs(b); while (b) { const t = a % b; a = b; b = t; } return a || 1; }
+/** ย่อ a√b ⁄ c ให้เป็นรูปอย่างง่าย แล้วคืนเป็นข้อความไว้เทียบกันตรง ๆ
+    ตั้งใจให้ 10√8 กับ 20√2 ผ่านทั้งคู่ เพราะเป็นจำนวนเดียวกัน แค่ยังไม่ลดรูป
+    สิ่งที่ตั้งใจกันคือการตอบเป็นทศนิยม ซึ่งไม่ใช่การตอบติดรูท
+    ถ้าครูอยากบังคับให้ลดรูปด้วย ให้เทียบ a กับ b ตรง ๆ แทนการเทียบรูปย่อ */
+function surdCanon(a, b, c) {
+  a = Math.round(Number(a)); b = Math.round(Number(b)); c = Math.round(Number(c) || 1);
+  if (!isFinite(a) || !isFinite(b) || !isFinite(c) || b < 1 || !c) return null;
+  if (c < 0) { a = -a; c = -c; }
+  for (let d = 2; d * d <= b; d++) { while (b % (d * d) === 0) { b = b / (d * d); a = a * d; } }
+  const g = surdGcd(a, c);
+  return (a / g) + '√' + b + '/' + (c / g);
+}
+/** อ่านค่าที่นักเรียนกรอกจากสามช่อง เก็บรวมไว้เป็นข้อความ "a|b|c" ในช่องเดิม */
+function parseSurd(raw) {
+  const p = String(raw == null ? '' : raw).split('|');
+  const a = p[0] === '' || p[0] == null ? NaN : Number(p[0]);
+  const b = p[1] === '' || p[1] == null ? NaN : Number(p[1]);
+  const c = p[2] === '' || p[2] == null ? 1 : Number(p[2]);
+  if (![a, b, c].every(x => isFinite(x) && Math.abs(x - Math.round(x)) < 1e-9)) return null;
+  if (b < 1 || !c) return null;
+  return { a: a, b: b, c: c };
+}
+function surdOK(raw, sur) {
+  const u = parseSurd(raw);
+  if (!u) return false;
+  const x = surdCanon(u.a, u.b, u.c), y = surdCanon(sur[0], sur[1], sur[2] == null ? 1 : sur[2]);
+  return !!x && x === y;
+}
+/** เขียนคำตอบติดรูทเป็นสูตรให้ M() เรนเดอร์ */
+function surdExpr(sur) {
+  const a = Math.round(sur[0]), b = Math.round(sur[1]), c = Math.round(sur[2] == null ? 1 : sur[2]);
+  const top = (b === 1) ? String(a) : (a === 1 ? 'sqrt(' + b + ')' :
+              (a === -1 ? '-sqrt(' + b + ')' : a + ' sqrt(' + b + ')'));
+  return c === 1 ? top : 'frac(' + top + ',' + c + ')';
+}
+/** ข้อความคำตอบของช่องหนึ่ง — ติดรูทก็แสดงเป็นรูท ไม่ใช่ทศนิยมยาว ๆ */
+function ansExpr(f) { return f.sur ? surdExpr(f.sur) : fmtq(f.value); }
+/** สร้างโจทย์หนึ่งข้อจาก tplId + seed — ผลลัพธ์เหมือนเดิมทุกครั้งที่เรียกด้วยค่าเดิม */
+function buildProblem(tplId, seed, cfg) {
+  const tpl = TPL_BY_ID[tplId];
+  if (!tpl) return null;
+  const c = cfg || {};
+  // ฟิสิกส์ใช้ g (ระดับง่ายบังคับ g = 10 ถ้าตั้งไว้) · คณิตใช้ π — ส่งให้แม่แบบทั้งคู่ แม่แบบอ่านเฉพาะค่าที่ใช้
+  const g = (tpl.level === 'ง่าย' && c.easyG10) ? 10 : (c.g != null ? c.g : 9.8);
+  const piMode = c.piMode || '3.14';
+  const pi = piVal(piMode);
+  let last = null;
+  // แม่แบบที่เงื่อนไขเลขสวยรัดกุมมาก (เช่น ต้องได้รากที่สองลงตัว) อาจต้องสุ่มหลายรอบ
+  // ลูปนี้ออกทันทีที่เจอชุดตัวเลขที่ใช้ได้ จำนวนรอบสูงสุดจึงไม่มีผลกับความเร็วในกรณีปกติ
+  for (let k = 0; k < 400; k++) {
+    const R = rng((seed >>> 0) + k * 7919);
+    let p = null;
+    try { p = tpl.gen(R, { g: g, pi: pi, piMode: piMode }); } catch (e) { continue; }
+    if (!p) continue;
+    last = p;
+    // โจทย์ทฤษฎีไม่มีคำตอบเป็นตัวเลข จึงข้ามการคัดกรองเลขสวยไปได้เลย
+    if (tpl.level === THEORY_LEVEL || niceProblem(p)) { return finishProblem(p, tpl, seed, g, piMode); }
+  }
+  // สุ่มจนครบแล้วยังไม่ได้เลขสวย — ยอมรับรอบสุดท้ายแล้วปัดเป็นทศนิยม 2 ตำแหน่ง
+  if (last) { last.rough = true; return finishProblem(last, tpl, seed, g, piMode); }
+  return null;
+}
+function finishProblem(p, tpl, seed, g, piMode) {
+  p.tplId = tpl.id; p.seed = seed; p.topic = tpl.topic; p.level = tpl.level;
+  p.sub = tpl.sub; p.skills = tpl.skills || []; p.g = g; p.piMode = piMode;
+  if (tpl.level === THEORY_LEVEL) {
+    // โจทย์ทฤษฎี: ตัวเลือกเป็นข้อความ แม่แบบสร้างมาให้ครบแล้ว ไม่มีตารางกำหนดให้/สิ่งที่ต้องหา
+    p.theory = true; p.given = p.given || []; p.finds = p.finds || [];
+    return p;
+  }
+  // ปัดเศษเฉพาะคำตอบชนิดทศนิยม — เศษส่วนและคำตอบที่ต้องตรงเป๊ะห้ามแตะ
+  p.finds.forEach(f => {
+    if (!f.kind || f.kind === 'num') f.value = round2(f.value);
+    if (f.kind === 'sci') f.value = f.man * Math.pow(10, f.exp);
+  });
+  // ระดับง่ายตอบแบบปรนัย — สร้างตัวเลือกจากตัวลวงที่แม่แบบให้มา
+  if (tpl.level === 'ง่าย' && p.finds.length === 1) {
+    p.choices = makeChoices(p, rng(((seed >>> 0) ^ 0x5bf03635) >>> 0));
+  }
+  return p;
+}
+/** สร้างตัวเลือก 4 ตัว: คำตอบถูก + ตัวลวงจากความเข้าใจผิด (เติมด้วยตัวลวงทั่วไปถ้าไม่พอ) */
+function makeChoices(p, R) {
+  if ((p.finds[0].kind || 'num') === 'frac') return makeFracChoices(p, R);
+  if (p.finds[0].kind === 'sci') return makeSciChoices(p, R);
+  const ans = round2(p.finds[0].value);
+  const pool = [];
+  const push = v => {
+    if (typeof v !== 'number' || !isFinite(v)) return;
+    const r = round2(v);
+    if (Math.abs(r - ans) < 0.005) return;                 // ซ้ำกับคำตอบถูก
+    if (r < 0 && ans > 0 && p.finds[0].positive) return;   // ค่าที่เป็นไปไม่ได้ในบริบทของโจทย์
+    if (pool.some(x => Math.abs(x - r) < 0.005)) return;   // ซ้ำกันเอง
+    if (dpOf(r, 4) > 2) return;
+    pool.push(r);
+  };
+  (p.distract || []).forEach(push);
+  // แม่แบบที่คำตอบมีค่าได้จำกัด (เช่น จตุภาคที่ 1-4) ตั้ง exactDistract ไว้
+  // จะได้ไม่มีตัวลวงอัตโนมัติที่เป็นไปไม่ได้โผล่มา เช่น "จตุภาคที่ 8"
+  /* SUBJECT_INFO.legacyChoices: วิทย์กายภาพเคยใช้เอนจินที่ไม่รู้จัก exactDistract
+     ชุดโจทย์ที่มอบหมายไปแล้วสร้างตัวเลือกใหม่จาก tplId + seed ทุกครั้งที่เปิด และคำตอบที่เลือกเก็บเป็นลำดับตัวเลือก
+     ถ้าเปลี่ยนวิธีสร้างตัวเลือก ผลที่ส่งไปแล้วจะชี้ไปผิดตัว จึงคงแบบเดิมไว้ให้วิชานั้น */
+  if (!p.exactDistract || SUBJECT_INFO.legacyChoices) {
+    const gen = [ans * 2, ans / 2, ans + Math.max(1, Math.round(Math.abs(ans) * 0.2)),
+                 ans - Math.max(1, Math.round(Math.abs(ans) * 0.2)), ans * 1.5, ans / 4, ans * 10];
+    for (const v of gen) { if (pool.length >= 6) break; push(v); }
+  }
+  const picked = R.shuffle(pool).slice(0, 3);
+  const all = R.shuffle(picked.concat([ans]));
+  return all.map(v => ({ value: v, correct: Math.abs(v - ans) < 0.005 }));
+}
+/* --- 3.5 การตรวจคำตอบ ----------------------------------------------------- */
+/** อ่านตัวเลขจากสิ่งที่นักเรียนพิมพ์ รองรับ 1,200 / +5 / 2.5x10^3 / 2.5e3 */
+/* ทำความสะอาดคำตอบก่อนอ่านเป็นตัวเลข — นักเรียนพิมพ์มาหลายแบบ ไม่ควรเสียคะแนนเพราะรูปแบบการพิมพ์
+   · เลขไทย ๐–๙ → 0–9 · เครื่องหมายลบแบบยูนิโค้ด (− – —) → - · ×10⁵ → ×10^5
+   · จุลภาคคั่นหลักพัน (1,000 · 12,345.6) ตัดทิ้ง ส่วนจุลภาคแบบอื่น เช่น 3,5 กำกวม (3.5 หรือ 35?)
+     จึงปล่อยไว้ให้อ่านไม่ผ่าน แล้วให้ ansIssue() บอกนักเรียนว่าให้ใช้จุดทศนิยม
+     (เดิมตัดจุลภาคทิ้งหมด 3,5 จึงกลายเป็น 35 โดยไม่มีใครรู้)
+   · หน่วยที่พิมพ์ต่อท้ายตัวเลข (5 m/s · 20 นิวตัน) ตัดทิ้ง เพราะหน่วยของช่องกำหนดไว้ข้างช่องแล้ว */
+function ansClean(raw) {
+  if (raw == null) return '';
+  var SUP = '⁰¹²³⁴⁵⁶⁷⁸⁹';
+  var s = String(raw).trim()
+    .replace(/[\u0E50-\u0E59]/g, function (c) { return String(c.charCodeAt(0) - 0x0E50); })
+    .replace(/[\u2212\u2012\u2013\u2014\uFE63\uFF0D]/g, '-')
+    .replace(/10\s*([⁻⁺]?)([⁰¹²³⁴⁵⁶⁷⁸⁹]+)/g, function (m, sg, d) {
+      return '10^' + (sg === '⁻' ? '-' : '') + d.replace(/./g, function (c) { return SUP.indexOf(c); });
+    })
+    .replace(/(\d),(?=\d{3}(?!\d))/g, '$1');
+  var m = s.match(/^([-+]?(?:\d[\d,]*\.?\d*|\.\d+)(?:\s*(?:[eE]|[×xX*]\s*10\s*\^?)\s*[-+]?\d+)?)\s*(.*)$/);
+  if (m && m[2] && /^[A-Za-zµμΩ°℃%\u0E01-\u0E4F]/.test(m[2])) s = m[1];
+  return s;
+}
+/** เหตุที่อ่านคำตอบเป็นตัวเลขไม่ได้ — ใช้บอกนักเรียนแทนการนับเป็นช่องว่าง */
+function ansIssue(raw) {
+  var s = ansClean(raw);
+  if (!s) return '';
+  if (/,/.test(s)) return 'ใช้จุด (.) เป็นจุดทศนิยม เช่น 3.5 ไม่ใช่ 3,5';
+  return 'อ่านเป็นตัวเลขไม่ได้ — พิมพ์ตัวเลขอย่างเดียว เช่น 12.5 · -3 · 3/4 · 2.4x10^-3';
+}
+/** เอาเฉพาะค่าตัวเลข — ใช้ตรวจว่านักเรียนกรอกช่องนี้แล้วหรือยัง */
+function parseNum(raw) { const a = parseAns(raw); return a ? a.v : null; }
+/** ของเดิม เก็บไว้ให้โค้ดส่วนที่เทียบตัวเลขล้วนยังเรียกได้ */
+function checkNum(user, target, tolPct) { return checkAns(user, { value: target, kind: 'num' }, tolPct); }
+/** ตารางสิ่งที่โจทย์กำหนดให้ + สิ่งที่ต้องหา (สร้างอัตโนมัติจากข้อมูลโจทย์) */
+function givenTable(p) {
+  let h = '<table class="given"><tbody>';
+  p.given.forEach(gv => {
+    h += '<tr><td class="s">' + M(gv.s) + '</td><td class="e">=</td>' +
+      '<td class="v">' + (typeof gv.v === 'number' ? fmt(gv.v) : gv.v) + '</td>' +
+      '<td class="d">' + (gv.unit ? esc(gv.unit) : '') + (gv.d ? ' &nbsp;(' + esc(gv.d) + ')' : '') + '</td></tr>';
+  });
+  p.finds.forEach(f => {
+    h += '<tr><td class="s">' + M(f.s) + '</td><td class="e">=</td>' +
+      '<td class="v" style="color:var(--muted)">?</td>' +
+      '<td class="d">' + (f.unit ? esc(f.unit) : '') + (f.d ? ' &nbsp;(' + esc(f.d) + ')' : '') + '</td></tr>';
+  });
+  return h + '</tbody></table>';
+}
+function stepBodies(p) {
+  if (p.theory) return [p.idea, choiceWhyHTML(p), p.why];
+  const s = p.sol;
+  const eqHtml = (s.eqs || []).map(e =>
+    '<div>' + EQ(e.eq) + (e.why ? '<div class="why">' + e.why + '</div>' : '') + '</div>').join('');
+  const lines = a => (Array.isArray(a) ? a : [a]).filter(Boolean).join('');
+  return [
+    s.analyze,
+    givenTable(p),
+    eqHtml,
+    lines(s.solve),
+    lines(s.subst),
+    lines(s.calc),
+    s.conclude
+  ];
+}
+/** กล่องอธิบายของโจทย์ทฤษฎี — แนวคิดหลัก + เหตุผลรายตัวเลือก + ข้อสรุปที่ต้องจำ */
+function theorySolutionHTML(p, open) {
+  const rows = [
+    { n: 1, t: 'แนวคิดที่ใช้ตอบ', b: p.idea },
+    { n: 2, t: 'ทำไมข้อนี้ถูก และข้ออื่นผิดตรงไหน', b: choiceWhyHTML(p) },
+    { n: 3, t: 'สิ่งที่ต้องจำไปใช้ต่อ', b: p.why }
+  ];
+  let h = '<div class="sol">';
+  rows.forEach(r => {
+    h += '<div class="solstep' + (open ? '' : ' closed') + '" data-step="' + (r.n - 1) + '">' +
+      '<div class="h"><span class="n">' + r.n + '</span>' + r.t +
+      (open ? '' : '<span class="cv">แตะเพื่อดู</span>') + '</div>' +
+      '<div class="b">' + (r.b || '<span class="hint">—</span>') + '</div></div>';
+  });
+  return h + '</div>';
+}
+/** ไล่อธิบายทีละตัวเลือกว่าถูกหรือผิดเพราะอะไร */
+function choiceWhyHTML(p) {
+  return '<div class="whylist">' + (p.choices || []).map((c, k) =>
+    '<div class="whyrow ' + (c.correct ? 'ok' : 'no') + '">' +
+    '<span class="wk">' + 'กขคง'[k] + '.</span>' +
+    '<span class="wt">' + c.text + '</span>' +
+    '<span class="wm">' + (c.correct ? '✓ ถูก' : '✗ ผิด') + '</span>' +
+    (c.why ? '<div class="wd">' + c.why + '</div>' : '') + '</div>').join('') + '</div>';
+}
+/** โหมด open=true จะกางทุกขั้น (ใช้ตอนพิมพ์) */
+function solutionHTML(p, open) {
+  if (p.theory) return theorySolutionHTML(p, open);
+  const b = stepBodies(p);
+  const L = workLines(1);
+  let h = '<div class="sol">';
+  
+  h += '<div class="row noprint" style="justify-content:flex-end; margin-bottom: 8px;">' +
+       '<button class="sm" type="button" onclick="this.closest(\'.sol\').classList.toggle(\'hide-steps\'); ' +
+       'this.innerHTML = this.closest(\'.sol\').classList.contains(\'hide-steps\') ? \'👁️ แสดงวิธีทำทั้งหมด\' : \'👁️ ซ่อนข้อความ (เว้นบรรทัดไว้เขียน)\'">' +
+       '👁️ ซ่อนข้อความ (เว้นบรรทัดไว้เขียน)</button></div>';
 
+  for (let i = 0; i < 7; i++) {
+    const blockId = WORK_BLOCKS[i] ? WORK_BLOCKS[i].id : null;
+    const count = L[blockId] || 0;
+    const linesHTML = count > 0 ? '<div class="sol-lines" style="display:none; padding: 6px 0;">' + 
+                      new Array(count + 1).join('<div class="wl"></div>') + 
+                      '</div>' : '<div class="sol-lines" style="display:none"><div class="hint" style="margin-top:8px">— ไม่มีบรรทัดในช่องนี้ —</div></div>';
+
+    h += '<div class="solstep' + (open ? '' : ' closed') + '" data-step="' + i + '">' +
+      '<div class="h"><span class="n">' + (i + 1) + '</span>' + STEP_TITLES[i] +
+      (open ? '' : '<span class="cv">แตะเพื่อดู</span>') + '</div>' +
+      '<div class="b"><div class="sol-text">' + (b[i] || '<span class="hint">—</span>') + '</div>' +
+      linesHTML + '</div></div>';
+  }
+  return h + '</div>';
+}
+/** ผูกให้แตะหัวข้อแล้วพับ/กางได้ */
+function bindSolutionToggle(root) {
+  $$('.solstep>.h', root).forEach(h => {
+    h.addEventListener('click', () => {
+      const st = h.parentElement;
+      st.classList.toggle('closed');
+      const cv = $('.cv', h);
+      if (cv) cv.textContent = st.classList.contains('closed') ? 'แตะเพื่อดู' : 'แตะเพื่อซ่อน';
+    });
+  });
+}
+/* --- 3.7 วาดตัวโจทย์ ------------------------------------------------------ */
+function topicName(id) { const t = topicOf(id); return t ? t.name : ''; }
+function problemHead(p, no) {
+  const t = topicOf(p.topic);
+  return '<div class="qhead">' +
+    (no ? '<span class="qno">ข้อ ' + no + '</span>' : '') +
+    '<span class="tag ' + LEVEL_CLS[p.level] + '">' + p.level + '</span>' +
+    (t ? '<span class="tag t">' + (t.exam ? '🎓 ' : '') + chLabel(t) + ' ' + esc(t.name) + '</span>' : '') +
+    '<span class="tag t">' + esc(p.sub) + '</span>' +
+    '</div>';
+}
+function problemBody(p) {
+  return '<div class="stem">' + p.stem + '</div>' + (p.figure ? '<div class="fig">' + p.figure + '</div>' : '');
+}
+/** ตัวเลือกปรนัยที่คำตอบเป็นเศษส่วน — ตัวลวงมาจาก p.distractFrac ซึ่งเป็นคู่ [เศษ, ส่วน]
+    เทียบกันด้วยรูปอย่างต่ำ ตัวเลือกจึงไม่มีทางเป็นค่าเดียวกัน เช่น 3/4 กับ 6/8 */
+function makeFracChoices(p, R) {
+  const f0 = p.finds[0];
+  const an = f0.num, ad = f0.den;
+  const key = (n, d) => { const r = reduceFrac(n, d); return r[0] + '/' + r[1]; };
+  const seen = {};
+  seen[key(an, ad)] = 1;
+  const pool = [];
+  const push = pr => {
+    if (!pr || !pr[1] || !isFinite(pr[0]) || !isFinite(pr[1])) return;
+    const r = reduceFrac(pr[0], pr[1]);
+    if (Math.abs(r[1]) > 40 || seen[key(r[0], r[1])]) return;
+    seen[key(r[0], r[1])] = 1;
+    pool.push(r);
+  };
+  (p.distractFrac || []).forEach(push);
+  // ตัวลวงสำรอง ใช้ต่อเมื่อของที่แม่แบบตั้งใจใส่มายังไม่พอ 6 ตัว
+  // (เรียงตามความพลาดที่พบบ่อย: บวกผิดที่ · กลับเศษกับส่วน · ลืมย่อ)
+  for (const pr of [[an + 1, ad], [an, ad + 1], [ad, an], [an * 2, ad], [an, ad * 2], [an - 1, ad]]) {
+    if (pool.length >= 6) break;
+    if (pr[0] === 0) continue;                       // 0 เป็นตัวลวงที่ตัดทิ้งได้ง่ายเกินไป
+    push(pr);
+  }
+  const picked = R.shuffle(pool).slice(0, 3);
+  const all = R.shuffle(picked.concat([[an, ad]]));
+  return all.map(pr => ({
+    value: pr[0] / pr[1], text: fracTxt(pr[0], pr[1]),
+    correct: pr[0] === an && pr[1] === ad
+  }));
+}
+/* --- 3.5 การตรวจคำตอบ -----------------------------------------------------
+   คณิตต่างจากฟิสิกส์ตรงที่คำตอบไม่ได้เป็นทศนิยมเสมอไป แม่แบบจึงระบุชนิดคำตอบไว้ที่
+   finds[].kind ได้ 4 แบบ
+     'num'   (ค่าเริ่มต้น) ทศนิยมทั่วไป ยอมคลาดเคลื่อนตาม tolPct
+     'int'   จำนวนเต็ม ต้องตรงเป๊ะ
+     'frac'  เศษส่วน ต้องส่ง num/den มาคู่กัน · ถ้า lowest:true ต้องตอบเป็นเศษส่วนอย่างต่ำ
+     'exact' ต้องตรงเป๊ะ ไม่ยอมคลาดเคลื่อน
+   -------------------------------------------------------------------------- */
+function gcd(a, b) { a = Math.abs(a); b = Math.abs(b); while (b) { const t = a % b; a = b; b = t; } return a || 1; }
+/** ย่อเศษส่วนให้อยู่ในรูปอย่างต่ำ ตัวส่วนเป็นบวกเสมอ คืน [เศษ, ส่วน] */
+function reduceFrac(n, d) {
+  if (!d) return [n, d];
+  if (d < 0) { n = -n; d = -d; }
+  const g = gcd(n, d);
+  return [n / g, d / g];
+}
+/** เขียนเศษส่วนเป็นข้อความสำหรับส่งให้ M() โดย<b>ย่ออย่างต่ำ</b>ก่อน
+    ใช้กับคำตอบและตัวเลือก ซึ่งต้องอยู่ในรูปอย่างต่ำเสมอ */
+function fracTxt(n, d) { const r = reduceFrac(n, d); return fracRaw(r[0], r[1]); }
+/** เขียนเศษส่วน <b>ตามที่ให้มา</b> ไม่ย่อ — ใช้กับตัวเลขในโจทย์ เพราะบางข้อ
+    ตั้งใจให้เห็นรูปที่ยังไม่ย่อ เช่น เทียบ 3/6 กับ 3/12 ที่ตัวเศษเท่ากัน */
+function fracRaw(n, d) {
+  if (d < 0) { n = -n; d = -d; }
+  if (d === 1) return String(n);
+  return (n < 0 ? '-' : '') + 'frac(' + Math.abs(n) + ',' + d + ')';
+}
+/** คำแนะนำเหนือช่องกรอกคำตอบ — เปลี่ยนตามชนิดคำตอบที่แม่แบบกำหนด
+    เพราะโจทย์เศษส่วน โจทย์จำนวนเต็ม และโจทย์ทศนิยม มีกติกาการตอบคนละแบบ */
+function ansHintHTML(p) {
+  const kinds = p.finds.map(f => f.kind || 'num');
+  let tip;
+  if (kinds.indexOf('frac') >= 0)
+    tip = 'พิมพ์เศษส่วนได้เลย เช่น <b>3/4</b> หรือจำนวนคละ <b>1 1/2</b>' +
+      (p.finds.some(f => f.lowest) ? ' · ข้อนี้ต้องตอบเป็น<b>เศษส่วนอย่างต่ำ</b>' : '');
+  else if (kinds.indexOf('sci') >= 0)
+    tip = 'ตอบในรูป <b>a × 10ⁿ</b> พิมพ์ได้เลย เช่น <b>3.2x10^-5</b> หรือ <b>3.2e-5</b> · ยอมคลาดเคลื่อนได้ ±' + fmt(Math.max(1, DB.settings.tolPct)) + '%';
+  else if (kinds.every(k => k === 'int' || k === 'exact'))
+    tip = 'ตอบให้ตรงเป๊ะ ไม่มีการปัดเศษ · ใส่เครื่องหมายลบด้วยถ้าคำตอบเป็นจำนวนลบ';
+  else
+    tip = 'ไม่ต้องพิมพ์หน่วย · ยอมคลาดเคลื่อนได้ ±' + fmt(DB.settings.tolPct) + '%';
+  // คำตอบทศนิยมล้วน (รวมข้อติดรูทของฟิสิกส์) ใช้หัวข้อเดิม "กรอกคำตอบเป็นตัวเลข"
+  const head = kinds.every(k => k === 'num') ? 'กรอกคำตอบเป็นตัวเลข' : 'กรอกคำตอบ';
+  return '<div style="margin-bottom:9px"><b>' + head + '</b> <span class="hint">(' + tip + ')</span></div>';
+}
+/** ข้อความคำตอบสำหรับแสดงผล — เศษส่วนแสดงเป็นเศษส่วน ไม่ใช่ทศนิยมยาว ๆ */
+function ansTxt(f) {
+  if (f.sur) return surdExpr(f.sur);          // คำตอบติดรูท (ฟิสิกส์)
+  if (f.kind === 'sci') return sciTxt(f.man, f.exp);
+  return (f.kind === 'frac' && f.den) ? fracTxt(f.num, f.den) : fmtq(f.value);
+}
+function parseAns(raw) {
+  if (raw == null) return null;
+  let s = ansClean(raw).replace(/^\+/, '');
+  if (s === '') return null;
+  // จำนวนคละ เช่น 1 1/2 หรือ -2 3/4
+  let m = s.match(/^(-?\d+)\s+(\d+)\s*\/\s*(\d+)$/);
+  if (m) {
+    const w = Number(m[1]), n = Number(m[2]), d = Number(m[3]);
+    if (!d) return null;
+    const sign = m[1].charAt(0) === '-' ? -1 : 1;
+    const num = Math.abs(w) * d + n;
+    return { v: sign * num / d, n: sign * num, d: d };
+  }
+  // เศษส่วนล้วน เช่น 3/4 หรือ -2/5
+  m = s.replace(/\s+/g, '').match(/^(-?\d+)\/(-?\d+)$/);
+  if (m) {
+    const n = Number(m[1]), d = Number(m[2]);
+    if (!d) return null;
+    return { v: n / d, n: n, d: d };
+  }
+  s = s.replace(/\s+/g, '').replace(/[×xX*]10\^?/, 'e').replace(/E/, 'e').replace(/−/g, '-');
+  if (!/^-?(\d+\.?\d*|\.\d+)(e[-+]?\d+)?$/.test(s)) return null;
+  const v = Number(s);
+  return isFinite(v) ? { v: v, n: null, d: null } : null;
+}
+/** เทียบคำตอบตามชนิดที่แม่แบบกำหนดไว้ใน find */
+function checkAns(raw, f, tolPct) {
+  const a = parseAns(raw);
+  if (!a) return false;
+  const kind = (f && f.kind) || 'num';
+  const target = f.value;
+  if (kind === 'frac') {
+    if (Math.abs(a.v - target) > 1e-9) return false;
+    if (!f.lowest) return true;
+    // โจทย์สั่ง "ตอบเป็นเศษส่วนอย่างต่ำ" — พิมพ์ทศนิยมมาถือว่ายังไม่ตรงรูปที่โจทย์ขอ
+    if (a.d == null) return Math.abs(target - Math.round(target)) < 1e-9;
+    const r = reduceFrac(a.n, a.d);
+    return r[0] === a.n && r[1] === a.d;
+  }
+  if (kind === 'int' || kind === 'exact') return Math.abs(a.v - target) < 1e-9;
+  if (kind === 'sci') {
+    const pc = Math.max(1, tolPct == null ? DB.settings.tolPct : tolPct) / 100;
+    return Math.abs(a.v - target) <= Math.abs(target) * pc + 1e-300;
+  }
+  const pct = (tolPct == null ? DB.settings.tolPct : tolPct) / 100;
+  const tol = Math.max(Math.abs(target) * pct, 0.005);
+  return Math.abs(a.v - target) <= tol + 1e-9;
+}
+/** ตัวเลือกปรนัยที่คำตอบเป็นสัญกรณ์วิทยาศาสตร์ — ตัวลวงมาจาก p.distractSci เป็นคู่ [ตัวหน้า, เลขชี้กำลัง]
+    ตัวลวงที่ดีคือเลขชี้กำลังผิด (ลืมกลับเครื่องหมาย บวกแทนลบ) เพราะนั่นคือจุดที่นักเรียนพลาดจริง */
+function makeSciChoices(p, R) {
+  const f0 = p.finds[0];
+  const key = (m, e) => { const o = sciNorm(m * Math.pow(10, e)); return o.m + 'e' + o.e; };
+  const seen = {};
+  seen[key(f0.man, f0.exp)] = 1;
+  const pool = [];
+  const push = pr => {
+    if (!pr || !isFinite(pr[0]) || !isFinite(pr[1]) || !pr[0]) return;
+    const o = sciNorm(pr[0] * Math.pow(10, pr[1]));
+    if (dpOf(o.m, 4) > 2 || seen[key(o.m, o.e)]) return;
+    if (o.m < 0 && f0.man > 0 && f0.positive) return;
+    seen[key(o.m, o.e)] = 1;
+    pool.push([o.m, o.e]);
+  };
+  (p.distractSci || []).forEach(push);
+  for (const pr of [[f0.man, f0.exp + 1], [f0.man, f0.exp - 1], [f0.man, -f0.exp], [f0.man * 2, f0.exp], [f0.man, f0.exp + 2]]) {
+    if (pool.length >= 6) break;
+    push(pr);
+  }
+  const picked = R.shuffle(pool).slice(0, 3);
+  const all = R.shuffle(picked.concat([[f0.man, f0.exp]]));
+  return all.map(pr => ({ value: pr[0] * Math.pow(10, pr[1]), text: sciTxt(pr[0], pr[1]),
+                          correct: pr[0] === f0.man && pr[1] === f0.exp }));
+}
+/** แยกค่าเป็น ตัวหน้า × 10^เลขชี้กำลัง โดย 1 ≤ |ตัวหน้า| < 10 และตัวหน้าปัดเป็นเลขนัยสำคัญ 3 ตัว */
+function sciNorm(v) {
+  if (!v || !isFinite(v)) return { m: 0, e: 0 };
+  let e = Math.floor(Math.log10(Math.abs(v)));
+  let m = Number((v / Math.pow(10, e)).toPrecision(3));
+  if (Math.abs(m) >= 10) { m = Number((m / 10).toPrecision(3)); e += 1; }
+  return { m: m, e: e };
+}
+/** ข้อความ a × 10^n สำหรับส่งให้ M() */
+function sciTxt(m, e) { return fmtq(m) + ' × 10^{' + e + '}'; }
+
+/* ============================================================================
+   ตัวช่วยเฉพาะวิชา — subjects/ijso/4-helpers.js
+   ตัววาดรูปประกอบโจทย์ (fig*) คลังคำที่แม่แบบใช้สุ่ม และชื่อขั้นของวิธีทำ 7 ขั้น (STEP_TITLES)
+   เอนจินสุ่มโจทย์อยู่ใน core/30-engine.js ใช้ร่วมกันทุกวิชา
+   ========================================================================== */
+const CARS   = ['รถยนต์', 'รถจักรยานยนต์', 'รถบรรทุก', 'รถไฟ', 'รถจักรยาน'];
+const BALLS  = ['ลูกบอล', 'ก้อนหิน', 'ลูกเหล็ก', 'ผลมะม่วง', 'เหรียญ'];
+const BOXES  = ['กล่อง', 'ลังไม้', 'กระสอบข้าว', 'ตู้เย็น', 'โต๊ะ'];
 /** พื้นเอียงพร้อมวัตถุ  opt:{deg, mass, forces:[{name  }], down  } */
 function figIncline(o) {
   const deg = o.deg, rad = deg * Math.PI / 180;
@@ -3166,7 +3697,6 @@ function figIncline(o) {
   if (o.fric) s += svgArrow(mx - ux * 13, my - uy * 13, mx - ux * 48, my - uy * 48, 'frc', o.fric, -8, 15);
   return svgWrap(W, H, s);
   }
-
 /** คานสมดุล  opt:{len, supports:[{x,label  }], loads:[{x,label,up  }], marks:[{x,label  }]   } x เป็นสัดส่วน 0..1 */
 function figBeam(o) {
   const W = 400, H = 150, x0 = 40, x1 = 360, y = 78;
@@ -3197,7 +3727,6 @@ function figBeam(o) {
     });
   return svgWrap(W, H, s);
   }
-
 /** เครื่องแอตวูด (รอกเดี่ยว มวลสองก้อนห้อย) */
 function figPulley(o) {
   const W = 300, H = 210; const cx = 150, cy = 42, r = 22;
@@ -3215,7 +3744,6 @@ function figPulley(o) {
   s += svgTxt(rx, ry + 20, o.m2 || '', 'middle');
   return svgWrap(W, H, s);
   }
-
 /** มวลบนโต๊ะผูกเชือกข้ามรอกกับมวลที่ห้อย */
 function figTablePulley(o) {
   const W = 360, H = 200; const ty = 80, tx0 = 30, tx1 = 250;
@@ -3232,7 +3760,6 @@ function figTablePulley(o) {
   if (o.fric) s += svgArrow(90, ty - 16, 46, ty - 16, 'frc', o.fric, 0, -8);
   return svgWrap(W, H, s);
   }
-
 /** บันไดพิงกำแพง */
 function figLadder(o) {
   const deg = o.deg, rad = deg * Math.PI / 180;
@@ -3250,7 +3777,6 @@ function figLadder(o) {
   if (o.w) s += svgArrow((bx + tx) / 2, (by + ty) / 2, (bx + tx) / 2, (by + ty) / 2 + 44, 'frc', o.w, 40, -2);
   return svgWrap(W, H, s);
   }
-
 /** กราฟความเร็ว-เวลา  pts:[[t,v],...] */
 function figVT(o) {
   // เผื่อขอบให้ชื่อแกนโดยเฉพาะ เดิมชื่อแกน t ไปชนตัวเลขขีดสุดท้าย และชื่อแกน v ล้นออกนอกกรอบ
@@ -3279,7 +3805,6 @@ function figVT(o) {
   o.pts.forEach(p => { s += '<circle class="arh" cx="' + n1(sx(p[0])) + '" cy="' + n1(sy(p[1])) + '" r="3"/>';   });
   return svgWrap(W, H, s);
   }
-
 /** แรงหลายแรงกระทำที่จุดเดียว  forces:[{deg,label,len  }] มุมวัดทวนเข็มจากแกน +x */
 /** แรงหลายแรงที่จุดเดียว — ใส่ f.lx / f.ly เพื่อขยับป้ายเองได้
     (จำเป็นเมื่อมีแรงทิศเดียวกันหลายแรง ป้ายจะไปกองทับกันที่เดิม) */
@@ -3297,7 +3822,6 @@ function figForcesPoint(o) {
   else s += '<circle class="bdy" cx="' + cx + '" cy="' + cy + '" r="7"/>';
   return svgWrap(W, H, s);
   }
-
 /** วัตถุหลายก้อนต่อกันด้วยเชือกบนพื้นราบ  masses:['m₁','m₂'] */
 function figChain(o) {
   const ms = o.masses, W = 400, H = 150, y = 90, bw = 50, bh = 34, gap = 34;
@@ -3318,7 +3842,6 @@ function figChain(o) {
   if (o.Fleft) s += svgArrow((W - total) / 2 - 62, y + bh / 2, (W - total) / 2 - 16, y + bh / 2, 'frc', o.Fleft, -30, -9);
   return svgWrap(W, H, s);
   }
-
 /** วัตถุแขวนด้วยเชือกสองเส้นทำมุมกับเพดาน */
 function figTwoRope(o) {
   const W = 340, H = 200, cx = 170, cy = 130, cyl = 26;
@@ -3339,7 +3862,6 @@ function figTwoRope(o) {
   s += svgTxt(cx, cy + cyl + 20, o.w || '', 'middle');
   return svgWrap(W, H, s);
   }
-
 /** การเคลื่อนที่แบบวงกลม  opt:{r,v,fc,center,vert  }
     vert = true จะวาดแนวดิ่งพร้อมทำเครื่องหมายจุดสูงสุด/ต่ำสุด */
 function figCircle(o) {
@@ -3370,7 +3892,6 @@ function figCircle(o) {
     }
   return svgWrap(W, H, s);
   }
-
 /** เส้นทางโพรเจกไทล์  opt:{mode:'h'|'a', h, u, deg, xlab, hlab, rlab  } */
 function figProj(o) {
   const W = 440, H = 262;
@@ -3415,265 +3936,9 @@ function figProj(o) {
     }
   return svgWrap(W, H, s);
   }
-
-/* --- 3.4 สร้างโจทย์จากแม่แบบ ---------------------------------------------
-   ตรวจว่าตัวเลขที่สุ่มออกมา "สวย" พอจะให้นักเรียนคิดได้ ถ้าไม่สวยจะสุ่มใหม่
-   -------------------------------------------------------------------------- */
-const TPL = [];                 // คลังแม่แบบ เติมในส่วนถัดไป
-const TPL_BY_ID = {  };
-
-function niceProblem(p) {
-  if (!p || !p.finds || !p.finds.length) return false;
-  for (const f of p.finds) {
-    if (typeof f.value !== 'number' || !isFinite(f.value)) return false;
-    // คำตอบติดรูทไม่มีทางเป็นทศนิยมสองตำแหน่ง ต้องข้ามด่านนี้ ไม่งั้นถูกตีตกทุกเมล็ด
-    if (f.sur) continue;
-    if (Math.abs(f.value) > 1e6) return false;
-    if (f.value !== 0 && Math.abs(f.value) < 0.01) return false;
-    if (dpOf(f.value, 4) > 2) return false;
-    }
-  return true;
-  }
-
-/* ── คำตอบติดรูท ───────────────────────────────────────────────────────
-   แม่แบบเขียนไว้ว่า  finds: [{ ..., value: 28.2842, sur: [20, 2, 1]   }]
-   หมายถึงคำตอบคือ 20√2 ⁄ 1 · ช่อง value ยังต้องมีไว้ให้ที่อื่นใช้คำนวณต่อ
-   นักเรียนกรอกสามช่อง แล้วตรวจจากรูปอย่างง่าย ไม่ใช่จากค่าทศนิยม        */
-function surdGcd(a, b) { a = Math.abs(a); b = Math.abs(b); while (b) { const t = a % b; a = b; b = t;   } return a || 1;   }
-/** ย่อ a√b ⁄ c ให้เป็นรูปอย่างง่าย แล้วคืนเป็นข้อความไว้เทียบกันตรง ๆ
-    ตั้งใจให้ 10√8 กับ 20√2 ผ่านทั้งคู่ เพราะเป็นจำนวนเดียวกัน แค่ยังไม่ลดรูป
-    สิ่งที่ตั้งใจกันคือการตอบเป็นทศนิยม ซึ่งไม่ใช่การตอบติดรูท
-    ถ้าครูอยากบังคับให้ลดรูปด้วย ให้เทียบ a กับ b ตรง ๆ แทนการเทียบรูปย่อ */
-function surdCanon(a, b, c) {
-  a = Math.round(Number(a)); b = Math.round(Number(b)); c = Math.round(Number(c) || 1);
-  if (!isFinite(a) || !isFinite(b) || !isFinite(c) || b < 1 || !c) return null;
-  if (c < 0) { a = -a; c = -c;   }
-  for (let d = 2; d * d <= b; d++) { while (b % (d * d) === 0) { b = b / (d * d); a = a * d;   }   }
-  const g = surdGcd(a, c);
-  return (a / g) + '√' + b + '/' + (c / g);
-  }
-/** อ่านค่าที่นักเรียนกรอกจากสามช่อง เก็บรวมไว้เป็นข้อความ "a|b|c" ในช่องเดิม */
-function parseSurd(raw) {
-  const p = String(raw == null ? '' : raw).split('|');
-  const a = p[0] === '' || p[0] == null ? NaN : Number(p[0]);
-  const b = p[1] === '' || p[1] == null ? NaN : Number(p[1]);
-  const c = p[2] === '' || p[2] == null ? 1 : Number(p[2]);
-  if (![a, b, c].every(x => isFinite(x) && Math.abs(x - Math.round(x)) < 1e-9)) return null;
-  if (b < 1 || !c) return null;
-  return { a: a, b: b, c: c   };
-  }
-function surdOK(raw, sur) {
-  const u = parseSurd(raw);
-  if (!u) return false;
-  const x = surdCanon(u.a, u.b, u.c), y = surdCanon(sur[0], sur[1], sur[2] == null ? 1 : sur[2]);
-  return !!x && x === y;
-  }
-/** เขียนคำตอบติดรูทเป็นสูตรให้ M() เรนเดอร์ */
-function surdExpr(sur) {
-  const a = Math.round(sur[0]), b = Math.round(sur[1]), c = Math.round(sur[2] == null ? 1 : sur[2]);
-  const top = (b === 1) ? String(a) : (a === 1 ? 'sqrt(' + b + ')' :
-              (a === -1 ? '-sqrt(' + b + ')' : a + ' sqrt(' + b + ')'));
-  return c === 1 ? top : 'frac(' + top + ',' + c + ')';
-  }
-/** ข้อความคำตอบของช่องหนึ่ง — ติดรูทก็แสดงเป็นรูท ไม่ใช่ทศนิยมยาว ๆ */
-function ansExpr(f) { return f.sur ? surdExpr(f.sur) : fmtq(f.value);   }
-
-/** สร้างโจทย์หนึ่งข้อจาก tplId + seed — ผลลัพธ์เหมือนเดิมทุกครั้งที่เรียกด้วยค่าเดิม */
-function buildProblem(tplId, seed, cfg) {
-  const tpl = TPL_BY_ID[tplId];
-  if (!tpl) return null;
-  const c = cfg || { g: 9.8   };
-  const g = (tpl.level === 'ง่าย' && c.easyG10) ? 10 : c.g;
-  let last = null;
-  // แม่แบบที่เงื่อนไขเลขสวยรัดกุมมาก (เช่น ต้องได้รากที่สองลงตัว) อาจต้องสุ่มหลายรอบ
-  // ลูปนี้ออกทันทีที่เจอชุดตัวเลขที่ใช้ได้ จำนวนรอบสูงสุดจึงไม่มีผลกับความเร็วในกรณีปกติ
-  for (let k = 0; k < 400; k++) {
-    const R = rng((seed >>> 0) + k * 7919);
-    let p = null;
-    try { p = tpl.gen(R, { g: g   });   } catch (e) { continue;   }
-    if (!p) continue;
-    last = p;
-    // โจทย์ทฤษฎีไม่มีคำตอบเป็นตัวเลข จึงข้ามการคัดกรองเลขสวยไปได้เลย
-    if (tpl.level === THEORY_LEVEL || niceProblem(p)) { return finishProblem(p, tpl, seed, g);   }
-    }
-  // สุ่มจนครบแล้วยังไม่ได้เลขสวย — ยอมรับรอบสุดท้ายแล้วปัดเป็นทศนิยม 2 ตำแหน่ง
-  if (last) { last.rough = true; return finishProblem(last, tpl, seed, g);   }
-  return null;
-  }
-
-function finishProblem(p, tpl, seed, g) {
-  p.tplId = tpl.id; p.seed = seed; p.topic = tpl.topic; p.level = tpl.level;
-  p.sub = tpl.sub; p.skills = tpl.skills || []; p.g = g;
-  if (tpl.level === THEORY_LEVEL) {
-    // โจทย์ทฤษฎี: ตัวเลือกเป็นข้อความ แม่แบบสร้างมาให้ครบแล้ว ไม่มีตารางกำหนดให้/สิ่งที่ต้องหา
-    p.theory = true; p.given = p.given || []; p.finds = p.finds || [];
-    return p;
-    }
-  p.finds.forEach(f => { f.value = round2(f.value);   });
-  // ระดับง่ายตอบแบบปรนัย — สร้างตัวเลือกจากตัวลวงที่แม่แบบให้มา
-  if (tpl.level === 'ง่าย' && p.finds.length === 1) {
-    p.choices = makeChoices(p, rng(((seed >>> 0) ^ 0x5bf03635) >>> 0));
-    }
-  return p;
-  }
-
-/** สร้างตัวเลือก 4 ตัว: คำตอบถูก + ตัวลวงจากความเข้าใจผิด (เติมด้วยตัวลวงทั่วไปถ้าไม่พอ) */
-function makeChoices(p, R) {
-  const ans = round2(p.finds[0].value);
-  const pool = [];
-  const push = v => {
-    if (typeof v !== 'number' || !isFinite(v)) return;
-    const r = round2(v);
-    if (Math.abs(r - ans) < 0.005) return;                 // ซ้ำกับคำตอบถูก
-    if (r < 0 && ans > 0 && p.finds[0].positive) return;   // ค่าที่เป็นไปไม่ได้เชิงฟิสิกส์
-    if (pool.some(x => Math.abs(x - r) < 0.005)) return;   // ซ้ำกันเอง
-    if (dpOf(r, 4) > 2) return;
-    pool.push(r);
-    };
-  (p.distract || []).forEach(push);
-  const gen = [ans * 2, ans / 2, ans + Math.max(1, Math.round(Math.abs(ans) * 0.2)),
-               ans - Math.max(1, Math.round(Math.abs(ans) * 0.2)), ans * 1.5, ans / 4, ans * 10];
-  for (const v of gen) { if (pool.length >= 6) break; push(v);   }
-  const picked = R.shuffle(pool).slice(0, 3);
-  const all = R.shuffle(picked.concat([ans]));
-  return all.map(v => ({ value: v, correct: Math.abs(v - ans) < 0.005   }));
-  }
-
-/* --- 3.5 การตรวจคำตอบ ----------------------------------------------------- */
-/** อ่านตัวเลขจากสิ่งที่นักเรียนพิมพ์ รองรับ 1,200 / +5 / 2.5x10^3 / 2.5e3 */
-function parseNum(raw) {
-  if (raw == null) return null;
-  let s = String(raw).trim().replace(/[,\s]/g, '').replace(/^\+/, '');
-  s = s.replace(/[×xX]10\^?/, 'e').replace(/E/, 'e');
-  if (s === '' || !/^-?(\d+\.?\d*|\.\d+)(e[-+]?\d+)?$/.test(s)) return null;
-  const n = Number(s);
-  return isFinite(n) ? n : null;
-  }
-/** เทียบคำตอบโดยยอมให้คลาดเคลื่อนตามเปอร์เซ็นต์ที่ตั้งไว้ (เผื่อการปัดเศษระหว่างทาง) */
-function checkNum(user, target, tolPct) {
-  if (user == null) return false;
-  const pct = (tolPct == null ? DB.settings.tolPct : tolPct) / 100;
-  const tol = Math.max(Math.abs(target) * pct, 0.005);
-  return Math.abs(user - target) <= tol + 1e-9;
-  }
-
 /* --- 3.6 วาดวิธีทำ 7 ขั้น ------------------------------------------------- */
 const STEP_TITLES = ['วิเคราะห์โจทย์', 'เขียนโจทย์กำหนด', 'วิเคราะห์สมการที่ใช้',
                      'แก้สมการ', 'แทนค่าลงในสมการ', 'คำนวณ', 'สรุปคำตอบ'];
-
-/** ตารางสิ่งที่โจทย์กำหนดให้ + สิ่งที่ต้องหา (สร้างอัตโนมัติจากข้อมูลโจทย์) */
-function givenTable(p) {
-  let h = '<table class="given"><tbody>';
-  p.given.forEach(gv => {
-    h += '<tr><td class="s">' + M(gv.s) + '</td><td class="e">=</td>' +
-      '<td class="v">' + (typeof gv.v === 'number' ? fmt(gv.v) : gv.v) + '</td>' +
-      '<td class="d">' + (gv.unit ? esc(gv.unit) : '') + (gv.d ? ' &nbsp;(' + esc(gv.d) + ')' : '') + '</td></tr>';
-    });
-  p.finds.forEach(f => {
-    h += '<tr><td class="s">' + M(f.s) + '</td><td class="e">=</td>' +
-      '<td class="v" style="color:var(--muted)">?</td>' +
-      '<td class="d">' + (f.unit ? esc(f.unit) : '') + (f.d ? ' &nbsp;(' + esc(f.d) + ')' : '') + '</td></tr>';
-    });
-  return h + '</tbody></table>';
-  }
-
-function stepBodies(p) {
-  if (p.theory) return [p.idea, choiceWhyHTML(p), p.why];
-  const s = p.sol;
-  const eqHtml = (s.eqs || []).map(e =>
-    '<div>' + EQ(e.eq) + (e.why ? '<div class="why">' + e.why + '</div>' : '') + '</div>').join('');
-  const lines = a => (Array.isArray(a) ? a : [a]).filter(Boolean).join('');
-  return [
-    s.analyze,
-    givenTable(p),
-    eqHtml,
-    lines(s.solve),
-    lines(s.subst),
-    lines(s.calc),
-    s.conclude
-  ];
-  }
-
-/** กล่องอธิบายของโจทย์ทฤษฎี — แนวคิดหลัก + เหตุผลรายตัวเลือก + ข้อสรุปที่ต้องจำ */
-function theorySolutionHTML(p, open) {
-  const rows = [
-    { n: 1, t: 'แนวคิดที่ใช้ตอบ', b: p.idea   },
-    { n: 2, t: 'ทำไมข้อนี้ถูก และข้ออื่นผิดตรงไหน', b: choiceWhyHTML(p)   },
-    { n: 3, t: 'สิ่งที่ต้องจำไปใช้ต่อ', b: p.why   }
-  ];
-  let h = '<div class="sol">';
-  rows.forEach(r => {
-    h += '<div class="solstep' + (open ? '' : ' closed') + '" data-step="' + (r.n - 1) + '">' +
-      '<div class="h"><span class="n">' + r.n + '</span>' + r.t +
-      (open ? '' : '<span class="cv">แตะเพื่อดู</span>') + '</div>' +
-      '<div class="b">' + (r.b || '<span class="hint">—</span>') + '</div></div>';
-    });
-  return h + '</div>';
-  }
-/** ไล่อธิบายทีละตัวเลือกว่าถูกหรือผิดเพราะอะไร */
-function choiceWhyHTML(p) {
-  return '<div class="whylist">' + (p.choices || []).map((c, k) =>
-    '<div class="whyrow ' + (c.correct ? 'ok' : 'no') + '">' +
-    '<span class="wk">' + 'กขคง'[k] + '.</span>' +
-    '<span class="wt">' + c.text + '</span>' +
-    '<span class="wm">' + (c.correct ? '✓ ถูก' : '✗ ผิด') + '</span>' +
-    (c.why ? '<div class="wd">' + c.why + '</div>' : '') + '</div>').join('') + '</div>';
-  }
-
-/** โหมด open=true จะกางทุกขั้น (ใช้ตอนพิมพ์) */
-function solutionHTML(p, open) {
-  if (p.theory) return theorySolutionHTML(p, open);
-  const b = stepBodies(p);
-  const L = workLines(1);
-  let h = '<div class="sol">';
-  
-  h += '<div class="row noprint" style="justify-content:flex-end; margin-bottom: 8px;">' +
-       '<button class="sm" type="button" onclick="this.closest(\'.sol\').classList.toggle(\'hide-steps\'); ' +
-       'this.innerHTML = this.closest(\'.sol\').classList.contains(\'hide-steps\') ? \'👁️ แสดงวิธีทำทั้งหมด\' : \'👁️ ซ่อนข้อความ (เว้นบรรทัดไว้เขียน)\'">' +
-       '👁️ ซ่อนข้อความ (เว้นบรรทัดไว้เขียน)</button></div>';
-
-  for (let i = 0; i < 7; i++) {
-    const blockId = WORK_BLOCKS[i] ? WORK_BLOCKS[i].id : null;
-    const count = L[blockId] || 0;
-    const linesHTML = count > 0 ? '<div class="sol-lines" style="display:none; padding: 6px 0;">' + 
-                      new Array(count + 1).join('<div class="wl"></div>') + 
-                      '</div>' : '<div class="sol-lines" style="display:none"><div class="hint" style="margin-top:8px">— ไม่มีบรรทัดในช่องนี้ —</div></div>';
-
-    h += '<div class="solstep' + (open ? '' : ' closed') + '" data-step="' + i + '">' +
-      '<div class="h"><span class="n">' + (i + 1) + '</span>' + STEP_TITLES[i] +
-      (open ? '' : '<span class="cv">แตะเพื่อดู</span>') + '</div>' +
-      '<div class="b"><div class="sol-text">' + (b[i] || '<span class="hint">—</span>') + '</div>' +
-      linesHTML + '</div></div>';
-    }
-  return h + '</div>';
-  }
-
-/** ผูกให้แตะหัวข้อแล้วพับ/กางได้ */
-function bindSolutionToggle(root) {
-  $$('.solstep>.h', root).forEach(h => {
-    h.addEventListener('click', () => {
-      const st = h.parentElement;
-      st.classList.toggle('closed');
-      const cv = $('.cv', h);
-      if (cv) cv.textContent = st.classList.contains('closed') ? 'แตะเพื่อดู' : 'แตะเพื่อซ่อน';
-      });
-    });
-  }
-
-/* --- 3.7 วาดตัวโจทย์ ------------------------------------------------------ */
-function topicName(id) { const t = topicOf(id); return t ? t.name : '';   }
-function problemHead(p, no) {
-  const t = topicOf(p.topic);
-  return '<div class="qhead">' +
-    (no ? '<span class="qno">ข้อ ' + no + '</span>' : '') +
-    '<span class="tag ' + LEVEL_CLS[p.level] + '">' + p.level + '</span>' +
-    (t ? '<span class="tag t">' + (t.exam ? '🎓 ' : '') + chLabel(t) + ' ' + esc(t.name) + '</span>' : '') +
-    '<span class="tag t">' + esc(p.sub) + '</span>' +
-    '</div>';
-  }
-function problemBody(p) {
-  return '<div class="stem">' + p.stem + '</div>' + (p.figure ? '<div class="fig">' + p.figure + '</div>' : '');
-  }
 
 /* @@SECTION-ENGINE-END@@ */
 
@@ -7741,44 +8006,9 @@ const ES_SYMS = [
 ];
 
 
-/* ============================================================
-   UI Theme Style Controller (Vibrant EdTech & Minimal Focus Mode)
-   ============================================================ */
-function getThemeStyle() {
-  try { return localStorage.getItem('ui_theme_style') || 'vibrant';   } catch(e) { return 'vibrant';   }
-  }
 
-function applyThemeStyle(style) {
-  if (style === 'minimal') {
-    document.documentElement.setAttribute('data-theme-style', 'minimal');
-    } else {
-    document.documentElement.removeAttribute('data-theme-style');
-    }
-  try { localStorage.setItem('ui_theme_style', style);   } catch(e) {  }
-  updateThemeSwitcherUI();
-  }
 
-function toggleThemeStyle() {
-  const cur = getThemeStyle();
-  const next = cur === 'minimal' ? 'vibrant' : 'minimal';
-  applyThemeStyle(next);
-  toast(next === 'minimal' ? '🎯 เปิดโหมดโฟกัส (คลีนมินิมอล)' : '✨ เปิดโหมดสีสันสดใส (Modern EdTech)', 'ok');
-  }
 
-function updateThemeSwitcherUI() {
-  const btn = $('#btnThemeStyle');
-  if (!btn) return;
-  const cur = getThemeStyle();
-  if (cur === 'minimal') {
-    btn.innerHTML = '🎯 <span class="theme-label">มินิมอล</span>';
-    btn.title = 'คลิกเพื่อสลับเป็นโหมดสีสันสดใส (Modern EdTech)';
-    btn.classList.add('on');
-    } else {
-    btn.innerHTML = '✨ <span class="theme-label">สีสันสดใส</span>';
-    btn.title = 'คลิกเพื่อสลับเป็นโหมดโฟกัสคลีนมินิมอล';
-    btn.classList.remove('on');
-    }
-  }
 
 /* ============================================================
    In-App PDF Viewer Engine (Open-Book Notes Reader)
@@ -13891,6 +14121,7 @@ function checkCurrent() {
     score = p.choices[it.pick].correct ? 1 : 0;
     } else {
     let blank = 0, hit = 0, badForm = 0;
+    const unread = [];   // กรอกแล้วแต่อ่านเป็นตัวเลขไม่ได้
     p.finds.forEach((f, k) => {
       if (f.sur) {
         /* ตรวจจากรูปอย่างง่าย ไม่ใช่จากค่าทศนิยม ตอบ 28.28 แทน 20√2 จึงไม่ผ่าน
@@ -13905,9 +14136,15 @@ function checkCurrent() {
         return;
         }
       const v = parseNum(it.raw[k]);
-      if (v == null) blank++;
+      if (v == null) { if (String(it.raw[k] == null ? '' : it.raw[k]).trim()) unread.push(k); else blank++; }
       else if (checkNum(v, f.value)) hit++;
       });
+    /* เดิมช่องที่อ่านไม่ได้ถูกนับเป็นช่องว่าง ข้อหลายช่องจึงได้ 0 เงียบ ๆ และแบบฝึกหัดล็อกคะแนนครั้งแรกไปแล้ว
+       ตอนนี้บอกให้แก้ก่อน และยังไม่นับเป็นการตรวจ */
+    if (unread.length) {
+      toast((p.finds.length > 1 ? 'ช่องที่ ' + unread.map(k => k + 1).join(', ') + ' — ' : '') + ansIssue(it.raw[unread[0]]), 'bad');
+      return;
+    }
     if (badForm && blank + badForm === p.finds.length) {
       toast('ข้อนี้ต้องตอบติดรูท กรอกเป็นจำนวนเต็มทั้งสามช่อง เช่น 20 √2 ⁄ 1', 'bad');
       return;
@@ -14151,6 +14388,8 @@ function renderResult() {
     '<div class="stat"><div class="v">' + Math.round(res.pct) + '%</div><div class="k">คิดเป็นร้อยละ</div></div>' +
     '<div class="stat"><div class="v">' + (res.pct >= DB.settings.passPct ? 'ผ่าน' : 'ไม่ผ่าน') +
       '</div><div class="k">เกณฑ์ ' + DB.settings.passPct + '%</div></div>' +
+    (a.finishedAt ? '<div class="stat"><div class="v" style="font-size:1.15rem">' + thDate(a.finishedAt) +
+      '</div><div class="k">วันที่ส่ง · ' + thDateTime(a.finishedAt).split(' ').pop() + ' น.</div></div>' : '') +
     '<div class="stat"><div class="v">' + mmss(res.sec) + '</div><div class="k">เวลาที่ใช้ทั้งหมด</div></div>' +
     '<div class="stat"><div class="v">' + mmss(res.n ? res.sec / res.n : 0) + '</div><div class="k">เฉลี่ยต่อข้อ</div></div>' +
     '<div class="stat"><div class="v">' + res.revealed + '</div><div class="k">ข้อที่เปิดดูวิธีทำ</div></div>' +
@@ -14468,7 +14707,7 @@ function renderStats() {
     (showRoomCol ? '<th class="num">ห้อง</th>' : '') +
     (showId ? '<th class="num">เลขที่</th><th class="num">เลขประจำตัว</th>' : '') +
     '<th>ชื่อ</th><th class="num">คะแนน</th><th class="num">ร้อยละ</th>' +
-    '<th>ผล</th><th class="num">เวลา</th>' +
+    '<th>ผล</th><th class="num">เวลา</th><th>วันที่ส่ง</th>' +
     // คอลัมน์นี้ขึ้นเฉพาะเมื่อมีคนในชุดนี้ถูกคุมสอบจริง ไม่งั้นตารางจะรกขึ้นมาเปล่า ๆ
     (rows.some(x => x.r.nOut || x.r.autoBy) ? '<th class="num">ออกจากแอป</th>' : '') +
     '<th>จุดที่ต้องพัฒนา</th></tr></thead><tbody>';
@@ -14485,6 +14724,7 @@ function renderStats() {
       '<td>' + (x.r.pct >= DB.settings.passPct ? '<span style="color:var(--ok)">ผ่าน</span>'
         : '<span style="color:var(--bad)">ไม่ผ่าน</span>') + '</td>' +
       '<td class="num">' + mmss(x.r.sec) + '</td>' +
+      '<td style="white-space:nowrap">' + thDateTime(x.a.finishedAt) + '</td>' +
       (rows.some(y => y.r.nOut || y.r.autoBy)
         ? '<td class="num">' + (x.r.nOut ? '<b>' + x.r.nOut + '</b> (' + mmss(x.r.secOut) + ')' : '—') +
           (x.r.autoBy ? ' ⚠' : '') + '</td>' : '') +
@@ -17690,62 +17930,69 @@ function renderPrint() {
 /* @@SECTION-PRINT-END@@ */
 
 /* ============================================================================
-   8) ชุดทดสอบตัวเอง — เปิดด้วย ijso.html?selftest=1
+   8) ชุดทดสอบตัวเอง — เปิดด้วย <ไฟล์ครู>.html?selftest=1
    วนสร้างทุกแม่แบบหลาย seed แล้วตรวจว่าโจทย์และเฉลยไม่มีอะไรพัง
    ========================================================================== */
 function runSelfTest(seeds) {
   const N = seeds || 200, fails = [];
-  const bad = s => {
-  const isBad = typeof s === 'string' && /undefined|NaN|Infinity|\{[a-zA-Z_]\w*}/.test(s);
-  if (isBad) console.log('BAD STRING:', s);
-  return isBad;
-};
+  // ใช้ขอบเขตคำ ไม่งั้นสูตรเคมีอย่าง NaNO3 หรือ NaCl จะถูกฟ้องว่าเป็น NaN
+  const bad = s => typeof s === 'string' && /\bundefined\b|\bNaN\b|\bInfinity\b|\{[a-zA-Z_]\w*\}/.test(s);
   TPL.forEach(tpl => {
     for (let s = 1; s <= N; s++) {
-      const p = buildProblem(tpl.id, s * 104729, { g: DB.settings.g, easyG10: DB.settings.easyG10   });
-      if (!p) { fails.push(tpl.id + ' seed=' + s + ': สร้างโจทย์ไม่ได้'); continue;   }
+      const p = buildProblem(tpl.id, s * 104729, { g: DB.settings.g, easyG10: DB.settings.easyG10, piMode: DB.settings.piMode });
+      if (!p) { fails.push(tpl.id + ' seed=' + s + ': สร้างโจทย์ไม่ได้'); continue; }
       p.finds.forEach((f, k) => {
+        const kd = f.kind || 'num';
         if (typeof f.value !== 'number' || !isFinite(f.value)) fails.push(tpl.id + ' seed=' + s + ': คำตอบ[' + k + '] ไม่ใช่ตัวเลข');
-        else if (dpOf(f.value, 4) > 2) fails.push(tpl.id + ' seed=' + s + ': คำตอบ[' + k + '] ทศนิยมเกิน 2 (' + f.value + ')');
+        else if (kd === 'frac' && (!f.den || f.den > 24 || reduceFrac(f.num, f.den)[1] !== f.den))
+          fails.push(tpl.id + ' seed=' + s + ': คำตอบ[' + k + '] เป็นเศษส่วนที่ยังไม่อย่างต่ำ หรือตัวส่วนเกิน 24 (' + f.num + '/' + f.den + ')');
+        else if (kd === 'int' && Math.abs(f.value - Math.round(f.value)) > 1e-9)
+          fails.push(tpl.id + ' seed=' + s + ': คำตอบ[' + k + '] ควรเป็นจำนวนเต็ม (' + f.value + ')');
+        else if (kd === 'sci' && (!(Math.abs(f.man) >= 1 && Math.abs(f.man) < 10) || dpOf(f.man, 4) > 2 || f.exp !== Math.round(f.exp)))
+          fails.push(tpl.id + ' seed=' + s + ': คำตอบ[' + k + '] สัญกรณ์วิทยาศาสตร์ไม่อยู่ในรูป a × 10^n (' + f.man + ', ' + f.exp + ')');
+        else if (kd === 'num' && dpOf(f.value, 4) > 2) fails.push(tpl.id + ' seed=' + s + ': คำตอบ[' + k + '] ทศนิยมเกิน 2 (' + f.value + ')');
         else if (f.positive && f.value <= 0) fails.push(tpl.id + ' seed=' + s + ': คำตอบ[' + k + '] ควรเป็นบวก (' + f.value + ')');
-        });
+      });
       p.given.forEach((g, k) => {
         if (typeof g.v === 'number' && (!isFinite(g.v) || dpOf(g.v, 4) > 2))
           fails.push(tpl.id + ' seed=' + s + ': ค่าที่กำหนดให้[' + k + '] ไม่สวย (' + g.v + ')');
-        });
+      });
       if (bad(p.stem)) fails.push(tpl.id + ' seed=' + s + ': ข้อความโจทย์ผิดปกติ');
       const b = stepBodies(p);
       if (b.length !== (p.theory ? 3 : 7)) fails.push(tpl.id + ' seed=' + s + ': จำนวนขั้นอธิบายไม่ถูกต้อง');
       b.forEach((x, k) => {
         if (!x || !String(x).trim()) fails.push(tpl.id + ' seed=' + s + ': ขั้นที่ ' + (k + 1) + ' ว่าง');
         if (bad(x)) fails.push(tpl.id + ' seed=' + s + ': ขั้นที่ ' + (k + 1) + ' มีข้อความผิดปกติ');
-        });
+      });
       if (tpl.level === 'ง่าย' || p.theory) {
         if (!p.choices || p.choices.length !== 4) fails.push(tpl.id + ' seed=' + s + ': ตัวเลือกไม่ครบ 4');
         else {
           if (p.choices.filter(c => c.correct).length !== 1) fails.push(tpl.id + ' seed=' + s + ': ตัวเลือกที่ถูกไม่ใช่ 1 ตัว');
-          const v = p.theory ? p.choices.map(c => c.text) : p.choices.map(c => c.value.toFixed(2));
+          // ตัวเลือกที่เป็นเศษส่วนมี text มาด้วย ต้องเทียบด้วยข้อความ
+          // ถ้าเทียบด้วยทศนิยม 2 ตำแหน่ง เศษส่วนคนละตัวอย่าง 2/13 กับ 3/20 จะถูกนับว่าซ้ำกัน
+          const v = p.theory ? p.choices.map(c => c.text)
+                            : p.choices.map(c => (c.text != null ? c.text : c.value.toFixed(2)));
           if (new Set(v).size !== 4) fails.push(tpl.id + ' seed=' + s + ': ตัวเลือกซ้ำกัน');
-          }
-        if (p.theory && (!p.idea || !p.why)) fails.push(tpl.id + ' seed=' + s + ': ขาดคำอธิบายแนวคิดหรือข้อสรุป');
         }
+        if (p.theory && (!p.idea || !p.why)) fails.push(tpl.id + ' seed=' + s + ': ขาดคำอธิบายแนวคิดหรือข้อสรุป');
       }
-    });
+    }
+  });
   // ตรวจว่าทุกบทมีแม่แบบครบทุกระดับ — สำคัญมากตอนเพิ่มบทใหม่ จะได้รู้ว่ายังขาดตรงไหน
   TOPICS.forEach(t => LEVELS.forEach(l => {
     const n = TPL.filter(x => x.topic === t.id && x.level === l).length;
     if (!n) fails.push('เรื่อง "' + t.name + '" ยังไม่มีแม่แบบระดับ' + l + ' เลย');
     else if (n < 3) fails.push('เรื่อง "' + t.name + '" ระดับ' + l + ' มีแค่ ' + n +
       ' แม่แบบ (ควรมีอย่างน้อย 3 เพื่อไม่ให้โจทย์ซ้ำเร็วเกินไป)');
-    }));
+  }));
   const orphan = TPL.filter(x => ALL_TOPIC_IDS.indexOf(x.topic) < 0);
   orphan.forEach(x => fails.push('แม่แบบ ' + x.id + ' อ้างเรื่อง id=' + x.topic + ' ที่ไม่มีในสารบัญ TOPICS'));
 
   const uniq = Array.from(new Set(fails));
-  const counts = {  };
+  const counts = {};
   TOPICS.forEach(t => LEVELS.forEach(l => {
     counts[t.id + '|' + l] = TPL.filter(x => x.topic === t.id && x.level === l).length;
-    }));
+  }));
   document.body.classList.remove('docpreview');
   $('#printarea').innerHTML = '';
   $('#pane-make').innerHTML =
@@ -17764,11 +18011,12 @@ function runSelfTest(seeds) {
       ? '<div class="notice bad" style="margin-top:12px"><b>พบข้อผิดพลาด</b><br>' +
         uniq.slice(0, 50).map(esc).join('<br>') + (uniq.length > 50 ? '<br>… อีก ' + (uniq.length - 50) + ' รายการ' : '') + '</div>'
       : '<div class="notice info" style="margin-top:12px">ผ่านทั้งหมด — ทุกแม่แบบสร้างโจทย์ได้ ' +
-        'คำตอบเป็นตัวเลขที่มีทศนิยมไม่เกิน 2 ตำแหน่ง วิธีทำครบ 7 ขั้น และตัวเลือกปรนัยถูกต้อง</div>') +
+        'คำตอบอยู่ในรูปที่กำหนดไว้ (จำนวนเต็ม ทศนิยมไม่เกิน 2 ตำแหน่ง เศษส่วนอย่างต่ำ หรือ a × 10ⁿ) ' +
+        'วิธีทำครบ 7 ขั้น และตัวเลือกปรนัยถูกต้อง</div>') +
     '<div class="row" style="margin-top:12px"><button class="primary" id="stBack">กลับสู่หน้าปกติ</button></div></div>';
-  $('#stBack').addEventListener('click', () => { location.href = location.pathname;   });
+  $('#stBack').addEventListener('click', () => { location.href = location.pathname; });
   return uniq;
-  }
+}
 
 /* ============================================================================
    9) เริ่มต้นโปรแกรม

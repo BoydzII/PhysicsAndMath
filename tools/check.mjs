@@ -13,6 +13,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { checkAll as assembledMismatch } from './assemble.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -25,6 +26,7 @@ const FILES = [
   'ScienceAutoSheet/science.html',   'ScienceAutoSheet/index.html',
   'BiologyAutoSheet/bio.html',       'BiologyAutoSheet/index.html',
   'PhysicalScienceAutoSheet/physci.html', 'PhysicalScienceAutoSheet/index.html',
+  'IJSOAutoSheet/ijso.html',         'IJSOApp/index.html',
   'EquilibriumLab/equilibrium.html', 'EquilibriumLab/index.html',
   // ห้องวาดรูปโจทย์เป็นเครื่องมือของครู มีไฟล์เดียว ไม่มีฉบับนักเรียน จึงไม่มีคู่ใน PAIRS
   'FigureLab/figure.html',
@@ -41,8 +43,29 @@ const PAIRS = [
   ['ScienceAutoSheet/science.html',   'ScienceAutoSheet/index.html'],
   ['BiologyAutoSheet/bio.html',       'BiologyAutoSheet/index.html'],
   ['PhysicalScienceAutoSheet/physci.html', 'PhysicalScienceAutoSheet/index.html'],
+  ['IJSOAutoSheet/ijso.html',         'IJSOApp/index.html'],
   ['EquilibriumLab/equilibrium.html', 'EquilibriumLab/index.html']
 ];
+
+/* ไฟล์ .html ทุกไฟล์ในโฟลเดอร์แอปต้องเป็นแอปของโฟลเดอร์นั้นจริง (ดูจาก <title> และคีย์ localStorage)
+   เคยพลาดมาแล้วสองครั้ง: หน้าแอปฟิสิกส์ 2 ถูกคัดลอกหน้าวิทย์กายภาพทับทั้งไฟล์
+   และ IJSOAutoSheet/index.html เป็นสำเนาวิทย์กายภาพที่ใช้คีย์ physciquiz.v1 ค้างอยู่
+   ถ้าเปิดไฟล์นั้นจะอ่าน-เขียนข้อมูลของวิทย์กายภาพ ทั้งสองกรณีไม่มีอะไรฟ้องเลย */
+const IDENT = {
+  PhysicsAutoSheet:         { title: 'คลังโจทย์ฟิสิกส์ ม.4',        key: 'physicsquiz.v1' },
+  MathAutoSheet:            { title: 'คลังโจทย์คณิตศาสตร์',        key: 'mathquiz.v1' },
+  PhysicsFoundation:        { title: 'ปรับพื้นฐานฟิสิกส์',           key: 'physfoundquiz.v1' },
+  ChemistryAutoSheet:       { title: 'คลังโจทย์เคมี',              key: 'chemquiz.v1' },
+  ScienceAutoSheet:         { title: 'คลังโจทย์วิทยาศาสตร์ ม.1',     key: 'sciquiz.v1' },
+  BiologyAutoSheet:         { title: 'คลังโจทย์ชีววิทยา',          key: 'bioquiz.v1' },
+  PhysicalScienceAutoSheet: { title: 'คลังโจทย์วิทยาศาสตร์กายภาพ',  key: 'physciquiz.v1' },
+  IJSOAutoSheet:            { title: 'คลังโจทย์IJSO',              key: 'ijsoquiz.v1' },
+  IJSOApp:                  { title: 'คลังโจทย์IJSO',              key: 'ijsoquiz.v1' },
+  EquilibriumLab:           { title: 'ห้องเรียนสมดุลกล' },
+  Physics2App:              { title: 'ฟิสิกส์ 2' },
+  FigureLab:                { title: 'ห้องวาดรูปโจทย์' },
+  WorkDesk:                 { title: 'ส่งงานออนไลน์' }
+};
 
 const RE_BUILTIN = /\/\* @@BUILTIN@@ \*\/[\s\S]*?\/\* @@BUILTIN-END@@ \*\//;
 let fail = 0;
@@ -77,6 +100,16 @@ for (const rel of FILES) {
     (html.length / 1024).toFixed(0) + ' KB)');
 }
 
+/* ไฟล์ครูต้องตรงกับผลประกอบจาก core/ + subjects/ (ยกเว้นบล็อก BUILTIN)
+   ถ้าไม่ตรง แปลว่ามีคนแก้ไฟล์ครูตรง ๆ งานนั้นจะหายตอน build ครั้งถัดไป */
+try {
+  for (const b of assembledMismatch()) {
+    console.error('✗  ' + b.out + '  : ไม่ตรงกับชิ้นส่วนใน core/ + subjects/' + b.key + '/ (ต่างตั้งแต่บรรทัด ' + b.line +
+      ') — ห้ามแก้ไฟล์ครูตรง ให้แก้ที่ core/ หรือ subjects/ แล้วสั่ง node tools/build-dist.mjs');
+    fail++;
+  }
+} catch (e) { console.error('✗  ประกอบไฟล์ครูไม่ได้ — ' + e.message); fail++; }
+
 for (const [a, b] of PAIRS) {
   const pa = path.join(ROOT, a), pb = path.join(ROOT, b);
   if (!fs.existsSync(pa) || !fs.existsSync(pb)) continue;
@@ -86,6 +119,24 @@ for (const [a, b] of PAIRS) {
     console.error('✗  ' + b + '  : เนื้อโปรแกรมไม่ตรงกับ ' + a +
       ' — สั่ง  node tools/build-dist.mjs  ก่อน');
     fail++;
+  }
+}
+
+for (const [dir, want] of Object.entries(IDENT)) {
+  const d = path.join(ROOT, dir);
+  if (!fs.existsSync(d)) continue;
+  for (const name of fs.readdirSync(d).filter(n => /\.html$/i.test(n))) {
+    const rel = dir + '/' + name;
+    const html = fs.readFileSync(path.join(d, name), 'utf8');
+    const title = (html.match(/<title>([^<]*)<\/title>/i) || [])[1] || '';
+    const key = (html.match(/const LS_KEY = '([^']*)'/) || [])[1] || '';
+    if (!title.includes(want.title)) {
+      console.error('✗  ' + rel + '  : ไม่ใช่แอปของโฟลเดอร์นี้ — ชื่อหน้า "' + title + '" (ควรมีคำว่า "' + want.title + '")');
+      fail++;
+    } else if (want.key && key && key !== want.key) {
+      console.error('✗  ' + rel + '  : ใช้คีย์เก็บข้อมูล ' + key + ' ของวิชาอื่น (ควรเป็น ' + want.key + ')');
+      fail++;
+    }
   }
 }
 

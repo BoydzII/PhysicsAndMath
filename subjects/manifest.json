@@ -1,0 +1,135 @@
+{
+  "physics": {
+    "out": "PhysicsAutoSheet/physics.html",
+    "parts": [
+      "subjects/physics/1-top.html",
+      "core/00-util.js",
+      "subjects/physics/2-subject.js",
+      "core/10-base.js",
+      "core/30-engine.js",
+      "subjects/physics/4-helpers.js",
+      "subjects/physics/5-rest.html",
+      "subjects/physics/6-content.js",
+      "core/50-ui.js",
+      "core/80-selftest.js",
+      "core/90-boot.js",
+      "subjects/physics/9-tail.html"
+    ]
+  },
+  "physci": {
+    "out": "PhysicalScienceAutoSheet/physci.html",
+    "parts": [
+      "subjects/physci/1-top.html",
+      "core/00-util.js",
+      "subjects/physci/2-subject.js",
+      "core/10-base.js",
+      "core/30-engine.js",
+      "subjects/physci/4-helpers.js",
+      "subjects/physci/5-rest.html",
+      "subjects/physci/6-content.js",
+      "core/50-ui.js",
+      "core/80-selftest.js",
+      "core/90-boot.js",
+      "subjects/physci/9-tail.html"
+    ]
+  },
+  "ijso": {
+    "out": "IJSOAutoSheet/ijso.html",
+    "parts": [
+      "subjects/ijso/1-top.html",
+      "core/00-util.js",
+      "subjects/ijso/2-subject.js",
+      "core/10-base.js",
+      "core/30-engine.js",
+      "subjects/ijso/4-helpers.js",
+      "subjects/ijso/5-rest.html",
+      "core/80-selftest.js",
+      "subjects/ijso/9-boot.html"
+    ]
+  },
+  "chem": {
+    "out": "ChemistryAutoSheet/chem.html",
+    "parts": [
+      "subjects/chem/1-top.html",
+      "core/00-util.js",
+      "subjects/chem/2-subject.js",
+      "core/10-base.js",
+      "core/30-engine.js",
+      "subjects/chem/4-helpers.js",
+      "subjects/chem/5-rest.html",
+      "subjects/chem/6-content.js",
+      "core/50-ui.js",
+      "core/80-selftest.js",
+      "core/90-boot.js",
+      "subjects/chem/9-tail.html"
+    ]
+  },
+  "math": {
+    "out": "MathAutoSheet/math.html",
+    "parts": [
+      "subjects/math/1-top.html",
+      "core/00-util.js",
+      "subjects/math/2-subject.js",
+      "core/10-base.js",
+      "core/30-engine.js",
+      "subjects/math/4-helpers.js",
+      "subjects/math/5-rest.html",
+      "subjects/math/6-content.js",
+      "core/50-ui.js",
+      "core/80-selftest.js",
+      "core/90-boot.js",
+      "subjects/math/9-tail.html"
+    ]
+  },
+  "science": {
+    "out": "ScienceAutoSheet/science.html",
+    "parts": [
+      "subjects/science/1-top.html",
+      "core/00-util.js",
+      "subjects/science/2-subject.js",
+      "core/10-base.js",
+      "core/30-engine.js",
+      "subjects/science/4-helpers.js",
+      "subjects/science/5-rest.html",
+      "subjects/science/6-content.js",
+      "core/50-ui.js",
+      "core/80-selftest.js",
+      "core/90-boot.js",
+      "subjects/science/9-tail.html"
+    ]
+  },
+  "bio": {
+    "out": "BiologyAutoSheet/bio.html",
+    "parts": [
+      "subjects/bio/1-top.html",
+      "core/00-util.js",
+      "subjects/bio/2-subject.js",
+      "core/10-base.js",
+      "core/30-engine.js",
+      "subjects/bio/4-helpers.js",
+      "subjects/bio/5-rest.html",
+      "subjects/bio/6-content.js",
+      "core/50-ui.js",
+      "core/80-selftest.js",
+      "core/90-boot.js",
+      "subjects/bio/9-tail.html"
+    ]
+  },
+  "foundation": {
+    "out": "PhysicsFoundation/foundation.html",
+    "parts": [
+      "subjects/foundation/1-top.html",
+      "core/00-util.js",
+      "subjects/foundation/2-subject.js",
+      "core/10-base.js",
+      "core/30-engine.js",
+      "subjects/foundation/4-helpers.js",
+      "subjects/foundation/5-rest.html",
+      "subjects/foundation/6-content.js",
+      "core/50-ui.js",
+      "core/80-selftest.js",
+      "core/90-boot.js",
+      "subjects/foundation/9-tail.html"
+    ]
+  }
+}

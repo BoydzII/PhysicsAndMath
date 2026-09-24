@@ -1,0 +1,91 @@
+/* ============================================================================
+   9) เริ่มต้นโปรแกรม
+   ========================================================================== */
+loadDB();
+healAttempts();
+applyBuiltin();
+adoptPortalSession();
+$$('#tabs button').forEach(b => b.addEventListener('click', () => {
+  if (TAB === 'do') stampTime();
+  setTab(b.dataset.tab);
+}));
+focusInit();          // ระบบเรียนรู้ไปพร้อมกัน — ผูกเหตุการณ์และกู้ช่วงเรียนที่ค้างอยู่
+const bVer = $('#btnAppVer');
+if (bVer) {
+  bVer.textContent = APP_VERSION;          // เลขจริงของไฟล์นี้ ไม่ใช่เลขที่เขียนไว้ใน HTML
+  bVer.addEventListener('click', checkAppUpdate);
+}
+// สำรอง/กู้คืนผูกไว้ในแท็บตั้งค่าแล้ว (bindSettingHandlers) เพราะการ์ดถูกวาดใหม่ทุกครั้ง
+$('#btnLogout').addEventListener('click', doLogout);
+// ต่อเน็ตได้เมื่อไร ส่งผลที่ค้างอยู่ให้เองทันที
+window.addEventListener('online', () => flushOutbox(false));
+// บันทึกเวลาของข้อที่กำลังทำอยู่ก่อนปิดหน้า
+window.addEventListener('beforeunload', e => {
+  if (TAB === 'do') { stampTime(); save(true); }
+  /* กำลังสอบอยู่แล้วจะปิดหน้าหรือกดย้อนกลับ ให้เบราว์เซอร์ถามยืนยันก่อน
+     คำตอบไม่หายอยู่แล้วเพราะบันทึกทุกครั้งที่ตอบ แต่การปิดทิ้งกลางคัน
+     ทำให้นาฬิกาเดินต่อโดยไม่มีใครดู แล้วกลายเป็นหมดเวลาไปเฉย ๆ */
+  /* ถามเฉพาะตอนอยู่บนหน้าทำข้อสอบจริง ไม่ใช่ทุกครั้งที่มีข้อสอบค้างอยู่
+     ไม่งั้นคนที่ทิ้งข้อสอบไว้โดยไม่ส่ง จะโดนถามยืนยันทุกครั้งที่ปิดหน้าไปตลอด */
+  if (TAB === 'do' && procCur()) { e.preventDefault(); e.returnValue = ''; return ''; }
+});
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    if (TAB === 'do') { stampTime(); save(true); }
+    procLeave();
+  } else {
+    procBack();
+    // ระบบปล่อยตัวกันจอดับเองทุกครั้งที่แอปถูกซ่อน กลับมาแล้วต้องขอใหม่
+    if (procCur()) examWakeOn();
+  }
+});
+['fullscreenchange', 'webkitfullscreenchange'].forEach(function (ev) {
+  document.addEventListener(ev, function () {
+    if (!EXAM.wantFull) return;
+    const a = procCur();
+    if (!a) { EXAM.wantFull = false; return; }   // สอบจบแล้ว ออกได้ตามปกติ
+    if (!examFsIsOn()) examWarnLeave();
+  });
+});
+window.addEventListener('pagehide', () => {
+  if (TAB === 'do') { stampTime(); save(true); }
+  procLeave();
+});
+setInterval(procTick, 1000);
+/* เปิดแอปกลับมาแล้วพบว่าเลยเส้นตายไปแล้ว — ส่งให้ตั้งแต่ตอนโหลด
+   เกิดเมื่อนักเรียนปิดแอปทิ้งไว้แล้วเปิดใหม่ทีหลัง หรือเครื่องดับกลางคัน */
+(function () {
+  const a = procCur();
+  if (!a) return;
+  if (a.proc.openAt) procReturn();          // ปิดเหตุการณ์ที่ค้างจากตอนเครื่องดับ
+  const left = procSecLeft(a);
+  if (left != null && left <= 0) doFinish('หมดเวลา');
+})();
+if (/[?&]selftest=1/.test(location.search)) {
+  setTab('make');
+  runSelfTest(200);
+} else {
+  // เริ่มที่แท็บที่เหมาะกับสถานะปัจจุบัน
+  const a = curAttempt();
+    const bTheme = $('#btnThemeStyle');
+  if (bTheme && !bTheme._b) {
+    bTheme._b = 1;
+    bTheme.addEventListener('click', toggleThemeStyle);
+  }
+  updateThemeSwitcherUI();
+  setTab(a && !a.finishedAt ? 'do' : 'make');
+  renderGate();
+  if (isStudent()) {
+    flushOutbox(false);
+    loadMyAssignments(true);
+    xpLoad(false);
+  } else if (canManage() && cloudOn() && !ESSYNC.at) {
+    // ครูเปิดแอปครั้งแรกของรอบนี้ ดึงคลังจากชีตให้เลย จะได้ไม่ต้องกดเอง
+    esBankSync(false);
+  }
+}
+$('#saveState').textContent = storageOK ? 'พร้อมใช้งาน' : 'บันทึกไม่ได้';
+renderOutboxBadge();
+markSession();
+renderBrand();
+applyAppIcon();
