@@ -62,6 +62,7 @@ const IDENT = {
   IJSOAutoSheet:            { title: 'คลังโจทย์IJSO',              key: 'ijsoquiz.v1' },
   IJSOApp:                  { title: 'คลังโจทย์IJSO',              key: 'ijsoquiz.v1' },
   EquilibriumLab:           { title: 'ห้องเรียนสมดุลกล' },
+  Physics1App:              { title: 'ฟิสิกส์ 1' },
   Physics2App:              { title: 'ฟิสิกส์ 2' },
   FigureLab:                { title: 'ห้องวาดรูปโจทย์' },
   WorkDesk:                 { title: 'ส่งงานออนไลน์' }

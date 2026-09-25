@@ -437,6 +437,17 @@ const SUBJECTS = [
     desc: 'ชุดการเรียนรู้ 12 ขั้น · คณิตศาสตร์ที่ใช้ในฟิสิกส์<br>' +
           'ทศนิยม สัญกรณ์วิทยาศาสตร์ จัดรูปสูตร ตรีโกณมิติ จนถึงเวกเตอร์' },
 
+  /* ฟิสิกส์ 1 — ม.4 เล่ม 1 บทที่ 1–3 + บทที่ 4 สมดุลกล (เล่ม 2) ตามที่โรงเรียนจัดสอน
+     เนื้อหาชุดเดียวใช้ทั้งแอปและสไลด์ (Physics1App/content_ch*.js) */
+  { key: 'physics1', ic: 'book', name: 'ฟิสิกส์ 1 (Interactive Notebook)', level: 'ฟิสิกส์ ม.4', grades: [4, 5, 6],
+    dir: 'Physics1App/', teacher: 'index.html', student: 'index.html', openFree: true,
+    desc: 'สมุดโน้ตขีดเขียนได้ · ธรรมชาติของฟิสิกส์ การเคลื่อนที่แนวตรง แรงและกฎการเคลื่อนที่ สมดุลกล<br>' +
+          'ทฤษฎี นิยาม ตัวอย่างชีวิตจริง และโจทย์ 150 ข้อ ปรับความยาก-ง่ายได้' },
+  { key: 'slides1', ic: 'slides', name: 'สไลด์สอนฟิสิกส์ 1', level: 'สื่อการสอนของครู', grades: [],
+    dir: 'Physics1App/', teacher: 'slides.html', student: 'slides.html', teacherOnly: true,
+    desc: 'สไลด์นำเสนอบทที่ 1–4 · ทฤษฎี สมการ ชีวิตจริง แบบจำลองโต้ตอบ 12 ชุด<br>' +
+          'โจทย์เผยวิธีทำทีละบรรทัดพร้อมสรุปคำตอบ แก้ข้อความบนสไลด์ได้' },
+
   { key: 'physics2', icon: '📓', name: 'ฟิสิกส์ 2 (Interactive Notebook)', level: 'ฟิสิกส์ ม.4-5', grades: [4, 5, 6],
     dir: 'Physics2App/', teacher: 'index.html', student: 'index.html', openFree: true,
     desc: 'สมุดโน้ตอัจฉริยะแบบขีดเขียนได้ · บทที่ 1 งานและพลังงาน<br>' +

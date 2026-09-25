@@ -274,7 +274,7 @@ function roadmap(){
   return { title:'เนื้อหาในบทนี้', html: `
     <div class="kicker"><b>บทที่ ${CHAPTER.no}</b><span class="dot"></span><span>เนื้อหาในบทนี้</span></div>
     <h2 class="chtitle" style="--c:${CHAPTER.color}"><span>${CHAPTER.title}</span></h2>
-    <ol class="road">${SECTIONS.map(S => `<li class="f" style="--c:${S.color}"><span class="n">${S.num}</span><span class="t">${S.title}<small>${S.en}</small></span><span class="q">${S.road}</span></li>`).join('')}</ol>` };
+    <ol class="road${SECTIONS.length >= 6 ? " dense" : ""}">${SECTIONS.map(S => `<li class="f" style="--c:${S.color}"><span class="n">${S.num}</span><span class="t">${S.title}<small>${S.en}</small></span><span class="q">${S.road}</span></li>`).join('')}</ol>` };
 }
 function opener(S){
   return { cls:'s-open', title:S.title, html: `
@@ -294,7 +294,7 @@ function coreSlide(S){
     <h2>ที่มาของสมการ</h2>
     <div class="core">
       <div class="hero"><div class="lbl">${c.lbl}</div>$$${c.eq}$$</div>
-      <ol class="steps">${c.steps.map(s => `<li class="f"><p>${s.t}</p>$$${s.eq}$$</li>`).join('')}</ol>
+      <ol class="steps">${c.steps.map(s => `<li class="f"><p>${s.t}</p>${s.eq ? "$$" + s.eq + "$$" : ""}</li>`).join('')}</ol>
     </div>` };
 }
 function eqsSlide(S){
@@ -414,7 +414,7 @@ SECTIONS.forEach(S => {
   // หัวข้อที่ไม่มีแบบจำลอง / นิยาม / ชีวิตจริง / ชวนคิด ข้ามสไลด์นั้นไป
   const has = { [defsSlide.name]: (S.defs || defsOf(S.key)).length, [simSlide.name]: S.sim && SIMS[S.sim], [lifeSlide.name]: S.life && S.life.length,
                 [thinkSlide.name]: S.think, [eqsSlide.name]: S.eqs && S.eqs.length, [coreSlide.name]: S.core };
-  [opener, defsSlide, coreSlide, simSlide, eqsSlide, lifeSlide, thinkSlide].filter(fn => has[fn.name] !== undefined ? has[fn.name] : true)
+  [opener, defsSlide, coreSlide, simSlide, eqsSlide, lifeSlide, thinkSlide].filter(fn => fn.name in has ? !!has[fn.name] : true)
     .forEach(fn => slides.push(Object.assign(fn(S), { S })));
   (S.probs || []).forEach((pid, i) => slides.push(probSlide(S, i + 1, pid)));
 });

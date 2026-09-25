@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>สไลด์ฟิสิกส์ 1 · บทที่ 1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@200;400;700&family=IBM+Plex+Sans+Thai+Looped:wght@300;400;700&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
+<link rel="stylesheet" href="../SlideDeck/deck.css">
+</head>
+<body>
+<!-- เนื้อหาชุดเดียวกับแอปฟิสิกส์ 1 (ทฤษฎี นิยาม โจทย์) — แก้ที่ content_ch*.js -->
+<script src="content_ch1.js"></script>
+<script src="content_ch2.js"></script>
+<script src="content_ch3.js"></script>
+<script src="content_ch4.js"></script>
+<script src="p1data.js"></script>
+<!-- เอนจินสไลด์ร่วม (ฟิสิกส์ 1 · ฟิสิกส์ 2) — แก้หน้าตาและการทำงานของสไลด์ที่ ../SlideDeck/ -->
+<script src="../SlideDeck/deck.js"></script>
+<script>
+(function(){
+const { arrowDefs, fmt } = SlideDeck;
+const put = (el, a) => { for (const k in a) el.setAttribute(k, a[k]); };
+
+/* ════════════════════════════════════════════════════════════════
+   แบบจำลองโต้ตอบของฟิสิกส์ 1 (SVG + JS ล้วน) — ชื่อตรงกับช่อง sim ใน content_ch*.js
+   ════════════════════════════════════════════════════════════════ */
+const SIMS = {
+/* ── 1.3 ความชันจากกราฟ ── */
+graph: {
+  html: `<svg viewBox="0 0 900 470">${arrowDefs('g13')}
+    <line x1="90" y1="410" x2="870" y2="410" class="gl" marker-end="url(#g13)"/><line x1="90" y1="410" x2="90" y2="30" class="gl" marker-end="url(#g13)"/>
+    <text x="870" y="466" font-size="22" text-anchor="end" fill="var(--ink2)">ระยะยืด x (m)</text><text x="100" y="30" font-size="22" fill="var(--ink2)">แรง F (N)</text>
+    <g id="gTicks" font-size="18" fill="var(--ink3)"></g>
+    <line id="gFit" stroke="var(--acc)" stroke-width="3"/>
+    <g id="gData"></g>
+    <line id="gDx" class="dsh"/><line id="gDy" class="dsh"/>
+    <circle id="gP1" r="10" fill="var(--ink)"/><circle id="gP2" r="10" fill="var(--ink)"/>
+    <text id="gDxT" font-size="22" fill="var(--ink2)"></text><text id="gDyT" font-size="22" fill="var(--ink2)"></text>
+    <text id="gOut" x="120" y="80" font-size="32" font-weight="700" style="font-variant-numeric:tabular-nums"></text>
+  </svg>
+  <div class="ctl"><label>จุดที่ 1 <input type="range" id="gA" min="0" max="0.12" step="0.01" value="0.02" style="width:240px"></label>
+    <label>จุดที่ 2 <input type="range" id="gB" min="0" max="0.12" step="0.01" value="0.10" style="width:240px"></label></div>`,
+  init(el){
+    const $ = s => el.querySelector(s), k = 50, X = x => 90 + x * 6000, Y = F => 410 - F * 55; // 0.12 m → 720 px · 6.5 N → 357 px
+    $('#gTicks').innerHTML = [0.02, 0.04, 0.06, 0.08, 0.10, 0.12].map(x => `<text x="${X(x)}" y="435" text-anchor="middle">${x.toFixed(2)}</text>`).join('') +
+      [1, 2, 3, 4, 5, 6].map(F => `<text x="80" y="${Y(F) + 6}" text-anchor="end">${F}</text><line x1="86" x2="94" y1="${Y(F)}" y2="${Y(F)}" stroke="var(--ink3)"/>`).join('');
+    const data = [[0.02, 1.0], [0.04, 2.1], [0.06, 2.9], [0.08, 4.1], [0.10, 5.0], [0.12, 6.1]];
+    $('#gData').innerHTML = data.map(([x, F]) => `<rect x="${X(x) - 6}" y="${Y(F) - 6}" width="12" height="12" fill="none" stroke="var(--ink3)" stroke-width="2"/>`).join('');
+    put($('#gFit'), { x1: X(0), y1: Y(0), x2: X(0.125), y2: Y(k * 0.125) });
+    const upd = () => {
+      const a = +$('#gA').value, b = +$('#gB').value, Fa = k * a, Fb = k * b;
+      put($('#gP1'), { cx: X(a), cy: Y(Fa) }); put($('#gP2'), { cx: X(b), cy: Y(Fb) });
+      put($('#gDx'), { x1: X(a), y1: Y(Fa), x2: X(b), y2: Y(Fa) }); put($('#gDy'), { x1: X(b), y1: Y(Fa), x2: X(b), y2: Y(Fb) });
+      put($('#gDxT'), { x: (X(a) + X(b)) / 2 - 40, y: Y(Fa) + 30 }); $('#gDxT').textContent = `Δx = ${fmt(b - a, 2)} m`;
+      put($('#gDyT'), { x: X(b) + 12, y: (Y(Fa) + Y(Fb)) / 2 }); $('#gDyT').textContent = `ΔF = ${fmt(Fb - Fa, 1)} N`;
+      $('#gOut').textContent = a === b ? 'เลือกสองจุดที่ต่างกัน' : `ความชัน = ${fmt(Fb - Fa, 1)} / ${fmt(b - a, 2)} = ${fmt((Fb - Fa) / (b - a))} N/m`;
+    };
+    $('#gA').oninput = upd; $('#gB').oninput = upd; upd();
+  }
+},
+/* ── 2.1 เดินไปแล้วเดินกลับ ── */
+walk: {
+  html: `<svg viewBox="0 0 900 470">${arrowDefs('w21')}
+    <line x1="40" y1="250" x2="860" y2="250" class="gl"/>
+    <g id="wTicks" font-size="18" fill="var(--ink3)"></g>
+    <path id="wPath" fill="none" stroke="var(--ink2)" stroke-width="3" marker-end="url(#w21)"/>
+    <line id="wDisp" stroke="var(--acc)" stroke-width="7" marker-end="url(#w21)"/>
+    <text id="wDispT" font-size="24" font-weight="700" fill="var(--acc)"></text>
+    <circle id="wMan" r="16" fill="var(--ink)"/>
+    <text id="wOut1" x="40" y="60" font-size="30" style="font-variant-numeric:tabular-nums"></text>
+    <text id="wOut2" x="40" y="104" font-size="30" font-weight="700" fill="var(--acc)" style="font-variant-numeric:tabular-nums"></text>
+  </svg>
+  <div class="ctl"><label>เดินไปทางขวา <input type="range" id="wA" min="0" max="10" step="1" value="8" style="width:200px"></label>
+    <label>เดินกลับ <input type="range" id="wB" min="0" max="15" step="1" value="3" style="width:200px"></label><button class="btn pri" id="wGo">เดิน</button></div>`,
+  init(el){
+    const $ = s => el.querySelector(s), X = x => 450 + x * 38;   // −10…+10 m
+    $('#wTicks').innerHTML = Array.from({ length: 21 }, (_, i) => i - 10).map(x => `<line x1="${X(x)}" x2="${X(x)}" y1="243" y2="257" stroke="var(--ink3)"/>` + (x % 2 === 0 ? `<text x="${X(x)}" y="282" text-anchor="middle">${x}</text>` : '')).join('');
+    let a, b, t = 0, raf = 0, last = 0, run = false;
+    const draw = () => {
+      a = +$('#wA').value; b = +$('#wB').value;
+      const go = Math.min(t, a), back = Math.max(0, Math.min(t - a, b)), x = go - back;
+      put($('#wMan'), { cx: X(x), cy: 222 });
+      let d = `M${X(0)} 205`;
+      if (go > 0) d += ` L${X(go)} 205`;
+      if (back > 0) d += ` L${X(go)} 180 L${X(go - back)} 180`;
+      $('#wPath').setAttribute('d', d);
+      put($('#wDisp'), { x1: X(0), y1: 320, x2: X(x) + (x === 0 ? 0.1 : 0), y2: 320 });
+      $('#wDisp').style.visibility = Math.abs(x) < 0.01 ? 'hidden' : 'visible';
+      put($('#wDispT'), { x: (X(0) + X(x)) / 2 - 60, y: 360 }); $('#wDispT').textContent = `Δx = ${x > 0 ? '+' : ''}${fmt(x, 1)} m`;
+      $('#wOut1').textContent = `ระยะทาง s = ${fmt(go, 1)} + ${fmt(back, 1)} = ${fmt(go + back, 1)} m`;
+      $('#wOut2').textContent = `การกระจัด Δx = ${fmt(x, 1)} m`;
+    };
+    const loop = now => { if (!run) return; t += Math.min((now - last) / 1000, 0.05) * 4; last = now; if (t >= a + b){ t = a + b; run = false; } draw(); if (run) raf = requestAnimationFrame(loop); };
+    $('#wGo').onclick = e => { e.stopPropagation(); cancelAnimationFrame(raf); t = 0; run = true; last = performance.now(); raf = requestAnimationFrame(loop); };
+    const reset = () => { run = false; cancelAnimationFrame(raf); t = +$('#wA').value + +$('#wB').value; draw(); };
+    $('#wA').oninput = reset; $('#wB').oninput = reset; el._reset = reset; reset();
+  },
+  leave(el){ el._reset && el._reset(); }
+},
+/* ── 2.4 กราฟ x–t และ v–t ── */
+graphs: {
+  html: `<svg viewBox="0 0 900 470">
+    <line x1="40" y1="70" x2="860" y2="70" class="gl2"/>
+    <g id="mCar"><rect x="-26" y="-22" width="52" height="22" rx="5" fill="var(--acc)"/><circle cx="-14" cy="2" r="6" fill="var(--ink)"/><circle cx="14" cy="2" r="6" fill="var(--ink)"/></g>
+    <g font-size="20" fill="var(--ink2)"><text x="60" y="140">x–t</text><text x="480" y="140">v–t</text></g>
+    <rect x="60" y="150" width="360" height="250" fill="none" class="gl2"/><rect x="480" y="150" width="360" height="250" fill="none" class="gl2"/>
+    <line id="mX0" x1="60" x2="420" class="dsh"/><line id="mV0" x1="480" x2="840" class="dsh"/>
+    <path id="mArea" fill="var(--acc)" fill-opacity=".18"/>
+    <path id="mXt" fill="none" stroke="var(--ink)" stroke-width="3"/><path id="mVt" fill="none" stroke="var(--acc)" stroke-width="3"/>
+    <text id="mOut" x="60" y="450" font-size="24" style="font-variant-numeric:tabular-nums"></text>
+  </svg>
+  <div class="ctl"><label>u <input type="range" id="mU" min="-5" max="10" step="1" value="2" style="width:200px"></label>
+    <label>a <input type="range" id="mA" min="-3" max="3" step="0.5" value="1.5" style="width:200px"></label><button class="btn pri" id="mGo">เล่น</button></div>`,
+  init(el){
+    const $ = s => el.querySelector(s), T = 6;
+    let u, a, t = 0, raf = 0, last = 0, run = false, xr, vr;
+    const setup = () => {
+      u = +$('#mU').value; a = +$('#mA').value;
+      const xs = [], vs = []; for (let i = 0; i <= 60; i++){ const tt = T * i / 60; xs.push(u * tt + 0.5 * a * tt * tt); vs.push(u + a * tt); }
+      xr = [Math.min(0, ...xs), Math.max(1, ...xs)]; vr = [Math.min(0, ...vs), Math.max(1, ...vs)];
+      const X0 = 400 - 250 * (0 - xr[0]) / (xr[1] - xr[0]), V0 = 400 - 250 * (0 - vr[0]) / (vr[1] - vr[0]);
+      put($('#mX0'), { y1: X0, y2: X0 }); put($('#mV0'), { y1: V0, y2: V0 });
+    };
+    const px = (tt, lo) => lo + 360 * tt / T;
+    const py = (val, r) => 400 - 250 * (val - r[0]) / (r[1] - r[0]);
+    const draw = () => {
+      let dx = '', dv = '', area = '';
+      const n = Math.max(1, Math.round(60 * t / T));
+      for (let i = 0; i <= n; i++){ const tt = t * i / n, x = u * tt + 0.5 * a * tt * tt, v = u + a * tt;
+        dx += (i ? ' L' : 'M') + px(tt, 60).toFixed(1) + ' ' + py(x, xr).toFixed(1);
+        dv += (i ? ' L' : 'M') + px(tt, 480).toFixed(1) + ' ' + py(v, vr).toFixed(1); }
+      const V0 = py(0, vr);
+      area = dv.replace(/^M/, `M${px(0, 480)} ${V0} L`) + ` L${px(t, 480)} ${V0} Z`;
+      $('#mXt').setAttribute('d', dx); $('#mVt').setAttribute('d', dv); $('#mArea').setAttribute('d', area);
+      const x = u * t + 0.5 * a * t * t, v = u + a * t;
+      $('#mCar').setAttribute('transform', `translate(${60 + 780 * (x - xr[0]) / (xr[1] - xr[0])} 70)`);
+      $('#mOut').textContent = `t = ${fmt(t, 1)} s · x = ${fmt(x, 1)} m · v = ${fmt(v, 1)} m/s · a = ${fmt(a, 1)} m/s² (พื้นที่ใต้ v–t = x)`;
+    };
+    const loop = now => { if (!run) return; t += Math.min((now - last) / 1000, 0.05) * 1.5; last = now; if (t >= T){ t = T; run = false; } draw(); if (run) raf = requestAnimationFrame(loop); };
+    $('#mGo').onclick = e => { e.stopPropagation(); cancelAnimationFrame(raf); setup(); t = 0; run = true; last = performance.now(); raf = requestAnimationFrame(loop); };
+    const reset = () => { run = false; cancelAnimationFrame(raf); setup(); t = T; draw(); };
+    $('#mU').oninput = reset; $('#mA').oninput = reset; el._reset = reset; reset();
+  },
+  leave(el){ el._reset && el._reset(); }
+},
+/* ── 2.5 รถเร่งบนถนนตรง ── */
+suvat: {
+  html: `<svg viewBox="0 0 900 470">
+    <line x1="40" y1="190" x2="860" y2="190" class="gl"/>
+    <g id="sMarks" font-size="16" fill="var(--ink3)"></g>
+    <g id="sCar"><rect x="-34" y="-30" width="68" height="28" rx="6" fill="var(--acc)"/><circle cx="-18" cy="0" r="8" fill="var(--ink)"/><circle cx="18" cy="0" r="8" fill="var(--ink)"/></g>
+    <g font-size="30" style="font-variant-numeric:tabular-nums">
+      <text id="sV" x="40" y="290"></text><text id="sS" x="40" y="340"></text>
+      <text id="sC" x="40" y="390" font-size="24" fill="var(--ink2)"></text><text id="sStop" x="40" y="440" font-size="24" font-weight="700" fill="var(--acc)"></text>
+    </g>
+  </svg>
+  <div class="ctl"><label>u <input type="range" id="sU" min="0" max="20" step="1" value="4" style="width:170px"></label>
+    <label>a <input type="range" id="sA" min="-4" max="4" step="0.5" value="2" style="width:170px"></label>
+    <label>t <input type="range" id="sT" min="0" max="10" step="0.5" value="5" style="width:170px"></label></div>`,
+  init(el){
+    const $ = s => el.querySelector(s);
+    const upd = () => {
+      const u = +$('#sU').value, a = +$('#sA').value; let t = +$('#sT').value, stop = '';
+      if (a < 0 && t > u / -a){ stop = `รถหยุดที่ t = ${fmt(u / -a, 1)} s แล้วไม่ถอยหลัง (เบรกไม่ใช่เกียร์ถอย)`; t = u / -a; }
+      const v = u + a * t, s = u * t + 0.5 * a * t * t;
+      const smax = Math.max(20, 20 * 10 + 0.5 * 4 * 100); // ระยะสูงสุดที่เป็นไปได้ = 400 m
+      $('#sMarks').innerHTML = [0, 100, 200, 300, 400].map(m => `<line x1="${60 + 780 * m / smax}" x2="${60 + 780 * m / smax}" y1="190" y2="202" stroke="var(--ink3)"/><text x="${60 + 780 * m / smax}" y="222" text-anchor="middle">${m} m</text>`).join('');
+      $('#sCar').setAttribute('transform', `translate(${60 + 780 * s / smax} 180)`);
+      $('#sV').textContent = `v = u + at = ${u} + (${a})(${fmt(t, 1)}) = ${fmt(v, 1)} m/s`;
+      $('#sS').textContent = `s = ut + ½at² = ${fmt(s, 1)} m`;
+      $('#sC').textContent = `ตรวจ: u² + 2as = ${fmt(u * u + 2 * a * s, 1)} · v² = ${fmt(v * v, 1)}`;
+      $('#sStop').textContent = stop;
+    };
+    ['#sU', '#sA', '#sT'].forEach(s => $(s).oninput = upd); upd();
+  }
+},
+/* ── 2.6 ภาพแฟลชของลูกบอล ── */
+freefall: {
+  html: `<svg viewBox="0 0 900 470">
+    <line x1="120" y1="440" x2="820" y2="440" class="gl"/>
+    <g id="fScale" font-size="16" fill="var(--ink3)"></g>
+    <g id="fDots"></g>
+    <circle id="fBall" r="14" fill="var(--acc)"/>
+    <text id="fOut" x="440" y="70" font-size="26" style="font-variant-numeric:tabular-nums"></text>
+    <text id="fOut2" x="440" y="108" font-size="21" fill="var(--ink2)"></text>
+  </svg>
+  <div class="ctl"><button class="btn on" data-m="drop">ปล่อยตก (u = 0)</button><button class="btn" data-m="up">โยนขึ้น (u = 20 m/s)</button><button class="btn pri" id="fGo">ถ่ายภาพ</button></div>`,
+  init(el){
+    const $ = s => el.querySelector(s), g = 10, Y = h => 440 - h * 19;   // 20 m = 380 px
+    $('#fScale').innerHTML = [0, 5, 10, 15, 20].map(h => `<line x1="112" x2="120" y1="${Y(h)}" y2="${Y(h)}" stroke="var(--ink3)"/><text x="104" y="${Y(h) + 5}" text-anchor="end">${h} m</text>`).join('');
+    let mode = 'drop', t = 0, raf = 0, last = 0, run = false;
+    const pos = tt => mode === 'drop' ? { h: 20 - 0.5 * g * tt * tt, x: 300 } : { h: 20 * tt - 0.5 * g * tt * tt, x: 260 + tt * 60 };
+    const T = () => mode === 'drop' ? 2 : 4;
+    const draw = () => {
+      const p = pos(t); put($('#fBall'), { cx: p.x, cy: Y(p.h) - 14 });
+      let dots = '';
+      for (let k = 0; k <= Math.floor(t / 0.2 + 1e-9); k++){ const q = pos(k * 0.2); dots += `<circle cx="${q.x}" cy="${Y(q.h) - 14}" r="12" fill="none" stroke="var(--ink3)" stroke-width="2"/>`; }
+      $('#fDots').innerHTML = dots;
+      const v = mode === 'drop' ? -g * t : 20 - g * t;
+      $('#fOut').textContent = `t = ${fmt(t, 1)} s · สูง ${fmt(p.h, 1)} m · v = ${fmt(v, 0)} m/s`;
+      $('#fOut2').textContent = mode === 'drop' ? 'ภาพทุก 0.2 s — ห่างขึ้นเรื่อย ๆ เพราะเร็วขึ้น' : 'สูงสุดที่ t = 2 s · กลับที่เดิมที่ t = 4 s';
+    };
+    const loop = now => { if (!run) return; t += Math.min((now - last) / 1000, 0.05) * 0.8; last = now; if (t >= T()){ t = T(); run = false; } draw(); if (run) raf = requestAnimationFrame(loop); };
+    $('#fGo').onclick = e => { e.stopPropagation(); cancelAnimationFrame(raf); t = 0; run = true; last = performance.now(); raf = requestAnimationFrame(loop); };
+    el.querySelectorAll('[data-m]').forEach(b => b.onclick = e => { e.stopPropagation(); mode = b.dataset.m; el.querySelectorAll('[data-m]').forEach(x => x.classList.toggle('on', x === b)); el._reset(); });
+    el._reset = () => { run = false; cancelAnimationFrame(raf); t = T(); draw(); };
+    el._reset();
+  },
+  leave(el){ el._reset && el._reset(); }
+},
+/* ── 3.1 รวมแรงสองแรง ── */
+vecadd: {
+  html: `<svg viewBox="0 0 900 470">${arrowDefs('v31')}
+    <line id="vP1" class="dsh"/><line id="vP2" class="dsh"/>
+    <line id="vF1" stroke="var(--ink)" stroke-width="5" marker-end="url(#v31)"/>
+    <line id="vF2" stroke="var(--ink2)" stroke-width="5" marker-end="url(#v31)"/>
+    <line id="vR" stroke="var(--acc)" stroke-width="7" marker-end="url(#v31)"/>
+    <text id="vF1t" font-size="24" font-weight="700"></text><text id="vF2t" font-size="24" font-weight="700" fill="var(--ink2)"></text><text id="vRt" font-size="26" font-weight="700" fill="var(--acc)"></text>
+    <circle cx="330" cy="330" r="7" fill="var(--ink)"/>
+    <text id="vOut" x="40" y="60" font-size="28" style="font-variant-numeric:tabular-nums"></text>
+  </svg>
+  <div class="ctl"><label>F₁ <input type="range" id="vA" min="1" max="10" step="1" value="6" style="width:170px"></label>
+    <label>F₂ <input type="range" id="vB" min="1" max="10" step="1" value="8" style="width:170px"></label>
+    <label>มุม <input type="range" id="vT" min="0" max="180" step="5" value="90" style="width:170px"></label></div>`,
+  init(el){
+    const $ = s => el.querySelector(s), O = [330, 330], K = 26;   // 1 N = 26 px
+    const upd = () => {
+      const a = +$('#vA').value, b = +$('#vB').value, th = +$('#vT').value * Math.PI / 180;
+      const p1 = [O[0] + a * K, O[1]], p2 = [O[0] + b * K * Math.cos(th), O[1] - b * K * Math.sin(th)];
+      const r = [p1[0] + p2[0] - O[0], p1[1] + p2[1] - O[1]];
+      put($('#vF1'), { x1: O[0], y1: O[1], x2: p1[0], y2: p1[1] }); put($('#vF2'), { x1: O[0], y1: O[1], x2: p2[0], y2: p2[1] });
+      put($('#vP1'), { x1: p1[0], y1: p1[1], x2: r[0], y2: r[1] }); put($('#vP2'), { x1: p2[0], y1: p2[1], x2: r[0], y2: r[1] });
+      const FR = Math.sqrt(a * a + b * b + 2 * a * b * Math.cos(th));
+      put($('#vR'), { x1: O[0], y1: O[1], x2: r[0] + (FR < 0.05 ? 0.1 : 0), y2: r[1] }); $('#vR').style.visibility = FR < 0.05 ? 'hidden' : 'visible';
+      put($('#vF1t'), { x: p1[0] + 8, y: p1[1] + 30 }); $('#vF1t').textContent = `F₁ = ${a} N`;
+      put($('#vF2t'), { x: p2[0] + 8, y: p2[1] - 10 }); $('#vF2t').textContent = `F₂ = ${b} N`;
+      put($('#vRt'), { x: r[0] + 10, y: r[1] - 12 }); $('#vRt').textContent = `F_R = ${fmt(FR, 2)} N`;
+      $('#vOut').textContent = `F_R² = ${a}² + ${b}² + 2(${a})(${b})cos ${$('#vT').value}° → F_R = ${fmt(FR, 2)} N`;
+    };
+    ['#vA', '#vB', '#vT'].forEach(s => $(s).oninput = upd); upd();
+  }
+},
+/* ── 3.3 ผลักรถทดลอง ── */
+fma: {
+  html: `<svg viewBox="0 0 900 470">${arrowDefs('f33')}
+    <line x1="40" y1="250" x2="860" y2="250" class="gl"/>
+    <g id="aCart"><rect id="aBody" y="-60" height="52" rx="6" fill="var(--acc)"/><circle id="aW1" cy="-6" r="9" fill="var(--ink)"/><circle id="aW2" cy="-6" r="9" fill="var(--ink)"/>
+      <text id="aM" y="-26" font-size="20" fill="#fff" text-anchor="middle" font-weight="700"></text>
+      <line id="aF" y1="-34" y2="-34" stroke="var(--ink)" stroke-width="5" marker-end="url(#f33)"/></g>
+    <g font-size="30" style="font-variant-numeric:tabular-nums"><text id="aOut1" x="40" y="340"></text><text id="aOut2" x="40" y="390" font-size="26" fill="var(--ink2)"></text></g>
+  </svg>
+  <div class="ctl"><label>แรง F <input type="range" id="aFr" min="0" max="20" step="1" value="10" style="width:200px"></label>
+    <label>มวล m <input type="range" id="aMr" min="1" max="10" step="1" value="2" style="width:200px"></label><button class="btn pri" id="aGo">ปล่อย</button></div>`,
+  init(el){
+    const $ = s => el.querySelector(s), PX = 12;   // 1 m = 12 px
+    let F, m, t = 0, raf = 0, last = 0, run = false;
+    const draw = () => {
+      F = +$('#aFr').value; m = +$('#aMr').value; const a = F / m, s = 0.5 * a * t * t, v = a * t, w = 60 + m * 8;
+      put($('#aBody'), { x: -w, width: w }); put($('#aW1'), { cx: -w + 14 }); put($('#aW2'), { cx: -14 });
+      put($('#aM'), { x: -w / 2 }); $('#aM').textContent = m + ' kg';
+      put($('#aF'), { x1: -w - 10 - F * 5, x2: -w - 6 }); $('#aF').style.visibility = F ? 'visible' : 'hidden';
+      $('#aCart').setAttribute('transform', `translate(${Math.min(170 + w + s * PX, 850)} 250)`);
+      $('#aOut1').textContent = `a = F/m = ${F}/${m} = ${fmt(a, 2)} m/s²`;
+      $('#aOut2').textContent = `t = ${fmt(t, 1)} s · v = ${fmt(v, 1)} m/s · s = ${fmt(s, 1)} m`;
+    };
+    const loop = now => { if (!run) return; t += Math.min((now - last) / 1000, 0.05); last = now; if (t >= 4){ t = 4; run = false; } draw(); if (run) raf = requestAnimationFrame(loop); };
+    $('#aGo').onclick = e => { e.stopPropagation(); cancelAnimationFrame(raf); t = 0; run = true; last = performance.now(); raf = requestAnimationFrame(loop); };
+    el._reset = () => { run = false; cancelAnimationFrame(raf); t = 0; draw(); };
+    $('#aFr').oninput = el._reset; $('#aMr').oninput = el._reset; el._reset();
+  },
+  leave(el){ el._reset && el._reset(); }
+},
+/* ── 3.5 ดึงกล่องบนพื้น ── */
+friction: {
+  html: `<svg viewBox="0 0 900 470">${arrowDefs('r35')}
+    <line x1="40" y1="170" x2="520" y2="170" class="gl"/>
+    <g id="rBox"><rect x="-50" y="-70" width="100" height="70" fill="var(--paper2)" stroke="var(--ink)" stroke-width="2"/><text id="rM" y="-28" text-anchor="middle" font-size="22" font-weight="700"></text></g>
+    <line id="rF" stroke="var(--ink)" stroke-width="5" marker-end="url(#r35)"/><line id="rf" stroke="var(--neg)" stroke-width="5" marker-end="url(#r35)"/>
+    <text id="rState" x="40" y="60" font-size="30" font-weight="700"></text>
+    <text id="rVals" x="40" y="240" font-size="24" style="font-variant-numeric:tabular-nums"></text><text id="rVals2" x="40" y="276" font-size="22" fill="var(--ink2)" style="font-variant-numeric:tabular-nums"></text>
+    <line x1="580" y1="440" x2="880" y2="440" class="gl"/><line x1="580" y1="440" x2="580" y2="190" class="gl"/>
+    <text x="875" y="465" font-size="18" text-anchor="end" fill="var(--ink3)">แรงดึง F (N)</text><text x="590" y="185" font-size="18" fill="var(--ink3)">แรงเสียดทาน f (N)</text>
+    <path id="rCurve" fill="none" stroke="var(--neg)" stroke-width="3"/><circle id="rDot" r="8" fill="var(--ink)"/>
+  </svg>
+  <div class="ctl"><label>แรงดึง F <input type="range" id="rFr" min="0" max="80" step="1" value="10" style="width:260px"></label>
+    <label>มวล <input type="range" id="rMr" min="2" max="10" step="1" value="5" style="width:160px"></label>
+    <span class="readout" style="font-size:20px">μs = 0.5 · μk = 0.4</span></div>`,
+  init(el){
+    const $ = s => el.querySelector(s), g = 10, mus = 0.5, muk = 0.4;
+    const GX = F => 580 + F * 3.6, GY = f => 440 - f * 4.5;   // 0–80 N · 0–55 N
+    let x = 0, v = 0, raf = 0, last = 0, active = false;
+    const fOf = (F, m) => F <= mus * m * g ? F : muk * m * g;
+    const draw = () => {
+      const F = +$('#rFr').value, m = +$('#rMr').value, fs = mus * m * g, fk = muk * m * g, f = fOf(F, m), slide = F > fs || v > 0.01;
+      const bx = 150 + (x % 300);
+      $('#rBox').setAttribute('transform', `translate(${bx} 170)`); $('#rM').textContent = m + ' kg';
+      put($('#rF'), { x1: bx + 50, y1: 135, x2: bx + 54 + F * 2.2, y2: 135 }); $('#rF').style.visibility = F ? 'visible' : 'hidden';
+      const fShow = slide ? fk : f;
+      put($('#rf'), { x1: bx - 50, y1: 165, x2: bx - 54 - fShow * 2.2, y2: 165 }); $('#rf').style.visibility = fShow ? 'visible' : 'hidden';
+      $('#rState').textContent = slide ? 'ไถลแล้ว — แรงเสียดทานจลน์' : 'ยังไม่ขยับ — แรงเสียดทานสถิต = F';
+      $('#rState').style.fill = slide ? 'var(--neg)' : 'var(--pos)';
+      $('#rVals').textContent = `F = ${F} N · f = ${fmt(fShow)} N`;
+      $('#rVals2').textContent = `f สถิตสูงสุด = ${fmt(fs)} N · f จลน์ = ${fmt(fk)} N`;
+      $('#rCurve').setAttribute('d', `M${GX(0)} ${GY(0)} L${GX(fs)} ${GY(fs)} L${GX(fs)} ${GY(fk)} L${GX(80)} ${GY(fk)}`);
+      put($('#rDot'), { cx: GX(F), cy: GY(fShow) });
+    };
+    const loop = now => {
+      if (!active) return;
+      const dt = Math.min((now - last) / 1000, 0.05); last = now;
+      const F = +$('#rFr').value, m = +$('#rMr').value, fs = mus * m * g, fk = muk * m * g;
+      if (F > fs || v > 0){ v = Math.max(0, v + (F - fk) / m * dt); x += v * dt * 20; }
+      draw(); raf = requestAnimationFrame(loop);
+    };
+    el._start = () => { active = true; last = performance.now(); cancelAnimationFrame(raf); raf = requestAnimationFrame(loop); };
+    el._stop = () => { active = false; cancelAnimationFrame(raf); x = 0; v = 0; draw(); };
+    $('#rFr').oninput = draw; $('#rMr').oninput = () => { x = 0; v = 0; draw(); };
+    draw();
+  },
+  enter(el){ el._start && el._start(); },
+  leave(el){ el._stop && el._stop(); }
+},
+/* ── 3.6 แรงโน้มถ่วงกับระยะห่าง ── */
+gravity: {
+  html: `<svg viewBox="0 0 900 470">${arrowDefs('y36')}
+    <circle id="yA" cy="150" fill="var(--ink2)"/><circle id="yB" cy="150" fill="var(--acc)"/>
+    <line id="yFa" y1="150" y2="150" stroke="var(--ink)" stroke-width="5" marker-end="url(#y36)"/><line id="yFb" y1="150" y2="150" stroke="var(--ink)" stroke-width="5" marker-end="url(#y36)"/>
+    <text id="yR" y="235" font-size="22" fill="var(--ink2)" text-anchor="middle"></text>
+    <line x1="520" y1="440" x2="880" y2="440" class="gl"/><line x1="520" y1="440" x2="520" y2="230" class="gl"/>
+    <text x="875" y="465" font-size="18" text-anchor="end" fill="var(--ink3)">ระยะห่าง r</text><text x="530" y="225" font-size="18" fill="var(--ink3)">แรง F</text>
+    <path id="yCurve" fill="none" stroke="var(--acc)" stroke-width="3"/><circle id="yDot" r="8" fill="var(--ink)"/>
+    <text id="yOut" x="40" y="330" font-size="28" font-weight="700" style="font-variant-numeric:tabular-nums"></text>
+    <text id="yOut2" x="40" y="372" font-size="20" fill="var(--ink2)">F₀ = แรงเมื่อ m₁ = m₂ = 1 และ r = 1</text>
+    <text x="40" y="402" font-size="20" fill="var(--ink2)">ลูกศรสองข้างยาวเท่ากันเสมอ (กฎข้อที่สาม)</text>
+  </svg>
+  <div class="ctl"><label>m₁ <input type="range" id="yM1" min="1" max="4" step="1" value="1" style="width:150px"></label>
+    <label>m₂ <input type="range" id="yM2" min="1" max="4" step="1" value="1" style="width:150px"></label>
+    <label>r <input type="range" id="yRr" min="1" max="4" step="0.5" value="1" style="width:180px"></label></div>`,
+  init(el){
+    const $ = s => el.querySelector(s), CX = r => 520 + (r - 0.8) * 110;
+    const upd = () => {
+      const m1 = +$('#yM1').value, m2 = +$('#yM2').value, r = +$('#yRr').value, F = m1 * m2 / (r * r);
+      const xa = 90, xb = 90 + r * 90;
+      put($('#yA'), { cx: xa, r: 14 + m1 * 6 }); put($('#yB'), { cx: xb, r: 14 + m2 * 6 });
+      const L = Math.min(18 + F * 8, 110);
+      put($('#yFa'), { x1: xa, x2: xa + L }); put($('#yFb'), { x1: xb, x2: xb - L });
+      put($('#yR'), { x: (xa + xb) / 2 }); $('#yR').textContent = `r = ${r} หน่วย`;
+      const CY = f => 440 - 190 * f / (m1 * m2);   // กราฟของมวลชุดปัจจุบัน สูงสุดที่ r = 1
+      let d = ''; for (let q = 1; q <= 4.001; q += 0.05) d += (d ? ' L' : 'M') + CX(q).toFixed(1) + ' ' + CY(m1 * m2 / (q * q)).toFixed(1);
+      $('#yCurve').setAttribute('d', d); put($('#yDot'), { cx: CX(r), cy: CY(F) });
+      $('#yOut').textContent = `F = F₀ × (${m1} × ${m2}) / ${r}² = ${fmt(F, 3)} F₀`;
+    };
+    ['#yM1', '#yM2', '#yRr'].forEach(s => $(s).oninput = upd); upd();
+  }
+},
+/* ── 4.2 ขันประแจ ── */
+torque: {
+  html: `<svg viewBox="0 0 900 470">${arrowDefs('t42')}
+    <rect x="160" y="297" width="560" height="26" rx="13" fill="var(--paper2)" stroke="var(--ink)" stroke-width="2"/>
+    <circle cx="160" cy="310" r="30" fill="none" stroke="var(--ink)" stroke-width="3"/><polygon points="160,290 177,300 177,320 160,330 143,320 143,300" fill="var(--ink)"/>
+    <line id="tLine" class="dsh"/><line id="tArm" stroke="var(--acc)" stroke-width="3" stroke-dasharray="4 5"/>
+    <line id="tF" stroke="var(--ink)" stroke-width="6" marker-end="url(#t42)"/>
+    <circle id="tDot" r="8" fill="var(--acc)"/>
+    <text id="tArmT" font-size="22" fill="var(--acc)"></text>
+    <text id="tOut" x="40" y="60" font-size="32" font-weight="700" style="font-variant-numeric:tabular-nums"></text>
+    <text id="tOut2" x="40" y="100" font-size="22" fill="var(--ink2)"></text>
+  </svg>
+  <div class="ctl"><label>ตำแหน่งที่ออกแรง r <input type="range" id="tR" min="0.1" max="0.5" step="0.05" value="0.4" style="width:200px"></label>
+    <label>มุมของแรง θ <input type="range" id="tT" min="0" max="180" step="5" value="90" style="width:200px"></label></div>`,
+  init(el){
+    const $ = s => el.querySelector(s), P = [160, 310], PX = 1100, F = 40;   // 0.5 m = 550 px
+    const upd = () => {
+      const r = +$('#tR').value, th = +$('#tT').value * Math.PI / 180, x = P[0] + r * PX;
+      const dir = [Math.cos(th), -Math.sin(th)];   // วัดจากแนวด้าม ทวนเข็มขึ้นบน
+      put($('#tDot'), { cx: x, cy: P[1] });
+      put($('#tF'), { x1: x, y1: P[1], x2: x + dir[0] * 130, y2: P[1] + dir[1] * 130 });
+      put($('#tLine'), { x1: x - dir[0] * 170, y1: P[1] - dir[1] * 170, x2: x + dir[0] * 170, y2: P[1] + dir[1] * 170 });
+      // เท้าตั้งฉากจากจุดหมุนถึงแนวแรง
+      const k = (P[0] - x) * dir[0] + (P[1] - P[1]) * dir[1], foot = [x + dir[0] * k, P[1] + dir[1] * k];
+      put($('#tArm'), { x1: P[0], y1: P[1], x2: foot[0], y2: foot[1] });
+      const arm = r * Math.abs(Math.sin(th)), M = F * arm;
+      put($('#tArmT'), { x: (P[0] + foot[0]) / 2 - 40, y: (P[1] + foot[1]) / 2 + 48 }); $('#tArmT').textContent = `ℓ = ${fmt(arm, 3)} m`;
+      $('#tOut').textContent = `M = rF sin θ = ${fmt(r, 2)} × 40 × sin ${$('#tT').value}° = ${fmt(M, 1)} N·m`;
+      $('#tOut2').textContent = `แรง 40 N · แขนของโมเมนต์ (เส้นประสีส้ม) คือระยะตั้งฉากจากจุดหมุนถึงแนวแรง`;
+    };
+    ['#tR', '#tT'].forEach(s => $(s).oninput = upd); upd();
+  }
+},
+/* ── 4.3 ไม้กระดานหก ── */
+seesaw: {
+  html: `<svg viewBox="0 0 900 470">
+    <polygon points="450,300 410,380 490,380" fill="var(--ink2)"/>
+    <line x1="120" y1="380" x2="780" y2="380" class="gl"/>
+    <g id="kPlank"><rect x="-320" y="-8" width="640" height="16" rx="4" fill="var(--paper2)" stroke="var(--ink)" stroke-width="2"/>
+      <g id="kTicks" font-size="15" fill="var(--ink3)"></g>
+      <g id="kL"><rect x="-22" y="-58" width="44" height="50" rx="8" fill="var(--ink)"/><text id="kLt" y="-26" font-size="16" fill="#fff" text-anchor="middle" font-weight="700"></text></g>
+      <g id="kR"><rect x="-22" y="-58" width="44" height="50" rx="8" fill="var(--acc)"/><text id="kRt" y="-26" font-size="16" fill="#fff" text-anchor="middle" font-weight="700"></text></g></g>
+    <g font-size="26" style="font-variant-numeric:tabular-nums"><text id="kM1" x="40" y="60"></text><text id="kM2" x="40" y="100"></text><text id="kState" x="40" y="150" font-weight="700" font-size="30"></text></g>
+  </svg>
+  <div class="ctl"><label>m₁ <input type="range" id="kA" min="10" max="80" step="5" value="60" style="width:140px"></label>
+    <label>d₁ <input type="range" id="kDa" min="0.5" max="2.5" step="0.25" value="1.5" style="width:140px"></label>
+    <label>m₂ <input type="range" id="kB" min="10" max="80" step="5" value="30" style="width:140px"></label>
+    <label>d₂ <input type="range" id="kDb" min="0.5" max="2.5" step="0.25" value="2" style="width:140px"></label></div>`,
+  init(el){
+    const $ = s => el.querySelector(s), PX = 120;   // 1 m = 120 px (2.5 m = 300 px)
+    $('#kTicks').innerHTML = [-2.5, -2, -1.5, -1, -0.5, 0.5, 1, 1.5, 2, 2.5].map(d => `<line x1="${d * PX}" x2="${d * PX}" y1="-8" y2="8" stroke="var(--ink3)"/><text x="${d * PX}" y="28" text-anchor="middle">${Math.abs(d)}</text>`).join('');
+    const upd = () => {
+      const m1 = +$('#kA').value, d1 = +$('#kDa').value, m2 = +$('#kB').value, d2 = +$('#kDb').value;
+      const M1 = m1 * 10 * d1, M2 = m2 * 10 * d2, net = M2 - M1;   // ทวนเข็ม (ซ้ายลง) เป็นลบของมุม
+      const bal = Math.abs(net) <= 0.01 * Math.max(M1, M2);
+      const ang = bal ? 0 : Math.max(-12, Math.min(12, net / 60));
+      $('#kPlank').setAttribute('transform', `translate(450 292) rotate(${ang})`);
+      $('#kL').setAttribute('transform', `translate(${-d1 * PX} 0)`); $('#kR').setAttribute('transform', `translate(${d2 * PX} 0)`);
+      $('#kLt').textContent = m1 + ' kg'; $('#kRt').textContent = m2 + ' kg';
+      $('#kM1').textContent = `ซ้าย (ทวนเข็ม): ${m1} × 10 × ${d1} = ${fmt(M1)} N·m`;
+      $('#kM2').textContent = `ขวา (ตามเข็ม): ${m2} × 10 × ${d2} = ${fmt(M2)} N·m`;
+      $('#kState').textContent = bal ? 'สมดุล — โมเมนต์ทวนเข็ม = ตามเข็ม' : (net > 0 ? 'ขวาหนักกว่า — หมุนตามเข็ม' : 'ซ้ายหนักกว่า — หมุนทวนเข็ม');
+      $('#kState').style.fill = bal ? 'var(--pos)' : 'var(--neg)';
+    };
+    ['#kA', '#kDa', '#kB', '#kDb'].forEach(s => $(s).oninput = upd); upd();
+  }
+},
+/* ── 4.4 เอียงกล่องจนล้ม ── */
+com: {
+  html: `<svg viewBox="0 0 900 470">
+    <line x1="60" y1="420" x2="860" y2="420" class="gl"/>
+    <g id="cBox"><rect id="cRect" fill="var(--paper2)" stroke="var(--ink)" stroke-width="3"/><circle id="cG" r="9" fill="var(--neg)"/></g>
+    <line id="cDrop" stroke="var(--neg)" stroke-width="3" stroke-dasharray="8 6"/>
+    <circle id="cPivot" r="6" fill="var(--ink)"/>
+    <text id="cOut" x="40" y="60" font-size="30" font-weight="700" style="font-variant-numeric:tabular-nums"></text>
+    <text id="cOut2" x="40" y="100" font-size="24" fill="var(--ink2)" style="font-variant-numeric:tabular-nums"></text>
+  </svg>
+  <div class="ctl"><label>ฐานกว้าง b <input type="range" id="cB" min="0.2" max="1" step="0.05" value="0.6" style="width:170px"></label>
+    <label>ศูนย์ถ่วงสูง h <input type="range" id="cH" min="0.2" max="1" step="0.05" value="0.4" style="width:170px"></label>
+    <label>เอียง θ <input type="range" id="cT" min="0" max="70" step="1" value="20" style="width:170px"></label></div>`,
+  init(el){
+    const $ = s => el.querySelector(s), PX = 300, piv = [520, 420];   // 1 m = 300 px · หมุนรอบมุมขวาล่าง
+    const upd = () => {
+      const b = +$('#cB').value, h = +$('#cH').value, th = +$('#cT').value, H = 2 * h;   // กล่องสม่ำเสมอ สูง 2h
+      const crit = Math.atan((b / 2) / h) * 180 / Math.PI, fall = th > crit;
+      put($('#cRect'), { x: -b * PX, y: -H * PX, width: b * PX, height: H * PX });
+      put($('#cG'), { cx: -b / 2 * PX, cy: -h * PX });
+      $('#cBox').setAttribute('transform', `translate(${piv[0]} ${piv[1]}) rotate(${th})`);
+      put($('#cPivot'), { cx: piv[0], cy: piv[1] });
+      const r = th * Math.PI / 180, gx = piv[0] + (-b / 2 * PX) * Math.cos(r) - (-h * PX) * Math.sin(r), gy = piv[1] + (-b / 2 * PX) * Math.sin(r) + (-h * PX) * Math.cos(r);
+      put($('#cDrop'), { x1: gx, y1: gy, x2: gx, y2: 420 });
+      $('#cOut').textContent = fall ? 'ล้ม! เส้นดิ่งจากศูนย์ถ่วงพ้นมุมฐานแล้ว' : 'ยังไม่ล้ม — เส้นดิ่งยังตกในฐาน';
+      $('#cOut').style.fill = fall ? 'var(--neg)' : 'var(--pos)';
+      $('#cOut2').textContent = `มุมวิกฤต tan θc = (b/2)/h = ${fmt(b / 2, 2)}/${fmt(h, 2)} → θc ≈ ${fmt(crit, 1)}°`;
+    };
+    ['#cB', '#cH', '#cT'].forEach(s => $(s).oninput = upd); upd();
+  }
+}
+};
+
+/* ── บทจาก content_ch*.js → รูปแบบที่เอนจินใช้ ── */
+const CHAPTERS = {};
+(window.P1 || []).forEach(C => { CHAPTERS[C.no] = C; });
+
+SlideDeck.start({
+  name: 'ฟิสิกส์ 1', en: 'Physics I', book: 'ม.4 เล่ม 1', bookAll: 'ม.4 เล่ม 1–2', app: 'index.html', themeKey: 'p1slides.theme',
+  chapters: CHAPTERS, sims: SIMS, topics: physicsData.topics
+});
+})();
+</script>
+</body>
+</html>

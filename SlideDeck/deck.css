@@ -259,3 +259,8 @@ body.editing .slide{cursor:default}
 #editbar button{flex:none;font:700 14px var(--head);border:1px solid color-mix(in srgb,var(--paper) 40%,transparent);background:transparent;color:inherit;border-radius:99px;padding:7px 14px;cursor:pointer}
 #editbar button.pri{background:var(--paper);color:var(--ink)}
 #hud #bEdit.on{background:var(--ink);color:var(--paper)}
+
+/* สารบัญบทที่มี 6 หัวข้อขึ้นไป — บีบแถวให้พอดีเวที */
+.road.dense li{padding:10px 0}
+.road.dense .n{font-size:52px}
+.road.dense .t{font-size:36px}
