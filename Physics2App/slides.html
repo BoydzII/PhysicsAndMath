@@ -50,11 +50,14 @@ body{font-family:var(--body);-webkit-font-smoothing:antialiased}
 .s-cover .sub{font:400 28px/1 var(--head);color:var(--ink2);margin-bottom:28px}
 .s-cover h1{font:700 150px/1.1 var(--head);margin:0}
 .s-cover h1 span{display:block;font-weight:200}
-.s-cover .meta{margin-top:40px;font-size:24px;color:var(--ink3)}
+.s-cover .meta{margin-top:40px;font-size:24px;line-height:1.6;color:var(--ink3);max-width:700px}
 .s-cover .keys{position:absolute;right:104px;bottom:96px;text-align:right;font-size:20px;line-height:2;color:var(--ink3)}
 kbd{font:400 17px var(--head);border:1px solid var(--rule);border-bottom-width:2px;border-radius:6px;padding:1px 8px;color:var(--ink2);background:var(--paper)}
 
 /* ── แผนที่บท ───────────────────────────────────── */
+/* ชื่อบทบนหน้าเนื้อหาในบทนี้ — ขีดเส้นใต้หนาสีประจำบท */
+.slide h2.chtitle span{text-decoration:underline;text-decoration-color:var(--c);text-decoration-thickness:8px;text-underline-offset:16px;text-decoration-skip-ink:none}
+.slide h2.chtitle{margin-bottom:48px}
 .road{list-style:none;margin:0;padding:0;border-top:1px solid var(--rule)}
 .road li{display:grid;grid-template-columns:160px 1fr auto;align-items:baseline;padding:22px 0;border-bottom:1px solid var(--rule)}
 .road .n{font:200 64px/1 var(--head);color:var(--c)}
@@ -817,7 +820,7 @@ function cover(){
 function roadmap(){
   return { title:'เนื้อหาในบทนี้', html: `
     <div class="kicker"><b>บทที่ ${CHAPTER.no}</b><span class="dot"></span><span>เนื้อหาในบทนี้</span></div>
-    <h2>${CHAPTER.road}</h2>
+    <h2 class="chtitle" style="--c:${CHAPTER.color}"><span>${CHAPTER.title}</span></h2>
     <ol class="road">${SECTIONS.map(S => `<li class="f" style="--c:${S.color}"><span class="n">${S.num}</span><span class="t">${S.title}<small>${S.en}</small></span><span class="q">${S.road}</span></li>`).join('')}</ol>` };
 }
 function opener(S){
@@ -843,7 +846,7 @@ function coreSlide(S){
 }
 function eqsSlide(S){
   return { title:'สมการที่ใช้บ่อย', html: `${kick(S,'สมการที่ใช้บ่อย')}
-    <h2>สมการในกระเป๋า</h2>
+    <h2>สรุปสูตรในบทนี้</h2>
     <div class="eqgrid">${S.eqs.map(e => `<div class="eqrow f"><div class="nm">${e.nm}<small>${e.s}</small></div><div>$$${e.eq}$$</div></div>`).join('')}</div>` };
 }
 function lifeSlide(S){
@@ -1457,7 +1460,7 @@ slides.forEach((s, i) => {
   const el = document.createElement('section');
   el.className = 'slide ' + (s.cls || '');
   el.innerHTML = s.html;
-  if (s.S) el.style.setProperty('--acc', s.S.color);
+  el.style.setProperty('--acc', s.S ? s.S.color : CHAPTER.color); // ปก สารบัญ สรุป ใช้สีประจำบท
   s.el = el; deck.appendChild(el);
 });
 
