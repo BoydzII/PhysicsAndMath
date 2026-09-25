@@ -360,6 +360,108 @@ function answerSummary(p, rows){
   const val = r.expr.replace(/<span class="ans">([\s\S]*?)<\/span>/, '$1').replace(/&nbsp;/g, ' ').trim();
   return lbl ? lbl + ' ' + (r.op || '$=$') + ' ' + val : val;
 }
+/* ── รูปประกอบเส้นทางการเคลื่อนที่ (p.fig) — ครูกดปุ่ม "รูปประกอบ" เปิด/ปิดบนสไลด์โจทย์ ──
+   fig: { start?:[x,y], path:[ช่วง…], sLbl, dLbl, compass?, pt?:{ start, end }, radii?:true|ป้าย, axis?:{ from, to, step, lbl? }, arrowOff?:[dx,dy] px, dur? }  (หน่วยเมตร แกน y ชี้ขึ้น = ทิศเหนือ)
+     ช่วงเส้นตรง { to:[dx,dy], lbl?, at?, lane? }   lane = เลื่อนเส้นออกข้าง (เดินย้อนทางเดิมจะไม่ทับกัน)
+     ช่วงโค้ง   { arc:{ r, a0, deg }, lbl? }  a0 = มุมของจุดปัจจุบันบนวงกลม (องศา) · deg บวก = ทวนเข็มนาฬิกา
+   เดินเส้นทางให้ดูก่อน (สีประจำหัวข้อ = ระยะทาง) จบแล้วลูกศรการกระจัดค่อยขึ้น (สีแดง) */
+const FW = 540, FH = 470;
+function figGeom(fig){
+  let cur = (fig.start || [0, 0]).slice();
+  const segs = [];
+  fig.path.forEach(g => {
+    const pts = [cur.slice()];
+    if (g.arc){
+      const { r, a0, deg } = g.arc, t0 = a0 * Math.PI / 180, c = [cur[0] - r * Math.cos(t0), cur[1] - r * Math.sin(t0)];
+      const n = Math.max(12, Math.ceil(Math.abs(deg) / 3));
+      for (let i = 1; i <= n; i++){ const t = t0 + deg * Math.PI / 180 * i / n; pts.push([c[0] + r * Math.cos(t), c[1] + r * Math.sin(t)]); }
+      segs.push({ g, pts, c, r, mid: t0 + deg * Math.PI / 360 });
+    } else {
+      pts.push([cur[0] + g.to[0], cur[1] + g.to[1]]);
+      segs.push({ g, pts });
+    }
+    cur = pts[pts.length - 1].slice();
+  });
+  const all = segs.flatMap(q => q.pts).concat(fig.axis ? [[fig.axis.from, 0], [fig.axis.to, 0]] : []);
+  const xs = all.map(p => p[0]), ys = all.map(p => p[1]);
+  const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+  const pad = 70, k = Math.min((FW - 2 * pad) / Math.max(x1 - x0, 1e-6), (FH - 2 * pad - (fig.axis ? 70 : 0)) / Math.max(y1 - y0, 1e-6), 1e9);
+  const ox = (FW - (x1 - x0) * k) / 2, oy = (FH - (fig.axis ? 70 : 0) - (y1 - y0) * k) / 2;
+  const T = p => [ox + (p[0] - x0) * k, oy + (y1 - p[1]) * k];
+  return { segs, T, k, start: fig.start || [0, 0], end: cur };
+}
+function figSVG(fig){
+  const G = figGeom(fig), T = G.T;
+  let d = '', labels = '', trail = [];
+  G.segs.forEach(q => {
+    const sp = q.pts.map(T);
+    let off = [0, 0];
+    if (!q.g.arc){
+      const dx = sp[1][0] - sp[0][0], dy = sp[1][1] - sp[0][1], L = Math.hypot(dx, dy) || 1, left = [dy / L, -dx / L];
+      off = left.map(v => v * 18 * (q.g.lane || 0));
+      // ป้ายอยู่ด้านซ้ายของทิศที่เดิน · เส้นแนวตั้งชิดป้ายด้านข้าง (text-anchor) ไม่ให้ทับเส้น · at = ตำแหน่งตามเส้น 0–1
+      const f = q.g.at ?? 0.5, side = Math.abs(left[0]) > 0.7, gap = side ? 16 : 30;
+      const m = [sp[0][0] + (sp[1][0] - sp[0][0]) * f + off[0] + left[0] * gap, sp[0][1] + (sp[1][1] - sp[0][1]) * f + off[1] + left[1] * gap];
+      const anc = side ? (left[0] > 0 ? 'start' : 'end') : 'middle';
+      if (q.g.lbl) labels += `<text x="${m[0].toFixed(1)}" y="${(m[1] + 8).toFixed(1)}" class="fl" text-anchor="${anc}">${q.g.lbl}</text>`;
+    } else if (q.g.lbl){
+      const c = T(q.c), rr = q.r * G.k + 16, cs = Math.cos(q.mid), sn = Math.sin(q.mid);
+      const anc = cs > 0.35 ? 'start' : cs < -0.35 ? 'end' : 'middle', dy = sn > 0.35 ? -4 : sn < -0.35 ? 26 : 8;
+      labels += `<text x="${(c[0] + rr * cs).toFixed(1)}" y="${(c[1] - rr * sn + dy).toFixed(1)}" class="fl" text-anchor="${anc}">${q.g.lbl}</text>`;
+    }
+    sp.forEach(p => trail.push([p[0] + off[0], p[1] + off[1]]));
+  });
+  d = trail.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' ');
+  const A = T(G.start), B = T(G.end), same = Math.hypot(B[0] - A[0], B[1] - A[1]) < 2, Bw = trail[trail.length - 1];
+  // ป้าย "เริ่ม/จบ" อยู่ฝั่งที่ห่างจากกลางรูป (ไม่ทับเส้นทาง) หรือกำหนดเองด้วย fig.pt = { start, end } : 'a' บน · 'b' ล่าง · 'l' ซ้าย · 'r' ขวา
+  const cy = trail.reduce((t, p) => t + p[1], 0) / trail.length;
+  const ptLbl = (p, t, cls, pos) => {
+    pos = pos || (p[1] < cy - 4 ? 'a' : 'b');
+    const [x, y, anc] = pos === 'a' ? [p[0], p[1] - 22, 'middle'] : pos === 'l' ? [p[0] - 20, p[1] + 7, 'end'] : pos === 'r' ? [p[0] + 20, p[1] + 7, 'start'] : [p[0], p[1] + 36, 'middle'];
+    return `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" class="${cls}" style="text-anchor:${anc}">${t}</text>`;
+  };
+  const ao = fig.arrowOff || [0, 0];
+  let radii = '';
+  if (fig.radii) G.segs.filter(q => q.g.arc).forEach(q => { const c = T(q.c), a = T(q.pts[0]), b = T(q.pts[q.pts.length - 1]); radii += `<line x1="${c[0]}" y1="${c[1]}" x2="${a[0]}" y2="${a[1]}" class="frad"/><line x1="${c[0]}" y1="${c[1]}" x2="${b[0]}" y2="${b[1]}" class="frad"/><circle cx="${c[0]}" cy="${c[1]}" r="5" class="fcen"/><text x="${c[0] + 14}" y="${c[1] - 12}" class="ftk" text-anchor="start">${fig.radii === true ? '' : fig.radii}</text>`; });
+  let axis = '';
+  if (fig.axis){
+    const a = fig.axis, yb = T([0, 0])[1] + 70;
+    axis += `<line x1="${T([a.from, 0])[0] - 20}" y1="${yb}" x2="${T([a.to, 0])[0] + 26}" y2="${yb}" class="fax" marker-end="url(#fgA)"/>`;
+    for (let v = a.from; v <= a.to + 1e-9; v += a.step){ const x = T([v, 0])[0]; axis += `<line x1="${x}" y1="${yb - 7}" x2="${x}" y2="${yb + 7}" class="fax"/><text x="${x}" y="${yb + 34}" class="ftk">${v}</text>`; }
+    axis += `<text x="${T([a.to, 0])[0] + 30}" y="${yb - 12}" class="ftk">${a.lbl || 'x (m)'}</text>`;
+  }
+  const comp = fig.compass ? `<g transform="translate(${FW - 44} 50)" class="fcomp"><line x1="0" y1="18" x2="0" y2="-18" marker-end="url(#fgA)"/><text x="0" y="-26">N</text></g>` : '';
+  return `<svg viewBox="0 0 ${FW} ${FH}" class="figsvg">
+    <defs><marker id="fgA" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="context-stroke"/></marker>
+      <marker id="fgD" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="4.5" markerHeight="4.5" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#d62f2f"/></marker></defs>
+    ${axis}${comp}${radii}
+    <path d="${d}" class="fghost"/>
+    <path d="${d}" class="ftrail"/>
+    ${same ? '' : `<line x1="${A[0] + ao[0]}" y1="${A[1] + ao[1]}" x2="${B[0] + ao[0]}" y2="${B[1] + ao[1]}" class="fdisp" marker-end="url(#fgD)"/>`}
+    <g class="flbl">${labels}</g>
+    <circle cx="${A[0]}" cy="${A[1]}" r="9" class="fstart"/>${ptLbl(A, same ? 'เริ่ม = จบ' : 'เริ่ม', 'fpt', (fig.pt || {}).start)}
+    ${same ? '' : ptLbl(Bw, 'จบ', 'fpt fend', (fig.pt || {}).end)}
+    <circle r="12" class="fwalk" cx="${A[0]}" cy="${A[1]}"/>
+  </svg>
+  <div class="flegend"><span class="ls"><i></i>${fig.sLbl || 'ระยะทาง'}</span><span class="ld"><i></i>${fig.dLbl || 'การกระจัด'}</span></div>`;
+}
+// เล่นแอนิเมชัน: เส้นทางค่อย ๆ ถูกวาดตามคนเดิน → จบแล้วลูกศรการกระจัดและป้ายค่อยขึ้น
+function playFig(box, fig){
+  const svg = box.querySelector('svg'); if (!svg) return;
+  const tr = svg.querySelector('.ftrail'), w = svg.querySelector('.fwalk'), L = tr.getTotalLength();
+  box.classList.remove('done');
+  tr.style.strokeDasharray = L; tr.style.strokeDashoffset = L;
+  const dur = (fig.dur || 3.2) * 1000, t0 = performance.now(), id = (box._run = (box._run || 0) + 1);
+  const step = now => {
+    if (box._run !== id || !box.isConnected) return;
+    const u = Math.min(1, (now - t0) / dur), e = u < .5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2;
+    const p = tr.getPointAtLength(L * e);
+    tr.style.strokeDashoffset = L * (1 - e);
+    w.setAttribute('cx', p.x); w.setAttribute('cy', p.y);
+    if (u < 1) requestAnimationFrame(step); else box.classList.add('done');
+  };
+  requestAnimationFrame(step);
+}
 function probSlide(S, order, pid, label){
   const list = (TOPICS[S.key] || {}).problems || [];
   const tag = label || 'โจทย์ข้อ ' + order;
@@ -387,8 +489,10 @@ function probSlide(S, order, pid, label){
           <div class="num">${String(idx).padStart(2,'0')}</div>
           <div class="txt">${fixTex(p.text)}</div>
           ${g.length ? `<div class="given f"><div class="lbl">โจทย์กำหนด</div><ul>${g.map(x => `<li>${fixTex(x)}</li>`).join('')}</ul></div>` : ''}
+          ${p.fig ? `<button class="hintbtn figbtn nointeract"><i class="ph ph-path"></i> รูปประกอบ</button>` : ''}
           ${p.hints ? `<button class="hintbtn nointeract"><i class="ph ph-lightbulb"></i> คำใบ้</button><div class="hintbox"><div class="lbl">คำใบ้</div>${fixTex([].concat(p.hints).join('<br>'))}</div>` : ''}
         </div>
+        ${p.fig ? `<div class="figpanel nointeract"><div class="fhead"><span>รูปประกอบ · แนวการเคลื่อนที่</span><button class="freplay" title="เล่นใหม่"><i class="ph ph-arrow-counter-clockwise"></i></button><button class="fclose" title="ปิด"><i class="ph ph-x"></i></button></div>${figSVG(p.fig)}</div>` : ''}
         <div class="psol">
           ${me ? `<div class="meq f"><div class="lbl">สมการหลัก · ${me.nm}</div>$$${me.tex}$$</div>` : ''}
           <div class="sol">${sol}</div>
@@ -413,8 +517,16 @@ function bindProb(el, obj){
   });
   const ps = el.querySelector('.psol');
   if (ps) ps.onscroll = () => ps.classList.toggle('scrolled', ps.scrollTop > 4);
-  const hb = el.querySelector('.hintbtn');
+  const hb = el.querySelector('.hintbtn:not(.figbtn)');
   if (hb) hb.onclick = e => { e.stopPropagation(); el.querySelector('.hintbox').classList.toggle('show'); };
+  const fb = el.querySelector('.figbtn'), fp = el.querySelector('.figpanel');
+  if (fb && fp){
+    const p = obj.list.find(x => x.id === obj.pid) || obj.list[0];
+    const toggle = on => { fp.classList.toggle('show', on); fb.classList.toggle('on', on); if (on) playFig(fp, p.fig); else fp._run = (fp._run || 0) + 1; };
+    fb.onclick = e => { e.stopPropagation(); toggle(!fp.classList.contains('show')); };
+    fp.querySelector('.fclose').onclick = e => { e.stopPropagation(); toggle(false); };
+    fp.querySelector('.freplay').onclick = e => { e.stopPropagation(); playFig(fp, p.fig); };
+  }
 }
 function fitSol(el){
   const ps = el.querySelector('.psol'); if (!ps) return;

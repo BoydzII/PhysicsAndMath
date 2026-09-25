@@ -290,3 +290,34 @@ body.editing .slide{cursor:default}
 .rule .ex{display:flex;flex-wrap:wrap;gap:12px 18px;font-size:28px}
 .rule .ex>span{display:inline-flex;align-items:baseline;gap:10px;background:var(--acc-soft);border-radius:6px;padding:4px 12px}
 .rule .ex b{color:var(--acc);font:700 22px var(--head);white-space:nowrap}
+
+/* ── รูปประกอบเส้นทางการเคลื่อนที่บนสไลด์โจทย์ (p.fig) ── */
+.pbody{position:relative}
+.hintbtn.figbtn.on{background:var(--acc);border-color:var(--acc);color:#fff;border-style:solid}
+.figpanel{position:absolute;left:0;top:0;bottom:0;width:540px;z-index:5;background:var(--paper);border:1.5px solid var(--rule);border-radius:12px;box-shadow:0 18px 50px -20px rgba(0,0,0,.35);display:flex;flex-direction:column;padding:14px 16px 16px;opacity:0;visibility:hidden;transform:translateY(12px) scale(.98);transition:opacity .3s,transform .35s cubic-bezier(.2,.8,.2,1),visibility 0s .35s}
+.figpanel.show{opacity:1;visibility:visible;transform:none;transition:opacity .3s,transform .35s cubic-bezier(.2,.8,.2,1)}
+.fhead{display:flex;align-items:center;gap:8px;font:700 20px var(--head);color:var(--ink3)}
+.fhead span{flex:1}
+.fhead button{width:40px;height:40px;border-radius:99px;border:1px solid var(--rule);background:var(--paper);color:var(--ink2);font-size:20px;display:grid;place-items:center;cursor:pointer}
+.figsvg{width:100%;flex:1;min-height:0}
+.figsvg .fghost{fill:none;stroke:var(--rule);stroke-width:3;stroke-dasharray:6 8}
+.figsvg .ftrail{fill:none;stroke:var(--acc);stroke-width:6;stroke-linecap:round;stroke-linejoin:round}
+.figsvg .fwalk{fill:var(--acc);stroke:var(--paper);stroke-width:4}
+.figsvg .fstart{fill:var(--paper);stroke:var(--ink);stroke-width:3}
+.figsvg .fpt{font:700 20px var(--head);fill:var(--ink2);text-anchor:middle}
+.figsvg .fl{font:700 22px var(--body);fill:var(--acc);opacity:0;transition:opacity .4s}
+.figsvg .fdisp{stroke:#d62f2f;stroke-width:5;stroke-dasharray:10 7;opacity:0;transition:opacity .5s .2s}
+.figsvg .fend{opacity:0;transition:opacity .4s}
+.figsvg .fax{stroke:var(--ink3);stroke-width:2;fill:none}
+.figsvg .ftk{font:400 18px var(--head);fill:var(--ink3);text-anchor:middle}
+.figsvg .fcomp line{stroke:var(--ink2);stroke-width:2.5}
+.figsvg .fcomp text{font:700 18px var(--head);fill:var(--ink2);text-anchor:middle}
+.figpanel.done .fl,.figpanel.done .fend{opacity:1}
+.figpanel.done .fdisp{opacity:1}
+.flegend{display:flex;flex-direction:column;gap:6px;font-size:22px;line-height:1.5;opacity:0;transition:opacity .5s .3s}
+.figpanel.done .flegend{opacity:1}
+.flegend i{display:inline-block;width:34px;height:0;vertical-align:middle;margin-right:12px}
+.flegend .ls i{border-top:6px solid var(--acc)}
+.flegend .ld i{border-top:5px dashed #d62f2f}
+.figsvg .frad{stroke:var(--ink3);stroke-width:2;stroke-dasharray:4 6}
+.figsvg .fcen{fill:var(--ink3)}
