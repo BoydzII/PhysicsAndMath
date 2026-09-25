@@ -119,6 +119,7 @@ Thumbs.db
 !Physics2App/
 Physics2App/*
 !Physics2App/index.html
+!Physics2App/slides.html
 !Physics2App/style.css
 !Physics2App/app.js
 !Physics2App/main_equations.js

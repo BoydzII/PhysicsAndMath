@@ -67,6 +67,7 @@
     </div>
 
     <div class="actions">
+      <button id="btnSlides" class="secondary icon-btn" title="เปิดสไลด์นำเสนอของบทนี้ (แท็บใหม่)"><i class="ph ph-presentation-chart"></i></button>
       <button id="btnFullscreen" class="secondary icon-btn" title="เปิด/ปิด โหมดเต็มจอ (Fullscreen)"><i class="ph ph-corners-out"></i></button>
       <button id="btnCheckAnswers" class="secondary icon-btn" title="ตรวจคำตอบทั้งหมด"><i class="ph ph-check-circle"></i></button>
       <button id="btnSubmit" class="primary" title="ส่งงานและบันทึกคะแนน"><i class="ph ph-paper-plane-right"></i> <span>ส่งงาน</span></button>
@@ -202,6 +203,15 @@
   <script src="simulations/sim_ch6.js?v=1790500000"></script>
   <script src="simulations/sim_ch7.js?v=1790500000"></script>
   <script src="app.js?v=1790500000"></script>
+  <script>
+    // ปุ่มสไลด์: เปิด slides.html ของบทที่กำลังเลือกในแท็บใหม่ (อ่านเลขบทจาก optgroup "บทที่ N: …")
+    document.getElementById('btnSlides').addEventListener('click', function () {
+      var sel = document.getElementById('topicSelector');
+      var opt = sel && sel.options[sel.selectedIndex];
+      var m = opt && opt.parentNode.label && opt.parentNode.label.match(/บทที่\s*(\d+)/);
+      window.open('slides.html?ch=' + (m ? m[1] : 5), '_blank');
+    });
+  </script>
 <!-- แถบเปลี่ยนแอปในเครือคลังโจทย์ (ไฟล์ร่วม ../apps.js) — หาไม่เจอก็ไม่เป็นไร แอปทำงานปกติ -->
 <script src="../apps.js" defer></script>
 </body>
