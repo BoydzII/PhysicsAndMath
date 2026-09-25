@@ -155,12 +155,14 @@ svg .dsh{stroke:var(--ink3);stroke-width:2;stroke-dasharray:6 7;fill:none}
 .hintbtn{align-self:flex-start;font:400 20px var(--head);background:none;border:1px dashed var(--ink3);color:var(--ink2);border-radius:99px;padding:8px 20px;cursor:pointer}
 .hintbox{display:none;font-size:24px;line-height:1.7;color:var(--ink2);border-left:3px dashed var(--acc);padding-left:20px}
 .hintbox.show{display:block}
-.psol{display:flex;flex-direction:column;min-height:0;border-left:1px solid var(--rule);padding-left:56px;--sfs:34px}
+.psol{display:flex;flex-direction:column;min-height:0;border-left:1px solid var(--rule);padding-left:56px;--sfs:34px;overflow-y:auto;scrollbar-width:none}
+.psol::-webkit-scrollbar{display:none}
+.psol.scrolled{-webkit-mask-image:linear-gradient(transparent,#000 56px);mask-image:linear-gradient(transparent,#000 56px)}
 .meq{margin-bottom:18px}
 .meq .lbl{font:400 20px var(--head);color:var(--acc)}
 .meq .katex-display{margin:6px 0 0;text-align:left}
 .meq .katex-display>.katex{text-align:left;font-size:1.25em}
-.sol{display:grid;grid-template-columns:66px auto auto 1fr;column-gap:0;align-content:start;font-size:var(--sfs);flex:1;min-height:0}
+.sol{display:grid;grid-template-columns:66px auto auto 1fr;column-gap:0;align-content:start;font-size:var(--sfs);flex:none}
 .sol .r{display:contents}
 .sol .r>div{padding:9px 0;min-height:1.9em;display:flex;align-items:center;line-height:1.6;transition:opacity .45s,transform .5s cubic-bezier(.2,.8,.2,1),filter .45s}
 .sol .r:not(.on)>div{opacity:0;transform:translateY(14px);filter:blur(6px)}
@@ -833,13 +835,15 @@ function bindProb(el, obj){
     renderMath(el); bindProb(el, obj);
     frag[cur] = 0; applyFrags(el, 0); fitSol(el);
   });
+  const ps = el.querySelector('.psol');
+  if (ps) ps.onscroll = () => ps.classList.toggle('scrolled', ps.scrollTop > 4);
   const hb = el.querySelector('.hintbtn');
   if (hb) hb.onclick = e => { e.stopPropagation(); el.querySelector('.hintbox').classList.toggle('show'); };
 }
 function fitSol(el){
   const ps = el.querySelector('.psol'); if (!ps) return;
   let fs = 34; ps.style.setProperty('--sfs', fs + 'px');
-  while (ps.scrollHeight > ps.clientHeight + 2 && fs > 20){ fs -= 1; ps.style.setProperty('--sfs', fs + 'px'); }
+  while (ps.scrollHeight > ps.clientHeight + 2 && fs > 26){ fs -= 1; ps.style.setProperty('--sfs', fs + 'px'); }
 }
 
 function summary(){
@@ -1419,8 +1423,20 @@ function applyFrags(el, n){
     if (last.dataset.g) fs.forEach((f, i) => { if (i < n && f.dataset.g === last.dataset.g) f.classList.add('grpnow'); });
   }
   const done = el.querySelector('.pdone'); if (done) done.classList.toggle('show', n >= fs.length && fs.length > 0);
+  followLine(el, last, n);
 }
 
+// ใช้ scrollTop ของช่องวิธีทำเอง (scrollIntoView จะเลื่อนเวทีทั้งแผ่นไปด้วย)
+function followLine(el, last, n){
+  const ps = el.querySelector('.psol'); if (!ps) return;
+  if (!n || !last){ ps.scrollTop = 0; return; }
+  const cell = last.classList.contains('r') ? last.lastElementChild : last;
+  const sc = stage.getBoundingClientRect().width / 1600 || 1;
+  const pr = ps.getBoundingClientRect(), cr = cell.getBoundingClientRect();
+  const below = (cr.bottom - pr.bottom) / sc + 28, above = (pr.top - cr.top) / sc + 28;
+  if (below > 28) ps.scrollTo({ top: ps.scrollTop + below, behavior: 'smooth' });
+  else if (above > 28) ps.scrollTo({ top: ps.scrollTop - above, behavior: 'smooth' });
+}
 const wipe = document.getElementById('wipe');
 let pending = null; // การสลับสไลด์ที่รออยู่หลังม่าน
 function show(i, dir, opts = {}){
