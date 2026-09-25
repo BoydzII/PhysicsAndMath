@@ -24,12 +24,12 @@
   --rule:#34353b; --pos:#4cc47f; --neg:#ff7a6a; --zero:#9a9a9a;
 }
 *{box-sizing:border-box}
-html,body{margin:0;height:100%;background:var(--paper);color:var(--ink);overflow:hidden}
+html,body{margin:0;height:100%;background:var(--paper);color:var(--ink);overflow:hidden;touch-action:manipulation;-webkit-text-size-adjust:100%}
 body{font-family:var(--body);-webkit-font-smoothing:antialiased}
 
 /* ── เวที 1600×900 ย่อขยายตามจอ ───────────────────── */
-#viewport{position:fixed;inset:0;display:grid;place-items:center}
-#stage{position:relative;width:1600px;height:900px;flex:none;transform-origin:center center;overflow:hidden;background:var(--paper)}
+#viewport{position:fixed;inset:0;overflow:hidden}
+#stage{position:absolute;left:0;top:0;width:1600px;height:900px;transform-origin:0 0;overflow:hidden;background:var(--paper)}
 .slide{--acc-soft:color-mix(in srgb,var(--acc) 12%,var(--paper));position:absolute;inset:0;padding:64px 104px 72px;font-size:28px;visibility:hidden;opacity:0;display:flex;flex-direction:column}
 .slide.active{visibility:visible;opacity:1}
 .slide .kicker{font:400 22px/1 var(--head);color:var(--acc);display:flex;gap:14px;align-items:center;margin-bottom:22px}
@@ -46,11 +46,10 @@ body{font-family:var(--body);-webkit-font-smoothing:antialiased}
 .f.on.now{--mark:var(--acc)}
 
 /* ── ปก ─────────────────────────────────────────── */
-.s-cover{justify-content:flex-end;padding-bottom:96px}
-.s-cover .sub{font:400 28px/1 var(--head);color:var(--ink2);margin-bottom:28px}
+.s-cover{justify-content:center;align-items:center;text-align:center;padding-bottom:64px}
+.s-cover .sub{font:400 28px/1 var(--head);color:var(--ink2);margin-bottom:36px}
 .s-cover h1{font:700 150px/1.1 var(--head);margin:0}
 .s-cover h1 span{display:block;font-weight:200}
-.s-cover .meta{margin-top:40px;font-size:24px;line-height:1.6;color:var(--ink3);max-width:700px}
 .s-cover .keys{position:absolute;right:104px;bottom:96px;text-align:right;font-size:20px;line-height:2;color:var(--ink3)}
 kbd{font:400 17px var(--head);border:1px solid var(--rule);border-bottom-width:2px;border-radius:6px;padding:1px 8px;color:var(--ink2);background:var(--paper)}
 
@@ -195,7 +194,7 @@ svg .dsh{stroke:var(--ink3);stroke-width:2;stroke-dasharray:6 7;fill:none}
 .sum .katex-display>.katex{text-align:left;font-size:1.2em}
 
 /* ── ม่านเปลี่ยนหัวข้อ ────────────────────────────── */
-.chnav{position:absolute;left:104px;top:64px;display:flex;gap:28px;font:400 20px var(--head)}
+.chnav{position:absolute;right:120px;top:80px;display:flex;gap:36px;font:400 20px/1.8 var(--head)}
 .chnav a{color:var(--ink3);text-decoration:none;border-bottom:1px solid var(--rule)}
 .chnav a:hover{color:var(--ink)}
 .chnav b{color:var(--ink);font-weight:700}
@@ -207,6 +206,7 @@ svg .dsh{stroke:var(--ink3);stroke-width:2;stroke-dasharray:6 7;fill:none}
 /* ── แถบควบคุม (นอกเวที ไม่ย่อ) ───────────────────── */
 #hud{position:fixed;left:0;right:0;bottom:0;padding:10px 18px 12px;display:flex;align-items:center;gap:16px;background:linear-gradient(transparent,color-mix(in srgb,var(--paper) 92%,transparent) 40%);transition:opacity .4s;z-index:50}
 #hud.hide{opacity:0}
+@media (pointer:coarse){#hud button{width:48px;height:48px}#hud #bCh{height:44px}}
 #hud button{background:none;border:0;color:var(--ink2);font-size:24px;width:40px;height:40px;border-radius:99px;cursor:pointer;display:grid;place-items:center}
 #hud button:hover{background:var(--paper2)}
 #bar{flex:1;display:flex;gap:4px;height:6px}
@@ -224,6 +224,8 @@ svg .dsh{stroke:var(--ink3);stroke-width:2;stroke-dasharray:6 7;fill:none}
 #ov .card small{display:block;font:400 14px var(--head);color:var(--ink3)}
 #ov .card span{font:400 18px/1.5 var(--body)}
 #blank{position:fixed;inset:0;background:#000;z-index:70;display:none}
+#toast{position:fixed;left:50%;bottom:72px;transform:translateX(-50%);max-width:min(560px,90vw);background:var(--ink);color:var(--paper);font:400 16px/1.6 var(--head);padding:12px 20px;border-radius:10px;opacity:0;pointer-events:none;transition:opacity .3s;z-index:80}
+#toast.show{opacity:1}
 /* ── หน้าล็อก (ไม่ใช่ครู) ─────────────────────────── */
 #lock{position:fixed;inset:0;display:none;align-items:center;justify-content:flex-start;padding:48px max(24px,8vw);background:var(--paper);z-index:90}
 #lock.show{display:flex}
@@ -238,6 +240,7 @@ svg .dsh{stroke:var(--ink3);stroke-width:2;stroke-dasharray:6 7;fill:none}
 #pick{position:fixed;inset:0;overflow:auto;background:var(--paper);z-index:90;padding:clamp(28px,6vh,64px) max(20px,7vw)}
 #pick .k{font:400 18px var(--head);color:var(--ink3);margin-bottom:10px}
 #pick h1{font:700 clamp(34px,5vw,60px)/1.2 var(--head);margin:0 0 clamp(20px,4vh,40px)}
+#pick h1[lang=en]{letter-spacing:-.02em}
 #pick a.ch{display:grid;grid-template-columns:clamp(90px,14vw,190px) 1fr auto;align-items:center;gap:clamp(12px,3vw,40px);padding:clamp(16px,3vh,28px) 0;border-top:1px solid var(--rule);color:var(--ink);text-decoration:none}
 #pick a.ch:last-of-type{border-bottom:1px solid var(--rule)}
 #pick a.ch:hover .t,#pick a.ch:focus-visible .t{color:var(--c)}
@@ -276,6 +279,7 @@ svg .dsh{stroke:var(--ink3);stroke-width:2;stroke-dasharray:6 7;fill:none}
 <div id="chmenu" role="menu"></div>
 <div id="pick" hidden></div>
 <div id="blank"></div>
+<div id="toast" role="status"></div>
 <div id="lock" role="dialog" aria-labelledby="lockH"><div class="in">
   <div class="k"><i class="ph ph-lock-simple"></i> สไลด์สอนฟิสิกส์ 2</div>
   <h1 id="lockH">สำหรับครูเท่านั้น</h1>
@@ -662,7 +666,7 @@ if (!CH_ASK || !CHAPTERS[CH_ASK[1]]){
   document.getElementById('hud').remove();
   const pk = document.getElementById('pick');
   pk.hidden = false;
-  pk.innerHTML = '<div class="k">ฟิสิกส์ 2 · ม.4 เล่ม 2 · สไลด์สอน</div><h1>เลือกบทที่จะสอน</h1>' +
+  pk.innerHTML = '<div class="k">ฟิสิกส์ 2 · ม.4 เล่ม 2 · สไลด์สอน</div><h1 lang="en">Physics II</h1>' +
     Object.values(CHAPTERS).map(c => '<a class="ch" href="' + chHref(c.no) + '" style="--c:' + c.color + '">' +
       '<span class="n">' + c.no + '</span>' +
       '<span class="t">บทที่ ' + c.no + ' ' + c.title +
@@ -812,7 +816,6 @@ function cover(){
   return { cls:'s-cover', title:'ปก', html: `
     <div class="sub">ฟิสิกส์ 2 · ม.4 เล่ม 2 · บทที่ ${CHAPTER.no}</div>
     <h1>${CHAPTER.cover[0]}<span>${CHAPTER.cover[1]}</span></h1>
-    <div class="meta">${CHAPTER.en} — ทฤษฎี · สมการ · ชีวิตจริง · โจทย์ทีละขั้น</div>
     <nav class="chnav nointeract">${Object.values(CHAPTERS).map(c => c.no === CHAPTER.no
       ? `<b>บทที่ ${c.no} ${c.title}</b>` : `<a href="?ch=${c.no}">บทที่ ${c.no} ${c.title}</a>`).join('')}</nav>
     <div class="keys"><kbd>→</kbd> <kbd>Space</kbd> หรือคลิก ไปต่อ · <kbd>←</kbd> ย้อน<br><kbd>5</kbd><kbd>6</kbd><kbd>7</kbd> เปลี่ยนบท · <kbd>O</kbd> ภาพรวม · <kbd>F</kbd> เต็มจอ · <kbd>D</kbd> มืด/สว่าง · <kbd>B</kbd> จอดำ</div>` };
@@ -1577,10 +1580,18 @@ function keepVisible(el){ /* เนื้อหาถูกออกแบบใ
 /* ── ย่อขยายเวที ── */
 const scaleNow = () => stage.getBoundingClientRect().width / 1600 || 1;
 function fit(){
-  const s = Math.min(innerWidth / 1600, innerHeight / 900);
-  stage.style.transform = `scale(${s})`;
+  const s = Math.min(vw() / 1600, vh() / 900);
+  const W = vw(), H = vh();
+  stage.style.transform = `translate(${(W - 1600 * s) / 2}px, ${(H - 900 * s) / 2}px) scale(${s})`;
 }
+// ขนาดที่เห็นจริง — Safari บน iPad ย่อ/ขยายแถบที่อยู่ ทำให้ innerHeight เปลี่ยนภายหลัง
+const vw = () => document.documentElement.clientWidth || innerWidth;
+const vh = () => document.documentElement.clientHeight || innerHeight;
 addEventListener('resize', fit);
+addEventListener('orientationchange', () => setTimeout(fit, 250));
+if (window.visualViewport) visualViewport.addEventListener('resize', fit);
+if (window.ResizeObserver) new ResizeObserver(() => fit()).observe(document.documentElement); // กันกรณีเบราว์เซอร์ไม่ยิง resize
+['fullscreenchange', 'webkitfullscreenchange'].forEach(ev => document.addEventListener(ev, () => setTimeout(fit, 60)));
 
 /* ── แถบควบคุม ── */
 const hud = document.getElementById('hud'), bar = document.getElementById('bar');
@@ -1602,7 +1613,7 @@ function updHud(){
   document.getElementById('count').textContent = `${cur + 1} / ${slides.length}`;
 }
 let idle; const wake = () => { hud.classList.remove('hide'); clearTimeout(idle); idle = setTimeout(() => hud.classList.add('hide'), 2600); };
-addEventListener('mousemove', wake); wake();
+addEventListener('mousemove', wake); addEventListener('touchstart', wake, { passive: true }); wake();
 document.getElementById('bPrev').onclick = prev;
 document.getElementById('bNext').onclick = next;
 document.getElementById('bFull').onclick = toggleFull;
@@ -1616,7 +1627,21 @@ document.getElementById('bCh').onclick = e => { e.stopPropagation(); chmenu.clas
 addEventListener('click', e => { if (!e.target.closest('#chmenu, #bCh')) chmenu.classList.remove('show'); });
 function goChapter(n){ if (CHAPTERS[n] && +n !== CH_NO) location.href = chHref(n); }
 
-function toggleFull(){ document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen?.(); }
+function toggleFull(){
+  const d = document, el = d.documentElement;
+  const on = d.fullscreenElement || d.webkitFullscreenElement;
+  try {
+    if (on) (d.exitFullscreen || d.webkitExitFullscreen).call(d);
+    else if (el.requestFullscreen) el.requestFullscreen().catch(noFull);
+    else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+    else noFull();
+  } catch (e) { noFull(); }
+}
+function noFull(){
+  const t = document.getElementById('toast');
+  t.textContent = 'อุปกรณ์นี้ไม่รองรับโหมดเต็มจอจากหน้าเว็บ — ลองหมุนจอเป็นแนวนอน หรือซ่อนแถบของเบราว์เซอร์แทน';
+  t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 4200);
+}
 function toggleTheme(){
   const r = document.documentElement, d = r.dataset.theme === 'dark';
   r.dataset.theme = d ? 'light' : 'dark';
