@@ -306,7 +306,7 @@ body.editing .slide{cursor:default}
 .figsvg .fstart{fill:var(--paper);stroke:var(--ink);stroke-width:3}
 .figsvg .fpt{font:700 20px var(--head);fill:var(--ink2);text-anchor:middle}
 .figsvg .fl{font:700 22px var(--body);fill:var(--acc);opacity:0;transition:opacity .4s}
-.figsvg .fdisp{stroke:#d62f2f;stroke-width:5;stroke-dasharray:10 7;opacity:0;transition:opacity .5s .2s}
+.figsvg .fdisp{stroke:#1f5fd6;stroke-width:5;stroke-linecap:round;opacity:0;transition:opacity .5s .2s}
 .figsvg .fend{opacity:0;transition:opacity .4s}
 .figsvg .fax{stroke:var(--ink3);stroke-width:2;fill:none}
 .figsvg .ftk{font:400 18px var(--head);fill:var(--ink3);text-anchor:middle}
@@ -318,6 +318,7 @@ body.editing .slide{cursor:default}
 .figpanel.done .flegend{opacity:1}
 .flegend i{display:inline-block;width:34px;height:0;vertical-align:middle;margin-right:12px}
 .flegend .ls i{border-top:6px solid var(--acc)}
-.flegend .ld i{border-top:5px dashed #d62f2f}
+.flegend .ld i{border-top:5px solid #1f5fd6;position:relative}
+.flegend .ld i::after{content:"";position:absolute;right:-6px;top:-10px;border:7.5px solid transparent;border-left:11px solid #1f5fd6}
 .figsvg .frad{stroke:var(--ink3);stroke-width:2;stroke-dasharray:4 6}
 .figsvg .fcen{fill:var(--ink3)}
