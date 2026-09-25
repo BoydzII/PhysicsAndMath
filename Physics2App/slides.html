@@ -1,0 +1,1577 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>สไลด์ฟิสิกส์ 2 · บทที่ 5</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@200;400;700&family=IBM+Plex+Sans+Thai+Looped:wght@300;400;700&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
+<style>
+/* ── โทเคน ─────────────────────────────────────────── */
+:root{
+  --paper:#f5f3ee; --paper2:#ebe8e0; --ink:#17181c; --ink2:#55565c; --ink3:#8d8c88;
+  --rule:#d9d5cb; --acc:#e4572e; --acc-soft:color-mix(in srgb,var(--acc) 12%,var(--paper));
+  --pos:#1f8a4c; --neg:#c93a2b; --zero:#6b6b6b;
+  --head:"IBM Plex Sans Thai",sans-serif; --body:"IBM Plex Sans Thai Looped","IBM Plex Sans Thai",sans-serif;
+}
+:root[data-theme="dark"]{
+  --paper:#15161a; --paper2:#1f2026; --ink:#f0eee8; --ink2:#b3b1ab; --ink3:#77766f;
+  --rule:#34353b; --pos:#4cc47f; --neg:#ff7a6a; --zero:#9a9a9a;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--paper);color:var(--ink);overflow:hidden}
+body{font-family:var(--body);-webkit-font-smoothing:antialiased}
+
+/* ── เวที 1600×900 ย่อขยายตามจอ ───────────────────── */
+#viewport{position:fixed;inset:0;display:grid;place-items:center}
+#stage{position:relative;width:1600px;height:900px;flex:none;transform-origin:center center;overflow:hidden;background:var(--paper)}
+.slide{--acc-soft:color-mix(in srgb,var(--acc) 12%,var(--paper));position:absolute;inset:0;padding:64px 104px 72px;font-size:28px;visibility:hidden;opacity:0;display:flex;flex-direction:column}
+.slide.active{visibility:visible;opacity:1}
+.slide .kicker{font:400 22px/1 var(--head);color:var(--acc);display:flex;gap:14px;align-items:center;margin-bottom:22px}
+.slide .kicker b{font-weight:700}
+.slide .kicker .dot{width:6px;height:6px;border-radius:99px;background:var(--rule)}
+.slide h2{font:700 60px/1.25 var(--head);margin:0 0 36px;text-wrap:balance}
+.slide p{font-size:30px;line-height:1.75;margin:0;text-wrap:pretty}
+.muted{color:var(--ink2)}
+.acc{color:var(--acc)}
+
+/* ── ชิ้นที่ค่อย ๆ เผย ──────────────────────────── */
+.f{opacity:0;transform:translateY(16px);filter:blur(6px);transition:opacity .45s ease,transform .5s cubic-bezier(.2,.8,.2,1),filter .45s ease}
+.f.on{opacity:1;transform:none;filter:none}
+.f.on.now{--mark:var(--acc)}
+
+/* ── ปก ─────────────────────────────────────────── */
+.s-cover{justify-content:flex-end;padding-bottom:96px}
+.s-cover .sub{font:400 28px/1 var(--head);color:var(--ink2);margin-bottom:28px}
+.s-cover h1{font:700 150px/1.1 var(--head);margin:0}
+.s-cover h1 span{display:block;font-weight:200}
+.s-cover .meta{margin-top:40px;font-size:24px;color:var(--ink3)}
+.s-cover .keys{position:absolute;right:104px;bottom:96px;text-align:right;font-size:20px;line-height:2;color:var(--ink3)}
+kbd{font:400 17px var(--head);border:1px solid var(--rule);border-bottom-width:2px;border-radius:6px;padding:1px 8px;color:var(--ink2);background:var(--paper)}
+
+/* ── แผนที่บท ───────────────────────────────────── */
+.road{list-style:none;margin:0;padding:0;border-top:1px solid var(--rule)}
+.road li{display:grid;grid-template-columns:160px 1fr auto;align-items:baseline;padding:22px 0;border-bottom:1px solid var(--rule)}
+.road .n{font:200 64px/1 var(--head);color:var(--c)}
+.road .t{font:700 42px/1.3 var(--head)}
+.road .t small{font:400 24px var(--head);color:var(--ink3);margin-left:14px}
+.road .q{font-size:24px;color:var(--ink2);max-width:560px;text-align:right;line-height:1.6}
+
+/* ── เปิดหัวข้อ ─────────────────────────────────── */
+.s-open{justify-content:center}
+.s-open .big{font:200 300px/.9 var(--head);color:var(--acc);margin:0 0 0 -14px;font-variant-numeric:tabular-nums}
+.s-open h2{font-size:104px;margin:10px 0 44px}
+.s-open h2 small{font:200 48px var(--head);color:var(--ink3);margin-left:20px}
+.s-open .hook{font:300 38px/1.7 var(--body);max-width:1180px;border-left:4px solid var(--acc);padding-left:32px}
+.s-open .hook b{font-weight:700}
+
+/* ── นิยาม ──────────────────────────────────────── */
+.defs{border-top:1px solid var(--rule)}
+.def{display:grid;grid-template-columns:420px 1fr;gap:48px;padding:26px 0;border-bottom:1px solid var(--rule)}
+.def dt{font:700 40px/1.35 var(--head)}
+.def dt .sym{display:block;font:400 26px/1.6 var(--body);color:var(--acc);margin-top:6px}
+.def dd{margin:0;font-size:28px;line-height:1.75}
+.def dd b{color:var(--acc);font-weight:700}
+
+/* ── สมการตั้งต้น ────────────────────────────────── */
+.core{display:grid;grid-template-columns:600px minmax(0,1fr);gap:64px;flex:1;min-height:0}
+.core .hero{align-self:start;background:var(--acc-soft);border-radius:6px;padding:28px 40px}
+.core .hero .lbl{font:400 22px var(--head);color:var(--acc)}
+.core .hero .katex{font-size:1.9em}
+.core .hero .katex-display{margin:12px 0}
+.steps{list-style:none;margin:0;padding:0;counter-reset:s}
+.steps li{position:relative;padding:4px 0 22px 64px;counter-increment:s}
+.steps li::before{content:counter(s);position:absolute;left:0;top:6px;width:40px;height:40px;border-radius:99px;border:1.5px solid var(--mark,var(--rule));display:grid;place-items:center;font:700 20px var(--head);color:var(--mark,var(--ink3));transition:border-color .3s,color .3s}
+.steps li p{font-size:28px}
+.steps li .katex-display{margin:8px 0 0;text-align:left}
+.steps li .katex-display>.katex{text-align:left;font-size:1.35em}
+
+/* ── สมการใช้บ่อย ───────────────────────────────── */
+.eqgrid{border-top:1px solid var(--rule)}
+.eqrow{display:grid;grid-template-columns:380px 1fr;align-items:center;gap:48px;padding:12px 0;border-bottom:1px solid var(--rule);min-height:138px}
+.eqrow>div:last-child{min-width:0}
+.eqrow .nm{font:700 32px/1.4 var(--head)}
+.eqrow .nm small{display:block;font:400 22px/1.5 var(--body);color:var(--ink3);margin-top:4px}
+.eqrow .katex-display{margin:0;text-align:left}
+.eqrow .katex-display>.katex{text-align:left;font-size:1.6em}
+
+/* ── ชีวิตประจำวัน ──────────────────────────────── */
+.life{border-top:1px solid var(--rule)}
+.life .row{display:grid;grid-template-columns:120px 400px 1fr;gap:36px;align-items:start;padding:28px 0;border-bottom:1px solid var(--rule)}
+.life .ic{width:96px;height:96px;border-radius:99px;border:1.5px solid var(--acc);display:grid;place-items:center;font-size:52px;color:var(--acc)}
+.life h3{font:700 36px/1.4 var(--head);margin:10px 0 0}
+.life p{font-size:27px;line-height:1.75}
+.life p b{color:var(--acc)}
+
+/* ── ชวนคิด ─────────────────────────────────────── */
+.s-think{justify-content:center}
+.s-think .q{font:700 64px/1.45 var(--head);max-width:1300px;text-wrap:balance;margin:0 0 20px}
+.s-think .timer{font:400 24px var(--head);color:var(--ink3);display:flex;align-items:center;gap:10px;margin-bottom:48px}
+.s-think .a{border-left:4px solid var(--acc);padding:6px 0 6px 32px;max-width:1250px}
+.s-think .a p{font-size:34px}
+.s-think .a .lbl{font:700 24px var(--head);color:var(--acc);margin-bottom:6px}
+
+/* ── แบบจำลอง ───────────────────────────────────── */
+.sim{display:grid;grid-template-columns:440px 1fr;gap:56px;flex:1;min-height:0}
+.sim .side p{font-size:26px;line-height:1.75}
+.sim .side .try{margin-top:28px;padding-top:24px;border-top:1px solid var(--rule)}
+.sim .side .try b{display:block;font:700 22px var(--head);color:var(--acc);margin-bottom:8px}
+.sim .side .try li{font-size:23px;line-height:1.7;color:var(--ink2)}
+.sim .side .try ul{margin:0;padding-left:24px}
+.sim .panel{display:flex;flex-direction:column;min-height:0}
+.sim svg{width:100%;flex:1;min-height:0}
+.sim .ctl{display:flex;gap:18px 24px;align-items:center;font:400 24px var(--head);margin-top:12px;flex-wrap:wrap}
+.sim .ctl label{display:flex;align-items:center;gap:14px}
+.sim input[type=range]{width:300px;accent-color:var(--acc);height:28px}
+.btn{font:700 22px var(--head);color:var(--ink);background:none;border:1.5px solid var(--ink);border-radius:99px;padding:10px 26px;cursor:pointer}
+.btn.pri{background:var(--acc);border-color:var(--acc);color:#fff}
+.btn.on{background:var(--ink);color:var(--paper)}
+.readout{font:400 30px/1.5 var(--head);font-variant-numeric:tabular-nums}
+svg text{font-family:var(--head);fill:var(--ink)}
+svg .gl{stroke:var(--ink);stroke-width:2;fill:none}
+svg .gl2{stroke:var(--rule);stroke-width:2;fill:none}
+svg .dsh{stroke:var(--ink3);stroke-width:2;stroke-dasharray:6 7;fill:none}
+
+/* ── โจทย์ ──────────────────────────────────────── */
+.s-prob{padding-top:52px}
+.ptop{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px}
+.ptop .kicker{margin:0}
+.chips{display:flex;gap:6px;align-items:center;font:400 18px var(--head);color:var(--ink3)}
+.chips button{font:400 18px var(--head);width:38px;height:38px;border-radius:99px;border:1px solid var(--rule);background:none;color:var(--ink2);cursor:pointer}
+.chips button.cur{background:var(--acc);border-color:var(--acc);color:#fff;font-weight:700}
+.pbody{display:grid;grid-template-columns:540px 1fr;gap:64px;flex:1;min-height:0}
+.pq{display:flex;flex-direction:column;gap:26px}
+.pq .txt{font:400 31px/1.8 var(--body)}
+.pq .num{font:200 88px/1 var(--head);color:var(--acc)}
+.given{border-top:1px solid var(--rule);padding-top:20px}
+.given .lbl,.hintbox .lbl{font:700 20px var(--head);color:var(--ink3);margin-bottom:10px}
+.given ul{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:10px 12px}
+.given li{font-size:25px;padding:4px 16px;border:1px solid var(--rule);border-radius:99px;background:var(--paper)}
+.hintbtn{align-self:flex-start;font:400 20px var(--head);background:none;border:1px dashed var(--ink3);color:var(--ink2);border-radius:99px;padding:8px 20px;cursor:pointer}
+.hintbox{display:none;font-size:24px;line-height:1.7;color:var(--ink2);border-left:3px dashed var(--acc);padding-left:20px}
+.hintbox.show{display:block}
+.psol{display:flex;flex-direction:column;min-height:0;border-left:1px solid var(--rule);padding-left:56px;--sfs:34px}
+.meq{margin-bottom:18px}
+.meq .lbl{font:400 20px var(--head);color:var(--acc)}
+.meq .katex-display{margin:6px 0 0;text-align:left}
+.meq .katex-display>.katex{text-align:left;font-size:1.25em}
+.sol{display:grid;grid-template-columns:66px auto auto 1fr;column-gap:0;align-content:start;font-size:var(--sfs);flex:1;min-height:0}
+.sol .r{display:contents}
+.sol .r>div{padding:9px 0;min-height:1.9em;display:flex;align-items:center;line-height:1.6;transition:opacity .45s,transform .5s cubic-bezier(.2,.8,.2,1),filter .45s}
+.sol .r:not(.on)>div{opacity:0;transform:translateY(14px);filter:blur(6px)}
+.sol .r.cont>div{padding-top:2px}
+.sol .r>div:has(.mfrac){padding-top:12px;padding-bottom:12px}
+.sol .nb{justify-content:flex-start}
+.sol .nb span{width:40px;height:40px;border-radius:99px;border:1.5px solid var(--rule);display:grid;place-items:center;font:700 19px var(--head);color:var(--ink3);transition:.3s}
+.sol .r.now .nb span,.sol .r.grpnow .nb span{border-color:var(--acc);color:var(--acc)}
+.sol .r.now>div:not(.nb){background:linear-gradient(var(--acc-soft),var(--acc-soft)) no-repeat;background-size:100% 100%}
+.sol .r.now>div:nth-child(2){border-radius:6px 0 0 6px;padding-left:12px;margin-left:-12px}
+.sol .r.now>.txt{border-radius:6px}
+.sol .r.now>div:last-child{border-radius:0 6px 6px 0;padding-right:12px}
+.sol .op{color:var(--ink3);justify-content:center;padding:0 16px !important}
+.sol .txt{grid-column:2 / -1}
+.ans{display:inline-block;font-weight:700;color:var(--acc);border:2px solid var(--acc);border-radius:8px;padding:0 14px;margin-right:8px;font-family:var(--head)}
+.r.final.on .ans{animation:pop .6s cubic-bezier(.3,1.6,.5,1)}
+@keyframes pop{0%{transform:scale(.6);opacity:0}100%{transform:none;opacity:1}}
+.pdone{margin-top:auto;padding-top:14px;font:400 20px var(--head);color:var(--ink3);opacity:0;transition:.4s}
+.pdone.show{opacity:1}
+
+/* ── สรุป ───────────────────────────────────────── */
+.sum{display:grid;grid-template-columns:1fr 1fr;column-gap:72px;border-top:1px solid var(--rule)}
+.sum .it{display:grid;grid-template-columns:90px 1fr;align-items:center;padding:14px 0;border-bottom:1px solid var(--rule);min-height:118px}
+.sum .it .n{font:200 44px var(--head);color:var(--c)}
+.sum .it .nm{font:700 24px var(--head);color:var(--ink2)}
+.sum .katex-display{margin:4px 0 0;text-align:left}
+.sum .katex-display>.katex{text-align:left;font-size:1.2em}
+
+/* ── ม่านเปลี่ยนหัวข้อ ────────────────────────────── */
+.chnav{position:absolute;left:104px;top:64px;display:flex;gap:28px;font:400 20px var(--head)}
+.chnav a{color:var(--ink3);text-decoration:none;border-bottom:1px solid var(--rule)}
+.chnav a:hover{color:var(--ink)}
+.chnav b{color:var(--ink);font-weight:700}
+.sol .li::before{content:'•';color:var(--ink3);margin-right:12px}
+#wipe{position:absolute;inset:0;background:var(--acc);z-index:20;clip-path:inset(0 100% 0 0);pointer-events:none;display:flex;align-items:flex-end;padding:0 104px 96px;color:#fff}
+#wipe .n{font:200 220px/.9 var(--head)}
+#wipe .t{font:700 72px/1.2 var(--head);margin-left:36px;padding-bottom:14px}
+
+/* ── แถบควบคุม (นอกเวที ไม่ย่อ) ───────────────────── */
+#hud{position:fixed;left:0;right:0;bottom:0;padding:10px 18px 12px;display:flex;align-items:center;gap:16px;background:linear-gradient(transparent,color-mix(in srgb,var(--paper) 92%,transparent) 40%);transition:opacity .4s;z-index:50}
+#hud.hide{opacity:0}
+#hud button{background:none;border:0;color:var(--ink2);font-size:24px;width:40px;height:40px;border-radius:99px;cursor:pointer;display:grid;place-items:center}
+#hud button:hover{background:var(--paper2)}
+#bar{flex:1;display:flex;gap:4px;height:6px}
+#bar .seg{flex:var(--n);background:var(--paper2);border-radius:99px;overflow:hidden;position:relative;cursor:pointer}
+#bar .seg i{position:absolute;inset:0;right:auto;width:var(--p,0%);background:var(--c);transition:width .4s}
+#count{font:400 16px var(--head);color:var(--ink3);font-variant-numeric:tabular-nums;min-width:64px;text-align:right}
+
+/* ── ภาพรวมสไลด์ ─────────────────────────────────── */
+#ov{position:fixed;inset:0;background:color-mix(in srgb,var(--paper) 96%,transparent);z-index:60;overflow:auto;padding:40px 56px;display:none}
+#ov.show{display:block}
+#ov h3{font:700 26px var(--head);margin:28px 0 12px;color:var(--c)}
+#ov .g{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+#ov .card{border:1px solid var(--rule);border-top:4px solid var(--c);border-radius:6px;padding:12px 14px;cursor:pointer;background:var(--paper)}
+#ov .card.cur{outline:2px solid var(--c)}
+#ov .card small{display:block;font:400 14px var(--head);color:var(--ink3)}
+#ov .card span{font:400 18px/1.5 var(--body)}
+#blank{position:fixed;inset:0;background:#000;z-index:70;display:none}
+#blank.show{display:block}
+</style>
+</head>
+<body>
+<div id="viewport"><div id="stage"><div id="deck"></div><div id="wipe"><span class="n"></span><span class="t"></span></div></div></div>
+<div id="hud">
+  <button id="bPrev" title="ย้อนกลับ (←)"><i class="ph ph-caret-left"></i></button>
+  <button id="bNext" title="ถัดไป (→ หรือ Space)"><i class="ph ph-caret-right"></i></button>
+  <div id="bar"></div>
+  <span id="count"></span>
+  <button id="bOv" title="ภาพรวมสไลด์ (O)"><i class="ph ph-squares-four"></i></button>
+  <button id="bTheme" title="โหมดมืด/สว่าง (D)"><i class="ph ph-circle-half"></i></button>
+  <button id="bFull" title="เต็มจอ (F)"><i class="ph ph-corners-out"></i></button>
+</div>
+<div id="ov"></div>
+<div id="blank"></div>
+
+<!-- เนื้อหาโจทย์ นิยาม และสมการหลัก ดึงจากไฟล์เดียวกับแอป -->
+<script src="data.js"></script>
+<script src="data_ch6.js"></script>
+<script src="data_ch7.js"></script>
+<script src="definitions.js"></script>
+<script src="main_equations.js"></script>
+<script>
+(function(){
+const R = String.raw;
+
+/* ════════════════════════════════════════════════════════════════
+   บทที่ 5 — ทฤษฎีเรียบเรียงจากแผงทฤษฎีของแอป (data.js)
+   โจทย์ดึงจาก physicsData ตาม id (เปลี่ยนข้ออื่นได้บนสไลด์)
+   ════════════════════════════════════════════════════════════════ */
+const SECTIONS5 = [
+{ key:'work', num:'5.1', title:'งาน', en:'Work', color:'#e4572e',
+  hook: R`ยืนถือกระเป๋าหนัก ๆ นิ่ง ๆ สิบนาทีจนแขนล้า… แต่ในทางฟิสิกส์ คุณ<b>ไม่ได้ทำงานเลยสักจูล</b> — แล้ว “งาน” คืออะไรกันแน่?`,
+  road: 'ทำไมแบกของเดินแนวราบ ไม่มีงาน',
+  core: { lbl:'สมการตั้งต้น · ดอทของเวกเตอร์', eq: R`\begin{aligned}W &= \overrightharpoon F\cdot\overrightharpoon s \\ &= Fs\cos\theta\end{aligned}`,
+    steps: [
+      { t: R`ใช้เฉพาะส่วนของแรงที่อยู่ใน<b>แนวการกระจัด</b>`, eq: R`W = (F\cos\theta)\,s` },
+      { t: R`มุม $\theta$ ระหว่างแรงกับการกระจัดบอก<b>เครื่องหมาย</b>ของงาน`, eq: R`\begin{array}{lll}\theta<90^\circ & \rightarrow & W>0 \\ \theta=90^\circ & \rightarrow & W=0 \\ \theta>90^\circ & \rightarrow & W<0\end{array}` },
+      { t: R`งานเป็น<b>สเกลาร์</b> หน่วยนิวตัน·เมตร เรียกว่า จูล`, eq: R`1\ \text{J} = 1\ \text{N}\cdot\text{m}` }
+    ] },
+  sim: 'work', simTitle: 'หมุนแรง ดูงานเปลี่ยน',
+  simText: R`กล่องถูกลากไปทางขวา $s = 4$ m ด้วยแรง $F = 20$ N ลองเปลี่ยนมุมของแรง แล้วสังเกตว่าส่วนของแรงที่อยู่ในแนวการกระจัด (เส้นสีส้ม) ทำให้งานเป็นบวก ศูนย์ หรือลบ`,
+  simTry: ['มุมเท่าไรที่งานมากที่สุด', 'ที่ 90° เกิดอะไรขึ้นกับเส้นสีส้ม', 'มุมมากกว่า 90° แรงแบบนี้ในชีวิตจริงคือแรงอะไร'],
+  eqs: [
+    { nm:'งานของแรงเสียดทาน', s:'แรงสวนทางการเคลื่อนที่ θ = 180°', eq: R`W_f = fs\cos180^\circ = -fs` },
+    { nm:'งานของแรงโน้มถ่วง', s:'ขึ้นกับความสูงที่เปลี่ยนเท่านั้น', eq: R`W_{mg} = -mg\,\Delta h` },
+    { nm:'งานลัพธ์', s:'รวมงานของทุกแรง', eq: R`W_{net} = \textstyle\sum W_i = \overrightharpoon F_{net}\cdot\overrightharpoon s` },
+    { nm:'แรงไม่คงตัว', s:'อ่านจากกราฟ', eq: R`W = \text{พื้นที่ใต้กราฟ } F\text{–}s` }
+  ],
+  life: [
+    { ic:'ph-suitcase-rolling', h:'ลากกระเป๋าเดินทาง', p: R`แรงดึงเอียงขึ้น มีแค่ส่วน <b>$F\cos\theta$</b> ที่ทำงานพากระเป๋าไปข้างหน้า ถ้ายิ่งดึงชันขึ้น ต้องออกแรงมากขึ้นเพื่อได้งานเท่าเดิม` },
+    { ic:'ph-coffee', h:'พนักงานเสิร์ฟถือถาดเดิน', p: R`แรงที่ยกถาดชี้ขึ้น แต่ถาดเคลื่อนไปข้างหน้า มุม 90° แรงยก<b>ไม่ทำงาน</b>กับถาดเลย แม้แขนจะเมื่อย` },
+    { ic:'ph-bicycle', h:'บีบเบรกจักรยาน', p: R`แรงเสียดทานที่ผ้าเบรกสวนทางการเคลื่อนที่ θ = 180° จึงทำ<b>งานลบ</b> ดึงพลังงานออกจนจักรยานช้าลง` }
+  ],
+  think: { q: 'ดาวเทียมโคจรเป็นวงกลมรอบโลกด้วยอัตราเร็วคงตัว แรงโน้มถ่วงของโลกทำงานกับดาวเทียมเท่าไร?',
+    a: R`<b>ศูนย์</b> — แรงโน้มถ่วงชี้เข้าหาศูนย์กลางวงโคจร ขณะที่ดาวเทียมเคลื่อนที่ตามแนวสัมผัส แรงจึง<b>ตั้งฉาก</b>กับการกระจัดตลอดเวลา $\theta = 90^\circ$ ทำให้อัตราเร็วไม่เปลี่ยน` },
+  probs: ['w1','w5','w2'] },
+
+{ key:'power', num:'5.2', title:'กำลัง', en:'Power', color:'#b7791f',
+  hook: R`ขึ้นบันไดไปชั้น 4 — เดินช้า ๆ กับวิ่งขึ้น <b>งานเท่ากัน</b> เพราะน้ำหนักตัวและความสูงเท่าเดิม… แล้วทำไมวิ่งขึ้นถึงเหนื่อยกว่ามาก?`,
+  road: 'งานเท่ากัน แต่ใครเร็วกว่า',
+  core: { lbl:'สมการตั้งต้น · อัตราการทำงาน', eq: R`\begin{aligned}P &= \frac{W}{t} \\ &= \overrightharpoon F\cdot\overrightharpoon v = Fv\cos\theta\end{aligned}`,
+    steps: [
+      { t: R`แทนงานด้วยดอท แล้วหารด้วยเวลา`, eq: R`P = \frac{\overrightharpoon F\cdot\overrightharpoon s}{t}` },
+      { t: R`การกระจัดต่อเวลาคือความเร็ว`, eq: R`\frac{\overrightharpoon s}{t} = \overrightharpoon v \;\Rightarrow\; P = \overrightharpoon F\cdot\overrightharpoon v` },
+      { t: R`แรงทิศเดียวกับความเร็ว $\theta = 0^\circ$`, eq: R`P = Fv` },
+      { t: R`หน่วยจูลต่อวินาที เรียกว่า วัตต์`, eq: R`1\ \text{W} = 1\ \text{J/s} \qquad 1\ \text{hp}\approx 746\ \text{W}` }
+    ] },
+  sim: 'power', simTitle: 'แข่งเครนยกของ',
+  simText: R`เครนสองตัวยกกล่องมวล 100 kg ขึ้นสูง 10 m เท่ากัน เครน A ใช้เวลา 5 s เครน B ใช้เวลา 10 s กดเริ่มแข่ง แล้วเทียบงานกับกำลังของทั้งสองตัว`,
+  simTry: ['งานของสองเครนต่างกันไหม', 'เครนไหนมีกำลังมากกว่า และมากกว่ากี่เท่า', 'ถ้า B อยากเร็วเท่า A ต้องเพิ่มกำลังเป็นเท่าไร'],
+  eqs: [
+    { nm:'กำลังเฉลี่ย', s:'งานต่อเวลา', eq: R`P = \frac{W}{t}` },
+    { nm:'เวลาที่ใช้ทำงาน', s:'กำลังมาก ใช้เวลาน้อย', eq: R`t = \frac{W}{P}` },
+    { nm:'ยกของด้วยความเร็วคงตัว', s:'แรงยกเท่ากับน้ำหนัก', eq: R`F = mg \;\Rightarrow\; P = mgv` },
+    { nm:'ประสิทธิภาพ', s:'ได้ออกมาเทียบกับที่ใส่เข้าไป', eq: R`\eta = \frac{P_{out}}{P_{in}}\times100\%` }
+  ],
+  life: [
+    { ic:'ph-plug', h:'กาต้มน้ำ 2,000 W กับ 1,000 W', p: R`ต้มน้ำปริมาณเท่ากันต้องใช้<b>พลังงานเท่ากัน</b> แต่กาที่กำลังสูงกว่าส่งพลังงานได้เร็วกว่า จึงเดือดเร็วกว่าครึ่งหนึ่ง` },
+    { ic:'ph-car', h:'ขับรถขึ้นเขาต้องใช้เกียร์ต่ำ', p: R`เครื่องยนต์มีกำลังจำกัด จาก $P = Fv$ ถ้าต้องการ<b>แรงมาก</b>เพื่อไต่เขา ก็ต้องยอม<b>ลดความเร็ว</b>ลง` },
+    { ic:'ph-buildings', h:'มอเตอร์ลิฟต์', p: R`ลิฟต์ยกคนขึ้นด้วยความเร็วคงตัว กำลังมอเตอร์ต้องได้อย่างน้อย <b>$P = mgv$</b> ยิ่งบรรทุกหนักหรือวิ่งเร็ว ยิ่งต้องใช้มอเตอร์กำลังสูง` }
+  ],
+  think: { q: 'หลอด LED 10 W กับหลอดไส้ 60 W ให้แสงสว่างพอ ๆ กัน หลอดไหนมีประสิทธิภาพสูงกว่า และพลังงานที่เหลือของอีกหลอดไปไหน?',
+    a: R`<b>หลอด LED</b> — ได้แสงเท่ากันโดยใช้กำลังน้อยกว่า 6 เท่า ส่วนหลอดไส้เปลี่ยนพลังงานไฟฟ้าส่วนใหญ่เป็น<b>ความร้อน</b> (ลองเอามือไปใกล้ ๆ จะรู้สึกร้อน) $\eta$ จึงต่ำ` },
+  probs: ['p1','p3','p10'] },
+
+{ key:'kinetic', num:'5.3', title:'พลังงานจลน์', en:'Kinetic Energy', color:'#1f6fd1',
+  hook: R`ป้ายเขตโรงเรียนจำกัดความเร็ว 30 km/h ถนนทั่วไป 60 km/h — เร็วขึ้นแค่<b>สองเท่า</b> แต่ทำไมความรุนแรงเวลาชนและระยะเบรกถึงเพิ่มขึ้นมากกว่านั้น?`,
+  road: 'เร็วขึ้น 2 เท่า อันตรายขึ้นกี่เท่า',
+  core: { lbl:'ทฤษฎีบทงาน–พลังงาน', eq: R`\begin{aligned}W_{net} &= \tfrac12 mv^2 - \tfrac12 mu^2 \\ &= \Delta E_k\end{aligned}`,
+    steps: [
+      { t: R`เริ่มจากกฎข้อที่สองของนิวตัน แล้วดอทด้วย $\overrightharpoon s$ ทั้งสองข้าง`, eq: R`\overrightharpoon F_{net}\cdot\overrightharpoon s = m\,\overrightharpoon a\cdot\overrightharpoon s` },
+      { t: R`สมการการเคลื่อนที่ $v^2 = u^2 + 2\,\overrightharpoon a\cdot\overrightharpoon s$ ให้`, eq: R`\overrightharpoon a\cdot\overrightharpoon s = \tfrac12\left(v^2 - u^2\right)` },
+      { t: R`แทนค่ากลับ ด้านขวาคือพลังงานจลน์ที่เปลี่ยนไป`, eq: R`W_{net} = \tfrac12 mv^2 - \tfrac12 mu^2` }
+    ] },
+  sim: 'kinetic', simTitle: 'เร่งรถ ดูพลังงานจลน์',
+  simText: R`รถมวล 1,000 kg ลองเลื่อนความเร็ว แล้วดูว่าพลังงานจลน์และระยะเบรก (แรงเบรกคงเดิม) เพิ่มขึ้นตามความเร็วแบบไหน`,
+  simTry: ['จาก 10 m/s ไป 20 m/s พลังงานจลน์เพิ่มกี่เท่า', 'ระยะเบรกเพิ่มตามกี่เท่า', 'ทำไมถึงเป็นกำลังสองของความเร็ว'],
+  eqs: [
+    { nm:'พลังงานจลน์', s:'สเกลาร์ ไม่ติดลบ', eq: R`E_k = \tfrac12 mv^2` },
+    { nm:'แรงคงตัวทำงานระยะ s', s:'งาน = พลังงานจลน์ที่เปลี่ยน', eq: R`Fs\cos\theta = \tfrac12 mv^2 - \tfrac12 mu^2` },
+    { nm:'เบรกจนหยุด', s:'งานของแรงเสียดทานเป็นลบ', eq: R`-fs = 0 - \tfrac12 mu^2` },
+    { nm:'เชื่อมกับโมเมนตัม', s:'ใช้ต่อในบทที่ 6', eq: R`E_k = \frac{p^2}{2m}` }
+  ],
+  life: [
+    { ic:'ph-car-profile', h:'ระยะเบรกของรถยนต์', p: R`จาก $fs = \tfrac12 mu^2$ ขับเร็วขึ้น <b>2 เท่า</b> ระยะเบรกยาวขึ้น <b>4 เท่า</b> — เหตุผลที่เขตโรงเรียนต้องจำกัดความเร็ว` },
+    { ic:'ph-soccer-ball', h:'เตะลูกฟุตบอล', p: R`เท้าออกแรงกับลูกบอลช่วงระยะสั้น ๆ ที่สัมผัสกัน งานนั้นกลายเป็น<b>พลังงานจลน์</b>ของลูกบอลทั้งหมด` },
+    { ic:'ph-wind', h:'กังหันลม', p: R`อากาศที่เคลื่อนที่มีพลังงานจลน์ เมื่อปะทะใบพัดจะ<b>ทำงาน</b>หมุนใบพัด แล้วเปลี่ยนเป็นพลังงานไฟฟ้า` }
+  ],
+  think: { q: 'รถสองคันมวลเท่ากัน วิ่งสวนกันด้วยอัตราเร็วเท่ากัน คันหนึ่งไปทางเหนือ อีกคันไปทางใต้ คันไหนมีพลังงานจลน์มากกว่า?',
+    a: R`<b>เท่ากัน</b> — พลังงานจลน์เป็นสเกลาร์ $E_k = \tfrac12 mv^2$ ใช้แค่<b>ขนาด</b>ของความเร็ว ทิศไม่มีผล (ต่างจากโมเมนตัมในบทที่ 6 ซึ่งสองคันนี้มีทิศตรงข้ามกัน)` },
+  probs: ['ke1','ke7','ke9'] },
+
+{ key:'potential', num:'5.4', title:'พลังงานศักย์', en:'Potential Energy', color:'#1f8a5a',
+  hook: R`น้ำในเขื่อนนิ่งสนิท ไม่ได้เคลื่อนที่เลยสักนิด… แต่ทำไมเขื่อนถึง<b>ผลิตไฟฟ้า</b>ได้? พลังงานซ่อนอยู่ตรงไหน?`,
+  road: 'พลังงานที่ซ่อนอยู่ในตำแหน่ง',
+  core: { lbl:'สมการตั้งต้น · งานของแรงอนุรักษ์', eq: R`\begin{aligned}\Delta E_p &= -W_c \\ &= -m\overrightharpoon g\cdot\Delta\overrightharpoon s \\ &= mg\,\Delta h\end{aligned}`,
+    steps: [
+      { t: R`ให้ $\overrightharpoon g$ ชี้ลง และการกระจัดมีทั้งแนวราบและแนวดิ่ง`, eq: R`\overrightharpoon g = -g\,\hat j \qquad \Delta\overrightharpoon s = \Delta x\,\hat i + \Delta h\,\hat j` },
+      { t: R`ดอทแล้วเหลือแค่แนวดิ่ง — งาน<b>ไม่ขึ้นกับเส้นทาง</b>`, eq: R`m\overrightharpoon g\cdot\Delta\overrightharpoon s = -mg\,\Delta h` },
+      { t: R`จึงนิยามพลังงานศักย์ โดยวัด $h$ จาก<b>ระดับอ้างอิง</b>ที่เลือกเอง`, eq: R`E_p = mgh` }
+    ] },
+  sim: 'potential', simTitle: 'ยกลูกบอล เลือกระดับอ้างอิง',
+  simText: R`ลูกบอลมวล 2 kg ลองยกขึ้นลง แล้วเปลี่ยนระดับอ้างอิง สังเกตว่าค่า $E_p$ เปลี่ยน แต่ <b>$\Delta E_p$</b> เมื่อยกขึ้น 1 m ยังเท่าเดิมเสมอ`,
+  simTry: ['ลูกบอลต่ำกว่าระดับอ้างอิง ค่า Ep เป็นอย่างไร', 'ยกขึ้น 1 m Ep เพิ่มเท่าไร ไม่ว่าอ้างอิงที่ไหน', 'ระดับอ้างอิงไหนคิดเลขง่ายที่สุด'],
+  eqs: [
+    { nm:'ศักย์โน้มถ่วง', s:'h วัดจากระดับอ้างอิง', eq: R`E_p = mgh` },
+    { nm:'ศักย์ยืดหยุ่น', s:'สปริงยืดหรือหด x', eq: R`E_p = \tfrac12 kx^2` },
+    { nm:'กฎของฮุก', s:'แรงดึงกลับ ทิศตรงข้ามการยืด', eq: R`\overrightharpoon F = -k\overrightharpoon x` },
+    { nm:'งานของแรงอนุรักษ์', s:'แรงทำงานบวก Ep ลดลง', eq: R`W_c = -\Delta E_p` }
+  ],
+  life: [
+    { ic:'ph-drop', h:'เขื่อนผลิตไฟฟ้า', p: R`น้ำที่กักไว้สูงมี <b>$E_p = mgh$</b> มาก เมื่อปล่อยลงท่อ พลังงานศักย์เปลี่ยนเป็นพลังงานจลน์ไปหมุนกังหัน` },
+    { ic:'ph-target', h:'หนังสติ๊กและธนู', p: R`ยิ่งดึงยาง (หรือสายธนู) ยืดมาก ยิ่งเก็บ<b>พลังงานศักย์ยืดหยุ่น</b> $\tfrac12 kx^2$ ไว้มาก ยืดเป็น 2 เท่า พลังงาน 4 เท่า` },
+    { ic:'ph-hammer', h:'ปั้นจั่นตอกเสาเข็ม', p: R`ยกตุ้มเหล็กหนักขึ้นสูงเพื่อสะสมพลังงานศักย์ แล้วปล่อยให้ตกลงมา<b>ทำงาน</b>ตอกเสาจมลงดิน` }
+  ],
+  think: { q: 'หนังสือเล่มหนึ่งวางอยู่บนโต๊ะ มีพลังงานศักย์โน้มถ่วงเท่าไร?',
+    a: R`<b>ตอบได้หลายค่า ขึ้นกับระดับอ้างอิง</b> — เทียบพื้นห้องเป็นบวก เทียบผิวโต๊ะเป็นศูนย์ เทียบเพดานเป็นลบ แต่ถ้ายกหนังสือขึ้น 1 m ค่า <b>$\Delta E_p$</b> เท่ากันทุกกรณี และฟิสิกส์ใช้แค่ค่าที่เปลี่ยนไปนี้` },
+  probs: ['pe1','pe3','pe7'] },
+
+{ key:'conservation', num:'5.5', title:'การอนุรักษ์พลังงานกล', en:'Conservation of Mechanical Energy', color:'#7b4bc9',
+  hook: R`รถไฟเหาะไม่มีเครื่องยนต์ดันระหว่างทางเลย แต่ขึ้นเนินลูกถัดไปได้อย่างไร? แล้วทำไมเนินลูกหลัง ๆ ต้อง<b>เตี้ยกว่า</b>เนินแรกเสมอ?`,
+  road: 'พลังงานเปลี่ยนรูป แต่ไม่หายไปไหน',
+  core: { lbl:'สมการตั้งต้น', eq: R`\begin{aligned}&E_{k1} + E_{p1} + W_{nc} \\ &\quad= E_{k2} + E_{p2}\end{aligned}`,
+    steps: [
+      { t: R`แยกงานลัพธ์เป็นงานของแรงอนุรักษ์กับแรงไม่อนุรักษ์`, eq: R`W_c + W_{nc} = \Delta E_k` },
+      { t: R`แทน $W_c = -\Delta E_p$ จากหัวข้อ 5.4`, eq: R`W_{nc} = \Delta E_k + \Delta E_p` },
+      { t: R`ถ้า<b>ไม่มีแรงเสียดทาน</b> $W_{nc} = 0$ พลังงานกลคงตัว`, eq: R`E_{k1} + E_{p1} = E_{k2} + E_{p2}` }
+    ] },
+  sim: 'conservation', simTitle: 'ลานสเก็ตรูปตัว U',
+  simText: R`นักสเก็ตมวล 50 kg ปล่อยจากขอบลานสูง 5 m ดูแถบพลังงานขณะเคลื่อนที่ แล้วลองเปิดแรงเสียดทาน พลังงานกลส่วนที่หายไปกลายเป็น<b>ความร้อน</b>`,
+  simTry: ['ที่จุดต่ำสุด Ep และ Ek เป็นเท่าไร', 'ไม่มีแรงเสียดทาน แถบพลังงานรวมเปลี่ยนไหม', 'เปิดแรงเสียดทาน พลังงานรวมทุกรูปยังคงตัวไหม'],
+  eqs: [
+    { nm:'ไม่มีแรงเสียดทาน', s:'Ek + Ep คงตัว', eq: R`\tfrac12 mv_1^2 + mgh_1 = \tfrac12 mv_2^2 + mgh_2` },
+    { nm:'มีสปริงร่วมด้วย', s:'รวมศักย์ยืดหยุ่น', eq: R`\tfrac12 mv^2 + mgh + \tfrac12 kx^2 = \text{คงตัว}` },
+    { nm:'มีแรงเสียดทาน', s:'พลังงานกลลดลง fs', eq: R`E_1 - fs = E_2` },
+    { nm:'ตกจากที่สูง h', s:'เริ่มจากหยุดนิ่ง', eq: R`v = \sqrt{2gh}` }
+  ],
+  life: [
+    { ic:'ph-train', h:'รถไฟเหาะ', p: R`ถูกลากขึ้นเนินแรกให้มี $E_p$ สูงสุด จากนั้นแลก $E_p \leftrightarrow E_k$ ไปตลอดทาง แรงเสียดทานกินพลังงานไปเรื่อย ๆ เนินหลังจึง<b>ต้องเตี้ยกว่า</b>` },
+    { ic:'ph-person-simple', h:'แกว่งชิงช้า', p: R`จุดสูงสุด หยุดนิ่งชั่วขณะ มีแต่ $E_p$ · จุดต่ำสุด เร็วที่สุด มีแต่ $E_k$ — <b>ผลรวม</b>ไม่เปลี่ยน ถ้าไม่มีแรงต้าน` },
+    { ic:'ph-person-simple-run', h:'กระโดดค้ำถ่อ', p: R`วิ่งสะสม $E_k$ → ไม้งอสะสม $\tfrac12 kx^2$ → ดีดตัวขึ้นเป็น $mgh$ ยิ่ง<b>วิ่งเร็ว</b>ยิ่งข้ามได้สูง` }
+  ],
+  think: { q: 'ปล่อยลูกบอลจากความสูง 2 m กระดอนขึ้นมาได้แค่ 1.5 m พลังงานส่วนที่หายไปไปไหน? ขัดกับกฎการอนุรักษ์พลังงานไหม?',
+    a: R`<b>ไม่ขัด</b> — พลังงานกลลดลงจริง เพราะตอนกระทบพื้นมีแรงไม่อนุรักษ์ทำงาน พลังงานส่วนนั้นกลายเป็น<b>ความร้อน เสียง</b> และการเปลี่ยนรูปของลูกบอล พลังงานรวมทุกรูปยังคงตัวเสมอ` },
+  probs: ['ce1','ce4','ce7'] }
+];
+
+/* ════════════════════════════════════════════════════════════════
+   บทที่ 6 — ทฤษฎีเรียบเรียงจากแผงทฤษฎีของแอป (data_ch6.js)
+   ════════════════════════════════════════════════════════════════ */
+const SECTIONS6 = [
+{ key:'momentum', num:'6.1', title:'โมเมนตัม', en:'Momentum', color:'#e4572e',
+  hook: R`รถบรรทุกคลานมาช้า ๆ 10 km/h กับลูกปิงปองที่พุ่งมา 100 km/h — อะไร<b>หยุดยากกว่ากัน</b>? ความเร็วอย่างเดียวตอบไม่ได้ ต้องดูมวลด้วย`,
+  road: 'มวล × ความเร็ว = ความยากในการหยุด',
+  core: { lbl:'สมการตั้งต้น · เวกเตอร์', eq: R`\begin{aligned}\overrightharpoon p &= m\overrightharpoon v \\ \Delta\overrightharpoon p &= m\overrightharpoon v - m\overrightharpoon u\end{aligned}`,
+    steps: [
+      { t: R`โมเมนตัมเป็น<b>เวกเตอร์</b> ทิศเดียวกับความเร็ว จึงต้อง<b>กำหนดทิศบวก</b>ก่อนเสมอ`, eq: R`\overrightharpoon p \parallel \overrightharpoon v` },
+      { t: R`ลูกบอลกระทบผนังแล้วสะท้อนกลับ ความเร็วต้น $+u$ ความเร็วปลาย $-v$`, eq: R`\Delta p = m(-v) - m(u) = -m(u + v)` },
+      { t: R`2 มิติ แยกคิดทีละแกน แล้วรวมกลับเป็นขนาด`, eq: R`|\overrightharpoon p| = \sqrt{p_x^2 + p_y^2}` }
+    ] },
+  sim: 'momentum', simTitle: 'ลูกบอลชนผนัง',
+  simText: R`ลูกบอลมวล 0.5 kg พุ่งเข้าผนังด้วยความเร็ว 10 m/s ลองปรับความเร็วที่สะท้อนกลับ แล้วดูเส้นจำนวนของโมเมนตัมว่า $\Delta p$ ยาวเท่าไร`,
+  simTry: ['ถ้าลูกบอลติดผนัง (v = 0) Δp เท่าไร', 'สะท้อนกลับเร็วเท่าเดิม Δp เป็นกี่เท่าของกรณีติดผนัง', 'ทำไมขนาดของ Δp จึงเป็น m(u + v) ไม่ใช่ m(u − v)'],
+  eqs: [
+    { nm:'กฎข้อสองรูปโมเมนตัม', s:'แรงลัพธ์ = อัตราการเปลี่ยนโมเมนตัม', eq: R`\textstyle\sum\overrightharpoon F = \dfrac{\Delta\overrightharpoon p}{\Delta t}` },
+    { nm:'สะท้อนกลับแนวเดิม', s:'ความเร็วกลับทิศ', eq: R`|\Delta p| = m(u + v)` },
+    { nm:'เชื่อมกับพลังงานจลน์', s:'จากบทที่ 5', eq: R`E_k = \frac{p^2}{2m}` },
+    { nm:'หน่วย', s:'สองหน่วยนี้เท่ากัน', eq: R`\text{kg}\cdot\text{m/s} = \text{N}\cdot\text{s}` }
+  ],
+  life: [
+    { ic:'ph-truck', h:'รถบรรทุกเบรกยากกว่ารถเก๋ง', p: R`วิ่งเร็วเท่ากัน แต่มวลมากกว่าหลายเท่า โมเมนตัม <b>$p = mv$</b> จึงมากกว่า ต้องใช้แรงมากหรือเวลานานกว่าจึงจะหยุดได้` },
+    { ic:'ph-tennis-ball', h:'ลูกเทนนิสเบาแต่เร็ว', p: R`มวลเพียง 60 g แต่ลูกเสิร์ฟเร็วเกิน 50 m/s โมเมนตัมจึง<b>มากพอ</b>จะทำให้แขนผู้รับลูกสะเทือน` },
+    { ic:'ph-boat', h:'ก้าวขึ้นฝั่งจากเรือลำเล็ก', p: R`คนก้าวไปข้างหน้า เรือไถล<b>ถอยหลัง</b> เพราะโมเมนตัมรวมต้องเป็นศูนย์เหมือนก่อนก้าว — จะได้เห็นอีกครั้งในหัวข้อ 6.3` }
+  ],
+  think: { q: 'ลูกบอลสองลูกมวลเท่ากัน ตกกระทบพื้นด้วยความเร็วเท่ากัน ลูกหนึ่งติดพื้น อีกลูกกระดอนขึ้นเร็วเท่าเดิม ลูกไหนโมเมนตัมเปลี่ยนมากกว่า?',
+    a: R`<b>ลูกที่กระดอน — มากกว่าสองเท่า</b> ลูกที่ติดพื้นมี $\Delta p = mu$ แต่ลูกที่กระดอนมี $\Delta p = m(u + u) = 2mu$ เพราะโมเมนตัมต้องลดเป็นศูนย์ <b>แล้ว</b>ยังต้องกลับทิศอีก` },
+  probs: ['ch6-1-1','ch6-1-5','ch6-1-7'] },
+
+{ key:'impulse', num:'6.2', title:'แรงและการดล', en:'Impulse', color:'#b7791f',
+  hook: R`นักกีฬากระโดดสูงตกลงบนเบาะหนา ๆ ไม่ใช่พื้นปูน ความเร็วตอนตกเท่ากันทุกครั้ง… แล้ว<b>อะไร</b>ที่ทำให้ตกลงเบาะแล้วไม่เจ็บ?`,
+  road: 'ยืดเวลาชน แรงกระแทกลดลง',
+  core: { lbl:'สมการตั้งต้น · การดล', eq: R`\begin{aligned}\overrightharpoon I &= \overrightharpoon F\,\Delta t \\ &= \Delta\overrightharpoon p = m\overrightharpoon v - m\overrightharpoon u\end{aligned}`,
+    steps: [
+      { t: R`เริ่มจากกฎข้อที่สองของนิวตันในรูปโมเมนตัม`, eq: R`\textstyle\sum\overrightharpoon F = \dfrac{\Delta\overrightharpoon p}{\Delta t}` },
+      { t: R`คูณ $\Delta t$ ทั้งสองข้าง ได้<b>การดล</b> ทิศเดียวกับ $\Delta\overrightharpoon p$`, eq: R`\overrightharpoon F\,\Delta t = \Delta\overrightharpoon p` },
+      { t: R`ถ้าแรงไม่คงตัว การดลคือ<b>พื้นที่ใต้กราฟ</b> $F$–$t$`, eq: R`I = \text{พื้นที่ใต้กราฟ } F\text{–}t` }
+    ] },
+  sim: 'impulse', simTitle: 'ปล่อยไข่ลงพื้นแบบต่าง ๆ',
+  simText: R`ไข่มวล 60 g กระทบพื้นด้วยความเร็ว 5 m/s แล้วหยุด ทุกพื้นจึงให้ $\Delta p$ เท่ากัน ลองเลือกพื้น แล้วดูว่าแรงเฉลี่ยที่ไข่ได้รับต่างกันแค่ไหน (สมมติว่าไข่แตกเมื่อแรงเกิน 25 N)`,
+  simTry: ['พื้นไหนที่ไข่รอด', 'Δp ของทุกพื้นเท่ากันไหม — ดูพื้นที่ของสี่เหลี่ยมในกราฟ', 'ถุงลมนิรภัยช่วยชีวิตคนได้อย่างไร'],
+  eqs: [
+    { nm:'แรงดลเฉลี่ย', s:'Δt ยาว แรงน้อย', eq: R`F = \frac{\Delta p}{\Delta t}` },
+    { nm:'กระทบแล้วหยุด', s:'ความเร็วปลายเป็นศูนย์', eq: R`F = \frac{mu}{\Delta t}` },
+    { nm:'กระทบแล้วสะท้อนกลับ', s:'ความเร็วกลับทิศ', eq: R`F = \frac{m(u + v)}{\Delta t}` },
+    { nm:'หน่วย', s:'การดลกับโมเมนตัมหน่วยเดียวกัน', eq: R`\text{N}\cdot\text{s} = \text{kg}\cdot\text{m/s}` }
+  ],
+  life: [
+    { ic:'ph-car', h:'ถุงลมนิรภัย', p: R`ยืดเวลาที่ศีรษะใช้หยุดให้นานขึ้นหลายเท่า $\Delta p$ เท่าเดิม แต่<b>แรงลดลง</b>ตาม $F = \Delta p/\Delta t$` },
+    { ic:'ph-person-simple-run', h:'ย่อเข่าตอนกระโดดลงพื้น', p: R`งอเข่าทำให้ร่างกายหยุดช้าลง $\Delta t$ ยาวขึ้น แรงที่ข้อเท้าและเข่าจึง<b>น้อยลง</b>` },
+    { ic:'ph-golf', h:'ตีกอล์ฟต้องตามวง', p: R`ไม้สัมผัสลูกนานขึ้น การดล $F\,\Delta t$ มากขึ้น ลูกจึงได้<b>โมเมนตัมมากขึ้น</b> และไปไกลขึ้น` }
+  ],
+  think: { q: 'ตกจากที่สูงเท่ากัน ลงบนกองทรายกับลงบนพื้นปูน การดลที่ร่างกายได้รับต่างกันไหม?',
+    a: R`<b>การดลเท่ากัน</b> — ความเร็วก่อนกระทบเท่ากันและหยุดเหมือนกัน $\Delta p$ จึงเท่ากัน สิ่งที่ต่างคือ<b>เวลา</b> ทรายยุบตัวทำให้ $\Delta t$ ยาวกว่ามาก แรงเฉลี่ยจึงน้อยกว่ามาก` },
+  probs: ['ch6-2-1','ch6-2-6','ch6-2-10'] },
+
+{ key:'collision', num:'6.3', title:'การชน', en:'Collisions', color:'#1f6fd1',
+  hook: R`ลูกบิลเลียดสีขาวพุ่งชนลูกที่จอดนิ่งตรง ๆ แล้ว<b>หยุดกึก</b> ส่วนลูกที่ถูกชนวิ่งออกไปแทนด้วยความเร็วเกือบเท่าเดิม — โมเมนตัมถูก “ส่งต่อ” ได้อย่างไร?`,
+  road: 'โมเมนตัมรวมไม่หายไปไหน',
+  core: { lbl:'กฎการอนุรักษ์โมเมนตัม', eq: R`\begin{aligned}&m_1\overrightharpoon u_1 + m_2\overrightharpoon u_2 \\ &\quad= m_1\overrightharpoon v_1 + m_2\overrightharpoon v_2\end{aligned}`,
+    steps: [
+      { t: R`ระหว่างชน สองวัตถุออกแรงต่อกัน<b>เท่ากันแต่ทิศตรงข้าม</b> (กฎข้อที่สาม) ในเวลาเท่ากัน`, eq: R`\overrightharpoon F_{12}\,\Delta t = -\overrightharpoon F_{21}\,\Delta t` },
+      { t: R`การดลที่แต่ละก้อนได้รับจึงหักล้างกันพอดี`, eq: R`\Delta\overrightharpoon p_1 = -\Delta\overrightharpoon p_2` },
+      { t: R`ถ้า<b>ไม่มีแรงภายนอก</b> โมเมนตัมรวมจึงคงตัว`, eq: R`\Delta\overrightharpoon p_1 + \Delta\overrightharpoon p_2 = 0` }
+    ] },
+  sim: 'collision', simTitle: 'ห้องทดลองการชน 1 มิติ',
+  simText: R`รถ A วิ่ง 4 m/s เข้าชนรถ B ที่จอดนิ่ง ปรับมวลทั้งสองคัน เลือกชนแบบยืดหยุ่นหรือชนแล้วติดกันไป แล้วเทียบโมเมนตัมรวมกับพลังงานจลน์ก่อนและหลังชน`,
+  simTry: ['มวลเท่ากัน ชนแบบยืดหยุ่น รถ A เป็นอย่างไรหลังชน', 'โมเมนตัมรวมเปลี่ยนไหมในทั้งสองแบบ', 'ชนแล้วติดกัน พลังงานจลน์หายไปเท่าไร และไปไหน'],
+  eqs: [
+    { nm:'อนุรักษ์โมเมนตัม 1 มิติ', s:'ใส่เครื่องหมายตามทิศ', eq: R`m_1u_1 + m_2u_2 = m_1v_1 + m_2v_2` },
+    { nm:'ชนแล้วติดกันไป', s:'ไม่ยืดหยุ่น Ek ลดลง', eq: R`v = \frac{m_1u_1 + m_2u_2}{m_1 + m_2}` },
+    { nm:'ยืดหยุ่น 1 มิติ (สูตรลัด)', s:'ใช้คู่กับสมการโมเมนตัม', eq: R`u_1 + v_1 = u_2 + v_2` },
+    { nm:'การระเบิด / ดีดตัว', s:'เริ่มจากหยุดนิ่ง', eq: R`0 = m_1\overrightharpoon v_1 + m_2\overrightharpoon v_2` }
+  ],
+  life: [
+    { ic:'ph-circles-three', h:'ลูกบิลเลียด', p: R`มวลเท่ากัน ชนตรง ๆ แบบเกือบยืดหยุ่น ลูกขาว<b>หยุด</b> แล้วส่งความเร็วทั้งหมดให้ลูกที่ถูกชน` },
+    { ic:'ph-rocket', h:'จรวดและแรงถีบของปืน', p: R`แก๊สพุ่งออกด้านหลัง จรวดจึงได้โมเมนตัม<b>ทิศตรงข้าม</b> เพราะโมเมนตัมรวมเริ่มจากศูนย์` },
+    { ic:'ph-car-profile', h:'รถชนแล้วติดกันไป', p: R`โมเมนตัมรวมคงตัว แต่พลังงานจลน์บางส่วนกลายเป็นความร้อน เสียง และตัวถังที่<b>บุบ</b> — การชนแบบไม่ยืดหยุ่น` }
+  ],
+  think: { q: 'ยืนนิ่งบนสเก็ตบอร์ดแล้วโยนลูกบอลหนัก ๆ ไปข้างหน้า จะเกิดอะไรขึ้นกับตัวเรา? เพราะอะไร?',
+    a: R`<b>ตัวเราไถลถอยหลัง</b> — ก่อนโยนโมเมนตัมรวมเป็นศูนย์ หลังโยนก็ต้องเป็นศูนย์ ลูกบอลได้โมเมนตัมไปข้างหน้า ตัวเราจึงได้โมเมนตัมขนาดเท่ากันในทิศตรงข้าม $0 = m_1v_1 + m_2v_2$` },
+  probs: ['ch6-3-1','ch6-3-7','ch6-3-9'] }
+];
+
+/* ════════════════════════════════════════════════════════════════
+   บทที่ 7 — ทฤษฎีเรียบเรียงจากแผงทฤษฎีของแอป (data_ch7.js)
+   ════════════════════════════════════════════════════════════════ */
+const SECTIONS7 = [
+{ key:'projectile', num:'7.1', title:'โพรเจกไทล์', en:'Projectile Motion', color:'#1f8a5a',
+  hook: R`นักบาสชู้ตลูกโค้งลงห่วงได้แม่นยำ เส้นโค้งสวย ๆ นั้นดูซับซ้อน… แต่ฟิสิกส์บอกว่ามันคือ<b>การเคลื่อนที่ง่าย ๆ สองแบบ</b>ที่เกิดขึ้นพร้อมกัน`,
+  road: 'แยกแกน x กับ y แล้วคิดทีละแกน',
+  core: { lbl:'สมการตั้งต้น · เวกเตอร์', eq: R`\begin{aligned}\overrightharpoon v &= \overrightharpoon u + \overrightharpoon g\,t \\ \overrightharpoon s &= \overrightharpoon u\,t + \tfrac12\overrightharpoon g\,t^2\end{aligned}`,
+    steps: [
+      { t: R`แกน $x$: ไม่มีแรงในแนวราบ <b>ความเร็วคงตัว</b>`, eq: R`v_x = u\cos\theta \qquad s_x = (u\cos\theta)\,t` },
+      { t: R`แกน $y$: ความเร่ง $-g$ <b>เหมือนวัตถุตกอิสระ</b>`, eq: R`v_y = u\sin\theta - gt \qquad s_y = (u\sin\theta)\,t - \tfrac12 gt^2` },
+      { t: R`สองแกนเชื่อมกันด้วย<b>เวลา $t$ ตัวเดียวกัน</b> แล้วรวมกลับเป็นความเร็วลัพธ์`, eq: R`|\overrightharpoon v| = \sqrt{v_x^2 + v_y^2}` }
+    ] },
+  sim: 'projectile', simTitle: 'ยิงลูกบอล',
+  simText: R`ปรับความเร็วต้นและมุมยิง แล้วกดยิง สังเกตลูกศรความเร็ว แนวราบ (สีเทา) ยาวเท่าเดิมตลอด ส่วนแนวดิ่ง (สีเขียว) สั้นลงจนเป็นศูนย์ที่จุดสูงสุด แล้วกลับทิศ`,
+  simTry: ['มุมไหนยิงได้ไกลที่สุด', 'ยิง 30° กับ 60° ตกที่ระยะเท่ากันไหม', 'ที่จุดสูงสุด ความเร็วเป็นศูนย์หรือเปล่า'],
+  eqs: [
+    { nm:'เวลาลอยทั้งหมด', s:'ตกกลับระดับเดิม', eq: R`T = \frac{2u\sin\theta}{g}` },
+    { nm:'ความสูงสูงสุด', s:'ที่จุดนั้น $v_y = 0$', eq: R`H = \frac{u^2\sin^2\theta}{2g}` },
+    { nm:'พิสัยแนวราบ', s:'ไกลสุดที่ 45°', eq: R`R = \frac{u^2\sin 2\theta}{g}` },
+    { nm:'ยิงแนวระดับจากที่สูง h', s:'เริ่มด้วย $u_y = 0$', eq: R`t = \sqrt{\frac{2h}{g}} \qquad R = ut` }
+  ],
+  life: [
+    { ic:'ph-basketball', h:'ชู้ตบาส', p: R`ลูกลอยเป็นเส้นโค้ง<b>พาราโบลา</b> ต้องเลือกมุมกับความเร็วต้นให้เข้ากัน ลูกจึงลงห่วงพอดี` },
+    { ic:'ph-drop', h:'น้ำพุและสายยางรดน้ำ', p: R`ทุกหยดน้ำเป็นโพรเจกไทล์ ยกปลายสายยางราว <b>45°</b> น้ำพุ่งได้ไกลที่สุด (ถ้าไม่คิดแรงต้านอากาศ)` },
+    { ic:'ph-soccer-ball', h:'เตะลูกโด่ง', p: R`ที่จุดสูงสุด ลูกบอล<b>ยังเคลื่อนที่ในแนวราบ</b> ความเร็วไม่เป็นศูนย์ มีแค่ $v_y = 0$` }
+  ],
+  think: { q: 'ยิงลูกหนึ่งออกไปในแนวระดับจากขอบโต๊ะ พร้อมกับปล่อยอีกลูกให้ตกจากความสูงเดียวกัน ลูกไหนถึงพื้นก่อน?',
+    a: R`<b>ถึงพื้นพร้อมกัน</b> — การเคลื่อนที่แนวดิ่งของทั้งสองลูกเหมือนกันทุกอย่าง ($u_y = 0$ และความเร่ง $g$ เท่ากัน) ความเร็วแนวราบไม่มีผลต่อเวลาตกเลย` },
+  probs: ['proj_1','proj_4','proj_2'] },
+
+{ key:'circular', num:'7.2', title:'การเคลื่อนที่แบบวงกลม', en:'Circular Motion', color:'#7b4bc9',
+  hook: R`รถเลี้ยวโค้งด้วยความเร็วคงที่ 60 km/h ตลอดทั้งโค้ง เข็มไมล์ไม่ขยับเลย… แต่ฟิสิกส์บอกว่ารถคันนี้<b>มีความเร่ง</b> เป็นไปได้อย่างไร?`,
+  road: 'อัตราเร็วคงตัว แต่ทิศเปลี่ยนตลอด',
+  core: { lbl:'แรงสู่ศูนย์กลาง', eq: R`\begin{aligned}\overrightharpoon F_c &= m\overrightharpoon a_c \\ a_c &= \frac{v^2}{r} = \omega^2 r\end{aligned}`,
+    steps: [
+      { t: R`ความเร็วอยู่ใน<b>แนวเส้นสัมผัส</b> ทิศเปลี่ยนตลอด จึงมีความเร่งแม้อัตราเร็วคงตัว`, eq: R`\overrightharpoon a_c\ \text{ชี้เข้าหาศูนย์กลางเสมอ}` },
+      { t: R`ความเร่งตั้งฉากกับความเร็ว — แรงสู่ศูนย์กลาง<b>ไม่ทำงาน</b> อัตราเร็วจึงไม่เปลี่ยน`, eq: R`\overrightharpoon F_c\cdot\overrightharpoon v = 0` },
+      { t: R`ใช้กฎข้อที่สองในแนว<b>เข้าหาศูนย์กลาง</b> — $F_c$ คือผลรวมของแรงจริง ไม่ใช่แรงชนิดใหม่`, eq: R`\textstyle\sum F_{\text{เข้าศูนย์กลาง}} = \dfrac{mv^2}{r}` }
+    ] },
+  sim: 'circular', simTitle: 'แกว่งลูกบอล แล้วตัดเชือก',
+  simText: R`ลูกบอลมวล 1 kg แกว่งเป็นวงกลม ลูกศรดำคือความเร็ว ลูกศรสีคือความเร่งสู่ศูนย์กลาง ปรับอัตราเร็วกับรัศมี แล้วลองกดตัดเชือกดูว่าลูกบอลพุ่งไปทางไหน`,
+  simTry: ['ความเร็วกับความเร่งทำมุมกันเท่าไร', 'เร็วขึ้น 2 เท่า แรงตึงเชือกเพิ่มกี่เท่า', 'ตัดเชือกแล้วลูกพุ่งออกนอกวง หรือพุ่งตามแนวเส้นสัมผัส'],
+  eqs: [
+    { nm:'ความเร็วเชิงเส้น', s:'T = เวลาหมุนครบรอบ', eq: R`v = \omega r = \frac{2\pi r}{T}` },
+    { nm:'แรงสู่ศูนย์กลาง', s:'ชี้เข้าหาศูนย์กลาง', eq: R`F_c = \frac{mv^2}{r} = m\omega^2 r` },
+    { nm:'โค้งราบ', s:'แรงเสียดทานเป็นแรงสู่ศูนย์กลาง', eq: R`v_{max} = \sqrt{\mu_s g r}` },
+    { nm:'วงกลมแนวดิ่ง จุดบนสุด', s:'ความเร็วต่ำสุดที่ไม่ตก', eq: R`v_{min} = \sqrt{gr}` }
+  ],
+  life: [
+    { ic:'ph-steering-wheel', h:'รถเลี้ยวโค้ง', p: R`แรงเสียดทานระหว่างยางกับถนนทำหน้าที่แรงสู่ศูนย์กลาง ถ้าเข้าโค้งเร็วเกิน <b>$\sqrt{\mu_s gr}$</b> รถจะไถลออกนอกโค้ง` },
+    { ic:'ph-planet', h:'ดาวเทียมโคจรรอบโลก', p: R`แรงโน้มถ่วงของโลกเป็นแรงสู่ศูนย์กลาง ดาวเทียม<b>ตกเข้าหาโลกตลอดเวลา</b> แต่เคลื่อนที่ไปข้างหน้าเร็วพอจนไม่เคยถึงพื้น` },
+    { ic:'ph-washing-machine', h:'เครื่องซักผ้าปั่นแห้ง', p: R`ถังดันผ้าให้เคลื่อนที่เป็นวงกลม แต่หยดน้ำ<b>หลุดผ่านรู</b>ได้ จึงพุ่งออกไปตามแนวเส้นสัมผัส ผ้าจึงแห้ง` }
+  ],
+  think: { q: 'แกว่งถังน้ำเป็นวงกลมในแนวดิ่ง ตอนถังอยู่บนสุดและคว่ำหัวลง ทำไมน้ำไม่หกออกมา?',
+    a: R`น้ำต้องการ<b>แรงสู่ศูนย์กลาง</b> $mv^2/r$ ถ้าแกว่งเร็วพอจน $mv^2/r \ge mg$ น้ำหนักอย่างเดียวไม่พอดึงน้ำให้เลี้ยวตามวง ก้นถังจึงต้องช่วยดันน้ำลงด้วย น้ำจึงไม่หก — เงื่อนไขคือ $v \ge \sqrt{gr}$` },
+  probs: ['circ_1','circ_2','circ_4'] },
+
+{ key:'shm', num:'7.3', title:'ฮาร์มอนิกอย่างง่าย', en:'Simple Harmonic Motion', color:'#c2255c',
+  hook: R`นาฬิกาลูกตุ้มโบราณเดินตรงได้เป็นร้อยปี เพราะลูกตุ้มแกว่งหนึ่งรอบ<b>ใช้เวลาเท่าเดิมเสมอ</b> ไม่ว่าจะแกว่งกว้างหรือแคบ — ความลับนั้นคืออะไร?`,
+  road: 'แรงดึงกลับ แปรผันตรงกับการกระจัด',
+  core: { lbl:'สมการตั้งต้น · แรงดึงกลับ', eq: R`\begin{aligned}\overrightharpoon F &= -k\overrightharpoon x \\ \overrightharpoon a &= -\omega^2\overrightharpoon x\end{aligned}`,
+    steps: [
+      { t: R`แรงดึงกลับมีขนาด<b>แปรผันตรง</b>กับการกระจัด แต่มีทิศ<b>ตรงข้าม</b>เสมอ`, eq: R`\overrightharpoon F = -k\overrightharpoon x` },
+      { t: R`หารด้วยมวลได้ความเร่ง แล้วนิยาม $\omega^2 = k/m$`, eq: R`\overrightharpoon a = -\frac{k}{m}\overrightharpoon x = -\omega^2\overrightharpoon x` },
+      { t: R`คาบขึ้นกับ $m$ และ $k$ เท่านั้น <b>ไม่ขึ้นกับแอมพลิจูด</b>`, eq: R`T = \frac{2\pi}{\omega} = 2\pi\sqrt{\frac{m}{k}}` }
+    ] },
+  sim: 'shm', simTitle: 'มวลติดสปริง',
+  simText: R`ปรับมวล ค่านิจสปริง และแอมพลิจูด แล้วสังเกตคาบ กับลูกศรความเร็ว (ดำ) และความเร่ง (สี) ที่ตำแหน่งต่าง ๆ กราฟด้านล่างคือการกระจัดเทียบกับเวลา`,
+  simTry: ['ที่จุดสมดุล ความเร็วและความเร่งเป็นอย่างไร', 'เพิ่มแอมพลิจูด คาบเปลี่ยนไหม', 'มวลเพิ่มเป็น 4 เท่า คาบเป็นกี่เท่า'],
+  eqs: [
+    { nm:'การกระจัด', s:'A = แอมพลิจูด', eq: R`x = A\sin(\omega t + \phi)` },
+    { nm:'ค่าสูงสุด', s:'v สูงสุดที่สมดุล a สูงสุดที่ปลาย', eq: R`v_{max} = \omega A \qquad a_{max} = \omega^2 A` },
+    { nm:'มวล–สปริง', s:'ไม่ขึ้นกับ g และ A', eq: R`T = 2\pi\sqrt{\frac{m}{k}}` },
+    { nm:'ลูกตุ้มอย่างง่าย', s:'มุมแกว่งเล็ก ไม่ขึ้นกับมวล', eq: R`T = 2\pi\sqrt{\frac{L}{g}}` }
+  ],
+  life: [
+    { ic:'ph-clock', h:'นาฬิกาลูกตุ้ม', p: R`คาบ $T = 2\pi\sqrt{L/g}$ ขึ้นกับความยาวเท่านั้น ช่างนาฬิกาปรับเวลาโดย<b>เลื่อนตุ้มขึ้นลง</b>` },
+    { ic:'ph-car', h:'ช่วงล่างรถยนต์', p: R`สปริงทำให้ตัวรถสั่นขึ้นลงแบบฮาร์มอนิก ส่วนโช้คอัพช่วย<b>หน่วง</b>ไม่ให้รถเด้งไม่หยุด` },
+    { ic:'ph-guitar', h:'สายกีตาร์', p: R`สายสั่นกลับไปกลับมารอบตำแหน่งสมดุล ความถี่ของการสั่นเป็นตัวกำหนด<b>ระดับเสียง</b>` }
+  ],
+  think: { q: 'นำนาฬิกาลูกตุ้มไปไว้บนดวงจันทร์ ซึ่งมี g น้อยกว่าโลก 6 เท่า นาฬิกาจะเดินเร็วขึ้นหรือช้าลง?',
+    a: R`<b>ช้าลง</b> — จาก $T = 2\pi\sqrt{L/g}$ เมื่อ $g$ ลดลง 6 เท่า คาบยาวขึ้น $\sqrt6 \approx 2.45$ เท่า ลูกตุ้มแกว่งช้าลง นาฬิกาจึงเดินช้ากว่าเวลาจริง` },
+  probs: ['shm_1','shm_2','shm_3'] }
+];
+
+/* ════════════════════════════════════════════════════════════════
+   เลือกบท — slides.html?ch=6 (ไม่ระบุ = บทที่ 5)
+   ════════════════════════════════════════════════════════════════ */
+const CHAPTERS = {
+  5: { no: 5, title: 'งานและพลังงาน', cover: ['งานและ', 'พลังงาน'], en: 'Work and Energy',
+       road: 'ห้าเรื่องที่ต่อกันเป็นเรื่องเดียว', sections: SECTIONS5,
+       sum: [
+         ['work', 'งาน', R`W = Fs\cos\theta`], ['power', 'กำลัง', R`P = \frac{W}{t} = Fv`],
+         ['kinetic', 'งาน–พลังงานจลน์', R`W_{net} = \Delta E_k`], ['potential', 'พลังงานศักย์', R`E_p = mgh,\ \ \tfrac12 kx^2`],
+         ['conservation', 'อนุรักษ์พลังงานกล', R`E_{k1}+E_{p1}+W_{nc} = E_{k2}+E_{p2}`] ],
+       story: 'แรงทำงาน → พลังงานเปลี่ยนรูป → ผลรวมคงตัว' },
+  6: { no: 6, title: 'โมเมนตัมและการชน', cover: ['โมเมนตัม', 'และการชน'], en: 'Momentum and Collisions',
+       road: 'สามเรื่องของมวลที่กำลังเคลื่อนที่', sections: SECTIONS6,
+       sum: [
+         ['momentum', 'โมเมนตัม', R`\overrightharpoon p = m\overrightharpoon v`], ['momentum', 'เปลี่ยนโมเมนตัม', R`\Delta\overrightharpoon p = m\overrightharpoon v - m\overrightharpoon u`],
+         ['impulse', 'การดล', R`\overrightharpoon F\,\Delta t = \Delta\overrightharpoon p`], ['collision', 'อนุรักษ์โมเมนตัม', R`\textstyle\sum\overrightharpoon p_{\text{ก่อน}} = \sum\overrightharpoon p_{\text{หลัง}}`],
+         ['collision', 'ชนแบบยืดหยุ่น', R`E_k\ \text{ก่อนชน} = E_k\ \text{หลังชน}`] ],
+       story: 'แรงกระทำช่วงเวลาหนึ่ง → โมเมนตัมเปลี่ยน → ไม่มีแรงภายนอก โมเมนตัมรวมคงตัว' },
+  7: { no: 7, title: 'การเคลื่อนที่แบบต่าง ๆ', cover: ['การเคลื่อนที่', 'แบบต่าง ๆ'], en: 'Projectile, Circular and Simple Harmonic Motion',
+       road: 'สามแบบของการเคลื่อนที่ที่ไม่ใช่เส้นตรง', sections: SECTIONS7,
+       sum: [
+         ['projectile', 'โพรเจกไทล์ แยกแกน', R`v_x = u\cos\theta,\ \ v_y = u\sin\theta - gt`], ['projectile', 'พิสัย', R`R = \frac{u^2\sin 2\theta}{g}`],
+         ['circular', 'แรงสู่ศูนย์กลาง', R`F_c = \frac{mv^2}{r}`], ['shm', 'แรงดึงกลับ', R`\overrightharpoon a = -\omega^2\overrightharpoon x`],
+         ['shm', 'คาบ', R`T = 2\pi\sqrt{\frac{m}{k}} = 2\pi\sqrt{\frac{L}{g}}`] ],
+       story: 'แยกแกน · หาแรงสู่ศูนย์กลาง · หาแรงดึงกลับ' }
+};
+const CH_NO = (() => { const m = location.search.match(/[?&]ch=(\d)/); return m && CHAPTERS[m[1]] ? +m[1] : 5; })();
+const CHAPTER = CHAPTERS[CH_NO];
+const SECTIONS = CHAPTER.sections;
+
+/* ════════════════════════════════════════════════════════════════
+   ตัวช่วย
+   ════════════════════════════════════════════════════════════════ */
+// data.js ประกาศ const physicsData (ไม่ผูกกับ window) จึงต้องเรียกชื่อตรง ๆ
+const TOPICS = ((typeof physicsData !== 'undefined' ? physicsData : window.physicsData) || {}).topics || {};
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+// % ในโหมดคณิตของ KaTeX คือคอมเมนต์ ทำให้ "80%" หายเงียบ ๆ
+const fixTex = s => String(s).replace(/\$[^$]*\$/g, m => m.replace(/(^|[^\\])%/g, '$1\\%'));
+const fmtNum = v => /^-?\d{5,}(\.\d+)?$/.test(v) ? Number(v).toLocaleString('en-US') : v;
+
+function defsOf(key){
+  if (!window.definitionsHTML) return [];
+  const box = document.createElement('div');
+  box.innerHTML = window.definitionsHTML(key);
+  return [...box.querySelectorAll('.def')].map(d => ({
+    t: d.querySelector('.def-th')?.innerHTML || '',
+    s: d.querySelector('.def-sym')?.innerHTML || '',
+    th: d.querySelector('.def-text')?.innerHTML || ''
+  }));
+}
+
+function mainEq(prob, key){
+  if (!window.mainEquationHTML) return null;
+  const h = window.mainEquationHTML(prob, key);
+  const tex = (h.match(/\$\$([\s\S]*?)\$\$/) || [])[1];
+  const nm = ((h.match(/me-tag">([^<]*)</) || [])[1] || '').replace(/^สมการหลัก\s*·\s*/, '');
+  return tex ? { tex, nm } : null;
+}
+
+function splitGiven(html){
+  // แยก "m = 5 kg, s = 4 m" ที่จุลภาคนอกโหมดคณิต
+  const out = []; let cur = '', inM = false;
+  for (let i = 0; i < html.length; i++){
+    const c = html[i];
+    if (c === '$') inM = !inM;
+    if (c === ',' && !inM && html[i+1] === ' '){ out.push(cur.trim()); cur = ''; i++; continue; }
+    cur += c;
+  }
+  if (cur.trim()) out.push(cur.trim());
+  return out;
+}
+function ansOf(p){
+  const m = (p.intermediateHtml || '').match(/data-answer="([^"]*)"|placeholder="([^"]*)"/);
+  return m ? parseFloat(String(m[1] || m[2]).replace(/,/g, '')) : NaN;
+}
+function givenOf(p){
+  const h = p.intermediateHtml || '';
+  const m = h.match(/โจทย์กำหนด:<\/b>([\s\S]*?)<\/div>/);
+  if (m) return splitGiven(m[1].trim());
+  const box = document.createElement('div'); box.innerHTML = h;
+  const first = [...box.querySelectorAll('p')].find(x => !x.querySelector('input') && x.textContent.trim());
+  return first ? splitGiven(first.innerHTML.trim()) : [];
+}
+
+// แยกแถวของ aligned ที่ระดับบนสุด (ไม่ตัดใน {…})
+function splitRows(tex){
+  const out = []; let d = 0, cur = '';
+  for (let i = 0; i < tex.length; i++){
+    const c = tex[i];
+    if (c === '{') d++; else if (c === '}') d--;
+    if (d === 0 && c === '\\' && tex[i+1] === '\\'){ out.push(cur); cur = ''; i++; continue; }
+    cur += c;
+  }
+  if (cur.trim()) out.push(cur);
+  return out.map(x => x.trim()).filter(Boolean);
+}
+function mathRows(tex){
+  const al = tex.match(/\\begin\{aligned\}([\s\S]*)\\end\{aligned\}/);
+  if (!al) return [{ type:'text', html: '$\\displaystyle ' + tex.trim() + '$' }];
+  return splitRows(al[1]).map(row => {
+    const at = row.indexOf('&');
+    const lhs = at < 0 ? '' : row.slice(0, at).trim();
+    let rhs = at < 0 ? row : row.slice(at + 1).trim();
+    const rel = rhs.match(/^(=|\\approx|\\ge|\\le|<|>|\\Rightarrow|\\rightarrow)\s*/);
+    const op = rel ? rel[1] : '';
+    if (rel) rhs = rhs.slice(rel[0].length);
+    return { type:'calc', label: lhs ? '$\\displaystyle ' + lhs + '$' : '', op: op ? '$' + op + '$' : '', expr: '$\\displaystyle ' + rhs + '$' };
+  });
+}
+function parseGuideSteps(box, ansVal){
+  const rows = []; let n = 0;
+  const steps = [...box.children];
+  steps.forEach(st => {
+    n++; let first = true;
+    const add = r => { r.grp = String(n); if (first){ r.n = String(n); first = false; } rows.push(r); };
+    const parts = st.classList.contains('step') ? [...st.children] : [st];
+    parts.forEach(el => {
+      if (el.tagName === 'UL' || el.tagName === 'OL'){ [...el.children].forEach(li => add({ type:'text', html: '<span class="li">' + li.innerHTML.trim() + '</span>' })); return; }
+      const h = el.innerHTML.trim();
+      // ใช้ textContent — innerHTML จะแปลง & ของ aligned เป็น &amp;
+      const dm = !el.children.length && el.textContent.trim().match(/^\$\$([\s\S]*)\$\$$/);
+      if (dm){ mathRows(dm[1]).forEach(add); return; }
+      add({ type:'text', html: h.replace(/^<strong>ขั้นที่\s*\d+\s*:?<\/strong>\s*/, '') });
+    });
+  });
+  // แถวคำตอบ = แถวล่างสุดที่ตัวเลขท้ายตรงกับคำตอบในแอป (บางข้อบรรทัดสุดท้ายไม่ใช่สิ่งที่โจทย์ถาม)
+  const calcs = rows.filter(r => r.type === 'calc').reverse();
+  const lastNum = tex => { const m = tex.replace(/\{,\}/g, '').match(/-?\d+(?:\.\d+)?/g); return m ? parseFloat(m[m.length - 1]) : NaN; };
+  const hit = isFinite(ansVal) ? calcs.find(r => { const v = lastNum(r.expr); return isFinite(v) && Math.abs(Math.abs(v) - Math.abs(ansVal)) <= Math.max(0.011 * Math.abs(ansVal), 1e-9); }) : null;
+  const ansRow = hit || calcs[0];
+  if (ansRow){ ansRow.ans = true; ansRow.expr = '<span class="ans">' + ansRow.expr + '</span>'; }
+  return rows;
+}
+
+function parseGuide(html, ansVal){
+  const box = document.createElement('div'); box.innerHTML = fixTex(html);
+  if (!box.querySelector('.calc-steps, input')) return parseGuideSteps(box, ansVal);
+  const rows = [];
+  for (const el of box.children){
+    if (el.classList.contains('calc-steps')){
+      const c = [...el.children];
+      for (let i = 0; i + 2 < c.length; i += 3)
+        rows.push({ type:'calc', label:c[i].innerHTML.trim(), op:c[i+1].innerHTML.trim(), expr:c[i+2].innerHTML.trim() });
+    } else rows.push({ type:'text', html: el.innerHTML.trim() });
+  }
+  let n = 0;
+  rows.forEach(r => {
+    const k = r.type === 'calc' ? 'label' : 'html';
+    const m = r[k].match(/^(\d+)\.\s*/);
+    if (m){ r.n = m[1]; r[k] = r[k].slice(m[0].length); n = +m[1]; }
+    else if (r.type === 'text' || r.label) r.n = String(++n);
+    r.grp = r.n || String(n);
+    const repl = s => s.replace(/<input[^>]*placeholder="([^"]*)"[^>]*>/, (_, v) => { r.ans = true; return '<span class="ans">' + fmtNum(v) + '</span>'; });
+    if (r.type === 'calc') r.expr = repl(r.expr); else r.html = repl(r.html);
+  });
+  return rows;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   ตัวสร้างสไลด์แต่ละชนิด — คืน {html, sec, title, init?, enter?, leave?}
+   ════════════════════════════════════════════════════════════════ */
+const kick = (S, what) => `<div class="kicker"><b>${S.num} ${S.title}</b><span class="dot"></span><span>${what}</span></div>`;
+
+function cover(){
+  return { cls:'s-cover', title:'ปก', html: `
+    <div class="sub">ฟิสิกส์ 2 · ม.4 เล่ม 2 · บทที่ ${CHAPTER.no}</div>
+    <h1>${CHAPTER.cover[0]}<span>${CHAPTER.cover[1]}</span></h1>
+    <div class="meta">${CHAPTER.en} — ทฤษฎี · สมการ · ชีวิตจริง · โจทย์ทีละขั้น</div>
+    <nav class="chnav nointeract">${Object.values(CHAPTERS).map(c => c.no === CHAPTER.no
+      ? `<b>บทที่ ${c.no} ${c.title}</b>` : `<a href="?ch=${c.no}">บทที่ ${c.no} ${c.title}</a>`).join('')}</nav>
+    <div class="keys"><kbd>→</kbd> <kbd>Space</kbd> หรือคลิก ไปต่อ · <kbd>←</kbd> ย้อน<br><kbd>O</kbd> ภาพรวม · <kbd>F</kbd> เต็มจอ · <kbd>D</kbd> มืด/สว่าง · <kbd>B</kbd> จอดำ</div>` };
+}
+function roadmap(){
+  return { title:'เนื้อหาในบทนี้', html: `
+    <div class="kicker"><b>บทที่ ${CHAPTER.no}</b><span class="dot"></span><span>เนื้อหาในบทนี้</span></div>
+    <h2>${CHAPTER.road}</h2>
+    <ol class="road">${SECTIONS.map(S => `<li class="f" style="--c:${S.color}"><span class="n">${S.num}</span><span class="t">${S.title}<small>${S.en}</small></span><span class="q">${S.road}</span></li>`).join('')}</ol>` };
+}
+function opener(S){
+  return { cls:'s-open', title:S.title, html: `
+    <div class="big">${S.num}</div>
+    <h2>${S.title}<small>${S.en}</small></h2>
+    <p class="hook f">${S.hook}</p>` };
+}
+function defsSlide(S){
+  const d = defsOf(S.key).slice(0, 3);
+  return { title:'นิยาม', html: `${kick(S,'นิยาม')}
+    <h2>${S.title} คืออะไร</h2>
+    <dl class="defs">${d.map((x,i) => `<div class="def ${i ? 'f' : ''}"><dt>${x.t}${x.s ? `<span class="sym">${x.s}</span>` : ''}</dt><dd>${x.th}</dd></div>`).join('')}</dl>` };
+}
+function coreSlide(S){
+  const c = S.core;
+  return { title:'สมการตั้งต้น', html: `${kick(S,'กฎและสมการ')}
+    <h2>ที่มาของสมการ</h2>
+    <div class="core">
+      <div class="hero"><div class="lbl">${c.lbl}</div>$$${c.eq}$$</div>
+      <ol class="steps">${c.steps.map(s => `<li class="f"><p>${s.t}</p>$$${s.eq}$$</li>`).join('')}</ol>
+    </div>` };
+}
+function eqsSlide(S){
+  return { title:'สมการที่ใช้บ่อย', html: `${kick(S,'สมการที่ใช้บ่อย')}
+    <h2>สมการในกระเป๋า</h2>
+    <div class="eqgrid">${S.eqs.map(e => `<div class="eqrow f"><div class="nm">${e.nm}<small>${e.s}</small></div><div>$$${e.eq}$$</div></div>`).join('')}</div>` };
+}
+function lifeSlide(S){
+  return { title:'ในชีวิตประจำวัน', html: `${kick(S,'ในชีวิตประจำวัน')}
+    <h2>เจอ${S.title}ที่ไหนบ้าง</h2>
+    <div class="life">${S.life.map(l => `<div class="row f"><div class="ic"><i class="ph ${l.ic}"></i></div><h3>${l.h}</h3><p>${l.p}</p></div>`).join('')}</div>` };
+}
+function thinkSlide(S){
+  return { cls:'s-think', title:'ชวนคิด', html: `${kick(S,'ชวนคิด')}
+    <p class="q">${S.think.q}</p>
+    <div class="timer"><i class="ph ph-timer"></i> คิดก่อน 30 วินาที แล้วคลิกดูคำตอบ</div>
+    <div class="a f"><div class="lbl">คำตอบ</div><p>${S.think.a}</p></div>` };
+}
+function simSlide(S){
+  const sim = SIMS[S.sim];
+  return { title: S.simTitle, html: `${kick(S,'ลองเล่น')}
+    <h2>${S.simTitle}</h2>
+    <div class="sim"><div class="side"><p>${S.simText}</p>
+      <div class="try"><b>ลองหาคำตอบ</b><ul>${S.simTry.map(t => `<li>${t}</li>`).join('')}</ul></div></div>
+      <div class="panel">${sim.html}</div></div>`,
+    init: sim.init, enter: sim.enter, leave: sim.leave };
+}
+
+function probSlide(S, order, pid){
+  const list = (TOPICS[S.key] || {}).problems || [];
+  const obj = { title:'โจทย์ข้อ ' + order, cls:'s-prob', pid, S, order, list };
+  obj.render = function(id){
+    const p = list.find(x => x.id === id) || list[0];
+    if (!p) return `${kick(S,'โจทย์')}<p>ไม่พบโจทย์ใน data.js</p>`;
+    const idx = list.indexOf(p) + 1;
+    const g = givenOf(p), me = mainEq(p, S.key), rows = parseGuide(p.guide || '', ansOf(p));
+    let prev = null;
+    const sol = rows.map((r, i) => {
+      const cont = !r.n && prev && prev.grp === r.grp;
+      prev = r;
+      const nb = `<div class="nb">${r.n ? `<span>${r.n}</span>` : ''}</div>`;
+      const cls = `r step${cont && r.type === 'calc' && !r.label ? ' cont' : ''}${r.ans ? ' final' : ''}`;
+      return r.type === 'calc'
+        ? `<div class="${cls}" data-g="${r.grp}">${nb}<div>${r.label}</div><div class="op">${r.op}</div><div>${r.expr}</div></div>`
+        : `<div class="${cls}" data-g="${r.grp}">${nb}<div class="txt">${r.html}</div></div>`;
+    }).join('');
+    return `
+      <div class="ptop">${kick(S,'โจทย์ข้อ ' + order)}
+        <div class="chips nointeract">เปลี่ยนข้อ ${list.map((x,i) => `<button data-pid="${x.id}" class="${x.id === p.id ? 'cur' : ''}" title="${esc(x.text.replace(/\$/g,'').slice(0,80))}">${i+1}</button>`).join('')}</div></div>
+      <div class="pbody">
+        <div class="pq">
+          <div class="num">${String(idx).padStart(2,'0')}</div>
+          <div class="txt">${fixTex(p.text)}</div>
+          ${g.length ? `<div class="given f"><div class="lbl">โจทย์กำหนด</div><ul>${g.map(x => `<li>${fixTex(x)}</li>`).join('')}</ul></div>` : ''}
+          ${p.hints ? `<button class="hintbtn nointeract"><i class="ph ph-lightbulb"></i> คำใบ้</button><div class="hintbox"><div class="lbl">คำใบ้</div>${fixTex([].concat(p.hints).join('<br>'))}</div>` : ''}
+        </div>
+        <div class="psol">
+          ${me ? `<div class="meq f"><div class="lbl">สมการหลัก · ${me.nm}</div>$$${me.tex}$$</div>` : ''}
+          <div class="sol">${sol}</div>
+          <div class="pdone">คลิกต่อเพื่อไปสไลด์ถัดไป · หรือกดเลขด้านบนเพื่อลองข้ออื่น</div>
+        </div>
+      </div>`;
+  };
+  obj.html = obj.render(pid);
+  obj.init = el => bindProb(el, obj);
+  obj.enter = el => fitSol(el);
+  return obj;
+}
+function bindProb(el, obj){
+  el.querySelectorAll('.chips button').forEach(b => b.onclick = e => {
+    e.stopPropagation();
+    obj.pid = b.dataset.pid;
+    el.innerHTML = obj.render(obj.pid);
+    renderMath(el); bindProb(el, obj);
+    frag[cur] = 0; applyFrags(el, 0); fitSol(el);
+  });
+  const hb = el.querySelector('.hintbtn');
+  if (hb) hb.onclick = e => { e.stopPropagation(); el.querySelector('.hintbox').classList.toggle('show'); };
+}
+function fitSol(el){
+  const ps = el.querySelector('.psol'); if (!ps) return;
+  let fs = 34; ps.style.setProperty('--sfs', fs + 'px');
+  while (ps.scrollHeight > ps.clientHeight + 2 && fs > 20){ fs -= 1; ps.style.setProperty('--sfs', fs + 'px'); }
+}
+
+function summary(){
+  const key = CHAPTER.sum.map(([k, nm, eq]) => { const S = SECTIONS.find(x => x.key === k); return [S.num, nm, eq, S.color]; });
+  return { title:'สรุปบท', html: `
+    <div class="kicker"><b>บทที่ ${CHAPTER.no}</b><span class="dot"></span><span>สรุป</span></div>
+    <h2>สมการที่ต้องติดตัว</h2>
+    <div class="sum">${key.map((k,i) => `<div class="it f" style="--c:${k[3]}"><span class="n">${k[0]}</span><div><div class="nm">${k[1]}</div>$$${k[2]}$$</div></div>`).join('')}
+      <div class="it f" style="--c:var(--ink3)"><span class="n"><i class="ph ph-arrows-clockwise"></i></span><div><div class="nm">เส้นเรื่องเดียวกันทั้งบท</div><p style="font-size:24px;line-height:1.6">${CHAPTER.story}</p></div></div>
+    </div>` };
+}
+
+/* ════════════════════════════════════════════════════════════════
+   แบบจำลองโต้ตอบ (SVG + JS ล้วน)
+   ════════════════════════════════════════════════════════════════ */
+const svgNS = 'http://www.w3.org/2000/svg';
+const arrowDefs = id => `<defs><marker id="${id}" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="context-stroke"/></marker></defs>`;
+const fmt = (v, d = 0) => Number(v).toLocaleString('en-US', { minimumFractionDigits:d, maximumFractionDigits:d });
+
+const SIMS = {
+work: {
+  html: `<svg viewBox="0 0 900 470">${arrowDefs('aw')}
+    <line x1="40" y1="330" x2="860" y2="330" class="gl"/>
+    <g id="wBox"><rect x="250" y="250" width="120" height="80" fill="var(--paper2)" stroke="var(--ink)" stroke-width="2"/></g>
+    <line id="wProj" class="dsh"/>
+    <line id="wFx" stroke="var(--acc)" stroke-width="10" stroke-linecap="round" opacity=".8"/>
+    <line id="wF" stroke="var(--ink)" stroke-width="5" marker-end="url(#aw)"/>
+    <path id="wArc" fill="none" stroke="var(--ink3)" stroke-width="2"/>
+    <text id="wTh" font-size="26"></text><text id="wFl" font-size="28" font-weight="700">F = 20 N</text>
+    <line x1="250" y1="380" x2="650" y2="380" stroke="var(--ink3)" stroke-width="3" marker-end="url(#aw)"/>
+    <text x="420" y="420" font-size="26" fill="var(--ink2)">s = 4 m</text>
+    <text id="wOut" x="40" y="60" font-size="40" font-weight="700"></text>
+    <text id="wSign" x="40" y="104" font-size="28"></text>
+  </svg>
+  <div class="ctl"><label>มุม θ <input type="range" id="wAng" min="0" max="180" step="1" value="37"></label><span class="readout" id="wRd"></span></div>`,
+  init(el){
+    const $ = s => el.querySelector(s), cx = 310, cy = 290, L = 200;
+    const upd = () => {
+      const th = +$('#wAng').value, r = th * Math.PI / 180, c = Math.cos(r);
+      const x2 = cx + L * c, y2 = cy - L * Math.sin(r);
+      Object.entries({x1:cx,y1:cy,x2,y2}).forEach(([k,v]) => $('#wF').setAttribute(k, v));
+      Object.entries({x1:cx,y1:cy,x2:cx + L*c,y2:cy}).forEach(([k,v]) => $('#wFx').setAttribute(k, v));
+      Object.entries({x1:x2,y1:y2,x2:x2,y2:cy}).forEach(([k,v]) => $('#wProj').setAttribute(k, v));
+      const a = 55, ax = cx + a * c, ay = cy - a * Math.sin(r);
+      $('#wArc').setAttribute('d', `M${cx + a} ${cy} A${a} ${a} 0 0 0 ${ax} ${ay}`);
+      const m = (r / 2), tx = cx + 90 * Math.cos(m), ty = cy - 90 * Math.sin(m);
+      $('#wTh').setAttribute('x', tx - 10); $('#wTh').setAttribute('y', ty + 8); $('#wTh').textContent = 'θ';
+      $('#wFl').setAttribute('x', x2 + (c >= 0 ? 12 : -140)); $('#wFl').setAttribute('y', y2 - 10);
+      const W = 20 * 4 * c, Wr = Math.abs(W) < 0.05 ? 0 : W;
+      $('#wOut').textContent = `W = 20 × 4 × cos ${th}° = ${fmt(Wr, 1)} J`;
+      const s = $('#wSign');
+      if (Wr > 0){ s.textContent = 'งานบวก — แรงช่วยให้เคลื่อนที่'; s.style.fill = 'var(--pos)'; }
+      else if (Wr < 0){ s.textContent = 'งานลบ — แรงต้านการเคลื่อนที่'; s.style.fill = 'var(--neg)'; }
+      else { s.textContent = 'งานเป็นศูนย์ — แรงตั้งฉากกับการกระจัด'; s.style.fill = 'var(--zero)'; }
+      $('#wRd').innerHTML = `F cos θ = ${fmt(20 * c, 2)} N`;
+    };
+    $('#wAng').oninput = upd; upd();
+  }
+},
+power: {
+  html: `<svg viewBox="0 0 900 470">
+    <line x1="40" y1="430" x2="860" y2="430" class="gl"/>
+    <g font-size="26">
+      <line x1="200" y1="40" x2="200" y2="430" class="gl2"/><line x1="200" y1="40" x2="330" y2="40" class="gl"/><line x1="200" y1="40" x2="200" y2="430" class="gl"/>
+      <line id="pRa" x1="300" y1="40" x2="300" y2="380" stroke="var(--ink3)" stroke-width="2"/>
+      <rect id="pA" x="270" y="380" width="60" height="50" fill="var(--acc)"/>
+      <text x="230" y="30" font-weight="700" font-size="28">A</text>
+      <line x1="560" y1="40" x2="690" y2="40" class="gl"/><line x1="560" y1="40" x2="560" y2="430" class="gl"/>
+      <line id="pRb" x1="660" y1="40" x2="660" y2="380" stroke="var(--ink3)" stroke-width="2"/>
+      <rect id="pB" x="630" y="380" width="60" height="50" fill="var(--ink2)"/>
+      <text x="590" y="30" font-weight="700" font-size="28">B</text>
+      <line x1="80" y1="80" x2="80" y2="430" stroke="var(--ink3)" stroke-width="2" stroke-dasharray="4 6"/>
+      <text x="92" y="260" fill="var(--ink3)">10 m</text>
+      <text id="pT" x="740" y="130" font-size="44" font-weight="700" style="font-variant-numeric:tabular-nums">0.0 s</text>
+      <text x="740" y="170" fill="var(--ink3)" font-size="22">เวลา</text>
+    </g></svg>
+  <div class="ctl"><button class="btn pri" id="pGo">เริ่มแข่ง</button>
+    <span class="readout" id="pRd" style="font-size:24px"></span></div>`,
+  init(el){
+    const $ = s => el.querySelector(s); let t0 = 0, run = false, raf = 0;
+    const top = 90, bot = 380, TA = 5, TB = 10, SPEED = 2; // 1 วินาทีจริง = 2 วินาทีในแบบจำลอง
+    const place = t => {
+      const ya = bot - (bot - top) * Math.min(t / TA, 1), yb = bot - (bot - top) * Math.min(t / TB, 1);
+      $('#pA').setAttribute('y', ya); $('#pRa').setAttribute('y2', ya);
+      $('#pB').setAttribute('y', yb); $('#pRb').setAttribute('y2', yb);
+      $('#pT').textContent = fmt(Math.min(t, TB), 1) + ' s';
+      const a = t >= TA ? `A ถึงแล้ว: W = 10,000 J, P = 10,000/5 = <b>2,000 W</b>` : 'A กำลังยก…';
+      const b = t >= TB ? `B ถึงแล้ว: W = 10,000 J, P = 10,000/10 = <b>1,000 W</b>` : 'B กำลังยก…';
+      $('#pRd').innerHTML = t === 0 ? 'W = mgh = 100 × 10 × 10 = 10,000 J เท่ากันทั้งสองเครน' : a + '<br>' + b;
+    };
+    const loop = now => { const t = (now - t0) / 1000 * SPEED; place(t); if (t < TB && run) raf = requestAnimationFrame(loop); else run = false; };
+    $('#pGo').onclick = e => { e.stopPropagation(); cancelAnimationFrame(raf); run = true; t0 = performance.now(); raf = requestAnimationFrame(loop); $('#pGo').textContent = 'แข่งใหม่'; };
+    el._pReset = () => { cancelAnimationFrame(raf); run = false; place(0); $('#pGo').textContent = 'เริ่มแข่ง'; };
+    place(0);
+  },
+  leave(el){ el._pReset && el._pReset(); }
+},
+kinetic: {
+  html: `<svg viewBox="0 0 900 470">${arrowDefs('ak')}
+    <text x="40" y="50" font-size="24" fill="var(--ink3)">พลังงานจลน์ Ek</text>
+    <rect x="40" y="70" width="800" height="44" fill="var(--paper2)"/>
+    <rect id="kBar" x="40" y="70" height="44" fill="var(--acc)"/>
+    <line id="kHalf" y1="62" y2="122" stroke="var(--ink)" stroke-width="2" stroke-dasharray="4 4"/>
+    <text id="kHalfT" y="150" font-size="20" fill="var(--ink2)"></text>
+    <text id="kE" x="40" y="205" font-size="40" font-weight="700"></text>
+    <line x1="40" y1="380" x2="860" y2="380" class="gl"/>
+    <g id="kCar"><rect x="0" y="-46" width="110" height="34" rx="6" fill="var(--ink)"/><rect x="22" y="-72" width="60" height="30" rx="6" fill="var(--ink)"/><circle cx="24" cy="-8" r="12" fill="var(--ink2)"/><circle cx="88" cy="-8" r="12" fill="var(--ink2)"/></g>
+    <line id="kD" x1="150" y1="420" y2="420" stroke="var(--acc)" stroke-width="6" marker-end="url(#ak)"/>
+    <text id="kDt" x="150" y="458" font-size="24" fill="var(--ink2)"></text>
+    <text x="40" y="300" font-size="24" fill="var(--ink3)">ระยะเบรก (แรงเบรกเท่าเดิม)</text>
+  </svg>
+  <div class="ctl"><label>ความเร็ว v <input type="range" id="kV" min="0" max="30" step="1" value="10"></label><span class="readout" id="kRd"></span></div>`,
+  init(el){
+    const $ = s => el.querySelector(s), m = 1000, Emax = 0.5 * m * 900, a = 7; // หน่วงด้วย 7 m/s²
+    const upd = () => {
+      const v = +$('#kV').value, E = 0.5 * m * v * v, w = 800 * E / Emax;
+      $('#kBar').setAttribute('width', w);
+      const hx = 40 + 800 * (0.25 * E) / Emax;
+      $('#kHalf').setAttribute('x1', hx); $('#kHalf').setAttribute('x2', hx);
+      $('#kHalfT').setAttribute('x', hx + 6); $('#kHalfT').textContent = v ? `ถ้าช้าลงครึ่งหนึ่ง (${v/2} m/s) เหลือแค่ ¼` : '';
+      $('#kE').textContent = `Ek = ½ × 1,000 × ${v}² = ${fmt(E)} J`;
+      const d = v * v / (2 * a), dx = 700 * d / (900 / (2 * a));
+      $('#kD').setAttribute('x2', 150 + Math.max(dx, 0.1)); $('#kD').style.visibility = v ? 'visible' : 'hidden';
+      $('#kDt').textContent = v ? `≈ ${fmt(d, 1)} m` : 'รถจอดนิ่ง';
+      $('#kCar').setAttribute('transform', 'translate(40 380)');
+      $('#kRd').textContent = `${v} m/s ≈ ${fmt(v * 3.6)} km/h`;
+    };
+    $('#kV').oninput = upd; upd();
+  }
+},
+potential: {
+  html: `<svg viewBox="0 0 900 470">
+    <line x1="60" y1="430" x2="520" y2="430" class="gl"/>
+    <rect x="300" y="390" width="160" height="10" fill="var(--ink2)"/><line x1="320" y1="400" x2="320" y2="430" class="gl"/><line x1="440" y1="400" x2="440" y2="430" class="gl"/>
+    <text x="470" y="400" font-size="20" fill="var(--ink3)">โต๊ะ 1 m</text>
+    <line x1="100" y1="30" x2="100" y2="430" class="gl2"/>
+    <g id="pTicks" font-size="18" fill="var(--ink3)"></g>
+    <line id="pRef" x1="80" x2="540" stroke="var(--acc)" stroke-width="3" stroke-dasharray="10 8"/>
+    <text id="pRefT" x="545" font-size="22" fill="var(--acc)" font-weight="700">Ep = 0</text>
+    <line id="pH" x1="220" x2="220" stroke="var(--ink3)" stroke-width="2"/>
+    <circle id="pBall" cx="220" r="22" fill="var(--ink)"/>
+    <text x="640" y="462" font-size="22" fill="var(--ink3)">Ep (J)</text>
+    <line x1="630" y1="30" x2="630" y2="440" class="gl2"/>
+    <line id="pZero" x1="620" x2="860" stroke="var(--ink)" stroke-width="2"/>
+    <rect id="pBar" x="680" width="110" fill="var(--acc)"/>
+    <text id="pVal" x="680" font-size="30" font-weight="700" style="font-variant-numeric:tabular-nums"></text>
+  </svg>
+  <div class="ctl"><label>ความสูง h <input type="range" id="pHt" min="0" max="10" step="0.5" value="5"></label>
+    <span>อ้างอิง:</span><button class="btn on" data-ref="0">พื้น</button><button class="btn" data-ref="1">โต๊ะ</button><button class="btn" data-ref="6">สูง 6 m</button></div>`,
+  init(el){
+    const $ = s => el.querySelector(s), Y = h => 430 - h * 38, m = 2, g = 10; let ref = 0;
+    $('#pTicks').innerHTML = Array.from({length: 11}, (_, i) => `<line x1="94" x2="106" y1="${Y(i)}" y2="${Y(i)}" stroke="var(--ink3)"/><text x="60" y="${Y(i) + 6}">${i}</text>`).join('');
+    const yz = 260, k = 1; // เส้น 0 J ของกราฟอยู่ที่ y=260 · 1 J = 1 px (ช่วง −120…+200 J)
+    const upd = () => {
+      const h = +$('#pHt').value, Ep = m * g * (h - ref);
+      $('#pBall').setAttribute('cy', Y(h) - 22); $('#pH').setAttribute('y1', Y(h)); $('#pH').setAttribute('y2', Y(ref));
+      $('#pRef').setAttribute('y1', Y(ref)); $('#pRef').setAttribute('y2', Y(ref)); $('#pRefT').setAttribute('y', Y(ref) - 8);
+      $('#pZero').setAttribute('y1', yz); $('#pZero').setAttribute('y2', yz);
+      const hgt = Math.abs(Ep) * k;
+      $('#pBar').setAttribute('y', Ep >= 0 ? yz - hgt : yz); $('#pBar').setAttribute('height', hgt);
+      $('#pBar').style.fill = Ep >= 0 ? 'var(--acc)' : 'var(--neg)';
+      $('#pVal').setAttribute('y', Ep >= 0 ? yz - hgt - 12 : yz + hgt + 34);
+      $('#pVal').textContent = `${Ep > 0 ? '+' : ''}${fmt(Ep)} J`;
+    };
+    el.querySelectorAll('[data-ref]').forEach(b => b.onclick = e => {
+      e.stopPropagation(); ref = +b.dataset.ref;
+      el.querySelectorAll('[data-ref]').forEach(x => x.classList.toggle('on', x === b)); upd();
+    });
+    $('#pHt').oninput = upd; upd();
+  }
+},
+conservation: {
+  html: `<svg viewBox="0 0 900 470">
+    <path id="cTrack" class="gl" stroke-width="4"/>
+    <line x1="30" y1="50" x2="30" y2="330" stroke="var(--ink3)" stroke-width="2" stroke-dasharray="4 6"/><text x="38" y="190" font-size="20" fill="var(--ink3)">5 m</text>
+    <circle id="cBall" r="20" fill="var(--acc)"/>
+    <g id="cBars" font-size="22"></g>
+  </svg>
+  <div class="ctl"><button class="btn pri" id="cGo">หยุด</button><button class="btn" id="cFr">แรงเสียดทาน: ปิด</button><button class="btn" id="cRs">เริ่มใหม่</button></div>`,
+  init(el){
+    const $ = s => el.querySelector(s), m = 50, g = 10, H = 5;
+    const X0 = 60, X1 = 560, Ytop = 50, Ybot = 330, half = (X1 - X0) / 2, mid = X0 + half;
+    const yOf = u => Ybot - (Ybot - Ytop) * u * u; // u ∈ [-1,1]
+    let d = `M${X0} ${Ytop}`; for (let i = -1; i <= 1.0001; i += 0.02) d += ` L${mid + i * half} ${yOf(i)}`;
+    $('#cTrack').setAttribute('d', d);
+    const names = [['Ek','var(--acc)'],['Ep','var(--pos)'],['ความร้อน','var(--neg)'],['รวม','var(--ink)']];
+    $('#cBars').innerHTML = names.map((n, i) => `<text x="${622 + i * 80}" y="455" text-anchor="middle" font-size="20">${n[0]}</text><rect id="cb${i}" x="${598 + i * 80}" width="48" fill="${n[1]}"/><text id="cv${i}" x="${622 + i * 80}" text-anchor="middle" font-size="18" fill="var(--ink2)"></text>`).join('') +
+      `<line x1="585" x2="895" y1="425" y2="425" class="gl"/>`;
+    const E0 = m * g * H, BH = 330; // 2,500 J = 330 px
+    let t = 0, last = 0, run = true, fr = false, A = 1, raf = 0, active = false;
+    const draw = () => {
+      const u = A * Math.cos(t * 1.6), h = H * u * u, Ep = m * g * h, Emech = m * g * H * A * A, Ek = Math.max(Emech - Ep, 0);
+      $('#cBall').setAttribute('cx', mid + u * half); $('#cBall').setAttribute('cy', yOf(u) - 20);
+      [Ek, Ep, E0 - Emech, E0].forEach((v, i) => {
+        const hh = BH * v / E0; $('#cb' + i).setAttribute('y', 425 - hh); $('#cb' + i).setAttribute('height', hh);
+        $('#cv' + i).setAttribute('y', 425 - hh - 8); $('#cv' + i).textContent = fmt(v);
+      });
+    };
+    const loop = now => {
+      if (!active) return;
+      const dt = Math.min((now - last) / 1000, 0.05); last = now;
+      if (run){ t += dt; if (fr) A = Math.max(A * Math.exp(-0.12 * dt), 0); }
+      draw(); raf = requestAnimationFrame(loop);
+    };
+    el._cStart = () => { active = true; last = performance.now(); cancelAnimationFrame(raf); raf = requestAnimationFrame(loop); };
+    el._cStop = () => { active = false; cancelAnimationFrame(raf); };
+    $('#cGo').onclick = e => { e.stopPropagation(); run = !run; $('#cGo').textContent = run ? 'หยุด' : 'เล่น'; };
+    $('#cFr').onclick = e => { e.stopPropagation(); fr = !fr; $('#cFr').textContent = 'แรงเสียดทาน: ' + (fr ? 'เปิด' : 'ปิด'); $('#cFr').classList.toggle('on', fr); };
+    $('#cRs').onclick = e => { e.stopPropagation(); t = 0; A = 1; draw(); };
+    draw();
+  },
+  enter(el){ el._cStart && el._cStart(); },
+  leave(el){ el._cStop && el._cStop(); }
+},
+/* ── บทที่ 6 ─────────────────────────────────────── */
+momentum: {
+  html: `<svg viewBox="0 0 900 470">${arrowDefs('am')}
+    <rect x="780" y="40" width="30" height="250" fill="var(--paper2)" stroke="var(--ink)" stroke-width="2"/>
+    <g stroke="var(--ink3)" stroke-width="2">${Array.from({length: 8}, (_, i) => `<line x1="810" y1="${55 + i * 30}" x2="830" y2="${40 + i * 30}"/>`).join('')}</g>
+    <text x="40" y="62" font-size="24" fill="var(--ink3)">ก่อนชน</text>
+    <line x1="120" y1="94" x2="320" y2="94" stroke="var(--ink)" stroke-width="5" marker-end="url(#am)"/>
+    <text x="330" y="102" font-size="24">u = +10 m/s</text>
+    <text x="40" y="200" font-size="24" fill="var(--ink3)">หลังชน</text>
+    <line id="mV" y1="240" y2="240" stroke="var(--ink)" stroke-width="5" marker-end="url(#am)"/>
+    <text id="mVt" y="222" font-size="24"></text>
+    <circle id="mBall" r="26" fill="var(--acc)"/>
+    <text x="40" y="318" font-size="22" fill="var(--ink3)">โมเมนตัม (kg·m/s)</text>
+    <line x1="60" y1="390" x2="860" y2="390" class="gl2"/>
+    <g id="mTicks" font-size="18" fill="var(--ink3)"></g>
+    <circle cx="660" cy="390" r="9" fill="var(--ink)"/><text x="646" y="365" font-size="22">p₁</text>
+    <circle id="mP2" cy="390" r="9" fill="var(--ink)"/><text id="mP2t" y="365" font-size="22">p₂</text>
+    <line id="mDp" y1="430" y2="430" stroke="var(--acc)" stroke-width="7" marker-end="url(#am)"/>
+    <text id="mDpt" y="462" font-size="24" font-weight="700" fill="var(--acc)"></text>
+  </svg>
+  <div class="ctl"><label>ความเร็วที่สะท้อนกลับ v <input type="range" id="mVr" min="0" max="10" step="1" value="10"></label><span class="readout" id="mRd"></span></div>`,
+  init(el){
+    const $ = s => el.querySelector(s), m = 0.5, u = 10, X = p => 460 + 40 * p; // 1 kg·m/s = 40 px, ศูนย์อยู่ที่ x=460
+    $('#mTicks').innerHTML = Array.from({length: 17}, (_, i) => i - 8).map(p => `<line x1="${X(p)}" x2="${X(p)}" y1="384" y2="396" stroke="var(--ink3)"/><text x="${X(p)}" y="418" text-anchor="middle">${p}</text>`).join('');
+    let v = 10, t = 0, last = 0, raf = 0, active = false;
+    const upd = () => {
+      v = +$('#mVr').value;
+      const p2 = -m * v, dp = p2 - m * u;
+      $('#mV').setAttribute('x1', 700); $('#mV').setAttribute('x2', 700 - 20 * v - 0.1);
+      $('#mV').style.visibility = v ? 'visible' : 'hidden';
+      $('#mVt').setAttribute('x', v ? 700 - 20 * v : 600); $('#mVt').textContent = v ? `v = −${v} m/s` : 'ติดผนัง v = 0';
+      $('#mP2').setAttribute('cx', X(p2)); $('#mP2t').setAttribute('x', X(p2) - 14);
+      $('#mDp').setAttribute('x1', X(m * u)); $('#mDp').setAttribute('x2', X(p2) + 8);
+      $('#mDpt').setAttribute('x', X(p2)); $('#mDpt').textContent = `Δp = ${fmt(dp, 1)}`;
+      $('#mRd').textContent = `|Δp| = m(u + v) = 0.5 × (10 + ${v}) = ${fmt(-dp, 1)} kg·m/s`;
+    };
+    // ลูกบอลวิ่งเข้าผนัง (1 วินาที) แล้วสะท้อนกลับตามความเร็ว v (1 วินาที) วนซ้ำ
+    const draw = () => {
+      const ph = t % 2.6, wall = 754;
+      let x;
+      if (ph < 1) x = 300 + (wall - 300) * ph;
+      else x = wall - 30 * v * Math.min(ph - 1, 1.2);
+      $('#mBall').setAttribute('cx', x); $('#mBall').setAttribute('cy', 150);
+    };
+    const loop = now => { if (!active) return; t += Math.min((now - last) / 1000, 0.05); last = now; draw(); raf = requestAnimationFrame(loop); };
+    el._start = () => { active = true; last = performance.now(); cancelAnimationFrame(raf); raf = requestAnimationFrame(loop); };
+    el._stop = () => { active = false; cancelAnimationFrame(raf); };
+    $('#mVr').oninput = upd; upd(); draw();
+  },
+  enter(el){ el._start && el._start(); },
+  leave(el){ el._stop && el._stop(); }
+},
+impulse: {
+  html: `<svg viewBox="0 0 900 470">
+    <rect id="iFloor" x="60" y="330" width="240" height="40"/>
+    <text id="iFloorT" x="180" y="400" font-size="24" text-anchor="middle" fill="var(--ink2)"></text>
+    <g id="iEgg"><ellipse cx="180" cy="290" rx="30" ry="38" fill="var(--paper)" stroke="var(--ink)" stroke-width="3"/>
+      <path id="iCrack" d="M156 280 L170 294 L180 278 L192 296 L204 282" fill="none" stroke="var(--neg)" stroke-width="4"/></g>
+    <text id="iVerdict" x="180" y="120" font-size="44" font-weight="700" text-anchor="middle"></text>
+    <text id="iF" x="180" y="170" font-size="28" text-anchor="middle"></text>
+    <line x1="400" y1="400" x2="870" y2="400" class="gl"/><line x1="420" y1="60" x2="420" y2="410" class="gl"/>
+    <text x="866" y="426" font-size="20" text-anchor="end" fill="var(--ink3)">t (s) → 0.1</text>
+    <text x="430" y="56" font-size="20" fill="var(--ink3)">F (N)</text>
+    <line id="iLim" x1="420" x2="870" stroke="var(--neg)" stroke-width="2" stroke-dasharray="8 6"/>
+    <text id="iLimT" x="866" font-size="18" text-anchor="end" fill="var(--neg)">ไข่แตกเมื่อ F > 25 N</text>
+    <g id="iRects"></g>
+    <text x="420" y="462" font-size="20" fill="var(--ink2)">พื้นที่ใต้กราฟ = การดล = 0.3 N·s เท่ากันทุกพื้น</text>
+  </svg>
+  <div class="ctl"><span>พื้น:</span><button class="btn" data-s="0">คอนกรีต</button><button class="btn" data-s="1">สนามหญ้า</button><button class="btn" data-s="2">ฟองน้ำ</button><button class="btn" data-s="3">หมอน</button></div>`,
+  init(el){
+    const $ = s => el.querySelector(s), dp = 0.06 * 5;
+    const S = [['คอนกรีต', 0.002, '#8d8c88'], ['สนามหญ้า', 0.01, '#4c9a5b'], ['ฟองน้ำ', 0.05, '#e3b341'], ['หมอน', 0.1, '#b39ddb']];
+    const tx = t => 420 + 4500 * t, fy = F => 400 - 2.2 * F; // 0.1 s = 450 px · 150 N = 330 px
+    $('#iLim').setAttribute('y1', fy(25)); $('#iLim').setAttribute('y2', fy(25)); $('#iLimT').setAttribute('y', fy(25) - 8);
+    const pick = k => {
+      const [nm, dt, col] = S[k], F = dp / dt, broke = F > 25;
+      el.querySelectorAll('[data-s]').forEach(b => b.classList.toggle('on', +b.dataset.s === k));
+      $('#iFloor').setAttribute('fill', col); $('#iFloorT').textContent = `${nm} · Δt = ${dt} s`;
+      $('#iCrack').style.visibility = broke ? 'visible' : 'hidden';
+      $('#iVerdict').textContent = broke ? 'แตก!' : 'รอด'; $('#iVerdict').style.fill = broke ? 'var(--neg)' : 'var(--pos)';
+      $('#iF').textContent = `F = 0.3 / ${dt} = ${fmt(F)} N`;
+      $('#iRects').innerHTML = S.map(([n2, d2, c2], i) => `<rect x="420" y="${fy(dp / d2)}" width="${tx(d2) - 420}" height="${400 - fy(dp / d2)}" fill="${i === k ? c2 : 'none'}" fill-opacity=".85" stroke="${i === k ? 'var(--ink)' : 'var(--rule)'}" stroke-width="2"/>`).join('');
+    };
+    el.querySelectorAll('[data-s]').forEach(b => b.onclick = e => { e.stopPropagation(); pick(+b.dataset.s); });
+    pick(0);
+  }
+},
+collision: {
+  html: `<svg viewBox="0 0 900 470">
+    <line x1="30" y1="240" x2="870" y2="240" class="gl"/>
+    <g id="cA"><rect id="cAr" y="180" height="50" rx="6" fill="var(--acc)"/><text id="cAt" y="213" font-size="22" fill="#fff" text-anchor="middle" font-weight="700">A</text>
+      <circle id="cAw1" cy="236" r="7" fill="var(--ink)"/><circle id="cAw2" cy="236" r="7" fill="var(--ink)"/></g>
+    <g id="cB"><rect id="cBr" y="180" height="50" rx="6" fill="var(--ink2)"/><text id="cBt" y="213" font-size="22" fill="#fff" text-anchor="middle" font-weight="700">B</text>
+      <circle id="cBw1" cy="236" r="7" fill="var(--ink)"/><circle id="cBw2" cy="236" r="7" fill="var(--ink)"/></g>
+    <text id="cVa" y="160" font-size="22" text-anchor="middle"></text><text id="cVb" y="160" font-size="22" text-anchor="middle"></text>
+    <g font-size="23" style="font-variant-numeric:tabular-nums">
+      <text x="40" y="310" fill="var(--ink3)">ก่อนชน</text><text x="40" y="350" id="cP0"></text><text x="40" y="390" id="cE0"></text>
+      <text x="470" y="310" fill="var(--ink3)">หลังชน</text><text x="470" y="350" id="cP1"></text><text x="470" y="390" id="cE1"></text>
+      <text x="40" y="445" id="cNote" font-weight="700"></text>
+    </g>
+  </svg>
+  <div class="ctl"><label>m<sub>A</sub> <input type="range" id="cMa" min="1" max="5" step="1" value="2" style="width:150px"></label>
+    <label>m<sub>B</sub> <input type="range" id="cMb" min="1" max="5" step="1" value="2" style="width:150px"></label>
+    <button class="btn on" data-k="e">ยืดหยุ่น</button><button class="btn" data-k="s">ติดกันไป</button><button class="btn pri" id="cGo2">ชน!</button></div>`,
+  init(el){
+    const $ = s => el.querySelector(s), u = 4, K = 55; // 1 m/s = 55 px/s บนจอ
+    let kind = 'e', t = 0, last = 0, raf = 0, run = false, mA = 2, mB = 2, v1 = 0, v2 = 0, tHit = 0;
+    const w = m => 50 + m * 14, xB0 = 520;
+    const place = (xa, xb) => {
+      const wa = w(mA), wb = w(mB);
+      $('#cAr').setAttribute('x', xa); $('#cAr').setAttribute('width', wa); $('#cAt').setAttribute('x', xa + wa / 2);
+      $('#cAw1').setAttribute('cx', xa + 12); $('#cAw2').setAttribute('cx', xa + wa - 12);
+      $('#cBr').setAttribute('x', xb); $('#cBr').setAttribute('width', wb); $('#cBt').setAttribute('x', xb + wb / 2);
+      $('#cBw1').setAttribute('cx', xb + 12); $('#cBw2').setAttribute('cx', xb + wb - 12);
+    };
+    const solve = () => {
+      mA = +$('#cMa').value; mB = +$('#cMb').value;
+      if (kind === 'e'){ v1 = (mA - mB) / (mA + mB) * u; v2 = 2 * mA / (mA + mB) * u; }
+      else { v1 = v2 = mA * u / (mA + mB); }
+      const p0 = mA * u, E0 = 0.5 * mA * u * u, p1 = mA * v1 + mB * v2, E1 = 0.5 * mA * v1 * v1 + 0.5 * mB * v2 * v2;
+      $('#cP0').textContent = `p = ${mA}(4) + ${mB}(0) = ${fmt(p0, 2)} kg·m/s`;
+      $('#cE0').textContent = `Ek = ${fmt(E0, 2)} J`;
+      $('#cP1').textContent = `p = ${mA}(${fmt(v1, 2)}) + ${mB}(${fmt(v2, 2)}) = ${fmt(p1, 2)}`;
+      $('#cE1').textContent = `Ek = ${fmt(E1, 2)} J`;
+      $('#cNote').textContent = kind === 'e' ? 'โมเมนตัมรวมคงตัว · พลังงานจลน์คงตัว' : `โมเมนตัมรวมคงตัว · พลังงานจลน์หายไป ${fmt(E0 - E1, 2)} J กลายเป็นความร้อนและเสียง`;
+      $('#cNote').style.fill = kind === 'e' ? 'var(--pos)' : 'var(--neg)';
+    };
+    const label = (va, vb, xa, xb) => {
+      $('#cVa').setAttribute('x', xa + w(mA) / 2); $('#cVa').textContent = `${fmt(va, 2)} m/s`;
+      $('#cVb').setAttribute('x', xb + w(mB) / 2); $('#cVb').textContent = `${fmt(vb, 2)} m/s`;
+    };
+    const reset = () => { run = false; cancelAnimationFrame(raf); t = 0; solve(); const xa = xB0 - w(mA) - 260; place(xa, xB0); label(u, 0, xa, xB0); };
+    const loop = now => {
+      if (!run) return;
+      t += Math.min((now - last) / 1000, 0.05); last = now;
+      const xa0 = xB0 - w(mA) - 260; tHit = 260 / (u * K);
+      let xa, xb, va = u, vb = 0;
+      if (t < tHit){ xa = xa0 + u * K * t; xb = xB0; }
+      else { const d = t - tHit; xa = xB0 - w(mA) + v1 * K * d; xb = xB0 + v2 * K * d; va = v1; vb = v2; }
+      place(xa, xb); label(va, vb, xa, xb);
+      if (t < tHit + 4 && xb < 900) raf = requestAnimationFrame(loop); else run = false;
+    };
+    $('#cGo2').onclick = e => { e.stopPropagation(); reset(); run = true; last = performance.now(); raf = requestAnimationFrame(loop); };
+    el.querySelectorAll('[data-k]').forEach(b => b.onclick = e => { e.stopPropagation(); kind = b.dataset.k; el.querySelectorAll('[data-k]').forEach(x => x.classList.toggle('on', x === b)); reset(); });
+    $('#cMa').oninput = reset; $('#cMb').oninput = reset;
+    el._reset = reset; reset();
+  },
+  leave(el){ el._reset && el._reset(); }
+},
+/* ── บทที่ 7 ─────────────────────────────────────── */
+projectile: {
+  html: `<svg viewBox="0 0 900 470">${arrowDefs('ap')}
+    <line x1="30" y1="430" x2="880" y2="430" class="gl"/>
+    <path id="jPath" class="dsh"/>
+    <line id="jH" class="dsh" stroke="var(--acc)"/>
+    <text id="jHt" font-size="20" fill="var(--acc)"></text>
+    <line id="jVx" stroke="var(--ink3)" stroke-width="4" marker-end="url(#ap)"/>
+    <line id="jVy" stroke="var(--acc)" stroke-width="4" marker-end="url(#ap)"/>
+    <circle id="jBall" r="12" fill="var(--ink)"/>
+    <text id="jOut" x="40" y="40" font-size="26" style="font-variant-numeric:tabular-nums"></text>
+    <text id="jNow" x="40" y="76" font-size="22" fill="var(--ink2)" style="font-variant-numeric:tabular-nums"></text>
+  </svg>
+  <div class="ctl"><label>u <input type="range" id="jU" min="10" max="30" step="1" value="20" style="width:220px"></label>
+    <label>θ <input type="range" id="jT" min="10" max="80" step="5" value="45" style="width:220px"></label>
+    <span class="readout" id="jRd" style="font-size:24px;min-width:150px"></span><button class="btn pri" id="jGo">ยิง</button></div>`,
+  init(el){
+    const $ = s => el.querySelector(s), g = 10, S = 8.5, O = [50, 430]; // 1 m = 8.5 px
+    let u, th, T, t = 0, last = 0, raf = 0, run = false;
+    const P = tt => [O[0] + S * u * Math.cos(th) * tt, O[1] - S * (u * Math.sin(th) * tt - 0.5 * g * tt * tt)];
+    const put = (id, a) => Object.entries(a).forEach(([k, v]) => $(id).setAttribute(k, v));
+    const show = tt => {
+      const [x, y] = P(tt), vx = u * Math.cos(th), vy = u * Math.sin(th) - g * tt;
+      put('#jBall', { cx: x, cy: y });
+      put('#jVx', { x1: x, y1: y, x2: x + 5 * vx, y2: y });
+      put('#jVy', { x1: x, y1: y, x2: x, y2: y - 5 * vy });
+      $('#jVy').style.visibility = Math.abs(vy) < 0.3 ? 'hidden' : 'visible';
+      $('#jNow').textContent = `t = ${fmt(tt, 2)} s · vx = ${fmt(vx, 1)} m/s · vy = ${fmt(vy, 1)} m/s`;
+    };
+    const upd = () => {
+      run = false; cancelAnimationFrame(raf);
+      u = +$('#jU').value; th = +$('#jT').value * Math.PI / 180; T = 2 * u * Math.sin(th) / g;
+      let d = ''; for (let i = 0; i <= 60; i++){ const [x, y] = P(T * i / 60); d += (i ? ' L' : 'M') + x.toFixed(1) + ' ' + y.toFixed(1); }
+      $('#jPath').setAttribute('d', d);
+      const H = u * u * Math.sin(th) ** 2 / (2 * g), R = u * u * Math.sin(2 * th) / g, [hx, hy] = P(T / 2);
+      put('#jH', { x1: hx, y1: hy, x2: hx, y2: 430 }); put('#jHt', { x: hx + 8, y: (hy + 430) / 2 }); $('#jHt').textContent = `H = ${fmt(H, 1)} m`;
+      $('#jOut').textContent = `ลอย ${fmt(T, 2)} s · สูงสุด H = ${fmt(H, 1)} m · พิสัย R = ${fmt(R, 1)} m`;
+      $('#jRd').textContent = `${u} m/s · ${$('#jT').value}°`;
+      t = 0; show(0);
+    };
+    const loop = now => { if (!run) return; t += Math.min((now - last) / 1000, 0.05); last = now; if (t >= T){ t = T; run = false; } show(t); if (run) raf = requestAnimationFrame(loop); };
+    $('#jGo').onclick = e => { e.stopPropagation(); upd(); run = true; last = performance.now(); raf = requestAnimationFrame(loop); };
+    $('#jU').oninput = upd; $('#jT').oninput = upd; el._reset = upd; upd();
+  },
+  leave(el){ el._reset && el._reset(); }
+},
+circular: {
+  html: `<svg viewBox="0 0 900 470">${arrowDefs('ac')}
+    <circle id="oPath" cx="330" cy="235" class="dsh"/>
+    <circle cx="330" cy="235" r="6" fill="var(--ink)"/>
+    <line id="oStr" x1="330" y1="235" stroke="var(--ink3)" stroke-width="2"/>
+    <line id="oV" stroke="var(--ink)" stroke-width="4" marker-end="url(#ac)"/>
+    <line id="oA" stroke="var(--acc)" stroke-width="4" marker-end="url(#ac)"/>
+    <circle id="oBall" r="16" fill="var(--acc)"/>
+    <g font-size="26" style="font-variant-numeric:tabular-nums"><text id="oR1" x="620" y="150"></text><text id="oR2" x="620" y="200"></text><text id="oR3" x="620" y="250" font-weight="700"></text><text id="oR4" x="620" y="300" fill="var(--ink2)" font-size="22"></text></g>
+  </svg>
+  <div class="ctl"><label>v <input type="range" id="oVv" min="1" max="6" step="0.5" value="3" style="width:200px"></label>
+    <label>r <input type="range" id="oRr" min="0.5" max="2" step="0.25" value="1.5" style="width:200px"></label>
+    <button class="btn pri" id="oCut">ตัดเชือก</button></div>`,
+  init(el){
+    const $ = s => el.querySelector(s), C = [330, 235], PX = 100; // 1 m = 100 px
+    let v, r, ang = 0, last = 0, raf = 0, active = false, cut = null;
+    const put = (id, a) => Object.entries(a).forEach(([k, val]) => $(id).setAttribute(k, val));
+    const upd = () => {
+      v = +$('#oVv').value; r = +$('#oRr').value; $('#oPath').setAttribute('r', r * PX);
+      const ac = v * v / r;
+      $('#oR1').textContent = `v = ${v} m/s · r = ${r} m`;
+      $('#oR2').textContent = `a꜀ = v²/r = ${fmt(ac, 1)} m/s²`;
+      $('#oR3').textContent = `แรงตึงเชือก = mv²/r = ${fmt(ac, 1)} N`;
+      $('#oR4').textContent = `หมุนครบรอบใช้เวลา ${fmt(2 * Math.PI * r / v, 2)} s`;
+    };
+    const draw = () => {
+      let x, y, tx, ty;
+      if (!cut){ x = C[0] + r * PX * Math.cos(ang); y = C[1] - r * PX * Math.sin(ang); tx = -Math.sin(ang); ty = -Math.cos(ang); }
+      else { x = cut.x; y = cut.y; tx = cut.tx; ty = cut.ty; }
+      put('#oBall', { cx: x, cy: y });
+      put('#oV', { x1: x, y1: y, x2: x + tx * 22 * v, y2: y + ty * 22 * v });
+      const L = Math.min(8 * v * v / r, 150);
+      put('#oA', { x1: x, y1: y, x2: x + (C[0] - x) / (r * PX) * L, y2: y + (C[1] - y) / (r * PX) * L });
+      $('#oA').style.visibility = cut ? 'hidden' : 'visible';
+      $('#oStr').style.visibility = cut ? 'hidden' : 'visible'; put('#oStr', { x2: x, y2: y });
+    };
+    const loop = now => {
+      if (!active) return;
+      const dt = Math.min((now - last) / 1000, 0.05); last = now;
+      if (!cut) ang += v / r * dt;
+      else { cut.x += cut.tx * v * PX * dt; cut.y += cut.ty * v * PX * dt; if (cut.x < -40 || cut.x > 940 || cut.y < -40 || cut.y > 510){ cut = null; $('#oCut').textContent = 'ตัดเชือก'; } }
+      draw(); raf = requestAnimationFrame(loop);
+    };
+    $('#oCut').onclick = e => {
+      e.stopPropagation();
+      if (cut){ cut = null; $('#oCut').textContent = 'ตัดเชือก'; return; }
+      cut = { x: C[0] + r * PX * Math.cos(ang), y: C[1] - r * PX * Math.sin(ang), tx: -Math.sin(ang), ty: -Math.cos(ang) };
+      $('#oCut').textContent = 'ต่อเชือกใหม่';
+    };
+    $('#oVv').oninput = upd; $('#oRr').oninput = upd;
+    el._start = () => { active = true; last = performance.now(); cancelAnimationFrame(raf); raf = requestAnimationFrame(loop); };
+    el._stop = () => { active = false; cancelAnimationFrame(raf); cut = null; $('#oCut').textContent = 'ตัดเชือก'; };
+    upd(); draw();
+  },
+  enter(el){ el._start && el._start(); },
+  leave(el){ el._stop && el._stop(); }
+},
+shm: {
+  html: `<svg viewBox="0 0 900 470">${arrowDefs('as')}
+    <rect x="40" y="70" width="20" height="130" fill="var(--paper2)" stroke="var(--ink)" stroke-width="2"/>
+    <line x1="40" y1="200" x2="880" y2="200" class="gl"/>
+    <line x1="460" y1="50" x2="460" y2="215" class="dsh"/><text x="466" y="46" font-size="18" fill="var(--ink3)">สมดุล x = 0</text>
+    <path id="sSpring" fill="none" stroke="var(--ink2)" stroke-width="3"/>
+    <rect id="sMass" y="100" width="90" height="100" rx="6" fill="var(--acc)"/>
+    <line id="sV" y1="84" y2="84" stroke="var(--ink)" stroke-width="4" marker-end="url(#as)"/>
+    <line id="sA" y1="215" y2="215" stroke="var(--acc)" stroke-width="4" marker-end="url(#as)"/>
+    <text x="40" y="250" font-size="20" fill="var(--ink3)">x–t</text>
+    <line x1="80" y1="330" x2="880" y2="330" class="gl2"/>
+    <path id="sTrace" fill="none" stroke="var(--acc)" stroke-width="3"/>
+    <g font-size="24" style="font-variant-numeric:tabular-nums"><text id="sR1" x="80" y="420"></text><text id="sR2" x="80" y="458" fill="var(--ink2)"></text></g>
+  </svg>
+  <div class="ctl"><label>m <input type="range" id="sM" min="0.5" max="4" step="0.5" value="1" style="width:160px"></label>
+    <label>k <input type="range" id="sK" min="10" max="80" step="5" value="40" style="width:160px"></label>
+    <label>A <input type="range" id="sAmp" min="0.05" max="0.2" step="0.05" value="0.15" style="width:160px"></label></div>`,
+  init(el){
+    const $ = s => el.querySelector(s), X0 = 460, PX = 1000; // 1 m = 1000 px (0.2 m = 200 px)
+    let m, k, A, w, t = 0, last = 0, raf = 0, active = false, hist = [];
+    const upd = () => {
+      m = +$('#sM').value; k = +$('#sK').value; A = +$('#sAmp').value; w = Math.sqrt(k / m);
+      $('#sR1').textContent = `คาบ T = 2π√(m/k) = ${fmt(2 * Math.PI / w, 2)} s`;
+      $('#sR2').textContent = `v สูงสุด = ωA = ${fmt(w * A, 2)} m/s · a สูงสุด = ω²A = ${fmt(w * w * A, 2)} m/s²`;
+    };
+    const draw = () => {
+      const x = A * Math.cos(w * t), v = -A * w * Math.sin(w * t), a = -w * w * x, mx = X0 + x * PX - 45;
+      $('#sMass').setAttribute('x', mx);
+      let d = 'M60 150', n = 14, L = mx - 60;
+      for (let i = 1; i < n; i++) d += ` L${60 + L * i / n} ${150 + (i % 2 ? -18 : 18)}`;
+      $('#sSpring').setAttribute('d', d + ` L${mx} 150`);
+      const cx = mx + 45;
+      $('#sV').setAttribute('x1', cx); $('#sV').setAttribute('x2', cx + 60 * v + 0.01);
+      $('#sA').setAttribute('x1', cx); $('#sA').setAttribute('x2', cx + 6 * a + 0.01);
+      $('#sV').style.visibility = Math.abs(v) < 0.02 ? 'hidden' : 'visible';
+      $('#sA').style.visibility = Math.abs(a) < 0.2 ? 'hidden' : 'visible';
+      hist.push([t, x]); while (hist.length && t - hist[0][0] > 6) hist.shift();
+      $('#sTrace').setAttribute('d', hist.map(([tt, xx], i) => (i ? 'L' : 'M') + (880 - (t - tt) * 800 / 6).toFixed(1) + ' ' + (330 - xx * 350).toFixed(1)).join(' '));
+    };
+    const loop = now => { if (!active) return; t += Math.min((now - last) / 1000, 0.05); last = now; draw(); raf = requestAnimationFrame(loop); };
+    ['#sM', '#sK', '#sAmp'].forEach(s => $(s).oninput = () => { upd(); t = 0; hist = []; });
+    el._start = () => { active = true; last = performance.now(); cancelAnimationFrame(raf); raf = requestAnimationFrame(loop); };
+    el._stop = () => { active = false; cancelAnimationFrame(raf); };
+    upd(); draw();
+  },
+  enter(el){ el._start && el._start(); },
+  leave(el){ el._stop && el._stop(); }
+}
+
+};
+
+/* ════════════════════════════════════════════════════════════════
+   ประกอบสำรับ
+   ════════════════════════════════════════════════════════════════ */
+document.title = `สไลด์ฟิสิกส์ 2 · บทที่ ${CHAPTER.no}`;
+const slides = [cover(), roadmap()];
+SECTIONS.forEach(S => {
+  [opener, defsSlide, coreSlide, simSlide, eqsSlide, lifeSlide, thinkSlide].forEach(fn => slides.push(Object.assign(fn(S), { S })));
+  S.probs.forEach((pid, i) => slides.push(probSlide(S, i + 1, pid)));
+});
+slides.push(summary());
+
+const deck = document.getElementById('deck'), stage = document.getElementById('stage');
+slides.forEach((s, i) => {
+  const el = document.createElement('section');
+  el.className = 'slide ' + (s.cls || '');
+  el.innerHTML = s.html;
+  if (s.S) el.style.setProperty('--acc', s.S.color);
+  s.el = el; deck.appendChild(el);
+});
+
+function renderMath(root){
+  if (!window.renderMathInElement) return;
+  renderMathInElement(root, { delimiters: [{left:'$$', right:'$$', display:true}, {left:'$', right:'$', display:false}], throwOnError:false });
+  fitX(root);
+}
+// สมการยาวเกินช่อง → ย่อเฉพาะสมการนั้นจนพอดี (ไม่ตัดขอบ)
+function fitX(root){
+  root.querySelectorAll('.katex-display').forEach(kd => {
+    let box = kd.parentElement; const k = kd.firstElementChild;
+    while (box && getComputedStyle(box).display === 'inline') box = box.parentElement; // auto-render ห่อด้วย span
+    if (!box || !k) return;
+    const cs = getComputedStyle(box), room = box.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    let z = 1; kd.style.fontSize = '';
+    // วัดจากกล่องของตัวอักษรจริง (ลูกศรเวกเตอร์ของ KaTeX เป็น svg กว้าง 400em ที่ถูกตัดขอบ วัดตรง ๆ ไม่ได้)
+    const need = () => {
+      let L = Infinity, Rt = -Infinity;
+      k.querySelectorAll('.katex-html .mord, .katex-html .mbin, .katex-html .mrel, .katex-html .mop, .katex-html .mopen, .katex-html .mclose, .katex-html .mpunct').forEach(e => {
+        const r = e.getBoundingClientRect(); if (!r.width || r.width > 4000) return;
+        L = Math.min(L, r.left); Rt = Math.max(Rt, r.right);
+      });
+      return Rt > L ? (Rt - L) / scaleNow() : 0;
+    };
+    while (need() > room + 1 && z > 0.55){ z -= 0.05; kd.style.fontSize = z + 'em'; }
+  });
+}
+
+/* ════════════════════════════════════════════════════════════════
+   การเลื่อนสไลด์ + การเผยทีละบรรทัด
+   ════════════════════════════════════════════════════════════════ */
+let cur = 0; const frag = slides.map(() => 0);
+const SHOW_ALL = /[?&]all(&|$)/.test(location.search); // ?all = เผยทุกบรรทัดทันที (ไว้พิมพ์/ตรวจ)
+const fragsOf = el => [...el.querySelectorAll('.f, .sol .r')];
+
+function applyFrags(el, n){
+  const fs = fragsOf(el);
+  fs.forEach((f, i) => { f.classList.toggle('on', i < n); f.classList.remove('now', 'grpnow'); });
+  const last = fs[n - 1];
+  if (last){
+    last.classList.add('now');
+    if (last.dataset.g) fs.forEach((f, i) => { if (i < n && f.dataset.g === last.dataset.g) f.classList.add('grpnow'); });
+  }
+  const done = el.querySelector('.pdone'); if (done) done.classList.toggle('show', n >= fs.length && fs.length > 0);
+}
+
+const wipe = document.getElementById('wipe');
+let pending = null; // การสลับสไลด์ที่รออยู่หลังม่าน
+function show(i, dir, opts = {}){
+  if (pending) pending();
+  i = Math.max(0, Math.min(slides.length - 1, i));
+  const from = slides[cur], to = slides[i];
+  if (i === cur && !opts.force) return;
+  frag[i] = (opts.allFrags || SHOW_ALL) ? fragsOf(to.el).length : 0;
+  applyFrags(to.el, frag[i]);
+  const secChange = to.S && (!from.S || from.S.key !== to.S.key) && to.el.classList.contains('s-open');
+  const swap = () => {
+    if (from !== to){ from.leave && from.leave(from.el); from.el.classList.remove('active'); }
+    to.el.classList.add('active');
+    to.enter && to.enter(to.el);
+    cur = i; updHud();
+    try { history.replaceState(null, '', '#' + (i + 1)); } catch (e) {}
+  };
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduce || opts.instant){ swap(); return; }
+  if (secChange && dir > 0){
+    wipe.style.background = to.S.color;
+    wipe.querySelector('.n').textContent = to.S.num; wipe.querySelector('.t').textContent = to.S.title;
+    const a = wipe.animate([{clipPath:'inset(0 100% 0 0)'},{clipPath:'inset(0 0 0 0)'}], {duration:420, easing:'cubic-bezier(.7,0,.3,1)', fill:'forwards'});
+    // สลับสไลด์ด้วยตัวจับเวลา ไม่รอ onfinish — แท็บเบื้องหลังหยุดแอนิเมชัน ถ้ารอจะค้างอยู่หลังม่าน
+    // และถ้ากดต่อระหว่างม่านปิด next()/prev() จะเรียก pending ให้ข้ามไปทันที
+    const done = () => {
+      if (pending !== done) return; pending = null; clearTimeout(tm);
+      swap(); a.cancel();
+      wipe.animate([{clipPath:'inset(0 0 0 0)'},{clipPath:'inset(0 0 0 100%)'}], {duration:520, delay:260, easing:'cubic-bezier(.7,0,.3,1)', fill:'both'});
+      to.el.animate([{opacity:0, transform:'translateX(60px)'},{opacity:1, transform:'none'}], {duration:700, delay:420, easing:'cubic-bezier(.2,.8,.2,1)', fill:'backwards'});
+    };
+    pending = done; const tm = setTimeout(done, 430);
+    return;
+  }
+  const dx = dir >= 0 ? 1 : -1;
+  if (from !== to) from.el.animate([{opacity:1, transform:'none', filter:'none'},{opacity:0, transform:`translateX(${-70 * dx}px) scale(.98)`, filter:'blur(6px)'}], {duration:380, easing:'cubic-bezier(.4,0,.2,1)'});
+  swap();
+  to.el.animate([{opacity:0, transform:`translateX(${90 * dx}px)`, filter:'blur(8px)'},{opacity:1, transform:'none', filter:'none'}], {duration:560, easing:'cubic-bezier(.2,.8,.2,1)'});
+}
+
+function next(){
+  if (pending){ pending(); return; }
+  const s = slides[cur], n = fragsOf(s.el).length;
+  if (frag[cur] < n){ frag[cur]++; applyFrags(s.el, frag[cur]); keepVisible(s.el); }
+  else if (cur < slides.length - 1) show(cur + 1, 1);
+}
+function prev(){
+  if (pending){ pending(); return; }
+  const s = slides[cur];
+  if (frag[cur] > 0){ frag[cur]--; applyFrags(s.el, frag[cur]); }
+  else if (cur > 0) show(cur - 1, -1, { allFrags: true });
+}
+function keepVisible(el){ /* เนื้อหาถูกออกแบบให้พอดีเวที — ปรับขนาดวิธีทำอีกครั้งเผื่อสูตรยาว */ if (el.querySelector('.psol')) fitSol(el); }
+
+/* ── ย่อขยายเวที ── */
+const scaleNow = () => stage.getBoundingClientRect().width / 1600 || 1;
+function fit(){
+  const s = Math.min(innerWidth / 1600, innerHeight / 900);
+  stage.style.transform = `scale(${s})`;
+}
+addEventListener('resize', fit);
+
+/* ── แถบควบคุม ── */
+const hud = document.getElementById('hud'), bar = document.getElementById('bar');
+const groups = [{ key:'_', color:'var(--ink3)', idx:[] }];
+slides.forEach((s, i) => {
+  const k = s.S ? s.S.key : (i < 2 ? '_' : '_end');
+  let g = groups.find(x => x.key === k);
+  if (!g){ g = { key:k, color: s.S ? s.S.color : 'var(--ink3)', idx:[] }; groups.push(g); }
+  g.idx.push(i);
+});
+bar.innerHTML = groups.map(g => `<div class="seg" style="--n:${g.idx.length};--c:${g.color}" data-first="${g.idx[0]}" title="${g.key === '_' ? 'เริ่มบท' : g.key === '_end' ? 'สรุป' : SECTIONS.find(S => S.key === g.key).num + ' ' + SECTIONS.find(S => S.key === g.key).title}"><i></i></div>`).join('');
+bar.querySelectorAll('.seg').forEach(s => s.onclick = () => show(+s.dataset.first, +s.dataset.first >= cur ? 1 : -1));
+function updHud(){
+  groups.forEach((g, gi) => {
+    const a = g.idx[0], b = g.idx[g.idx.length - 1];
+    const p = cur > b ? 100 : cur < a ? 0 : (cur - a + 1) / g.idx.length * 100;
+    bar.children[gi].style.setProperty('--p', p + '%');
+  });
+  document.getElementById('count').textContent = `${cur + 1} / ${slides.length}`;
+}
+let idle; const wake = () => { hud.classList.remove('hide'); clearTimeout(idle); idle = setTimeout(() => hud.classList.add('hide'), 2600); };
+addEventListener('mousemove', wake); wake();
+document.getElementById('bPrev').onclick = prev;
+document.getElementById('bNext').onclick = next;
+document.getElementById('bFull').onclick = toggleFull;
+document.getElementById('bTheme').onclick = toggleTheme;
+document.getElementById('bOv').onclick = toggleOv;
+
+function toggleFull(){ document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen?.(); }
+function toggleTheme(){
+  const r = document.documentElement, d = r.dataset.theme === 'dark';
+  r.dataset.theme = d ? 'light' : 'dark';
+  try { localStorage.setItem('p2slides.theme', r.dataset.theme); } catch (e) {}
+}
+try { const t = localStorage.getItem('p2slides.theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+
+/* ── ภาพรวม ── */
+const ov = document.getElementById('ov');
+function toggleOv(){
+  if (ov.classList.toggle('show')){
+    ov.innerHTML = groups.map(g => {
+      const S = SECTIONS.find(x => x.key === g.key);
+      const head = S ? `${S.num} ${S.title}` : g.key === '_' ? 'เริ่มบท' : 'สรุป';
+      return `<h3 style="--c:${g.color}">${head}</h3><div class="g">${g.idx.map(i => `<div class="card ${i === cur ? 'cur' : ''}" style="--c:${g.color}" data-i="${i}"><small>${i + 1}</small><span>${slides[i].title}</span></div>`).join('')}</div>`;
+    }).join('');
+    ov.querySelectorAll('.card').forEach(c => c.onclick = () => { ov.classList.remove('show'); show(+c.dataset.i, +c.dataset.i >= cur ? 1 : -1, { instant: true }); });
+  }
+}
+
+/* ── อินพุต ── */
+const isCtl = t => t.closest && t.closest('button, input, select, a, .nointeract, label');
+stage.addEventListener('click', e => { if (!isCtl(e.target)) next(); });
+stage.addEventListener('contextmenu', e => { e.preventDefault(); prev(); });
+addEventListener('keydown', e => {
+  if (e.target.matches && e.target.matches('input[type=range]') && /Arrow/.test(e.key)) return;
+  if (ov.classList.contains('show') && e.key !== 'o' && e.key !== 'O' && e.key !== 'Escape') return;
+  const k = e.key;
+  if (['ArrowRight','ArrowDown',' ','PageDown','Enter'].includes(k)){ e.preventDefault(); next(); }
+  else if (['ArrowLeft','ArrowUp','PageUp','Backspace'].includes(k)){ e.preventDefault(); prev(); }
+  else if (k === 'Home') show(0, -1);
+  else if (k === 'End') show(slides.length - 1, 1);
+  else if (k === 'o' || k === 'O' || (k === 'Escape' && ov.classList.contains('show'))) toggleOv();
+  else if (k === 'f' || k === 'F') toggleFull();
+  else if (k === 'd' || k === 'D') toggleTheme();
+  else if (k === 'b' || k === 'B' || k === '.') document.getElementById('blank').classList.toggle('show');
+  else if (k === 'h' || k === 'H'){ const hb = slides[cur].el.querySelector('.hintbox'); if (hb) hb.classList.toggle('show'); }
+});
+document.getElementById('blank').onclick = e => e.currentTarget.classList.remove('show');
+let tx = null;
+stage.addEventListener('touchstart', e => { tx = e.touches[0].clientX; }, { passive:true });
+stage.addEventListener('touchend', e => {
+  if (tx === null) return; const dx = e.changedTouches[0].clientX - tx; tx = null;
+  if (Math.abs(dx) > 60){ dx < 0 ? next() : prev(); }
+});
+
+/* ── เริ่ม ── */
+function boot(){
+  renderMath(deck);
+  slides.forEach(s => s.init && s.init(s.el));
+  fit();
+  if (document.fonts) document.fonts.ready.then(() => fitX(deck));
+  const h = parseInt(location.hash.slice(1), 10);
+  cur = 0; slides[0].el.classList.add('active');
+  show(h > 1 ? h - 1 : 0, 1, { force: true, instant: true });
+  updHud();
+}
+// ไว้ตรวจสไลด์จากคอนโซล: slidesDeck.go(10) = ไปสไลด์ที่ 11 แบบเผยครบทุกบรรทัด
+window.slidesDeck = { go: i => show(i, 1, { allFrags: true, instant: true, force: true }), get count(){ return slides.length; } };
+if (document.readyState === 'complete') boot(); else addEventListener('load', boot);
+})();
+</script>
+</body>
+</html>
