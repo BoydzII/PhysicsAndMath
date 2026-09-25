@@ -221,6 +221,16 @@ svg .dsh{stroke:var(--ink3);stroke-width:2;stroke-dasharray:6 7;fill:none}
 #ov .card small{display:block;font:400 14px var(--head);color:var(--ink3)}
 #ov .card span{font:400 18px/1.5 var(--body)}
 #blank{position:fixed;inset:0;background:#000;z-index:70;display:none}
+/* ── หน้าล็อก (ไม่ใช่ครู) ─────────────────────────── */
+#lock{position:fixed;inset:0;display:none;align-items:center;justify-content:flex-start;padding:48px max(24px,8vw);background:var(--paper);z-index:90}
+#lock.show{display:flex}
+#lock .in{max-width:640px}
+#lock .k{font:400 18px var(--head);color:#e4572e;margin-bottom:18px;display:flex;gap:10px;align-items:center}
+#lock h1{font:700 clamp(36px,6vw,64px)/1.2 var(--head);margin:0 0 20px}
+#lock p{font:300 clamp(17px,2vw,21px)/1.8 var(--body);color:var(--ink2);margin:0 0 32px;text-wrap:pretty}
+#lock .row{display:flex;gap:12px;flex-wrap:wrap}
+#lock a{font:700 17px var(--head);text-decoration:none;border-radius:99px;padding:12px 24px;border:1.5px solid var(--ink);color:var(--ink)}
+#lock a.pri{background:#e4572e;border-color:#e4572e;color:#fff}
 #blank.show{display:block}
 </style>
 </head>
@@ -237,6 +247,12 @@ svg .dsh{stroke:var(--ink3);stroke-width:2;stroke-dasharray:6 7;fill:none}
 </div>
 <div id="ov"></div>
 <div id="blank"></div>
+<div id="lock" role="dialog" aria-labelledby="lockH"><div class="in">
+  <div class="k"><i class="ph ph-lock-simple"></i> สไลด์สอนฟิสิกส์ 2</div>
+  <h1 id="lockH">สำหรับครูเท่านั้น</h1>
+  <p id="lockP">สไลด์ชุดนี้เป็นสื่อการสอนของครู กรุณาลงชื่อเข้าใช้ที่หน้าหลักในฐานะครูหรือแอดมิน แล้วเปิดจากการ์ด “สไลด์สอนฟิสิกส์ 2” หรือปุ่มสไลด์ในแอปฟิสิกส์ 2</p>
+  <div class="row"><a class="pri" href="../index.html">ไปหน้าลงชื่อเข้าใช้</a><a href="index.html">เปิดแอปฟิสิกส์ 2</a></div>
+</div></div>
 
 <!-- เนื้อหาโจทย์ นิยาม และสมการหลัก ดึงจากไฟล์เดียวกับแอป -->
 <script src="data.js"></script>
@@ -247,6 +263,28 @@ svg .dsh{stroke:var(--ink3);stroke-width:2;stroke-dasharray:6 7;fill:none}
 <script>
 (function(){
 const R = String.raw;
+
+/* ════════════════════════════════════════════════════════════════
+   เปิดได้เฉพาะครู/แอดมิน — อ่านการลงชื่อของหน้าพอร์ทัล (localStorage pcportal.v1)
+   แบบเดียวกับ apps.js และแอปวิชา: role 'admin' = แอดมินหลักและแอดมินรอง (ครู)
+   ตรวจครั้งเดียวตอนเปิด ไม่ไล่ครูออกกลางคาบเมื่อการลงชื่อหมดอายุ
+   ════════════════════════════════════════════════════════════════ */
+function portalSession(){ try { return JSON.parse(localStorage.getItem('pcportal.v1') || 'null'); } catch (e) { return null; } }
+const SESS = portalSession();
+const IS_TEACHER = !!(SESS && SESS.v === 1 && SESS.exp > Date.now() && SESS.role === 'admin');
+if (!IS_TEACHER){
+  document.getElementById('viewport').remove();
+  document.getElementById('hud').remove();
+  if (SESS && SESS.v === 1 && SESS.role === 'admin')
+    document.getElementById('lockP').textContent = 'การลงชื่อเข้าใช้ของครูหมดอายุแล้ว กรุณาลงชื่อที่หน้าหลักอีกครั้ง แล้วกลับมาเปิดสไลด์';
+  else if (SESS && SESS.v === 1 && SESS.exp > Date.now())
+    document.getElementById('lockP').textContent = 'บัญชีที่ลงชื่อไว้ตอนนี้เป็นบัญชีนักเรียน สไลด์ชุดนี้เปิดได้เฉพาะครูและแอดมิน';
+  document.getElementById('lock').classList.add('show');
+  document.title = 'สไลด์สอนฟิสิกส์ 2 · สำหรับครู';
+  // ลงชื่อเป็นครูในแท็บอื่นแล้ว หน้านี้เปิดเองได้ทันที
+  addEventListener('storage', e => { if (e.key === 'pcportal.v1') location.reload(); });
+  return;
+}
 
 /* ════════════════════════════════════════════════════════════════
    บทที่ 5 — ทฤษฎีเรียบเรียงจากแผงทฤษฎีของแอป (data.js)

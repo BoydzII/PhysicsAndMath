@@ -130,6 +130,8 @@
       dir: 'PhysicsFoundation/', teacher: 'foundation.html', student: 'index.html' },
     { key: 'physics2',    ic: 'book',        name: 'ฟิสิกส์ 2 (Interactive Notebook)', level: 'ฟิสิกส์ ม.4-5',
       dir: 'Physics2App/', teacher: 'index.html', student: 'index.html' },
+    { key: 'slides2',     ic: 'slides',      name: 'สไลด์สอนฟิสิกส์ 2',  level: 'สื่อการสอนของครู',
+      dir: 'Physics2App/', teacher: 'slides.html', student: 'slides.html', teacherOnly: true },
     { key: 'math',        ic: 'math',        name: 'คณิตศาสตร์',          level: 'ม.1–ม.3',
       dir: 'MathAutoSheet/', teacher: 'math.html', student: 'index.html' },
     { key: 'science',     ic: 'science',     name: 'วิทยาศาสตร์',         level: 'ม.1–ม.3',
@@ -160,6 +162,7 @@
     physci: '<path d="M2 8.4q2.5-4 5 0t5 0 5 0 5 0"/><path d="M2 15.6q2.5-4 5 0t5 0 5 0 5 0"/>',
     equilibrium: '<circle cx="12" cy="3.6" r="1.4"/><path d="M12 5v14"/><path d="M8.4 19h7.2"/><path d="M3.6 7.2h16.8"/><path d="M4.4 7.4 2.2 11.4"/><path d="M19.6 7.4l2.2 4"/><path d="M1.6 11.4a3.4 3.4 0 0 0 5.2 0"/><path d="M17.2 11.4a3.4 3.4 0 0 0 5.2 0"/>',
     figure: '<path d="M4.2 19.8l4.3-1.1 9.7-9.7a2.5 2.5 0 0 0-3.5-3.5L5 15.3z"/><path d="M14.1 6.2l3.5 3.5"/>',
+    slides: '<rect x="3.4" y="4" width="17.2" height="11.6" rx="1.6"/><path d="M12 15.6V20"/><path d="M8.6 20h6.8"/><path d="M7.4 12.2l3-3 2.6 2.1 3.6-3.6"/>',
     book: '<path d="M3.4 5.2c2.8-1.2 5.6-1.2 8.6.8 3-2 5.8-2 8.6-.8v13c-2.8-1.2-5.6-1.2-8.6.8-3-2-5.8-2-8.6-.8z"/><path d="M12 6v13"/>',
     work: '<path d="M4 13.5h4.2l1.6 2.6h4.4l1.6-2.6H20"/><path d="M5.6 5.5h12.8L20 13.5v5a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 18.5v-5z"/><path d="M12 3.5v7"/><path d="M9.4 8l2.6 2.6L14.6 8"/>',
     found: '<path d="M3.5 19.5h4.4v-4.2h4.3v-4.2h4.3V6.9h4"/><path d="M3.5 19.5h17"/><path d="M17.8 3.6l2.7 3.3-3.3 2.6"/>',
@@ -186,7 +189,8 @@
   }
   function currentKey() {
     var here = location.href.split(/[?#]/)[0];
-    for (var i = 0; i < APPS.length; i++) if (here.indexOf(ROOT + APPS[i].dir) === 0) return APPS[i].key;
+    for (var j = 0; j < APPS.length; j++) if (APPS[j].teacherOnly && here === ROOT + APPS[j].dir + APPS[j].teacher) return APPS[j].key;
+    for (var i = 0; i < APPS.length; i++) if (!APPS[i].teacherOnly && here.indexOf(ROOT + APPS[i].dir) === 0) return APPS[i].key;
     return '';
   }
 
