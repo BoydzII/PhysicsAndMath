@@ -16,10 +16,12 @@
    core:{ lbl, eq, steps:[{ t, eq? }] } · eqs:[{ nm, s, eq }] · tips:[…] (จำให้ขึ้นใจ)
    life:[{ ic, h, p }] · think:{ q, a } · main:{ nm, tex } (สมการหลักของโจทย์)
    sim? simTitle simText simTry (แบบจำลองในสไลด์ — โค้ดอยู่ใน slides.html)
+   lessons?:[บทเรียนย่อย…] ก่อนสมการตั้งต้น — { kick, h, lead?, hero?:{ lbl, eq }, steps?, table?:{ cols, rows, split?, quiz? }, rules?:[{ t, ex:[[tex, จำนวน]] }], note? }
+            หรือ { prob:id } = ตัวอย่างโจทย์คั่นในสไลด์ (ในแอปอยู่ในรายการโจทย์ตามปกติ)
    probs:[id, id, id] (โจทย์ 3 ข้อแรกบนสไลด์) · problems:[โจทย์…]
 
    ── รูปแบบโจทย์ ────────────────────────────────────────────────────────────
-   { id, text, given:[…], hint, steps:[แถว…], ans:{ sym, val, unit, op? }, say? }
+   { id, text, given:[…], hint, steps:[แถว…], ans:{ sym, val, unit, op? }, say?, main?:{ nm, tex } (แทนสมการหลักของหัวข้อ) }
    แถวของวิธีทำ
      [ตัวแปร, นิพจน์]             → ตัวแปร = นิพจน์            (ตัวแปร '' = บรรทัดต่อจากชุดเดิม)
      [ตัวแปร, ตัวดำเนินการ, นิพจน์] → เช่น ['v', '\\approx', '3.16']
@@ -66,6 +68,23 @@ var P1_TOPIC_ORDER = [];
   function theoryHTML(S) {
     var h = '<h2><span class="t-num">' + S.num + '</span>' + S.title + ' (' + S.en + ')</h2>';
     if (S.lead) h += '<p class="lead">' + S.lead + '</p>';
+    (S.lessons || []).forEach(function (L) {
+      if (L.prob) return;
+      h += '<section class="p1-lesson"><h3 class="eq-sec">' + L.h + '</h3>';
+      if (L.lead) h += '<p>' + L.lead + '</p>';
+      if (L.hero) {
+        h += '<section class="eq-core"><div class="eq-label">' + L.hero.lbl + '</div><div class="eq-block">$$' + L.hero.eq + '$$</div><ol class="derive">';
+        (L.steps || []).forEach(function (st) { h += '<li><p>' + st.t + '</p>' + (st.eq ? '<div class="eq-block">$$' + st.eq + '$$</div>' : '') + '</li>'; });
+        h += '</ol></section>';
+      }
+      if (L.table) h += '<div class="p1-tabwrap"><table class="p1-tab"><thead><tr>' + L.table.cols.map(function (c) { return '<th>' + c + '</th>'; }).join('') + '</tr></thead><tbody>' +
+        L.table.rows.map(function (r) { return '<tr>' + r.map(function (c) { return '<td>' + c + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table></div>';
+      if (L.rules) h += '<ol class="p1-rules">' + L.rules.map(function (r) {
+        return '<li><p>' + r.t + '</p><div class="p1-ex">' + r.ex.map(function (e) { return '<span>$' + e[0] + '$ <b>' + e[1] + '</b></span>'; }).join('') + '</div></li>';
+      }).join('') + '</ol>';
+      if (L.note) h += '<p class="p1-note">' + L.note + '</p>';
+      h += '</section>';
+    });
     if (S.core) {
       h += '<section class="eq-core"><div class="eq-label">' + S.core.lbl + '</div><div class="eq-block">$$' + S.core.eq + '$$</div><ol class="derive">';
       S.core.steps.forEach(function (st) { h += '<li><p>' + st.t + '</p>' + (st.eq ? '<div class="eq-block">$$' + st.eq + '$$</div>' : '') + '</li>'; });
@@ -91,7 +110,7 @@ var P1_TOPIC_ORDER = [];
         problems: (S.problems || []).map(function (p) {
           var given = (p.given || []).join(', ');
           return {
-            id: p.id, text: p.text, hints: p.hint || '', answer: p.ans ? String(p.ans.val) : undefined, say: p.say,
+            id: p.id, text: p.text, hints: p.hint || '', answer: p.ans ? String(p.ans.val) : undefined, say: p.say, main: p.main,
             guide: guideHTML(p),
             intermediateHtml: (given ? '<div class="step" style="color:var(--text-light);font-size:0.95rem;"><b>โจทย์กำหนด:</b> ' + given + '</div>' : '') + answerLine(p),
             advancedHtml: answerLine(p)
@@ -113,8 +132,9 @@ var P1_TOPIC_ORDER = [];
   };
   window.mainEquationHTML = function (prob, key) {
     var S = SEC[key];
-    if (!S || !S.main) return '';
-    return '<div class="main-eq"><span class="me-tag">สมการหลัก · ' + S.main.nm + '</span><div class="me-body">$$' + S.main.tex + '$$</div></div>';
+    var m = (prob && prob.main) || (S && S.main);
+    if (!m) return '';
+    return '<div class="main-eq"><span class="me-tag">สมการหลัก · ' + m.nm + '</span><div class="me-body">$$' + m.tex + '$$</div></div>';
   };
   window.P1_SECTIONS = SEC;
 })();

@@ -297,10 +297,36 @@ function coreSlide(S){
       <ol class="steps">${c.steps.map(s => `<li class="f"><p>${s.t}</p>${s.eq ? "$$" + s.eq + "$$" : ""}</li>`).join('')}</ol>
     </div>` };
 }
+// บทเรียนย่อยของหัวข้อ (S.lessons) — สไลด์เดียวประกอบจากส่วนที่มี: lead · hero+steps · table · rules · note
+//   table:{ cols:[…], rows:[[…]], split?:2, w?:ความกว้างคอลัมน์ (grid), quiz?:true (เผยช่องที่ 2 เป็นต้นไปทีละแถว) }
+//   rules:[{ t, ex:[[tex, จำนวน]] }]  การ์ดกฎพร้อมตัวอย่าง
+function lessonSlide(S, L){
+  const cells = r => r.map((c, j) => `<div class="c${j ? '' : ' c0'}">${c}</div>`).join('');
+  const tbl = t => {
+    const halves = t.split === 2 ? [t.rows.slice(0, Math.ceil(t.rows.length / 2)), t.rows.slice(Math.ceil(t.rows.length / 2))] : [t.rows];
+    return `<div class="ltab${t.quiz ? ' quiz' : ''}" style="--n:${t.cols.length}${t.w ? ";--w:" + t.w : ""}">${halves.map(rows => `<div class="lcol">
+      <div class="lrow head">${cells(t.cols)}</div>
+      ${rows.map(r => t.quiz ? `<div class="lrow">${cells(r.slice(0, 1))}<div class="la f">${r.slice(1).map(c => `<div class="c">${c}</div>`).join('')}</div></div>`
+                              : `<div class="lrow f">${cells(r)}</div>`).join('')}</div>`).join('')}</div>`;
+  };
+  const body = [
+    L.lead ? `<p class="llead">${L.lead}</p>` : '',
+    L.hero ? `<div class="core">
+      <div class="hero"><div class="lbl">${L.hero.lbl}</div>$$${L.hero.eq}$$</div>
+      <ol class="steps">${(L.steps || []).map(s => `<li class="f"><p>${s.t}</p>${s.eq ? "$$" + s.eq + "$$" : ""}</li>`).join('')}</ol>
+    </div>` : '',
+    L.table ? tbl(L.table) : '',
+    L.rules ? `<div class="rules">${L.rules.map((r, i) => `<div class="rule f"><span class="n">${i + 1}</span><p>${r.t}</p>
+      <div class="ex">${r.ex.map(([x, c]) => `<span><span class="x">$${x}$</span><b>${c}</b></span>`).join('')}</div></div>`).join('')}</div>` : '',
+    L.note ? `<p class="lnote f">${L.note}</p>` : ''
+  ].join('');
+  return { title: L.h, cls: 's-lesson', html: `${kick(S, L.kick || 'บทเรียน')}
+    <h2>${L.h}</h2>${body}` };
+}
 function eqsSlide(S){
   return { title:'สมการที่ใช้บ่อย', html: `${kick(S,'สมการที่ใช้บ่อย')}
     <h2>สรุปสูตรในบทนี้</h2>
-    <div class="eqgrid">${S.eqs.map(e => `<div class="eqrow f"><div class="nm">${e.nm}<small>${e.s}</small></div><div>$$${e.eq}$$</div></div>`).join('')}</div>` };
+    <div class="eqgrid${S.eqs.length >= 5 ? " dense" : ""}">${S.eqs.map(e => `<div class="eqrow f"><div class="nm">${e.nm}<small>${e.s}</small></div><div>$$${e.eq}$$</div></div>`).join('')}</div>` };
 }
 function lifeSlide(S){
   return { title:'ในชีวิตประจำวัน', html: `${kick(S,'ในชีวิตประจำวัน')}
@@ -334,9 +360,10 @@ function answerSummary(p, rows){
   const val = r.expr.replace(/<span class="ans">([\s\S]*?)<\/span>/, '$1').replace(/&nbsp;/g, ' ').trim();
   return lbl ? lbl + ' ' + (r.op || '$=$') + ' ' + val : val;
 }
-function probSlide(S, order, pid){
+function probSlide(S, order, pid, label){
   const list = (TOPICS[S.key] || {}).problems || [];
-  const obj = { title:'โจทย์ข้อ ' + order, cls:'s-prob', pid, S, order, list };
+  const tag = label || 'โจทย์ข้อ ' + order;
+  const obj = { title: tag, cls:'s-prob', pid, S, order, list };
   obj.render = function(id){
     const p = list.find(x => x.id === id) || list[0];
     if (!p) return `${kick(S,'โจทย์')}<p>ไม่พบโจทย์ใน data.js</p>`;
@@ -353,7 +380,7 @@ function probSlide(S, order, pid){
         : `<div class="${cls}" data-g="${r.grp}">${nb}<div class="txt">${r.html}</div></div>`;
     }).join('');
     return `
-      <div class="ptop">${kick(S,'โจทย์ข้อ ' + order)}
+      <div class="ptop">${kick(S, tag)}
         <div class="chips nointeract">เปลี่ยนข้อ ${list.map((x,i) => `<button data-pid="${x.id}" class="${x.id === p.id ? 'cur' : ''}" title="${esc(x.text.replace(/\$/g,'').slice(0,80))}">${i+1}</button>`).join('')}</div></div>
       <div class="pbody">
         <div class="pq">
@@ -414,8 +441,13 @@ SECTIONS.forEach(S => {
   // หัวข้อที่ไม่มีแบบจำลอง / นิยาม / ชีวิตจริง / ชวนคิด ข้ามสไลด์นั้นไป
   const has = { [defsSlide.name]: (S.defs || defsOf(S.key)).length, [simSlide.name]: S.sim && SIMS[S.sim], [lifeSlide.name]: S.life && S.life.length,
                 [thinkSlide.name]: S.think, [eqsSlide.name]: S.eqs && S.eqs.length, [coreSlide.name]: S.core };
-  [opener, defsSlide, coreSlide, simSlide, eqsSlide, lifeSlide, thinkSlide].filter(fn => fn.name in has ? !!has[fn.name] : true)
-    .forEach(fn => slides.push(Object.assign(fn(S), { S })));
+  const add = fn => slides.push(Object.assign(fn(S), { S }));
+  const keep = fn => fn.name in has ? !!has[fn.name] : true;
+  [opener, defsSlide].filter(keep).forEach(add);
+  // บทเรียนย่อยมาก่อนสมการตั้งต้น · { prob:id } = ตัวอย่างโจทย์คั่นระหว่างบทเรียน
+  let ex = 0;
+  (S.lessons || []).forEach(L => slides.push(L.prob ? probSlide(S, 0, L.prob, 'ตัวอย่างที่ ' + (++ex)) : Object.assign(lessonSlide(S, L), { S })));
+  [coreSlide, simSlide, eqsSlide, lifeSlide, thinkSlide].filter(keep).forEach(add);
   (S.probs || []).forEach((pid, i) => slides.push(probSlide(S, i + 1, pid)));
 });
 slides.push(summary());
