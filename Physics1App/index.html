@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>ฟิสิกส์ 1 - Interactive Notebook</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css?v=1790500000">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js?v=1790500000"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js?v=1790500000"></script>
+  <link rel="stylesheet" type="text/css" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css"/>
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <link rel="stylesheet" href="style.css?v=1790500000">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="logo">
+      <i class="ph ph-atom"></i>
+      <span>ฟิสิกส์ 1 (สสวท.)</span>
+    </div>
+    
+    <div class="tools">
+      <button id="btnTogglePanel" class="secondary icon-btn" title="ซ่อน/แสดง ทฤษฎี">
+        <i class="ph ph-arrows-out-line-horizontal"></i>
+      </button>
+      <select id="topicSelector"><!-- เติมจาก P1_TOPIC_ORDER ใน p1data.js --></select>
+
+      <div class="level-switch" title="เลือกระดับความยาก">
+        <label class="toggle-btn" title="ระดับพื้นฐาน (มีแนวทางการคำนวณไกด์)">
+          <input type="radio" name="level" value="beginner" checked>
+          <span class="btn-text"><i class="ph ph-cell-signal-low"></i></span>
+        </label>
+        <label class="toggle-btn" title="ระดับปานกลาง (บอกตัวแปรที่โจทย์กำหนด)">
+          <input type="radio" name="level" value="intermediate">
+          <span class="btn-text"><i class="ph ph-cell-signal-medium"></i></span>
+        </label>
+        <label class="toggle-btn" title="ระดับขั้นสูง (โจทย์ล้วน ท้าทาย)">
+          <input type="radio" name="level" value="advanced">
+          <span class="btn-text"><i class="ph ph-cell-signal-high"></i></span>
+        </label>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button id="btnSlides" class="secondary icon-btn" title="เปิดสไลด์นำเสนอของบทนี้ (แท็บใหม่) · เฉพาะครู" hidden><i class="ph ph-presentation-chart"></i></button>
+      <button id="btnFullscreen" class="secondary icon-btn" title="เปิด/ปิด โหมดเต็มจอ (Fullscreen)"><i class="ph ph-corners-out"></i></button>
+      <button id="btnCheckAnswers" class="secondary icon-btn" title="ตรวจคำตอบทั้งหมด"><i class="ph ph-check-circle"></i></button>
+      <button id="btnSubmit" class="primary" title="ส่งงานและบันทึกคะแนน"><i class="ph ph-paper-plane-right"></i> <span>ส่งงาน</span></button>
+    </div>
+  </header>
+
+  <div class="drawing-toolbar" id="drawingToolbar">
+    <div class="drag-handle" title="ลากเพื่อย้าย"><i class="ph ph-dots-six-vertical"></i></div>
+    <div class="tool-group">
+      <button class="tool-btn active" data-tool="pen" title="ปากกา"><i class="ph ph-pen"></i></button>
+      <button class="tool-btn" data-tool="highlight" title="ปากกาเน้นข้อความ (เขียนทับโจทย์)"><i class="ph ph-highlighter-circle"></i></button>
+      <button class="tool-btn" data-tool="eraser" title="ยางลบ"><i class="ph ph-eraser"></i></button>
+      <button class="tool-btn" data-tool="laser" title="เลเซอร์พอยน์เตอร์ (ชี้อธิบาย ไม่ทิ้งรอย)"><i class="ph ph-lightning"></i></button>
+      <button class="tool-btn" data-tool="finger" title="นิ้วชี้อธิบาย (ชี้เน้นข้อความ)"><i class="ph ph-hand-pointing"></i></button>
+    </div>
+    <div class="tool-group sizes" title="ขนาดหัวปากกา / พอยน์เตอร์">
+      <button class="size-btn" data-size="1.5" title="ขนาดเล็ก (S)">S</button>
+      <button class="size-btn active" data-size="2.5" title="ขนาดกลาง (M)">M</button>
+      <button class="size-btn" data-size="6" title="ขนาดใหญ่ (L)">L</button>
+    </div>
+    <div class="tool-group colors">
+      <div class="color-swatch active" data-color="#000000" style="background:#000000" title="ดำ"></div>
+      <div class="color-swatch" data-color="#2563eb" style="background:#2563eb" title="น้ำเงิน"></div>
+      <div class="color-swatch" data-color="#dc2626" style="background:#dc2626" title="แดง"></div>
+      <div class="color-swatch" data-color="#16a34a" style="background:#16a34a" title="เขียว"></div>
+      <div class="color-swatch" data-color="#eab308" style="background:#eab308" title="เหลือง"></div>
+    </div>
+    <div class="tool-group history" style="border-left: 1px solid var(--border); padding-left: 8px; display:flex; gap:4px;">
+      <button class="tool-btn" id="btnUndo" title="เลิกทำ (Ctrl+Z)"><i class="ph ph-arrow-u-up-left"></i></button>
+      <button class="tool-btn" id="btnRedo" title="ทำซ้ำ (Ctrl+Y)"><i class="ph ph-arrow-u-up-right"></i></button>
+      <button class="tool-btn danger" id="btnClearDraw" title="ล้างหน้า"><i class="ph ph-trash"></i></button>
+    </div>
+    <div class="tool-group zoom-group" style="border-left: 1px solid var(--border); padding-left: 8px; display:flex; align-items:center; gap:2px;" title="ย่อ/ขยายเฉพาะหน้ากระดาษทำโจทย์">
+      <button class="tool-btn" id="btnZoomOut" title="ย่อหน้ากระดาษ (Zoom Out)"><i class="ph ph-magnifying-glass-minus"></i></button>
+      <span id="zoomLevelText" title="คลิกเพื่อรีเซ็ตเป็น 100%" class="zoom-text">100%</span>
+      <button class="tool-btn" id="btnZoomIn" title="ขยายหน้ากระดาษ (Zoom In)"><i class="ph ph-magnifying-glass-plus"></i></button>
+    </div>
+    <div class="tool-group modes-group" style="border-left: 1px solid var(--border); padding-left: 8px; display:flex; gap:4px;">
+      <button class="tool-btn" id="btnPenOnlyMode" title="โหมดปากกาเท่านั้น (ใช้นิ้วเลื่อน/ซูม ป้องกันมือเขียน)"><i class="ph ph-hand-palm"></i></button>
+      <button class="tool-btn active" id="btnHighlightLayer" title="ลำดับชั้น: ปากกา/ไฮไลต์อยู่บนสุดทับโจทย์ (คลิกเพื่อสลับ)"><i class="ph ph-stack"></i></button>
+      <button class="tool-btn active" id="btnToggleInputsLock" title="ช่องคำตอบถูกป้องกันอยู่ (แตะช่องเพื่อพิมพ์ตอบ)"><i class="ph ph-lock-key"></i></button>
+    </div>
+  </div>
+
+  <main class="workspace">
+    <section class="content-panel">
+      <div class="panel-inner" id="theoryContainer"></div>
+    </section>
+
+    <section class="notebook-panel">
+      <div class="notebook-wrapper canvas-on-top">
+        <div class="notebook-paper" id="notebookContainer"></div>
+        <canvas id="drawingCanvas"></canvas>
+        <canvas id="presentationCanvas"></canvas>
+      </div>
+    </section>
+  </main>
+
+  <!-- Submit & Evaluation Modal -->
+  <div id="submitModal" class="modal-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:9999; align-items:center; justify-content:center; backdrop-filter:blur(3px);">
+    <div class="modal-box" style="background:white; padding:24px 28px; border-radius:16px; max-width:560px; width:92%; max-height:90vh; overflow-y:auto; box-shadow:0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; border-bottom:1px solid #e5e7eb; padding-bottom:12px;">
+        <h3 style="margin:0; color:var(--primary); font-size:1.3rem; display:flex; align-items:center; gap:8px;">
+          <i class="ph ph-certificate" style="font-size:24px;"></i> ระบบส่งงานและการประเมินผล
+        </h3>
+        <button id="btnCloseModal" style="background:none; border:none; font-size:20px; cursor:pointer; color:#6b7280;">✕</button>
+      </div>
+
+      <!-- Student Profile Card -->
+      <div class="submission-card" style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:14px 16px; margin-bottom:16px;">
+        <div style="font-weight:600; color:#334155; margin-bottom:8px; font-size:0.95rem;">👤 ข้อมูลผู้ส่งงาน:</div>
+        <div style="display:grid; grid-template-columns: 1fr 100px 100px; gap:8px;">
+          <div>
+            <label style="font-size:0.8rem; color:#64748b;">ชื่อ - นามสกุล</label>
+            <input type="text" id="studentNameInput" placeholder="ด.ช./นาย/น.ส. ..." style="width:100%; padding:6px 10px; border:1px solid #cbd5e1; border-radius:6px; font-size:0.9rem;">
+          </div>
+          <div>
+            <label style="font-size:0.8rem; color:#64748b;">ชั้น/ห้อง</label>
+            <input type="text" id="studentRoomInput" placeholder="ม.5/1" style="width:100%; padding:6px 10px; border:1px solid #cbd5e1; border-radius:6px; font-size:0.9rem;">
+          </div>
+          <div>
+            <label style="font-size:0.8rem; color:#64748b;">เลขที่</label>
+            <input type="text" id="studentNoInput" placeholder="1" style="width:100%; padding:6px 10px; border:1px solid #cbd5e1; border-radius:6px; font-size:0.9rem;">
+          </div>
+        </div>
+      </div>
+
+      <!-- Score & Grade Card -->
+      <div id="scoreSummaryCard" style="background:linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border:1px solid #bfdbfe; border-radius:12px; padding:16px; margin-bottom:16px; text-align:center;">
+        <div style="font-size:0.9rem; color:#1e40af; font-weight:500;">สรุปผลการทำแบบฝึกหัด: <span id="summaryTopicTitle" style="font-weight:bold;">-</span></div>
+        <div style="font-size:2.2rem; font-weight:800; color:#1e3a8a; margin:8px 0;" id="summaryScoreBig">0 / 10</div>
+        <div id="summaryBadge" style="display:inline-block; padding:4px 12px; border-radius:999px; font-weight:600; font-size:0.85rem; background:#3b82f6; color:white;">ตรวจผลคะแนน</div>
+        <div style="margin-top:8px; font-size:0.85rem; color:#3b82f6;" id="summaryPercentageText">คิดเป็น 0%</div>
+      </div>
+
+      <!-- Breakdown Table (Collapsible) -->
+      <details style="margin-bottom:16px; border:1px solid #e5e7eb; border-radius:8px; padding:8px 12px; background:#fff;">
+        <summary style="cursor:pointer; font-weight:600; color:#4b5563; font-size:0.9rem;">🔍 ดูรายละเอียดการตรวจคำตอบรายข้อ</summary>
+        <div id="questionBreakdownList" style="margin-top:10px; max-height:180px; overflow-y:auto; font-size:0.85rem;"></div>
+      </details>
+
+      <!-- Action Buttons -->
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:16px;">
+        <button id="btnPrintWorksheet" class="primary" style="padding:10px 14px; border:none; border-radius:8px; background:#2563eb; color:white; cursor:pointer; font-weight:600; display:flex; align-items:center; justify-content:center; gap:6px;">
+          <i class="ph ph-printer" style="font-size:18px;"></i> พิมพ์ PDF พร้อมลายมือ
+        </button>
+        <button id="btnSubmitToSheets" class="secondary" style="padding:10px 14px; border:1px solid #16a34a; background:#f0fdf4; color:#15803d; border-radius:8px; cursor:pointer; font-weight:600; display:flex; align-items:center; justify-content:center; gap:6px;">
+          <i class="ph ph-microsoft-excel-logo" style="font-size:18px;"></i> ส่งคะแนนเข้า Sheets
+        </button>
+      </div>
+      <div style="margin-top:8px;">
+        <button id="btnCopyReport" style="width:100%; padding:8px 14px; border:1px solid #cbd5e1; background:#f8fafc; color:#475569; border-radius:8px; cursor:pointer; font-size:0.85rem; display:flex; align-items:center; justify-content:center; gap:6px;">
+          <i class="ph ph-copy" style="font-size:16px;"></i> คัดลอกข้อความสรุปผล (สำหรับส่งใน LINE / Classroom)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toastNotification" class="toast-notification"></div>
+
+  <script src="content_ch1.js"></script>
+  <script src="content_ch2.js"></script>
+  <script src="content_ch3.js"></script>
+  <script src="content_ch4.js"></script>
+  <script src="p1data.js"></script>
+  <script>
+    // ตัวเลือกหัวข้อ: จัดกลุ่มตามบท (optgroup "บทที่ N: …" — ปุ่มสไลด์อ่านเลขบทจากตรงนี้)
+    (function () {
+      var sel = document.getElementById('topicSelector'), groups = {};
+      P1_TOPIC_ORDER.forEach(function (t) {
+        var g = groups[t.ch];
+        if (!g) { g = groups[t.ch] = document.createElement('optgroup'); g.label = 'บทที่ ' + t.ch + ': ' + t.chTitle; sel.appendChild(g); }
+        var o = document.createElement('option'); o.value = t.key; o.textContent = t.label; g.appendChild(o);
+      });
+    })();
+  </script>
+  <script src="draw.js"></script>
+  <script src="app.js"></script>
+  <script>
+    // ปุ่มสไลด์: เปิด slides.html ของบทที่กำลังเลือกในแท็บใหม่ (อ่านเลขบทจาก optgroup "บทที่ N: …")
+    // ขึ้นเฉพาะเมื่อลงชื่อที่หน้าหลักในฐานะครู/แอดมิน (pcportal.v1 role = admin) — สไลด์เป็นสื่อของครู
+    (function () {
+      try {
+        var s = JSON.parse(localStorage.getItem('pcportal.v1') || 'null');
+        if (s && s.v === 1 && s.exp > Date.now() && s.role === 'admin') document.getElementById('btnSlides').hidden = false;
+      } catch (e) {}
+    })();
+    document.getElementById('btnSlides').addEventListener('click', function () {
+      var sel = document.getElementById('topicSelector');
+      var opt = sel && sel.options[sel.selectedIndex];
+      var m = opt && opt.parentNode.label && opt.parentNode.label.match(/บทที่\s*(\d+)/);
+      window.open('slides.html?ch=' + (m ? m[1] : 1), '_blank');
+    });
+  </script>
+<!-- แถบเปลี่ยนแอปในเครือคลังโจทย์ (ไฟล์ร่วม ../apps.js) — หาไม่เจอก็ไม่เป็นไร แอปทำงานปกติ -->
+<script src="../apps.js" defer></script>
+</body>
+</html>

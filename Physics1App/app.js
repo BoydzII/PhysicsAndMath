@@ -1,0 +1,1150 @@
+// หัวข้อแรกของฟิสิกส์ 1 (ลำดับจาก p1data.js)
+let currentTopic = (typeof P1_TOPIC_ORDER !== 'undefined' && P1_TOPIC_ORDER.length) ? P1_TOPIC_ORDER[0].key : 'discovery';
+window.currentTopic = currentTopic;
+if (typeof physicsData !== 'undefined') window.physicsData = physicsData;
+let currentLevel = 'beginner';
+
+// แบบฝึกหัดท้ายบท (ท้าทาย) บังคับเป็นระดับขั้นสูงอย่างเดียว เลือกระดับไม่ได้
+function isChallengeTopic(t) { return /_challenge$/.test(t || ''); }
+function effectiveLevel() { return isChallengeTopic(currentTopic) ? 'advanced' : currentLevel; }
+function updateLevelSwitch() {
+  const sw = document.querySelector('.level-switch');
+  if (!sw) return;
+  const locked = isChallengeTopic(currentTopic);
+  sw.classList.toggle('locked', locked);
+  sw.title = locked ? 'แบบฝึกหัดท้ายบทเป็นระดับขั้นสูงอย่างเดียว' : 'เลือกระดับความยาก';
+  sw.querySelectorAll('input[name="level"]').forEach(r => {
+    r.disabled = locked;
+    r.checked = r.value === (locked ? 'advanced' : currentLevel);
+  });
+}
+let drawingEngine = null;
+let currentPaperZoom = 1.0;
+window.currentPaperZoom = currentPaperZoom;
+
+function setPaperZoom(zoomLevel) {
+  currentPaperZoom = Math.min(Math.max(Number(zoomLevel.toFixed(2)), 0.7), 2.5);
+  window.currentPaperZoom = currentPaperZoom;
+  const wrapper = document.querySelector('.notebook-wrapper');
+  const panel = document.querySelector('.notebook-panel');
+  if (!wrapper || !panel) return;
+
+  const baseW = wrapper.offsetWidth;
+  const scaledW = baseW * currentPaperZoom;
+  const shiftX = Math.max(0, (scaledW - baseW) / 2);
+  const shiftY = Math.max(0, (wrapper.offsetHeight * currentPaperZoom - wrapper.offsetHeight) / 2);
+
+  wrapper.style.transformOrigin = 'top center';
+  wrapper.style.transform = `scale(${currentPaperZoom})`;
+  wrapper.style.marginLeft = shiftX > 0 ? `${shiftX}px` : 'auto';
+  wrapper.style.marginRight = shiftX > 0 ? `${shiftX}px` : 'auto';
+  wrapper.style.marginBottom = shiftY > 0 ? `${shiftY * 2}px` : '0px';
+
+  const zoomText = document.getElementById('zoomLevelText');
+  if (zoomText) {
+    zoomText.textContent = `${Math.round(currentPaperZoom * 100)}%`;
+  }
+}
+window.setPaperZoom = setPaperZoom;
+
+document.addEventListener('DOMContentLoaded', () => {
+  // Init Drawing
+  drawingEngine = new DrawingEngine('drawingCanvas');
+  drawingEngine.topic = currentTopic;
+  
+  // Try to load saved inputs
+  loadInputs();
+  // Load saved drawings
+  drawingEngine.loadData();
+
+  // Setup UI Listeners
+  setupListeners();
+
+  // Initial Render
+  renderApp();
+  setPaperZoom(1.0);
+});
+
+function setupListeners() {
+  // Topic selection (Safe with error boundaries)
+  const topicSelector = document.getElementById('topicSelector');
+  if (topicSelector) {
+    topicSelector.addEventListener('change', (e) => {
+      const newTopic = e.target.value;
+      try { saveInputs(); } catch (err) { console.warn(err); }
+      try { if (drawingEngine) drawingEngine.saveData(); } catch (err) { console.warn(err); }
+      
+      currentTopic = newTopic;
+      window.currentTopic = newTopic;
+      
+      renderApp();
+      
+      if (drawingEngine) {
+        try {
+          drawingEngine.topic = currentTopic;
+          drawingEngine.clear(false);
+          drawingEngine.loadData();
+        } catch (err) { console.warn(err); }
+      }
+    });
+  }
+
+  // Level selection
+  const levelRadios = document.querySelectorAll('input[name="level"]');
+  levelRadios.forEach(radio => {
+    radio.addEventListener('change', (e) => {
+      currentLevel = e.target.value;
+      renderApp();
+    });
+  });
+
+  
+  // Toolbar Dragging Logic
+  const toolbar = document.getElementById('drawingToolbar');
+  const dragHandle = toolbar.querySelector('.drag-handle');
+  
+  let isDraggingToolbar = false;
+  let startX, startY, initialLeft, initialTop;
+
+  function onDragStart(e) {
+    if (e.target.closest('.tool-btn') || e.target.closest('.color-swatch')) return;
+    isDraggingToolbar = true;
+    toolbar.style.transition = 'none'; // Disable transition during drag
+    
+    let clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    let clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    
+    startX = clientX;
+    startY = clientY;
+    
+    const rect = toolbar.getBoundingClientRect();
+    initialLeft = rect.left;
+    initialTop = rect.top;
+    
+    // Clear transform to use raw left/top
+    toolbar.style.transform = 'none';
+    toolbar.style.left = initialLeft + 'px';
+    toolbar.style.top = initialTop + 'px';
+    toolbar.style.bottom = 'auto';
+    toolbar.style.right = 'auto';
+    
+    e.preventDefault();
+  }
+
+  function onDragMove(e) {
+    if (!isDraggingToolbar) return;
+    let clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    let clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    
+    let dx = clientX - startX;
+    let dy = clientY - startY;
+    
+    let newLeft = initialLeft + dx;
+    let newTop = initialTop + dy;
+    
+    toolbar.style.left = newLeft + 'px';
+    toolbar.style.top = newTop + 'px';
+  }
+
+  function onDragEnd(e) {
+    if (!isDraggingToolbar) return;
+    isDraggingToolbar = false;
+    toolbar.style.transition = 'flex-direction 0.2s ease, border-radius 0.2s ease, left 0.3s ease, top 0.3s ease, transform 0.3s ease';
+    
+    const rect = toolbar.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const screenW = window.innerWidth;
+    const screenH = window.innerHeight;
+    
+    // Snap Logic
+    if (centerX < screenW * 0.2) {
+      // Snap to Left
+      toolbar.classList.add('vertical');
+      toolbar.style.left = '24px';
+      toolbar.style.top = '50%';
+      toolbar.style.transform = 'translateY(-50%)';
+    } else if (centerX > screenW * 0.8) {
+      // Snap to Right
+      toolbar.classList.add('vertical');
+      toolbar.style.left = (screenW - rect.width - 24) + 'px';
+      toolbar.style.top = '50%';
+      toolbar.style.transform = 'translateY(-50%)';
+    } else {
+      // Snap to Bottom Center
+      toolbar.classList.remove('vertical');
+      toolbar.style.left = '50%';
+      toolbar.style.top = (screenH - rect.height - 24) + 'px';
+      toolbar.style.transform = 'translateX(-50%)';
+    }
+  }
+
+  dragHandle.addEventListener('mousedown', onDragStart);
+  window.addEventListener('mousemove', onDragMove);
+  window.addEventListener('mouseup', onDragEnd);
+  
+  dragHandle.addEventListener('touchstart', onDragStart, {passive: false});
+  window.addEventListener('touchmove', onDragMove, {passive: false});
+  window.addEventListener('touchend', onDragEnd);
+
+
+  // Drawing Tools
+  document.querySelectorAll('.tool-btn[data-tool]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      document.querySelectorAll('.tool-btn[data-tool]').forEach(b => b.classList.remove('active'));
+      const t = e.currentTarget;
+      t.classList.add('active');
+      drawingEngine.setTool(t.dataset.tool);
+    });
+  });
+
+  // Stroke Size Buttons
+  document.querySelectorAll('.size-btn[data-size]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
+      const b = e.currentTarget;
+      b.classList.add('active');
+      if (drawingEngine) drawingEngine.setSize(b.dataset.size);
+    });
+  });
+
+  // Undo & Redo Buttons
+  document.getElementById('btnUndo')?.addEventListener('click', () => {
+    if (drawingEngine) drawingEngine.undo();
+  });
+  document.getElementById('btnRedo')?.addEventListener('click', () => {
+    if (drawingEngine) drawingEngine.redo();
+  });
+
+  // Sheet-Only Zoom Controls
+  document.getElementById('btnZoomIn')?.addEventListener('click', () => {
+    setPaperZoom(currentPaperZoom + 0.15);
+  });
+  document.getElementById('btnZoomOut')?.addEventListener('click', () => {
+    setPaperZoom(currentPaperZoom - 0.15);
+  });
+  document.getElementById('zoomLevelText')?.addEventListener('click', () => {
+    setPaperZoom(1.0);
+    showToast('🔍 รีเซ็ตขนาดหน้ากระดาษเป็น 100%', 'info');
+  });
+
+  // Trackpad pinch or Ctrl + Wheel zoom on Notebook Panel
+  const notebookPanel = document.querySelector('.notebook-panel');
+  if (notebookPanel) {
+    notebookPanel.addEventListener('wheel', (e) => {
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        const delta = e.deltaY * -0.003;
+        setPaperZoom(currentPaperZoom + delta);
+      }
+    }, { passive: false });
+
+    // Multi-Touch Pinch-to-Zoom (for iPad / Touch Screens)
+    let initialPinchDist = null;
+    let initialZoomOnPinch = 1.0;
+
+    notebookPanel.addEventListener('touchstart', (e) => {
+      if (e.touches && e.touches.length === 2) {
+        initialPinchDist = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+        initialZoomOnPinch = currentPaperZoom;
+      }
+    }, { passive: true });
+
+    notebookPanel.addEventListener('touchmove', (e) => {
+      if (e.touches && e.touches.length === 2 && initialPinchDist) {
+        e.preventDefault();
+        const currentDist = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+        const factor = currentDist / initialPinchDist;
+        setPaperZoom(initialZoomOnPinch * factor);
+      }
+    }, { passive: false });
+
+    const endPinch = (e) => {
+      if (!e.touches || e.touches.length < 2) {
+        initialPinchDist = null;
+      }
+    };
+    notebookPanel.addEventListener('touchend', endPinch);
+    notebookPanel.addEventListener('touchcancel', endPinch);
+  }
+
+  // Colors
+  document.querySelectorAll('.color-swatch').forEach(swatch => {
+    swatch.addEventListener('click', (e) => {
+      document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+      const s = e.currentTarget;
+      s.classList.add('active');
+      drawingEngine.setColor(s.dataset.color);
+      
+      document.querySelectorAll('.tool-btn[data-tool]').forEach(b => b.classList.remove('active'));
+      document.querySelector('.tool-btn[data-tool="pen"]').classList.add('active');
+    });
+  });
+
+  // Clear Canvas
+  document.getElementById('btnClearDraw').addEventListener('click', () => {
+    if (confirm('ต้องการล้างหน้ากระดาษจดโน้ตและลายมือทั้งหมดหรือไม่?')) {
+      drawingEngine.clear();
+      document.querySelectorAll('.answer-input').forEach(inp => {
+        inp.value = '';
+        inp.classList.remove('input-correct', 'input-incorrect');
+      });
+      saveInputs();
+      showToast('🧹 ล้างหน้ากระดาษและคำตอบเรียบร้อยแล้ว', 'info');
+    }
+  });
+
+  // Save inputs when typing & clear validation borders
+  document.getElementById('notebookContainer').addEventListener('input', (e) => {
+    if (e.target.classList.contains('answer-input')) {
+      e.target.classList.remove('input-correct', 'input-incorrect');
+      saveInputs();
+    }
+  });
+
+  // Real-Time Answer Check ("ตรวจคำตอบ")
+  document.getElementById('btnCheckAnswers')?.addEventListener('click', () => {
+    checkAnswers(true);
+  });
+
+  // Student Profile Inputs
+  loadStudentProfile();
+  ['studentNameInput', 'studentRoomInput', 'studentNoInput'].forEach(id => {
+    document.getElementById(id)?.addEventListener('input', saveStudentProfile);
+  });
+
+  // Toggle Theory Panel
+  document.getElementById('btnTogglePanel')?.addEventListener('click', (e) => {
+    const leftPanel = document.querySelector('.content-panel');
+    const rightPanel = document.querySelector('.notebook-panel');
+    leftPanel.classList.toggle('collapsed');
+    rightPanel.classList.toggle('expanded');
+    
+    const btn = e.currentTarget;
+    if (leftPanel.classList.contains('collapsed')) {
+      btn.innerHTML = '<i class="ph ph-arrows-in-line-horizontal"></i>';
+      btn.title = 'แสดงเนื้อหาทฤษฎี';
+    } else {
+      btn.innerHTML = '<i class="ph ph-arrows-out-line-horizontal"></i>';
+      btn.title = 'ซ่อนเนื้อหาทฤษฎี';
+    }
+    setTimeout(() => { if (drawingEngine) drawingEngine.resize(); }, 350);
+  });
+
+  // Fullscreen Mode
+  document.getElementById('btnFullscreen')?.addEventListener('click', toggleFullscreen);
+
+  // Toggle Inputs Lock
+  document.getElementById('btnToggleInputsLock')?.addEventListener('click', toggleInputsLock);
+
+  // Pen-Only Mode (Palm Rejection)
+  const btnPenOnlyMode = document.getElementById('btnPenOnlyMode');
+  if (btnPenOnlyMode) {
+    btnPenOnlyMode.addEventListener('click', () => {
+      if (!drawingEngine) return;
+      const nextState = !drawingEngine.penOnlyMode;
+      drawingEngine.setPenOnlyMode(nextState);
+      if (nextState) {
+        btnPenOnlyMode.classList.add('active');
+        btnPenOnlyMode.title = 'โหมดห้ามมือเขียน: ใช้นิ้วเลื่อนเอกสาร และใช้ปากกาเขียน';
+        showToast('✋ เปิดโหมดห้ามมือเขียน: ใช้นิ้วเลื่อนเอกสารได้ และใช้ปากกาเขียน', 'info');
+      } else {
+        btnPenOnlyMode.classList.remove('active');
+        btnPenOnlyMode.title = 'โหมดวาดทั่วไป: เขียนได้ทั้งนิ้วและปากกา';
+        showToast('✏️ โหมดวาดทั่วไป: เขียนได้ทั้งนิ้วและปากกา', 'info');
+      }
+    });
+  }
+
+  // Highlight & Ink On-Top Layer (Mix-blend-mode multiply over problem text)
+  const btnHighlightLayer = document.getElementById('btnHighlightLayer');
+  if (btnHighlightLayer) {
+    btnHighlightLayer.addEventListener('click', () => {
+      if (!drawingEngine) return;
+      const nextState = !drawingEngine.highlightOnTop;
+      drawingEngine.setHighlightOnTop(nextState);
+      if (nextState) {
+        btnHighlightLayer.classList.add('active');
+        btnHighlightLayer.title = 'ลำดับชั้น: ปากกาและไฮไลต์อยู่บนสุดทับโจทย์ (เปิดอยู่)';
+        showToast('📑 ปากกาและไฮไลต์อยู่บนสุดทับโจทย์ (เปิด Blend Multiply)', 'info');
+      } else {
+        btnHighlightLayer.classList.remove('active');
+        btnHighlightLayer.title = 'ลำดับชั้น: ลายเส้นอยู่ด้านล่างข้อความโจทย์';
+        showToast('📄 ลายเส้นอยู่ใต้ตัวหนังสือโจทย์', 'info');
+      }
+    });
+  }
+
+  // Modal Actions
+  document.getElementById('btnSubmit')?.addEventListener('click', () => {
+    updateModalGradingSummary();
+    document.getElementById('submitModal').style.display = 'flex';
+  });
+  
+  document.getElementById('btnCloseModal')?.addEventListener('click', () => {
+    document.getElementById('submitModal').style.display = 'none';
+  });
+
+  document.getElementById('btnCancelSubmit')?.addEventListener('click', () => {
+    document.getElementById('submitModal').style.display = 'none';
+  });
+
+  document.getElementById('btnPrintWorksheet')?.addEventListener('click', () => {
+    printWorksheet();
+  });
+
+  document.getElementById('btnSubmitToSheets')?.addEventListener('click', () => {
+    submitToGoogleSheets();
+  });
+
+  document.getElementById('btnCopyReport')?.addEventListener('click', () => {
+    copyReportSummary();
+  });
+
+  // Expand space delegated
+  document.getElementById('notebookContainer').addEventListener('click', (e) => {
+    if (e.target.classList.contains('expand-btn')) {
+      const block = e.target.closest('.problem-block');
+      const spacer = block.querySelector('.spacer-div');
+      const curH = parseInt(spacer.style.height || 0);
+      spacer.style.height = (curH + 160) + 'px';
+      drawingEngine.resize();
+    }
+  });
+}
+
+// ตัดเลขลำดับ ("1." "2." ...) ที่ขึ้นต้นบรรทัดวิธีทำออก
+// และเติมชื่อตัวแปรซ้ำที่บรรทัดสุดท้ายของแต่ละชุดสมการ เช่น
+//   F  =  mg          →  F  =  mg
+//      =  10 x 10            =  10 x 10
+//      =  100 N        F     =  100 N
+function polishSolutionSteps(root) {
+  var NUM = /^(\s|&nbsp;)*\d+[.)]\s*/;
+
+  // บรรทัดคำอธิบายของวิธีทำ
+  root.querySelectorAll('.solution-guide .step').forEach(function(el) {
+    el.innerHTML = el.innerHTML.replace(NUM, '');
+  });
+
+  // ตารางคำนวณ: 3 ช่องต่อแถว (ตัวแปร / = / นิพจน์)
+  root.querySelectorAll('.calc-steps').forEach(function(grid) {
+    var cells = Array.prototype.slice.call(grid.children);
+    if (cells.length % 3 !== 0) return;
+    var rows = [];
+    for (var i = 0; i < cells.length; i += 3) rows.push(cells.slice(i, i + 3));
+
+    rows.forEach(function(r) { r[0].innerHTML = r[0].innerHTML.replace(NUM, ''); });
+
+    var isBlank = function(c) { return c.innerHTML.replace(/(&nbsp;|\s)/g, '') === ''; };
+    for (var a = 0; a < rows.length; a++) {
+      if (isBlank(rows[a][0])) continue;          // แถวเริ่มต้นของชุดต้องมีชื่อตัวแปร
+      var b = a;
+      while (b + 1 < rows.length && isBlank(rows[b + 1][0])) b++;
+      if (b > a) rows[b][0].innerHTML = rows[a][0].innerHTML;   // เติมตัวแปรที่บรรทัดสุดท้าย
+      a = b;
+    }
+  });
+}
+
+function renderApp() {
+  const data = physicsData.topics[currentTopic];
+  if (!data) return;
+  const level = effectiveLevel();
+  updateLevelSwitch();
+
+  // 1. Render Left Panel (Theory)
+  const theoryContainer = document.getElementById('theoryContainer');
+  if (theoryContainer) {
+    theoryContainer.innerHTML = data.theory || '';
+    // นิยามของเรื่อง (ไทยตาม สสวท. + อังกฤษจากตำรา) วางใต้หัวเรื่อง ส่วนย่อหน้านำ (มุมมองดอทเวกเตอร์) อยู่ติดสมการตั้งต้น
+    const defs = typeof definitionsHTML === 'function' ? definitionsHTML(currentTopic) : '';
+    const lead = theoryContainer.querySelector('.lead');
+    if (defs && lead) lead.insertAdjacentHTML('beforebegin', defs);
+  }
+
+  // 2. Render Right Panel (Problems)
+  const notebookContainer = document.getElementById('notebookContainer');
+  let html = '';
+  
+  if (data.problems) {
+    data.problems.forEach((prob, idx) => {
+      html += `<div class="problem-block" data-id="${prob.id}">`;
+      html += `<div class="problem-text">ข้อ ${idx + 1}. ${prob.text}</div>`;
+      
+      // สมการหลัก (รูปเวกเตอร์) แสดงก่อนสมการที่ใช้คำนวณ
+      const mainEq = (level !== 'advanced' && typeof mainEquationHTML === 'function')
+        ? mainEquationHTML(prob, currentTopic) : '';
+
+      if (level === 'beginner') {
+        if (prob.hints) {
+          const hintText = Array.isArray(prob.hints) ? prob.hints.join(' | ') : prob.hints;
+          html += `<div class="hint-box"><b>ไกด์นำทาง:</b> ${hintText}</div>`;
+        }
+        html += mainEq;
+        html += `<div class="solution-guide">${prob.guide}</div>`;
+      } else if (level === 'intermediate') {
+        html += mainEq;
+        html += `<div class="solution-guide">${prob.intermediateHtml || ''}</div>`;
+        html += `<div class="spacer-div" style="height:256px;"></div>`;
+        html += `<button class="sm expand-btn" style="position:relative; z-index:10; margin-top:16px; padding:4px 8px; border-radius:4px; border:1px solid #ccc; cursor:pointer; background:#fff;">+ เพิ่มพื้นที่ทด</button>`;
+      } else {
+        html += `<div class="solution-guide">${prob.advancedHtml || ''}</div>`;
+        html += `<div class="spacer-div" style="height:256px;"></div>`;
+        html += `<button class="sm expand-btn" style="position:relative; z-index:10; margin-top:16px; padding:4px 8px; border-radius:4px; border:1px solid #ccc; cursor:pointer; background:#fff;">+ เพิ่มพื้นที่ทด</button>`;
+      }
+      
+      html += `</div>`;
+    });
+  }
+
+  if (notebookContainer) notebookContainer.innerHTML = html;
+
+  // 2.5 จัดวิธีทำให้อ่านง่าย: ตัดเลขลำดับข้อย่อยออก และเติมตัวแปรที่บรรทัดสุดท้ายของแต่ละชุดสมการ
+  if (notebookContainer) polishSolutionSteps(notebookContainer);
+
+  // 3. Render Math using KaTeX safely
+  try {
+    if (typeof renderMathInElement === 'function') {
+      renderMathInElement(document.body, {
+        delimiters: [
+          {left: '$$', right: '$$', display: true},
+          {left: '$', right: '$', display: false}
+        ],
+        throwOnError: false,
+        strict: false
+      });
+    }
+  } catch (mathErr) {
+    console.warn('KaTeX rendering error:', mathErr);
+  }
+
+  // 4. Initialize Simulation if available
+  try {
+    if (currentTopic === 'work' && typeof initWorkSimulation === 'function') {
+      initWorkSimulation();
+    } else if (currentTopic === 'power' && typeof initPowerSimulation === 'function') {
+      initPowerSimulation();
+    } else if (currentTopic === 'kinetic' && typeof initKineticSimulation === 'function') {
+      initKineticSimulation();
+    } else if (currentTopic === 'potential' && typeof initPotentialSimulation === 'function') {
+      initPotentialSimulation();
+    } else if (currentTopic === 'conservation' && typeof initConservationSimulation === 'function') {
+      initConservationSimulation();
+    } else if (currentTopic === 'momentum' && typeof initMomentumSim === 'function') {
+      initMomentumSim();
+    } else if (currentTopic === 'impulse' && typeof initImpulseSim === 'function') {
+      initImpulseSim();
+    } else if (currentTopic === 'collision' && typeof initCollisionSim === 'function') {
+      initCollisionSim();
+    } else if (currentTopic === 'projectile' && typeof initProjectileSim === 'function') {
+      initProjectileSim();
+    } else if (currentTopic === 'circular' && typeof initCircularSim === 'function') {
+      initCircularSim();
+    } else if (currentTopic === 'shm' && typeof initSHMSim === 'function') {
+      initSHMSim();
+    }
+  } catch (simErr) {
+    console.warn('Simulation init error:', simErr);
+  }
+
+  // Restore inputs after re-render
+  try { restoreInputs(); } catch(e) {}
+  // Set up answer inputs protection
+  try { setupAnswerInputProtection(); } catch(e) {}
+  // Ensure canvas resizes to fit new content height and apply current zoom
+  setTimeout(() => {
+    try {
+      if (drawingEngine) drawingEngine.resize();
+      setPaperZoom(currentPaperZoom);
+    } catch(e) {}
+  }, 100);
+}
+
+function saveInputs() {
+  try {
+    const inputs = document.querySelectorAll('.answer-input');
+    const values = Array.from(inputs).map(inp => inp.value);
+    localStorage.setItem('physics1_inputs_' + currentTopic + '_' + effectiveLevel(), JSON.stringify(values));
+  } catch(e) {
+    console.warn('saveInputs error:', e);
+  }
+}
+
+function loadInputs() {
+  // Input loading is handled after render
+}
+
+function restoreInputs() {
+  const saved = localStorage.getItem('physics1_inputs_' + currentTopic + '_' + effectiveLevel());
+  if (saved) {
+    const values = JSON.parse(saved);
+    const inputs = document.querySelectorAll('.answer-input');
+    inputs.forEach((inp, i) => {
+      if (values[i] !== undefined) inp.value = values[i];
+    });
+  }
+}
+
+
+// --- Safari iOS Gesture Pinch Zoom for Paper Only ---
+let initialZoomOnGesture = 1.0;
+
+document.addEventListener('gesturestart', function(e) {
+  e.preventDefault();
+  initialZoomOnGesture = currentPaperZoom;
+});
+
+document.addEventListener('gesturechange', function(e) {
+  e.preventDefault();
+  const newZoom = initialZoomOnGesture * e.scale;
+  setPaperZoom(newZoom);
+});
+
+document.addEventListener('gestureend', function(e) {
+  e.preventDefault();
+});
+
+// --- Fullscreen Mode Logic ---
+function toggleFullscreen() {
+  const isFull = !!(document.fullscreenElement || document.webkitFullscreenElement);
+  if (!isFull) {
+    const docEl = document.documentElement;
+    if (docEl.requestFullscreen) {
+      docEl.requestFullscreen().catch(err => console.warn('Fullscreen error:', err));
+    } else if (docEl.webkitRequestFullscreen) {
+      docEl.webkitRequestFullscreen();
+    }
+  } else {
+    if (document.exitFullscreen) {
+      document.exitFullscreen().catch(err => console.warn('Exit fullscreen error:', err));
+    } else if (document.webkitExitFullscreen) {
+      document.webkitExitFullscreen();
+    }
+  }
+}
+
+function updateFullscreenUI() {
+  const isFull = !!(document.fullscreenElement || document.webkitFullscreenElement);
+  const btn = document.getElementById('btnFullscreen');
+  if (btn) {
+    btn.innerHTML = isFull 
+      ? '<i class="ph ph-corners-in"></i>' 
+      : '<i class="ph ph-corners-out"></i>';
+    btn.title = isFull ? 'ออกจากโหมดเต็มจอ (Fullscreen)' : 'เปิดโหมดเต็มจอ (Fullscreen)';
+  }
+  setTimeout(() => {
+    try {
+      if (drawingEngine) drawingEngine.resize();
+      setPaperZoom(currentPaperZoom);
+    } catch(e) {}
+  }, 100);
+}
+
+document.addEventListener('fullscreenchange', updateFullscreenUI);
+document.addEventListener('webkitfullscreenchange', updateFullscreenUI);
+
+// --- Answer Inputs Protection System ---
+let inputsProtected = true;
+
+function setupAnswerInputProtection() {
+  const container = document.getElementById('notebookContainer');
+  if (!container) return;
+
+  const inputs = container.querySelectorAll('.answer-input');
+  inputs.forEach(input => {
+    if (inputsProtected) {
+      input.readOnly = true;
+      input.classList.add('input-protected');
+      input.title = 'ช่องคำตอบถูกล็อกอยู่ — แตะเพื่อปลดล็อกและพิมพ์ตอบ';
+    } else {
+      input.readOnly = false;
+      input.classList.remove('input-protected');
+      input.title = 'พิมพ์คำตอบ';
+    }
+
+    if (!input.dataset.protectedBound) {
+      input.dataset.protectedBound = 'true';
+
+      input.addEventListener('click', (e) => {
+        if (input.classList.contains('input-protected')) {
+          e.preventDefault();
+          e.stopPropagation();
+          input.readOnly = false;
+          input.classList.remove('input-protected');
+          showToast('🔓 ปลดล็อกช่องตอบแล้ว: พร้อมพิมพ์ตัวเลขคำตอบ', 'info');
+          input.focus();
+          try {
+            const len = input.value.length;
+            input.setSelectionRange(len, len);
+          } catch (err) {}
+        }
+      });
+
+      input.addEventListener('blur', () => {
+        if (inputsProtected) {
+          input.readOnly = true;
+          input.classList.add('input-protected');
+        }
+        saveInputs();
+      });
+
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          input.blur();
+        }
+      });
+    }
+  });
+
+  updateInputsLockUI();
+}
+
+function updateInputsLockUI() {
+  const btn = document.getElementById('btnToggleInputsLock');
+  if (btn) {
+    if (inputsProtected) {
+      btn.classList.add('active');
+      btn.innerHTML = '<i class="ph ph-lock-key"></i>';
+      btn.title = 'ช่องคำตอบถูกล็อกอยู่ (แตะช่องเพื่อพิมพ์ตอบ)';
+    } else {
+      btn.classList.remove('active');
+      btn.innerHTML = '<i class="ph ph-lock-key-open"></i>';
+      btn.title = 'ช่องคำตอบปลดล็อกแล้ว (พร้อมพิมพ์)';
+    }
+  }
+}
+
+function toggleInputsLock() {
+  inputsProtected = !inputsProtected;
+  const container = document.getElementById('notebookContainer');
+  if (container) {
+    const inputs = container.querySelectorAll('.answer-input');
+    inputs.forEach(input => {
+      if (inputsProtected) {
+        input.readOnly = true;
+        input.classList.add('input-protected');
+        input.title = 'ช่องคำตอบถูกล็อกอยู่ — แตะเพื่อปลดล็อกและพิมพ์ตอบ';
+      } else {
+        input.readOnly = false;
+        input.classList.remove('input-protected');
+        input.title = 'พิมพ์คำตอบ';
+      }
+    });
+  }
+  updateInputsLockUI();
+  if (inputsProtected) {
+    showToast('🔒 ล็อกช่องคำตอบทั้งหมดแล้ว ป้องกันปากกาเขียนโดน', 'info');
+  } else {
+    showToast('🔓 ปลดล็อกช่องคำตอบทั้งหมดแล้ว พร้อมพิมพ์คำตอบ', 'info');
+  }
+}
+
+
+// ==========================================
+// Grading & Student Submission Dashboard
+// ==========================================
+
+function getProblemAnswer(prob) {
+  if (prob.answer !== undefined) return String(prob.answer).trim();
+  
+  // 1. Check data-answer in guide, intermediateHtml, or advancedHtml
+  const allHtml = (prob.guide || '') + (prob.intermediateHtml || '') + (prob.advancedHtml || '');
+  const dataAnsMatch = allHtml.match(/data-answer=["']([^"']+)["']/);
+  if (dataAnsMatch) return dataAnsMatch[1].trim();
+  
+  // 2. Check placeholder in guide
+  const placeholderMatch = (prob.guide || '').match(/placeholder=["']([^"']+)["']/);
+  if (placeholderMatch && placeholderMatch[1] !== 'คำตอบ') return placeholderMatch[1].trim();
+  
+  // 3. Check placeholder in intermediateHtml / advancedHtml
+  const interMatch = (prob.intermediateHtml || '').match(/placeholder=["']([^"']+)["']/);
+  if (interMatch && interMatch[1] !== 'คำตอบ') return interMatch[1].trim();
+
+  // 4. Check &= ... at the end of guide LaTeX
+  const eqMatches = [...(prob.guide || '').matchAll(/&=\s*([0-9.,]+)(?:\\text|&nbsp;|\s|\$|<)/g)];
+  if (eqMatches.length > 0) {
+    const last = eqMatches[eqMatches.length - 1];
+    return last[1].replace(/,/g, '').trim();
+  }
+
+  // 5. Fallback regex for final number before \text in guide
+  const lastNumMatches = [...(prob.guide || '').matchAll(/([0-9]+(?:\.[0-9]+)?)\s*\\text/g)];
+  if (lastNumMatches.length > 0) {
+    return lastNumMatches[lastNumMatches.length - 1][1].trim();
+  }
+
+  return null;
+}
+
+function evaluateAnswer(userVal, correctVal) {
+  if (!userVal || userVal.trim() === '') return { isAnswered: false, isCorrect: false };
+  const u = userVal.trim().replace(/,/g, '');
+  const c = String(correctVal).trim().replace(/,/g, '');
+  
+  // Exact string match (case-insensitive)
+  if (u.toLowerCase() === c.toLowerCase()) {
+    return { isAnswered: true, isCorrect: true };
+  }
+  
+  // Numeric comparison with tolerance (±2% or ±0.15)
+  const uNum = parseFloat(u);
+  const cNum = parseFloat(c);
+  if (!isNaN(uNum) && !isNaN(cNum)) {
+    const diff = Math.abs(uNum - cNum);
+    const tol = Math.max(0.15, Math.abs(cNum) * 0.02);
+    if (diff <= tol) {
+      return { isAnswered: true, isCorrect: true };
+    }
+  }
+  
+  return { isAnswered: true, isCorrect: false };
+}
+
+function checkAnswers(showToastNotice = true) {
+  const topic = physicsData.topics[currentTopic];
+  if (!topic || !topic.problems) return { total: 0, correct: 0, answered: 0, percentage: 0, details: [] };
+
+  const details = [];
+  let correctCount = 0;
+  let answeredCount = 0;
+
+  const blocks = document.querySelectorAll('.problem-block');
+  blocks.forEach((block, idx) => {
+    const prob = topic.problems[idx];
+    if (!prob) return;
+    const input = block.querySelector('.answer-input');
+    const userVal = input ? input.value : '';
+    const correctAns = getProblemAnswer(prob);
+
+    const evalResult = evaluateAnswer(userVal, correctAns);
+
+    if (input) {
+      input.classList.remove('input-correct', 'input-incorrect');
+      if (evalResult.isAnswered) {
+        if (evalResult.isCorrect) {
+          input.classList.add('input-correct');
+          correctCount++;
+        } else {
+          input.classList.add('input-incorrect');
+        }
+        answeredCount++;
+      }
+    }
+
+    details.push({
+      index: idx + 1,
+      id: prob.id,
+      text: prob.text,
+      userAnswer: userVal || '(ยังไม่ตอบ)',
+      correctAnswer: correctAns || '-',
+      isAnswered: evalResult.isAnswered,
+      isCorrect: evalResult.isCorrect
+    });
+  });
+
+  const total = topic.problems.length;
+  const pct = total > 0 ? ((correctCount / total) * 100).toFixed(1) : '0.0';
+
+  if (showToastNotice) {
+    if (answeredCount === 0) {
+      showToast('⚠️ ยังไม่ได้กรอกคำตอบ กรุณากรอกคำตอบลงในช่องก่อนตรวจ', 'warning');
+    } else {
+      showToast(`🎯 ตรวจเสร็จสิ้น: ถูกต้อง ${correctCount} จาก ${total} ข้อ (${pct}%)`, correctCount === total ? 'success' : 'info');
+    }
+  }
+
+  return { total, correct: correctCount, answered: answeredCount, percentage: pct, details };
+}
+
+function loadStudentProfile() {
+  const saved = localStorage.getItem('physics1_student_profile');
+  if (saved) {
+    try {
+      const data = JSON.parse(saved);
+      if (document.getElementById('studentNameInput') && data.name) {
+        document.getElementById('studentNameInput').value = data.name;
+      }
+      if (document.getElementById('studentRoomInput') && data.room) {
+        document.getElementById('studentRoomInput').value = data.room;
+      }
+      if (document.getElementById('studentNoInput') && data.no) {
+        document.getElementById('studentNoInput').value = data.no;
+      }
+    } catch(e) {}
+  }
+}
+
+function saveStudentProfile() {
+  const name = document.getElementById('studentNameInput')?.value || '';
+  const room = document.getElementById('studentRoomInput')?.value || '';
+  const no = document.getElementById('studentNoInput')?.value || '';
+  localStorage.setItem('physics1_student_profile', JSON.stringify({ name, room, no }));
+}
+
+function updateModalGradingSummary() {
+  const result = checkAnswers(false);
+  const topic = physicsData.topics[currentTopic];
+  
+  // Topic title
+  const topicTitleEl = document.getElementById('summaryTopicTitle');
+  if (topicTitleEl && topic) topicTitleEl.textContent = topic.title;
+
+  // Score big
+  const scoreBigEl = document.getElementById('summaryScoreBig');
+  if (scoreBigEl) scoreBigEl.textContent = `${result.correct} / ${result.total}`;
+
+  // Percentage
+  const pctEl = document.getElementById('summaryPercentageText');
+  if (pctEl) pctEl.textContent = `คิดเป็น ${result.percentage}% (ตอบแล้ว ${result.answered}/${result.total} ข้อ)`;
+
+  // Badge
+  const badgeEl = document.getElementById('summaryBadge');
+  if (badgeEl) {
+    const numPct = parseFloat(result.percentage);
+    if (numPct >= 80) {
+      badgeEl.textContent = '🌟 ยอดเยี่ยม (ดีมาก)';
+      badgeEl.style.background = '#16a34a';
+      badgeEl.style.color = '#ffffff';
+    } else if (numPct >= 60) {
+      badgeEl.textContent = '👍 ผ่านเกณฑ์ (ดี)';
+      badgeEl.style.background = '#2563eb';
+      badgeEl.style.color = '#ffffff';
+    } else if (numPct >= 50) {
+      badgeEl.textContent = '⚡ ผ่านเกณฑ์ขั้นต่ำ';
+      badgeEl.style.background = '#d97706';
+      badgeEl.style.color = '#ffffff';
+    } else {
+      badgeEl.textContent = '📖 ควรทบทวนเพิ่มเติม';
+      badgeEl.style.background = '#e11d48';
+      badgeEl.style.color = '#ffffff';
+    }
+  }
+
+  // Question Breakdown Table
+  const breakdownList = document.getElementById('questionBreakdownList');
+  if (breakdownList) {
+    let tableHtml = `
+      <table style="width:100%; border-collapse:collapse; text-align:left;">
+        <thead>
+          <tr style="border-bottom:2px solid #e2e8f0; color:#475569; font-size:0.8rem;">
+            <th style="padding:6px;">ข้อ</th>
+            <th style="padding:6px;">คำตอบของคุณ</th>
+            <th style="padding:6px;">คำตอบที่ถูก</th>
+            <th style="padding:6px; text-align:center;">สถานะ</th>
+          </tr>
+        </thead>
+        <tbody>
+    `;
+    result.details.forEach(d => {
+      let statusIcon = '⏳ <span style="color:#64748b;">เว้นว่าง</span>';
+      if (d.isAnswered) {
+        statusIcon = d.isCorrect
+          ? '✅ <span style="color:#16a34a; font-weight:600;">ถูกต้อง</span>'
+          : '❌ <span style="color:#ef4444; font-weight:600;">ไม่ถูกต้อง</span>';
+      }
+      tableHtml += `
+        <tr style="border-bottom:1px solid #f1f5f9;">
+          <td style="padding:6px; font-weight:600;">${d.index}</td>
+          <td style="padding:6px; color:${d.isCorrect ? '#16a34a' : '#ef4444'}; font-family:monospace;">${d.userAnswer}</td>
+          <td style="padding:6px; color:#2563eb; font-family:monospace;">${d.correctAnswer}</td>
+          <td style="padding:6px; text-align:center;">${statusIcon}</td>
+        </tr>
+      `;
+    });
+    tableHtml += `</tbody></table>`;
+    breakdownList.innerHTML = tableHtml;
+  }
+}
+
+function printWorksheet() {
+  saveStudentProfile();
+  const profile = JSON.parse(localStorage.getItem('physics1_student_profile') || '{}');
+  const topic = physicsData.topics[currentTopic];
+  const result = checkAnswers(false);
+
+  // Close modal before printing
+  document.getElementById('submitModal').style.display = 'none';
+
+  // Inject or update official print header banner
+  let printHeader = document.getElementById('officialPrintHeader');
+  if (!printHeader) {
+    printHeader = document.createElement('div');
+    printHeader.id = 'officialPrintHeader';
+    printHeader.className = 'print-header-banner';
+    const container = document.getElementById('notebookContainer');
+    container.parentNode.insertBefore(printHeader, container);
+  }
+
+  const now = new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
+  printHeader.innerHTML = `
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2px solid #000; padding-bottom:10px; margin-bottom:14px;">
+      <div>
+        <div style="font-size:15pt; font-weight:bold;">โรงเรียน...........................................................</div>
+        <div style="font-size:12pt; font-weight:600;">ใบงานแบบฝึกหัดฟิสิกส์ เรื่อง: ${topic ? topic.title : currentTopic} (ระดับ: ${effectiveLevel()})</div>
+        <div style="font-size:11pt; margin-top:4px;">
+          ชื่อ-สกุล: <b>${profile.name || '........................................................'}</b> &nbsp;&nbsp;&nbsp;
+          ชั้น: <b>${profile.room || '.........'}</b> &nbsp;&nbsp;&nbsp;
+          เลขที่: <b>${profile.no || '.........'}</b>
+        </div>
+      </div>
+      <div style="text-align:right; border:1px solid #000; padding:6px 12px; border-radius:6px;">
+        <div style="font-size:10pt; color:#555;">คะแนนที่ได้</div>
+        <div style="font-size:16pt; font-weight:bold;">${result.correct} / ${result.total}</div>
+        <div style="font-size:9pt;">วันที่: ${now}</div>
+      </div>
+    </div>
+  `;
+
+  setTimeout(() => {
+    window.print();
+  }, 150);
+}
+
+function copyReportSummary() {
+  saveStudentProfile();
+  const profile = JSON.parse(localStorage.getItem('physics1_student_profile') || '{}');
+  const topic = physicsData.topics[currentTopic];
+  const result = checkAnswers(false);
+  const now = new Date().toLocaleString('th-TH');
+
+  const text = `📊 ผลการส่งงานฟิสิกส์ออนไลน์ (Physics2App)\n` +
+    `👤 ชื่อ-สกุล: ${profile.name || '(ไม่ได้ระบุ)'} ชั้น: ${profile.room || '-'} เลขที่: ${profile.no || '-'}\n` +
+    `📚 บทเรียน: ${topic ? topic.title : currentTopic} [ระดับ: ${effectiveLevel()}]\n` +
+    `🎯 คะแนนที่ได้: ${result.correct}/${result.total} (${result.percentage}%)\n` +
+    `📅 เวลาส่ง: ${now}\n` +
+    `📝 รายละเอียด: ตอบถูก ${result.correct} ข้อ, ตอบผิด ${result.answered - result.correct} ข้อ, เว้นว่าง ${result.total - result.answered} ข้อ`;
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => {
+      showToast('📋 คัดลอกผลสรุปคะแนนเรียบร้อยแล้ว พร้อมส่งใน LINE/Classroom!', 'success');
+    }).catch(() => {
+      prompt('คัดลอกข้อความสรุปด้านล่างนี้:', text);
+    });
+  } else {
+    prompt('คัดลอกข้อความสรุปด้านล่างนี้:', text);
+  }
+}
+
+function submitToGoogleSheets() {
+  saveStudentProfile();
+  const profile = JSON.parse(localStorage.getItem('physics1_student_profile') || '{}');
+  const topic = physicsData.topics[currentTopic];
+  const result = checkAnswers(false);
+
+  if (!profile.name || profile.name.trim() === '') {
+    showToast('⚠️ กรุณากรอก ชื่อ - นามสกุล ก่อนส่งงาน', 'warning');
+    document.getElementById('studentNameInput')?.focus();
+    return;
+  }
+
+  let sheetsUrl = localStorage.getItem('physics1_sheets_webhook_url');
+  if (!sheetsUrl) {
+    sheetsUrl = prompt(
+      'กรุณาใส่ Google Apps Script Web App URL สำหรับรับข้อมูลคะแนน (หากยังไม่มี ให้กดยืนยันเพื่อบันทึกจำลอง):',
+      'https://script.google.com/macros/s/AKfycbz_MOCK_PHYSICS_WEBAPP/exec'
+    );
+    if (sheetsUrl) {
+      localStorage.setItem('physics1_sheets_webhook_url', sheetsUrl);
+    }
+  }
+
+  const payload = {
+    timestamp: new Date().toISOString(),
+    studentName: profile.name,
+    room: profile.room || '',
+    number: profile.no || '',
+    topicId: currentTopic,
+    topicTitle: topic ? topic.title : currentTopic,
+    level: effectiveLevel(),
+    score: result.correct,
+    total: result.total,
+    percentage: result.percentage,
+    details: result.details
+  };
+
+  showToast('⏳ กำลังบันทึกคะแนนเข้า Google Sheets...', 'info');
+
+  if (sheetsUrl && !sheetsUrl.includes('MOCK')) {
+    fetch(sheetsUrl, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    }).then(() => {
+      showToast('✅ ส่งคะแนนเข้า Google Sheets เรียบร้อยแล้ว!', 'success');
+      document.getElementById('submitModal').style.display = 'none';
+    }).catch(err => {
+      console.warn('Sheets submission error:', err);
+      showToast('✅ บันทึกข้อมูลสำเร็จ (โหมดจำลองออฟไลน์)', 'success');
+      document.getElementById('submitModal').style.display = 'none';
+    });
+  } else {
+    setTimeout(() => {
+      showToast('✅ ส่งคะแนนเข้า Google Sheets จำลองสำเร็จ!', 'success');
+      document.getElementById('submitModal').style.display = 'none';
+    }, 600);
+  }
+}
+
+let toastTimeout = null;
+function showToast(message, type = 'info', duration = 3500) {
+  const toast = document.getElementById('toastNotification');
+  if (!toast) return;
+
+  clearTimeout(toastTimeout);
+  toast.textContent = message;
+  toast.className = 'toast-notification show';
+  
+  if (type === 'success') {
+    toast.style.borderColor = '#22c55e';
+    toast.style.color = '#15803d';
+  } else if (type === 'warning') {
+    toast.style.borderColor = '#f59e0b';
+    toast.style.color = '#b45309';
+  } else {
+    toast.style.borderColor = '#3b82f6';
+    toast.style.color = '#1d4ed8';
+  }
+
+  toastTimeout = setTimeout(() => {
+    toast.className = 'toast-notification';
+  }, duration);
+}
+
+// --- Suppress Native iOS/Browser Text Selection & Callout Popups ("คัดลอก | แปลภาษา | ค้นหา") ---
+document.addEventListener('selectstart', (e) => {
+  // Allow text selection only when user is typing inside unlocked inputs
+  if (e.target.tagName === 'INPUT' && !e.target.readOnly) {
+    return;
+  }
+  e.preventDefault();
+  return false;
+}, { passive: false });
+
+document.addEventListener('contextmenu', (e) => {
+  // Suppress long-press iOS context callouts ("คัดลอก | แปลภาษา | ค้นหา") across the app
+  if (e.target.tagName === 'INPUT' && !e.target.readOnly) {
+    return;
+  }
+  e.preventDefault();
+  return false;
+}, { passive: false });
+
+// Instantly clear any accidental selection outside active inputs
+document.addEventListener('selectionchange', () => {
+  const activeEl = document.activeElement;
+  if (activeEl && activeEl.tagName === 'INPUT' && !activeEl.readOnly) {
+    return;
+  }
+  if (window.getSelection) {
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0 && !sel.isCollapsed) {
+      sel.removeAllRanges();
+    }
+  }
+});

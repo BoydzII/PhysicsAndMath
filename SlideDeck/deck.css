@@ -1,0 +1,266 @@
+/* สไลด์สอน — สไตล์ร่วมของทุกสำรับ (ฟิสิกส์ 1 · ฟิสิกส์ 2) · โหลดจาก <link href="../SlideDeck/deck.css"> */
+/* ── โทเคน ─────────────────────────────────────────── */
+:root{
+  --paper:#f5f3ee; --paper2:#ebe8e0; --ink:#17181c; --ink2:#55565c; --ink3:#8d8c88;
+  --rule:#d9d5cb; --acc:#e4572e; --acc-soft:color-mix(in srgb,var(--acc) 12%,var(--paper));
+  --pos:#1f8a4c; --neg:#c93a2b; --zero:#6b6b6b;
+  --head:"IBM Plex Sans Thai",sans-serif; --body:"IBM Plex Sans Thai Looped","IBM Plex Sans Thai",sans-serif;
+}
+:root[data-theme="dark"]{
+  --paper:#15161a; --paper2:#1f2026; --ink:#f0eee8; --ink2:#b3b1ab; --ink3:#77766f;
+  --rule:#34353b; --pos:#4cc47f; --neg:#ff7a6a; --zero:#9a9a9a;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--paper);color:var(--ink);overflow:hidden;touch-action:manipulation;-webkit-text-size-adjust:100%}
+body{font-family:var(--body);-webkit-font-smoothing:antialiased}
+
+/* ── เวที 1600×900 ย่อขยายตามจอ ───────────────────── */
+#viewport{position:fixed;inset:0;overflow:hidden}
+#stage{position:absolute;left:0;top:0;width:1600px;height:900px;transform-origin:0 0;overflow:hidden;background:var(--paper)}
+.slide{--acc-soft:color-mix(in srgb,var(--acc) 12%,var(--paper));position:absolute;inset:0;padding:64px 104px 72px;font-size:28px;visibility:hidden;opacity:0;display:flex;flex-direction:column}
+.slide.active{visibility:visible;opacity:1}
+.slide .kicker{font:400 22px/1 var(--head);color:var(--acc);display:flex;gap:14px;align-items:center;margin-bottom:22px}
+.slide .kicker b{font-weight:700}
+.slide .kicker .dot{width:6px;height:6px;border-radius:99px;background:var(--rule)}
+.slide h2{font:700 60px/1.25 var(--head);margin:0 0 36px;text-wrap:balance}
+.slide p{font-size:30px;line-height:1.75;margin:0;text-wrap:pretty}
+.muted{color:var(--ink2)}
+.acc{color:var(--acc)}
+
+/* ── ชิ้นที่ค่อย ๆ เผย ──────────────────────────── */
+.f{opacity:0;transform:translateY(16px);filter:blur(6px);transition:opacity .45s ease,transform .5s cubic-bezier(.2,.8,.2,1),filter .45s ease}
+.f.on{opacity:1;transform:none;filter:none}
+.f.on.now{--mark:var(--acc)}
+
+/* ── ปก ─────────────────────────────────────────── */
+.s-cover{justify-content:center;align-items:center;text-align:center;padding-bottom:64px}
+.s-cover .sub{font:400 28px/1 var(--head);color:var(--ink2);margin-bottom:36px}
+.s-cover h1{margin:0;line-height:0}
+.s-cover .wvsvg{display:block;overflow:visible}
+.s-cover .keys{position:absolute;right:104px;bottom:96px;text-align:right;font-size:20px;line-height:2;color:var(--ink3)}
+kbd{font:400 17px var(--head);border:1px solid var(--rule);border-bottom-width:2px;border-radius:6px;padding:1px 8px;color:var(--ink2);background:var(--paper)}
+
+/* ── แผนที่บท ───────────────────────────────────── */
+/* ชื่อบทบนหน้าเนื้อหาในบทนี้ — ขีดเส้นใต้หนาสีประจำบท */
+.slide h2.chtitle span{text-decoration:underline;text-decoration-color:var(--c);text-decoration-thickness:8px;text-underline-offset:16px;text-decoration-skip-ink:none}
+.slide h2.chtitle{margin-bottom:48px}
+.road{list-style:none;margin:0;padding:0;border-top:1px solid var(--rule)}
+.road li{display:grid;grid-template-columns:160px 1fr auto;align-items:baseline;padding:22px 0;border-bottom:1px solid var(--rule)}
+.road .n{font:200 64px/1 var(--head);color:var(--c)}
+.road .t{font:700 42px/1.3 var(--head)}
+.road .t small{font:400 24px var(--head);color:var(--ink3);margin-left:14px}
+.road .q{font-size:24px;color:var(--ink2);max-width:560px;text-align:right;line-height:1.6}
+
+/* ── เปิดหัวข้อ ─────────────────────────────────── */
+.s-open{justify-content:center}
+.s-open .big{font:200 300px/.9 var(--head);color:var(--acc);margin:0 0 0 -14px;font-variant-numeric:tabular-nums}
+.s-open h2{font-size:104px;margin:10px 0 44px}
+.s-open h2 small{font:200 48px var(--head);color:var(--ink3);margin-left:20px}
+.s-open .hook{font:300 38px/1.7 var(--body);max-width:1180px;border-left:4px solid var(--acc);padding-left:32px}
+.s-open .hook b{font-weight:700}
+
+/* ── นิยาม ──────────────────────────────────────── */
+.defs{border-top:1px solid var(--rule)}
+.def{display:grid;grid-template-columns:420px 1fr;gap:48px;padding:26px 0;border-bottom:1px solid var(--rule)}
+.def dt{font:700 40px/1.35 var(--head)}
+.def dt .sym{display:block;font:400 26px/1.6 var(--body);color:var(--acc);margin-top:6px}
+.def dd{margin:0;font-size:28px;line-height:1.75}
+.def dd b{color:var(--acc);font-weight:700}
+
+/* ── สมการตั้งต้น ────────────────────────────────── */
+.core{display:grid;grid-template-columns:600px minmax(0,1fr);gap:64px;flex:1;min-height:0}
+.core .hero{align-self:start;background:var(--acc-soft);border-radius:6px;padding:28px 40px}
+.core .hero .lbl{font:400 22px var(--head);color:var(--acc)}
+.core .hero .katex{font-size:1.9em}
+.core .hero .katex-display{margin:12px 0}
+.steps{list-style:none;margin:0;padding:0;counter-reset:s}
+.steps li{position:relative;padding:4px 0 22px 64px;counter-increment:s}
+.steps li::before{content:counter(s);position:absolute;left:0;top:6px;width:40px;height:40px;border-radius:99px;border:1.5px solid var(--mark,var(--rule));display:grid;place-items:center;font:700 20px var(--head);color:var(--mark,var(--ink3));transition:border-color .3s,color .3s}
+.steps li p{font-size:28px}
+.steps li .katex-display{margin:8px 0 0;text-align:left}
+.steps li .katex-display>.katex{text-align:left;font-size:1.35em}
+
+/* ── สมการใช้บ่อย ───────────────────────────────── */
+.eqgrid{border-top:1px solid var(--rule)}
+.eqrow{display:grid;grid-template-columns:380px 1fr;align-items:center;gap:48px;padding:12px 0;border-bottom:1px solid var(--rule);min-height:138px}
+.eqrow>div:last-child{min-width:0}
+.eqrow .nm{font:700 32px/1.4 var(--head)}
+.eqrow .nm small{display:block;font:400 22px/1.5 var(--body);color:var(--ink3);margin-top:4px}
+.eqrow .katex-display{margin:0;text-align:left}
+.eqrow .katex-display>.katex{text-align:left;font-size:1.6em}
+
+/* ── ชีวิตประจำวัน ──────────────────────────────── */
+.life{border-top:1px solid var(--rule)}
+.life .row{display:grid;grid-template-columns:120px 400px 1fr;gap:36px;align-items:start;padding:28px 0;border-bottom:1px solid var(--rule)}
+.life .ic{width:96px;height:96px;border-radius:99px;border:1.5px solid var(--acc);display:grid;place-items:center;font-size:52px;color:var(--acc)}
+.life h3{font:700 36px/1.4 var(--head);margin:10px 0 0}
+.life p{font-size:27px;line-height:1.75}
+.life p b{color:var(--acc)}
+
+/* ── ชวนคิด ─────────────────────────────────────── */
+.s-think{justify-content:center}
+.s-think .q{font:700 64px/1.45 var(--head);max-width:1300px;text-wrap:balance;margin:0 0 20px}
+.s-think .timer{font:400 24px var(--head);color:var(--ink3);display:flex;align-items:center;gap:10px;margin-bottom:48px}
+.s-think .a{border-left:4px solid var(--acc);padding:6px 0 6px 32px;max-width:1250px}
+.s-think .a p{font-size:34px}
+.s-think .a .lbl{font:700 24px var(--head);color:var(--acc);margin-bottom:6px}
+
+/* ── แบบจำลอง ───────────────────────────────────── */
+.sim{display:grid;grid-template-columns:440px 1fr;gap:56px;flex:1;min-height:0}
+.sim .side p{font-size:26px;line-height:1.75}
+.sim .side .try{margin-top:28px;padding-top:24px;border-top:1px solid var(--rule)}
+.sim .side .try b{display:block;font:700 22px var(--head);color:var(--acc);margin-bottom:8px}
+.sim .side .try li{font-size:23px;line-height:1.7;color:var(--ink2)}
+.sim .side .try ul{margin:0;padding-left:24px}
+.sim .panel{display:flex;flex-direction:column;min-height:0}
+.sim svg{width:100%;flex:1;min-height:0}
+.sim .ctl{display:flex;gap:18px 24px;align-items:center;font:400 24px var(--head);margin-top:12px;flex-wrap:wrap}
+.sim .ctl label{display:flex;align-items:center;gap:14px}
+.sim input[type=range]{width:300px;accent-color:var(--acc);height:28px}
+.btn{font:700 22px var(--head);color:var(--ink);background:none;border:1.5px solid var(--ink);border-radius:99px;padding:10px 26px;cursor:pointer}
+.btn.pri{background:var(--acc);border-color:var(--acc);color:#fff}
+.btn.on{background:var(--ink);color:var(--paper)}
+.readout{font:400 30px/1.5 var(--head);font-variant-numeric:tabular-nums}
+svg text{font-family:var(--head);fill:var(--ink)}
+svg .gl{stroke:var(--ink);stroke-width:2;fill:none}
+svg .gl2{stroke:var(--rule);stroke-width:2;fill:none}
+svg .dsh{stroke:var(--ink3);stroke-width:2;stroke-dasharray:6 7;fill:none}
+
+/* ── โจทย์ ──────────────────────────────────────── */
+.s-prob{padding-top:52px}
+.ptop{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px}
+.ptop .kicker{margin:0}
+.chips{display:flex;gap:6px;align-items:center;font:400 18px var(--head);color:var(--ink3)}
+.chips button{font:400 18px var(--head);width:38px;height:38px;border-radius:99px;border:1px solid var(--rule);background:none;color:var(--ink2);cursor:pointer}
+.chips button.cur{background:var(--acc);border-color:var(--acc);color:#fff;font-weight:700}
+.pbody{display:grid;grid-template-columns:540px 1fr;gap:64px;flex:1;min-height:0}
+.pq{display:flex;flex-direction:column;gap:26px}
+.pq .txt{font:400 31px/1.8 var(--body)}
+.pq .num{font:200 88px/1 var(--head);color:var(--acc)}
+.given{border-top:1px solid var(--rule);padding-top:20px}
+.given .lbl,.hintbox .lbl{font:700 20px var(--head);color:var(--ink3);margin-bottom:10px}
+.given ul{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:10px 12px}
+.given li{font-size:25px;padding:4px 16px;border:1px solid var(--rule);border-radius:99px;background:var(--paper)}
+.hintbtn{align-self:flex-start;font:400 20px var(--head);background:none;border:1px dashed var(--ink3);color:var(--ink2);border-radius:99px;padding:8px 20px;cursor:pointer}
+.hintbox{display:none;font-size:24px;line-height:1.7;color:var(--ink2);border-left:3px dashed var(--acc);padding-left:20px}
+.hintbox.show{display:block}
+.psol{display:flex;flex-direction:column;min-height:0;border-left:1px solid var(--rule);padding-left:56px;--sfs:34px;overflow-y:auto;scrollbar-width:none}
+.psol::-webkit-scrollbar{display:none}
+.psol.scrolled{-webkit-mask-image:linear-gradient(transparent,#000 56px);mask-image:linear-gradient(transparent,#000 56px)}
+.meq{margin-bottom:18px}
+.meq .lbl{font:400 20px var(--head);color:var(--acc)}
+.meq .katex-display{margin:6px 0 0;text-align:left}
+.meq .katex-display>.katex{text-align:left;font-size:1.25em}
+.sol{display:grid;grid-template-columns:66px auto auto 1fr;column-gap:0;align-content:start;font-size:var(--sfs);flex:none}
+.sol .r{display:contents}
+.sol .r>div{padding:9px 0;min-height:1.9em;display:flex;align-items:center;line-height:1.6;transition:opacity .45s,transform .5s cubic-bezier(.2,.8,.2,1),filter .45s}
+.sol .r:not(.on)>div{opacity:0;transform:translateY(14px);filter:blur(6px)}
+.sol .r.cont>div{padding-top:2px}
+.sol .r>div:has(.mfrac){padding-top:12px;padding-bottom:12px}
+.sol .nb{justify-content:flex-start}
+.sol .nb span{width:40px;height:40px;border-radius:99px;border:1.5px solid var(--rule);display:grid;place-items:center;font:700 19px var(--head);color:var(--ink3);transition:.3s}
+.sol .r.now .nb span,.sol .r.grpnow .nb span{border-color:var(--acc);color:var(--acc)}
+.sol .r.now>div:not(.nb){background:linear-gradient(var(--acc-soft),var(--acc-soft)) no-repeat;background-size:100% 100%}
+.sol .r.now>div:nth-child(2){border-radius:6px 0 0 6px;padding-left:12px;margin-left:-12px}
+.sol .r.now>.txt{border-radius:6px}
+.sol .r.now>div:last-child{border-radius:0 6px 6px 0;padding-right:12px}
+.sol .op{color:var(--ink3);justify-content:center;padding:0 16px !important}
+.sol .txt{grid-column:2 / -1}
+.ans{display:inline-block;font-weight:700;color:var(--acc);border:2px solid var(--acc);border-radius:8px;padding:0 14px;margin-right:8px;font-family:var(--head)}
+.r.final.on .ans{animation:pop .6s cubic-bezier(.3,1.6,.5,1)}
+@keyframes pop{0%{transform:scale(.6);opacity:0}100%{transform:none;opacity:1}}
+.pdone{margin-top:auto;padding-top:14px;font:400 20px var(--head);color:var(--ink3);opacity:0;transition:.4s}
+.pdone.show{opacity:1}
+
+/* ── สรุป ───────────────────────────────────────── */
+.sum{display:grid;grid-template-columns:1fr 1fr;column-gap:72px;border-top:1px solid var(--rule)}
+.sum .it{display:grid;grid-template-columns:90px 1fr;align-items:center;padding:14px 0;border-bottom:1px solid var(--rule);min-height:118px}
+.sum .it .n{font:200 44px var(--head);color:var(--c)}
+.sum .it .nm{font:700 24px var(--head);color:var(--ink2)}
+.sum .katex-display{margin:4px 0 0;text-align:left}
+.sum .katex-display>.katex{text-align:left;font-size:1.2em}
+
+/* ── ม่านเปลี่ยนหัวข้อ ────────────────────────────── */
+.sol .li::before{content:'•';color:var(--ink3);margin-right:12px}
+#wipe{position:absolute;inset:0;background:var(--acc);z-index:20;clip-path:inset(0 100% 0 0);pointer-events:none;display:flex;align-items:flex-end;padding:0 104px 96px;color:#fff}
+#wipe .n{font:200 220px/.9 var(--head)}
+#wipe .t{font:700 72px/1.2 var(--head);margin-left:36px;padding-bottom:14px}
+
+/* ── แถบควบคุม (นอกเวที ไม่ย่อ) ───────────────────── */
+#hud{position:fixed;left:0;right:0;bottom:0;padding:10px 18px 12px;display:flex;align-items:center;gap:16px;background:linear-gradient(transparent,color-mix(in srgb,var(--paper) 92%,transparent) 40%);transition:opacity .4s;z-index:50}
+#hud.hide{opacity:0}
+@media (pointer:coarse){#hud button{width:48px;height:48px}#hud #bCh{height:44px}}
+#hud button{background:none;border:0;color:var(--ink2);font-size:24px;width:40px;height:40px;border-radius:99px;cursor:pointer;display:grid;place-items:center}
+#hud button:hover{background:var(--paper2)}
+#bar{flex:1;display:flex;gap:4px;height:6px}
+#bar .seg{flex:var(--n);background:var(--paper2);border-radius:99px;overflow:hidden;position:relative;cursor:pointer}
+#bar .seg i{position:absolute;inset:0;right:auto;width:var(--p,0%);background:var(--c);transition:width .4s}
+#count{font:400 16px var(--head);color:var(--ink3);font-variant-numeric:tabular-nums;min-width:64px;text-align:right}
+
+/* ── ภาพรวมสไลด์ ─────────────────────────────────── */
+#ov{position:fixed;inset:0;background:color-mix(in srgb,var(--paper) 96%,transparent);z-index:60;overflow:auto;padding:40px 56px;display:none}
+#ov.show{display:block}
+#ov h3{font:700 26px var(--head);margin:28px 0 12px;color:var(--c)}
+#ov .g{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+#ov .card{border:1px solid var(--rule);border-top:4px solid var(--c);border-radius:6px;padding:12px 14px;cursor:pointer;background:var(--paper)}
+#ov .card.cur{outline:2px solid var(--c)}
+#ov .card small{display:block;font:400 14px var(--head);color:var(--ink3)}
+#ov .card span{font:400 18px/1.5 var(--body)}
+#blank{position:fixed;inset:0;background:#000;z-index:70;display:none}
+#toast{position:fixed;left:50%;bottom:72px;transform:translateX(-50%);max-width:min(560px,90vw);background:var(--ink);color:var(--paper);font:400 16px/1.6 var(--head);padding:12px 20px;border-radius:10px;opacity:0;pointer-events:none;transition:opacity .3s;z-index:80}
+#toast.show{opacity:1}
+/* ── หน้าล็อก (ไม่ใช่ครู) ─────────────────────────── */
+#lock{position:fixed;inset:0;display:none;align-items:center;justify-content:flex-start;padding:48px max(24px,8vw);background:var(--paper);z-index:90}
+#lock.show{display:flex}
+#lock .in{max-width:640px}
+#lock .k{font:400 18px var(--head);color:#e4572e;margin-bottom:18px;display:flex;gap:10px;align-items:center}
+#lock h1{font:700 clamp(36px,6vw,64px)/1.2 var(--head);margin:0 0 20px}
+#lock p{font:300 clamp(17px,2vw,21px)/1.8 var(--body);color:var(--ink2);margin:0 0 32px;text-wrap:pretty}
+#lock .row{display:flex;gap:12px;flex-wrap:wrap}
+#lock a{font:700 17px var(--head);text-decoration:none;border-radius:99px;padding:12px 24px;border:1.5px solid var(--ink);color:var(--ink)}
+#lock a.pri{background:#e4572e;border-color:#e4572e;color:#fff}
+/* ── หน้าเลือกบท (เปิดโดยไม่ระบุ ?ch=) ─────────────────── */
+#pick{position:fixed;inset:0;overflow:auto;background:var(--paper);z-index:90;padding:clamp(28px,6vh,64px) max(20px,7vw)}
+#pick .k{font:400 18px var(--head);color:var(--ink3);margin-bottom:10px}
+#pick h1{font:700 clamp(34px,5vw,60px)/1.2 var(--head);margin:0 0 clamp(20px,4vh,40px)}
+#pick h1[lang=en]{letter-spacing:-.02em}
+#pick a.ch{display:grid;grid-template-columns:clamp(90px,14vw,190px) 1fr auto;align-items:center;gap:clamp(12px,3vw,40px);padding:clamp(16px,3vh,28px) 0;border-top:1px solid var(--rule);color:var(--ink);text-decoration:none}
+#pick a.ch:last-of-type{border-bottom:1px solid var(--rule)}
+#pick a.ch:hover .t,#pick a.ch:focus-visible .t{color:var(--c)}
+#pick .n{font:200 clamp(56px,10vw,130px)/.9 var(--head);color:var(--c)}
+#pick .t{font:700 clamp(22px,3vw,38px)/1.3 var(--head);transition:color .2s}
+#pick .s{display:block;font:400 clamp(14px,1.5vw,19px)/1.7 var(--body);color:var(--ink2);margin-top:4px}
+#pick .go{font:400 clamp(14px,1.4vw,17px) var(--head);color:var(--ink3);white-space:nowrap}
+@media (max-width:640px){#pick a.ch{grid-template-columns:72px 1fr}#pick .go{display:none}}
+/* ── ปุ่มเลือกบทในแถบควบคุม ─────────────────────────── */
+#hud #bCh{width:auto;padding:0 14px;font:700 15px var(--head);gap:6px;display:flex;border:1px solid var(--rule)}
+#chmenu{position:fixed;left:18px;bottom:60px;z-index:55;background:var(--paper);border:1px solid var(--rule);border-radius:10px;padding:6px;display:none;min-width:280px;box-shadow:0 8px 28px rgba(0,0,0,.12)}
+#chmenu.show{display:block}
+#chmenu a{display:flex;gap:14px;align-items:baseline;padding:10px 12px;border-radius:6px;color:var(--ink);text-decoration:none;font:400 17px var(--head)}
+#chmenu a b{font:200 26px var(--head);color:var(--c);min-width:26px}
+#chmenu a:hover{background:var(--paper2)}
+#chmenu a.cur{background:var(--paper2);font-weight:700}
+#ov .ovch{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:8px;font:400 17px var(--head);color:var(--ink3)}
+#ov .ovch a{padding:8px 16px;border:1px solid var(--rule);border-radius:99px;color:var(--ink2);text-decoration:none}
+#ov .ovch a.cur{background:var(--ink);border-color:var(--ink);color:var(--paper);font-weight:700}
+#blank.show{display:block}
+
+/* ── สรุปคำตอบท้ายวิธีทำ ─────────────────────────── */
+.sumans{display:flex;align-items:baseline;gap:18px;margin-top:14px;padding:12px 20px;border-left:4px solid var(--acc);background:var(--acc-soft);border-radius:0 8px 8px 0;font-size:var(--sfs);line-height:1.6}
+.sumans .lbl{font:700 20px var(--head);color:var(--acc);white-space:nowrap}
+.sumans .v{font-weight:700}
+/* ── โหมดแก้ไขข้อความ ────────────────────────────── */
+body.editing [contenteditable=true]{outline:2px dashed color-mix(in srgb,var(--acc) 60%,transparent);outline-offset:6px;border-radius:4px;cursor:text}
+body.editing [contenteditable=true]:focus{outline-style:solid;background:var(--acc-soft)}
+body.editing .slide{cursor:default}
+#editbar{position:fixed;top:14px;left:50%;transform:translateX(-50%);display:none;align-items:center;gap:12px;max-width:calc(100vw - 24px);background:var(--ink);color:var(--paper);padding:8px 8px 8px 18px;border-radius:99px;font:400 15px/1.4 var(--head);z-index:65;box-shadow:0 8px 28px rgba(0,0,0,.2)}
+#editbar.show{display:flex}
+#editbar span{flex:1;min-width:0}
+#editbar button{flex:none;font:700 14px var(--head);border:1px solid color-mix(in srgb,var(--paper) 40%,transparent);background:transparent;color:inherit;border-radius:99px;padding:7px 14px;cursor:pointer}
+#editbar button.pri{background:var(--paper);color:var(--ink)}
+#hud #bEdit.on{background:var(--ink);color:var(--paper)}
+
+/* สารบัญบทที่มี 6 หัวข้อขึ้นไป — บีบแถวให้พอดีเวที */
+.road.dense li{padding:10px 0}
+.road.dense .n{font-size:52px}
+.road.dense .t{font-size:36px}
