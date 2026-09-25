@@ -268,7 +268,7 @@ function cover(){
   return { cls:'s-cover', title:'ปก', enter: waveStart, leave: waveStop, html: `
     <div class="sub">${CFG.name} · ${CHAPTER.book || CFG.book} · บทที่ ${CHAPTER.no}</div>
     <h1 aria-label="${CHAPTER.cover.join('')}">${waveTitle(CHAPTER)}</h1>
-    <div class="keys"><kbd>→</kbd> <kbd>Space</kbd> หรือคลิก ไปต่อ · <kbd>←</kbd> ย้อน<br>${NUMS.map(n => `<kbd>${n}</kbd>`).join('')} เปลี่ยนบท · <kbd>O</kbd> ภาพรวม · <kbd>F</kbd> เต็มจอ · <kbd>D</kbd> มืด/สว่าง · <kbd>B</kbd> จอดำ</div>` };
+    <div class="keys"><kbd>→</kbd> <kbd>Space</kbd> หรือคลิก ไปต่อ · <kbd>←</kbd> ย้อน<br>${NUMS.map(n => `<kbd>${n}</kbd>`).join('')} เปลี่ยนบท · <kbd>O</kbd> ภาพรวม · <kbd>E</kbd> แก้ข้อความ · <kbd>F</kbd> เต็มจอ · <kbd>D</kbd> มืด/สว่าง · <kbd>B</kbd> จอดำ</div>` };
 }
 function roadmap(){
   return { title:'เนื้อหาในบทนี้', html: `
@@ -323,6 +323,17 @@ function simSlide(S){
     init: sim.init, enter: sim.enter, leave: sim.leave };
 }
 
+// สรุปคำตอบท้ายวิธีทำ: ใช้ p.say ถ้ามี ไม่งั้นประกอบจากแถวคำตอบ (ตัวแปรของชุดสมการนั้น = ค่า หน่วย)
+function answerSummary(p, rows){
+  if (p.say) return fixTex(p.say);
+  const i = rows.findIndex(r => r.ans);
+  if (i < 0 || rows[i].type !== 'calc') return '';
+  const r = rows[i];
+  let lbl = r.label;
+  for (let j = i - 1; !lbl && j >= 0 && rows[j].grp === r.grp; j--) lbl = rows[j].label;
+  const val = r.expr.replace(/<span class="ans">([\s\S]*?)<\/span>/, '$1').replace(/&nbsp;/g, ' ').trim();
+  return lbl ? lbl + ' ' + (r.op || '$=$') + ' ' + val : val;
+}
 function probSlide(S, order, pid){
   const list = (TOPICS[S.key] || {}).problems || [];
   const obj = { title:'โจทย์ข้อ ' + order, cls:'s-prob', pid, S, order, list };
@@ -330,7 +341,7 @@ function probSlide(S, order, pid){
     const p = list.find(x => x.id === id) || list[0];
     if (!p) return `${kick(S,'โจทย์')}<p>ไม่พบโจทย์ใน data.js</p>`;
     const idx = list.indexOf(p) + 1;
-    const g = givenOf(p), me = mainEq(p, S.key), rows = parseGuide(p.guide || '', ansOf(p));
+    const g = givenOf(p), me = mainEq(p, S.key), rows = parseGuide(p.guide || '', ansOf(p)), summ = answerSummary(p, rows);
     let prev = null;
     const sol = rows.map((r, i) => {
       const cont = !r.n && prev && prev.grp === r.grp;
@@ -354,6 +365,7 @@ function probSlide(S, order, pid){
         <div class="psol">
           ${me ? `<div class="meq f"><div class="lbl">สมการหลัก · ${me.nm}</div>$$${me.tex}$$</div>` : ''}
           <div class="sol">${sol}</div>
+          ${summ ? `<div class="sumans f"><span class="lbl">สรุปคำตอบ</span><span class="v">${summ}</span></div>` : ''}
           <div class="pdone">คลิกต่อเพื่อไปสไลด์ถัดไป · หรือกดเลขด้านบนเพื่อลองข้ออื่น</div>
         </div>
       </div>`;
@@ -368,8 +380,9 @@ function bindProb(el, obj){
     e.stopPropagation();
     obj.pid = b.dataset.pid;
     el.innerHTML = obj.render(obj.pid);
-    renderMath(el); bindProb(el, obj);
+    renderMath(el); bindProb(el, obj); applyEdits(cur);
     frag[cur] = 0; applyFrags(el, 0); fitSol(el);
+    if (editing){ applyFrags(el, fragsOf(el).length); setEditable(cur, true); }
   });
   const ps = el.querySelector('.psol');
   if (ps) ps.onscroll = () => ps.classList.toggle('scrolled', ps.scrollTop > 4);
@@ -476,6 +489,7 @@ const wipe = document.getElementById('wipe');
 let pending = null; // การสลับสไลด์ที่รออยู่หลังม่าน
 function show(i, dir, opts = {}){
   if (pending) pending();
+  if (editing) setEditable(cur, false);
   i = Math.max(0, Math.min(slides.length - 1, i));
   const from = slides[cur], to = slides[i];
   if (i === cur && !opts.force) return;
@@ -487,6 +501,7 @@ function show(i, dir, opts = {}){
     to.el.classList.add('active');
     to.enter && to.enter(to.el);
     cur = i; updHud();
+    if (editing){ frag[i] = fragsOf(to.el).length; applyFrags(to.el, frag[i]); setEditable(i, true); }
     try { history.replaceState(null, '', '#' + (i + 1)); } catch (e) {}
   };
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -611,11 +626,78 @@ function toggleOv(){
   }
 }
 
+/* ── แก้ข้อความบนสไลด์ (กด E) ─────────────────────────────────
+   แก้ได้เฉพาะข้อความ (หัวเรื่อง คำอธิบาย ชีวิตจริง ชวนคิด โจทย์ คำใบ้) — สูตรคณิตเป็นก้อนเดียว ลบได้แต่แก้ข้างในไม่ได้
+   บันทึกใน localStorage ของเครื่องนี้ คีย์ละข้อความ พร้อมลายนิ้วมือของข้อความเดิม
+   ถ้าเนื้อหาต้นฉบับเปลี่ยนภายหลัง ข้อความที่แก้ไว้จะไม่ถูกนำไปทับผิดที่ */
+const EDIT_KEY = (CFG.storeKey || THEME_KEY.replace(/\.theme$/, '')) + '.edits.v1';
+const EDITABLE = 'h2, .hook, .def dt, .def dd, .steps li p, .eqrow .nm, .life h3, .life p, .s-think .q, .s-think .a p, ' +
+                 '.road .t, .road .q, .sim .side > p, .sim .try li, .pq .txt, .hintbox, .given li, .sum .nm, .s-cover .sub';
+let EDITS = {}; try { EDITS = JSON.parse(localStorage.getItem(EDIT_KEY) || '{}') || {}; } catch (e) {}
+let editing = false, saveT = 0;
+const saveEdits = () => { try { localStorage.setItem(EDIT_KEY, JSON.stringify(EDITS)); } catch (e) { toast('บันทึกข้อความที่แก้ไม่ได้ — พื้นที่เก็บในเบราว์เซอร์เต็มหรือถูกปิดไว้'); } };
+const saveSoon = () => { clearTimeout(saveT); saveT = setTimeout(saveEdits, 300); };
+const hashStr = t => { let x = 0; for (let i = 0; i < t.length; i++) x = (x * 31 + t.charCodeAt(i)) >>> 0; return x.toString(36); };
+const origOf = new WeakMap();
+const editKey = (i, k) => CH_NO + ':' + i + ':' + (slides[i].pid || '') + ':' + k;
+const editables = el => [...el.querySelectorAll(EDITABLE)];
+function applyEdits(i){
+  editables(slides[i].el).forEach((x, k) => {
+    if (!origOf.has(x)) origOf.set(x, x.innerHTML);
+    const e = EDITS[editKey(i, k)];
+    if (e && e.o === hashStr(origOf.get(x))) x.innerHTML = e.h;
+  });
+}
+function setEditable(i, on){
+  editables(slides[i].el).forEach((x, k) => {
+    if (!on){ x.removeAttribute('contenteditable'); x.oninput = null; return; }
+    if (!origOf.has(x)) origOf.set(x, x.innerHTML);
+    x.contentEditable = 'true';
+    x.querySelectorAll('.katex, .ans').forEach(m => m.contentEditable = 'false');
+    x.oninput = () => { EDITS[editKey(i, k)] = { o: hashStr(origOf.get(x)), h: x.innerHTML }; saveSoon(); };
+  });
+}
+document.body.insertAdjacentHTML('beforeend',
+  '<div id="editbar" role="toolbar" aria-label="แก้ไขข้อความ"><i class="ph ph-pencil-simple"></i>' +
+  '<span>คลิกข้อความเพื่อแก้ · บันทึกอัตโนมัติในเครื่องนี้ · สูตรคณิตลบได้ทั้งก้อน</span>' +
+  '<button id="eReset" type="button">คืนค่าหน้านี้</button><button id="eDone" class="pri" type="button">เสร็จ (E)</button></div>');
+document.getElementById('bOv').insertAdjacentHTML('beforebegin', '<button id="bEdit" title="แก้ไขข้อความบนสไลด์ (E)"><i class="ph ph-pencil-simple"></i></button>');
+const editbar = document.getElementById('editbar');
+function toggleEdit(force){
+  editing = force === undefined ? !editing : force;
+  document.body.classList.toggle('editing', editing);
+  editbar.classList.toggle('show', editing);
+  document.getElementById('bEdit').classList.toggle('on', editing);
+  const el = slides[cur].el;
+  if (editing){ frag[cur] = fragsOf(el).length; applyFrags(el, frag[cur]); setEditable(cur, true); }
+  else { clearTimeout(saveT); saveEdits(); setEditable(cur, false); if (document.activeElement) document.activeElement.blur(); fitX(el); fitSol(el); }
+}
+document.getElementById('bEdit').onclick = e => { e.stopPropagation(); toggleEdit(); };
+document.getElementById('eDone').onclick = () => toggleEdit(false);
+document.getElementById('eReset').onclick = () => {
+  const el = slides[cur].el;
+  editables(el).forEach((x, k) => { delete EDITS[editKey(cur, k)]; if (origOf.has(x)) x.innerHTML = origOf.get(x); });
+  saveEdits(); if (editing) setEditable(cur, true);
+  toast('คืนข้อความเดิมของหน้านี้แล้ว');
+};
+// วางข้อความจากที่อื่น → เอาเฉพาะตัวอักษร ไม่เอาสีและฟอนต์ติดมา
+document.addEventListener('paste', e => {
+  if (!e.target.isContentEditable) return;
+  e.preventDefault();
+  document.execCommand('insertText', false, (e.clipboardData || window.clipboardData).getData('text/plain'));
+});
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 3200);
+}
+
 /* ── อินพุต ── */
 const isCtl = t => t.closest && t.closest('button, input, select, a, .nointeract, label');
-stage.addEventListener('click', e => { if (!isCtl(e.target)) next(); });
+stage.addEventListener('click', e => { if (!editing && !isCtl(e.target)) next(); });
 stage.addEventListener('contextmenu', e => { e.preventDefault(); prev(); });
 addEventListener('keydown', e => {
+  if (e.target.isContentEditable){ if (e.key === 'Escape') e.target.blur(); return; }   // กำลังพิมพ์แก้ข้อความ
+  if (e.key === 'e' || e.key === 'E' || (editing && e.key === 'Escape')){ e.preventDefault(); toggleEdit(e.key === 'Escape' ? false : undefined); return; }
   if (e.target.matches && e.target.matches('input[type=range]') && /Arrow/.test(e.key)) return;
   if (ov.classList.contains('show') && e.key !== 'o' && e.key !== 'O' && e.key !== 'Escape') return;
   const k = e.key;
@@ -636,12 +718,13 @@ let tx = null;
 stage.addEventListener('touchstart', e => { tx = e.touches[0].clientX; }, { passive:true });
 stage.addEventListener('touchend', e => {
   if (tx === null) return; const dx = e.changedTouches[0].clientX - tx; tx = null;
-  if (Math.abs(dx) > 60){ dx < 0 ? next() : prev(); }
+  if (!editing && Math.abs(dx) > 60){ dx < 0 ? next() : prev(); }
 });
 
 /* ── เริ่ม ── */
 function boot(){
   renderMath(deck);
+  slides.forEach((s, i) => applyEdits(i));
   slides.forEach(s => s.init && s.init(s.el));
   fit();
   if (document.fonts) document.fonts.ready.then(() => fitX(deck));

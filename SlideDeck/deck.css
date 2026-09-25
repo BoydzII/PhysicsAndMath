@@ -244,3 +244,18 @@ svg .dsh{stroke:var(--ink3);stroke-width:2;stroke-dasharray:6 7;fill:none}
 #ov .ovch a{padding:8px 16px;border:1px solid var(--rule);border-radius:99px;color:var(--ink2);text-decoration:none}
 #ov .ovch a.cur{background:var(--ink);border-color:var(--ink);color:var(--paper);font-weight:700}
 #blank.show{display:block}
+
+/* ── สรุปคำตอบท้ายวิธีทำ ─────────────────────────── */
+.sumans{display:flex;align-items:baseline;gap:18px;margin-top:14px;padding:12px 20px;border-left:4px solid var(--acc);background:var(--acc-soft);border-radius:0 8px 8px 0;font-size:var(--sfs);line-height:1.6}
+.sumans .lbl{font:700 20px var(--head);color:var(--acc);white-space:nowrap}
+.sumans .v{font-weight:700}
+/* ── โหมดแก้ไขข้อความ ────────────────────────────── */
+body.editing [contenteditable=true]{outline:2px dashed color-mix(in srgb,var(--acc) 60%,transparent);outline-offset:6px;border-radius:4px;cursor:text}
+body.editing [contenteditable=true]:focus{outline-style:solid;background:var(--acc-soft)}
+body.editing .slide{cursor:default}
+#editbar{position:fixed;top:14px;left:50%;transform:translateX(-50%);display:none;align-items:center;gap:12px;max-width:calc(100vw - 24px);background:var(--ink);color:var(--paper);padding:8px 8px 8px 18px;border-radius:99px;font:400 15px/1.4 var(--head);z-index:65;box-shadow:0 8px 28px rgba(0,0,0,.2)}
+#editbar.show{display:flex}
+#editbar span{flex:1;min-width:0}
+#editbar button{flex:none;font:700 14px var(--head);border:1px solid color-mix(in srgb,var(--paper) 40%,transparent);background:transparent;color:inherit;border-radius:99px;padding:7px 14px;cursor:pointer}
+#editbar button.pri{background:var(--paper);color:var(--ink)}
+#hud #bEdit.on{background:var(--ink);color:var(--paper)}
