@@ -46,11 +46,10 @@ body{font-family:var(--body);-webkit-font-smoothing:antialiased}
 .f.on.now{--mark:var(--acc)}
 
 /* ── ปก ─────────────────────────────────────────── */
-.s-cover{justify-content:flex-end;padding-bottom:96px}
-.s-cover .sub{font:400 28px/1 var(--head);color:var(--ink2);margin-bottom:28px}
+.s-cover{justify-content:center;align-items:center;text-align:center;padding-bottom:64px}
+.s-cover .sub{font:400 28px/1 var(--head);color:var(--ink2);margin-bottom:36px}
 .s-cover h1{font:700 150px/1.1 var(--head);margin:0}
 .s-cover h1 span{display:block;font-weight:200}
-.s-cover .meta{margin-top:40px;font-size:24px;line-height:1.6;color:var(--ink3);max-width:700px}
 .s-cover .keys{position:absolute;right:104px;bottom:96px;text-align:right;font-size:20px;line-height:2;color:var(--ink3)}
 kbd{font:400 17px var(--head);border:1px solid var(--rule);border-bottom-width:2px;border-radius:6px;padding:1px 8px;color:var(--ink2);background:var(--paper)}
 
@@ -195,7 +194,7 @@ svg .dsh{stroke:var(--ink3);stroke-width:2;stroke-dasharray:6 7;fill:none}
 .sum .katex-display>.katex{text-align:left;font-size:1.2em}
 
 /* ── ม่านเปลี่ยนหัวข้อ ────────────────────────────── */
-.chnav{position:absolute;left:104px;top:64px;display:flex;gap:28px;font:400 20px var(--head)}
+.chnav{position:absolute;right:120px;top:80px;display:flex;gap:36px;font:400 20px/1.8 var(--head)}
 .chnav a{color:var(--ink3);text-decoration:none;border-bottom:1px solid var(--rule)}
 .chnav a:hover{color:var(--ink)}
 .chnav b{color:var(--ink);font-weight:700}
@@ -816,7 +815,6 @@ function cover(){
   return { cls:'s-cover', title:'ปก', html: `
     <div class="sub">ฟิสิกส์ 2 · ม.4 เล่ม 2 · บทที่ ${CHAPTER.no}</div>
     <h1>${CHAPTER.cover[0]}<span>${CHAPTER.cover[1]}</span></h1>
-    <div class="meta">${CHAPTER.en} — ทฤษฎี · สมการ · ชีวิตจริง · โจทย์ทีละขั้น</div>
     <nav class="chnav nointeract">${Object.values(CHAPTERS).map(c => c.no === CHAPTER.no
       ? `<b>บทที่ ${c.no} ${c.title}</b>` : `<a href="?ch=${c.no}">บทที่ ${c.no} ${c.title}</a>`).join('')}</nav>
     <div class="keys"><kbd>→</kbd> <kbd>Space</kbd> หรือคลิก ไปต่อ · <kbd>←</kbd> ย้อน<br><kbd>5</kbd><kbd>6</kbd><kbd>7</kbd> เปลี่ยนบท · <kbd>O</kbd> ภาพรวม · <kbd>F</kbd> เต็มจอ · <kbd>D</kbd> มืด/สว่าง · <kbd>B</kbd> จอดำ</div>` };
