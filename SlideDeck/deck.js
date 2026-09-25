@@ -412,6 +412,11 @@ function figSVG(fig){
     sp.forEach(p => trail.push([p[0] + off[0], p[1] + off[1]]));
   });
   d = trail.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' ');
+  // ลูกศรการกระจัด: เส้นทึบสีน้ำเงิน วาดทับจุดคนเดิน · ถ้าไม่เลื่อนออกข้าง ตัดปลายให้หัวลูกศรหยุดที่ขอบจุดจบ (มองเห็นหัวลูกศร)
+  const dispLine = (A, B, ao) => {
+    const dx = B[0] - A[0], dy = B[1] - A[1], L = Math.hypot(dx, dy), off = ao[0] || ao[1], a = off ? 0 : 11 / L, b = off ? 1 : 1 - 15 / L;
+    return `<line x1="${(A[0] + dx * a + ao[0]).toFixed(1)}" y1="${(A[1] + dy * a + ao[1]).toFixed(1)}" x2="${(A[0] + dx * b + ao[0]).toFixed(1)}" y2="${(A[1] + dy * b + ao[1]).toFixed(1)}" class="fdisp" marker-end="url(#fgD)"/>`;
+  };
   const A = T(G.start), B = T(G.end), same = Math.hypot(B[0] - A[0], B[1] - A[1]) < 2, Bw = trail[trail.length - 1];
   // ป้าย "เริ่ม/จบ" อยู่ฝั่งที่ห่างจากกลางรูป (ไม่ทับเส้นทาง) หรือกำหนดเองด้วย fig.pt = { start, end } : 'a' บน · 'b' ล่าง · 'l' ซ้าย · 'r' ขวา
   const cy = trail.reduce((t, p) => t + p[1], 0) / trail.length;
@@ -433,15 +438,15 @@ function figSVG(fig){
   const comp = fig.compass ? `<g transform="translate(${FW - 44} 50)" class="fcomp"><line x1="0" y1="18" x2="0" y2="-18" marker-end="url(#fgA)"/><text x="0" y="-26">N</text></g>` : '';
   return `<svg viewBox="0 0 ${FW} ${FH}" class="figsvg">
     <defs><marker id="fgA" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="context-stroke"/></marker>
-      <marker id="fgD" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="4.5" markerHeight="4.5" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#d62f2f"/></marker></defs>
+      <marker id="fgD" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto" markerUnits="strokeWidth"><path d="M0 0 L10 5 L0 10 z" fill="#1f5fd6"/></marker></defs>
     ${axis}${comp}${radii}
     <path d="${d}" class="fghost"/>
     <path d="${d}" class="ftrail"/>
-    ${same ? '' : `<line x1="${A[0] + ao[0]}" y1="${A[1] + ao[1]}" x2="${B[0] + ao[0]}" y2="${B[1] + ao[1]}" class="fdisp" marker-end="url(#fgD)"/>`}
     <g class="flbl">${labels}</g>
     <circle cx="${A[0]}" cy="${A[1]}" r="9" class="fstart"/>${ptLbl(A, same ? 'เริ่ม = จบ' : 'เริ่ม', 'fpt', (fig.pt || {}).start)}
     ${same ? '' : ptLbl(Bw, 'จบ', 'fpt fend', (fig.pt || {}).end)}
     <circle r="12" class="fwalk" cx="${A[0]}" cy="${A[1]}"/>
+    ${same ? '' : dispLine(A, B, ao)}
   </svg>
   <div class="flegend"><span class="ls"><i></i>${fig.sLbl || 'ระยะทาง'}</span><span class="ld"><i></i>${fig.dLbl || 'การกระจัด'}</span></div>`;
 }
