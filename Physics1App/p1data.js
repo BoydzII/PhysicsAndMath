@@ -21,7 +21,8 @@
    probs:[id, id, id] (โจทย์ 3 ข้อแรกบนสไลด์) · problems:[โจทย์…]
 
    ── รูปแบบโจทย์ ────────────────────────────────────────────────────────────
-   { id, text, given:[…], hint, steps:[แถว…], ans:{ sym, val, unit, op? }, say?, main?:{ nm, tex } (แทนสมการหลักของหัวข้อ) }
+   { id, text, given:[…], hint, steps:[แถว…], ans:{ sym, val, unit, op? }, say?, main?:{ nm, tex } (แทนสมการหลักของหัวข้อ),
+     fig? (รูปประกอบเส้นทางเคลื่อนไหวบนสไลด์ — รูปแบบอยู่ที่ figGeom ใน SlideDeck/deck.js) }
    แถวของวิธีทำ
      [ตัวแปร, นิพจน์]             → ตัวแปร = นิพจน์            (ตัวแปร '' = บรรทัดต่อจากชุดเดิม)
      [ตัวแปร, ตัวดำเนินการ, นิพจน์] → เช่น ['v', '\\approx', '3.16']
@@ -110,7 +111,7 @@ var P1_TOPIC_ORDER = [];
         problems: (S.problems || []).map(function (p) {
           var given = (p.given || []).join(', ');
           return {
-            id: p.id, text: p.text, hints: p.hint || '', answer: p.ans ? String(p.ans.val) : undefined, say: p.say, main: p.main,
+            id: p.id, text: p.text, hints: p.hint || '', answer: p.ans ? String(p.ans.val) : undefined, say: p.say, main: p.main, fig: p.fig,
             guide: guideHTML(p),
             intermediateHtml: (given ? '<div class="step" style="color:var(--text-light);font-size:0.95rem;"><b>โจทย์กำหนด:</b> ' + given + '</div>' : '') + answerLine(p),
             advancedHtml: answerLine(p)
