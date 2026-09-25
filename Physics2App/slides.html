@@ -231,12 +231,36 @@ svg .dsh{stroke:var(--ink3);stroke-width:2;stroke-dasharray:6 7;fill:none}
 #lock .row{display:flex;gap:12px;flex-wrap:wrap}
 #lock a{font:700 17px var(--head);text-decoration:none;border-radius:99px;padding:12px 24px;border:1.5px solid var(--ink);color:var(--ink)}
 #lock a.pri{background:#e4572e;border-color:#e4572e;color:#fff}
+/* ── หน้าเลือกบท (เปิดโดยไม่ระบุ ?ch=) ─────────────────── */
+#pick{position:fixed;inset:0;overflow:auto;background:var(--paper);z-index:90;padding:clamp(28px,6vh,64px) max(20px,7vw)}
+#pick .k{font:400 18px var(--head);color:var(--ink3);margin-bottom:10px}
+#pick h1{font:700 clamp(34px,5vw,60px)/1.2 var(--head);margin:0 0 clamp(20px,4vh,40px)}
+#pick a.ch{display:grid;grid-template-columns:clamp(90px,14vw,190px) 1fr auto;align-items:center;gap:clamp(12px,3vw,40px);padding:clamp(16px,3vh,28px) 0;border-top:1px solid var(--rule);color:var(--ink);text-decoration:none}
+#pick a.ch:last-of-type{border-bottom:1px solid var(--rule)}
+#pick a.ch:hover .t,#pick a.ch:focus-visible .t{color:var(--c)}
+#pick .n{font:200 clamp(56px,10vw,130px)/.9 var(--head);color:var(--c)}
+#pick .t{font:700 clamp(22px,3vw,38px)/1.3 var(--head);transition:color .2s}
+#pick .s{display:block;font:400 clamp(14px,1.5vw,19px)/1.7 var(--body);color:var(--ink2);margin-top:4px}
+#pick .go{font:400 clamp(14px,1.4vw,17px) var(--head);color:var(--ink3);white-space:nowrap}
+@media (max-width:640px){#pick a.ch{grid-template-columns:72px 1fr}#pick .go{display:none}}
+/* ── ปุ่มเลือกบทในแถบควบคุม ─────────────────────────── */
+#hud #bCh{width:auto;padding:0 14px;font:700 15px var(--head);gap:6px;display:flex;border:1px solid var(--rule)}
+#chmenu{position:fixed;left:18px;bottom:60px;z-index:55;background:var(--paper);border:1px solid var(--rule);border-radius:10px;padding:6px;display:none;min-width:280px;box-shadow:0 8px 28px rgba(0,0,0,.12)}
+#chmenu.show{display:block}
+#chmenu a{display:flex;gap:14px;align-items:baseline;padding:10px 12px;border-radius:6px;color:var(--ink);text-decoration:none;font:400 17px var(--head)}
+#chmenu a b{font:200 26px var(--head);color:var(--c);min-width:26px}
+#chmenu a:hover{background:var(--paper2)}
+#chmenu a.cur{background:var(--paper2);font-weight:700}
+#ov .ovch{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:8px;font:400 17px var(--head);color:var(--ink3)}
+#ov .ovch a{padding:8px 16px;border:1px solid var(--rule);border-radius:99px;color:var(--ink2);text-decoration:none}
+#ov .ovch a.cur{background:var(--ink);border-color:var(--ink);color:var(--paper);font-weight:700}
 #blank.show{display:block}
 </style>
 </head>
 <body>
 <div id="viewport"><div id="stage"><div id="deck"></div><div id="wipe"><span class="n"></span><span class="t"></span></div></div></div>
 <div id="hud">
+  <button id="bCh" title="เปลี่ยนบท (กด 5 · 6 · 7)"><i class="ph ph-books"></i><span id="bChT"></span></button>
   <button id="bPrev" title="ย้อนกลับ (←)"><i class="ph ph-caret-left"></i></button>
   <button id="bNext" title="ถัดไป (→ หรือ Space)"><i class="ph ph-caret-right"></i></button>
   <div id="bar"></div>
@@ -246,6 +270,8 @@ svg .dsh{stroke:var(--ink3);stroke-width:2;stroke-dasharray:6 7;fill:none}
   <button id="bFull" title="เต็มจอ (F)"><i class="ph ph-corners-out"></i></button>
 </div>
 <div id="ov"></div>
+<div id="chmenu" role="menu"></div>
+<div id="pick" hidden></div>
 <div id="blank"></div>
 <div id="lock" role="dialog" aria-labelledby="lockH"><div class="in">
   <div class="k"><i class="ph ph-lock-simple"></i> สไลด์สอนฟิสิกส์ 2</div>
@@ -604,21 +630,21 @@ const SECTIONS7 = [
    เลือกบท — slides.html?ch=6 (ไม่ระบุ = บทที่ 5)
    ════════════════════════════════════════════════════════════════ */
 const CHAPTERS = {
-  5: { no: 5, title: 'งานและพลังงาน', cover: ['งานและ', 'พลังงาน'], en: 'Work and Energy',
+  5: { no: 5, color: '#e4572e', title: 'งานและพลังงาน', cover: ['งานและ', 'พลังงาน'], en: 'Work and Energy',
        road: 'ห้าเรื่องที่ต่อกันเป็นเรื่องเดียว', sections: SECTIONS5,
        sum: [
          ['work', 'งาน', R`W = Fs\cos\theta`], ['power', 'กำลัง', R`P = \frac{W}{t} = Fv`],
          ['kinetic', 'งาน–พลังงานจลน์', R`W_{net} = \Delta E_k`], ['potential', 'พลังงานศักย์', R`E_p = mgh,\ \ \tfrac12 kx^2`],
          ['conservation', 'อนุรักษ์พลังงานกล', R`E_{k1}+E_{p1}+W_{nc} = E_{k2}+E_{p2}`] ],
        story: 'แรงทำงาน → พลังงานเปลี่ยนรูป → ผลรวมคงตัว' },
-  6: { no: 6, title: 'โมเมนตัมและการชน', cover: ['โมเมนตัม', 'และการชน'], en: 'Momentum and Collisions',
+  6: { no: 6, color: '#1f6fd1', title: 'โมเมนตัมและการชน', cover: ['โมเมนตัม', 'และการชน'], en: 'Momentum and Collisions',
        road: 'สามเรื่องของมวลที่กำลังเคลื่อนที่', sections: SECTIONS6,
        sum: [
          ['momentum', 'โมเมนตัม', R`\overrightharpoon p = m\overrightharpoon v`], ['momentum', 'เปลี่ยนโมเมนตัม', R`\Delta\overrightharpoon p = m\overrightharpoon v - m\overrightharpoon u`],
          ['impulse', 'การดล', R`\overrightharpoon F\,\Delta t = \Delta\overrightharpoon p`], ['collision', 'อนุรักษ์โมเมนตัม', R`\textstyle\sum\overrightharpoon p_{\text{ก่อน}} = \sum\overrightharpoon p_{\text{หลัง}}`],
          ['collision', 'ชนแบบยืดหยุ่น', R`E_k\ \text{ก่อนชน} = E_k\ \text{หลังชน}`] ],
        story: 'แรงกระทำช่วงเวลาหนึ่ง → โมเมนตัมเปลี่ยน → ไม่มีแรงภายนอก โมเมนตัมรวมคงตัว' },
-  7: { no: 7, title: 'การเคลื่อนที่แบบต่าง ๆ', cover: ['การเคลื่อนที่', 'แบบต่าง ๆ'], en: 'Projectile, Circular and Simple Harmonic Motion',
+  7: { no: 7, color: '#1f8a5a', title: 'การเคลื่อนที่แบบต่าง ๆ', cover: ['การเคลื่อนที่', 'แบบต่าง ๆ'], en: 'Projectile, Circular and Simple Harmonic Motion',
        road: 'สามแบบของการเคลื่อนที่ที่ไม่ใช่เส้นตรง', sections: SECTIONS7,
        sum: [
          ['projectile', 'โพรเจกไทล์ แยกแกน', R`v_x = u\cos\theta,\ \ v_y = u\sin\theta - gt`], ['projectile', 'พิสัย', R`R = \frac{u^2\sin 2\theta}{g}`],
@@ -626,7 +652,23 @@ const CHAPTERS = {
          ['shm', 'คาบ', R`T = 2\pi\sqrt{\frac{m}{k}} = 2\pi\sqrt{\frac{L}{g}}`] ],
        story: 'แยกแกน · หาแรงสู่ศูนย์กลาง · หาแรงดึงกลับ' }
 };
-const CH_NO = (() => { const m = location.search.match(/[?&]ch=(\d)/); return m && CHAPTERS[m[1]] ? +m[1] : 5; })();
+const CH_ASK = location.search.match(/[?&]ch=(\d)/);
+const chHref = n => '?ch=' + n;
+if (!CH_ASK || !CHAPTERS[CH_ASK[1]]){
+  document.getElementById('viewport').remove();
+  document.getElementById('hud').remove();
+  const pk = document.getElementById('pick');
+  pk.hidden = false;
+  pk.innerHTML = '<div class="k">ฟิสิกส์ 2 · ม.4 เล่ม 2 · สไลด์สอน</div><h1>เลือกบทที่จะสอน</h1>' +
+    Object.values(CHAPTERS).map(c => '<a class="ch" href="' + chHref(c.no) + '" style="--c:' + c.color + '">' +
+      '<span class="n">' + c.no + '</span>' +
+      '<span class="t">บทที่ ' + c.no + ' ' + c.title +
+        '<span class="s">' + c.sections.map(S => S.num + ' ' + S.title).join(' · ') + '</span></span>' +
+      '<span class="go">เปิดบทนี้ →</span></a>').join('');
+  document.title = 'สไลด์สอนฟิสิกส์ 2 · เลือกบท';
+  return;
+}
+const CH_NO = +CH_ASK[1];
 const CHAPTER = CHAPTERS[CH_NO];
 const SECTIONS = CHAPTER.sections;
 
@@ -770,7 +812,7 @@ function cover(){
     <div class="meta">${CHAPTER.en} — ทฤษฎี · สมการ · ชีวิตจริง · โจทย์ทีละขั้น</div>
     <nav class="chnav nointeract">${Object.values(CHAPTERS).map(c => c.no === CHAPTER.no
       ? `<b>บทที่ ${c.no} ${c.title}</b>` : `<a href="?ch=${c.no}">บทที่ ${c.no} ${c.title}</a>`).join('')}</nav>
-    <div class="keys"><kbd>→</kbd> <kbd>Space</kbd> หรือคลิก ไปต่อ · <kbd>←</kbd> ย้อน<br><kbd>O</kbd> ภาพรวม · <kbd>F</kbd> เต็มจอ · <kbd>D</kbd> มืด/สว่าง · <kbd>B</kbd> จอดำ</div>` };
+    <div class="keys"><kbd>→</kbd> <kbd>Space</kbd> หรือคลิก ไปต่อ · <kbd>←</kbd> ย้อน<br><kbd>5</kbd><kbd>6</kbd><kbd>7</kbd> เปลี่ยนบท · <kbd>O</kbd> ภาพรวม · <kbd>F</kbd> เต็มจอ · <kbd>D</kbd> มืด/สว่าง · <kbd>B</kbd> จอดำ</div>` };
 }
 function roadmap(){
   return { title:'เนื้อหาในบทนี้', html: `
@@ -1563,6 +1605,13 @@ document.getElementById('bNext').onclick = next;
 document.getElementById('bFull').onclick = toggleFull;
 document.getElementById('bTheme').onclick = toggleTheme;
 document.getElementById('bOv').onclick = toggleOv;
+const chmenu = document.getElementById('chmenu');
+document.getElementById('bChT').textContent = 'บทที่ ' + CH_NO;
+chmenu.innerHTML = Object.values(CHAPTERS).map(c => '<a role="menuitem" href="' + chHref(c.no) + '" class="' + (c.no === CH_NO ? 'cur' : '') + '" style="--c:' + c.color + '"><b>' + c.no + '</b>' + c.title + '</a>').join('') +
+  '<a role="menuitem" href="?"><b>·</b>หน้าเลือกบท</a>';
+document.getElementById('bCh').onclick = e => { e.stopPropagation(); chmenu.classList.toggle('show'); };
+addEventListener('click', e => { if (!e.target.closest('#chmenu, #bCh')) chmenu.classList.remove('show'); });
+function goChapter(n){ if (CHAPTERS[n] && +n !== CH_NO) location.href = chHref(n); }
 
 function toggleFull(){ document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen?.(); }
 function toggleTheme(){
@@ -1576,7 +1625,7 @@ try { const t = localStorage.getItem('p2slides.theme'); if (t) document.document
 const ov = document.getElementById('ov');
 function toggleOv(){
   if (ov.classList.toggle('show')){
-    ov.innerHTML = groups.map(g => {
+    ov.innerHTML = '<div class="ovch">บท ' + Object.values(CHAPTERS).map(c => '<a href="' + chHref(c.no) + '" class="' + (c.no === CH_NO ? 'cur' : '') + '">บทที่ ' + c.no + ' ' + c.title + '</a>').join('') + '</div>' + groups.map(g => {
       const S = SECTIONS.find(x => x.key === g.key);
       const head = S ? `${S.num} ${S.title}` : g.key === '_' ? 'เริ่มบท' : 'สรุป';
       return `<h3 style="--c:${g.color}">${head}</h3><div class="g">${g.idx.map(i => `<div class="card ${i === cur ? 'cur' : ''}" style="--c:${g.color}" data-i="${i}"><small>${i + 1}</small><span>${slides[i].title}</span></div>`).join('')}</div>`;
@@ -1596,6 +1645,8 @@ addEventListener('keydown', e => {
   if (['ArrowRight','ArrowDown',' ','PageDown','Enter'].includes(k)){ e.preventDefault(); next(); }
   else if (['ArrowLeft','ArrowUp','PageUp','Backspace'].includes(k)){ e.preventDefault(); prev(); }
   else if (k === 'Home') show(0, -1);
+  else if (/^[5-7]$/.test(k)) goChapter(k);
+  else if (k === 'Escape' && chmenu.classList.contains('show')) chmenu.classList.remove('show');
   else if (k === 'End') show(slides.length - 1, 1);
   else if (k === 'o' || k === 'O' || (k === 'Escape' && ov.classList.contains('show'))) toggleOv();
   else if (k === 'f' || k === 'F') toggleFull();
