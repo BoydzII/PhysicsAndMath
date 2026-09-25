@@ -116,6 +116,10 @@ __pycache__/
 Thumbs.db
 
 # ---- แอป Interactive ฟิสิกส์ 2 ----
+!SlideDeck/
+SlideDeck/*
+!SlideDeck/deck.js
+!SlideDeck/deck.css
 !Physics2App/
 Physics2App/*
 !Physics2App/index.html
