@@ -489,7 +489,7 @@ function probSlide(S, order, pid, label){
     }).join('');
     return `
       <div class="ptop">${kick(S, tag)}
-        <div class="chips nointeract">เปลี่ยนข้อ ${list.map((x,i) => `<button data-pid="${x.id}" class="${x.id === p.id ? 'cur' : ''}" title="${esc(x.text.replace(/\$/g,'').slice(0,80))}">${i+1}</button>`).join('')}</div></div>
+        <div class="chips nointeract${list.length > 16 ? ' dense' : ''}">เปลี่ยนข้อ ${list.map((x,i) => `<button data-pid="${x.id}" class="${x.id === p.id ? 'cur' : ''}" title="${esc(x.text.replace(/\$/g,'').slice(0,80))}">${i+1}</button>`).join('')}</div></div>
       <div class="pbody">
         <div class="pq">
           <div class="num">${String(idx).padStart(2,'0')}</div>
