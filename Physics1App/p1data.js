@@ -73,8 +73,11 @@ var P1_TOPIC_ORDER = [];
       if (L.prob) return;
       h += '<section class="p1-lesson"><h3 class="eq-sec">' + L.h + '</h3>';
       if (L.lead) h += '<p>' + L.lead + '</p>';
+      if (L.defs) h += '<section class="defs"><dl>' + L.defs.map(function (d) {
+        return '<div class="def"><dt><span class="def-th">' + d.t + '</span>' + (d.e ? '<span class="def-en" lang="en">' + esc(d.e) + '</span>' : '') + (d.s ? '<span class="def-sym">' + d.s + '</span>' : '') + '</dt><dd class="def-text">' + d.th + '</dd></div>';
+      }).join('') + '</dl></section>';
       if (L.hero) {
-        h += '<section class="eq-core"><div class="eq-label">' + L.hero.lbl + '</div><div class="eq-block">$$' + L.hero.eq + '$$</div><ol class="derive">';
+        h += '<section class="eq-core"><div class="eq-label">' + L.hero.lbl + '</div><div class="eq-block">$$' + L.hero.eq + '$$</div><ol class="derive"' + (L.start ? ' style="counter-reset:d ' + (L.start - 1) + '"' : '') + '>';
         (L.steps || []).forEach(function (st) { h += '<li><p>' + st.t + '</p>' + (st.eq ? '<div class="eq-block">$$' + st.eq + '$$</div>' : '') + '</li>'; });
         h += '</ol></section>';
       }
