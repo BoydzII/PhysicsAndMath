@@ -471,6 +471,11 @@ function renderApp() {
   const notebookContainer = document.getElementById('notebookContainer');
   let html = '';
   
+  // หัวข้อบทนำที่ไม่มีโจทย์ (เช่น 1.1) — บอกให้ไปทำโจทย์ที่หัวข้อถัดไป แทนหน้าว่าง
+  if (data.problems && !data.problems.length) {
+    const i = P1_TOPIC_ORDER.findIndex(t => t.key === currentTopic), next = P1_TOPIC_ORDER[i + 1];
+    html += `<div class="problem-block"><div class="problem-text">หัวข้อนี้เป็นบทนำ อ่านทฤษฎีทางซ้ายให้เข้าใจก่อน ยังไม่มีโจทย์${next ? ` — เริ่มทำโจทย์ได้ที่หัวข้อ <b>${next.label}</b>` : ''}</div></div>`;
+  }
   if (data.problems) {
     data.problems.forEach((prob, idx) => {
       html += `<div class="problem-block" data-id="${prob.id}">`;

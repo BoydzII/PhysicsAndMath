@@ -64,6 +64,7 @@ kbd{font:400 17px var(--head);border:1px solid var(--rule);border-bottom-width:2
 .def{display:grid;grid-template-columns:420px 1fr;gap:48px;padding:26px 0;border-bottom:1px solid var(--rule)}
 .def dt{font:700 40px/1.35 var(--head)}
 .def dt .sym{display:block;font:400 26px/1.6 var(--body);color:var(--acc);margin-top:6px}
+.def dt .en{display:block;font:400 22px/1.4 var(--head);color:var(--ink3);margin-top:2px}
 .def dd{margin:0;font-size:28px;line-height:1.75}
 .def dd b{color:var(--acc);font-weight:700}
 
@@ -322,3 +323,9 @@ body.editing .slide{cursor:default}
 .flegend .ld i::after{content:"";position:absolute;right:-6px;top:-10px;border:7.5px solid transparent;border-left:11px solid #1f5fd6}
 .figsvg .frad{stroke:var(--ink3);stroke-width:2;stroke-dasharray:4 6}
 .figsvg .fcen{fill:var(--ink3)}
+.core.wide{grid-template-columns:420px minmax(0,1fr);gap:48px}
+.core.wide .hero{padding:24px 28px}
+.core.wide .hero .katex{font-size:1.6em}
+.core.wide .steps li{padding-bottom:14px}
+.core.wide .steps li p{font-size:27px;line-height:1.5}
+.core.wide .steps li .katex-display{margin-top:4px}

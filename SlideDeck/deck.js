@@ -297,7 +297,7 @@ function coreSlide(S){
       <ol class="steps">${c.steps.map(s => `<li class="f"><p>${s.t}</p>${s.eq ? "$$" + s.eq + "$$" : ""}</li>`).join('')}</ol>
     </div>` };
 }
-// บทเรียนย่อยของหัวข้อ (S.lessons) — สไลด์เดียวประกอบจากส่วนที่มี: lead · hero+steps · table · rules · note
+// บทเรียนย่อยของหัวข้อ (S.lessons) — สไลด์เดียวประกอบจากส่วนที่มี: lead · defs · hero+steps (start = เลขขั้นแรก · wide = ช่องขั้นตอนกว้าง) · table · rules · note
 //   table:{ cols:[…], rows:[[…]], split?:2, w?:ความกว้างคอลัมน์ (grid), quiz?:true (เผยช่องที่ 2 เป็นต้นไปทีละแถว) }
 //   rules:[{ t, ex:[[tex, จำนวน]] }]  การ์ดกฎพร้อมตัวอย่าง
 function lessonSlide(S, L){
@@ -311,10 +311,11 @@ function lessonSlide(S, L){
   };
   const body = [
     L.lead ? `<p class="llead">${L.lead}</p>` : '',
-    L.hero ? `<div class="core">
+    L.hero ? `<div class="core${L.wide ? ' wide' : ''}">
       <div class="hero"><div class="lbl">${L.hero.lbl}</div>$$${L.hero.eq}$$</div>
-      <ol class="steps">${(L.steps || []).map(s => `<li class="f"><p>${s.t}</p>${s.eq ? "$$" + s.eq + "$$" : ""}</li>`).join('')}</ol>
+      <ol class="steps"${L.start ? ` style="counter-reset:s ${L.start - 1}"` : ''}>${(L.steps || []).map(s => `<li class="f"><p>${s.t}</p>${s.eq ? "$$" + s.eq + "$$" : ""}</li>`).join('')}</ol>
     </div>` : '',
+    L.defs ? `<dl class="defs">${L.defs.map((x, i) => `<div class="def ${i ? 'f' : ''}"><dt>${x.t}${x.e ? `<small class="en">${x.e}</small>` : ''}${x.s ? `<span class="sym">${x.s}</span>` : ''}</dt><dd>${x.th}</dd></div>`).join('')}</dl>` : '',
     L.table ? tbl(L.table) : '',
     L.rules ? `<div class="rules">${L.rules.map((r, i) => `<div class="rule f"><span class="n">${i + 1}</span><p>${r.t}</p>
       <div class="ex">${r.ex.map(([x, c]) => `<span><span class="x">$${x}$</span><b>${c}</b></span>`).join('')}</div></div>`).join('')}</div>` : '',
