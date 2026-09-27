@@ -297,7 +297,7 @@ function coreSlide(S){
       <ol class="steps">${c.steps.map(s => `<li class="f"><p>${s.t}</p>${s.eq ? "$$" + s.eq + "$$" : ""}</li>`).join('')}</ol>
     </div>` };
 }
-// บทเรียนย่อยของหัวข้อ (S.lessons) — สไลด์เดียวประกอบจากส่วนที่มี: lead · defs · hero+steps (start = เลขขั้นแรก · wide = ช่องขั้นตอนกว้าง) · table · rules · note
+// บทเรียนย่อยของหัวข้อ (S.lessons) — สไลด์เดียวประกอบจากส่วนที่มี: lead · defs · hero+steps (start = เลขขั้นแรก · wide = ช่องขั้นตอนกว้าง) · table · rules · bank:[{ nm, s?, eq }] (cols) · note
 //   table:{ cols:[…], rows:[[…]], split?:2, w?:ความกว้างคอลัมน์ (grid), quiz?:true (เผยช่องที่ 2 เป็นต้นไปทีละแถว) }
 //   rules:[{ t, ex:[[tex, จำนวน]] }]  การ์ดกฎพร้อมตัวอย่าง
 function lessonSlide(S, L){
@@ -317,6 +317,7 @@ function lessonSlide(S, L){
     </div>` : '',
     L.defs ? `<dl class="defs">${L.defs.map((x, i) => `<div class="def ${i ? 'f' : ''}"><dt>${x.t}${x.e ? `<small class="en">${x.e}</small>` : ''}${x.s ? `<span class="sym">${x.s}</span>` : ''}</dt><dd>${x.th}</dd></div>`).join('')}</dl>` : '',
     L.table ? tbl(L.table) : '',
+    L.bank ? `<div class="bank" style="--c:${L.cols || 3}">${L.bank.map(b => `<div class="bc"><div class="bn">${b.nm}${b.s ? `<small>${b.s}</small>` : ''}</div>$$${b.eq}$$</div>`).join('')}</div>` : '',
     L.rules ? `<div class="rules">${L.rules.map((r, i) => `<div class="rule f"><span class="n">${i + 1}</span><p>${r.t}</p>
       <div class="ex">${r.ex.map(([x, c]) => `<span><span class="x">$${x}$</span><b>${c}</b></span>`).join('')}</div></div>`).join('')}</div>` : '',
     L.note ? `<p class="lnote f">${L.note}</p>` : ''
@@ -565,7 +566,12 @@ SECTIONS.forEach(S => {
   // บทเรียนย่อยมาก่อนสมการตั้งต้น · { prob:id } = ตัวอย่างโจทย์คั่นระหว่างบทเรียน
   let ex = 0;
   (S.lessons || []).forEach(L => slides.push(L.prob ? probSlide(S, 0, L.prob, 'ตัวอย่างที่ ' + (++ex)) : Object.assign(lessonSlide(S, L), { S })));
-  [coreSlide, simSlide, eqsSlide, lifeSlide, thinkSlide].filter(keep).forEach(add);
+  // S.after = บทเรียนต่อท้ายสไลด์ "สรุปสูตรในบทนี้" (เช่น คลังสมการ ม.ปลาย ใน 1.1)
+  [coreSlide, simSlide, eqsSlide, lifeSlide, thinkSlide].filter(keep).forEach(fn => {
+    add(fn);
+    if (fn === eqsSlide) (S.after || []).forEach(L => slides.push(Object.assign(lessonSlide(S, L), { S })));
+  });
+  if (!keep(eqsSlide)) (S.after || []).forEach(L => slides.push(Object.assign(lessonSlide(S, L), { S })));
   (S.probs || []).forEach((pid, i) => slides.push(probSlide(S, i + 1, pid)));
 });
 slides.push(summary());
