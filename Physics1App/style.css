@@ -995,3 +995,4 @@ select#topicSelector {
 .p1-ex span { background: var(--core-bg, #f5f5fd); border-radius: 6px; padding: 2px 10px; }
 .p1-ex b { color: var(--core, #4338ca); font-size: 0.85rem; }
 .p1-note { border-left: 3px solid var(--core, #4338ca); background: var(--core-bg, #f5f5fd); padding: 8px 12px; border-radius: 0 6px 6px 0; }
+.p1-bank-s { color: var(--ink-3, #737a8f); font-weight: 400; font-size: 0.85em; }

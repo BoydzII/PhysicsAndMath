@@ -331,3 +331,11 @@ body.editing .slide{cursor:default}
 .core.wide .steps li{padding-bottom:14px}
 .core.wide .steps li p{font-size:27px;line-height:1.5}
 .core.wide .steps li .katex-display{margin-top:4px}
+
+/* ── คลังสมการ (bank) ── */
+.s-lesson .bank{display:grid;grid-template-columns:repeat(var(--c),minmax(0,1fr));gap:12px 16px}
+.bc{border:1px solid var(--rule);border-radius:10px;padding:10px 16px 8px;background:var(--paper);min-width:0}
+.bn{font:700 20px/1.35 var(--head);color:var(--acc)}
+.bn small{display:block;font:400 16px/1.35 var(--body);color:var(--ink3)}
+.bc .katex-display{margin:6px 0 2px;text-align:left}
+.bc .katex-display>.katex{text-align:left;font-size:1.12em}

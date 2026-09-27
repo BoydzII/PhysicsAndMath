@@ -16,6 +16,7 @@
    core:{ lbl, eq, steps:[{ t, eq? }] } · eqs:[{ nm, s, eq }] · tips:[…] (จำให้ขึ้นใจ)
    life:[{ ic, h, p }] · think:{ q, a } · main:{ nm, tex } (สมการหลักของโจทย์)
    sim? simTitle simText simTry (แบบจำลองในสไลด์ — โค้ดอยู่ใน slides.html)
+   after?:[บทเรียนย่อย…] ต่อท้ายสรุปสูตร (เช่น คลังสมการ bank:[{ nm, s?, eq }] ใน content_ch1_bank.js)
    lessons?:[บทเรียนย่อย…] ก่อนสมการตั้งต้น — { kick, h, lead?, hero?:{ lbl, eq }, steps?, table?:{ cols, rows, split?, quiz? }, rules?:[{ t, ex:[[tex, จำนวน]] }], note? }
             หรือ { prob:id } = ตัวอย่างโจทย์คั่นในสไลด์ (ในแอปอยู่ในรายการโจทย์ตามปกติ)
    probs:[id, id, id] (โจทย์ 3 ข้อแรกบนสไลด์) · problems:[โจทย์…]
@@ -69,8 +70,10 @@ var P1_TOPIC_ORDER = [];
   function theoryHTML(S) {
     var h = '<h2><span class="t-num">' + S.num + '</span>' + S.title + ' (' + S.en + ')</h2>';
     if (S.lead) h += '<p class="lead">' + S.lead + '</p>';
-    (S.lessons || []).forEach(function (L) {
-      if (L.prob) return;
+    (S.lessons || []).forEach(function (L) { h += lessonHTML(L); });
+    function lessonHTML(L) {
+      var h = '';
+      if (L.prob) return h;
       h += '<section class="p1-lesson"><h3 class="eq-sec">' + L.h + '</h3>';
       if (L.lead) h += '<p>' + L.lead + '</p>';
       if (L.defs) h += '<section class="defs"><dl>' + L.defs.map(function (d) {
@@ -86,9 +89,12 @@ var P1_TOPIC_ORDER = [];
       if (L.rules) h += '<ol class="p1-rules">' + L.rules.map(function (r) {
         return '<li><p>' + r.t + '</p><div class="p1-ex">' + r.ex.map(function (e) { return '<span>$' + e[0] + '$ <b>' + e[1] + '</b></span>'; }).join('') + '</div></li>';
       }).join('') + '</ol>';
+      if (L.bank) h += '<div class="eq-list">' + L.bank.map(function (b) {
+        return '<div class="eq-row"><div class="eq-name">' + b.nm + (b.s ? ' <span class="p1-bank-s">· ' + b.s + '</span>' : '') + '</div><div class="eq-block">$$' + b.eq + '$$</div></div>';
+      }).join('') + '</div>';
       if (L.note) h += '<p class="p1-note">' + L.note + '</p>';
-      h += '</section>';
-    });
+      return h + '</section>';
+    }
     if (S.core) {
       h += '<section class="eq-core"><div class="eq-label">' + S.core.lbl + '</div><div class="eq-block">$$' + S.core.eq + '$$</div><ol class="derive">';
       S.core.steps.forEach(function (st) { h += '<li><p>' + st.t + '</p>' + (st.eq ? '<div class="eq-block">$$' + st.eq + '$$</div>' : '') + '</li>'; });
@@ -99,6 +105,7 @@ var P1_TOPIC_ORDER = [];
       S.eqs.forEach(function (e) { h += '<div class="eq-row"><div class="eq-name">' + e.nm + '</div><div class="eq-block">$$' + e.eq + '$$</div></div>'; });
       h += '</div>';
     }
+    (S.after || []).forEach(function (L) { h += lessonHTML(L); });
     if (S.tips && S.tips.length) h += '<aside class="tips"><div class="tips-title">จำให้ขึ้นใจ</div><ul>' + S.tips.map(function (t) { return '<li>' + t + '</li>'; }).join('') + '</ul></aside>';
     if (S.life && S.life.length) h += '<aside class="tips"><div class="tips-title">ในชีวิตประจำวัน</div><ul>' + S.life.map(function (l) { return '<li><b>' + l.h + '</b> — ' + l.p + '</li>'; }).join('') + '</ul></aside>';
     if (S.think) h += '<aside class="tips"><div class="tips-title">ชวนคิด</div><ul><li>' + S.think.q + '</li><li><details><summary>ดูคำตอบ</summary>' + S.think.a + '</details></li></ul></aside>';
