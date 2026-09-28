@@ -1335,7 +1335,7 @@ table td,table th,.num,.xpstat b,.tick,
    *** ห้ามลบบรรทัดเครื่องหมาย @@BUILTIN@@ ทั้งสองอัน ตัวสร้างไฟล์ใช้หาตำแหน่ง ***
    ========================================================================== */
 /* @@BUILTIN@@ */
-const BUILTIN = {"url":"https://script.google.com/macros/s/AKfycbxVa8BYYQeIhBDmg85w2UBwsIqt6a2YudehUfCbyMny9T-5TTh1UfFxsJjTk9HLNuFc/exec","studentOnly":false,"lockCloud":true,"logo":"","header":null,"about":null,"build":"2026-09-28 22:21","ver":"v8.255","books":[{"url":"https://script.google.com/macros/s/AKfycbxVa8BYYQeIhBDmg85w2UBwsIqt6a2YudehUfCbyMny9T-5TTh1UfFxsJjTk9HLNuFc/exec","name":"ชีตวิทยาศาสตร์กายภาพ"},{"url":"https://script.google.com/macros/s/AKfycbzuuRbnE_oB7a9vx7zZizyPVEKao31ERDTU82DvydMuRTDqVoQvgns9EsjTIzpbBjuM/exec","name":"ชีตฟิสิกส์"}]};
+const BUILTIN = {"url":"https://script.google.com/macros/s/AKfycbxVa8BYYQeIhBDmg85w2UBwsIqt6a2YudehUfCbyMny9T-5TTh1UfFxsJjTk9HLNuFc/exec","studentOnly":false,"lockCloud":true,"logo":"","header":null,"about":null,"build":"2026-09-28 22:31","ver":"v8.256","books":[{"url":"https://script.google.com/macros/s/AKfycbxVa8BYYQeIhBDmg85w2UBwsIqt6a2YudehUfCbyMny9T-5TTh1UfFxsJjTk9HLNuFc/exec","name":"ชีตวิทยาศาสตร์กายภาพ"},{"url":"https://script.google.com/macros/s/AKfycbzuuRbnE_oB7a9vx7zZizyPVEKao31ERDTU82DvydMuRTDqVoQvgns9EsjTIzpbBjuM/exec","name":"ชีตฟิสิกส์"}]};
 /* @@BUILTIN-END@@ */
 
 /* ถ่ายภาพซอร์สของหน้านี้ไว้ตั้งแต่สคริปต์เพิ่งเริ่มทำงาน
@@ -7100,6 +7100,7 @@ function createQuiz(o) {
     kind: o.kind === 'test' ? 'test' : 'practice',
     // แบบทดสอบสลับลำดับตัวเลือกของแต่ละคนเป็นค่าเริ่มต้น เก็บไว้เฉพาะตอนครูปิด
     mix: o.kind === 'test' && o.mix === false ? false : undefined,
+    qmix: o.kind === 'test' && o.qmix === false ? false : undefined,   // สลับลำดับข้อ (ไม่ระบุ = สลับ)
     seedShift: o.kind === 'test' ? (Math.floor(Math.random() * 2000000000) + 1) : 0,
     /* กติกาคุมสอบติดไปกับตัวชุดโจทย์เสมอ ไม่ใช่ให้ไปอ่านค่าตั้งตอนเริ่มทำ
        เพราะรหัสใบงานที่แจกนักเรียนพาไปได้แค่สิ่งที่อยู่ในตัวชุดเท่านั้น */
@@ -13405,7 +13406,11 @@ function renderMake() {
       ? '<label class="chk' + (c.mixCh !== false ? ' on' : '') + '" style="display:flex;margin-bottom:12px">' +
         '<input type="checkbox" id="mixCh"' + (c.mixCh !== false ? ' checked' : '') + '>' +
         '<span><span class="t">🔀 สลับลำดับตัวเลือกของแต่ละคน</span><br><span class="d">' +
-        'นักเรียนแต่ละคนเห็นตัวเลือก ก ข ค ง เรียงไม่เหมือนกัน บอกกันหรือดูของเพื่อนไม่ได้ · คะแนนตรวจได้ตามปกติ</span></span></label>'
+        'นักเรียนแต่ละคนเห็นตัวเลือก ก ข ค ง เรียงไม่เหมือนกัน บอกกันหรือดูของเพื่อนไม่ได้ · คะแนนตรวจได้ตามปกติ</span></span></label>' +
+        '<label class="chk' + (c.qmixCh !== false ? ' on' : '') + '" style="display:flex;margin-bottom:12px">' +
+        '<input type="checkbox" id="qmixCh"' + (c.qmixCh !== false ? ' checked' : '') + '>' +
+        '<span><span class="t">🔢 สลับลำดับข้อของแต่ละคน</span><br><span class="d">' +
+        'ข้อ 1 ของแต่ละคนเป็นคนละข้อ (สลับภายในระดับความยากเดียวกัน ทุกคนยังเริ่มจากง่ายไปยาก) · คะแนนและรายงานของครูใช้เลขข้อเดิม</span></span></label>'
       : '') +
     '<div class="row"><input type="text" id="qtitle" class="grow" style="min-width:220px" placeholder="เช่น ใบงานที่ 1 การเคลื่อนที่แนวตรง" value="' +
     esc(c.lastTitle || '') + '">' +
@@ -13607,6 +13612,8 @@ function renderMake() {
   }));
   const mxc = $('#mixCh');
   if (mxc) mxc.addEventListener('change', e => { c.mixCh = e.target.checked; save(); renderMake(); });
+  const qmc = $('#qmixCh');
+  if (qmc) qmc.addEventListener('change', e => { c.qmixCh = e.target.checked; save(); renderMake(); });
   $('#btnGen').addEventListener('click', doGenerate);
   const bmc = $('#btnMc');
   if (bmc) bmc.addEventListener('click', () => mcDialog(null));
@@ -13768,7 +13775,7 @@ function doGenerate() {
     (QUIZ_KINDS[kind].name + ' ' + c.topics.map(shortOf).filter(Boolean).join(' + ') + ' ' + thDate(Date.now()));
   c.lastTitle = title;
   const q = createQuiz({
-    title: title, topics: c.topics, subs: c.subs, counts: counts, kind: kind, mix: c.mixCh !== false,
+    title: title, topics: c.topics, subs: c.subs, counts: counts, kind: kind, mix: c.mixCh !== false, qmix: c.qmixCh !== false,
     seed: Math.floor(Math.random() * 2000000000) + 1
   });
   if (q.error) { toast(q.error, 'bad'); return; }
@@ -14000,7 +14007,7 @@ async function startQuiz(quizId, assignCode) {
     examWakeOn();          // กันจอดับทั้งสองแบบ ไม่ใช่เฉพาะเต็มหน้าจอ
   }
   DB.attempts.push(a);
-  DB.cur.quizId = q.id; DB.cur.attemptId = a.id; DB.cur.i = 0;
+  DB.cur.quizId = q.id; DB.cur.attemptId = a.id; DB.cur.i = qOrderOf(a, q)[0] || 0;
   QT.i = -1;
   save(true);
   setTab('do');
@@ -14278,6 +14285,8 @@ function renderDo() {
   const probs = problemsOf(q);
   const i = clamp(DB.cur.i, 0, probs.length - 1);
   const p = probs[i], it = a.answers[i];
+  // i = เลขข้อเดิม (ใช้เก็บคำตอบ) · qpos = ลำดับที่นักเรียนคนนี้เห็น (ใช้แสดงเลขข้อ)
+  const qo = qOrderOf(a, q), qpos = Math.max(0, qo.indexOf(i));
   if (QT.i !== i) { QT.i = i; QT.t0 = Date.now(); }
 
   const done = a.answers.filter(x => x.checked).length;
@@ -14289,7 +14298,7 @@ function renderDo() {
     '<div class="grow"><b>' + esc(q.title) + '</b> ' +
     '<span class="tag ' + QUIZ_KINDS[quizKind(q)].cls + '">' + QUIZ_KINDS[quizKind(q)].name + '</span>' +
     '<div class="hint">ผู้ทำ: ' + esc(attemptWho(a)) +
-    ' · ข้อ ' + (i + 1) + ' จาก ' + probs.length +
+    ' · ข้อ ' + (qpos + 1) + ' จาก ' + probs.length +
     (T ? ' · ตอบแล้ว ' + done + ' ข้อ'
        : ' · ตรวจแล้ว ' + done + ' ข้อ · ได้ ' + fmt(gotScore) + ' คะแนน') +
     (T && a.limitSec ? ' · เหลือเวลา <span class="tag t" id="examClock">' + mmss(procSecLeft(a)) + '</span>' : '') +
@@ -14300,12 +14309,13 @@ function renderDo() {
     '<button class="sendbig" id="btnFinish">📤 ' + (T || isPaper(q) ? 'ส่งคำตอบ' : 'ส่งคำตอบ / จบชุดนี้') + '</button></div></div>' +
     '<div class="bar" style="margin-top:9px"><i style="width:' + Math.round(done / probs.length * 100) + '%"></i></div>' +
     '<div class="qnav" style="margin-top:11px">' +
-    a.answers.map((x, k) => {
+    qo.map((k, j) => {
+      const x = a.answers[k];
       let cls = '';
       // ระหว่างทำข้อสอบ แสดงแค่ว่าตอบแล้วหรือยัง ไม่บอกว่าถูกหรือผิด
       if (x.checked) cls = T ? 'half' : (x.score >= 1 ? 'ok' : (x.score > 0 ? 'half' : 'bad'));
       if (k === i) cls += ' cur';
-      return '<button class="' + cls + '" data-go="' + k + '">' + (k + 1) + '</button>';
+      return '<button class="' + cls + '" data-go="' + k + '">' + (j + 1) + '</button>';
     }).join('') + '</div>' +
     (T ? '<div class="hint" style="margin-top:9px">โหมดแบบทดสอบ — ไม่แสดงเฉลยและไม่บอกถูกผิดระหว่างทำ ' +
          'ตอบแล้ว<b>บันทึกในเครื่องให้ทันที</b> ไม่ต้องกดส่งทีละข้อ แก้ได้จนกว่าจะกด <b>ส่งคำตอบ</b> ครั้งเดียวตอนจบ</div>' : '') +
@@ -14330,7 +14340,7 @@ function renderDo() {
     $$('[data-go]').forEach(b => b.addEventListener('click', () => gotoQ(Number(b.dataset.go))));
     $('#btnFinish').addEventListener('click', finishAttempt);
     const sb = $('#skipBad');
-    if (sb) sb.addEventListener('click', () => gotoQ(Math.min(i + 1, probs.length - 1)));
+    if (sb) sb.addEventListener('click', () => gotoQ(qo[Math.min(qpos + 1, qo.length - 1)]));
     return;
   }
 
@@ -14508,7 +14518,7 @@ function renderDo() {
     return;
   }
 
-  h += '<div class="card">' + problemHead(p, i + 1) + problemBody(p);
+  h += '<div class="card">' + problemHead(p, qpos + 1) + problemBody(p);
 
   // --- ช่องตอบ ---
   h += '<div class="ansbox">';
@@ -14588,8 +14598,8 @@ function renderDo() {
   }
 
   h += '<div class="row" style="margin-top:14px">' +
-    '<button id="btnPrev"' + (i === 0 ? ' disabled' : '') + '>← ข้อก่อนหน้า</button>' +
-    '<button id="btnNext"' + (i === probs.length - 1 ? ' disabled' : '') + '>ข้อถัดไป →</button>' +
+    '<button id="btnPrev"' + (qpos === 0 ? ' disabled' : '') + '>← ข้อก่อนหน้า</button>' +
+    '<button id="btnNext"' + (qpos === qo.length - 1 ? ' disabled' : '') + '>ข้อถัดไป →</button>' +
     '<div class="grow"></div><span class="hint">ใช้เวลาข้อนี้ไปแล้ว ' + mmss(it.sec) + '</span></div>';
   h += '</div>';
 
@@ -14597,8 +14607,8 @@ function renderDo() {
 
   // --- ผูกเหตุการณ์ ---
   $$('[data-go]').forEach(b => b.addEventListener('click', () => gotoQ(Number(b.dataset.go))));
-  $('#btnPrev').addEventListener('click', () => gotoQ(i - 1));
-  $('#btnNext').addEventListener('click', () => gotoQ(i + 1));
+  $('#btnPrev').addEventListener('click', () => gotoQ(qo[Math.max(qpos - 1, 0)]));
+  $('#btnNext').addEventListener('click', () => gotoQ(qo[Math.min(qpos + 1, qo.length - 1)]));
   $('#btnFinish').addEventListener('click', finishAttempt);
   $$('[data-pick]').forEach(b => b.addEventListener('click', () => {
     it.pick = Number(b.dataset.pick);
@@ -14613,7 +14623,7 @@ function renderDo() {
     const nb = $('[data-go="' + i + '"]'); if (nb) nb.classList.toggle('half', !!it.checked);
     const ts = $('#tstate'); if (ts) ts.innerHTML = testStateHTML(it);
   };
-  const enterKey = e => { if (e.key !== 'Enter') return; e.preventDefault(); if (T) gotoQ(Math.min(i + 1, probs.length - 1)); else checkCurrent(); };
+  const enterKey = e => { if (e.key !== 'Enter') return; e.preventDefault(); if (T) gotoQ(qo[Math.min(qpos + 1, qo.length - 1)]); else checkCurrent(); };
   $$('[data-sur]').forEach(inp => {
     inp.addEventListener('input', e => {
       const k = Number(e.target.dataset.sur);
@@ -15121,6 +15131,26 @@ function checkCurrent() {
    จำ "ข้อ 3 ตอบ ข" ไปบอกเพื่อนจึงไม่ได้ผล · คำตอบยังเก็บเป็นเลขตัวเลือกเดิม (it.pick)
    การตรวจคะแนน สถิติ รายงานของครู และการตรวจใหม่เมื่อแก้เฉลยจึงใช้ได้ตามเดิมทั้งหมด
    กระดาษคำตอบไม่สลับ เพราะตัวเลือกต้องตรงกับข้อสอบกระดาษที่ครูแจก */
+function qmixOn(q) { return !!q && isTest(q) && !isPaper(q) && q.qmix !== false; }
+/** ลำดับข้อที่ผู้ทำคนนี้เห็น — อาร์เรย์ของเลขข้อเดิม
+    สลับเฉพาะภายในระดับความยากเดียวกัน ทุกคนจึงยังไล่จากง่ายไปยากเท่ากัน แค่ข้อในระดับเดียวกันสลับที่
+    ได้จากเลขประจำการทำครั้งนี้ เปิดใหม่ลำดับเดิม · ชุดที่เริ่มทำไปแล้วก่อนมีระบบนี้ไม่สลับกลางคัน */
+function qOrderOf(a, q) {
+  const probs = problemsOf(q), id = [];
+  for (let j = 0; j < probs.length; j++) id.push(j);
+  if (!a || !qmixOn(q) || probs.length < 2) return id;
+  if (a.qMix === undefined) a.qMix = !a.answers.some(x => x && (x.pick != null || x.checked));
+  if (!a.qMix) return id;
+  let h = 2166136261;
+  const key = String(a.id) + ':q';
+  for (let c = 0; c < key.length; c++) { h ^= key.charCodeAt(c); h = Math.imul(h, 16777619) >>> 0; }
+  const R = rng(h || 1), groups = [];
+  probs.forEach((p, j) => {
+    const lv = p ? p.level : '', last = groups[groups.length - 1];
+    if (last && last.lv === lv) last.ix.push(j); else groups.push({ lv: lv, ix: [j] });
+  });
+  return groups.reduce((acc, g) => acc.concat(R.shuffle(g.ix)), []);
+}
 function mixOn(q) { return !!q && isTest(q) && !isPaper(q) && q.mix !== false; }
 /** ข้อที่ตัวเลือกอ้างถึงกัน (ถูกทุกข้อ · ทั้ง ก และ ข · ไม่มีข้อใดถูก) ห้ามสลับ ไม่งั้นความหมายเพี้ยน */
 function canMix(p) {
@@ -15260,9 +15290,12 @@ function submitReviewBox(a, q, mode) {
             : '<div class="notice ok">ตอบครบทุกข้อแล้ว ✓</div>') +
       (bad ? '<div class="notice warn" style="margin-top:6px">มี <b>' + bad + ' ข้อ</b> (กรอบสีส้ม) ที่พิมพ์คำตอบเป็นตัวเลขที่อ่านไม่ได้ ลองกลับไปแก้</div>' : '') +
       '<div class="hint" style="margin-top:8px">ตรวจคำตอบสุดท้ายด้านล่าง — <b>ส่งแล้วแก้ไม่ได้</b> · แตะที่ข้อไหนเพื่อกลับไปแก้ข้อนั้น</div>';
-  const list = '<div class="ansum' + (view ? ' view' : '') + '">' + rows.map((r, k) =>
-    '<div class="ar' + (!r.txt ? ' miss' : '') + (r.bad ? ' bad' : '') + '" data-goq="' + k + '"><b>' + (k + 1) + '</b>' +
-    '<span>' + (r.txt ? esc(r.txt) : 'ยังไม่ตอบ') + '</span></div>').join('') + '</div>';
+  // เรียงและใส่เลขข้อตามลำดับที่นักเรียนคนนี้เห็น · data-goq เป็นเลขข้อเดิม
+  const list = '<div class="ansum' + (view ? ' view' : '') + '">' + qOrderOf(a, q).map((k, j) => {
+    const r = rows[k];
+    return '<div class="ar' + (!r.txt ? ' miss' : '') + (r.bad ? ' bad' : '') + '" data-goq="' + k + '"><b>' + (j + 1) + '</b>' +
+      '<span>' + (r.txt ? esc(r.txt) : 'ยังไม่ตอบ') + '</span></div>';
+  }).join('') + '</div>';
   openModal({
     title: mode === 'full' ? '🎉 ทำครบทุกข้อแล้ว — ส่งคำตอบเลยไหม?' : view ? 'คำตอบที่ส่งไป' : 'ตรวจคำตอบก่อนส่ง',
     wide: probs.length > 20,
@@ -17045,7 +17078,7 @@ async function pullResults(code) {
 var SHEET_CELL_MAX = 45000;
 function answersForSheet(a) {
   let step = 1, out;
-  const aq = quizOf(a), aps = aq ? problemsOf(aq) : [];
+  const aq = quizOf(a), aps = aq ? problemsOf(aq) : [], aqo = aq ? qOrderOf(a, aq) : null;
   for (;;) {
     out = a.answers.map(function (x, k) {
       const o = { s: x.score, t: x.tries, r: x.revealed ? 1 : 0,
@@ -17061,6 +17094,8 @@ function answersForSheet(a) {
       const sv = answerSummary(aps[k], x, ord).txt;
       // ลำดับตัวเลือกที่นักเรียนคนนี้เห็น (เฉพาะข้อที่ถูกสลับ) — k ยังเป็นเลขตัวเลือกเดิม
       if (ord && ord.some(function (v, j) { return v !== j; })) o.o = ord.join('');
+      // p = ลำดับข้อที่นักเรียนคนนี้เห็น (เฉพาะเมื่อไม่ตรงเลขข้อเดิม)
+      if (aqo && aqo.indexOf(k) !== k) o.p = aqo.indexOf(k) + 1;
       if (sv) o.v = sv.slice(0, 160);
       if (x.raw && x.raw.some(function (v) { return String(v == null ? '' : v).trim(); }))
         o.n = x.raw.map(function (v) { return v == null ? '' : String(v); });
@@ -18198,7 +18233,7 @@ function encodeQuiz(q) {
   const c = {
     i: q.id, t: q.title, s: q.seed, tp: q.topics, sb: q.subs || [],
     c: q.counts, g: q.g, e: q.easyG10 ? 1 : 0, pm: q.piMode || '3.14',
-    k: quizKind(q), sh: (q.seedShift || 0), mx: q.mix === false ? 0 : 1,
+    k: quizKind(q), sh: (q.seedShift || 0), mx: q.mix === false ? 0 : 1, qm: q.qmix === false ? 0 : 1,
     lm: q.limitSec || 0, mo: q.maxOut || 0, ms: q.maxOutSec || 0,
     // ใบตอบข้อสอบกระดาษเก็บเฉลยแทนแม่แบบ ขึ้นต้นด้วย P เพื่อให้ฝั่งถอดรหัสแยกออก
     pp: isPaper(q) ? { ch: q.paper.ch || 4, tp: q.paper.topic == null ? '' : q.paper.topic,
@@ -18255,7 +18290,7 @@ function decodeQuiz(code) {
     topics: Array.isArray(c.tp) ? c.tp : [], subs: Array.isArray(c.sb) ? c.sb : [],
     counts: c.c || {}, g: Number(c.g) || 9.8, easyG10: !!c.e, piMode: PI_MODES[c.pm] ? c.pm : '3.14',
     kind: paper ? 'test' : (c.k === 'test' ? 'test' : 'practice'), seedShift: Number(c.sh) || 0,
-    mix: c.mx === 0 ? false : undefined,
+    mix: c.mx === 0 ? false : undefined, qmix: c.qm === 0 ? false : undefined,
     paper: paper ? { ch: Number(paper.ch) || 4, topic: paper.tp === '' ? null : Number(paper.tp),
                      st: PAPER_STYLES[paper.st] ? paper.st : 'th' } : null,
     // รหัสที่สร้างก่อนมีระบบคุมสอบไม่มีคีย์พวกนี้ ได้ 0 = ไม่จำกัด ซึ่งถูกต้องแล้ว
