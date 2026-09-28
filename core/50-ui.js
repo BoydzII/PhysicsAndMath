@@ -47,6 +47,8 @@ function createQuiz(o) {
     id: uid(), ts: Date.now(), title: o.title, seed: o.seed,
     topics: o.topics.slice(), subs: (o.subs || []).slice(), counts: Object.assign({}, o.counts),
     kind: o.kind === 'test' ? 'test' : 'practice',
+    // แบบทดสอบสลับลำดับตัวเลือกของแต่ละคนเป็นค่าเริ่มต้น เก็บไว้เฉพาะตอนครูปิด
+    mix: o.kind === 'test' && o.mix === false ? false : undefined,
     seedShift: o.kind === 'test' ? (Math.floor(Math.random() * 2000000000) + 1) : 0,
     /* กติกาคุมสอบติดไปกับตัวชุดโจทย์เสมอ ไม่ใช่ให้ไปอ่านค่าตั้งตอนเริ่มทำ
        เพราะรหัสใบงานที่แจกนักเรียนพาไปได้แค่สิ่งที่อยู่ในตัวชุดเท่านั้น */
@@ -6348,6 +6350,12 @@ function renderMake() {
                           : 'ไม่มีเฉลย ไม่บอกถูกผิดจนกว่าจะส่ง แก้คำตอบได้ก่อนส่ง') +
         '</span></span></label>';
     }).join('') + '</div>' +
+    ((c.kind || 'practice') === 'test'
+      ? '<label class="chk' + (c.mixCh !== false ? ' on' : '') + '" style="display:flex;margin-bottom:12px">' +
+        '<input type="checkbox" id="mixCh"' + (c.mixCh !== false ? ' checked' : '') + '>' +
+        '<span><span class="t">🔀 สลับลำดับตัวเลือกของแต่ละคน</span><br><span class="d">' +
+        'นักเรียนแต่ละคนเห็นตัวเลือก ก ข ค ง เรียงไม่เหมือนกัน บอกกันหรือดูของเพื่อนไม่ได้ · คะแนนตรวจได้ตามปกติ</span></span></label>'
+      : '') +
     '<div class="row"><input type="text" id="qtitle" class="grow" style="min-width:220px" placeholder="เช่น ใบงานที่ 1 การเคลื่อนที่แนวตรง" value="' +
     esc(c.lastTitle || '') + '">' +
     '<button class="primary" id="btnGen">สุ่ม' + QUIZ_KINDS[c.kind || 'practice'].name + '</button></div>' +
@@ -6546,6 +6554,8 @@ function renderMake() {
   $$('input[name=qk]').forEach(r => r.addEventListener('change', e => {
     c.kind = e.target.value; save(); renderMake();
   }));
+  const mxc = $('#mixCh');
+  if (mxc) mxc.addEventListener('change', e => { c.mixCh = e.target.checked; save(); renderMake(); });
   $('#btnGen').addEventListener('click', doGenerate);
   const bmc = $('#btnMc');
   if (bmc) bmc.addEventListener('click', () => mcDialog(null));
@@ -6707,7 +6717,7 @@ function doGenerate() {
     (QUIZ_KINDS[kind].name + ' ' + c.topics.map(shortOf).filter(Boolean).join(' + ') + ' ' + thDate(Date.now()));
   c.lastTitle = title;
   const q = createQuiz({
-    title: title, topics: c.topics, subs: c.subs, counts: counts, kind: kind,
+    title: title, topics: c.topics, subs: c.subs, counts: counts, kind: kind, mix: c.mixCh !== false,
     seed: Math.floor(Math.random() * 2000000000) + 1
   });
   if (q.error) { toast(q.error, 'bad'); return; }
@@ -7456,12 +7466,14 @@ function renderDo() {
       (p.theory ? '<span class="hint">(ข้อสอบเชิงแนวคิด ไม่ต้องคำนวณ)</span>'
                 : '<span class="hint">(' + esc(p.finds[0].d) + ' หน่วย ' + esc(p.finds[0].unit || '—') + ')</span>') +
       '</div><div class="choices' + (p.theory ? ' txt' : '') + '">';
-    p.choices.forEach((ch, k) => {
+    // แบบทดสอบ: แต่ละคนเห็นตัวเลือกเรียงไม่เหมือนกัน — data-pick ยังเป็นเลขตัวเลือกเดิม คะแนนจึงตรวจได้ตามปกติ
+    choiceOrder(a, q, i, p).forEach((k, j) => {
+      const ch = p.choices[k];
       let cls = 'choice';
       if (it.pick === k) cls += ' sel';
       if (it.checked && !T) { if (ch.correct) cls += ' ok'; else if (it.pick === k) cls += ' bad'; }
       h += '<button class="' + cls + '" data-pick="' + k + '"' + (it.checked && !T ? ' disabled' : '') + '>' +
-        '<span class="k">' + 'กขคง'[k] + '.</span><span>' +
+        '<span class="k">' + 'กขคง'[j] + '.</span><span>' +
         (p.theory ? ch.text
                   : M((ch.text != null ? ch.text : fmt(ch.value)) +
                       (p.finds[0].unit ? ' `' + p.finds[0].unit + '`' : ''))) +
@@ -8053,6 +8065,34 @@ function checkCurrent() {
    แบบทดสอบและกระดาษคำตอบ: ตอบข้อไหนก็บันทึกลงเครื่องทันที ไม่ต้องกดบันทึกหรือส่งทีละข้อ
    ส่งขึ้นชีตครั้งเดียวตอนกด "ส่งคำตอบ" — ก่อนส่งเห็นสรุปคำตอบสุดท้ายทุกข้อ และกลับไปแก้ได้
    สิ่งที่ส่งมีคำตอบสุดท้ายของทุกข้อ (answersForSheet ช่อง v n) ครูจึงตรวจใหม่ได้เมื่อแก้เฉลย */
+/* --- สลับลำดับตัวเลือกของแต่ละคน ------------------------------------------
+   แบบทดสอบที่ครูสุ่มจากแม่แบบ: ทุกคนได้โจทย์และตัวเลือกชุดเดียวกัน แต่เห็นเรียงไม่เหมือนกัน
+   จำ "ข้อ 3 ตอบ ข" ไปบอกเพื่อนจึงไม่ได้ผล · คำตอบยังเก็บเป็นเลขตัวเลือกเดิม (it.pick)
+   การตรวจคะแนน สถิติ รายงานของครู และการตรวจใหม่เมื่อแก้เฉลยจึงใช้ได้ตามเดิมทั้งหมด
+   กระดาษคำตอบไม่สลับ เพราะตัวเลือกต้องตรงกับข้อสอบกระดาษที่ครูแจก */
+function mixOn(q) { return !!q && isTest(q) && !isPaper(q) && q.mix !== false; }
+/** ข้อที่ตัวเลือกอ้างถึงกัน (ถูกทุกข้อ · ทั้ง ก และ ข · ไม่มีข้อใดถูก) ห้ามสลับ ไม่งั้นความหมายเพี้ยน */
+function canMix(p) {
+  if (!p || !p.choices || p.choices.length < 2) return false;
+  const t = p.choices.map(c => String(c.text == null ? '' : c.text)).join(' | ');
+  // ตัวอักษรต้องยืนเดี่ยว ๆ ไม่ติดคำ — "ข้อความ" หรือ "ความเร่งและความเร็ว" ไม่นับ
+  return !/ทุกข้อ|ข้อใด|ถูกทั้ง|ผิดทั้ง|ไม่มีข้อ|ข้อ\s*[กขคง](?![฀-๿])|(^|[\s(])[กขคง]\.?\s*(และ|หรือ|,)\s*[กขคง](?![฀-๿])/.test(t);
+}
+/** ลำดับตัวเลือกที่ผู้ทำคนนี้เห็นในข้อที่ k — อาร์เรย์ของเลขตัวเลือกเดิม
+    ได้จากเลขประจำการทำครั้งนี้ จึงเหมือนเดิมทุกครั้งที่เปิด (ปิดแอปแล้วเปิดใหม่ก็ไม่เปลี่ยน) */
+function choiceOrder(a, q, k, p) {
+  const n = p && p.choices ? p.choices.length : 0;
+  const id = [];
+  for (let j = 0; j < n; j++) id.push(j);
+  if (!a || !mixOn(q) || !canMix(p)) return id;
+  // ชุดที่เริ่มทำไปแล้วก่อนมีระบบนี้ไม่สลับ — ตัวเลือกจะได้ไม่ย้ายที่ต่อหน้านักเรียนกลางคัน
+  if (a.chMix === undefined) a.chMix = !a.answers.some(x => x && x.pick != null);
+  if (!a.chMix) return id;
+  let h = 2166136261;
+  const key = String(a.id) + ':' + k;
+  for (let c = 0; c < key.length; c++) { h ^= key.charCodeAt(c); h = Math.imul(h, 16777619) >>> 0; }
+  return rng(h || 1).shuffle(id);
+}
 function ensureSubmitCSS() {
   if (document.getElementById('sendonce-css')) return;
   const st = document.createElement('style');
@@ -8112,7 +8152,7 @@ function testStateHTML(it) {
 }
 /** คำตอบสุดท้ายของข้อหนึ่งเป็นข้อความสั้น ('' = ยังไม่ตอบ) · bad = มีช่องที่อ่านเป็นตัวเลขไม่ได้
     ใช้ทั้งหน้าสรุปก่อนส่ง และเป็นช่อง v ที่ส่งขึ้นชีต */
-function answerSummary(p, x) {
+function answerSummary(p, x, ord) {
   const out = { txt: '', bad: false };
   if (!p || !x) return out;
   // เลขยกกำลังต้องคงไว้เป็นตัวยก ไม่งั้น 10⁹ กลายเป็น 109 ตอนถอดแท็ก
@@ -8133,7 +8173,8 @@ function answerSummary(p, x) {
     const t = plain(c.text != null ? c.text : fmt(c.value));
     if (p.paper || !p.finds) { out.txt = t; return out; }                       // กระดาษคำตอบ: ตัวเลือกคือ ก ข ค ง อยู่แล้ว
     const unit = !p.theory && p.finds[0] && p.finds[0].unit ? ' ' + p.finds[0].unit : '';
-    out.txt = 'กขคง'[x.pick] + '. ' + t + unit;
+    // ord = ลำดับที่นักเรียนคนนี้เห็น ตัวอักษรต้องตรงกับที่เขาแตะ ไม่ใช่ตำแหน่งเดิม
+    out.txt = 'กขคง'[ord ? Math.max(0, ord.indexOf(x.pick)) : x.pick] + '. ' + t + unit;
     return out;
   }
   const fs = p.finds || [];
@@ -8158,7 +8199,7 @@ function submitReviewBox(a, q, mode) {
   if (!a || !q) return;
   ensureSubmitCSS();
   const probs = problemsOf(q);
-  const rows = probs.map((p, k) => answerSummary(p, a.answers[k]));
+  const rows = probs.map((p, k) => answerSummary(p, a.answers[k], choiceOrder(a, q, k, p)));
   const miss = rows.filter(r => !r.txt).length, bad = rows.filter(r => r.bad).length;
   const view = mode === 'view';
   const head = view
@@ -9965,7 +10006,10 @@ function answersForSheet(a) {
       if (x.finalAns && String(x.finalAns).trim()) o.f = String(x.finalAns).trim();
       /* คำตอบสุดท้ายของข้อนี้ — v เป็นข้อความอ่านง่าย n เป็นค่าที่นักเรียนพิมพ์จริง
          เก็บไว้ในชีตทุกครั้งที่ส่ง ครูแก้เฉลยแล้วตรวจใหม่จากค่าเหล่านี้ได้ */
-      const sv = answerSummary(aps[k], x).txt;
+      const ord = aq && aps[k] ? choiceOrder(a, aq, k, aps[k]) : null;
+      const sv = answerSummary(aps[k], x, ord).txt;
+      // ลำดับตัวเลือกที่นักเรียนคนนี้เห็น (เฉพาะข้อที่ถูกสลับ) — k ยังเป็นเลขตัวเลือกเดิม
+      if (ord && ord.some(function (v, j) { return v !== j; })) o.o = ord.join('');
       if (sv) o.v = sv.slice(0, 160);
       if (x.raw && x.raw.some(function (v) { return String(v == null ? '' : v).trim(); }))
         o.n = x.raw.map(function (v) { return v == null ? '' : String(v); });
@@ -11103,7 +11147,7 @@ function encodeQuiz(q) {
   const c = {
     i: q.id, t: q.title, s: q.seed, tp: q.topics, sb: q.subs || [],
     c: q.counts, g: q.g, e: q.easyG10 ? 1 : 0, pm: q.piMode || '3.14',
-    k: quizKind(q), sh: (q.seedShift || 0),
+    k: quizKind(q), sh: (q.seedShift || 0), mx: q.mix === false ? 0 : 1,
     lm: q.limitSec || 0, mo: q.maxOut || 0, ms: q.maxOutSec || 0,
     // ใบตอบข้อสอบกระดาษเก็บเฉลยแทนแม่แบบ ขึ้นต้นด้วย P เพื่อให้ฝั่งถอดรหัสแยกออก
     pp: isPaper(q) ? { ch: q.paper.ch || 4, tp: q.paper.topic == null ? '' : q.paper.topic,
@@ -11160,6 +11204,7 @@ function decodeQuiz(code) {
     topics: Array.isArray(c.tp) ? c.tp : [], subs: Array.isArray(c.sb) ? c.sb : [],
     counts: c.c || {}, g: Number(c.g) || 9.8, easyG10: !!c.e, piMode: PI_MODES[c.pm] ? c.pm : '3.14',
     kind: paper ? 'test' : (c.k === 'test' ? 'test' : 'practice'), seedShift: Number(c.sh) || 0,
+    mix: c.mx === 0 ? false : undefined,
     paper: paper ? { ch: Number(paper.ch) || 4, topic: paper.tp === '' ? null : Number(paper.tp),
                      st: PAPER_STYLES[paper.st] ? paper.st : 'th' } : null,
     // รหัสที่สร้างก่อนมีระบบคุมสอบไม่มีคีย์พวกนี้ ได้ 0 = ไม่จำกัด ซึ่งถูกต้องแล้ว
