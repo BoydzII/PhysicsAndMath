@@ -549,6 +549,46 @@ hl{background:var(--warn-bg);border-radius:4px;padding:0 3px}
 .vec::before{content:'';position:absolute;left:.04em;right:0;top:.12em;border-top:.075em solid currentColor}
 .vec::after{content:'';position:absolute;right:-.16em;top:.015em;
   border-left:.3em solid currentColor;border-top:.14em solid transparent;border-bottom:.14em solid transparent}
+/* สัญลักษณ์นิวเคลียร์ — เลขมวลบน เลขอะตอมล่าง อยู่หน้าสัญลักษณ์ธาตุ */
+.nuc{display:inline-flex;align-items:center;font-style:normal;white-space:nowrap;margin:0 1px}
+.nuc .nnum{display:inline-flex;flex-direction:column;align-items:flex-end;
+           font-size:.62em;line-height:1.06;margin-right:1px}
+.nuc .nel{font-weight:700}
+
+/* ── หน้าตอบข้อสอบอัตนัย ───────────────────────────────────────────────
+   โจทย์อยู่เต็มความกว้างด้านบน กรอบขั้นตอนจึงเริ่มต่ำกว่าโจทย์เสมอ
+   ของเดิมโจทย์อยู่ในคอลัมน์ซ้าย พอโจทย์ยาว กรอบฝั่งขวาจะขึ้นไปซ้อนกับโจทย์
+   ซ้าย = รูปกับโจทย์กำหนดวางคู่กัน แล้วต่อด้วยขั้นเลือกสมการ แทนค่า คำนวณ สรุป
+   ขวา = วิธีทำที่เรียงเครื่องหมายเท่ากับให้ตรงคอลัมน์เดียวกัน คำอธิบายชิดซ้าย */
+.esq{font-size:16px;margin:4px 0 12px;line-height:1.75}
+.esmodebar{margin:8px 0;align-items:center;gap:8px;flex-wrap:wrap}
+.esrow2{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;margin-bottom:10px}
+.eswbox{padding:11px 13px;border:1px solid var(--line);border-radius:10px;background:var(--panel2)}
+.eswhint{color:var(--muted);font-size:13px;line-height:1.7}
+/* เครื่องหมายเท่ากับอยู่คอลัมน์ของตัวเอง ทุกบรรทัดจึงตรงกันเสมอ
+   ซ้ายของเท่ากับชิดขวา ขวาของเท่ากับชิดซ้าย เหมือนเขียนวิธีทำในสมุด */
+.ewgrid{display:grid;grid-template-columns:max-content max-content max-content minmax(0,1fr);
+        gap:7px 8px;align-items:baseline}
+.ewlab{color:var(--muted);font-size:12.5px;white-space:nowrap}
+.ewl{text-align:right;font-size:18px;line-height:1.7}
+.eweq{font-size:18px;color:var(--muted)}
+.ewr{font-size:18px;line-height:1.7;overflow-x:auto}
+.ewr.ok{color:var(--ok);font-weight:700}
+.ewsum{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:8px;
+       margin-top:9px;padding-top:9px;border-top:1px dashed var(--line);
+       font-size:14px;line-height:1.7}
+@media (min-width: 760px) {
+  .esrow2{grid-template-columns:minmax(0,300px) minmax(0,1fr);align-items:start}
+}
+@media (min-width: 1000px) {
+  .esguide{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,360px);
+           gap:14px;align-items:start}
+  .esright{position:sticky;top:8px}
+  .es-split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+            gap:12px;align-items:start}
+  .es-split > .es-write{grid-column:2;grid-row:1 / span 9;position:sticky;top:8px}
+}
+
 /* ── การ์ดโปรไฟล์และเลเวลของผู้เรียน ─────────────────────────────────── */
 .xpcard{background:linear-gradient(135deg,var(--panel2),var(--panel));border:1px solid var(--line)}
 .xprow{display:flex;align-items:center;gap:13px}
@@ -593,6 +633,14 @@ hl{background:var(--warn-bg);border-radius:4px;padding:0 3px}
 .xpblv b{display:block;font-size:19px;line-height:1.15}
 .xpblv span{font-size:11px;color:var(--muted)}
 .xpbgap{text-align:center;color:var(--muted);letter-spacing:3px;margin:2px 0 6px}
+
+/* ช่องกรอกคำตอบติดรูท — สามช่องเรียงกันเป็น a √b ⁄ c */
+.surdin{display:inline-flex;align-items:center;gap:3px}
+.surdin input{width:58px;text-align:center;font-size:16px}
+.surdin .sq{font-size:19px;line-height:1}
+.surdin .sl{font-size:19px;opacity:.6;margin:0 2px}
+.surdin.ok input{border-color:var(--ok);background:var(--ok-bg)}
+.surdin.bad input{border-color:var(--bad);background:var(--bad-bg)}
 
 /* รากที่สองและรากที่สาม */
 .sqrt{display:inline-block;font-style:normal;white-space:nowrap}
@@ -670,10 +718,153 @@ input.numin.bad{border-color:var(--bad);background:var(--bad-bg)}
 /* ---------- แถบความคืบหน้าข้อ ---------- */
 .qnav{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
 .qnav button{width:40px;height:40px;min-height:40px;padding:0;border-radius:9px;font-weight:700;font-size:14px}
+/* แถวข้อสอบในคลัง */
+.esbrow{display:flex;gap:9px;align-items:flex-start;padding:9px 11px;border:1px solid var(--line);
+        border-radius:10px;margin-bottom:6px;cursor:pointer}
+.esbrow:hover{background:var(--panel2)}
+.esbrow input[type=checkbox]{margin-top:3px;flex:0 0 auto}
+
+/* แถบสัญลักษณ์ของครู และบรรทัดบอกสมการที่ใช้แทนค่า */
+.essym{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin-top:11px;
+       padding:8px;border:1px solid var(--line);border-radius:10px;background:var(--panel2)}
+.essym b{margin-right:4px}
+.essym button{min-width:40px;font-size:16px;padding:6px 9px}
+.esuse{margin:4px 0 8px;padding:7px 11px;border-left:3px solid var(--brand);
+       background:var(--panel2);border-radius:0 8px 8px 0;font-size:16px}
+
+/* แถวเลือกบทบาทของกล่องและสมการ ในกล่องที่ครูใช้ออกข้อสอบ */
+.esrole{display:inline-flex;align-items:center;gap:5px;padding:4px 7px;border:1px solid var(--line);
+        border-radius:9px;margin:0 5px 5px 0}
+.esrole b{font-weight:700;font-size:13px;max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ข้อสอบอัตนัยแบบทำทีละขั้น */
+.esfig{margin:10px 0;text-align:center}
+.esfig img{max-width:100%;border:1px solid var(--line);border-radius:10px}
+.esguide{margin-top:12px}
+.esstep{border:1px solid var(--line);border-radius:12px;padding:11px 13px;margin-bottom:10px}
+.esstep.done{border-color:var(--ok);background:var(--ok-bg)}
+.esh{display:flex;gap:9px;align-items:center;margin-bottom:7px}
+.esn{background:var(--brand);color:var(--brand-ink);width:24px;height:24px;border-radius:50%;
+     display:flex;align-items:center;justify-content:center;font-size:13px;flex:0 0 auto;font-weight:700}
+.esstep.done .esn{background:var(--ok)}
+.eschips,.eseqs{display:flex;flex-wrap:wrap;gap:6px;margin-top:5px}
+.eschip,.eseq{padding:8px 12px;border:1px solid var(--line);border-radius:999px;background:var(--panel);
+              font-size:15px;cursor:pointer}
+.eseq{border-radius:10px}
+/* กล่องที่เลือกแล้วเป็นสีเทาจาง ๆ ตัวหนังสือยังอ่านออก
+   ของเดิมใช้ตัวแปรสี --acc ซึ่งไม่มีอยู่จริงในธีมนี้ พื้นจึงเป็นสีขาว
+   แต่ตัวหนังสือถูกสั่งเป็นสีขาวไว้ กล่องที่เลือกเลยกลายเป็นกล่องเปล่ามองไม่เห็นอะไรเลย */
+.eschip.sel,.eseq.sel{background:var(--panel2);color:var(--ink);
+                      border-color:var(--muted);font-weight:700;
+                      box-shadow:inset 0 0 0 1px var(--muted)}
+.eschip.find.sel{background:var(--warn);color:#fff;border-color:var(--warn);box-shadow:none}
+.esvars{display:flex;flex-wrap:wrap;gap:9px;margin-top:6px}
+.esvar{display:flex;align-items:center;gap:6px}
+.esvar label{min-width:34px;font-weight:700}
+.esvar input{width:110px;font-size:16px;text-align:right}
+.eskeys{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;max-width:330px;margin-top:12px}
+.eskey{padding:11px 0;font-size:17px;border-radius:10px}
+.eskey.op{background:var(--panel2)}
+.eskey.warn{background:var(--warn-bg);border-color:var(--warn)}
+
+/* ใบตอบข้อสอบกระดาษ — แถวละข้อ ปุ่มกลมเหมือนฝนคำตอบ */
+.papersheet{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:7px}
+.paperrow{display:flex;align-items:center;gap:6px;padding:5px 7px;border:1px solid var(--line);border-radius:10px}
+.paperrow .pno{min-width:26px;text-align:right;font-weight:700;color:var(--dim)}
+.pbub{width:38px;height:38px;min-height:38px;padding:0;border-radius:50%;font-weight:700}
+.pbub.sel{background:var(--acc);color:#fff;border-color:var(--acc)}
 .qnav button.cur{border-color:var(--brand);box-shadow:0 0 0 3px rgba(31,111,235,.15)}
 .qnav button.ok{background:var(--ok-bg);border-color:var(--ok);color:var(--ok)}
 .qnav button.bad{background:var(--bad-bg);border-color:var(--bad);color:var(--bad)}
 .qnav button.half{background:var(--warn-bg);border-color:var(--warn);color:var(--warn)}
+
+/* ---------- กระดานสอน / สมุดจด ---------- */
+/* เต็มจอจริง เพราะตัวนี้ถูกฉายขึ้นจอหน้าห้อง ไม่ใช่ดูบนมือถือ
+   ตัวหนังสือบนแถบบนจึงใหญ่กว่าปกติหนึ่งขั้น ให้เด็กแถวหลังอ่านออก */
+.bdroot{position:fixed;inset:0;z-index:200;background:var(--bg);
+  display:flex;flex-direction:column;gap:9px;padding:10px 12px;overflow:auto}
+/* แถบบนกับแผงสูตรต้องกินความสูงตามเนื้อจริง ไม่ใช่ถูกบีบ
+   ในกล่องเรียงแนวตั้ง ตัวที่ไม่ระบุ flex จะถูกบีบให้เล็กลงเมื่อที่ไม่พอ
+   ซึ่งทำให้แผงสูตรเหลือแค่แถบบาง ๆ อ่านไม่ได้ */
+.bdtop{display:flex;align-items:center;gap:9px;flex-wrap:wrap;flex:0 0 auto}
+.bdtop input.t{flex:1 1 240px;min-width:160px;font-size:19px;font-weight:700;
+  padding:9px 12px;min-height:46px}
+.bdtop .pg{font-variant-numeric:tabular-nums;font-weight:700;font-size:15px;
+  padding:0 4px;white-space:nowrap}
+.bdroot .hw-canvas-wrap{flex:1 1 auto}
+.bdfx{border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;
+  background:var(--panel);max-height:38vh;overflow:auto;flex:0 0 auto}
+.bdfx .fxrow .fxe{font-size:20px}      /* บนจอฉายต้องใหญ่กว่าบนจอส่วนตัว */
+.bdfx .fxrow .fxd{font-size:15px}
+@media print{.bdroot{display:none!important}}
+
+/* ---------- แถบเครื่องมือแถวที่สองของสมุดจด ---------- */
+.nbbar{display:flex;flex-wrap:wrap;gap:6px 4px;align-items:center;margin:0 0 10px;
+  padding:7px 12px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r)}
+.nbbar .grp{display:flex;gap:4px;align-items:center;flex-wrap:wrap}
+.nbbar .lab{font-size:12px;color:var(--muted);margin:0 3px 0 2px;white-space:nowrap}
+.nbbar .sep{width:1px;align-self:stretch;background:var(--line);margin:2px 5px}
+.nbbar .btn-tool{padding:5px 10px}
+/* ช่องพิมพ์ข้อความลอยอยู่บนกระดาษ ตรงตำแหน่งที่แตะ — พิมพ์เสร็จแตะที่อื่นก็เก็บเอง */
+.nbtxt{position:absolute;z-index:3;min-width:140px;padding:3px 6px;margin:0;
+  border:1.5px dashed #2563eb;border-radius:6px;background:rgba(255,255,255,.97);color:#1e293b;
+  font-family:"Anuphan","Leelawadee UI",Tahoma,sans-serif;line-height:1.4;resize:none;
+  outline:none;box-shadow:0 4px 14px rgba(15,23,42,.12);white-space:pre;overflow:hidden}
+
+/* แบบกระดาษคอร์เนลล์ — ช่องคำถามด้านซ้าย ช่องจดบันทึกด้านขวา และช่องสรุปด้านล่าง
+   ระยะเส้นบรรทัดและความสูงช่องสรุป (150px) ต้องตรงกับที่วาดตอนพิมพ์ใน nbPaper */
+.hw-canvas-wrap.bg-cornell{
+  background-image:
+    linear-gradient(90deg, transparent calc(28% - 1px), #fca5a5 calc(28% - 1px), #fca5a5 calc(28% + .5px), transparent calc(28% + .5px)),
+    linear-gradient(#fca5a5, #fca5a5),
+    repeating-linear-gradient(transparent, transparent 31px, #e2e8f0 31px, #e2e8f0 32px);
+  background-size: 100% calc(100% - 150px), 100% 1.5px, 100% 32px;
+  background-position: 0 0, 0 calc(100% - 150px), 0 0;
+  background-repeat: no-repeat, no-repeat, repeat}
+.hw-canvas-wrap.bg-cornell::before,.hw-canvas-wrap.bg-cornell::after{
+  position:absolute;left:8px;font-size:12px;color:#ef4444;opacity:.7;pointer-events:none;z-index:0}
+.hw-canvas-wrap.bg-cornell::before{content:'คำถาม · คำสำคัญ';top:6px}
+.hw-canvas-wrap.bg-cornell::after{content:'สรุปท้ายคาบ';bottom:128px}
+.hw-canvas-wrap.bg-cornell .hw-canvas{position:relative;z-index:1}
+
+/* ---------- ชั้นหนังสือ ---------- */
+.nbshelf{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:12px}
+.nbbook{display:flex;gap:12px;border:1px solid var(--line);border-radius:var(--r);padding:11px;
+  background:var(--panel)}
+.nbbook .cv{flex:0 0 66px;height:88px;border-radius:5px 9px 9px 5px;color:#fff;
+  display:flex;align-items:flex-end;padding:7px;font-size:11px;font-weight:700;line-height:1.3;
+  box-shadow:inset 6px 0 0 rgba(0,0,0,.18);overflow:hidden;word-break:break-word}
+.nbbook .cv span{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.nbbook .bd{flex:1 1 auto;min-width:0}
+.nbbook .tt{font-weight:700;font-size:15.5px;line-height:1.4;overflow-wrap:anywhere}
+.nbcv{width:34px;height:34px;min-height:34px;padding:0;border-radius:8px;border:2px solid transparent}
+.nbcv.on{box-shadow:0 0 0 2px var(--panel),0 0 0 4px var(--ink)}
+/* หน้าสมุดบนกระดาษพิมพ์ — หน้าละหนึ่งแผ่น ย่อให้พอดีความสูงแผ่น */
+#printarea .nbpg{text-align:center}
+#printarea .nbpgno{font-size:9pt;color:#555;text-align:right;margin-bottom:3px}
+#printarea .nbpg img{max-width:100%;max-height:250mm;object-fit:contain;border:1px solid #bbb}
+/* หน้าสมุดที่ครูเปิดดู — เรียงลงมาทีละหน้า */
+.ntpages{display:grid;gap:14px;margin-top:10px}
+.ntpages figure{margin:0}
+.ntpages figcaption{font-size:12px;color:var(--muted);margin-bottom:4px}
+.ntpages img{width:100%;border:1px solid var(--line);border-radius:6px;background:#fff}
+/* ตราประทับและความเห็นของครู */
+.ntstamp{display:inline-block;padding:1px 10px;border-radius:999px;border:1.5px solid #d97706;
+  color:#b45309;background:#fffbeb;font-weight:700;font-size:12.5px;line-height:1.6;transform:rotate(-2deg)}
+.nbfb{margin-top:8px;padding:7px 10px;border-left:3px solid #d97706;background:rgba(217,119,6,.07);
+  border-radius:0 6px 6px 0;font-size:13.5px;line-height:1.7}
+.nbfb .tx{white-space:pre-wrap;overflow-wrap:anywhere}
+.nbnew{color:#dc2626;font-size:12px}
+.ntfb{border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;margin-top:10px;background:var(--panel)}
+.ntst button.on{background:#d97706;border-color:#d97706;color:#fff}
+.bdtop button.on{border-color:#2563eb;color:#1d4ed8}
+/* ทบทวนแบบคอร์เนลล์ — ผ้าคลุมช่องจดบันทึก แตะแล้วเลื่อนลงทีละบรรทัด */
+.bdroot .hw-canvas-wrap{position:relative}
+.nbcover{position:absolute;left:28%;right:0;bottom:150px;z-index:4;cursor:pointer;
+  background:repeating-linear-gradient(135deg,#eef2f7 0 12px,#e5eaf1 12px 24px);
+  border-top:2px dashed #2563eb;display:flex;justify-content:center;align-items:flex-start}
+.nbcover span{position:sticky;top:10px;margin:12px 10px 0;padding:6px 12px;border-radius:999px;
+  background:#fff;color:#1e3a8a;font-size:13px;box-shadow:0 2px 8px rgba(15,23,42,.1)}
 
 /* ---------- ตัวเลือกในแท็บสร้างชุด ---------- */
 .chk{display:flex;gap:9px;align-items:flex-start;padding:9px 11px;border:1px solid var(--line);
@@ -758,8 +949,113 @@ input.numin.bad{border-color:var(--bad);background:var(--bad-bg)}
 .lgd>.lgdh:first-child{margin-top:0}
 .lgdrow{display:flex;gap:10px;align-items:flex-start;padding:4px 0;font-size:13.5px;line-height:1.6}
 .lgdrow>span:last-child{flex:1 1 auto}
+
+/* ---------- กล่องพิมพ์ข้อสอบปรนัยของครู ---------- */
+.mcq{border:1px solid var(--line);border-radius:var(--r);padding:11px 12px;margin-bottom:11px}
+.mccs{display:grid;gap:6px;margin-top:7px}
+.mcrow{display:flex;align-items:center;gap:9px}
+.mcrow input[type=radio]{width:19px;height:19px;min-height:auto;flex:0 0 auto}
+.mcrow .lab{flex:0 0 auto;min-width:1.4em;font-weight:700;color:var(--muted)}
 .lgdbdg{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;
   width:20px;height:20px;border-radius:50%;color:#fff;font-weight:bold;font-size:12px}
+
+/* ---------- In-App PDF & Split View ---------- */
+.exam-split-wrap {
+  display: flex; gap: 14px; align-items: flex-start; transition: all 0.25s ease; width: 100%;
+}
+.exam-split-wrap.mode-split .pdf-pane {
+  flex: 0 0 46%; max-width: 50%; display: flex; flex-direction: column;
+}
+.exam-split-wrap.mode-split .exam-pane {
+  flex: 1 1 54%; min-width: 0;
+}
+.exam-split-wrap.mode-drawer .pdf-pane {
+  position: fixed; top: 0; right: -530px; width: min(520px, 94vw); height: 100vh;
+  z-index: 999; box-shadow: -6px 0 28px rgba(0,0,0,0.25);
+  transition: right 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  background: var(--panel); display: flex; flex-direction: column;
+}
+.exam-split-wrap.mode-drawer.drawer-open .pdf-pane {
+  right: 0;
+}
+.exam-split-wrap.mode-drawer .exam-pane {
+  flex: 1 1 100%; min-width: 0;
+}
+.pdf-pane.hide-pane { display: none !important; }
+
+.pdf-box {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+  overflow: hidden; box-shadow: var(--shadow); display: flex; flex-direction: column;
+  height: calc(100vh - 85px); position: sticky; top: 12px;
+}
+.pdf-head {
+  padding: 8px 12px; background: var(--panel2); border-bottom: 1px solid var(--line);
+  display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;
+}
+.pdf-controls { display: flex; align-items: center; gap: 6px; }
+.pdf-body {
+  flex: 1 1 auto; background: #525659; position: relative; overflow: hidden; height: 100%;
+}
+.pdf-dropzone {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  height: 100%; padding: 24px; text-align: center; color: #fff; gap: 10px;
+}
+
+/* ---------- Handwriting Pad (iPad & Apple Pencil - Ergonomic Floating Dock) ---------- */
+.hw-bar {
+  display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between;
+  margin-bottom: 10px; padding: 8px 14px; background: var(--panel); border: 1px solid var(--line);
+  border-radius: var(--r-pill); box-shadow: var(--shadow);
+}
+.hw-tools, .hw-actions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.btn-tool {
+  background: var(--panel2); border: 1px solid var(--line); border-radius: var(--r-pill);
+  padding: 6px 13px; font-size: 13px; font-weight:700; cursor: pointer;
+  display: flex; align-items: center; gap: 5px; min-height: 34px; transition: all .15s ease;
+  box-shadow: none;
+}
+.btn-tool:hover { background: var(--panel); border-color: var(--brand); }
+.btn-tool.active {
+  background: var(--brand-gradient, var(--brand)); color: #fff;
+  border-color: transparent; box-shadow: var(--brand-glow);
+}
+html[data-theme-style="minimal"] .btn-tool.active {
+  background: var(--brand); color: var(--brand-ink); box-shadow: none;
+}
+.color-swatch {
+  width: 22px; height: 22px; border-radius: 50%; border: 2px solid transparent; cursor: pointer;
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.18s ease;
+}
+.color-swatch:hover { transform: scale(1.15); }
+.color-swatch.active {
+  transform: scale(1.25);
+  box-shadow: 0 0 0 2.5px var(--panel), 0 0 0 4.5px var(--ink);
+}
+
+.hw-canvas-wrap {
+  position: relative; width: 100%; border: 1.5px solid var(--line); border-radius: var(--r);
+  overflow: hidden; touch-action: none; -webkit-user-select: none; user-select: none;
+  background-color: #ffffff; box-shadow: var(--shadow-sm);
+}
+.hw-canvas-wrap.bg-lined {
+  background-image: repeating-linear-gradient(transparent, transparent 31px, #e2e8f0 31px, #e2e8f0 32px);
+  background-size: 100% 32px;
+}
+.hw-canvas-wrap.bg-grid {
+  background-image:
+    repeating-linear-gradient(transparent, transparent 23px, #e2e8f0 23px, #e2e8f0 24px),
+    repeating-linear-gradient(90deg, transparent, transparent 23px, #e2e8f0 23px, #e2e8f0 24px);
+  background-size: 24px 24px;
+}
+.hw-canvas-wrap.bg-blank { background-image: none; }
+
+.hw-canvas {
+  display: block; width: 100%; height: 380px; cursor: crosshair; touch-action: none;
+}
+.hw-footer {
+  display: flex; justify-content: space-between; align-items: center; margin-top: 8px;
+  font-size: 12.5px; color: var(--muted);
+}
 
 /* ---------- ชุดลัด: หนึ่งจุดโฟกัส แล้วที่เหลือเงียบ ----------
    ของเดิมเป็นการ์ดห้าใบขนาดเท่ากัน ทุกใบตะโกนเท่ากันจนไม่รู้ว่าควรกดอันไหน
@@ -954,6 +1250,7 @@ table td,table th,.num,.xpstat b,.tick,
 </div>
 
 <main>
+  <div id="previewBar"></div>
   <div id="storageWarn"></div>
   <section class="tabpane" id="pane-make"></section>
   <section class="tabpane" id="pane-do"></section>
