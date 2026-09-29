@@ -1047,7 +1047,7 @@ table td,table th,.num,.xpstat b,.tick,
    *** ห้ามลบบรรทัดเครื่องหมาย @@BUILTIN@@ ทั้งสองอัน ตัวสร้างไฟล์ใช้หาตำแหน่ง ***
    ========================================================================== */
 /* @@BUILTIN@@ */
-const BUILTIN = {"url":"","studentOnly":false,"lockCloud":false,"logo":"","header":null,"about":null,"build":"2026-09-28 22:49","ver":"v8.257","books":[{"url":"https://script.google.com/macros/s/AKfycbxVa8BYYQeIhBDmg85w2UBwsIqt6a2YudehUfCbyMny9T-5TTh1UfFxsJjTk9HLNuFc/exec","name":"ชีตวิทยาศาสตร์กายภาพ"},{"url":"https://script.google.com/macros/s/AKfycbzuuRbnE_oB7a9vx7zZizyPVEKao31ERDTU82DvydMuRTDqVoQvgns9EsjTIzpbBjuM/exec","name":"ชีตฟิสิกส์"}]};
+const BUILTIN = {"url":"","studentOnly":false,"lockCloud":false,"logo":"","header":null,"about":null,"build":"2026-09-29 18:20","ver":"v8.258","books":[{"url":"https://script.google.com/macros/s/AKfycbxVa8BYYQeIhBDmg85w2UBwsIqt6a2YudehUfCbyMny9T-5TTh1UfFxsJjTk9HLNuFc/exec","name":"ชีตวิทยาศาสตร์กายภาพ"},{"url":"https://script.google.com/macros/s/AKfycbzuuRbnE_oB7a9vx7zZizyPVEKao31ERDTU82DvydMuRTDqVoQvgns9EsjTIzpbBjuM/exec","name":"ชีตฟิสิกส์"}]};
 /* @@BUILTIN-END@@ */
 
 /* ถ่ายภาพซอร์สของหน้านี้ไว้ตั้งแต่สคริปต์เพิ่งเริ่มทำงาน
@@ -15025,6 +15025,7 @@ function boardOpen(who) {
       ? '<select id="bdTopic"><option value="">แทรกสรุปสูตร…</option>' +
         TOPICS.map(t => '<option value="' + t.id + '">' + esc(chLabel(t) + ' ' + t.name) + '</option>').join('') +
         '</select>' : '') +
+    (teach ? '<button data-bd="prob" title="สุ่มโจทย์จากคลังขึ้นกล่องเหนือกระดานของหน้านี้">🎲 แทรกโจทย์</button>' : '') +
     (teach ? '' : '<button data-bd="review" id="bdReview" hidden title="ปิดช่องจดบันทึกไว้ นึกคำตอบจากคำถามด้านซ้าย แล้วแตะเปิดทีละบรรทัด">ทบทวน</button>') +
     '<button data-bd="print">พิมพ์หน้านี้</button>' +
     '<button data-bd="pdf" title="พิมพ์ทุกหน้า หรือเลือกบันทึกเป็น PDF ในกล่องพิมพ์">PDF ทั้งเล่ม</button>' +
@@ -15032,6 +15033,7 @@ function boardOpen(who) {
     '<button data-bd="close" class="primary">ปิดกระดาน</button>' +
     '</div>' +
     '<div class="bdfx" id="bdFx" hidden></div>' +
+    '<div class="bdfx bdprob" id="bdProb" hidden></div>' +
     hwPadHTML('bd', false, '', '', true);
   document.body.appendChild(root);
 
@@ -15051,6 +15053,7 @@ function boardOpen(who) {
     if (act === 'shelf') { boardClose(); nbShelf(); return; }
     if (act === 'tag') return nbTagDialog();
     if (act === 'review') return nbReviewToggle();
+    if (act === 'prob') return boardProbDialog();
     if (act === 'prev' || act === 'next') {
       boardSavePage();
       const b2 = boardDB(BOARD.who);
@@ -15170,6 +15173,7 @@ function boardLoadPage() {
   if (pgEl) pgEl.textContent = 'หน้า ' + (b.cur + 1) + '/' + b.pages.length;
   boardFit(pg.h || 0);
   nbBoardExtras();
+  boardProbRender();
 }
 /** เก็บลายมือของหน้าที่กำลังเปิดก่อนสลับหน้า — ตัวปากกาบันทึกหน่วงไว้ 0.45 วินาที
     ถ้าสลับหน้าเร็วกว่านั้น เส้นสุดท้ายจะหาย จึงต้องดึงจากตัวปากกาตรง ๆ อีกครั้ง */
@@ -15181,6 +15185,122 @@ function boardSavePage() {
   p.strokes = nbPack(BOARD.pad.strokes);
   nbPageSize(p);
   save(true);
+}
+/* --- แทรกโจทย์ที่สุ่มลงกระดานสอน -------------------------------------------
+   ครูเลือกบทกับระดับ สุ่มโจทย์หนึ่งข้อจากคลังขึ้นกล่องเหนือพื้นที่เขียน แล้วเขียนวิธีทำใต้โจทย์บนจอฉาย
+   เก็บแค่ tplId + seed ไว้กับหน้านั้น (pg.prob) เปิดหน้ากลับมาได้โจทย์เดิมเป๊ะ พร้อมรูปและตัวเลือกครบ
+   ปุ่มเฉลยเปิดคำตอบกับวิธีทำ 7 ขั้นใต้โจทย์ ครูกดเมื่อพร้อมเฉลยให้ทั้งห้อง */
+function boardProbCSS() {
+  if (document.getElementById('bdprob-css')) return;
+  const st = document.createElement('style');
+  st.id = 'bdprob-css';
+  st.textContent =
+    '.bdprob .stem{font-size:21px;line-height:1.7}' +
+    '.bdprob .fig{margin:8px 0}' +
+    '.bdprob .bpch{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 18px;font-size:19px;margin-top:8px}' +
+    '.bdprob .bptools{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}' +
+    '.bdprob .bpans{margin-top:10px;padding:8px 12px;border-left:4px solid var(--ok);background:var(--ok-bg);font-size:18px;border-radius:0 8px 8px 0}' +
+    '@media (max-width:700px){.bdprob .bpch{grid-template-columns:1fr}}';
+  document.head.appendChild(st);
+}
+function boardProbBuild(pr) {
+  try { return buildProblem(pr.tplId, pr.seed, { g: DB.settings.g, easyG10: DB.settings.easyG10, piMode: DB.settings.piMode }); }
+  catch (e) { return null; }
+}
+function boardProbHTML(pg) {
+  const pr = pg && pg.prob;
+  if (!pr) return '';
+  const p = boardProbBuild(pr);
+  if (!p) return '<div class="hint">เปิดโจทย์ข้อนี้ไม่ได้ในโปรแกรมรุ่นนี้ <button class="sm" data-bdp="del">นำออก</button></div>';
+  const unit = !p.theory && p.finds && p.finds[0] && p.finds[0].unit ? ' `' + p.finds[0].unit + '`' : '';
+  const chTxt = c => p.theory ? c.text : M((c.text != null ? c.text : fmt(c.value)) + unit);
+  const ch = p.choices ? '<div class="bpch">' + p.choices.map((c, k) =>
+    '<div><b>' + 'กขคง'[k] + '.</b> ' + chTxt(c) + '</div>').join('') + '</div>' : '';
+  const ci = p.choices ? p.choices.findIndex(c => c.correct) : -1;
+  const ans = p.choices
+    ? 'ข้อ ' + 'กขคง'[ci] + '. ' + chTxt(p.choices[ci])
+    : p.finds.map(f => M(f.s + ' = ' + ansTxt(f) + (f.unit ? ' `' + f.unit + '`' : ''))).join(' , ');
+  return problemHead(p, 0) + problemBody(p) + ch +
+    '<div class="bptools noprint">' +
+    '<button class="sm" data-bdp="new">🎲 สุ่มข้อใหม่ (บทและระดับเดิม)</button>' +
+    '<button class="sm" data-bdp="ans">' + (pr.open ? '🙈 ซ่อนเฉลย' : '👁 เฉลย / วิธีทำ') + '</button>' +
+    '<button class="sm" data-bdp="del">✕ นำโจทย์ออก</button></div>' +
+    (pr.open ? '<div class="bpans"><b>คำตอบ:</b> ' + ans + '</div>' + solutionHTML(p, false) : '');
+}
+function boardProbRender() {
+  if (!BOARD) return;
+  boardProbCSS();
+  const el = $('#bdProb', BOARD.root);
+  if (!el) return;
+  const b = boardDB(BOARD.who), pg = b.pages[b.cur];
+  const h = BOARD.who === 'teach' ? boardProbHTML(pg) : '';
+  el.hidden = !h;
+  el.innerHTML = h;
+  if (h) {
+    bindSolutionToggle(el);
+    $$('[data-bdp]', el).forEach(bt => bt.addEventListener('click', () => boardProbAct(bt.dataset.bdp)));
+  }
+  boardFit((pg && pg.h) || 0);     // พื้นที่เขียนเตี้ยลงตามความสูงของกล่องโจทย์
+}
+function boardProbPick(topic, level) {
+  const pool = poolFor([topic], [], level);
+  if (!pool.length) { toast('บทนี้ยังไม่มีโจทย์ระดับ' + level, 'bad'); return null; }
+  const t = pool[Math.floor(Math.random() * pool.length)];
+  return { tplId: t.id, seed: Math.floor(Math.random() * 2000000000) + 1, topic: topic, level: level, open: false };
+}
+function boardProbAct(act) {
+  if (!BOARD) return;
+  boardSavePage();
+  const b = boardDB(BOARD.who), pg = b.pages[b.cur];
+  if (!pg) return;
+  if (act === 'del') delete pg.prob;
+  else if (act === 'ans' && pg.prob) pg.prob.open = !pg.prob.open;
+  else if (act === 'new' && pg.prob) { const n = boardProbPick(pg.prob.topic, pg.prob.level); if (n) pg.prob = n; }
+  b.up = Date.now();
+  save(true);
+  boardProbRender();
+}
+function boardProbDialog() {
+  if (!BOARD) return;
+  const last = BOARD.lastProb || {};
+  const lv0 = last.level || LEVELS[1];
+  openModal({
+    title: '🎲 แทรกโจทย์ลงกระดาน',
+    bodyHTML:
+      '<label class="hint" for="bpTopic">บท</label><br>' +
+      '<select id="bpTopic" style="max-width:100%">' + TOPICS.map(t =>
+        '<option value="' + t.id + '"' + (t.id === last.topic ? ' selected' : '') + '>' +
+        esc(chLabel(t) + ' ' + t.name) + '</option>').join('') + '</select>' +
+      '<div class="hint" style="margin-top:12px">ระดับ</div>' +
+      '<div class="segbtn">' + LEVELS.map(l =>
+        '<button class="sm' + (l === lv0 ? ' on' : '') + '" data-bplv="' + l + '">' + l + '</button>').join('') + '</div>' +
+      '<div class="hint" style="margin-top:12px">สุ่มโจทย์ 1 ข้อขึ้นกล่องเหนือพื้นที่เขียนของ<b>หน้านี้</b> ' +
+      '(แทนข้อเดิมถ้ามี) · เขียนวิธีทำใต้โจทย์ได้เลย · กด <b>เฉลย / วิธีทำ</b> เมื่อพร้อมเฉลย</div>',
+    buttons: [
+      { label: 'ยกเลิก' },
+      { label: '🎲 สุ่มแล้วแทรก', cls: 'primary', act: (close, root) => {
+          const topic = Number($('#bpTopic', root).value);
+          const on = $('[data-bplv].on', root);
+          const lv = on ? on.dataset.bplv : LEVELS[1];
+          const n = boardProbPick(topic, lv);
+          if (!n) return;
+          BOARD.lastProb = { topic: topic, level: lv };
+          boardSavePage();
+          const b = boardDB(BOARD.who);
+          b.pages[b.cur].prob = n;
+          b.up = Date.now();
+          save(true);
+          close();
+          boardProbRender();
+        } }
+    ],
+    onMount: root => {
+      $$('[data-bplv]', root).forEach(x => x.addEventListener('click', () => {
+        $$('[data-bplv]', root).forEach(y => y.classList.remove('on'));
+        x.classList.add('on');
+      }));
+    }
+  });
 }
 function boardClose() {
   if (!BOARD) return;
@@ -15204,13 +15324,14 @@ function boardPrint() {
   try { img = nbPageImage(b.pages[b.cur], b.paper); } catch (e) { img = ''; }
   if (!img) { toast('แปลงกระดานเป็นรูปไม่สำเร็จ', 'bad'); return; }
   const hd = DB.settings.header || {};
-  const fx = $('#bdFx', BOARD.root);
+  const fx = $('#bdFx', BOARD.root), bpEl = $('#bdProb', BOARD.root);
   $('#printarea').innerHTML =
     '<div class="phead"><div class="t1">' + esc(hd.school || '') + '</div>' +
     '<div class="t2">' + esc(b.title || (BOARD.who === 'teach' ? 'กระดานสอน' : 'สมุดจด')) + '</div>' +
     '<div class="t3">หน้า ' + (b.cur + 1) + '/' + b.pages.length + ' · ' + thDateTime(Date.now()) +
     '</div></div><hr class="prule">' +
     (fx && !fx.hidden ? '<div class="pitem">' + fx.innerHTML + '</div>' : '') +
+    (bpEl && !bpEl.hidden ? '<div class="pitem">' + bpEl.innerHTML + '</div>' : '') +
     '<img src="' + img + '" style="width:100%;border:1px solid #999">';
   setTimeout(() => window.print(), 80);
 }
