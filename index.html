@@ -306,7 +306,7 @@ footer b{font-weight:700;color:var(--ink)}
 /* เลขรุ่นกับวันเวลาที่สร้างไฟล์ — tools/build-dist.mjs ประทับให้ตอนขึ้นเว็บ
    *** ห้ามลบบรรทัดเครื่องหมาย @@VER@@ ทั้งสองอัน ตัวสร้างไฟล์ใช้หาตำแหน่ง *** */
 /* @@VER@@ */
-const APP_VER = "v8.262", BUILD_AT = "2026-09-30 01:22";
+const APP_VER = "v8.264", BUILD_AT = "2026-09-30 08:33";
 /* @@VER-END@@ */
 
 /* ---- ค่าที่ต้องตั้ง ------------------------------------------------------ */
@@ -488,6 +488,11 @@ const SUBJECTS = [
     dir: 'PhysicalScienceAutoSheet/', teacher: 'physci.html', student: 'index.html',
     desc: 'คลื่น เสียง แสงสี · 45 แม่แบบ ตามหนังสือเรียน สสวท. เล่ม 2<br>' +
           'รับใบงานจากครูด้วยรหัส และส่งผลกลับได้' },
+  /* สไลด์สอนวิทย์กายภาพ ม.5 เล่ม 2 (ฟิสิกส์) ครบ 7 บท — เนื้อหาอยู่ที่ PhysciSlides/content_ch*.js · เปิดได้เฉพาะครู/แอดมิน */
+  { key: 'slidesps', ic: 'slides', name: 'สไลด์สอนวิทยาศาสตร์กายภาพ', level: 'สื่อการสอนของครู', grades: [],
+    dir: 'PhysciSlides/', teacher: 'slides.html', student: 'slides.html', teacherOnly: true,
+    desc: 'สไลด์นำเสนอ ม.5 เล่ม 2 ครบ 7 บท · การเคลื่อนที่ แรง พลังงาน คลื่น เสียง แสงสี คลื่นแม่เหล็กไฟฟ้า<br>' +
+          'นิยาม สมการ ชีวิตจริง แบบจำลองโต้ตอบ 7 ชุด · โจทย์ 127 ข้อเผยวิธีทำทีละบรรทัด' },
 
   { key: 'equilibrium', name: 'ห้องเรียนสมดุลกล', level: 'ฟิสิกส์ ม.4', grades: [4, 5, 6],
     dir: 'EquilibriumLab/', teacher: 'equilibrium.html', student: 'index.html', openFree: true,

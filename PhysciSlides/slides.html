@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>สไลด์วิทยาศาสตร์กายภาพ ม.5 เล่ม 2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@200;400;700&family=IBM+Plex+Sans+Thai+Looped:wght@300;400;700&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
+<link rel="stylesheet" href="../SlideDeck/deck.css">
+<!-- สไลด์ฉายเต็มจอ ไม่ต้องมีแถบเปลี่ยนแอปทับ (เหมือนสไลด์ฟิสิกส์ 1–2) — กลับพอร์ทัลได้จากหน้าล็อก/ปุ่มเปลี่ยนบท -->
+<script>window.PC_NO_SWITCHER = true;</script>
+<script src="../apps.js"></script>
+</head>
+<body>
+<!-- เนื้อหาวิทยาศาสตร์กายภาพ ม.5 เล่ม 2 (ฟิสิกส์) บทที่ 1–7 — แก้ที่ content_ch*.js · รูปแบบอธิบายไว้ที่หัว psdata.js -->
+<script src="content_ch1.js"></script>
+<script src="content_ch2.js"></script>
+<script src="content_ch3.js"></script>
+<script src="content_ch4.js"></script>
+<script src="content_ch5.js"></script>
+<script src="content_ch6.js"></script>
+<script src="content_ch7.js"></script>
+<script src="psdata.js"></script>
+<!-- เอนจินสไลด์ร่วม (ฟิสิกส์ 1 · ฟิสิกส์ 2 · วิทย์กายภาพ) — แก้หน้าตาและการทำงานของสไลด์ที่ ../SlideDeck/ -->
+<script src="../SlideDeck/deck.js"></script>
+<script>
+(function(){
+const { arrowDefs, fmt } = SlideDeck;
+const put = (el, a) => { for (const k in a) el.setAttribute(k, a[k]); };
+const SUP = { '-': '⁻', 0: '⁰', 1: '¹', 2: '²', 3: '³', 4: '⁴', 5: '⁵', 6: '⁶', 7: '⁷', 8: '⁸', 9: '⁹' };
+// เลขวิทยาศาสตร์อ่านง่ายบนจอ เช่น 3.0 × 10⁸
+const sci = (v, d = 2) => {
+  if (!isFinite(v) || v === 0) return '0';
+  const e = Math.floor(Math.log10(Math.abs(v)));
+  if (e >= -2 && e <= 3) return fmt(v, Math.max(0, d - Math.max(0, e)));
+  return fmt(v / Math.pow(10, e), d) + ' × 10' + String(e).split('').map(c => SUP[c]).join('');
+};
+
+/* ════════════════════════════════════════════════════════════════
+   แบบจำลองโต้ตอบของวิทย์กายภาพ (SVG + JS ล้วน) — ชื่อตรงกับช่อง sim ใน content_ch*.js
+   ════════════════════════════════════════════════════════════════ */
+const SIMS = {
+/* ── 1.4 โพรเจกไทล์ ── */
+proj: {
+  html: `<svg viewBox="0 0 900 470">
+    <line x1="40" y1="420" x2="880" y2="420" class="gl"/>
+    <g id="pjScale" font-size="16" fill="var(--ink3)"></g>
+    <path id="pjGhost" fill="none" stroke="var(--ink3)" stroke-width="2" stroke-dasharray="7 7"/>
+    <path id="pjTrail" fill="none" stroke="var(--acc)" stroke-width="4"/>
+    <line id="pjAim" stroke="var(--ink)" stroke-width="6" stroke-linecap="round"/>
+    <circle id="pjBall" r="11" fill="var(--acc)"/>
+    <text id="pjOut" x="880" y="50" text-anchor="end" font-size="26" style="font-variant-numeric:tabular-nums"></text>
+    <text id="pjOut2" x="880" y="88" text-anchor="end" font-size="21" fill="var(--ink2)" style="font-variant-numeric:tabular-nums"></text>
+  </svg>
+  <div class="ctl"><label>อัตราเร็วต้น u <input type="range" id="pjU" min="5" max="30" step="1" value="20" style="width:190px"></label>
+    <label>มุมยิง θ <input type="range" id="pjT" min="10" max="80" step="5" value="45" style="width:190px"></label>
+    <button class="btn pri" id="pjGo">ยิง</button></div>`,
+  init(el){
+    const $ = s => el.querySelector(s), g = 10, K = 8.8, X = x => 60 + x * K, Y = y => 420 - y * K;
+    $('#pjScale').innerHTML = [0, 20, 40, 60, 80].map(m => `<line x1="${X(m)}" x2="${X(m)}" y1="420" y2="428" stroke="var(--ink3)"/><text x="${X(m)}" y="448" text-anchor="middle">${m} m</text>`).join('');
+    let t = 0, raf = 0, last = 0, run = false;
+    const P = () => { const u = +$('#pjU').value, th = +$('#pjT').value * Math.PI / 180; return { u, th, ux: u * Math.cos(th), uy: u * Math.sin(th) }; };
+    const path = (p, T) => { let d = ''; for (let k = 0; k <= 60; k++){ const tt = T * k / 60; d += (k ? 'L' : 'M') + X(p.ux * tt).toFixed(1) + ' ' + Y(p.uy * tt - 0.5 * g * tt * tt).toFixed(1); } return d; };
+    const draw = () => {
+      const p = P(), T = 2 * p.uy / g, R = p.ux * T, H = p.uy * p.uy / (2 * g), tt = Math.min(t, T);
+      put($('#pjAim'), { x1: X(0), y1: Y(0), x2: X(0) + 50 * Math.cos(p.th), y2: Y(0) - 50 * Math.sin(p.th) });
+      $('#pjGhost').setAttribute('d', path(p, T));
+      $('#pjTrail').setAttribute('d', tt > 0 ? path(p, tt) : '');
+      put($('#pjBall'), { cx: X(p.ux * tt), cy: Y(p.uy * tt - 0.5 * g * tt * tt) - 11 });
+      $('#pjOut').textContent = `ระยะแนวระดับ R = ${fmt(R, 1)} m · สูงสุด H = ${fmt(H, 1)} m`;
+      $('#pjOut2').textContent = `เวลาลอย ${fmt(T, 2)} s · uₓ = ${fmt(p.ux, 1)} m/s คงตัวตลอดทาง`;
+    };
+    const loop = now => { if (!run) return; t += Math.min((now - last) / 1000, 0.05); last = now; const p = P(); if (t >= 2 * p.uy / g) run = false; draw(); if (run) raf = requestAnimationFrame(loop); };
+    $('#pjGo').onclick = e => { e.stopPropagation(); cancelAnimationFrame(raf); t = 0; run = true; last = performance.now(); raf = requestAnimationFrame(loop); };
+    ['#pjU', '#pjT'].forEach(s => $(s).oninput = () => { run = false; t = 0; draw(); });
+    el._reset = () => { run = false; cancelAnimationFrame(raf); t = 0; draw(); };
+    el._reset();
+  },
+  leave(el){ el._reset && el._reset(); }
+},
+
+/* ── 2.1 ชั่งน้ำหนักบนดาวต่าง ๆ ── */
+weigh: {
+  html: `<svg viewBox="0 0 900 470">
+    <rect x="330" y="360" width="240" height="46" rx="10" fill="var(--paper2)" stroke="var(--ink)" stroke-width="3"/>
+    <rect x="370" y="372" width="160" height="24" rx="4" fill="var(--ink)"/>
+    <text id="wRead" x="450" y="391" text-anchor="middle" font-size="20" font-weight="700" style="fill:#7CFC9A;font-variant-numeric:tabular-nums"></text>
+    <g id="wMan" transform="translate(450 355)">
+      <circle cx="0" cy="-150" r="26" fill="var(--paper2)" stroke="var(--ink)" stroke-width="3"/>
+      <rect x="-34" y="-122" width="68" height="84" rx="16" fill="var(--acc)"/>
+      <rect x="-30" y="-40" width="24" height="40" rx="6" fill="var(--ink2)"/><rect x="6" y="-40" width="24" height="40" rx="6" fill="var(--ink2)"/>
+    </g>
+    <line x1="120" y1="420" x2="780" y2="420" class="gl"/>
+    <text id="wOut" x="40" y="60" font-size="28" font-weight="700" style="font-variant-numeric:tabular-nums"></text>
+    <text id="wOut2" x="40" y="100" font-size="22" fill="var(--ink2)" style="font-variant-numeric:tabular-nums"></text>
+    <g id="wBars"></g>
+  </svg>
+  <div class="ctl"><span>ดาว</span><button class="btn on" data-g="9.8">โลก</button><button class="btn" data-g="1.6">ดวงจันทร์</button><button class="btn" data-g="3.7">ดาวอังคาร</button><button class="btn" data-g="24.8">ดาวพฤหัสบดี</button>
+    <label>มวล <input type="range" id="wM" min="20" max="120" step="5" value="60" style="width:180px"></label></div>`,
+  init(el){
+    const $ = s => el.querySelector(s);
+    const PL = [['โลก', 9.8], ['ดวงจันทร์', 1.6], ['ดาวอังคาร', 3.7], ['ดาวพฤหัสบดี', 24.8]];
+    let g = 9.8;
+    const draw = () => {
+      const m = +$('#wM').value, W = m * g, nm = PL.find(p => p[1] === g)[0];
+      $('#wRead').textContent = fmt(W, 0) + ' N';
+      $('#wOut').textContent = `บน${nm}: W = mg = ${m} × ${g} = ${fmt(W, 0)} N`;
+      $('#wOut2').textContent = `มวล ${m} kg เท่าเดิมทุกดาว · g ของ${nm} = ${g} N/kg`;
+      const s = 0.55 + 0.45 * m / 120;
+      $('#wMan').setAttribute('transform', `translate(450 360) scale(${s})`);
+      $('#wBars').innerHTML = PL.map((p, i) => { const w = m * p[1], h = w / (120 * 24.8) * 230, x = 640 + i * 62;
+        return `<rect x="${x}" y="${410 - h}" width="40" height="${h}" fill="${p[1] === g ? 'var(--acc)' : 'var(--ink3)'}" opacity="${p[1] === g ? 1 : .45}"/><text x="${x + 20}" y="${402 - h}" text-anchor="middle" font-size="15">${fmt(w, 0)}</text><text x="${x + 20}" y="440" text-anchor="middle" font-size="14" fill="var(--ink2)">${p[0].replace('ดาว', '')}</text>`; }).join('');
+    };
+    el.querySelectorAll('[data-g]').forEach(b => b.onclick = e => { e.stopPropagation(); g = +b.dataset.g; el.querySelectorAll('[data-g]').forEach(x => x.classList.toggle('on', x === b)); draw(); });
+    $('#wM').oninput = draw;
+    draw();
+  }
+},
+
+/* ── 3.2 พลังงานของรถไฟเหาะ ── */
+coaster: {
+  html: `<svg viewBox="0 0 900 470">
+    <path id="cTrack" fill="none" stroke="var(--ink)" stroke-width="5"/>
+    <path id="cFill" fill="var(--paper2)" opacity=".7"/>
+    <g id="cCar"><rect x="-20" y="-24" width="40" height="20" rx="6" fill="var(--acc)"/><circle cx="-11" cy="-4" r="5" fill="var(--ink)"/><circle cx="11" cy="-4" r="5" fill="var(--ink)"/></g>
+    <g font-size="18" style="font-variant-numeric:tabular-nums">
+      <rect x="330" y="18" width="540" height="30" fill="none" stroke="var(--ink3)"/>
+      <rect id="cEp" y="18" height="30" fill="#2f7ae5"/><rect id="cEk" y="18" height="30" fill="#e4572e"/><rect id="cQ" y="18" height="30" fill="#9aa0a6"/>
+      <text id="cLbl" x="330" y="74" fill="var(--ink2)"></text>
+    </g>
+  </svg>
+  <div class="ctl"><button class="btn pri" id="cGo">ปล่อยรถ</button>
+    <label>แรงเสียดทาน <input type="range" id="cMu" min="0" max="0.12" step="0.01" value="0" style="width:200px"></label>
+    <span style="font-size:20px"><b style="color:#2f7ae5">■</b> ศักย์ <b style="color:#e4572e">■</b> จลน์ <b style="color:#9aa0a6">■</b> ความร้อน</span></div>`,
+  init(el){
+    const $ = s => el.querySelector(s), g = 10, L = 112, H0 = 36;
+    const h = x => 4 + 16 * (1 + Math.cos(2 * Math.PI * x / 64)) * (x < 32 ? 1 : 0.7);
+    const dh = x => (h(x + 0.01) - h(x - 0.01)) / 0.02;
+    const X = x => 60 + x * 7.2, Y = y => 420 - y * 9;
+    let d = '', f = '';
+    for (let x = 0; x <= L; x += 1){ d += (x ? 'L' : 'M') + X(x).toFixed(1) + ' ' + Y(h(x)).toFixed(1); }
+    f = d + `L${X(L)} 440 L${X(0)} 440 Z`;
+    $('#cTrack').setAttribute('d', d); $('#cFill').setAttribute('d', f);
+    let x = 1.5, dir = 1, E = H0, raf = 0, last = 0, run = false;
+    const draw = () => {
+      const hx = h(x), ep = hx / H0, ek = Math.max(0, E - hx) / H0, q = (H0 - E) / H0, W = 540;
+      const ang = Math.atan(dh(x) * 9 / 7.2) * 180 / Math.PI;
+      $('#cCar').setAttribute('transform', `translate(${X(x)} ${Y(hx)}) rotate(${-ang})`);
+      put($('#cEp'), { x: 330, width: W * ep }); put($('#cEk'), { x: 330 + W * ep, width: W * ek }); put($('#cQ'), { x: 330 + W * (ep + ek), width: W * q });
+      const v = Math.sqrt(Math.max(0, 2 * g * (E - hx)));
+      $('#cLbl').textContent = `สูง ${fmt(hx, 1)} m · อัตราเร็ว ${fmt(v, 1)} m/s · พลังงานกลเหลือ ${fmt(E / H0 * 100, 0)}%`;
+    };
+    const loop = now => {
+      if (!run) return;
+      let dt = Math.min((now - last) / 1000, 0.05) * 1.4; last = now;
+      const mu = +$('#cMu').value;
+      for (let k = 0; k < 10; k++){
+        const s = dt / 10, v = Math.sqrt(Math.max(0, 2 * g * (E - h(x)))) || 0.4;
+        const dx = dir * v * s / Math.sqrt(1 + dh(x) * dh(x));
+        const nx = x + dx;
+        if (nx <= 0 || nx >= L || E - h(nx) < 0){ dir = -dir; continue; }
+        E -= mu * Math.abs(dx); x = nx;
+        if (x > 10 && E <= h(x) + 0.02 && Math.abs(dh(x)) < 0.05){ run = false; break; }
+      }
+      draw(); if (run) raf = requestAnimationFrame(loop);
+    };
+    $('#cGo').onclick = e => { e.stopPropagation(); cancelAnimationFrame(raf); x = 1.5; dir = 1; E = H0; run = true; last = performance.now(); raf = requestAnimationFrame(loop); };
+    el._reset = () => { run = false; cancelAnimationFrame(raf); x = 1.5; dir = 1; E = H0; draw(); };
+    el._reset();
+  },
+  leave(el){ el._reset && el._reset(); }
+},
+
+/* ── 4.1 คลื่นในเส้นเชือก ── */
+wave: {
+  html: `<svg viewBox="0 0 900 470">${arrowDefs('w41')}
+    <line x1="40" y1="230" x2="870" y2="230" stroke="var(--ink3)" stroke-width="1.5" stroke-dasharray="6 6"/>
+    <path id="wvPath" fill="none" stroke="var(--acc)" stroke-width="5"/>
+    <circle id="wvDot" r="11" fill="var(--neg)"/>
+    <line id="wvLam" stroke="var(--ink)" stroke-width="2.5" marker-start="url(#w41)" marker-end="url(#w41)"/>
+    <text id="wvLamT" font-size="24" text-anchor="middle" font-weight="700"></text>
+    <text id="wvOut" x="40" y="440" font-size="26" style="font-variant-numeric:tabular-nums"></text>
+  </svg>
+  <div class="ctl"><label>ความถี่ f <input type="range" id="wvF" min="0.5" max="3" step="0.25" value="1" style="width:200px"></label>
+    <label>แอมพลิจูด A <input type="range" id="wvA" min="20" max="90" step="5" value="60" style="width:180px"></label></div>`,
+  init(el){
+    const $ = s => el.querySelector(s), V = 200, PX = 100;   // v = 2 m/s (100 px = 1 m)
+    let t = 0, raf = 0, last = 0, on = false;
+    const draw = () => {
+      const f = +$('#wvF').value, A = +$('#wvA').value, lam = V / f, k = 2 * Math.PI / lam, w = 2 * Math.PI * f;
+      let d = '';
+      for (let x = 40; x <= 870; x += 5){ const y = 230 - A * Math.sin(w * t - k * (x - 40)); d += (x > 40 ? 'L' : 'M') + x + ' ' + y.toFixed(1); }
+      $('#wvPath').setAttribute('d', d);
+      put($('#wvDot'), { cx: 460, cy: 230 - A * Math.sin(w * t - k * 420) });
+      // สันแรกหลังตำแหน่ง 120 px → ลากลูกศรหนึ่งความยาวคลื่น
+      let x0 = 40 + ((w * t - Math.PI / 2) / k) % lam; while (x0 < 120) x0 += lam;
+      const yL = 230 - A - 26;
+      if (x0 + lam <= 860){ put($('#wvLam'), { x1: x0, y1: yL, x2: x0 + lam, y2: yL }); put($('#wvLamT'), { x: x0 + lam / 2, y: yL - 12 }); $('#wvLamT').textContent = 'λ = ' + fmt(lam / PX, 2) + ' m'; $('#wvLam').style.visibility = $('#wvLamT').style.visibility = 'visible'; }
+      else $('#wvLam').style.visibility = $('#wvLamT').style.visibility = 'hidden';
+      $('#wvOut').textContent = `v = fλ = ${fmt(f, 2)} × ${fmt(lam / PX, 2)} = ${fmt(V / PX, 0)} m/s (ตัวกลางเดิม อัตราเร็วคงตัว) · T = ${fmt(1 / f, 2)} s`;
+    };
+    const loop = now => { if (!on) return; t += Math.min((now - last) / 1000, 0.05) * 0.5; last = now; draw(); raf = requestAnimationFrame(loop); };
+    el._start = () => { on = true; last = performance.now(); cancelAnimationFrame(raf); raf = requestAnimationFrame(loop); };
+    el._stop = () => { on = false; cancelAnimationFrame(raf); };
+    ['#wvF', '#wvA'].forEach(s => $(s).oninput = draw);
+    draw();
+  },
+  enter(el){ el._start && el._start(); },
+  leave(el){ el._stop && el._stop(); }
+},
+
+/* ── 5.3 ปรากฏการณ์ดอปเพลอร์ ── */
+doppler: {
+  html: `<svg viewBox="0 0 900 470">
+    <g id="dpRings" fill="none" stroke="var(--acc)" stroke-width="2.5"></g>
+    <circle id="dpSrc" r="14" fill="var(--neg)"/>
+    <g font-size="22" font-weight="700" style="font-variant-numeric:tabular-nums">
+      <text x="30" y="440" id="dpL"></text><text x="870" y="440" text-anchor="end" id="dpR"></text>
+    </g>
+    <text x="450" y="40" text-anchor="middle" font-size="22" fill="var(--ink2)" id="dpTop"></text>
+    <text x="40" y="236" font-size="40">🧍</text><text x="822" y="236" font-size="40">🧍</text>
+  </svg>
+  <div class="ctl"><label>อัตราเร็วแหล่งกำเนิด <input type="range" id="dpV" min="0" max="0.9" step="0.05" value="0.5" style="width:240px"></label><span id="dpVt" style="font-size:22px"></span></div>`,
+  init(el){
+    const $ = s => el.querySelector(s), C = 150, F0 = 3, Y0 = 225;   // หน้าคลื่นออกทุก 1/3 s
+    let t = 0, raf = 0, last = 0, on = false, rings = [], sx = 200, nextT = 0;
+    const draw = () => {
+      const m = +$('#dpV').value;
+      $('#dpRings').innerHTML = rings.map(r => { const R = (t - r.t) * C; return R < 700 ? `<circle cx="${r.x.toFixed(1)}" cy="${Y0}" r="${R.toFixed(1)}" opacity="${Math.max(0.15, 1 - R / 700).toFixed(2)}"/>` : ''; }).join('');
+      put($('#dpSrc'), { cx: sx, cy: Y0 });
+      $('#dpVt').textContent = `= ${fmt(m, 2)} เท่าของอัตราเร็วเสียง`;
+      const fR = F0 / (1 - m), fL = F0 / (1 + m);
+      $('#dpR').textContent = `ด้านหน้า: ได้ยิน ${fmt(fR / F0, 2)} f₀ (สูงขึ้น)`;
+      $('#dpL').textContent = `ด้านหลัง: ได้ยิน ${fmt(fL / F0, 2)} f₀ (ต่ำลง)`;
+      $('#dpTop').textContent = m ? 'หน้าคลื่นด้านหน้าเบียดกัน λ สั้น · ด้านหลังห่างกัน λ ยาว' : 'แหล่งกำเนิดหยุดนิ่ง หน้าคลื่นเป็นวงกลมซ้อนกันพอดี ทุกคนได้ยินความถี่เท่ากัน';
+    };
+    const loop = now => {
+      if (!on) return;
+      const dt = Math.min((now - last) / 1000, 0.05); last = now; t += dt;
+      const m = +$('#dpV').value;
+      sx += m * C * dt; if (sx > 720){ sx = 200; rings = []; nextT = t; }
+      if (!m && sx !== 450 && rings.length === 0) sx = 450;
+      if (t >= nextT){ rings.push({ x: sx, t }); nextT = t + 1 / F0; if (rings.length > 30) rings.shift(); }
+      draw(); raf = requestAnimationFrame(loop);
+    };
+    $('#dpV').oninput = () => { rings = []; sx = +$('#dpV').value ? 200 : 450; nextT = t; draw(); };
+    el._start = () => { on = true; last = performance.now(); cancelAnimationFrame(raf); raf = requestAnimationFrame(loop); };
+    el._stop = () => { on = false; cancelAnimationFrame(raf); };
+    draw();
+  },
+  enter(el){ el._start && el._start(); },
+  leave(el){ el._stop && el._stop(); }
+},
+
+/* ── 6.4 ผสมแสงสี ── */
+rgb: {
+  html: `<svg viewBox="0 0 900 470">
+    <rect x="160" y="10" width="580" height="450" rx="18" fill="#05070c"/>
+    <g style="isolation:isolate">
+      <circle id="rgR" cx="390" cy="160" r="130" style="mix-blend-mode:screen"/>
+      <circle id="rgG" cx="510" cy="160" r="130" style="mix-blend-mode:screen"/>
+      <circle id="rgB" cx="450" cy="262" r="130" style="mix-blend-mode:screen"/>
+    </g>
+    <text id="rgOut" x="450" y="440" text-anchor="middle" font-size="22" style="fill:#fff"></text>
+  </svg>
+  <div class="ctl"><label style="color:#e0312f">แดง <input type="range" id="rgRv" min="0" max="255" step="5" value="255" style="width:150px"></label>
+    <label style="color:#1f9d45">เขียว <input type="range" id="rgGv" min="0" max="255" step="5" value="255" style="width:150px"></label>
+    <label style="color:#2f6fe5">น้ำเงิน <input type="range" id="rgBv" min="0" max="255" step="5" value="255" style="width:150px"></label></div>`,
+  init(el){
+    const $ = s => el.querySelector(s);
+    const name = (r, g, b) => {
+      const on = [r > 100, g > 100, b > 100].map(Number).join('');
+      return { '000': 'มืด', 100: 'แดง', '010': 'เขียว', '001': 'น้ำเงิน', 110: 'เหลือง', '011': 'ฟ้า (ไซแอน)', 101: 'ม่วงแดง (มาเจนตา)', 111: 'ขาว' }[on];
+    };
+    const draw = () => {
+      const r = +$('#rgRv').value, g = +$('#rgGv').value, b = +$('#rgBv').value;
+      $('#rgR').setAttribute('fill', `rgb(${r},0,0)`); $('#rgG').setAttribute('fill', `rgb(0,${g},0)`); $('#rgB').setAttribute('fill', `rgb(0,0,${b})`);
+      $('#rgOut').textContent = `ตรงกลางที่ซ้อนครบสามดวง: rgb(${r}, ${g}, ${b}) → ${name(r, g, b)}`;
+    };
+    ['#rgRv', '#rgGv', '#rgBv'].forEach(s => $(s).oninput = draw);
+    draw();
+  }
+},
+
+/* ── 7.2 สเปกตรัมคลื่นแม่เหล็กไฟฟ้า ── */
+spectrum: {
+  html: `<svg viewBox="0 0 900 470">
+    <defs><linearGradient id="spVis" x1="0" x2="1"><stop offset="0" stop-color="#e02020"/><stop offset=".2" stop-color="#f08a00"/><stop offset=".38" stop-color="#f0dc00"/><stop offset=".55" stop-color="#20b040"/><stop offset=".75" stop-color="#2060e0"/><stop offset=".88" stop-color="#4b2ab0"/><stop offset="1" stop-color="#8a2be2"/></linearGradient></defs>
+    <g id="spBands"></g>
+    <path id="spWave" fill="none" stroke="var(--acc)" stroke-width="3"/>
+    <polygon id="spPtr" fill="var(--ink)"/>
+    <g font-size="24" style="font-variant-numeric:tabular-nums">
+      <text id="spName" x="40" y="250" font-size="36" font-weight="700"></text>
+      <text id="spL" x="40" y="300"></text><text id="spF" x="40" y="340"></text><text id="spE" x="40" y="380"></text>
+      <text id="spUse" x="40" y="430" fill="var(--ink2)" font-size="22"></text>
+    </g>
+  </svg>
+  <div class="ctl"><label>ความยาวคลื่น (ยาว ← → สั้น) <input type="range" id="spX" min="0" max="1000" step="1" value="578" style="width:520px"></label></div>`,
+  init(el){
+    const $ = s => el.querySelector(s), c = 3e8, h = 6.6e-34;
+    // แกนนอนเป็นลอการิทึมของความยาวคลื่น: ซ้าย 10³ m → ขวา 10⁻¹³ m
+    const LG0 = 3, LG1 = -13, X0 = 40, X1 = 860, lx = lg => X0 + (LG0 - lg) / (LG0 - LG1) * (X1 - X0);
+    const BANDS = [
+      ['คลื่นวิทยุ', 3, -1, '#8fa3b8', 'วิทยุ AM/FM โทรทัศน์'],
+      ['ไมโครเวฟ', -1, -3, '#7c93ad', 'เตาไมโครเวฟ เรดาร์ Wi-Fi โทรศัพท์มือถือ'],
+      ['อินฟราเรด', -3, -6.155, '#b0413e', 'รีโมต กล้องถ่ายภาพความร้อน เครื่องวัดไข้'],
+      ['แสงที่มองเห็น', -6.155, -6.398, 'url(#spVis)', 'การมองเห็น สังเคราะห์ด้วยแสง เส้นใยนำแสง'],
+      ['อัลตราไวโอเลต', -6.398, -8, '#7b4bd6', 'ฆ่าเชื้อโรค ตรวจธนบัตร (ผิวไหม้ได้)'],
+      ['รังสีเอกซ์', -8, -11, '#5a6270', 'ถ่ายภาพกระดูก ตรวจกระเป๋าที่สนามบิน'],
+      ['รังสีแกมมา', -11, -13, '#2e3440', 'รักษามะเร็ง ฆ่าเชื้อในอาหาร (อันตรายสูง)']
+    ];
+    $('#spBands').innerHTML = BANDS.map(b => { const x1 = lx(b[1]), x2 = lx(b[2]);
+      return `<rect x="${x1}" y="60" width="${x2 - x1}" height="70" fill="${b[3]}"/><text x="${(x1 + x2) / 2}" y="${b[0] === 'แสงที่มองเห็น' ? 182 : 160}" text-anchor="middle" font-size="16" fill="var(--ink2)">${b[0]}</text>`; }).join('') +
+      `<text x="${X0}" y="210" font-size="16" fill="var(--ink3)">λ ยาว · f ต่ำ · E ต่ำ</text><text x="${X1}" y="210" text-anchor="end" font-size="16" fill="var(--ink3)">λ สั้น · f สูง · E สูง</text>`;
+    const lenTxt = l => l >= 1 ? fmt(l, l < 10 ? 1 : 0) + ' m' : l >= 1e-3 ? fmt(l * 1e3, 1) + ' mm' : l >= 1e-6 ? fmt(l * 1e6, 1) + ' μm' : l >= 1e-9 ? fmt(l * 1e9, 0) + ' nm' : sci(l, 1) + ' m';
+    const draw = () => {
+      const lg = LG0 - (+$('#spX').value / 1000) * (LG0 - LG1), lam = Math.pow(10, lg), f = c / lam, E = h * f, eV = E / 1.6e-19;
+      const B = BANDS.find(b => lg <= b[1] && lg >= b[2]) || BANDS[BANDS.length - 1], x = lx(lg);
+      put($('#spPtr'), { points: `${x - 12},40 ${x + 12},40 ${x},60` });
+      let d = '', per = 12 + (LG0 - lg) * 3;
+      for (let k = 0; k <= 200; k++){ const px = 520 + k * 1.7; d += (k ? 'L' : 'M') + px.toFixed(1) + ' ' + (330 - 50 * Math.sin(2 * Math.PI * k / 200 * per / 12 * 1.2)).toFixed(1); }
+      $('#spWave').setAttribute('d', d);
+      $('#spName').textContent = B[0];
+      $('#spL').textContent = 'ความยาวคลื่น λ = ' + lenTxt(lam);
+      $('#spF').textContent = 'ความถี่ f = c/λ = ' + sci(f, 2) + ' Hz';
+      $('#spE').textContent = 'พลังงานโฟตอน E = hf = ' + sci(eV, 2) + ' eV';
+      $('#spUse').textContent = 'ใช้ประโยชน์: ' + B[4];
+    };
+    $('#spX').oninput = draw;
+    draw();
+  }
+}
+};
+
+/* ── บทจาก content_ch*.js → รูปแบบที่เอนจินใช้ ── */
+const CHAPTERS = {};
+(window.PS || []).forEach(C => { CHAPTERS[C.no] = C; });
+
+SlideDeck.start({
+  name: 'วิทยาศาสตร์กายภาพ', en: 'Physical Science II', book: 'ม.5 เล่ม 2', app: '../PhysicalScienceAutoSheet/index.html', themeKey: 'psslides.theme',
+  chapters: CHAPTERS, sims: SIMS, topics: physicsData.topics
+});
+})();
+</script>
+</body>
+</html>

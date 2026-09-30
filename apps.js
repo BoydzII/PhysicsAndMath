@@ -148,6 +148,8 @@
       dir: 'BiologyAutoSheet/', teacher: 'bio.html', student: 'index.html' },
     { key: 'physci',      ic: 'physci',      name: 'วิทยาศาสตร์กายภาพ',   level: 'ม.5 · ฟิสิกส์',
       dir: 'PhysicalScienceAutoSheet/', teacher: 'physci.html', student: 'index.html' },
+    { key: 'slidesps',    ic: 'slides',      name: 'สไลด์สอนวิทยาศาสตร์กายภาพ', level: 'สื่อการสอนของครู',
+      dir: 'PhysciSlides/', teacher: 'slides.html', student: 'slides.html', teacherOnly: true },
     { key: 'equilibrium', ic: 'equilibrium', name: 'ห้องเรียนสมดุลกล',    level: 'ฟิสิกส์ ม.4',
       dir: 'EquilibriumLab/', teacher: 'equilibrium.html', student: 'index.html' },
           { key: 'ijso',        ic: 'science',     name: 'ข้อสอบ IJSO สอวน. ม.ต้น', level: 'ม.ต้น (สอบแข่งขัน)',

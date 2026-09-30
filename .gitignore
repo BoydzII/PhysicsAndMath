@@ -120,6 +120,11 @@ Thumbs.db
 SlideDeck/*
 !SlideDeck/deck.js
 !SlideDeck/deck.css
+!PhysciSlides/
+PhysciSlides/*
+!PhysciSlides/slides.html
+!PhysciSlides/psdata.js
+!PhysciSlides/content_ch*.js
 !Physics1App/
 Physics1App/*
 !Physics1App/index.html

@@ -64,6 +64,7 @@ const IDENT = {
   EquilibriumLab:           { title: 'ห้องเรียนสมดุลกล' },
   Physics1App:              { title: 'ฟิสิกส์ 1' },
   Physics2App:              { title: 'ฟิสิกส์ 2' },
+  PhysciSlides:             { title: 'สไลด์วิทยาศาสตร์กายภาพ' },
   FigureLab:                { title: 'ห้องวาดรูปโจทย์' },
   WorkDesk:                 { title: 'ส่งงานออนไลน์' }
 };
