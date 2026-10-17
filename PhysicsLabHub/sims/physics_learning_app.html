@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Pastel - เรียนฟิสิกส์ให้เป็นเรื่องง่าย</title>
+    
+    <!-- Fonts: Sarabun for Thai -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    
+    <!-- React & Babel -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Custom Styles -->
+    <style>
+        :root {
+            --pastel-blue: #a2d2ff;
+            --pastel-pink: #ffafcc;
+            --pastel-purple: #cdb4db;
+            --pastel-yellow: #fcf6bd;
+            --pastel-bg: #fdfbf7;
+        }
+        body {
+            font-family: 'Sarabun', sans-serif;
+            background-color: var(--pastel-bg);
+            color: #4a4a4a;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .font-math {
+            font-family: 'Cambria Math', 'Cambria', 'Times New Roman', serif;
+            letter-spacing: 0.5px;
+        }
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: #ffffff;
+            border: 3px solid var(--pastel-pink);
+            cursor: pointer;
+            margin-top: -8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 6px;
+            cursor: pointer;
+            background: #e2e8f0;
+            border-radius: 3px;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+        .animate-slide-in {
+            animation: slideIn 0.3s ease-out forwards;
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        // ลบ data-type="module" ออกเพื่อให้ Babel ใช้การคอมไพล์แบบมาตรฐานที่ไม่พยายามนำเข้า ES modules
+        const { useState, useEffect, useRef } = React;
+
+        const IconHome = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>;
+        const IconBook = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>;
+        const IconTarget = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>;
+        const IconPlay = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>;
+
+        const MathText = ({ children, className = "" }) => <span className={`font-math ${className}`}>{children}</span>;
+
+        const Motion1DSimulator = () => {
+            const [velocity, setVelocity] = useState(10);
+            const [time, setTime] = useState(0);
+            const [isPlaying, setIsPlaying] = useState(false);
+            const requestRef = useRef();
+            const startTimeRef = useRef();
+
+            const animate = t => {
+                if (!startTimeRef.current) startTimeRef.current = t;
+                const progress = (t - startTimeRef.current) / 1000;
+                if (progress <= 5) {
+                    setTime(progress);
+                    requestRef.current = requestAnimationFrame(animate);
+                } else {
+                    setIsPlaying(false);
+                }
+            };
+
+            const startSimulation = () => {
+                if (isPlaying) return;
+                setTime(0);
+                startTimeRef.current = null;
+                setIsPlaying(true);
+                requestRef.current = requestAnimationFrame(animate);
+            };
+
+            const reset = () => {
+                cancelAnimationFrame(requestRef.current);
+                setIsPlaying(false);
+                setTime(0);
+            };
+
+            useEffect(() => () => cancelAnimationFrame(requestRef.current), []);
+
+            const s = (velocity * time).toFixed(1);
+
+            return (
+                <div className="glass-panel p-4 md:p-6 rounded-2xl animate-slide-in">
+                    <h2 className="text-xl md:text-2xl font-bold text-gray-800 mb-4">การเคลื่อนที่แนวตรง</h2>
+                    <div className="bg-blue-50 rounded-xl p-4 mb-4 relative h-32 overflow-hidden border border-blue-100">
+                        <div className="absolute bottom-4 left-0 right-0 h-2 bg-gray-300"></div>
+                        <div className="absolute bottom-6 transition-all duration-75" style={{ left: `${Math.min((time * velocity * 2), 85)}%`, transform: 'translateX(-50%)' }}>
+                            <div className="w-16 h-8 bg-blue-400 rounded-t-lg relative shadow-md">
+                                <div className="absolute bottom-[-4px] left-2 w-4 h-4 bg-gray-800 rounded-full"></div>
+                                <div className="absolute bottom-[-4px] right-2 w-4 h-4 bg-gray-800 rounded-full"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 mb-4">
+                        <div className="bg-white p-3 rounded-xl shadow-sm text-center">
+                            <p className="text-sm text-gray-500">ความเร็ว <MathText>(v)</MathText></p>
+                            <p className="text-lg font-bold text-blue-500"><MathText>{velocity} m/s</MathText></p>
+                        </div>
+                        <div className="bg-white p-3 rounded-xl shadow-sm text-center">
+                            <p className="text-sm text-gray-500">การกระจัด <MathText>(s)</MathText></p>
+                            <p className="text-lg font-bold text-pink-500"><MathText>{s} m</MathText></p>
+                        </div>
+                    </div>
+                    <input type="range" min="1" max="20" value={velocity} onChange={(e) => setVelocity(Number(e.target.value))} disabled={isPlaying} />
+                    <div className="flex space-x-2 mt-4">
+                        <button onClick={startSimulation} disabled={isPlaying} className={`flex-1 py-3 rounded-xl font-bold text-white ${isPlaying ? 'bg-gray-400' : 'bg-blue-400'}`}>เริ่มจำลอง</button>
+                        <button onClick={reset} className="flex-1 py-3 bg-pink-100 text-pink-600 rounded-xl font-bold">รีเซ็ต</button>
+                    </div>
+                </div>
+            );
+        };
+
+        const App = () => {
+            const [activeTab, setActiveTab] = useState('home');
+            const renderContent = () => {
+                switch(activeTab) {
+                    case 'home': return <div className="text-center mt-10">เลือกหัวข้อด้านข้างเพื่อเริ่ม</div>;
+                    case 'sim1': return <Motion1DSimulator />;
+                    default: return <div>กำลังพัฒนา...</div>;
+                }
+            };
+            return (
+                <div className="min-h-screen flex">
+                    <aside className="w-64 bg-white border-r p-6">
+                        <h1 className="text-2xl font-bold mb-6">Phys<span className="font-math">Pastel</span></h1>
+                        <nav className="space-y-2">
+                            <button onClick={() => setActiveTab('home')} className="w-full text-left py-2">หน้าหลัก</button>
+                            <button onClick={() => setActiveTab('sim1')} className="w-full text-left py-2">การเคลื่อนที่ 1 มิติ</button>
+                        </nav>
+                    </aside>
+                    <main className="flex-1 p-8">{renderContent()}</main>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

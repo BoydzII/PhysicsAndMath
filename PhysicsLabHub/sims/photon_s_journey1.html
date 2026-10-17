@@ -1,0 +1,1427 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Photon's Journey - Physics Simulator & Quiz</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Mitr:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Prompt', sans-serif; background-color: #f0f9ff; overflow: hidden; }
+        h1, h2, h3, h4, .heading-font { font-family: 'Mitr', sans-serif; }
+        .glass-panel { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.6); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05); }
+        .view-section { display: none; width: 100%; height: 100%; animation: fadeIn 0.3s ease; }
+        .view-section.active { display: flex; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 16px; width: 16px; border-radius: 50%; cursor: pointer; margin-top: -6px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; cursor: pointer; background: #e2e8f0; border-radius: 9999px; }
+        input[type=range]:disabled { opacity: 0.5; cursor: not-allowed; }
+        
+        .slider-red::-webkit-slider-thumb { background: #ef4444; } .slider-blue::-webkit-slider-thumb { background: #3b82f6; } 
+        .slider-green::-webkit-slider-thumb { background: #10b981; } .slider-orange::-webkit-slider-thumb { background: #f97316; } 
+        .slider-purple::-webkit-slider-thumb { background: #8b5cf6; } .slider-teal::-webkit-slider-thumb { background: #14b8a6; }
+
+        ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        
+        .home-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .home-card:hover { transform: translateY(-5px) scale(1.02); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); }
+        
+        .math-modal { transition: all 0.3s; opacity: 0; pointer-events: none; }
+        .math-modal.show { opacity: 1; pointer-events: auto; z-index: 100; }
+        
+        .eq-grid { display: grid; grid-template-columns: max-content max-content 1fr; gap: 0.25rem 0.75rem; align-items: center; font-family: monospace; font-size: 1rem; color: #334155; }
+        .eq-grid > :nth-child(3n+1) { text-align: right; }
+        .eq-grid > :nth-child(3n+2) { text-align: center; color: #ef4444; font-weight: bold; }
+        .eq-grid > :nth-child(3n) { text-align: left; }
+    </style>
+</head>
+<body class="w-screen h-screen">
+
+    <!-- ================= 1. HOME VIEW ================= -->
+    <div id="view-home" class="view-section active flex-col items-center justify-center p-6 bg-gradient-to-br from-blue-50 to-indigo-100">
+        <h1 class="text-4xl md:text-5xl font-bold text-indigo-900 mb-2 heading-font text-center">Photon's Journey</h1>
+        <p class="text-slate-600 mb-10 text-center text-lg">ศูนย์รวมการเรียนรู้กฎการเคลื่อนที่ของนิวตันและสมดุลกล</p>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-6xl justify-center">
+            <!-- Simulation Card -->
+            <button onclick="navTo('sim')" class="home-card flex-1 bg-white rounded-3xl p-8 border-2 border-transparent hover:border-blue-200 text-left relative overflow-hidden group z-10">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-blue-100 rounded-bl-full -z-10 group-hover:scale-110 transition-transform"></div>
+                <div class="w-16 h-16 bg-gradient-to-br from-blue-400 to-blue-600 text-white rounded-2xl flex items-center justify-center text-3xl mb-6 shadow-lg"><i class="fas fa-shapes"></i></div>
+                <h2 class="text-2xl font-bold text-slate-800 mb-2 heading-font">ห้องจำลองอิสระ</h2>
+                <p class="text-slate-500 mb-4">สังเกตพฤติกรรมของแรง การเคลื่อนที่ และสมดุลกล พร้อมดูวิธีทำสมการแบบละเอียด</p>
+                <span class="text-blue-600 font-semibold flex items-center gap-2 group-hover:translate-x-2 transition-transform">เข้าสู่ห้องทดลอง <i class="fas fa-arrow-right"></i></span>
+            </button>
+
+            <!-- Newton's Laws Card -->
+            <button onclick="navTo('newton')" class="home-card flex-1 bg-white rounded-3xl p-8 border-2 border-transparent hover:border-emerald-200 text-left relative overflow-hidden group z-10">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-emerald-100 rounded-bl-full -z-10 group-hover:scale-110 transition-transform"></div>
+                <div class="w-16 h-16 bg-gradient-to-br from-emerald-400 to-emerald-600 text-white rounded-2xl flex items-center justify-center text-3xl mb-6 shadow-lg"><i class="fas fa-atom"></i></div>
+                <h2 class="text-2xl font-bold text-slate-800 mb-2 heading-font">กฎของนิวตัน</h2>
+                <p class="text-slate-500 mb-4">เรียนรู้กฎ 3 ข้อของนิวตันผ่านแอนิเมชันสถานการณ์จำลอง พร้อมคำถามชวนคิด</p>
+                <span class="text-emerald-600 font-semibold flex items-center gap-2 group-hover:translate-x-2 transition-transform">เข้าสู่บทเรียน <i class="fas fa-arrow-right"></i></span>
+            </button>
+
+            <!-- Quiz Card -->
+            <button onclick="navTo('quiz-setup')" class="home-card flex-1 bg-white rounded-3xl p-8 border-2 border-transparent hover:border-purple-200 text-left relative overflow-hidden group z-10">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-purple-100 rounded-bl-full -z-10 group-hover:scale-110 transition-transform"></div>
+                <div class="w-16 h-16 bg-gradient-to-br from-purple-400 to-purple-600 text-white rounded-2xl flex items-center justify-center text-3xl mb-6 shadow-lg"><i class="fas fa-clipboard-list"></i></div>
+                <h2 class="text-2xl font-bold text-slate-800 mb-2 heading-font">แบบทดสอบ (Quiz)</h2>
+                <p class="text-slate-500 mb-4">ประเมินความเข้าใจด้วยแบบทดสอบประยุกต์กฎนิวตัน มีทั้งระดับง่าย ปานกลาง และยาก</p>
+                <span class="text-purple-600 font-semibold flex items-center gap-2 group-hover:translate-x-2 transition-transform">เริ่มทำแบบทดสอบ <i class="fas fa-arrow-right"></i></span>
+            </button>
+        </div>
+    </div>
+
+    <!-- ================= 2. SIMULATION VIEW ================= -->
+    <div id="view-sim" class="view-section flex-col md:flex-row p-2 gap-3 text-slate-700 relative">
+        
+        <!-- Detailed Solution Modal -->
+        <div id="math-modal" class="math-modal fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+            <div class="bg-white w-full max-w-xl rounded-2xl shadow-2xl overflow-hidden flex flex-col">
+                <div class="bg-indigo-600 p-4 text-white flex justify-between items-center">
+                    <h3 class="text-lg font-bold heading-font"><i class="fas fa-calculator mr-2"></i> เฉลยวิธีทำแบบละเอียด</h3>
+                    <button onclick="document.getElementById('math-modal').classList.remove('show')" class="text-white hover:text-indigo-200"><i class="fas fa-times text-xl"></i></button>
+                </div>
+                <div class="p-6 overflow-y-auto max-h-[70vh] text-slate-700 bg-slate-50" id="math-solution-content">
+                    <!-- Solution injected via JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Viewport -->
+        <div class="relative w-full md:w-3/4 h-[55vh] md:h-full rounded-2xl overflow-hidden shadow-inner bg-gradient-to-b from-[#e0f2fe] to-[#bae6fd]">
+            <button onclick="navTo('home')" class="absolute top-4 left-4 z-30 bg-white/80 hover:bg-white text-slate-700 w-10 h-10 rounded-full shadow flex items-center justify-center transition-colors"><i class="fas fa-home"></i></button>
+
+            <canvas id="gameCanvas" class="absolute top-0 left-0 w-full h-full"></canvas>
+
+            <div class="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-3 z-10">
+                <button id="btn-reset" class="px-5 py-2 text-sm bg-white text-slate-700 font-bold rounded-full shadow-md hover:bg-slate-50 transition-colors border border-slate-200"><i class="fas fa-stop"></i> รีเซ็ต</button>
+                <button id="btn-play" class="px-6 py-2 text-sm bg-gradient-to-r from-blue-500 to-indigo-500 text-white font-bold rounded-full shadow-lg hover:shadow-blue-500/50 transition-all w-32"><i class="fas fa-play"></i> เล่น</button>
+            </div>
+        </div>
+
+        <!-- Control Panel -->
+        <div class="w-full md:w-1/4 h-[40vh] md:h-full glass-panel rounded-2xl p-3 flex flex-col overflow-hidden relative z-20">
+            <div class="flex justify-between items-center mb-1">
+                <h1 class="text-xl font-bold text-indigo-900 heading-font">โหมดจำลองอิสระ</h1>
+            </div>
+            
+            <div class="mb-2 relative z-50">
+                <select id="scen-selector" class="w-full p-2 text-xs font-bold bg-indigo-50 text-indigo-700 rounded-lg border border-indigo-200 outline-none cursor-pointer">
+                    <option value="incline">ราบ / พื้นเอียง (Incline)</option>
+                    <option value="hanging">แกว่งลูกตุ้ม (Pendulum)</option>
+                    <option value="two_strings">สมดุลเชือก 2 เส้น (2 Strings)</option>
+                    <option value="elevator">ลิฟต์ (Elevator)</option>
+                    <option value="multi_blocks">ดันวัตถุติดกัน (Multi-Blocks)</option>
+                </select>
+            </div>
+
+            <button onclick="showSolution()" class="mb-2 w-full py-1.5 bg-slate-800 hover:bg-slate-700 text-white text-[11px] font-bold rounded-lg shadow transition-colors"><i class="fas fa-file-signature mr-1"></i> ดูวิธีทำแบบละเอียด</button>
+
+            <div class="flex flex-col gap-2 mb-2" id="dynamic-controls-area">
+                <!-- ถูกสร้างด้วย JavaScript -->
+            </div>
+
+            <div class="flex gap-1 mb-2 border-b border-slate-200 pb-2">
+                <div class="flex items-center justify-center flex-1 py-1 bg-indigo-50 rounded-lg border border-indigo-100 cursor-pointer" id="toggle-fbd-container">
+                    <span id="fbd-btn-label" class="text-[9px] font-bold text-indigo-900 mr-1">FBD</span>
+                    <button id="btn-toggle-fbd" class="w-6 h-3 rounded-full bg-slate-300 relative pointer-events-none"><div id="fbd-toggle-knob" class="w-2.5 h-2.5 bg-white rounded-full absolute top-[1px] left-[1px] transition-transform"></div></button>
+                </div>
+                <div class="flex items-center justify-center flex-1 py-1 bg-indigo-50 rounded-lg border border-indigo-100 cursor-pointer" id="toggle-val-container">
+                    <span class="text-[9px] font-bold text-indigo-900 mr-1">ตัวเลข</span>
+                    <button id="btn-toggle-val" class="w-6 h-3 rounded-full bg-indigo-500 relative pointer-events-none"><div id="val-toggle-knob" class="w-2.5 h-2.5 bg-white rounded-full absolute top-[1px] left-[1px] translate-x-3 transition-transform"></div></button>
+                </div>
+                <select id="obj-selector" class="flex-1 p-1 text-[9px] rounded-lg border border-slate-200 bg-white outline-none font-bold text-indigo-900 cursor-pointer">
+                    <option value="box">ทรงกล่อง</option>
+                    <option value="sphere">ทรงกลม</option>
+                </select>
+            </div>
+
+            <div id="force-adder-section">
+                <h2 class="text-[11px] font-semibold mb-1 heading-font text-slate-700">เพิ่มการ์ดแรง (ปรับอิสระ)</h2>
+                <div class="grid grid-cols-2 gap-1 mb-2">
+                    <button id="add-mg" class="force-add-btn p-1.5 rounded-lg border border-red-200 bg-red-50 text-red-600 text-[10px] font-medium flex items-center justify-center gap-1 hover:bg-red-100"><span class="w-2 h-2 rounded-full bg-red-500"></span> mg</button>
+                    <button id="add-N" class="force-add-btn p-1.5 rounded-lg border border-blue-200 bg-blue-50 text-blue-600 text-[10px] font-medium flex items-center justify-center gap-1 hover:bg-blue-100"><span class="w-2 h-2 rounded-full bg-blue-500"></span> N</button>
+                    <button id="add-F" class="force-add-btn p-1.5 rounded-lg border border-green-200 bg-green-50 text-green-600 text-[10px] font-medium flex items-center justify-center gap-1 hover:bg-green-100"><span class="w-2 h-2 rounded-full bg-green-500"></span> F</button>
+                    <button id="add-f" class="force-add-btn p-1.5 rounded-lg border border-orange-200 bg-orange-50 text-orange-600 text-[10px] font-medium flex items-center justify-center gap-1 hover:bg-orange-100"><span class="w-2 h-2 rounded-full bg-orange-500"></span> f</button>
+                </div>
+            </div>
+
+            <div id="sliders-container" class="flex-1 flex flex-col gap-2 overflow-y-auto pr-1 pb-4"></div>
+        </div>
+    </div>
+
+    <!-- ================= NEWTON LAWS VIEW (ADDED) ================= -->
+    <div id="view-newton" class="view-section flex-col md:flex-row p-2 gap-3 text-slate-700 relative bg-slate-50">
+        <!-- Viewport / Canvas -->
+        <div class="relative w-full md:w-2/3 h-[50vh] md:h-full rounded-2xl overflow-hidden shadow-inner bg-gradient-to-b from-[#f8fafc] to-[#e2e8f0]">
+            <button onclick="navTo('home')" class="absolute top-4 left-4 z-30 bg-white/80 hover:bg-white text-slate-700 w-10 h-10 rounded-full shadow flex items-center justify-center transition-colors"><i class="fas fa-home"></i></button>
+            <canvas id="newtonCanvas" class="absolute top-0 left-0 w-full h-full"></canvas>
+            
+            <div class="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-3 z-10">
+                <button onclick="resetNewton()" class="px-5 py-2 text-sm bg-white text-slate-700 font-bold rounded-full shadow-md hover:bg-slate-50 border border-slate-200"><i class="fas fa-undo"></i> เริ่มใหม่</button>
+                <button id="btn-play-newton" onclick="playNewton()" class="px-6 py-2 text-sm bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold rounded-full shadow-lg hover:shadow-emerald-500/50 w-32"><i class="fas fa-play"></i> จำลอง</button>
+            </div>
+        </div>
+
+        <!-- Control / Info Panel -->
+        <div class="w-full md:w-1/3 h-[50vh] md:h-full glass-panel rounded-2xl p-4 flex flex-col overflow-y-auto relative z-20">
+            <h1 class="text-2xl font-bold text-emerald-900 heading-font mb-4"><i class="fas fa-atom mr-2 text-emerald-600"></i> กฎของนิวตัน</h1>
+            
+            <!-- Tabs -->
+            <div class="flex bg-slate-200 rounded-lg p-1 mb-4">
+                <button onclick="initNewton(1)" id="tab-law-1" class="flex-1 py-1.5 text-xs font-bold rounded-md bg-white shadow text-emerald-700">กฎข้อ 1</button>
+                <button onclick="initNewton(2)" id="tab-law-2" class="flex-1 py-1.5 text-xs font-bold rounded-md text-slate-500 hover:text-slate-700">กฎข้อ 2</button>
+                <button onclick="initNewton(3)" id="tab-law-3" class="flex-1 py-1.5 text-xs font-bold rounded-md text-slate-500 hover:text-slate-700">กฎข้อ 3</button>
+            </div>
+
+            <!-- Content Area -->
+            <div id="newton-content" class="flex-1 flex flex-col gap-3">
+                <!-- Data injected by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= 3. QUIZ SETUP VIEW ================= -->
+    <div id="view-quiz-setup" class="view-section flex-col items-center justify-center p-6 bg-slate-50">
+        <div class="bg-white p-8 rounded-3xl shadow-xl max-w-md w-full text-center relative border border-slate-100">
+            <button onclick="navTo('home')" class="absolute top-4 left-4 text-slate-400 hover:text-slate-700 w-8 h-8 rounded-full flex items-center justify-center"><i class="fas fa-arrow-left"></i></button>
+            <div class="w-20 h-20 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center text-4xl mx-auto mb-4"><i class="fas fa-brain"></i></div>
+            <h2 class="text-3xl font-bold text-slate-800 mb-2 heading-font">ตั้งค่าแบบทดสอบ</h2>
+            <div class="mb-6 text-left mt-6">
+                <label class="block text-sm font-bold text-slate-700 mb-2">จำนวนข้อที่ต้องการทำ:</label>
+                <div class="grid grid-cols-2 gap-3">
+                    <button id="btn-quiz-10" class="quiz-num-btn py-3 border-2 border-purple-500 bg-purple-50 text-purple-700 font-bold rounded-xl transition-colors">10 ข้อ</button>
+                    <button id="btn-quiz-20" class="quiz-num-btn py-3 border-2 border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-50 transition-colors">20 ข้อ</button>
+                </div>
+            </div>
+            <button onclick="startQuiz()" class="w-full py-3 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-xl font-bold text-lg hover:shadow-lg transition-all">เริ่มทำแบบทดสอบ</button>
+        </div>
+    </div>
+    
+    <!-- ================= 4. QUIZ ACTIVE VIEW ================= -->
+    <div id="view-quiz-active" class="view-section flex-col items-center justify-start p-4 md:p-10 bg-slate-50">
+        <div class="w-full max-w-2xl">
+            <div class="flex justify-between items-center mb-6">
+                <button onclick="navTo('home')" class="text-slate-500 font-medium hover:text-slate-900"><i class="fas fa-times"></i> ออก</button>
+                <div class="bg-white px-4 py-1.5 rounded-full shadow-sm text-sm font-bold text-purple-600 border border-purple-100">ข้อ <span id="quiz-curr-idx">1</span> / <span id="quiz-total-idx">10</span></div>
+            </div>
+            <div class="w-full h-2 bg-slate-200 rounded-full mb-8"><div id="quiz-progress" class="h-full bg-purple-500 rounded-full transition-all duration-300" style="width: 10%;"></div></div>
+            <div class="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-slate-200 mb-6 relative">
+                <span id="quiz-diff-badge" class="absolute -top-3 right-6 px-3 py-1 bg-green-100 text-green-700 text-[10px] font-bold rounded-full">ง่าย</span>
+                <h3 id="quiz-question" class="text-lg md:text-xl font-semibold text-slate-800 mb-6">คำถาม?</h3>
+                <div id="quiz-options" class="flex flex-col gap-3"></div>
+            </div>
+            <div class="flex justify-end hidden" id="quiz-next-container">
+                <button onclick="nextQuestion()" class="px-8 py-3 bg-slate-800 text-white font-bold rounded-xl hover:bg-slate-700">ข้อต่อไป <i class="fas fa-arrow-right ml-1"></i></button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- ================= 5. QUIZ RESULT VIEW ================= -->
+    <div id="view-quiz-result" class="view-section flex-col items-center justify-center p-6 bg-slate-50">
+        <div class="bg-white p-8 rounded-3xl shadow-xl max-w-md w-full text-center border border-slate-100">
+            <div id="result-icon" class="w-24 h-24 rounded-full flex items-center justify-center text-5xl mx-auto mb-4 bg-green-100 text-green-500"><i class="fas fa-trophy"></i></div>
+            <h2 class="text-3xl font-bold text-slate-800 mb-2 heading-font" id="result-title">ยอดเยี่ยม!</h2>
+            <div class="bg-slate-50 p-4 rounded-xl mb-8 mt-4 border border-slate-200">
+                <p class="text-sm text-slate-500 mb-1">คะแนนของคุณ</p>
+                <div class="text-5xl font-bold text-slate-800 heading-font"><span id="result-score" class="text-indigo-600">8</span><span class="text-2xl text-slate-400">/10</span></div>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <button onclick="navTo('home')" class="py-3 bg-slate-100 font-bold rounded-xl hover:bg-slate-200 text-slate-700">กลับหน้าหลัก</button>
+                <button onclick="navTo('quiz-setup')" class="py-3 bg-purple-600 text-white font-bold rounded-xl hover:bg-purple-700">ทำใหม่อีกครั้ง</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= JAVASCRIPT ================= -->
+    <script>
+        // ใช้ตัวแปร Global แบบ Lazy-initialization ป้องกันปัญหา Cannot read properties of null
+        let canvas, ctx, nCanvas, nCtx;
+        let animFrame = null, lastTime = 0, newtonAnimFrame = null;
+        
+        function getGameCtx() {
+            if (!canvas) canvas = document.getElementById('gameCanvas');
+            if (canvas && !ctx) ctx = canvas.getContext('2d');
+            return ctx;
+        }
+
+        function getNewtonCtx() {
+            if (!nCanvas) nCanvas = document.getElementById('newtonCanvas');
+            if (nCanvas && !nCtx) nCtx = nCanvas.getContext('2d');
+            return nCtx;
+        }
+
+        function navTo(viewId) {
+            document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
+            document.getElementById('view-' + viewId).classList.add('active');
+            
+            if (viewId === 'sim') { resize(); draw(); }
+            if (viewId === 'newton') { resizeNewton(); initNewton(nlState.law || 1); }
+            
+            if (animFrame !== null) { cancelAnimationFrame(animFrame); animFrame = null; }
+            if (newtonAnimFrame !== null) { cancelAnimationFrame(newtonAnimFrame); newtonAnimFrame = null; }
+        }
+        
+        const BASE_SIZE = 50; 
+        const BASE_SCALE = 6;
+
+        const state = {
+            mode: 'planning', scenario: 'incline', forces: {}, showFBDOnly: false, showValues: true, objectType: 'box',
+            bridgeStart: 0, floorY: 0,
+            incline: { m: 1, angle: 0, s: 0, v: 0, ax: 0, ay: 0, targetS: 400, p: 0 },
+            hanging: { m: 1, L: 260, pivotY: 0, theta: 0, omega: 0 },
+            two_strings: { m: 1, th1: 45, th2: 45, D: 300, pivotY: 0, x:0, y:0 }, 
+            elevator: { m: 10, m_lift: 50, a: 0, p: 0, v: 0 },
+            multi_blocks: { num: 2, m1: 2, m2: 2, m3: 2, F: 20, s: 0, v: 0, ax: 0, R12: 0, R23: 0 }
+        };
+
+        const colors = { mg: '#ef4444', N: '#3b82f6', F: '#10b981', f: '#f97316', T: '#8b5cf6', T1: '#8b5cf6', T2: '#d946ef', R: '#ea580c' };
+        
+        function resize() {
+            if (!getGameCtx()) return;
+            const rect = canvas.parentElement.getBoundingClientRect();
+            canvas.width = rect.width; canvas.height = rect.height;
+            state.floorY = canvas.height * 0.7;
+            state.bridgeStart = canvas.width / 2;
+            state.hanging.pivotY = -state.floorY + 60;
+            state.two_strings.pivotY = -state.floorY + 80;
+            draw();
+        }
+        
+        window.addEventListener('resize', () => { 
+            if(document.getElementById('view-sim').classList.contains('active')) resize(); 
+            if(document.getElementById('view-newton').classList.contains('active')) resizeNewton();
+        });
+
+        document.getElementById('toggle-fbd-container').addEventListener('click', () => {
+            state.showFBDOnly = !state.showFBDOnly;
+            document.getElementById('btn-toggle-fbd').classList.toggle('bg-indigo-500'); document.getElementById('btn-toggle-fbd').classList.toggle('bg-slate-300');
+            document.getElementById('fbd-toggle-knob').classList.toggle('translate-x-3'); draw();
+        });
+        document.getElementById('toggle-val-container').addEventListener('click', () => {
+            state.showValues = !state.showValues;
+            document.getElementById('btn-toggle-val').classList.toggle('bg-indigo-500'); document.getElementById('btn-toggle-val').classList.toggle('bg-slate-300');
+            document.getElementById('val-toggle-knob').classList.toggle('translate-x-3'); draw();
+        });
+
+        document.getElementById('obj-selector').addEventListener('change', (e) => {
+            state.objectType = e.target.value; draw();
+        });
+
+        document.getElementById('scen-selector').addEventListener('change', (e) => setScenario(e.target.value));
+
+        function setScenario(scen) {
+            state.scenario = scen; resetGame();
+            const area = document.getElementById('dynamic-controls-area'); area.innerHTML = '';
+            document.getElementById('sliders-container').innerHTML = '<div id="empty-state" class="text-center text-slate-400 text-[10px] py-4 bg-slate-50 rounded-lg border border-dashed border-slate-200">ไม่มีการ์ดแรง</div>';
+            state.forces = {};
+            const forceSection = document.getElementById('force-adder-section'); forceSection.style.display = 'none';
+
+            // จัดการแสดงชื่อปุ่ม FBD
+            const fbdBtnLabel = document.getElementById('fbd-btn-label');
+            if (fbdBtnLabel) fbdBtnLabel.innerText = (scen === 'multi_blocks') ? 'ซ่อนวัตถุ' : 'FBD';
+
+            if (scen === 'incline') {
+                area.innerHTML = `
+                    <div class="bg-white p-2 rounded-lg border border-slate-200 mb-1 shadow-sm">
+                        <div class="flex justify-between items-center mb-1 text-[11px] font-semibold text-slate-700">
+                            <span><i class="fas fa-angle-up text-blue-500 mr-1"></i> ความชัน (&theta;)</span>
+                            <span id="disp-angle" class="bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded">${state.incline.angle}&deg;</span>
+                        </div>
+                        <input type="range" id="input-angle" min="0" max="60" value="${state.incline.angle}" class="slider-blue" oninput="state.incline.angle=parseInt(this.value); document.getElementById('disp-angle').innerText=this.value+'&deg;'; updateMath(); draw();">
+                    </div>`;
+                forceSection.style.display = 'block'; ['mg', 'N', 'F', 'f'].forEach(id => document.getElementById('add-'+id).style.display = 'flex');
+            } 
+            else if (scen === 'hanging') {
+                area.innerHTML = `<div class="bg-white p-2 rounded-lg border border-slate-200 shadow-sm"><div class="flex justify-between items-center mb-1 text-[11px] font-semibold"><span>มุมเริ่มต้น (&theta;)</span><span id="disp-theta">${(state.hanging.theta * 180 / Math.PI).toFixed(0)}&deg;</span></div><input type="range" min="-60" max="60" value="${(state.hanging.theta * 180 / Math.PI).toFixed(0)}" class="slider-blue" oninput="state.hanging.theta=parseInt(this.value)*Math.PI/180; document.getElementById('disp-theta').innerText=this.value+'&deg;'; updateMath(); draw();"></div>`;
+                forceSection.style.display = 'block'; ['mg', 'F'].forEach(id => document.getElementById('add-'+id).style.display = 'flex');
+                document.getElementById('add-N').style.display = 'none'; document.getElementById('add-f').style.display = 'none';
+                addSliderForce('T', 10, true, 'สมดุลรัศมี');
+            }
+            else if (scen === 'two_strings') {
+                area.innerHTML = `
+                    <div class="bg-white p-2 rounded-lg border border-slate-200 mb-1 shadow-sm">
+                        <div class="flex justify-between items-center mb-1 text-[11px] font-semibold"><span>มวลวัตถุ (m)</span><span id="disp-m2">${state.two_strings.m} kg</span></div>
+                        <input type="range" min="1" max="20" value="${state.two_strings.m}" class="slider-red" oninput="state.two_strings.m=parseInt(this.value); document.getElementById('disp-m2').innerText=this.value+' kg'; updateMath(); draw();">
+                    </div>
+                    <div class="flex gap-1">
+                        <div class="bg-white p-2 rounded-lg border border-slate-200 flex-1 shadow-sm">
+                            <div class="flex justify-between items-center mb-1 text-[10px] font-semibold"><span>มุม &theta;1</span><span id="disp-th1">${state.two_strings.th1}&deg;</span></div>
+                            <input type="range" min="10" max="80" value="${state.two_strings.th1}" class="slider-purple" oninput="state.two_strings.th1=parseInt(this.value); document.getElementById('disp-th1').innerText=this.value+'&deg;'; updateMath(); draw();">
+                        </div>
+                        <div class="bg-white p-2 rounded-lg border border-slate-200 flex-1 shadow-sm">
+                            <div class="flex justify-between items-center mb-1 text-[10px] font-semibold"><span>มุม &theta;2</span><span id="disp-th2">${state.two_strings.th2}&deg;</span></div>
+                            <input type="range" min="10" max="80" value="${state.two_strings.th2}" class="slider-purple" oninput="state.two_strings.th2=parseInt(this.value); document.getElementById('disp-th2').innerText=this.value+'&deg;'; updateMath(); draw();">
+                        </div>
+                    </div>`;
+                addSliderForce('mg', 50, true, 'W = mg'); addSliderForce('T1', 0, true, 'คำนวณสมดุล'); addSliderForce('T2', 0, true, 'คำนวณสมดุล');
+            }
+            else if (scen === 'elevator') {
+                area.innerHTML = `<div class="flex gap-1 mb-1"><div class="bg-white p-2 rounded-lg border border-slate-200 flex-1 shadow-sm"><div class="flex justify-between items-center mb-1 text-[10px] font-semibold"><span>มวลวัตถุ (m)</span><span id="disp-meobj">${state.elevator.m} kg</span></div><input type="range" min="1" max="50" value="${state.elevator.m}" class="slider-red" oninput="state.elevator.m=parseInt(this.value); document.getElementById('disp-meobj').innerText=this.value+' kg'; updateMath(); draw();"></div><div class="bg-white p-2 rounded-lg border border-slate-200 flex-1 shadow-sm"><div class="flex justify-between items-center mb-1 text-[10px] font-semibold"><span>มวลลิฟต์ (M)</span><span id="disp-mlift">${state.elevator.m_lift} kg</span></div><input type="range" min="10" max="200" value="${state.elevator.m_lift}" step="10" class="slider-blue" oninput="state.elevator.m_lift=parseInt(this.value); document.getElementById('disp-mlift').innerText=this.value+' kg'; updateMath(); draw();"></div></div><div class="bg-white p-2 rounded-lg border border-slate-200 shadow-sm"><div class="flex justify-between items-center mb-1 text-[11px] font-semibold"><span>ความเร่งลิฟต์ (a)</span><span id="disp-a">${state.elevator.a} m/s&sup2;</span></div><input type="range" id="sim-ele-a" min="-5" max="5" value="${state.elevator.a}" class="slider-teal" oninput="state.elevator.a=parseInt(this.value); document.getElementById('disp-a').innerText=this.value+' m/s²'; updateMath(); draw();"></div>`;
+                addSliderForce('mg', 100, true, 'น้ำหนักวัตถุ'); addSliderForce('N', 100, true, 'N = m(g+a)'); addSliderForce('T', 600, true, 'T = (M+m)(g+a)');
+            }
+            else if (scen === 'multi_blocks') {
+                area.innerHTML = `<div class="bg-white p-2 rounded-lg border border-slate-200 mb-1 shadow-sm"><select class="w-full text-xs outline-none" onchange="state.multi_blocks.num=parseInt(this.value); updateMath(); draw();"><option value="2" ${state.multi_blocks.num===2?'selected':''}>ดัน 2 กล่อง (m1, m2)</option><option value="3" ${state.multi_blocks.num===3?'selected':''}>ดัน 3 กล่อง (m1, m2, m3)</option></select></div><div class="flex gap-1 mb-1"><div class="bg-white p-1.5 rounded-lg border border-slate-200 flex-1 text-center shadow-sm"><div class="text-[9px] font-semibold">m1</div><input type="range" min="1" max="10" value="${state.multi_blocks.m1}" class="slider-red" oninput="state.multi_blocks.m1=parseInt(this.value); updateMath(); draw();"></div><div class="bg-white p-1.5 rounded-lg border border-slate-200 flex-1 text-center shadow-sm"><div class="text-[9px] font-semibold">m2</div><input type="range" min="1" max="10" value="${state.multi_blocks.m2}" class="slider-blue" oninput="state.multi_blocks.m2=parseInt(this.value); updateMath(); draw();"></div><div class="bg-white p-1.5 rounded-lg border border-slate-200 flex-1 text-center shadow-sm" id="ctrl-m3" style="display:${state.multi_blocks.num===3?'block':'none'};"><div class="text-[9px] font-semibold">m3</div><input type="range" min="1" max="10" value="${state.multi_blocks.m3}" class="slider-green" oninput="state.multi_blocks.m3=parseInt(this.value); updateMath(); draw();"></div></div>`;
+                forceSection.style.display = 'block'; ['mg', 'N', 'F', 'f'].forEach(id => document.getElementById('add-'+id).style.display = 'flex');
+                document.getElementById('add-T').style.display = 'none';
+                addSliderForce('F', 20, false, 'แรงผลักวัตถุ');
+            }
+            updateMath(); draw();
+        }
+
+        document.querySelectorAll('.force-add-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                if (state.mode !== 'planning') return;
+                const type = e.target.id.replace('add-', '');
+                if (state.forces[type] !== undefined) return;
+                let val = (type === 'mg' || type === 'N') ? 10 : (type === 'f' ? 2 : 10);
+                addSliderForce(type, val, type === 'N' && state.scenario === 'incline', type === 'N' ? 'ปรับตามสมดุล' : '');
+            });
+        });
+
+        // ล็อกไม่ให้ปรับแรง N ได้ แต่แสดงค่าที่คำนวณอัตโนมัติ
+        function addSliderForce(type, defaultVal, isAuto, autoMsg) {
+            state.forces[type] = defaultVal;
+            const container = document.getElementById('sliders-container');
+            const empty = document.getElementById('empty-state');
+            if (empty) empty.style.display = 'none';
+            const colorsMap = { mg: 'red', N: 'blue', F: 'green', f: 'orange', T: 'purple', T1: 'purple', T2: 'purple' };
+            const c = colorsMap[type] || 'slate';
+            const isN = (type === 'N'); 
+            
+            container.insertAdjacentHTML('beforeend', `
+                <div class="p-2 bg-${c}-50 border border-${c}-200 rounded-lg shadow-sm relative" id="slider-group-${type}">
+                    ${(!isAuto && ['incline','hanging','multi_blocks'].includes(state.scenario)) ? `<button onclick="removeForce('${type}')" class="absolute top-1 right-1 text-slate-400 hover:text-red-500 text-xs w-4 h-4">&times;</button>` : ''}
+                    <div class="flex justify-between items-center mb-1 pr-4">
+                        <label class="font-medium text-${c}-700 text-[10px]">${type}</label>
+                        <span class="font-bold text-${c}-700 text-[10px] bg-white px-1.5 py-0.5 rounded" id="val-${type}">${defaultVal.toFixed(0)} N</span>
+                    </div>
+                    ${autoMsg ? `<div class="text-[8px] text-slate-500 mb-0.5">${autoMsg}</div>` : ''}
+                    ${!isN ? `<input type="range" min="0" max="${['T','mg','N'].includes(type)?200:50}" step="1" value="${defaultVal}" class="slider-${c}" id="input-${type}" ${isAuto ? 'disabled' : ''} oninput="updateFVal('${type}', this.value)">` : `<div class="text-[9px] text-blue-600 font-medium italic">ค่านี้ถูกคำนวณตามสมดุลอัตโนมัติ</div>`}
+                </div>
+            `);
+            updateMath(); draw();
+        }
+        
+        window.updateFVal = (type, val) => { 
+            state.forces[type] = parseInt(val); 
+            const valLabel = document.getElementById(`val-${type}`);
+            if (valLabel) valLabel.innerText = `${val} N`; 
+            updateMath(); 
+            draw(); 
+        };
+
+        window.removeForce = (type) => { 
+            delete state.forces[type]; 
+            const sliderGroup = document.getElementById(`slider-group-${type}`);
+            if (sliderGroup) sliderGroup.remove(); 
+            
+            const emptyState = document.getElementById('empty-state');
+            if (emptyState && Object.keys(state.forces).length === 0) emptyState.style.display = 'block'; 
+            
+            updateMath(); 
+            draw(); 
+        };
+
+        function updateMath() {
+            const sc = state.scenario;
+
+            if (sc === 'incline') {
+                const W = state.forces['mg'] || 0, F = state.forces['F'] || 0, f = state.forces['f'] || 0, rad = state.incline.angle * Math.PI / 180;
+                if (state.forces['N'] !== undefined) {
+                    state.forces['N'] = parseFloat((W * Math.cos(rad)).toFixed(1));
+                    const el = document.getElementById('input-N'); if(el) { el.value = state.forces['N']; }
+                    const valN = document.getElementById('val-N'); if(valN) valN.innerText = state.forces['N']+' N';
+                }
+                state.incline.ay = ( (state.forces['N']||0) - W*Math.cos(rad) ) / state.incline.m;
+                state.incline.ax = (F - f - W*Math.sin(rad)) / state.incline.m;
+            } 
+            else if (sc === 'hanging') {
+                const W = state.forces['mg'] || 0, F = state.forces['F'] || 0, th = state.hanging.theta, m = state.hanging.m;
+                const at = (F * Math.cos(th) - W * Math.sin(th)) / m;
+                if (state.forces['T'] !== undefined) {
+                    const L_m = state.hanging.L / 50; const v = state.hanging.omega * L_m; const ac = (v * v) / L_m;
+                    state.forces['T'] = parseFloat((W * Math.cos(th) + F * Math.sin(th) + m * ac).toFixed(1));
+                    const el = document.getElementById('input-T'); if(el) { el.value = Math.min(state.forces['T'], 200); document.getElementById('val-T').innerText = state.forces['T']+' N'; }
+                }
+            }
+            else if (sc === 'two_strings') {
+                const W = state.two_strings.m * 10;
+                const th1 = state.two_strings.th1 * Math.PI / 180;
+                const th2 = state.two_strings.th2 * Math.PI / 180;
+                
+                const D = state.two_strings.D;
+                const x = D * Math.tan(th2) / (Math.tan(th1) + Math.tan(th2));
+                const y = x * Math.tan(th1);
+                state.two_strings.x = x - D/2;
+                state.two_strings.y = y;
+
+                const T2 = W / ( (Math.cos(th2)/Math.cos(th1))*Math.sin(th1) + Math.sin(th2) );
+                const T1 = T2 * Math.cos(th2) / Math.cos(th1);
+
+                if (state.forces['mg'] !== undefined) { state.forces['mg'] = W; const el = document.getElementById('input-mg'); if(el) { el.value = W; document.getElementById('val-mg').innerText = W+' N'; } }
+                if (state.forces['T1'] !== undefined) { state.forces['T1'] = parseFloat(T1.toFixed(1)); const el = document.getElementById('input-T1'); if(el) { el.value = Math.min(T1, 200); document.getElementById('val-T1').innerText = T1.toFixed(1)+' N'; } }
+                if (state.forces['T2'] !== undefined) { state.forces['T2'] = parseFloat(T2.toFixed(1)); const el = document.getElementById('input-T2'); if(el) { el.value = Math.min(T2, 200); document.getElementById('val-T2').innerText = T2.toFixed(1)+' N'; } }
+            }
+            else if (sc === 'elevator') {
+                const m = state.elevator.m, M = state.elevator.m_lift, a = state.elevator.a;
+                if (state.forces['mg'] !== undefined) { state.forces['mg'] = m * 10; const el = document.getElementById('input-mg'); if(el) { el.value = m*10; document.getElementById('val-mg').innerText = (m*10)+' N'; } }
+                if (state.forces['N'] !== undefined) { 
+                    state.forces['N'] = m * (10 + a); 
+                    const valN = document.getElementById('val-N'); if(valN) valN.innerText = state.forces['N']+' N'; 
+                }
+                if (state.forces['T'] !== undefined) { state.forces['T'] = (M + m) * (10 + a); const el = document.getElementById('input-T'); if(el) { el.value = state.forces['T']; document.getElementById('val-T').innerText = state.forces['T']+' N'; } }
+            }
+            else if (sc === 'multi_blocks') {
+                const m1 = state.multi_blocks.m1, m2 = state.multi_blocks.m2, m3 = state.multi_blocks.m3, num = state.multi_blocks.num;
+                const el3 = document.getElementById('ctrl-m3'); if (el3) el3.style.display = num===3?'block':'none';
+                const M_tot = m1 + m2 + (num===3?m3:0);
+                if (state.forces['mg'] !== undefined) { state.forces['mg'] = M_tot * 10; const el = document.getElementById('input-mg'); if(el) { el.value = state.forces['mg']; document.getElementById('val-mg').innerText = state.forces['mg']+' N'; } }
+                if (state.forces['N'] !== undefined) { 
+                    state.forces['N'] = state.forces['mg'] || (M_tot * 10); 
+                    const valN = document.getElementById('val-N'); if(valN) valN.innerText = state.forces['N']+' N'; 
+                }
+                const F = state.forces['F'] || 0, f = state.forces['f'] || 0;
+                state.multi_blocks.ax = Math.max(0, (F - f) / M_tot);
+                state.multi_blocks.R12 = (m2 + (num===3?m3:0)) * (F / M_tot);
+                state.multi_blocks.R23 = num===3 ? m3 * (F / M_tot) : 0;
+            }
+        }
+
+        // --- Core Drawing ---
+        function drawArrow(cx_input, cy_input, tox, toy, color, label, val, isDashed = false, largeText = false, liftText = false) {
+            let activeCtx = getGameCtx();
+            if(!activeCtx) return;
+
+            const dx = tox - cx_input, dy = toy - cy_input, len = Math.sqrt(dx*dx + dy*dy);
+            if (len < 1) return; // ไม่วาดถ้าแรงเกือบศูนย์
+            const angle = Math.atan2(dy, dx);
+            
+            const headlen = Math.min(15.6, len*0.52); 
+            const shortenPx = headlen * 0.85; 
+            const endX = tox - Math.cos(angle) * shortenPx;
+            const endY = toy - Math.sin(angle) * shortenPx;
+
+            activeCtx.lineJoin = 'round';
+            activeCtx.beginPath(); activeCtx.moveTo(cx_input, cy_input); activeCtx.lineTo(endX, endY);
+            activeCtx.strokeStyle = color; activeCtx.lineWidth = isDashed ? 2 : 4;
+            if (isDashed) activeCtx.setLineDash([5, 5]); activeCtx.stroke(); activeCtx.setLineDash([]);
+            
+            activeCtx.lineJoin = 'miter';
+            activeCtx.beginPath();
+            activeCtx.moveTo(tox, toy); 
+            activeCtx.lineTo(tox - headlen * Math.cos(angle - Math.PI/9), toy - headlen * Math.sin(angle - Math.PI/9));
+            activeCtx.lineTo(tox - headlen * Math.cos(angle + Math.PI/9), toy - headlen * Math.sin(angle + Math.PI/9)); 
+            activeCtx.closePath();
+            activeCtx.fillStyle = color; activeCtx.fill();
+
+            if (!label) return;
+            let textToDraw = state.showValues && val !== undefined ? `${label}=${val}` : label;
+            let fontSize = largeText ? 24 : (isDashed ? 13 : 15); 
+            let offset = largeText ? 35 : (isDashed ? 20 : 25);
+            
+            activeCtx.fillStyle = color; activeCtx.font = isDashed ? `normal ${fontSize}px Prompt` : `bold ${fontSize}px Prompt`;
+            activeCtx.textAlign = "center"; activeCtx.textBaseline = "middle";
+            let tx = tox + Math.cos(angle)*offset;
+            let ty = toy + Math.sin(angle)*offset;
+            
+            if (liftText) { tx += Math.cos(angle + Math.PI/2) * 20; ty += Math.sin(angle + Math.PI/2) * 20; }
+            
+            activeCtx.shadowColor = 'rgba(255,255,255,0.95)'; activeCtx.shadowBlur = 5;
+            activeCtx.fillText(textToDraw, tx, ty); activeCtx.fillText(textToDraw, tx, ty); activeCtx.shadowBlur = 0;
+            activeCtx.fillText(textToDraw, tx, ty);
+        }
+
+        function drawFBDAxes(cx, cy) {
+            let activeCtx = getGameCtx();
+            if(!activeCtx) return;
+            activeCtx.save();
+            activeCtx.strokeStyle = 'rgba(148, 163, 184, 0.6)'; // สีเทาโปร่งแสง
+            activeCtx.lineWidth = 1.5;
+            activeCtx.setLineDash([6, 4]); // เส้นประ
+            
+            activeCtx.beginPath(); activeCtx.moveTo(cx - 200, cy); activeCtx.lineTo(cx + 200, cy); activeCtx.stroke();
+            activeCtx.beginPath(); activeCtx.moveTo(cx, cy - 200); activeCtx.lineTo(cx, cy + 200); activeCtx.stroke();
+            
+            activeCtx.fillStyle = 'rgba(100, 116, 139, 0.9)';
+            activeCtx.font = 'bold 12px Prompt';
+            activeCtx.fillText('+x', cx + 185, cy + 15);
+            activeCtx.fillText('+y', cx - 18, cy - 185);
+            activeCtx.restore();
+        }
+
+        function drawShape(x, y, size, rotation) {
+            let activeCtx = getGameCtx();
+            if(!activeCtx) return;
+            activeCtx.save();
+            activeCtx.translate(x, y);
+            activeCtx.rotate(rotation);
+            if (state.objectType === 'sphere') {
+                const grad = activeCtx.createRadialGradient(-size/6, -size/6, size/10, 0, 0, size/2);
+                grad.addColorStop(0, '#e2e8f0'); grad.addColorStop(1, '#64748b');
+                activeCtx.fillStyle = grad;
+                activeCtx.beginPath(); activeCtx.arc(0, 0, size/2, 0, Math.PI*2); activeCtx.fill();
+                activeCtx.strokeStyle = '#334155'; activeCtx.lineWidth = 3; activeCtx.stroke();
+            } else { 
+                activeCtx.fillStyle = '#d97706'; activeCtx.fillRect(-size/2, -size/2, size, size);
+                activeCtx.strokeStyle = '#92400e'; activeCtx.lineWidth = 3; activeCtx.strokeRect(-size/2, -size/2, size, size);
+            }
+            activeCtx.restore();
+        }
+
+        function drawBox(x, y, size, color, border, label) {
+            let activeCtx = getGameCtx();
+            if(!activeCtx) return;
+            activeCtx.fillStyle = color; activeCtx.fillRect(x - size/2, y - size/2, size, size);
+            activeCtx.strokeStyle = border; activeCtx.lineWidth = 3; activeCtx.strokeRect(x - size/2, y - size/2, size, size);
+            activeCtx.fillStyle = '#fff'; activeCtx.font = "bold 16px Prompt"; activeCtx.textAlign = "center"; activeCtx.textBaseline = "middle";
+            if (label) activeCtx.fillText(label, x, y);
+        }
+
+        function draw() {
+            let activeCtx = getGameCtx();
+            if (!activeCtx || !canvas) return;
+
+            activeCtx.clearRect(0, 0, canvas.width, canvas.height);
+            activeCtx.save();
+            activeCtx.translate(state.bridgeStart, state.floorY);
+            
+            const sc = state.scenario;
+            const size = BASE_SIZE; 
+            
+            const maxForceVal = Math.max(0, ...Object.values(state.forces));
+            let scale = BASE_SCALE;
+            const maxArrowPx = canvas.height * 0.35; 
+            if (maxForceVal * scale > maxArrowPx && maxForceVal > 0) {
+                scale = maxArrowPx / maxForceVal;
+            }
+
+            if (sc === 'incline') {
+                const rad = state.incline.angle * Math.PI / 180;
+                
+                activeCtx.fillStyle = '#e2e8f0'; 
+                activeCtx.fillRect(-canvas.width, 0, canvas.width*2, canvas.height);
+                
+                activeCtx.strokeStyle = '#94a3b8'; activeCtx.lineWidth = 3; activeCtx.setLineDash([8, 8]);
+                activeCtx.beginPath(); activeCtx.moveTo(-canvas.width, 0); activeCtx.lineTo(canvas.width, 0); activeCtx.stroke();
+                activeCtx.setLineDash([]);
+
+                if (state.incline.angle > 0) {
+                    activeCtx.strokeStyle = '#334155'; activeCtx.lineWidth = 3;
+                    activeCtx.beginPath(); activeCtx.arc(0, 0, 100, 0, -rad, true); activeCtx.stroke();
+                    activeCtx.fillStyle = '#334155'; activeCtx.font = "bold 18px Prompt";
+                    activeCtx.fillText(`θ = ${state.incline.angle}°`, 140, -30);
+                }
+
+                activeCtx.rotate(-rad);
+
+                activeCtx.fillStyle = '#bbf7d0';
+                activeCtx.beginPath(); activeCtx.moveTo(-canvas.width*2, 0); activeCtx.lineTo(canvas.width*2, 0);
+                activeCtx.lineTo(canvas.width*2, canvas.height*2); activeCtx.lineTo(-canvas.width*2, canvas.height*2); activeCtx.fill();
+
+                activeCtx.strokeStyle = '#22c55e'; activeCtx.lineWidth = 4;
+                activeCtx.beginPath(); activeCtx.moveTo(-canvas.width*2, 0); activeCtx.lineTo(canvas.width*2, 0); activeCtx.stroke();
+
+                const drawX = state.incline.s, drawY = -size/2 - state.incline.p;
+
+                activeCtx.fillStyle = 'rgba(250, 204, 21, 0.4)'; activeCtx.fillRect(state.incline.targetS, -80, 80, 80);
+                activeCtx.strokeStyle = '#eab308'; activeCtx.setLineDash([5,5]); activeCtx.strokeRect(state.incline.targetS, -80, 80, 80); activeCtx.setLineDash([]);
+                
+                if (state.showFBDOnly) { 
+                    drawFBDAxes(drawX, drawY);
+                    activeCtx.fillStyle = '#1e293b'; activeCtx.beginPath(); activeCtx.arc(drawX, drawY, 6, 0, Math.PI * 2); activeCtx.fill(); 
+                }
+                else drawShape(drawX, drawY, size, 0);
+
+                const startOffset = state.showFBDOnly ? 0 : size/2;
+                for (const [type, val] of Object.entries(state.forces)) {
+                    if (val <= 0) continue;
+                    const rad = state.incline.angle * Math.PI / 180; const len = val * scale;
+                    if (type === 'mg' && state.incline.angle > 0) {
+                        const Wy = val * Math.cos(rad), Wx = val * Math.sin(rad);
+                        let angleMain = Math.PI / 2 + rad;
+                        drawArrow(drawX, drawY, drawX + Math.cos(angleMain)*(len+startOffset), drawY + Math.sin(angleMain)*(len+startOffset), 'rgba(239, 68, 68, 0.3)', type, val);
+                        if (Wy>0) drawArrow(drawX, drawY, drawX, drawY + (Wy*scale)+startOffset, '#991b1b', 'mg_y', Wy.toFixed(1), true);
+                        if (Wx>0) drawArrow(drawX, drawY, drawX - (Wx*scale)-startOffset, drawY, '#991b1b', 'mg_x', Wx.toFixed(1), true, false, true); 
+                    } else if (type === 'f' && state.incline.angle > 0 && state.forces['mg']) {
+                        let Wx = state.forces['mg'] * Math.sin(rad);
+                        let fromX = drawX - (Wx*scale) - startOffset;
+                        drawArrow(fromX, drawY, fromX - (val*scale), drawY, colors[type], type, val);
+                    } else {
+                        let angle = (type === 'mg') ? (Math.PI / 2 + rad) : (type === 'N' ? -Math.PI/2 : (type === 'F' ? 0 : Math.PI));
+                        drawArrow(drawX + Math.cos(angle)*startOffset, drawY + Math.sin(angle)*startOffset, drawX + Math.cos(angle)*(len+startOffset), drawY + Math.sin(angle)*(len+startOffset), colors[type], type, val);
+                    }
+                }
+            } 
+            else if (sc === 'hanging') {
+                const pY = state.hanging.pivotY;
+                const drawX = state.hanging.L * Math.sin(state.hanging.theta);
+                const drawY = pY + state.hanging.L * Math.cos(state.hanging.theta);
+
+                activeCtx.fillStyle = '#94a3b8'; activeCtx.fillRect(-150, pY - 20, 300, 20); 
+                
+                activeCtx.strokeStyle = '#94a3b8'; activeCtx.lineWidth = 2; activeCtx.setLineDash([5, 5]);
+                activeCtx.beginPath(); activeCtx.moveTo(0, pY); activeCtx.lineTo(0, pY + state.hanging.L + 40); activeCtx.stroke();
+                activeCtx.setLineDash([]);
+                
+                if (Math.abs(state.hanging.theta) > 0.05) {
+                    activeCtx.strokeStyle = '#3b82f6'; activeCtx.lineWidth = 2;
+                    activeCtx.beginPath();
+                    const startAngle = Math.PI / 2;
+                    const endAngle = Math.PI / 2 - state.hanging.theta;
+                    activeCtx.arc(0, pY, 70, Math.min(startAngle, endAngle), Math.max(startAngle, endAngle));
+                    activeCtx.stroke();
+                    
+                    activeCtx.fillStyle = '#3b82f6'; activeCtx.font = "bold 14px Prompt";
+                    const textAngle = Math.PI / 2 - state.hanging.theta / 2;
+                    activeCtx.fillText(`θ=${Math.abs((state.hanging.theta * 180 / Math.PI)).toFixed(0)}°`, Math.cos(textAngle) * 95, pY + Math.sin(textAngle) * 95);
+                }
+
+                if (state.forces['T']) { activeCtx.strokeStyle = '#b45309'; activeCtx.lineWidth = 3; activeCtx.beginPath(); activeCtx.moveTo(0, pY); activeCtx.lineTo(drawX, drawY); activeCtx.stroke(); }
+                
+                if (state.showFBDOnly) { 
+                    drawFBDAxes(drawX, drawY);
+                    activeCtx.fillStyle = '#1e293b'; activeCtx.beginPath(); activeCtx.arc(drawX, drawY, 6, 0, Math.PI * 2); activeCtx.fill(); 
+                }
+                else drawShape(drawX, drawY, size, -state.hanging.theta);
+
+                const startOffset = state.showFBDOnly ? 0 : size/2;
+                for (const [type, val] of Object.entries(state.forces)) {
+                    if (val <= 0) continue;
+                    const len = val * scale;
+                    let angle = type === 'mg' ? Math.PI/2 : (type === 'F' ? 0 : Math.atan2(pY - drawY, -drawX));
+                    
+                    if (type === 'T' && Math.abs(state.hanging.theta) > 0.05) {
+                        let Ty = val * Math.cos(state.hanging.theta), Tx = val * Math.sin(state.hanging.theta);
+                        drawArrow(drawX, drawY, drawX + Math.cos(angle)*(len+startOffset), drawY + Math.sin(angle)*(len+startOffset), 'rgba(139, 92, 246, 0.4)', type, val);
+                        if(Ty>0) drawArrow(drawX, drawY - startOffset, drawX, drawY - startOffset - (Ty*scale), '#7e22ce', 'T_y', Ty.toFixed(1), true);
+                        let dirX = state.hanging.theta > 0 ? -1 : 1;
+                        if(Tx>0) drawArrow(drawX + dirX*startOffset, drawY, drawX + dirX*(startOffset + Tx*scale), drawY, '#7e22ce', 'T_x', Math.abs(Tx).toFixed(1), true, false, true);
+                    } else {
+                        drawArrow(drawX + Math.cos(angle)*startOffset, drawY + Math.sin(angle)*startOffset, drawX + Math.cos(angle)*(len+startOffset), drawY + Math.sin(angle)*(len+startOffset), colors[type], type, val);
+                    }
+                }
+            }
+            else if (sc === 'two_strings') {
+                const pY = state.two_strings.pivotY;
+                const D = state.two_strings.D;
+                const x = state.two_strings.x, y = pY + state.two_strings.y;
+                const th1 = state.two_strings.th1 * Math.PI / 180;
+                const th2 = state.two_strings.th2 * Math.PI / 180;
+
+                activeCtx.fillStyle = '#94a3b8'; activeCtx.fillRect(-D/2 - 50, pY - 20, D + 100, 20); 
+                activeCtx.fillStyle = '#334155'; activeCtx.beginPath(); activeCtx.arc(-D/2, pY, 5, 0, Math.PI*2); activeCtx.fill(); activeCtx.beginPath(); activeCtx.arc(D/2, pY, 5, 0, Math.PI*2); activeCtx.fill();
+
+                activeCtx.strokeStyle = '#b45309'; activeCtx.lineWidth = 3; 
+                activeCtx.beginPath(); activeCtx.moveTo(-D/2, pY); activeCtx.lineTo(x, y); activeCtx.stroke();
+                activeCtx.beginPath(); activeCtx.moveTo(D/2, pY); activeCtx.lineTo(x, y); activeCtx.stroke();
+
+                activeCtx.strokeStyle = '#64748b'; activeCtx.lineWidth = 2; activeCtx.setLineDash([4,4]);
+                activeCtx.beginPath(); activeCtx.moveTo(-D/2, pY); activeCtx.lineTo(-D/2 + 60, pY); activeCtx.stroke();
+                activeCtx.beginPath(); activeCtx.moveTo(D/2, pY); activeCtx.lineTo(D/2 - 60, pY); activeCtx.stroke();
+                activeCtx.setLineDash([]);
+                
+                activeCtx.strokeStyle = '#3b82f6'; activeCtx.beginPath(); activeCtx.arc(-D/2, pY, 40, 0, th1); activeCtx.stroke();
+                activeCtx.beginPath(); activeCtx.arc(D/2, pY, 40, Math.PI - th2, Math.PI); activeCtx.stroke();
+                activeCtx.fillStyle = '#3b82f6'; activeCtx.font = "bold 14px Prompt"; activeCtx.fillText(`θ1=${state.two_strings.th1}°`, -D/2 + 55, pY + 25);
+                activeCtx.fillText(`θ2=${state.two_strings.th2}°`, D/2 - 55, pY + 25);
+
+                if (state.showFBDOnly) { 
+                    drawFBDAxes(x, y);
+                    activeCtx.fillStyle = '#1e293b'; activeCtx.beginPath(); activeCtx.arc(x, y, 6, 0, Math.PI * 2); activeCtx.fill(); 
+                }
+                else drawShape(x, y, size, 0);
+
+                const startOffset = state.showFBDOnly ? 0 : size/2;
+                if (state.forces['mg']) drawArrow(x, y + startOffset, x, y + startOffset + (state.forces['mg']*scale), colors.mg, 'mg', state.forces['mg']);
+                if (state.forces['T1']) {
+                    const a1 = Math.atan2(pY - y, -D/2 - x);
+                    drawArrow(x + Math.cos(a1)*startOffset, y + Math.sin(a1)*startOffset, x + Math.cos(a1)*(startOffset+state.forces['T1']*scale), y + Math.sin(a1)*(startOffset+state.forces['T1']*scale), colors.T1, 'T1', state.forces['T1']);
+                }
+                if (state.forces['T2']) {
+                    const a2 = Math.atan2(pY - y, D/2 - x);
+                    drawArrow(x + Math.cos(a2)*startOffset, y + Math.sin(a2)*startOffset, x + Math.cos(a2)*(startOffset+state.forces['T2']*scale), y + Math.sin(a2)*(startOffset+state.forces['T2']*scale), colors.T2, 'T2', state.forces['T2']);
+                }
+            }
+            else if (sc === 'elevator') {
+                const eleY = -state.elevator.p;
+                const cH = 150, cW = 120;
+                
+                activeCtx.strokeStyle = '#cbd5e1'; activeCtx.lineWidth = 8;
+                activeCtx.beginPath(); activeCtx.moveTo(-cW/2-15, eleY+50); activeCtx.lineTo(-cW/2-15, -1000); activeCtx.moveTo(cW/2+15, eleY+50); activeCtx.lineTo(cW/2+15, -1000); activeCtx.stroke();
+
+                activeCtx.strokeStyle = '#475569'; activeCtx.lineWidth = 6; activeCtx.strokeRect(-cW/2, eleY - cH, cW, cH);
+                activeCtx.fillStyle = 'rgba(241, 245, 249, 0.4)'; activeCtx.fillRect(-cW/2, eleY - cH, cW, cH);
+                activeCtx.fillStyle = '#94a3b8'; activeCtx.fillRect(-cW/2, eleY, cW, 10);
+                activeCtx.strokeStyle = '#334155'; activeCtx.lineWidth = 5; activeCtx.beginPath(); activeCtx.moveTo(0, eleY - cH); activeCtx.lineTo(0, -1000); activeCtx.stroke(); 
+
+                const drawX = 0, drawY = eleY - size/2;
+                if (state.showFBDOnly) { 
+                    drawFBDAxes(drawX, drawY);
+                    activeCtx.fillStyle = '#1e293b'; activeCtx.beginPath(); activeCtx.arc(drawX, drawY, 6, 0, Math.PI * 2); activeCtx.fill(); 
+                }
+                else drawBox(drawX, drawY, size, '#d97706', '#92400e');
+
+                const startOffset = state.showFBDOnly ? 0 : size/2;
+                if (state.forces['mg']) drawArrow(drawX, drawY + startOffset, drawX, drawY + startOffset + state.forces['mg']*scale, colors.mg, 'mg', state.forces['mg'], false, true);
+                if (state.forces['N']) drawArrow(drawX, drawY - startOffset, drawX, drawY - startOffset - state.forces['N']*scale, colors.N, 'N', state.forces['N'], false, true);
+                if (state.forces['T']) drawArrow(0, eleY - cH, 0, eleY - cH - state.forces['T']*scale, colors.T, 'T', state.forces['T'], false, true);
+            }
+            else if (sc === 'multi_blocks') {
+                activeCtx.fillStyle = '#bbf7d0'; activeCtx.fillRect(-canvas.width*2, 0, canvas.width * 4, canvas.height * 2);
+                const num = state.multi_blocks.num, m1 = state.multi_blocks.m1, m2 = state.multi_blocks.m2, m3 = state.multi_blocks.m3;
+                
+                const w1 = 80 + m1*10, w2 = 80 + m2*10, w3 = 80 + m3*10;
+                const h = 100; const y = 0;
+                let startX = state.multi_blocks.s - (w1+w2+(num===3?w3:0))/2;
+
+                activeCtx.font = "bold 24px Prompt"; activeCtx.textAlign = "center"; activeCtx.textBaseline = "middle";
+
+                activeCtx.fillStyle = '#3b82f6'; activeCtx.fillRect(startX, y-h, w1, h); activeCtx.strokeRect(startX, y-h, w1, h);
+                activeCtx.fillStyle = '#fff'; activeCtx.fillText("m1", startX + w1/2, y-h/2);
+                
+                activeCtx.fillStyle = '#ef4444'; activeCtx.fillRect(startX+w1, y-h, w2, h); activeCtx.strokeRect(startX+w1, y-h, w2, h);
+                activeCtx.fillStyle = '#fff'; activeCtx.fillText("m2", startX+w1 + w2/2, y-h/2);
+
+                if (num === 3) {
+                    activeCtx.fillStyle = '#10b981'; activeCtx.fillRect(startX+w1+w2, y-h, w3, h); activeCtx.strokeRect(startX+w1+w2, y-h, w3, h);
+                    activeCtx.fillStyle = '#fff'; activeCtx.fillText("m3", startX+w1+w2 + w3/2, y-h/2);
+                }
+
+                const F = state.forces['F'] || 0, f = state.forces['f'] || 0, W = state.forces['mg'] || 0, N = state.forces['N'] || 0;
+                const cx = startX + (w1+w2+(num===3?w3:0))/2; 
+                
+                if (F > 0) drawArrow(startX - Math.min(F*scale, maxArrowPx) - 10, y - h/2, startX - 5, y - h/2, colors.F, 'F', F);
+                if (f > 0) drawArrow(cx + Math.min(f*scale, maxArrowPx)/2, y, cx - Math.min(f*scale, maxArrowPx)/2, y, colors.f, 'f', f);
+                if (W > 0) drawArrow(cx, y - h/2, cx, y - h/2 + Math.min(W*scale, maxArrowPx), colors.mg, 'mg', W);
+                if (N > 0) drawArrow(cx, y - h/2, cx, y - h/2 - Math.min(N*scale, maxArrowPx), colors.N, 'N', N);
+
+                const R12 = state.multi_blocks.R12;
+                if (R12 > 0) {
+                    drawArrow(startX+w1, y - h*0.75, startX+w1 + Math.min(R12*scale, maxArrowPx), y - h*0.75, colors.R, 'R(12)', R12.toFixed(1));
+                    drawArrow(startX+w1, y - h*0.25, startX+w1 - Math.min(R12*scale, maxArrowPx), y - h*0.25, '#dc2626', 'R(21)', R12.toFixed(1));
+                }
+                if (num === 3) {
+                    const R23 = state.multi_blocks.R23;
+                    if (R23 > 0) {
+                        drawArrow(startX+w1+w2, y - h*0.75, startX+w1+w2 + Math.min(R23*scale, maxArrowPx), y - h*0.75, colors.R, 'R(23)', R23.toFixed(1));
+                        drawArrow(startX+w1+w2, y - h*0.25, startX+w1+w2 - Math.min(R23*scale, maxArrowPx), y - h*0.25, '#dc2626', 'R(32)', R23.toFixed(1));
+                    }
+                }
+            }
+
+            activeCtx.restore();
+        }
+
+        // --- Game Loop ---
+        function simulate(timestamp) {
+            if (state.mode !== 'playing') return;
+            if (!lastTime) { lastTime = timestamp; }
+            const dt = Math.min((timestamp - lastTime) / 1000, 0.1); 
+            lastTime = timestamp;
+
+            const visualScale = 60; const sc = state.scenario;
+            if (sc === 'elevator') { state.elevator.v += state.elevator.a * (visualScale/1.5) * dt; state.elevator.p += state.elevator.v * dt; }
+            else if (sc === 'incline') { state.incline.v += state.incline.ax * visualScale * dt; state.incline.s += state.incline.v * dt; state.incline.p += state.incline.ay * visualScale * dt; }
+            else if (sc === 'hanging') {
+                const W = state.forces['mg'] || 0, F = state.forces['F'] || 0, m = state.hanging.m, L_m = state.hanging.L / 50; 
+                const at = (F * Math.cos(state.hanging.theta) - W * Math.sin(state.hanging.theta)) / m;
+                state.hanging.omega += (at / L_m) * dt; state.hanging.omega *= 0.995; state.hanging.theta += state.hanging.omega * dt;
+            } 
+            else if (sc === 'multi_blocks') { state.multi_blocks.v += state.multi_blocks.ax * visualScale * dt; state.multi_blocks.s += state.multi_blocks.v * dt; }
+
+            updateMath(); draw();
+            
+            if (sc === 'incline' && Math.abs(state.incline.s) > 1000) resetGame();
+            if (sc === 'multi_blocks' && Math.abs(state.multi_blocks.s) > 1000) resetGame();
+
+            if (state.mode === 'playing') animFrame = requestAnimationFrame(simulate);
+        }
+
+        document.getElementById('btn-play').addEventListener('click', () => {
+            if (state.mode === 'planning') {
+                state.mode = 'playing';
+                state.incline.v = 0; state.incline.s = 0; state.incline.p = 0;
+                state.hanging.omega = 0; state.elevator.v = 0; state.elevator.p = 0;
+                state.multi_blocks.v = 0; state.multi_blocks.s = 0;
+                
+                const btn = document.getElementById('btn-play');
+                btn.innerHTML = '<i class="fas fa-pause"></i> หยุด';
+                btn.classList.replace('from-blue-500', 'from-red-500'); btn.classList.replace('to-indigo-500', 'to-rose-500');
+                
+                document.querySelectorAll('input[type=range]').forEach(s => { if(s.id!=='sim-ele-a' && !['input-F', 'input-f', 'input-angle'].includes(s.id)) s.disabled = true; });
+                
+                lastTime = 0;
+                animFrame = requestAnimationFrame(simulate);
+            } else if (state.mode === 'playing') {
+                state.mode = 'planning';
+                cancelAnimationFrame(animFrame);
+                const btn = document.getElementById('btn-play');
+                btn.innerHTML = '<i class="fas fa-play"></i> เล่นต่อ';
+                btn.classList.replace('from-red-500', 'from-blue-500'); btn.classList.replace('to-rose-500', 'to-indigo-500');
+            }
+        });
+
+        document.getElementById('btn-reset').addEventListener('click', resetGame);
+
+        function resetGame() {
+            if (animFrame) cancelAnimationFrame(animFrame);
+            state.mode = 'planning';
+            state.incline.v = 0; state.incline.s = 0; state.incline.p = 0;
+            state.hanging.theta = document.getElementById('disp-theta') ? parseInt(document.getElementById('disp-theta').innerText) * Math.PI/180 : 0; state.hanging.omega = 0;
+            state.elevator.v = 0; state.elevator.p = 0;
+            state.multi_blocks.v = 0; state.multi_blocks.s = 0;
+            
+            const btn = document.getElementById('btn-play');
+            btn.innerHTML = '<i class="fas fa-play"></i> เล่น';
+            btn.classList.replace('from-red-500', 'from-blue-500'); btn.classList.replace('to-rose-500', 'to-indigo-500');
+            
+            document.querySelectorAll('input[type=range]').forEach(s => {
+                if (s.id==='input-N') return; 
+                if (s.id==='input-T' && ['hanging','elevator'].includes(state.scenario)) return;
+                if (['input-T1','input-T2','input-mg'].includes(s.id) && state.scenario==='two_strings') return;
+                s.disabled = false;
+            });
+            updateMath(); draw();
+        }
+
+        function showSolution() {
+            const sc = state.scenario;
+            let html = '';
+            
+            if (sc === 'incline') {
+                const w = state.forces.mg||0, f = state.forces.f||0, F = state.forces.F||0, N = state.forces.N||0, a = state.incline.angle;
+                const wx = (w*Math.sin(a*Math.PI/180)).toFixed(2), wy = (w*Math.cos(a*Math.PI/180)).toFixed(2);
+                html = `
+                <div class="mb-4 text-sm font-bold text-indigo-700">พิจารณาแนวตั้งฉากกับพื้นเอียง (แกน Y)</div>
+                <div class="eq-grid mb-6">
+                    <div>ΣF<sub>y</sub></div><div>=</div><div>ma<sub>y</sub></div>
+                    <div>N - mg cos(θ)</div><div>=</div><div>0 (วัตถุไม่ลอย)</div>
+                    <div>N</div><div>=</div><div>mg cos(${a}°)</div>
+                    <div>N</div><div>=</div><div>${wy} N</div>
+                </div>
+                <div class="mb-4 text-sm font-bold text-indigo-700">พิจารณาแนวขนานกับพื้นเอียง (แกน X)</div>
+                <div class="eq-grid">
+                    <div>ΣF<sub>x</sub></div><div>=</div><div>ma<sub>x</sub></div>
+                    <div>F - f - mg sin(θ)</div><div>=</div><div>ma<sub>x</sub></div>
+                    <div>${F} - ${f} - ${wx}</div><div>=</div><div>(1) a<sub>x</sub></div>
+                    <div>${(F - f - wx).toFixed(2)}</div><div>=</div><div>a<sub>x</sub></div>
+                    <div>a<sub>x</sub></div><div>=</div><div>${(F - f - wx).toFixed(2)} m/s²</div>
+                </div>`;
+            } else if (sc === 'two_strings') {
+                const W = state.forces.mg||0, t1 = state.forces.T1||0, t2 = state.forces.T2||0;
+                const a1 = state.two_strings.th1, a2 = state.two_strings.th2;
+                html = `
+                <div class="mb-4 text-sm font-bold text-indigo-700">พิจารณาสมดุลกล (แกน X)</div>
+                <div class="eq-grid mb-6">
+                    <div>ΣF<sub>x</sub></div><div>=</div><div>0</div>
+                    <div>T<sub>1</sub> cos(${a1}°) - T<sub>2</sub> cos(${a2}°)</div><div>=</div><div>0</div>
+                    <div>T<sub>1</sub></div><div>=</div><div>T<sub>2</sub> [cos(${a2}°) / cos(${a1}°)] --- (1)</div>
+                </div>
+                <div class="mb-4 text-sm font-bold text-indigo-700">พิจารณาสมดุลกล (แกน Y)</div>
+                <div class="eq-grid">
+                    <div>ΣF<sub>y</sub></div><div>=</div><div>0</div>
+                    <div>T<sub>1</sub> sin(${a1}°) + T<sub>2</sub> sin(${a2}°) - mg</div><div>=</div><div>0</div>
+                    <div>(แทนค่า T1 จากสมการที่ 1)</div><div></div><div></div>
+                    <div>T<sub>2</sub> [cos(${a2}°)/cos(${a1}°)] sin(${a1}°) + T<sub>2</sub> sin(${a2}°)</div><div>=</div><div>${W}</div>
+                    <div>T<sub>2</sub> [${(Math.cos(a2*Math.PI/180)*Math.tan(a1*Math.PI/180) + Math.sin(a2*Math.PI/180)).toFixed(4)}]</div><div>=</div><div>${W}</div>
+                    <div>T<sub>2</sub></div><div>=</div><div>${t2} N</div>
+                    <div>ดังนั้น T<sub>1</sub></div><div>=</div><div>${t1} N</div>
+                </div>`;
+            } else if (sc === 'elevator') {
+                const m = state.elevator.m, M = state.elevator.m_lift, a = state.elevator.a;
+                const N = state.forces.N||0, T = state.forces.T||0;
+                html = `
+                <div class="mb-4 text-sm font-bold text-indigo-700">พิจารณาเฉพาะวัตถุในลิฟต์ (หาแรง N)</div>
+                <div class="eq-grid mb-6">
+                    <div>ΣF<sub>y</sub></div><div>=</div><div>ma</div>
+                    <div>N - mg</div><div>=</div><div>ma</div>
+                    <div>N</div><div>=</div><div>m(g + a)</div>
+                    <div>N</div><div>=</div><div>${m}(10 + ${a})</div>
+                    <div>N</div><div>=</div><div>${N} N</div>
+                </div>
+                <div class="mb-4 text-sm font-bold text-indigo-700">พิจารณาระบบรวมทั้งหมด (หาแรงตึงเคเบิล T)</div>
+                <div class="eq-grid">
+                    <div>ΣF<sub>y</sub></div><div>=</div><div>M<sub>รวม</sub>a</div>
+                    <div>T - (M+m)g</div><div>=</div><div>(M+m)a</div>
+                    <div>T</div><div>=</div><div>(M+m)(g + a)</div>
+                    <div>T</div><div>=</div><div>(${M}+${m})(10 + ${a})</div>
+                    <div>T</div><div>=</div><div>${T} N</div>
+                </div>`;
+            } else if (sc === 'multi_blocks') {
+                const m1 = state.multi_blocks.m1, m2 = state.multi_blocks.m2, m3 = state.multi_blocks.m3, num = state.multi_blocks.num;
+                const M_tot = m1 + m2 + (num===3?m3:0);
+                const F = state.forces.F||0, f = state.forces.f||0, ax = state.multi_blocks.ax.toFixed(2);
+                html = `
+                <div class="mb-4 text-sm font-bold text-indigo-700">1. หาความเร่งของระบบทั้งหมด (มองเป็นก้อนเดียว)</div>
+                <div class="eq-grid mb-6">
+                    <div>ΣF<sub>x</sub></div><div>=</div><div>M<sub>รวม</sub>a</div>
+                    <div>F - f</div><div>=</div><div>(${M_tot})a</div>
+                    <div>${F} - ${f}</div><div>=</div><div>${M_tot}a</div>
+                    <div>a</div><div>=</div><div>${ax} m/s²</div>
+                </div>
+                <div class="mb-4 text-sm font-bold text-indigo-700">2. หาแรงที่ก้อน 1 กระทำก้อน 2 (R<sub>12</sub>)</div>
+                <div class="mb-2 text-xs text-slate-500">*พิจารณาบล็อกที่อยู่ข้างหน้า R12 ทั้งหมด (ก้อน 2${num===3?' และ 3':''})</div>
+                <div class="eq-grid mb-6">
+                    <div>ΣF<sub>x</sub></div><div>=</div><div>ma</div>
+                    <div>R<sub>12</sub> - f<sub>(ก้อนหลัง)</sub></div><div>=</div><div>(${M_tot - m1})a</div>
+                    <div>R<sub>12</sub></div><div>=</div><div>(${M_tot - m1})(${ax})</div>
+                    <div>R<sub>12</sub></div><div>=</div><div>${state.multi_blocks.R12.toFixed(2)} N</div>
+                </div>`;
+                if(num===3) {
+                    html += `<div class="mb-4 text-sm font-bold text-indigo-700">3. หาแรงที่ก้อน 2 กระทำก้อน 3 (R<sub>23</sub>)</div>
+                    <div class="eq-grid">
+                        <div>ΣF<sub>x</sub></div><div>=</div><div>m<sub>3</sub>a</div>
+                        <div>R<sub>23</sub></div><div>=</div><div>(${m3})(${ax})</div>
+                        <div>R<sub>23</sub></div><div>=</div><div>${state.multi_blocks.R23.toFixed(2)} N</div>
+                    </div>`;
+                }
+            } else {
+                html = `<div class="text-center p-4">ฟังก์ชันแสดงวิธีทำสำหรับโหมดนี้กำลังอยู่ในระหว่างพัฒนา</div>`;
+            }
+
+            document.getElementById('math-solution-content').innerHTML = html;
+            document.getElementById('math-modal').classList.add('show');
+        }
+
+        const quizDB = [
+            { q: "ข้อใดกล่าวถึง กฎข้อที่ 1 ของนิวตัน ได้ถูกต้องที่สุด?", c: ["F = ma", "แรงกริยา = แรงปฏิกิริยา", "วัตถุจะรักษาสภาพนิ่งหรือเคลื่อนที่ด้วยความเร็วคงที่ หาก ΣF = 0", "แรงแปรผันตรงกับมวล"], a: 2, d: 'easy' },
+            { q: "ถ้าไม่มีแรงลัพธ์ภายนอกมากระทำต่อวัตถุที่กำลังเคลื่อนที่ วัตถุนั้นจะเป็นอย่างไร?", c: ["หยุดนิ่งทันที", "เคลื่อนที่ต่อไปด้วยความเร็วคงที่", "เคลื่อนที่ช้าลงเรื่อยๆ", "มีความเร่งเพิ่มขึ้น"], a: 1, d: 'easy' },
+            { q: "หน่วยของ แรง (Force) ในระบบ SI คืออะไร?", c: ["กิโลกรัม (kg)", "จูล (J)", "วัตต์ (W)", "นิวตัน (N)"], a: 3, d: 'easy' },
+            { q: "สมการใดเป็นตัวแทนของ กฎข้อที่ 2 ของนิวตัน?", c: ["W = mg", "F = ma", "Action = Reaction", "v = s/t"], a: 1, d: 'easy' },
+            { q: "น้ำหนัก (Weight) ของวัตถุเกิดจากอะไร?", c: ["มวลคูณกับความเร่งโน้มถ่วง", "ปริมาตรคูณกับความหนาแน่น", "แรงเสียดทานคูณกับระยะทาง", "ความเร็วคูณกับเวลา"], a: 0, d: 'easy' },
+            { q: "การเตะฟุตบอลอัดกำแพง แล้วลูกบอลกระดอนกลับ อธิบายได้ด้วยกฎข้อใดของนิวตัน?", c: ["กฎข้อที่ 1", "กฎข้อที่ 2", "กฎข้อที่ 3", "กฎแรงโน้มถ่วงสากล"], a: 2, d: 'easy' },
+            { q: "แรงเสียดทาน (Friction) มีทิศทางอย่างไรเมื่อเทียบกับการเคลื่อนที่?", c: ["ทิศทางเดียวกับการเคลื่อนที่", "ทิศทางตั้งฉากกับการเคลื่อนที่", "ทิศทางตรงข้ามกับการเคลื่อนที่", "ทำมุม 45 องศากับการเคลื่อนที่"], a: 2, d: 'easy' },
+            { q: "วัตถุ 5 kg วางนิ่งบนโต๊ะ แรงปฏิกิริยาตั้งฉาก (N) มีค่าเท่าใด (g=10)", c: ["5 N", "10 N", "50 N", "0 N"], a: 2, d: 'easy' },
+            { q: "ความเฉื่อย (Inertia) ขึ้นอยู่กับปริมาณใดของวัตถุมากที่สุด?", c: ["ความเร็ว", "ปริมาตร", "รูปร่าง", "มวล"], a: 3, d: 'easy' },
+            { q: "ถ้า ΣF = 0 หมายความว่าอย่างไร?", c: ["วัตถุต้องหยุดนิ่งเท่านั้น", "วัตถุต้องมีความเร่ง", "วัตถุอยู่ในสภาวะสมดุลกล", "วัตถุไม่มีมวล"], a: 2, d: 'easy' },
+            
+            { q: "ออกแรง 20 N ผลักกล่องมวล 4 kg บนพื้นลื่น กล่องจะมีความเร่งเท่าใด?", c: ["2 m/s²", "4 m/s²", "5 m/s²", "8 m/s²"], a: 2, d: 'medium' },
+            { q: "วัตถุมวล 2 kg ถูกดึงขึ้นด้วยเชือกด้วยความเร่ง 2 m/s² แรงตึงเชือกคือเท่าใด? (g=10)", c: ["16 N", "20 N", "24 N", "40 N"], a: 2, d: 'medium' },
+            { q: "คนมวล 50 kg ยืนอยู่ในลิฟต์ที่กำลังเคลื่อนที่ลงด้วยความเร็วคงที่ ตาชั่งจะอ่านค่าได้เท่าใด? (g=10)", c: ["500 N", "มากกว่า 500 N", "น้อยกว่า 500 N", "0 N"], a: 0, d: 'medium' },
+            { q: "กล่อง 10 kg วางบนพื้นที่มีสัมประสิทธิ์ความเสียดทานจลน์ 0.2 หากดึงด้วยแรง 30 N จะเกิดอะไรขึ้น?", c: ["กล่องหยุดนิ่ง", "กล่องเคลื่อนที่ด้วยความเร่ง 1 m/s²", "กล่องเคลื่อนที่ด้วยความเร่ง 2 m/s²", "กล่องเคลื่อนที่ด้วยความเร่ง 3 m/s²"], a: 1, d: 'medium' },
+            { q: "แรง Action และ Reaction กระทำต่อวัตถุก้อนเดียวกันหรือไม่?", c: ["ใช่ กระทำที่จุดเดียวกัน", "ใช่ แต่กระทำคนละจุด", "ไม่ใช่ กระทำต่อวัตถุคนละก้อน", "ขึ้นอยู่กับสถานการณ์"], a: 2, d: 'medium' },
+            { q: "แขวนป้ายมวล 10 kg ด้วยเชือก 2 เส้นทำมุม 30° กับแนวดิ่ง แรงตึงเชือกแต่ละเส้นคือเท่าใด? (cos30=0.866)", c: ["50 N", "57.7 N", "100 N", "115.4 N"], a: 1, d: 'medium' },
+            { q: "วางวัตถุบนพื้นเอียงมุม θ ถ้าวัตถุเริ่มไถลพอดี สัมประสิทธิ์ความเสียดทานสถิตมีค่าเท่าใด?", c: ["sin θ", "cos θ", "tan θ", "cot θ"], a: 2, d: 'medium' },
+            { q: "ผลักกล่อง A(2kg) ติดกับกล่อง B(3kg) ด้วยแรง 20N จากฝั่ง A แรงที่ A กระทำต่อ B คือเท่าใด?", c: ["8 N", "12 N", "20 N", "0 N"], a: 1, d: 'medium' },
+            { q: "การที่จรวดพุ่งขึ้นไปในอวกาศได้ อาศัยหลักการใดเป็นหลัก?", c: ["กฎข้อ 1", "กฎข้อ 2", "กฎข้อ 3", "แรงลอยตัว"], a: 2, d: 'medium' },
+            { q: "เมื่อวัตถุเคลื่อนที่เป็นวงกลมด้วยอัตราเร็วคงที่ แรงลัพธ์ที่กระทำต่อวัตถุมีค่าเท่าใด?", c: ["ศูนย์", "มวล × ความเร่งเข้าสู่ศูนย์กลาง", "แรงเสียดทานลบแรงหนีศูนย์กลาง", "แรงตึงเชือก"], a: 1, d: 'medium' },
+
+            { q: "ลิฟต์มวล M มีคนมวล m อยู่ข้างใน ลิฟต์เร่งขึ้นด้วย a ความตึงของสายเคเบิลลิฟต์คือ?", c: ["Mg + ma", "(M+m)g", "(M+m)(g+a)", "(M+m)(g-a)"], a: 2, d: 'hard' },
+            { q: "ลิฟต์สายเคเบิลขาดและตกอย่างอิสระ คนในลิฟต์จะรู้สึกว่าตัวเองมีน้ำหนักเท่าใด?", c: ["เท่าเดิม", "เพิ่มขึ้น 2 เท่า", "ลดลงครึ่งหนึ่ง", "ศูนย์ (ไร้น้ำหนัก)"], a: 3, d: 'hard' },
+            { q: "วัตถุวางบนพื้นเอียง 30° ถ้าพื้นลื่น วัตถุจะมีความเร่งไถลลงเท่าใด? (g=10)", c: ["10 m/s²", "8.66 m/s²", "5 m/s²", "0 m/s²"], a: 2, d: 'hard' },
+            { q: "กล่อง A, B, C มวล m เท่ากัน วางติดกัน ถูกผลักด้วยแรง F แรงที่กล่อง B กระทำต่อกล่อง C คือเท่าใด?", c: ["F", "2F/3", "F/3", "0"], a: 2, d: 'hard' },
+            { q: "รอกเบาและลื่นมีเชือกคล้อง โดยแขวนมวล 3 kg และ 2 kg ไว้คนละข้าง ความเร่งของระบบคือเท่าใด? (g=10)", c: ["1 m/s²", "2 m/s²", "5 m/s²", "10 m/s²"], a: 1, d: 'hard' },
+            { q: "ลากกล่องด้วยเชือกทำมุม 60° กับแนวระดับด้วยแรง F แรงปฏิกิริยาตั้งฉาก (N) จะเป็นอย่างไรเทียบกับน้ำหนัก (mg)?", c: ["เท่ากับ mg", "มากกว่า mg", "น้อยกว่า mg", "เป็นศูนย์"], a: 2, d: 'hard' },
+            { q: "ลูกตุ้มมวล m แกว่งผ่านจุดต่ำสุดด้วยความเร็ว v แรงตึงเชือก ณ จุดนี้คือเท่าใด?", c: ["mg", "mv²/R", "mg + mv²/R", "mg - mv²/R"], a: 2, d: 'hard' },
+            { q: "เครื่องชั่งสปริงแขวนอยู่ในลิฟต์ที่กำลัง 'หน่วง' ขณะเคลื่อนที่ 'ขึ้น' น้ำหนักที่อ่านได้จะเป็นอย่างไร?", c: ["มากกว่าน้ำหนักจริง", "น้อยกว่าน้ำหนักจริง", "เท่ากับน้ำหนักจริง", "อ่านค่าไม่ได้"], a: 1, d: 'hard' },
+            { q: "ยิงปืน มวลปืน M มวลลูกปืน m ความเร็วลูกปืน v ความเร็วถอยหลังของปืน (V) คือ?", c: ["v(m/M)", "-v(m/M)", "v(M/m)", "-v(M/m)"], a: 1, d: 'hard' },
+            { q: "ในการทดลองลากบล็อกไม้ ถ้าเพิ่มพื้นที่สัมผัสเป็น 2 เท่า แรงเสียดทานจะเป็นอย่างไร?", c: ["เพิ่มเป็น 2 เท่า", "ลดลงครึ่งหนึ่ง", "เท่าเดิม", "ขึ้นอยู่กับความเร็ว"], a: 2, d: 'hard' }
+        ];
+
+        let quizState = { active: [], currIdx: 0, score: 0 };
+
+        document.getElementById('btn-quiz-10').addEventListener('click', function() { this.classList.add('border-purple-500', 'bg-purple-50', 'text-purple-700'); document.getElementById('btn-quiz-20').classList.remove('border-purple-500', 'bg-purple-50', 'text-purple-700'); quizState.total = 10; });
+        document.getElementById('btn-quiz-20').addEventListener('click', function() { this.classList.add('border-purple-500', 'bg-purple-50', 'text-purple-700'); document.getElementById('btn-quiz-10').classList.remove('border-purple-500', 'bg-purple-50', 'text-purple-700'); quizState.total = 20; });
+        quizState.total = 10; 
+
+        function shuffle(array) { let cur = array.length, ran; while (cur != 0) { ran = Math.floor(Math.random() * cur); cur--; [array[cur], array[ran]] = [array[ran], array[cur]]; } return array; }
+
+        function startQuiz() {
+            let selectedQs = shuffle([...quizDB]).slice(0, quizState.total);
+            quizState.active = selectedQs;
+            quizState.currIdx = 0;
+            quizState.score = 0;
+            document.getElementById('quiz-total-idx').innerText = quizState.total;
+            navTo('quiz-active');
+            renderQuestion();
+        }
+
+        function renderQuestion() {
+            const q = quizState.active[quizState.currIdx];
+            document.getElementById('quiz-curr-idx').innerText = quizState.currIdx + 1;
+            document.getElementById('quiz-progress').style.width = `${((quizState.currIdx) / quizState.total) * 100}%`;
+            
+            const badge = document.getElementById('quiz-diff-badge');
+            badge.innerText = q.d === 'easy' ? 'ง่าย' : (q.d === 'medium' ? 'ปานกลาง' : 'ยาก');
+            badge.className = `absolute -top-3 right-6 px-3 py-1 text-[10px] font-bold rounded-full border uppercase ${q.d === 'easy' ? 'bg-green-100 text-green-700 border-green-200' : (q.d === 'medium' ? 'bg-orange-100 text-orange-700 border-orange-200' : 'bg-red-100 text-red-700 border-red-200')}`;
+            
+            document.getElementById('quiz-question').innerText = `${quizState.currIdx + 1}. ${q.q}`;
+            
+            const opts = document.getElementById('quiz-options');
+            opts.innerHTML = '';
+            q.c.forEach((choice, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'quiz-opt-btn w-full text-left p-4 rounded-xl border-2 border-slate-100 hover:border-purple-300 hover:bg-purple-50 transition-all font-medium text-slate-700';
+                btn.innerHTML = `<span class="inline-block w-6 text-purple-400">${String.fromCharCode(65+idx)}.</span> ${choice}`;
+                btn.onclick = () => selectAnswer(idx, btn);
+                opts.appendChild(btn);
+            });
+            document.getElementById('quiz-next-container').classList.add('hidden');
+        }
+
+        function selectAnswer(ansIdx, btnElement) {
+            document.querySelectorAll('.quiz-opt-btn').forEach(btn => btn.disabled = true);
+            const q = quizState.active[quizState.currIdx];
+            const isCorrect = ansIdx === q.a;
+            if (isCorrect) quizState.score++;
+
+            document.querySelectorAll('.quiz-opt-btn').forEach((btn, idx) => {
+                if (idx === q.a) {
+                    btn.classList.replace('border-slate-100', 'border-green-500');
+                    btn.classList.replace('hover:bg-purple-50', 'bg-green-50');
+                    btn.classList.add('text-green-800');
+                    btn.innerHTML += ' <i class="fas fa-check-circle float-right text-green-500 mt-1"></i>';
+                } else if (idx === ansIdx && !isCorrect) {
+                    btn.classList.replace('border-slate-100', 'border-red-500');
+                    btn.classList.add('bg-red-50', 'text-red-800');
+                    btn.innerHTML += ' <i class="fas fa-times-circle float-right text-red-500 mt-1"></i>';
+                }
+            });
+
+            document.getElementById('quiz-progress').style.width = `${((quizState.currIdx + 1) / quizState.total) * 100}%`;
+            document.getElementById('quiz-next-container').classList.remove('hidden');
+            
+            const nextBtn = document.getElementById('quiz-next-container').querySelector('button');
+            if (quizState.currIdx === quizState.total - 1) nextBtn.innerHTML = 'ดูผลสรุป <i class="fas fa-flag-checkered ml-1"></i>';
+            else nextBtn.innerHTML = 'ข้อต่อไป <i class="fas fa-arrow-right ml-1"></i>';
+        }
+
+        function nextQuestion() {
+            quizState.currIdx++;
+            if (quizState.currIdx < quizState.total) {
+                renderQuestion();
+            } else {
+                showResult();
+            }
+        }
+
+        function showResult() {
+            document.getElementById('result-score').innerText = quizState.score;
+            document.getElementById('result-score').nextElementSibling.innerText = `/${quizState.total}`;
+            
+            const pct = quizState.score / quizState.total;
+            const icon = document.getElementById('result-icon');
+            const title = document.getElementById('result-title');
+            
+            icon.className = "w-24 h-24 rounded-full flex items-center justify-center text-5xl mx-auto mb-4";
+            if (pct === 1) { icon.classList.add('bg-yellow-100', 'text-yellow-500'); icon.innerHTML = '<i class="fas fa-crown"></i>'; title.innerText = "สมบูรณ์แบบ!"; }
+            else if (pct >= 0.7) { icon.classList.add('bg-green-100', 'text-green-500'); icon.innerHTML = '<i class="fas fa-trophy"></i>'; title.innerText = "ยอดเยี่ยม!"; }
+            else if (pct >= 0.5) { icon.classList.add('bg-blue-100', 'text-blue-500'); icon.innerHTML = '<i class="fas fa-thumbs-up"></i>'; title.innerText = "ผ่านเกณฑ์!"; }
+            else { icon.classList.add('bg-red-100', 'text-red-500'); icon.innerHTML = '<i class="fas fa-book"></i>'; title.innerText = "พยายามอีกนิดนะ!"; }
+
+            navTo('quiz-result');
+        }
+        
+        // ================= NEWTON LAWS SIMULATOR LOGIC =================
+        const nlState = {
+            law: 1,
+            status: 'idle', // idle, playing, braking, end
+            t: 0,
+            lastTime: 0,
+            carX: 50, carV: 150, boxX: 50, boxV: 150,
+            m1X: 50, m1V: 0, m1A: 250, 
+            m2X: 50, m2V: 0, m2A: 50, 
+            skaterA: {x: 0, v: 0, m: 80},
+            skaterB: {x: 0, v: 0, m: 40}
+        };
+
+        const lawData = {
+            1: {
+                title: "กฎความเฉื่อย (Inertia)",
+                desc: "วัตถุจะรักษาสภาพอยู่นิ่ง หรือเคลื่อนที่ด้วยความเร็วคงที่ในทิศทางเดิม หากไม่มีแรงลัพธ์มากระทำ (ΣF = 0)",
+                q: "จำลองรถที่กำลังวิ่งแล้วเบรกกะทันหัน ทำไมกล่องบนหลังคารถถึงไถลไปข้างหน้า?",
+                a: "เพราะแรงเบรกกระทำที่รถ (รถหยุด) แต่ไม่มีแรงต้านกระทำที่กล่อง กล่องจึงพยายามรักษาสภาพการเคลื่อนที่เดิมด้วยความเร็วเท่าเดิมตามกฎข้อ 1"
+            },
+            2: {
+                title: "กฎของความเร่ง (F = ma)",
+                desc: "เมื่อมีแรงลัพธ์ที่ไม่เป็นศูนย์มากระทำต่อวัตถุ จะทำให้วัตถุมีความเร่ง โดยความเร่งจะแปรผันตรงกับแรง และแปรผกผันกับมวล",
+                q: "หากเราออกแรง 500 N ผลักกล่อง 10 kg (สีน้ำเงิน) และกล่อง 50 kg (สีแดง) กล่องใดจะวิ่งถึงเส้นชัยก่อน?",
+                a: "กล่องสีน้ำเงิน (10 kg) เพราะมีมวลน้อยกว่า เมื่อถูกกระทำด้วยแรงที่เท่ากัน จึงมีความเร่งมากกว่า (a = F/m) ทำให้เคลื่อนที่ได้เร็วกว่า"
+            },
+            3: {
+                title: "กริยา = ปฏิกิริยา (Action = Reaction)",
+                desc: "ทุกแรงกริยา ย่อมมีแรงปฏิกิริยาที่มีขนาดเท่ากันแต่ทิศทางตรงกันข้ามเสมอ (F₁₂ = -F₂₁)",
+                q: "นักสเก็ต A มวล 80kg ผลัก นักสเก็ต B มวล 40kg แรงที่ทั้งสองได้รับเท่ากันหรือไม่? และใครจะถอยหลังเร็วกว่า?",
+                a: "ทั้งคู่ได้รับ 'แรง' เท่ากันเป๊ะ! (ตามกฎข้อ 3) แต่ B จะถอยหลังเร็วกว่า เพราะ B มีมวลน้อยกว่าจึงมีความเร่งมากกว่า (ตามกฎข้อ 2)"
+            }
+        };
+
+        function resizeNewton() {
+            if (!getNewtonCtx()) return;
+            const rect = nCanvas.parentElement.getBoundingClientRect();
+            nCanvas.width = rect.width; nCanvas.height = rect.height;
+            drawNewton();
+        }
+
+        function initNewton(lawIdx) {
+            nlState.law = lawIdx;
+            
+            [1, 2, 3].forEach(i => {
+                const tab = document.getElementById(`tab-law-${i}`);
+                if (!tab) return;
+                if (i === lawIdx) {
+                    tab.className = "flex-1 py-1.5 text-xs font-bold rounded-md bg-white shadow text-emerald-700";
+                } else {
+                    tab.className = "flex-1 py-1.5 text-xs font-bold rounded-md text-slate-500 hover:text-slate-700";
+                }
+            });
+
+            const d = lawData[lawIdx];
+            document.getElementById('newton-content').innerHTML = `
+                <div class="bg-emerald-50 text-emerald-800 p-3 rounded-xl border border-emerald-100 text-sm mb-2 shadow-sm">
+                    <span class="font-bold block mb-1">${d.title}</span>
+                    ${d.desc}
+                </div>
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm relative mt-2 flex-1 flex flex-col">
+                    <div class="absolute -top-3 left-4 bg-orange-100 text-orange-700 px-2 py-0.5 text-[10px] font-bold rounded-full border border-orange-200">คำถามชวนคิด <i class="fas fa-lightbulb"></i></div>
+                    <p class="text-sm font-semibold text-slate-700 mt-2">${d.q}</p>
+                    <div class="mt-auto pt-4">
+                        <button onclick="toggleNewtonAns()" id="btn-show-ans" class="w-full py-2 bg-slate-800 text-white text-xs font-bold rounded-lg hover:bg-slate-700 transition">ดูคำอธิบาย / เฉลย</button>
+                        <div id="newton-ans" class="hidden mt-3 p-3 bg-blue-50 text-blue-800 text-sm rounded-lg border border-blue-100 border-l-4 border-l-blue-500">
+                            ${d.a}
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            resetNewton();
+        }
+
+        function toggleNewtonAns() {
+            const ans = document.getElementById('newton-ans');
+            const btn = document.getElementById('btn-show-ans');
+            if (ans.classList.contains('hidden')) {
+                ans.classList.remove('hidden');
+                btn.innerText = "ซ่อนคำอธิบาย";
+                btn.classList.replace('bg-slate-800', 'bg-slate-300');
+                btn.classList.replace('text-white', 'text-slate-700');
+            } else {
+                ans.classList.add('hidden');
+                btn.innerText = "ดูคำอธิบาย / เฉลย";
+                btn.classList.replace('bg-slate-300', 'bg-slate-800');
+                btn.classList.replace('text-slate-700', 'text-white');
+            }
+        }
+
+        function resetNewton() {
+            if (newtonAnimFrame) cancelAnimationFrame(newtonAnimFrame);
+            nlState.status = 'idle';
+            nlState.t = 0;
+            
+            nlState.carX = 50; nlState.carV = 200; nlState.boxX = 50; nlState.boxV = 200;
+            nlState.m1X = 50; nlState.m1V = 0; nlState.m2X = 50; nlState.m2V = 0;
+            nlState.skaterA.x = -30; nlState.skaterA.v = 0; 
+            nlState.skaterB.x = 30; nlState.skaterB.v = 0;
+
+            const btn = document.getElementById('btn-play-newton');
+            if (btn) {
+                btn.innerHTML = '<i class="fas fa-play"></i> จำลอง';
+                btn.className = "px-6 py-2 text-sm bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold rounded-full shadow-lg w-32 hover:shadow-emerald-500/50";
+            }
+            drawNewton();
+        }
+
+        function playNewton() {
+            if (nlState.status === 'idle') {
+                nlState.status = 'playing';
+                nlState.lastTime = performance.now();
+                
+                const btn = document.getElementById('btn-play-newton');
+                if (nlState.law === 1) {
+                    btn.innerHTML = '<i class="fas fa-hand-paper"></i> เบรก!';
+                    btn.className = "px-6 py-2 text-sm bg-gradient-to-r from-red-500 to-rose-500 text-white font-bold rounded-full shadow-lg w-32 animate-pulse";
+                } else {
+                    btn.innerHTML = '<i class="fas fa-running"></i> กำลังทำงาน...';
+                    btn.className = "px-6 py-2 text-sm bg-slate-400 text-white font-bold rounded-full shadow-lg w-32 cursor-not-allowed";
+                }
+                
+                simLoopNewton();
+            } else if (nlState.status === 'playing' && nlState.law === 1) {
+                nlState.status = 'braking';
+                const btn = document.getElementById('btn-play-newton');
+                btn.innerHTML = 'หยุดแล้ว';
+                btn.className = "px-6 py-2 text-sm bg-slate-400 text-white font-bold rounded-full shadow-lg w-32 cursor-not-allowed";
+            }
+        }
+
+        function simLoopNewton() {
+            if (nlState.status === 'idle' || !getNewtonCtx()) return;
+            
+            const now = performance.now();
+            const dt = Math.min((now - nlState.lastTime) / 1000, 0.1);
+            nlState.lastTime = now;
+            nlState.t += dt;
+
+            if (nlState.law === 1) {
+                if (nlState.status === 'playing') {
+                    nlState.carX += nlState.carV * dt;
+                    nlState.boxX += nlState.boxV * dt;
+                } else if (nlState.status === 'braking') {
+                    nlState.carV -= 800 * dt; 
+                    if (nlState.carV < 0) nlState.carV = 0;
+                    nlState.carX += nlState.carV * dt;
+                    nlState.boxX += nlState.boxV * dt;
+                }
+                if (nlState.boxX > nCanvas.width + 100) nlState.status = 'end'; 
+            } 
+            else if (nlState.law === 2) {
+                if (nlState.m1X < nCanvas.width - 150) { nlState.m1V += nlState.m1A * dt; nlState.m1X += nlState.m1V * dt; }
+                if (nlState.m2X < nCanvas.width - 150) { nlState.m2V += nlState.m2A * dt; nlState.m2X += nlState.m2V * dt; }
+                
+                if (nlState.m1X >= nCanvas.width - 150 && nlState.m2X >= nCanvas.width - 150) nlState.status = 'end';
+            }
+            else if (nlState.law === 3) {
+                if (nlState.t > 0.5) {
+                    nlState.skaterA.v = -100; 
+                    nlState.skaterB.v = 200;  
+                    nlState.skaterA.x += nlState.skaterA.v * dt;
+                    nlState.skaterB.x += nlState.skaterB.v * dt;
+                }
+                if (nlState.skaterB.x > nCanvas.width/2 + 100) nlState.status = 'end';
+            }
+
+            drawNewton();
+            
+            if (nlState.status !== 'end') {
+                newtonAnimFrame = requestAnimationFrame(simLoopNewton);
+            }
+        }
+
+        function drawNewton() {
+            let activeCtx = getNewtonCtx();
+            if (!activeCtx || !nCanvas) return;
+
+            activeCtx.clearRect(0, 0, nCanvas.width, nCanvas.height);
+            
+            const floorY = nCanvas.height * 0.75;
+            activeCtx.fillStyle = '#e2e8f0'; activeCtx.fillRect(0, floorY, nCanvas.width, nCanvas.height - floorY);
+            activeCtx.strokeStyle = '#cbd5e1'; activeCtx.lineWidth = 2; activeCtx.beginPath(); activeCtx.moveTo(0, floorY); activeCtx.lineTo(nCanvas.width, floorY); activeCtx.stroke();
+
+            if (nlState.law === 1) {
+                const cx = nlState.carX, cy = floorY;
+                const bx = nlState.boxX;
+                
+                activeCtx.fillStyle = '#3b82f6'; activeCtx.fillRect(cx - 60, cy - 40, 120, 30); 
+                activeCtx.fillRect(cx - 30, cy - 70, 60, 30); 
+                activeCtx.fillStyle = '#1e293b'; 
+                activeCtx.beginPath(); activeCtx.arc(cx - 35, cy - 10, 12, 0, Math.PI*2); activeCtx.fill(); 
+                activeCtx.beginPath(); activeCtx.arc(cx + 35, cy - 10, 12, 0, Math.PI*2); activeCtx.fill(); 
+
+                let dropY = 0;
+                if (bx > cx + 60) {
+                    dropY = Math.min((bx - (cx + 60)), floorY - (cy - 70) - 15);
+                }
+                activeCtx.fillStyle = '#d97706'; activeCtx.fillRect(bx - 15, cy - 70 - 30 + dropY, 30, 30);
+                activeCtx.strokeStyle = '#92400e'; activeCtx.strokeRect(bx - 15, cy - 70 - 30 + dropY, 30, 30);
+
+                if (nlState.carV > 0) {
+                    activeCtx.strokeStyle = '#94a3b8'; activeCtx.beginPath();
+                    activeCtx.moveTo(cx - 80, cy - 25); activeCtx.lineTo(cx - 110, cy - 25);
+                    activeCtx.moveTo(cx - 70, cy - 50); activeCtx.lineTo(cx - 90, cy - 50);
+                    activeCtx.stroke();
+                }
+
+                if (nlState.status === 'braking' && nlState.carV > 0) {
+                    activeCtx.fillStyle = 'rgba(239, 68, 68, 0.8)';
+                    activeCtx.font = "bold 16px Prompt"; activeCtx.fillText("F (แรงเบรก)", cx, cy + 30);
+                    activeCtx.strokeStyle = 'red'; activeCtx.lineWidth = 3;
+                    activeCtx.beginPath(); activeCtx.moveTo(cx, cy + 15); activeCtx.lineTo(cx - 40, cy + 15); activeCtx.stroke();
+                    activeCtx.beginPath(); activeCtx.moveTo(cx - 40, cy + 15); activeCtx.lineTo(cx - 30, cy + 10); activeCtx.lineTo(cx - 30, cy + 20); activeCtx.fill();
+                }
+
+            } 
+            else if (nlState.law === 2) {
+                const finishX = nCanvas.width - 100;
+                activeCtx.strokeStyle = '#ef4444'; activeCtx.lineWidth = 4; activeCtx.setLineDash([10, 10]);
+                activeCtx.beginPath(); activeCtx.moveTo(finishX, floorY); activeCtx.lineTo(finishX, floorY - 200); activeCtx.stroke(); activeCtx.setLineDash([]);
+                activeCtx.fillStyle = '#ef4444'; activeCtx.font = "bold 16px Prompt"; activeCtx.fillText("เส้นชัย", finishX, floorY - 210);
+
+                const y1 = floorY - 120;
+                activeCtx.fillStyle = '#3b82f6'; activeCtx.fillRect(nlState.m1X - 20, y1 - 40, 40, 40);
+                activeCtx.fillStyle = '#fff'; activeCtx.font = "bold 14px Prompt"; activeCtx.textAlign = "center"; activeCtx.fillText("10kg", nlState.m1X, y1 - 20);
+                
+                const y2 = floorY;
+                activeCtx.fillStyle = '#dc2626'; activeCtx.fillRect(nlState.m2X - 35, y2 - 70, 70, 70);
+                activeCtx.fillStyle = '#fff'; activeCtx.font = "bold 16px Prompt"; activeCtx.textAlign = "center"; activeCtx.fillText("50kg", nlState.m2X, y2 - 35);
+
+                if (nlState.status !== 'idle') {
+                    activeCtx.fillStyle = '#10b981'; activeCtx.strokeStyle = '#10b981'; activeCtx.lineWidth = 3;
+                    if (nlState.m1X < finishX) {
+                        activeCtx.beginPath(); activeCtx.moveTo(nlState.m1X - 50, y1 - 20); activeCtx.lineTo(nlState.m1X - 25, y1 - 20); activeCtx.stroke();
+                        activeCtx.beginPath(); activeCtx.moveTo(nlState.m1X - 25, y1 - 20); activeCtx.lineTo(nlState.m1X - 35, y1 - 25); activeCtx.lineTo(nlState.m1X - 35, y1 - 15); activeCtx.fill();
+                        activeCtx.fillText("F", nlState.m1X - 60, y1 - 20);
+                    }
+                    if (nlState.m2X < finishX) {
+                        activeCtx.beginPath(); activeCtx.moveTo(nlState.m2X - 65, y2 - 35); activeCtx.lineTo(nlState.m2X - 40, y2 - 35); activeCtx.stroke();
+                        activeCtx.beginPath(); activeCtx.moveTo(nlState.m2X - 40, y2 - 35); activeCtx.lineTo(nlState.m2X - 50, y2 - 40); activeCtx.lineTo(nlState.m2X - 50, y2 - 30); activeCtx.fill();
+                        activeCtx.fillText("F", nlState.m2X - 75, y2 - 35);
+                    }
+                }
+
+            }
+            else if (nlState.law === 3) {
+                const cx = nCanvas.width / 2;
+                const ax = cx + nlState.skaterA.x;
+                const bx = cx + nlState.skaterB.x;
+
+                activeCtx.fillStyle = '#3b82f6'; 
+                activeCtx.beginPath(); activeCtx.arc(ax - 20, floorY - 60, 25, 0, Math.PI*2); activeCtx.fill(); 
+                activeCtx.beginPath(); activeCtx.arc(ax - 20, floorY - 100, 15, 0, Math.PI*2); activeCtx.fill(); 
+                activeCtx.fillStyle = '#fff'; activeCtx.font = "bold 12px Prompt"; activeCtx.fillText("A (80kg)", ax - 20, floorY - 60);
+
+                activeCtx.fillStyle = '#ef4444'; 
+                activeCtx.beginPath(); activeCtx.arc(bx + 20, floorY - 45, 18, 0, Math.PI*2); activeCtx.fill(); 
+                activeCtx.beginPath(); activeCtx.arc(bx + 20, floorY - 75, 12, 0, Math.PI*2); activeCtx.fill(); 
+                activeCtx.fillStyle = '#fff'; activeCtx.font = "bold 10px Prompt"; activeCtx.fillText("B (40kg)", bx + 20, floorY - 45);
+
+                if (nlState.status === 'idle' || nlState.t < 0.5) {
+                    activeCtx.strokeStyle = '#334155'; activeCtx.lineWidth = 4;
+                    activeCtx.beginPath(); activeCtx.moveTo(ax, floorY - 60); activeCtx.lineTo(cx, floorY - 60); activeCtx.stroke(); 
+                    activeCtx.beginPath(); activeCtx.moveTo(bx, floorY - 45); activeCtx.lineTo(cx, floorY - 45); activeCtx.stroke(); 
+                    
+                    if (nlState.status !== 'idle') {
+                        activeCtx.lineWidth = 3;
+                        
+                        activeCtx.strokeStyle = '#3b82f6'; activeCtx.fillStyle = '#3b82f6';
+                        activeCtx.beginPath(); activeCtx.moveTo(cx, floorY - 110); activeCtx.lineTo(cx - 40, floorY - 110); activeCtx.stroke();
+                        activeCtx.beginPath(); activeCtx.moveTo(cx - 40, floorY - 110); activeCtx.lineTo(cx - 30, floorY - 115); activeCtx.lineTo(cx - 30, floorY - 105); activeCtx.fill();
+                        activeCtx.fillText("F (ปฏิกิริยา)", cx - 60, floorY - 125);
+                        
+                        activeCtx.strokeStyle = '#ef4444'; activeCtx.fillStyle = '#ef4444';
+                        activeCtx.beginPath(); activeCtx.moveTo(cx, floorY - 110); activeCtx.lineTo(cx + 40, floorY - 110); activeCtx.stroke();
+                        activeCtx.beginPath(); activeCtx.moveTo(cx + 40, floorY - 110); activeCtx.lineTo(cx + 30, floorY - 115); activeCtx.lineTo(cx + 30, floorY - 105); activeCtx.fill();
+                        activeCtx.fillText("F (กริยา)", cx + 60, floorY - 125);
+                    }
+                } else {
+                    activeCtx.strokeStyle = '#334155'; activeCtx.lineWidth = 4;
+                    activeCtx.beginPath(); activeCtx.moveTo(ax, floorY - 60); activeCtx.lineTo(ax - 10, floorY - 50); activeCtx.stroke();
+                    activeCtx.beginPath(); activeCtx.moveTo(bx, floorY - 45); activeCtx.lineTo(bx + 10, floorY - 35); activeCtx.stroke();
+                    
+                    activeCtx.lineWidth = 2;
+                    activeCtx.strokeStyle = '#3b82f6'; activeCtx.fillStyle = '#3b82f6';
+                    activeCtx.beginPath(); activeCtx.moveTo(ax - 20, floorY - 130); activeCtx.lineTo(ax - 50, floorY - 130); activeCtx.stroke();
+                    activeCtx.beginPath(); activeCtx.moveTo(ax - 50, floorY - 130); activeCtx.lineTo(ax - 40, floorY - 135); activeCtx.lineTo(ax - 40, floorY - 125); activeCtx.fill();
+                    activeCtx.fillText("v", ax - 60, floorY - 130);
+
+                    activeCtx.strokeStyle = '#ef4444'; activeCtx.fillStyle = '#ef4444';
+                    activeCtx.beginPath(); activeCtx.moveTo(bx + 20, floorY - 130); activeCtx.lineTo(bx + 80, floorY - 130); activeCtx.stroke(); 
+                    activeCtx.beginPath(); activeCtx.moveTo(bx + 80, floorY - 130); activeCtx.lineTo(bx + 70, floorY - 135); activeCtx.lineTo(bx + 70, floorY - 125); activeCtx.fill();
+                    activeCtx.fillText("v (เร็วกว่า)", bx + 100, floorY - 130);
+                }
+            }
+        }
+
+        window.addEventListener('load', () => { 
+            // ล้างค่าแล้วรันเริ่มต้นเมื่อโครงสร้าง HTML โหลดเสร็จเท่านั้น
+            setScenario(state.scenario); 
+            navTo('home'); 
+            resize(); 
+        });
+    </script>
+</body>
+</html>

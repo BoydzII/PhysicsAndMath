@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Photon's Journey - FBD Game</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600&family=Mitr:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Prompt', sans-serif;
+            background-color: #f0f9ff;
+            overflow: hidden;
+            touch-action: none;
+        }
+        
+        h1, h2, h3, .heading-font {
+            font-family: 'Mitr', sans-serif;
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+        }
+
+        .slider-red { accent-color: #ef4444; }
+        .slider-blue { accent-color: #3b82f6; }
+        .slider-green { accent-color: #22c55e; }
+        .slider-orange { accent-color: #f97316; }
+
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+        .floating-cloud { animation: float 6s ease-in-out infinite; }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            cursor: pointer;
+            margin-top: -8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 6px;
+            cursor: pointer;
+            background: #e2e8f0;
+            border-radius: 9999px;
+        }
+        input[type=range]:disabled { opacity: 0.5; cursor: not-allowed; }
+        input[type=range]:disabled::-webkit-slider-thumb { cursor: not-allowed; }
+
+        .slider-red::-webkit-slider-thumb { background: #ef4444; }
+        .slider-blue::-webkit-slider-thumb { background: #3b82f6; }
+        .slider-green::-webkit-slider-thumb { background: #10b981; }
+        .slider-orange::-webkit-slider-thumb { background: #f97316; }
+
+        #message-box {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: translateY(-20px);
+            opacity: 0;
+            pointer-events: none;
+        }
+        #message-box.show {
+            transform: translateY(0);
+            opacity: 1;
+            pointer-events: auto;
+        }
+    </style>
+</head>
+<body class="w-screen h-screen flex flex-col md:flex-row p-2 md:p-4 gap-4 text-slate-700">
+
+    <!-- Left side: Game Viewport -->
+    <div class="relative w-full md:w-2/3 h-[50vh] md:h-full rounded-3xl overflow-hidden shadow-inner bg-gradient-to-b from-[#e0f2fe] to-[#bae6fd]">
+        <svg class="absolute top-10 left-10 w-24 h-24 text-white opacity-60 floating-cloud" fill="currentColor" viewBox="0 0 20 20" style="animation-delay: 0s;">
+            <path d="M5.5 16a3.5 3.5 0 01-.369-6.98 4 4 0 117.759-1.549V8a3.5 3.5 0 11-7.39 1.488C5.168 15.65 5.334 16 5.5 16z"></path>
+        </svg>
+        <svg class="absolute top-24 right-20 w-32 h-32 text-white opacity-50 floating-cloud" fill="currentColor" viewBox="0 0 20 20" style="animation-delay: -3s;">
+            <path d="M5.5 16a3.5 3.5 0 01-.369-6.98 4 4 0 117.759-1.549V8a3.5 3.5 0 11-7.39 1.488C5.168 15.65 5.334 16 5.5 16z"></path>
+        </svg>
+
+        <canvas id="gameCanvas" class="absolute top-0 left-0 w-full h-full"></canvas>
+
+        <div id="message-box" class="absolute top-4 left-1/2 -translate-x-1/2 z-10 w-11/12 md:w-auto max-w-md bg-white/90 backdrop-blur-sm p-4 rounded-2xl shadow-lg border-2 border-transparent text-center">
+            <h3 id="msg-title" class="text-xl font-bold mb-1 heading-font">แจ้งเตือน</h3>
+            <p id="msg-desc" class="text-sm text-slate-600">ข้อความรายละเอียด</p>
+        </div>
+
+        <div class="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-3 z-10">
+            <button id="btn-reset" class="px-6 py-2 bg-white text-slate-700 font-medium rounded-full shadow-md hover:bg-slate-50 transition-colors border border-slate-200">
+                <i class="fas fa-undo"></i> รีเซ็ต
+            </button>
+            <button id="btn-play" class="px-8 py-2 bg-gradient-to-r from-blue-500 to-indigo-500 text-white font-medium rounded-full shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 hover:-translate-y-0.5 transition-all">
+                <i class="fas fa-play"></i> ทดสอบการเคลื่อนที่
+            </button>
+        </div>
+    </div>
+
+    <!-- Right side: Control Panel -->
+    <div class="w-full md:w-1/3 h-[45vh] md:h-full glass-panel rounded-3xl p-5 flex flex-col overflow-y-auto">
+        <h1 class="text-2xl font-bold text-indigo-900 mb-2 heading-font">Photon's Journey</h1>
+        <p class="text-sm text-slate-500 mb-4 pb-4 border-b border-slate-200">
+            สร้าง <b>Free Body Diagram</b> โดยเพิ่มแรงต่างๆ ให้กับน้องโฟตอน เพื่อพาเขาไปยังจุดหมาย (มวล = 1 kg)
+        </p>
+
+        <!-- Angle Slider -->
+        <div class="mb-5 bg-white/60 p-3 rounded-xl border border-slate-200 shadow-sm">
+            <div class="flex justify-between items-center mb-2 text-sm font-semibold text-slate-700 heading-font">
+                <span><i class="fas fa-mountain text-indigo-500 mr-1"></i> ความชันพื้นเอียง (&theta;)</span>
+                <span id="angle-val-display" class="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-md">0&deg;</span>
+            </div>
+            <input type="range" id="angle-slider" min="0" max="60" step="1" value="0" class="slider-blue w-full">
+        </div>
+
+        <!-- Object Selector & FBD Toggle -->
+        <div class="mb-5">
+            <div class="flex gap-2 mb-3">
+                <button id="btn-obj-photon" class="flex-1 py-1.5 px-2 text-xs font-medium rounded-lg border-2 border-orange-400 bg-orange-100 text-orange-700 transition-colors shadow-sm">โฟตอน</button>
+                <button id="btn-obj-box" class="flex-1 py-1.5 px-2 text-xs font-medium rounded-lg border-2 border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 transition-colors">กล่อง</button>
+                <button id="btn-obj-sphere" class="flex-1 py-1.5 px-2 text-xs font-medium rounded-lg border-2 border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 transition-colors">ทรงกลม</button>
+            </div>
+            
+            <div class="flex items-center justify-between p-3 bg-indigo-50 rounded-xl border border-indigo-100 cursor-pointer hover:bg-indigo-100/50 transition-colors" id="toggle-fbd-container">
+                <span class="text-sm font-medium text-indigo-900"><i class="fas fa-crosshairs mr-1 text-indigo-500"></i> โหมดจุด (FBD Only)</span>
+                <button id="btn-toggle-fbd" class="w-10 h-5 rounded-full bg-slate-300 relative transition-colors duration-300 pointer-events-none">
+                    <div id="fbd-toggle-knob" class="w-4 h-4 bg-white rounded-full absolute top-0.5 left-0.5 transition-transform duration-300 shadow-sm"></div>
+                </button>
+            </div>
+        </div>
+
+        <!-- Card Selector -->
+        <h2 class="text-sm font-semibold mb-3 heading-font text-slate-700">เพิ่มเวกเตอร์แรง</h2>
+        <div class="grid grid-cols-2 gap-2 mb-6">
+            <button id="add-mg" class="p-2 rounded-xl border-2 border-red-200 bg-red-50 text-red-600 hover:bg-red-100 transition-colors text-sm font-medium flex items-center justify-center gap-2">
+                <span class="w-3 h-3 rounded-full bg-red-500"></span> น้ำหนัก (mg)
+            </button>
+            <button id="add-N" class="p-2 rounded-xl border-2 border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors text-sm font-medium flex items-center justify-center gap-2">
+                <span class="w-3 h-3 rounded-full bg-blue-500"></span> แรงดันพื้น (N)
+            </button>
+            <button id="add-F" class="p-2 rounded-xl border-2 border-green-200 bg-green-50 text-green-600 hover:bg-green-100 transition-colors text-sm font-medium flex items-center justify-center gap-2">
+                <span class="w-3 h-3 rounded-full bg-green-500"></span> แรงผลัก (F)
+            </button>
+            <button id="add-f" class="p-2 rounded-xl border-2 border-orange-200 bg-orange-50 text-orange-600 hover:bg-orange-100 transition-colors text-sm font-medium flex items-center justify-center gap-2">
+                <span class="w-3 h-3 rounded-full bg-orange-500"></span> แรงเสียดทาน (f)
+            </button>
+        </div>
+
+        <!-- Sliders Container -->
+        <h2 class="text-sm font-semibold mb-3 heading-font text-slate-700 flex justify-between items-end">
+            ปรับขนาดแรง <span class="text-xs font-normal text-slate-400">ลากเพื่อปรับนิวตัน (N)</span>
+        </h2>
+        <div id="sliders-container" class="flex-1 flex flex-col gap-4 overflow-y-auto pr-2">
+            <div id="empty-state" class="text-center text-slate-400 text-sm py-8 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                คลิกปุ่มด้านบนเพื่อเพิ่มแรง<br>ลงบน Free Body Diagram
+            </div>
+        </div>
+
+        <!-- Real-time Math Feedback -->
+        <div class="mt-4 p-4 bg-slate-800 text-white rounded-2xl shadow-inner text-sm font-mono flex flex-col gap-1">
+            <div class="text-slate-300 mb-1 text-xs uppercase tracking-wider">Net Force Analysis</div>
+            <div class="flex justify-between">
+                <span>&Sigma;F<sub>y</sub> (ตั้งฉากพื้น):</span>
+                <span id="sum-fy" class="text-yellow-300 font-bold">0 N</span>
+            </div>
+            <div class="flex justify-between">
+                <span>&Sigma;F<sub>x</sub> (ขนานพื้น):</span>
+                <span id="sum-fx" class="text-yellow-300 font-bold">0 N</span>
+            </div>
+            <div class="h-px bg-slate-600 my-1"></div>
+            <div class="flex justify-between text-xs text-slate-400">
+                <span>a (ความเร่งแนวขนาน):</span>
+                <span id="acceleration-display">0 m/s²</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Game State ---
+        const state = {
+            mode: 'planning', // 'planning', 'playing', 'ended'
+            forces: {}, // e.g. { mg: 10, N: 10, F: 5, f: 2 }
+            mass: 1, 
+            angle: 0, // Incline angle in degrees
+            
+            objectType: 'photon', 
+            showFBDOnly: false,
+
+            // Object physics (using s for parallel distance, p for perpendicular offset)
+            obj: {
+                s: 100, // Distance along the incline
+                p: 0,   // Perpendicular displacement (0 = on ground)
+                size: 40,
+                vx: 0,
+                vy: 0, // Velocity in perpendicular direction
+                ax: 0,
+                ay: 0  // Acceleration in perpendicular direction
+            },
+            
+            bridgeStart: 50,
+            floorY: 0,
+            targetS: 400, // Target distance along incline
+        };
+
+        const colors = { mg: '#ef4444', N: '#3b82f6', F: '#10b981', f: '#f97316' };
+        const labels = { mg: 'น้ำหนัก (W=mg)', N: 'แรงดันพื้น (N)', F: 'แรงผลัก (F)', f: 'แรงเสียดทาน (f)' };
+        
+        // Local angles (relative to the inclined plane)
+        const localAngles = { 
+            N: -Math.PI / 2, // Up away from plane
+            F: 0,            // Up the incline
+            f: Math.PI       // Down the incline
+        };
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const btnPlay = document.getElementById('btn-play');
+        const btnReset = document.getElementById('btn-reset');
+        const slidersContainer = document.getElementById('sliders-container');
+        const emptyState = document.getElementById('empty-state');
+        const sumFyDisplay = document.getElementById('sum-fy');
+        const sumFxDisplay = document.getElementById('sum-fx');
+        const accelDisplay = document.getElementById('acceleration-display');
+        
+        function resize() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+            
+            state.floorY = canvas.height * 0.7;
+            state.targetS = Math.min(canvas.width * 0.6, 500); // dynamic target based on screen width
+            draw();
+        }
+        window.addEventListener('resize', resize);
+
+        // Angle Control
+        const angleSlider = document.getElementById('angle-slider');
+        if (angleSlider) {
+            angleSlider.addEventListener('input', (e) => {
+                state.angle = parseInt(e.target.value);
+                document.getElementById('angle-val-display').innerHTML = `${state.angle}&deg;`;
+                updatePhysicsMath();
+                draw();
+            });
+        }
+
+        // Force UI Management
+        function addForce(type) {
+            if (state.mode !== 'planning') return;
+            if (state.forces[type] !== undefined) return;
+
+            let defaultVal = 0;
+            if(type === 'mg') defaultVal = 10;
+            if(type === 'F') defaultVal = 10;
+            if(type === 'f') defaultVal = 2;
+            
+            // N is calculated automatically, set placeholder value
+            if(type === 'N') defaultVal = 10; 
+
+            state.forces[type] = defaultVal;
+            if(emptyState) emptyState.style.display = 'none';
+
+            const colorClass = `slider-${type === 'mg' ? 'red' : type === 'N' ? 'blue' : type === 'F' ? 'green' : 'orange'}`;
+            const textClass = `text-${type === 'mg' ? 'red' : type === 'N' ? 'blue' : type === 'F' ? 'green' : 'orange'}-600`;
+            const bgClass = `bg-${type === 'mg' ? 'red' : type === 'N' ? 'blue' : type === 'F' ? 'green' : 'orange'}-50`;
+            const borderClass = `border-${type === 'mg' ? 'red' : type === 'N' ? 'blue' : type === 'F' ? 'green' : 'orange'}-200`;
+
+            const isN = (type === 'N');
+
+            const sliderHtml = `
+                <div class="p-3 ${bgClass} border ${borderClass} rounded-xl shadow-sm relative group" id="slider-group-${type}">
+                    <button onclick="removeForce('${type}')" class="absolute top-2 right-2 text-slate-400 hover:text-red-500 w-6 h-6 flex items-center justify-center rounded-full hover:bg-white transition-colors">
+                        &times;
+                    </button>
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="font-medium ${textClass} text-sm">${labels[type]}</label>
+                        <span class="font-bold ${textClass} text-sm bg-white px-2 py-0.5 rounded-md shadow-sm" id="val-${type}">${defaultVal} N</span>
+                    </div>
+                    ${isN ? `<div class="text-[10px] text-blue-500 mb-1 font-mono">ปรับตามสมการ N = mg cos(&theta;) อัตโนมัติ</div>` : ''}
+                    <input type="range" min="0" max="30" step="1" value="${defaultVal}" class="${colorClass}" id="input-${type}" ${isN ? 'disabled' : ''}>
+                </div>
+            `;
+            
+            slidersContainer.insertAdjacentHTML('beforeend', sliderHtml);
+            
+            document.getElementById(`input-${type}`).addEventListener('input', (e) => {
+                if (type === 'N') return; // N cannot be manually changed
+                const val = parseInt(e.target.value);
+                state.forces[type] = val;
+                document.getElementById(`val-${type}`).innerText = `${val} N`;
+                updatePhysicsMath();
+                draw();
+            });
+
+            updatePhysicsMath();
+            draw();
+        }
+
+        window.removeForce = function(type) {
+            if (state.mode !== 'planning') return;
+            delete state.forces[type];
+            document.getElementById(`slider-group-${type}`).remove();
+            
+            if(Object.keys(state.forces).length === 0) {
+                emptyState.style.display = 'block';
+            }
+            updatePhysicsMath();
+            draw();
+        }
+
+        const forceTypes = ['mg', 'N', 'F', 'f'];
+        for (let i = 0; i < forceTypes.length; i++) {
+            const btn = document.getElementById(`add-${forceTypes[i]}`);
+            if (btn) btn.addEventListener('click', () => addForce(forceTypes[i]));
+        }
+
+        // Object Selection
+        const btnPhoton = document.getElementById('btn-obj-photon');
+        const btnBox = document.getElementById('btn-obj-box');
+        const btnSphere = document.getElementById('btn-obj-sphere');
+        const toggleContainer = document.getElementById('toggle-fbd-container');
+        const toggleBtn = document.getElementById('btn-toggle-fbd');
+        const toggleKnob = document.getElementById('fbd-toggle-knob');
+
+        function updateObjectSelection(type) {
+            state.objectType = type;
+            const btns = [btnPhoton, btnBox, btnSphere];
+            for (let i = 0; i < btns.length; i++) {
+                if (btns[i]) btns[i].className = "flex-1 py-1.5 px-2 text-xs font-medium rounded-lg border-2 border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 transition-colors";
+            }
+            
+            if(type === 'photon') btnPhoton.className = "flex-1 py-1.5 px-2 text-xs font-medium rounded-lg border-2 border-orange-400 bg-orange-100 text-orange-700 shadow-sm";
+            else if (type === 'box') btnBox.className = "flex-1 py-1.5 px-2 text-xs font-medium rounded-lg border-2 border-amber-500 bg-amber-50 text-amber-700 shadow-sm";
+            else if (type === 'sphere') btnSphere.className = "flex-1 py-1.5 px-2 text-xs font-medium rounded-lg border-2 border-slate-400 bg-slate-200 text-slate-800 shadow-sm";
+            draw();
+        }
+
+        if (btnPhoton) btnPhoton.addEventListener('click', () => updateObjectSelection('photon'));
+        if (btnBox) btnBox.addEventListener('click', () => updateObjectSelection('box'));
+        if (btnSphere) btnSphere.addEventListener('click', () => updateObjectSelection('sphere'));
+
+        if (toggleContainer) {
+            toggleContainer.addEventListener('click', () => {
+                state.showFBDOnly = !state.showFBDOnly;
+                if(state.showFBDOnly) {
+                    toggleBtn.classList.replace('bg-slate-300', 'bg-indigo-500');
+                    toggleKnob.classList.add('translate-x-5');
+                } else {
+                    toggleBtn.classList.replace('bg-indigo-500', 'bg-slate-300');
+                    toggleKnob.classList.remove('translate-x-5');
+                }
+                draw();
+            });
+        }
+
+        // Physics Calculation
+        function updatePhysicsMath() {
+            const rad = state.angle * Math.PI / 180;
+            const W = state.forces['mg'] || 0;
+            
+            // Auto Update N based on W and angle (N = mg cos θ)
+            if (state.forces['N'] !== undefined) {
+                state.forces['N'] = parseFloat((W * Math.cos(rad)).toFixed(1));
+                const nInput = document.getElementById('input-N');
+                const nVal = document.getElementById('val-N');
+                if (nInput) nInput.value = state.forces['N'];
+                if (nVal) nVal.innerText = `${state.forces['N']} N`;
+            }
+
+            const N = state.forces['N'] || 0;
+            const F = state.forces['F'] || 0;
+            const f = state.forces['f'] || 0;
+
+            const Wy = W * Math.cos(rad);
+            const Wx = W * Math.sin(rad);
+
+            const sumFy = N - Wy; 
+            const sumFx = F - f - Wx;
+
+            sumFyDisplay.innerText = `${sumFy.toFixed(1)} N`;
+            sumFyDisplay.className = Math.abs(sumFy) < 0.1 ? "text-green-400 font-bold" : "text-red-400 font-bold";
+            
+            sumFxDisplay.innerText = `${sumFx.toFixed(1)} N`;
+            
+            const a = sumFx / state.mass;
+            accelDisplay.innerText = `${a.toFixed(2)} m/s²`;
+            
+            state.obj.ax = a;
+            state.obj.ay = -sumFy / state.mass; // If N < Wy, accelerates downward perpendicularly
+        }
+
+        function showMessage(title, desc, type="info") {
+            const box = document.getElementById('message-box');
+            document.getElementById('msg-title').innerText = title;
+            document.getElementById('msg-desc').innerText = desc;
+            
+            box.classList.remove('border-green-500', 'border-red-500', 'border-blue-500');
+            if(type === 'success') box.classList.add('border-green-500');
+            else if(type === 'fail') box.classList.add('border-red-500');
+            else box.classList.add('border-blue-500');
+            
+            box.classList.add('show');
+        }
+        function hideMessage() { document.getElementById('message-box').classList.remove('show'); }
+
+        // Render Functions
+        function drawArrow(fromx, fromy, tox, toy, color, label, val) {
+            const headlen = 10; 
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const angle = Math.atan2(dy, dx);
+            
+            ctx.beginPath();
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 4;
+            ctx.lineCap = 'round';
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.lineTo(tox, toy);
+            ctx.fillStyle = color;
+            ctx.fill();
+
+            ctx.fillStyle = color;
+            ctx.font = "bold 14px Prompt";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            
+            // Adjust label offset logic
+            let labelOffset = 25;
+            ctx.fillText(`${label} = ${val}`, tox + Math.cos(angle)*labelOffset, toy + Math.sin(angle)*labelOffset);
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            ctx.save();
+            // Move pivot point to bridge start
+            ctx.translate(state.bridgeStart, state.floorY);
+            // Rotate the entire context up by the incline angle
+            const rad = state.angle * Math.PI / 180;
+            ctx.rotate(-rad);
+
+            // Draw Floor (extend far right and far down)
+            ctx.fillStyle = '#bbf7d0'; 
+            ctx.fillRect(0, 0, canvas.width * 2, canvas.height * 2);
+            
+            // Draw Target Zone
+            ctx.fillStyle = 'rgba(250, 204, 21, 0.4)'; 
+            ctx.fillRect(state.targetS, -80, 80, 80);
+            
+            ctx.strokeStyle = '#eab308';
+            ctx.setLineDash([5, 5]);
+            ctx.lineWidth = 2;
+            ctx.strokeRect(state.targetS, -80, 80, 80);
+            ctx.setLineDash([]);
+            
+            ctx.fillStyle = '#ca8a04';
+            ctx.font = "14px Prompt";
+            ctx.fillText("จุดหมาย", state.targetS + 40, -90);
+
+            // Draw Object
+            const o = state.obj;
+            const drawX = o.s;
+            const drawY = -o.size/2 + o.p;
+            
+            if (state.showFBDOnly) {
+                // Axes relative to incline
+                ctx.strokeStyle = 'rgba(100, 116, 139, 0.4)';
+                ctx.setLineDash([5, 5]);
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(-canvas.width, drawY);
+                ctx.lineTo(canvas.width*2, drawY);
+                ctx.moveTo(drawX, -canvas.height*2);
+                ctx.lineTo(drawX, canvas.height*2);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                
+                // Center Dot
+                ctx.fillStyle = '#1e293b'; 
+                ctx.beginPath();
+                ctx.arc(drawX, drawY, 6, 0, Math.PI * 2);
+                ctx.fill();
+            } else {
+                if (state.objectType === 'photon') {
+                    const gradient = ctx.createRadialGradient(drawX, drawY, o.size/4, drawX, drawY, o.size*1.8);
+                    gradient.addColorStop(0, 'rgba(255, 255, 255, 0.9)'); 
+                    gradient.addColorStop(0.2, 'rgba(253, 224, 71, 0.8)'); 
+                    gradient.addColorStop(0.5, 'rgba(249, 115, 22, 0.6)'); 
+                    gradient.addColorStop(1, 'rgba(239, 68, 68, 0)'); 
+                    ctx.fillStyle = gradient;
+                    ctx.beginPath(); ctx.arc(drawX, drawY, o.size*1.8, 0, Math.PI*2); ctx.fill();
+
+                    const coreGrad = ctx.createRadialGradient(drawX - o.size/6, drawY - o.size/6, 2, drawX, drawY, o.size/2);
+                    coreGrad.addColorStop(0, '#fef08a'); coreGrad.addColorStop(0.6, '#f97316'); coreGrad.addColorStop(1, '#ef4444');
+                    ctx.fillStyle = coreGrad;
+                    ctx.beginPath(); ctx.arc(drawX, drawY, o.size/2, 0, Math.PI*2); ctx.fill();
+                    
+                    ctx.fillStyle = '#431407'; 
+                    ctx.beginPath(); ctx.arc(drawX - 6, drawY - 2, 2, 0, Math.PI*2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(drawX + 6, drawY - 2, 2, 0, Math.PI*2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(drawX, drawY + 4, 3, 0, Math.PI, false); ctx.stroke();
+                } 
+                else if (state.objectType === 'box') {
+                    ctx.fillStyle = '#d97706'; 
+                    ctx.fillRect(drawX - o.size/2, drawY - o.size/2, o.size, o.size);
+                    ctx.strokeStyle = '#92400e'; ctx.lineWidth = 3;
+                    ctx.strokeRect(drawX - o.size/2, drawY - o.size/2, o.size, o.size);
+                    
+                    ctx.lineWidth = 1; ctx.beginPath();
+                    ctx.moveTo(drawX - o.size/2, drawY - o.size/2); ctx.lineTo(drawX + o.size/2, drawY + o.size/2);
+                    ctx.moveTo(drawX + o.size/2, drawY - o.size/2); ctx.lineTo(drawX - o.size/2, drawY + o.size/2);
+                    ctx.stroke();
+                } 
+                else if (state.objectType === 'sphere') {
+                    const sphereGrad = ctx.createRadialGradient(drawX - o.size/6, drawY - o.size/6, o.size/10, drawX, drawY, o.size/2);
+                    sphereGrad.addColorStop(0, '#e2e8f0'); sphereGrad.addColorStop(1, '#64748b');
+                    ctx.fillStyle = sphereGrad;
+                    ctx.beginPath(); ctx.arc(drawX, drawY, o.size/2, 0, Math.PI*2); ctx.fill();
+                    ctx.strokeStyle = '#334155'; ctx.lineWidth = 2; ctx.stroke();
+                }
+            }
+
+            // Draw Vectors
+            const scale = 5; 
+            for (const [type, val] of Object.entries(state.forces)) {
+                if (val > 0) {
+                    let angle = 0;
+                    if (type === 'mg') {
+                        // Gravity is always straight down globally. 
+                        // In local rotated context, straight down is PI/2 + theta.
+                        angle = Math.PI / 2 + rad;
+                    } else {
+                        angle = localAngles[type];
+                    }
+                    
+                    const startOffset = state.showFBDOnly ? 0 : (o.size/3.5);
+                    const length = (o.size/2) + (val * scale);
+                    
+                    const fromX = drawX + Math.cos(angle) * startOffset;
+                    const fromY = drawY + Math.sin(angle) * startOffset;
+                    const toX = drawX + Math.cos(angle) * (length + startOffset);
+                    const toY = drawY + Math.sin(angle) * (length + startOffset);
+                    
+                    drawArrow(fromX, fromY, toX, toY, colors[type], type, val);
+                }
+            }
+
+            ctx.restore();
+        }
+
+        // --- Simulation Loop ---
+        let animFrame;
+        let lastTime = 0;
+        let timestamp_diff = 0;
+        let start_time = 0;
+
+        function simulate(timestamp) {
+            if (state.mode !== 'playing') return;
+            
+            if (!lastTime) lastTime = timestamp;
+            const dt = Math.min((timestamp - lastTime) / 1000, 0.1); 
+            lastTime = timestamp;
+            timestamp_diff = timestamp - start_time;
+
+            const o = state.obj;
+            const visualScale = 50; 
+            
+            o.vx += (o.ax * visualScale) * dt;
+            o.vy += (o.ay * visualScale) * dt; 
+            
+            o.s += o.vx * dt;
+            o.p += o.vy * dt;
+
+            draw();
+            checkGameStatus();
+
+            if (state.mode === 'playing') {
+                animFrame = requestAnimationFrame(simulate);
+            }
+        }
+
+        function checkGameStatus() {
+            const o = state.obj;
+            let ended = false;
+
+            const rad = state.angle * Math.PI / 180;
+            const W = state.forces['mg'] || 0;
+            const Wy = W * Math.cos(rad);
+            const N = state.forces['N'] || 0;
+
+            if (o.p < -10) {
+                showMessage("โฟตอนลอยหายไปแล้ว!", "แรงดันพื้น (N) มีค่ามากกว่าน้ำหนักกดทับ \n(ΣFy ไม่สมดุล)", "fail");
+                ended = true;
+            }
+            
+            if (o.p > 10) {
+                if (!state.forces['N'] && W > 0) {
+                     showMessage("อุ๊ย! พื้นทะลุ", "เมื่อมีน้ำหนัก (mg) กดทับพื้น อย่าลืมใส่ แรงปฏิกิริยาตั้งฉาก (N) ดันกลับด้วยนะ!", "fail");
+                } else if (!W) {
+                    showMessage("ลืมอะไรหรือเปล่า?", "ในโลกความจริง วัตถุต้องมีน้ำหนัก (mg) เสมอนะ!", "fail");
+                } else {
+                    showMessage("อุ๊ย! พื้นทะลุ", "น้ำหนักกดทับมากกว่าแรงต้านพื้น ลองแก้ไขแรง N ดูนะ", "fail");
+                }
+                ended = true;
+            }
+
+            if (o.s < 0) {
+                showMessage("อ้าว... ถอยหลังซะงั้น", "แรงไถลลง (f + mg sinθ) ชนะแรงผลัก (F) ทำให้วัตถุไถลลงตามพื้นเอียง", "fail");
+                ended = true;
+            }
+
+            if (o.s >= state.targetS && Math.abs(o.p) < 5) {
+                const Wx = W * Math.sin(rad);
+                const F = state.forces['F'] || 0;
+                const f = state.forces['f'] || 0;
+                
+                if (F > (f + Wx)) {
+                    showMessage("ยอดเยี่ยมมาก! 🎉", `เดินทางถึงจุดหมายด้วยความเร่ง ${state.obj.ax.toFixed(2)} m/s² \n(ΣFx = ${sumFxDisplay.innerText})`, "success");
+                } else {
+                    showMessage("ถึงเป้าหมาย...แบบงงๆ", "แรงลัพธ์ขนานพื้นเป็นศูนย์ แต่ยังไหลมาถึงได้? \n(ความจริงควรมี ΣFx > 0 เพื่อให้เริ่มเคลื่อนที่นะ)", "info");
+                }
+                ended = true;
+            }
+            
+            if (!ended && o.ax === 0 && o.ay === 0 && timestamp_diff > 2000) {
+                showMessage("ไม่ขยับเลย...", "แรงลัพธ์เป็นศูนย์ (ΣF = 0) ทำให้วัตถุรักษาสภาพหยุดนิ่ง (กฎข้อ 1 ของนิวตัน) \nลองเพิ่มแรงผลัก (F) ให้ชนะแรงเสียดทานและน้ำหนักที่ดึงลงดูสิ!", "info");
+                ended = true;
+            }
+
+            if (ended) {
+                state.mode = 'ended';
+                if (btnPlay) {
+                    btnPlay.innerHTML = '<i class="fas fa-play"></i> เล่นอีกครั้ง';
+                    btnPlay.classList.replace('from-blue-500', 'from-slate-400');
+                    btnPlay.classList.replace('to-indigo-500', 'to-slate-500');
+                }
+            }
+        }
+
+        // --- Play & Reset Controls ---
+        if (btnPlay) {
+            btnPlay.addEventListener('click', () => {
+                if (state.mode === 'planning') {
+                    if (!state.forces['mg']) {
+                        showMessage("ยังขาดแรงโน้มถ่วง!", "วัตถุบนโลกต้องมี น้ำหนัก (mg) กระทำเสมอ อย่าลืมเพิ่มการ์ดนี้ด้วยนะ", "fail");
+                        return;
+                    }
+
+                    state.mode = 'playing';
+                    hideMessage();
+                    
+                    state.obj.vx = 0;
+                    state.obj.vy = 0;
+                    updatePhysicsMath();
+                    
+                    btnPlay.innerHTML = '<i class="fas fa-spinner fa-spin"></i> กำลังทดสอบ...';
+                    
+                    const sliders = document.querySelectorAll('input[type=range]');
+                    for (let i = 0; i < sliders.length; i++) sliders[i].disabled = true;
+                    
+                    lastTime = 0;
+                    start_time = performance.now();
+                    timestamp_diff = 0;
+                    
+                    animFrame = requestAnimationFrame(simulate);
+                } 
+                else if (state.mode === 'ended') {
+                    resetGame();
+                }
+            });
+        }
+
+        if (btnReset) {
+            btnReset.addEventListener('click', resetGame);
+        }
+
+        function resetGame() {
+            cancelAnimationFrame(animFrame);
+            state.mode = 'planning';
+            
+            // Clean Reset of Position and Velocity
+            state.obj.s = 100;
+            state.obj.p = 0;
+            state.obj.vx = 0;
+            state.obj.vy = 0;
+            
+            if (btnPlay) {
+                btnPlay.innerHTML = '<i class="fas fa-play"></i> ทดสอบการเคลื่อนที่';
+                btnPlay.classList.replace('from-slate-400', 'from-blue-500');
+                btnPlay.classList.replace('to-slate-500', 'to-indigo-500');
+            }
+            
+            hideMessage();
+            
+            // Re-enable interactive sliders (keep N disabled)
+            const sliders = document.querySelectorAll('input[type=range]');
+            for (let i = 0; i < sliders.length; i++) {
+                if (sliders[i].id !== 'input-N') {
+                    sliders[i].disabled = false;
+                }
+            }
+            
+            updatePhysicsMath();
+            draw();
+        }
+
+        const fa = document.createElement('link');
+        fa.rel = 'stylesheet';
+        fa.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css';
+        document.head.appendChild(fa);
+
+        window.addEventListener('load', resize);
+        setTimeout(resize, 100);
+    </script>
+</body>
+</html>

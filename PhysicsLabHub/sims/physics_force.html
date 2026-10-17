@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Pastel & AI - เรียนฟิสิกส์ให้เป็นเรื่องง่าย</title>
+    
+    <!-- Fonts: Sarabun for Thai -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    
+    <!-- React & Babel -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Custom Styles -->
+    <style>
+        :root {
+            --pastel-blue: #a2d2ff;
+            --pastel-pink: #ffafcc;
+            --pastel-purple: #cdb4db;
+            --pastel-yellow: #fcf6bd;
+            --pastel-bg: #fdfbf7;
+        }
+        body {
+            font-family: 'Sarabun', sans-serif;
+            background-color: var(--pastel-bg);
+            color: #4a4a4a;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .font-math {
+            font-family: 'Cambria Math', 'Cambria', 'Times New Roman', serif;
+            letter-spacing: 0.5px;
+        }
+        
+        /* Smooth sliders */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: #ffffff;
+            border: 3px solid var(--pastel-pink);
+            cursor: pointer;
+            margin-top: -8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 6px;
+            cursor: pointer;
+            background: #e2e8f0;
+            border-radius: 3px;
+        }
+        input[type=range]:focus {
+            outline: none;
+        }
+        
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+        
+        /* Animation */
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-slide-in {
+            animation: slideIn 0.3s ease-out forwards;
+        }
+        
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 15px rgba(167, 139, 250, 0.4); }
+            50% { box-shadow: 0 0 25px rgba(167, 139, 250, 0.8); }
+        }
+        .ai-loading-glow {
+            animation: pulse-glow 2s infinite;
+        }
+
+        .pb-safe {
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <!-- บังคับให้ Babel ใช้ React ในรูปแบบ Classic Runtime -->
+    <script>
+        Babel.registerPreset('react-classic', {
+            presets: [
+                [Babel.availablePresets['react'], { runtime: 'classic' }]
+            ]
+        });
+    </script>
+
+    <script type="text/babel" data-presets="react-classic,env">
+        const { useState, useEffect, useRef } = React;
+
+        // --- Gemini API Setup ---
+        const callGeminiAPI = async (prompt, systemInstructionText) => {
+            const apiKey = ""; // API key will be injected by the environment
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+            
+            const payload = {
+                contents: [{ parts: [{ text: prompt }] }],
+                systemInstruction: { parts: [{ text: systemInstructionText }] }
+            };
+
+            const delays = [1000, 2000, 4000, 8000, 16000];
+            
+            for (let attempt = 0; attempt <= 5; attempt++) {
+                try {
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    const data = await response.json();
+                    return data.candidates?.[0]?.content?.parts?.[0]?.text || "AI ไม่สามารถตอบสนองได้ในขณะนี้";
+                } catch (error) {
+                    if (attempt === 5) {
+                        return "ขออภัยค่ะ ระบบ AI อาจารย์ผู้ช่วยขัดข้องในขณะนี้ โปรดลองใหม่อีกครั้งนะคะ 🥺 (Error: Network/API)";
+                    }
+                    await new Promise(res => setTimeout(res, delays[attempt]));
+                }
+            }
+        };
+
+        // --- UI Icons ---
+        const IconHome = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>;
+        const IconBook = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>;
+        const IconTarget = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>;
+        const IconPlay = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>;
+        const IconSparkles = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>;
+
+        const MathText = ({ children, className = "" }) => (
+            <span className={`font-math ${className}`}>{children}</span>
+        );
+
+        // --- 1. Component สำหรับสัญลักษณ์เวกเตอร์ในข้อความ (HTML) จัดกลางเป๊ะ ---
+        const Vec = ({ name="F", sub, className="" }) => (
+            <span className={`inline-flex items-baseline font-math ${className}`} style={{ whiteSpace: 'nowrap' }}>
+                <span className="relative inline-block">
+                    {/* ลูกศรวาดด้วย SVG เพื่อให้คมและอยู่เหนืออักษรเอียง (Italic) พอดี */}
+                    <svg width="14" height="12" viewBox="0 0 14 12" className="absolute" style={{ top: '-0.35em', left: '50%', transform: 'translateX(-35%)', overflow: 'visible' }}>
+                        <line x1="0" y1="6" x2="8" y2="6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+                        <polygon points="8,3.5 12,6 8,8.5" fill="currentColor" />
+                    </svg>
+                    <span className="italic relative z-10 pr-[1px]">{name}</span>
+                </span>
+                {sub && <sub className="text-[0.65em] ml-[1px] mb-[1px]">{sub}</sub>}
+            </span>
+        );
+
+        // --- 2. Component วาดสัญลักษณ์เวกเตอร์เหนือตัวอักษรบนกราฟิกกระดาน (SVG Canvas) ---
+        const SvgVectorLabel = ({ x, y, label, sub, color }) => (
+            <g transform={`translate(${x}, ${y})`}>
+                <text x="0" y="0" textAnchor="middle" fill={color} fontSize="18" fontStyle="italic" className="font-math">{label}</text>
+                {sub && <text x="6" y="4" textAnchor="start" fill={color} fontSize="12" className="font-math">{sub}</text>}
+                <g transform="translate(1, -14)">
+                    <line x1="-4" y1="0" x2="3.5" y2="0" stroke={color} strokeWidth="1.2" />
+                    <polygon points="3.5,-2.5 7,0 3.5,2.5" fill={color} />
+                </g>
+            </g>
+        );
+
+        // --- 1. Simulation: 1D Force (Resultant) ---
+        const Force1DSimulator = () => {
+            const [f1, setF1] = useState(50);
+            const [f2, setF2] = useState(-30);
+            const [aiResponse, setAiResponse] = useState(null);
+            const [isAiLoading, setIsAiLoading] = useState(false);
+
+            const resultant = f1 + f2;
+            const dir = resultant > 0 ? "ขวา" : resultant < 0 ? "ซ้าย" : "สมดุล (หยุดนิ่ง)";
+            const absRes = Math.abs(resultant);
+
+            const cx = 175;
+            const cy = 75;
+            const boxSize = 50;
+            const halfBox = boxSize / 2;
+
+            const getArrowProps = (force, color) => {
+                if (force === 0) return null;
+                const startX = force > 0 ? cx + halfBox : cx - halfBox;
+                const endX = startX + force * 1.2; 
+                return { x1: startX, y1: cy, x2: endX, y2: cy, stroke: color };
+            };
+
+            const arrow1 = getArrowProps(f1, "#3b82f6"); 
+            const arrow2 = getArrowProps(f2, "#ec4899");  
+
+            const handleAskAi = async () => {
+                setIsAiLoading(true);
+                setAiResponse(null);
+                const prompt = `ฉันมีแรงดึงวัตถุไปทางขวา ${f1 > 0 ? f1 : 0} N ซ้าย ${f1 < 0 ? -f1 : 0} N และแรงดึงอีกเส้นไปทางขวา ${f2 > 0 ? f2 : 0} N ซ้าย ${f2 < 0 ? -f2 : 0} N แรงลัพธ์สุทธิคือ ${absRes} N ไปทาง${dir} ช่วยยกตัวอย่างเหตุการณ์ในชีวิตจริงที่เปรียบเทียบกับแรงเหล่านี้ให้เห็นภาพชัดเจนหน่อย`;
+                const systemPrompt = "คุณคือครูสอนฟิสิกส์ใจดี อธิบายเรื่องฟิสิกส์ให้เป็นเรื่องใกล้ตัว ยกตัวอย่างเหตุการณ์ในชีวิตจริง (เช่น ชักเย่อ, ดันกล่อง, ลากรถ) ใช้ภาษาไทยสไตล์น่ารักๆ พาสเทล มีอิโมจิประกอบ ตอบสั้นๆ ไม่เกิน 3-4 ประโยค";
+                
+                const response = await callGeminiAPI(prompt, systemPrompt);
+                setAiResponse(response);
+                setIsAiLoading(false);
+            };
+
+            useEffect(() => { setAiResponse(null); }, [f1, f2]);
+
+            return (
+                <div className="glass-panel p-4 md:p-6 rounded-2xl animate-slide-in">
+                    <h2 className="text-xl md:text-2xl font-bold text-gray-800 mb-4">การหาแรงลัพธ์ใน 1 มิติ</h2>
+                    
+                    <div className="bg-pink-50 rounded-xl p-4 mb-6 relative flex items-center justify-center border border-pink-100 overflow-hidden h-48">
+                        <svg width="100%" height="100%" viewBox="0 0 350 150" className="w-full max-w-[350px]">
+                            <defs>
+                                <marker id="arrowBlue1D" viewBox="0 0 6 6" refX="4" refY="3" markerWidth="3" markerHeight="3" orient="auto">
+                                    <path d="M 0 0 L 6 3 L 0 6 z" fill="#3b82f6" />
+                                </marker>
+                                <marker id="arrowPink1D" viewBox="0 0 6 6" refX="4" refY="3" markerWidth="3" markerHeight="3" orient="auto">
+                                    <path d="M 0 0 L 6 3 L 0 6 z" fill="#ec4899" />
+                                </marker>
+                            </defs>
+                            
+                            <rect x={cx - halfBox} y={cy - halfBox} width={boxSize} height={boxSize} rx="8" fill="#d8b4fe" stroke="#c084fc" strokeWidth="3" />
+                            <text x={cx} y={cy + 6} textAnchor="middle" fill="#fff" fontSize="20" fontWeight="bold">M</text>
+                            
+                            {arrow1 && <line {...arrow1} strokeWidth="2.5" markerEnd="url(#arrowBlue1D)" />}
+                            {arrow2 && <line {...arrow2} strokeWidth="2.5" markerEnd="url(#arrowPink1D)" />}
+                            
+                            {/* ป้ายชื่อเวกเตอร์ ไม่ต้องมีขนาดตัวเลขแล้ว */}
+                            {arrow1 && <SvgVectorLabel x={(arrow1.x1 + arrow1.x2) / 2} y={cy - 12} label="F" sub="1" color="#3b82f6" />}
+                            {arrow2 && <SvgVectorLabel x={(arrow2.x1 + arrow2.x2) / 2} y={cy - 12} label="F" sub="2" color="#ec4899" />}
+                        </svg>
+                    </div>
+
+                    <div className="bg-white p-4 rounded-xl shadow-sm text-center mb-6">
+                        <p className="text-gray-600 mb-1">แรงลัพธ์ <span className="font-math text-lg">(Σ<Vec name="F" />)</span></p>
+                        <p className="text-3xl font-bold text-purple-600 mb-2"><MathText>{absRes} N</MathText></p>
+                        <p className="text-sm font-medium bg-purple-100 text-purple-700 py-1 px-3 rounded-full inline-block">ทิศทาง: {dir}</p>
+                    </div>
+
+                    <div className="space-y-4 mb-6">
+                        <div>
+                            <label className="flex justify-between text-sm font-medium text-blue-700 mb-1">
+                                <span>แรง <Vec name="F" sub="1" /> ({f1 >= 0 ? "ขวา" : "ซ้าย"})</span>
+                                <MathText>{Math.abs(f1)} N</MathText>
+                            </label>
+                            <input type="range" min="-100" max="100" value={f1} onChange={(e) => setF1(Number(e.target.value))} />
+                        </div>
+                        <div>
+                            <label className="flex justify-between text-sm font-medium text-pink-700 mb-1">
+                                <span>แรง <Vec name="F" sub="2" /> ({f2 >= 0 ? "ขวา" : "ซ้าย"})</span>
+                                <MathText>{Math.abs(f2)} N</MathText>
+                            </label>
+                            <input type="range" min="-100" max="100" value={f2} onChange={(e) => setF2(Number(e.target.value))} />
+                        </div>
+                    </div>
+
+                    {/* Gemini AI Feature */}
+                    <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-4 rounded-xl border border-purple-100">
+                        {!aiResponse && !isAiLoading ? (
+                            <button 
+                                onClick={handleAskAi}
+                                className="w-full flex items-center justify-center space-x-2 bg-gradient-to-r from-purple-400 to-pink-400 hover:from-purple-500 hover:to-pink-500 text-white py-3 rounded-xl font-bold shadow-md transition-all transform hover:scale-[1.02]"
+                            >
+                                <IconSparkles />
+                                <span>✨ ให้ AI ยกตัวอย่างเหตุการณ์นี้ในชีวิตจริง</span>
+                            </button>
+                        ) : isAiLoading ? (
+                            <div className="flex flex-col items-center justify-center py-4 space-y-3">
+                                <div className="w-10 h-10 rounded-full bg-purple-200 flex items-center justify-center ai-loading-glow">
+                                    <IconSparkles />
+                                </div>
+                                <span className="text-sm text-purple-600 font-bold animate-pulse">กำลังคิดตัวอย่างน่ารักๆ...</span>
+                            </div>
+                        ) : (
+                            <div className="animate-slide-in">
+                                <div className="flex items-center space-x-2 mb-2 text-purple-700 font-bold">
+                                    <IconSparkles /> <span>ตัวอย่างจาก AI:</span>
+                                </div>
+                                <p className="text-gray-700 text-sm leading-relaxed">{aiResponse}</p>
+                                <button onClick={handleAskAi} className="mt-3 text-xs text-purple-500 font-bold hover:underline">✨ ขอตัวอย่างอื่นอีก</button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        // --- 2. Simulation: 2D Force ---
+        const Force2DSimulator = () => {
+            const [f1, setF1] = useState(40);
+            const [f2, setF2] = useState(30);
+            const [angle, setAngle] = useState(60);
+            const [aiResponse, setAiResponse] = useState(null);
+            const [isAiLoading, setIsAiLoading] = useState(false);
+
+            const angleRad = (angle * Math.PI) / 180;
+            const v1x = f1; const v1y = 0;
+            const v2x = f2 * Math.cos(angleRad);
+            const v2y = f2 * Math.sin(angleRad);
+            
+            const rx = v1x + v2x;
+            const ry = v1y + v2y;
+            const rMag = Math.sqrt(rx*rx + ry*ry).toFixed(1);
+            let rAngle = (Math.atan2(ry, rx) * 180 / Math.PI).toFixed(1);
+
+            const scale = 2.5; 
+            const ox = 40; const oy = 260;
+            
+            const getSvgCoords = (mathX, mathY) => ({
+                x: ox + (mathX * scale),
+                y: oy - (mathY * scale) 
+            });
+
+            const ptV1 = getSvgCoords(v1x, v1y);
+            const ptV2 = getSvgCoords(v2x, v2y);
+            const ptR = getSvgCoords(rx, ry);
+
+            const handleAskAi = async () => {
+                setIsAiLoading(true);
+                setAiResponse(null);
+                const prompt = `ฉันมีแรงดึงวัตถุ F1 = ${f1} N และ F2 = ${f2} N โดยทำมุมต่อกัน ${angle} องศา ได้แรงลัพธ์ขนาด ${rMag} N ทำมุมเบี่ยงเบน ${rAngle} องศา ช่วยยกตัวอย่างการประยุกต์ใช้หรือเหตุการณ์ที่เกิดการดึงแบบนี้ในชีวิตจริงหน่อย`;
+                const systemPrompt = "คุณคือครูสอนฟิสิกส์ใจดี อธิบายการประยุกต์ใช้กฎสี่เหลี่ยมด้านขนานของเวกเตอร์ 2 มิติ ในชีวิตจริง (เช่น ลากเรือ, ดันสิ่งของสองคน, เครื่องบินโดนลมพัด) ใช้ภาษาไทยสไตล์พาสเทลน่ารักๆ อธิบายเข้าใจง่าย ตอบสั้นๆ ไม่เกิน 3-4 ประโยค";
+                
+                const response = await callGeminiAPI(prompt, systemPrompt);
+                setAiResponse(response);
+                setIsAiLoading(false);
+            };
+
+            useEffect(() => { setAiResponse(null); }, [f1, f2, angle]);
+
+            return (
+                <div className="glass-panel p-4 md:p-6 rounded-2xl animate-slide-in">
+                    <h2 className="text-xl md:text-2xl font-bold text-gray-800 mb-4">เวกเตอร์ 2 มิติ (สี่เหลี่ยมด้านขนาน)</h2>
+                    
+                    <div className="bg-white rounded-xl mb-6 relative border border-gray-200 overflow-hidden shadow-inner flex justify-center">
+                        <svg width="100%" height="300" viewBox="0 0 350 300" className="w-full max-w-[350px]">
+                            <defs>
+                                <marker id="arrowBlue2D" viewBox="0 0 6 6" refX="4" refY="3" markerWidth="3" markerHeight="3" orient="auto">
+                                    <path d="M 0 0 L 6 3 L 0 6 z" fill="#3b82f6" />
+                                </marker>
+                                <marker id="arrowPink2D" viewBox="0 0 6 6" refX="4" refY="3" markerWidth="3" markerHeight="3" orient="auto">
+                                    <path d="M 0 0 L 6 3 L 0 6 z" fill="#ec4899" />
+                                </marker>
+                                <marker id="arrowPurple2D" viewBox="0 0 6 6" refX="4" refY="3" markerWidth="3" markerHeight="3" orient="auto">
+                                    <path d="M 0 0 L 6 3 L 0 6 z" fill="#8b5cf6" />
+                                </marker>
+                            </defs>
+                            
+                            <g stroke="#f3f4f6" strokeWidth="1">
+                                {[...Array(10)].map((_,i) => <line key={`gx${i}`} x1="0" y1={i*30} x2="350" y2={i*30} />)}
+                                {[...Array(12)].map((_,i) => <line key={`gy${i}`} x1={i*30} y1="0" x2={i*30} y2="300" />)}
+                            </g>
+
+                            <line x1={ptV1.x} y1={ptV1.y} x2={ptR.x} y2={ptR.y} stroke="#ec4899" strokeWidth="2" strokeDasharray="5,5" opacity="0.5"/>
+                            <line x1={ptV2.x} y1={ptV2.y} x2={ptR.x} y2={ptR.y} stroke="#3b82f6" strokeWidth="2" strokeDasharray="5,5" opacity="0.5"/>
+
+                            <line x1={ox} y1={oy} x2={ptV1.x} y2={ptV1.y} stroke="#3b82f6" strokeWidth="3" markerEnd="url(#arrowBlue2D)" />
+                            <line x1={ox} y1={oy} x2={ptV2.x} y2={ptV2.y} stroke="#ec4899" strokeWidth="3" markerEnd="url(#arrowPink2D)" />
+                            <line x1={ox} y1={oy} x2={ptR.x} y2={ptR.y} stroke="#8b5cf6" strokeWidth="4" markerEnd="url(#arrowPurple2D)" />
+                            
+                            <SvgVectorLabel x={ptV1.x - 15} y={ptV1.y + 25} label="F" sub="1" color="#3b82f6" />
+                            <SvgVectorLabel x={ptV2.x - 15} y={ptV2.y - 12} label="F" sub="2" color="#ec4899" />
+                            <SvgVectorLabel x={ptR.x + 20} y={ptR.y + 5} label="F" sub="net" color="#8b5cf6" />
+                        </svg>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 mb-6">
+                        <div className="bg-purple-50 p-3 rounded-xl border border-purple-100 text-center">
+                            <p className="text-xs text-purple-500 font-bold mb-1">ขนาดแรงลัพธ์ <span className="font-math">|<Vec name="F" sub="net" />|</span></p>
+                            <p className="text-2xl font-bold text-purple-700"><MathText>{rMag} N</MathText></p>
+                        </div>
+                        <div className="bg-purple-50 p-3 rounded-xl border border-purple-100 text-center">
+                            <p className="text-xs text-purple-500 font-bold mb-1">มุมเบี่ยงเบน <span className="font-math">(θ<sub>net</sub>)</span></p>
+                            <p className="text-2xl font-bold text-purple-700"><MathText>{rAngle}°</MathText></p>
+                        </div>
+                    </div>
+
+                    <div className="space-y-4 mb-6">
+                        <div>
+                            <label className="flex justify-between text-sm font-medium text-blue-700 mb-1">
+                                <span>แรง <Vec name="F" sub="1" /> (แกน X)</span><MathText>{f1} N</MathText>
+                            </label>
+                            <input type="range" min="0" max="80" value={f1} onChange={(e) => setF1(Number(e.target.value))} />
+                        </div>
+                        <div>
+                            <label className="flex justify-between text-sm font-medium text-pink-700 mb-1">
+                                <span>แรง <Vec name="F" sub="2" /></span><MathText>{f2} N</MathText>
+                            </label>
+                            <input type="range" min="0" max="80" value={f2} onChange={(e) => setF2(Number(e.target.value))} />
+                        </div>
+                        <div>
+                            <label className="flex justify-between text-sm font-medium text-gray-700 mb-1">
+                                <span>มุมระหว่างแรง <MathText>(θ)</MathText></span><MathText>{angle}°</MathText>
+                            </label>
+                            <input type="range" min="0" max="180" value={angle} onChange={(e) => setAngle(Number(e.target.value))} />
+                        </div>
+                    </div>
+
+                    {/* Gemini AI Feature */}
+                    <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-4 rounded-xl border border-blue-100">
+                        {!aiResponse && !isAiLoading ? (
+                            <button 
+                                onClick={handleAskAi}
+                                className="w-full flex items-center justify-center space-x-2 bg-gradient-to-r from-blue-400 to-purple-400 hover:from-blue-500 hover:to-purple-500 text-white py-3 rounded-xl font-bold shadow-md transition-all transform hover:scale-[1.02]"
+                            >
+                                <IconSparkles />
+                                <span>✨ ให้ AI สร้างสถานการณ์จากแรงนี้</span>
+                            </button>
+                        ) : isAiLoading ? (
+                            <div className="flex flex-col items-center justify-center py-4 space-y-3">
+                                <div className="w-10 h-10 rounded-full bg-blue-200 flex items-center justify-center ai-loading-glow">
+                                    <IconSparkles />
+                                </div>
+                                <span className="text-sm text-blue-600 font-bold animate-pulse">กำลังประมวลผลตัวอย่าง...</span>
+                            </div>
+                        ) : (
+                            <div className="animate-slide-in">
+                                <div className="flex items-center space-x-2 mb-2 text-blue-700 font-bold">
+                                    <IconSparkles /> <span>ตัวอย่างจาก AI:</span>
+                                </div>
+                                <p className="text-gray-700 text-sm leading-relaxed">{aiResponse}</p>
+                                <button onClick={handleAskAi} className="mt-3 text-xs text-blue-500 font-bold hover:underline">✨ เปลี่ยนสถานการณ์</button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        // --- 3. Quiz System (Advanced with AI Tutor) ---
+        const QuizSystem = () => {
+            const [quizState, setQuizState] = useState('setup');
+            const [level, setLevel] = useState('easy');
+            const [qCount, setQCount] = useState(5);
+            
+            const [questions, setQuestions] = useState([]);
+            const [currentQ, setCurrentQ] = useState(0);
+            const [score, setScore] = useState(0);
+            const [selectedChoice, setSelectedChoice] = useState(null);
+            const [hasAnswered, setHasAnswered] = useState(false);
+            
+            const [aiExplanation, setAiExplanation] = useState(null);
+            const [isAiLoading, setIsAiLoading] = useState(false);
+
+            // ถอด React Element กลับเป็นข้อความธรรมดา เพื่อส่งให้ AI วิเคราะห์
+            const extractTextFromElement = (element) => {
+                if (!element) return "";
+                if (typeof element === 'string' || typeof element === 'number') return element;
+                if (React.isValidElement(element)) {
+                    if (element.type === Vec) {
+                        return `${element.props.name || "F"}${element.props.sub ? "_" + element.props.sub : ""}`;
+                    }
+                    if (element.props.children) {
+                        if (Array.isArray(element.props.children)) {
+                            return element.props.children.map(extractTextFromElement).join('');
+                        }
+                        return extractTextFromElement(element.props.children);
+                    }
+                }
+                return "";
+            };
+
+            const generateQuestions = (lvl, count) => {
+                const qList = [];
+                for (let i = 0; i < count; i++) {
+                    const f1 = Math.floor(Math.random() * 20) + 10;
+                    const f2 = Math.floor(Math.random() * 9) + 1;
+                    
+                    if (lvl === 'easy') {
+                        const types = [
+                            { q: "ปริมาณใดคือปริมาณเวกเตอร์ (มีทั้งขนาดและทิศทาง)?", choices: ["มวล (Mass)", "ระยะทาง (Distance)", "แรง (Force)", "เวลา (Time)"], ans: 2 },
+                            { q: <span>ดึงวัตถุไปทางขวา <MathText>{f1} N</MathText> และดึงไปทางซ้าย <MathText>{f2} N</MathText> แรงลัพธ์มีค่าและทิศทางใด?</span>, choices: [`${f1+f2} N ขวา`, `${f1-f2} N ขวา`, `${f1-f2} N ซ้าย`, `0 N`], ans: 1 },
+                            { q: <span>แรงขนาด <MathText>{f2} N</MathText> จำนวน 2 แรงกระทำต่อวัตถุในทิศทางเดียวกัน แรงลัพธ์มีค่าเท่าใด?</span>, choices: [`0 N`, `${f2} N`, `${f2*2} N`, `${f2*f2} N`], ans: 2 },
+                            { q: <span>หากแรงลัพธ์ <span className="font-math">(Σ<Vec name="F" />)</span> ที่กระทำต่อวัตถุมีค่าเป็นศูนย์ วัตถุจะมีสภาพเป็นอย่างไร?</span>, choices: ["ความเร็วเพิ่มขึ้น", "อยู่นิ่ง หรือ ความเร็วคงที่", "หมุนรอบตัวเอง", "เปลี่ยนทิศทาง"], ans: 1 }
+                        ];
+                        qList.push(types[i % types.length]);
+                    } else if (lvl === 'medium') {
+                        const trips = [[3,4,5], [6,8,10], [5,12,13], [9,12,15]];
+                        const t = trips[i % trips.length];
+                        const types = [
+                            { q: <span>แรง <MathText>{t[0]} N</MathText> และ <MathText>{t[1]} N</MathText> กระทำต่อวัตถุตั้งฉากกัน (90°) แรงลัพธ์คือเท่าใด?</span>, choices: [`${t[0]+t[1]} N`, `${t[2]} N`, `${t[1]-t[0]} N`, `0 N`], ans: 1 },
+                            { q: <span>ข้อใดคือสูตรหาขนาดแรงลัพธ์ <span className="font-math">|<Vec name="F" sub="net" />|</span> ของ 2 แรงที่ตั้งฉากกัน?</span>, choices: [<span><span className="font-math">|<Vec name="F" sub="1" /> + <Vec name="F" sub="2" />|</span></span>, <span><MathText>√(F₁ + F₂)</MathText></span>, <span><MathText>√(F₁² + F₂²)</MathText></span>, <span><MathText>F₁ - F₂</MathText></span>], ans: 2 },
+                            { q: <span>แรงสองแรงกระทำสวนทางกัน แรงลัพธ์มีขนาด <MathText>{f1} N</MathText> ถ้านำแรงคู่เดิมมาทำมุมฉากกัน แรงลัพธ์จะมีขนาดเท่าใด?</span>, choices: ["เพิ่มขึ้น", "ลดลง", "เท่าเดิม", "เป็นศูนย์"], ans: 0 }
+                        ];
+                        qList.push(types[i % types.length]);
+                    } else if (lvl === 'hard') {
+                        const f = (Math.floor(Math.random() * 5) + 1) * 10;
+                        const types = [
+                            { q: <span>แรง <MathText>{f} N</MathText> สองแรงทำมุม 60° ต่อกัน ขนาดแรงลัพธ์ประมาณเท่าใด? <br/><small className="text-gray-400">(กำหนด <MathText>cos 60° = 0.5, √3 ≈ 1.732</MathText>)</small></span>, choices: [`${f} N`, `${(f*1.414).toFixed(1)} N`, `${(f*1.732).toFixed(1)} N`, `${f*2} N`], ans: 2 },
+                            { q: <span>แรง <MathText>{f} N</MathText> สองแรงทำมุมกัน 120° ขนาดแรงลัพธ์คือเท่าใด? <br/><small className="text-gray-400">(กำหนด <MathText>cos 120° = -0.5</MathText>)</small></span>, choices: [`0 N`, `${f/2} N`, `${f} N`, `${f*2} N`], ans: 2 },
+                            { q: <span>หากต้องการให้แรงลัพธ์ <span className="font-math">(Σ<Vec name="F" />)</span> ระหว่างแรง 2 แรงมีค่า "สูงสุด" ต้องให้แรงทั้งสองทำมุมกันกี่องศา?</span>, choices: [<span><MathText>0°</MathText></span>, <span><MathText>45°</MathText></span>, <span><MathText>90°</MathText></span>, <span><MathText>180°</MathText></span>], ans: 0 }
+                        ];
+                        qList.push(types[i % types.length]);
+                    } else if (lvl === 'expert') {
+                        const fX = (Math.floor(Math.random() * 4) + 2) * 10;
+                        const types = [
+                            { q: <span>วัตถุหนึ่งอยู่ในสภาวะสมดุล หากมีแรงดึงซ้าย <MathText>30 N</MathText> และดึงขึ้นบน <MathText>40 N</MathText> แรงที่สามที่กระทำเพื่อรักษาสมดุลคือเท่าใด?</span>, choices: ["10 N", "50 N", "70 N", "100 N"], ans: 1 },
+                            { q: <span>แรง <Vec name="F" /> ขนาด <MathText>{fX} N</MathText> ทำมุม 30° กับแกน X ขนาดของแรงในแนวแกน X <MathText>(Fₓ)</MathText> คือข้อใด?</span>, choices: [<span><MathText>{fX} cos 30°</MathText></span>, <span><MathText>{fX} sin 30°</MathText></span>, <span><MathText>{fX} tan 30°</MathText></span>, <span><MathText>{fX}</MathText></span>], ans: 0 },
+                            { q: <span>มีแรง 3 แรงกระทำต่อจุดเดียวกัน: ซ้าย <MathText>10 N</MathText>, ขวา <MathText>10 N</MathText>, และชี้ขึ้นบน <MathText>5 N</MathText> ขนาดของแรงลัพธ์รวมคือเท่าใด?</span>, choices: ["0 N", "5 N", "15 N", "25 N"], ans: 1 }
+                        ];
+                        qList.push(types[i % types.length]);
+                    }
+                }
+                return qList.sort(() => Math.random() - 0.5);
+            };
+
+            const startQuiz = () => {
+                setQuestions(generateQuestions(level, qCount));
+                setCurrentQ(0);
+                setScore(0);
+                setHasAnswered(false);
+                setSelectedChoice(null);
+                setAiExplanation(null);
+                setQuizState('playing');
+            };
+
+            const handleAnswer = (index) => {
+                if (hasAnswered) return;
+                setSelectedChoice(index);
+                setHasAnswered(true);
+                if (index === questions[currentQ].ans) setScore(score + 1);
+            };
+
+            const handleNextQuestion = () => {
+                if (currentQ + 1 < questions.length) {
+                    setCurrentQ(currentQ + 1);
+                    setSelectedChoice(null);
+                    setHasAnswered(false);
+                    setAiExplanation(null);
+                } else {
+                    setQuizState('result');
+                }
+            };
+
+            const handleExplainAi = async () => {
+                setIsAiLoading(true);
+                const qInfo = questions[currentQ];
+                
+                const plainQuestion = extractTextFromElement(qInfo.q);
+                const plainChoices = qInfo.choices.map((c, i) => `${i+1}. ${extractTextFromElement(c)}`).join(', ');
+                const correctAnswer = extractTextFromElement(qInfo.choices[qInfo.ans]);
+
+                const prompt = `นักเรียนทำข้อสอบข้อนี้: "${plainQuestion}" ตัวเลือกคือ: [${plainChoices}] คำตอบที่ถูกต้องคือ "${correctAnswer}" ช่วยอธิบายทีละขั้นตอนว่าทำไมคำตอบนี้ถึงถูก อธิบายให้เด็กนักเรียนเข้าใจง่ายที่สุด ไม่ให้ดูเป็นวิชาการมากเกินไป`;
+                const systemPrompt = "คุณคือติวเตอร์ฟิสิกส์แสนน่ารัก อธิบายเฉลยข้อสอบอย่างละเอียดแต่เข้าใจง่าย ใช้ภาษาพูดที่เป็นกันเอง มีอิโมจิน่ารักๆ ตอบแบบรัดกุม 1-2 ย่อหน้า";
+                
+                const response = await callGeminiAPI(prompt, systemPrompt);
+                setAiExplanation(response);
+                setIsAiLoading(false);
+            };
+
+            if (quizState === 'setup') {
+                return (
+                    <div className="animate-slide-in glass-panel p-6 md:p-8 rounded-2xl max-w-2xl mx-auto">
+                        <div className="text-center mb-8">
+                            <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center text-yellow-500 text-3xl mx-auto mb-4 shadow-sm">🎯</div>
+                            <h2 className="text-2xl font-bold text-gray-800">บททดสอบตนเอง</h2>
+                            <p className="text-gray-500 mt-2">เลือกความท้าทายและจำนวนข้อที่คุณต้องการ</p>
+                        </div>
+                        
+                        <div className="mb-6">
+                            <h3 className="text-sm font-bold text-gray-700 mb-3 uppercase tracking-wider">1. เลือกระดับความยาก</h3>
+                            <div className="grid grid-cols-2 gap-3">
+                                {[
+                                    { id: 'easy', icon: '🌱', label: 'ง่าย (Easy)' },
+                                    { id: 'medium', icon: '🚀', label: 'ปานกลาง (Medium)' },
+                                    { id: 'hard', icon: '🔥', label: 'ยาก (Hard)' },
+                                    { id: 'expert', icon: '👑', label: 'ยาก 2 (Hard 2)' }
+                                ].map(l => (
+                                    <button 
+                                        key={l.id} 
+                                        onClick={() => setLevel(l.id)}
+                                        className={`p-4 rounded-xl border-2 transition text-left flex items-center ${level === l.id ? 'border-yellow-400 bg-yellow-50 text-yellow-800 font-bold shadow-sm' : 'border-gray-100 bg-white text-gray-500 hover:border-yellow-200'}`}
+                                    >
+                                        <span className="text-2xl mr-3">{l.icon}</span>
+                                        <span>{l.label}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="mb-8 bg-white p-5 rounded-xl border border-gray-100 shadow-sm">
+                            <label className="flex justify-between text-sm font-bold text-gray-700 mb-4 uppercase tracking-wider">
+                                <span>2. เลือกจำนวนข้อสอบ</span>
+                                <span className="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full">{qCount} ข้อ</span>
+                            </label>
+                            <input 
+                                type="range" min="5" max="20" step="1" 
+                                value={qCount} 
+                                onChange={(e) => setQCount(Number(e.target.value))} 
+                                className="w-full"
+                            />
+                            <div className="flex justify-between text-xs text-gray-400 mt-2">
+                                <span>5 ข้อ</span>
+                                <span>20 ข้อ</span>
+                            </div>
+                        </div>
+
+                        <button onClick={startQuiz} className="w-full py-4 bg-yellow-400 text-yellow-900 font-bold text-lg rounded-xl hover:bg-yellow-500 transition shadow-md flex items-center justify-center">
+                            เริ่มทำแบบทดสอบ <IconPlay />
+                        </button>
+                    </div>
+                );
+            }
+
+            if (quizState === 'result') {
+                const percent = (score / questions.length) * 100;
+                let msg = "เยี่ยมมาก อัจฉริยะฟิสิกส์!"; 
+                let bg = "bg-green-100 text-green-700 border-green-200";
+                if (percent < 50) { 
+                    msg = "ไม่เป็นไรนะ ลองทบทวนแล้วลุยใหม่!"; 
+                    bg = "bg-orange-100 text-orange-700 border-orange-200"; 
+                }
+                
+                return (
+                    <div className="glass-panel p-8 rounded-2xl text-center animate-slide-in max-w-md mx-auto border-t-8 border-yellow-400">
+                        <div className="w-24 h-24 bg-yellow-100 rounded-full flex items-center justify-center text-5xl mx-auto mb-6 shadow-inner">🏆</div>
+                        <h2 className="text-3xl font-bold mb-2 text-gray-800">ผลการทดสอบ</h2>
+                        <p className={`text-2xl font-bold py-3 px-8 rounded-2xl inline-block mb-6 border-2 shadow-sm ${bg}`}>
+                            {score} / {questions.length} คะแนน
+                        </p>
+                        <p className="text-gray-600 mb-8">{msg}</p>
+                        <button onClick={() => setQuizState('setup')} className="w-full py-4 bg-gray-800 text-white font-bold rounded-xl hover:bg-gray-700 transition shadow-md">
+                            กลับไปตั้งค่าใหม่
+                        </button>
+                    </div>
+                );
+            }
+
+            const qInfo = questions[currentQ];
+            return (
+                <div className="glass-panel p-6 md:p-8 rounded-2xl animate-slide-in max-w-2xl mx-auto border border-yellow-100 shadow-sm">
+                    <div className="flex justify-between items-center mb-6 border-b border-gray-100 pb-4">
+                        <div className="flex items-center space-x-2">
+                            <span className="text-sm font-bold text-yellow-700 bg-yellow-100 py-1 px-3 rounded-full">ข้อที่ {currentQ + 1} / {questions.length}</span>
+                        </div>
+                        <span className="text-sm font-bold text-gray-500 capitalize bg-gray-100 py-1 px-3 rounded-full shadow-inner">ระดับ: {level}</span>
+                    </div>
+                    
+                    <h3 className="text-xl md:text-2xl font-medium text-gray-800 mb-8 leading-relaxed">
+                        {qInfo.q}
+                    </h3>
+                    
+                    <div className="space-y-3 mb-6">
+                        {qInfo.choices.map((choice, idx) => {
+                            let btnStyle = "bg-white hover:bg-gray-50 border-gray-200 text-gray-700";
+                            if (hasAnswered) {
+                                if (idx === qInfo.ans) btnStyle = "bg-green-100 border-green-400 text-green-800 font-bold shadow-sm";
+                                else if (idx === selectedChoice) btnStyle = "bg-red-100 border-red-400 text-red-800 line-through shadow-sm";
+                                else btnStyle = "bg-gray-50 border-gray-100 text-gray-400 opacity-50";
+                            }
+                            return (
+                                <button key={idx} onClick={() => handleAnswer(idx)} disabled={hasAnswered} className={`w-full text-left p-5 rounded-xl border-2 transition-all ${btnStyle}`}>
+                                    {choice}
+                                </button>
+                            );
+                        })}
+                    </div>
+
+                    {hasAnswered && (
+                        <div className="animate-slide-in space-y-4 pt-4 border-t border-gray-100">
+                            {!aiExplanation && !isAiLoading ? (
+                                <button 
+                                    onClick={handleExplainAi}
+                                    className="w-full flex items-center justify-center space-x-2 bg-yellow-50 hover:bg-yellow-100 text-yellow-700 border border-yellow-200 py-3 rounded-xl font-bold transition-colors"
+                                >
+                                    <IconSparkles />
+                                    <span>✨ ให้อาจารย์ AI อธิบายข้อนี้ให้ฟังหน่อย</span>
+                                </button>
+                            ) : isAiLoading ? (
+                                <div className="flex justify-center py-4 bg-yellow-50 rounded-xl">
+                                    <span className="text-sm text-yellow-600 font-bold animate-pulse">✨ AI กำลังเขียนคำอธิบาย...</span>
+                                </div>
+                            ) : (
+                                <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-200 text-sm text-gray-700">
+                                    <div className="flex items-center space-x-2 mb-2 font-bold text-yellow-700">
+                                        <IconSparkles /> <span>คำอธิบายจาก AI:</span>
+                                    </div>
+                                    <p className="leading-relaxed whitespace-pre-line">{aiExplanation}</p>
+                                </div>
+                            )}
+
+                            <button 
+                                onClick={handleNextQuestion}
+                                className="w-full py-4 bg-gray-800 text-white font-bold text-lg rounded-xl hover:bg-gray-700 transition shadow-md"
+                            >
+                                {currentQ + 1 === questions.length ? "ดูผลคะแนน" : "ข้อต่อไป ➡️"}
+                            </button>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        // --- Main App Component ---
+        const App = () => {
+            const [activeTab, setActiveTab] = useState('home');
+
+            const renderContent = () => {
+                switch(activeTab) {
+                    case 'home':
+                        return (
+                            <div className="animate-slide-in space-y-6">
+                                <div className="bg-gradient-to-r from-blue-200 to-pink-200 p-6 md:p-8 rounded-3xl shadow-sm text-gray-800">
+                                    <h1 className="text-3xl md:text-4xl font-bold mb-2">ยินดีต้อนรับนักฟิสิกส์ 🌟</h1>
+                                    <p className="text-md md:text-lg opacity-80">เรียนรู้เรื่องแรงและการหาแรงลัพธ์ ผ่านการทดลองที่ขับเคลื่อนด้วย AI</p>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div onClick={() => setActiveTab('force1d')} className="glass-panel p-5 rounded-2xl cursor-pointer hover:shadow-md transition">
+                                        <div className="w-12 h-12 bg-pink-100 text-pink-500 rounded-xl flex items-center justify-center mb-3">⬅️➡️</div>
+                                        <h3 className="font-bold text-lg">หาแรงลัพธ์ 1 มิติ</h3>
+                                    </div>
+                                    <div onClick={() => setActiveTab('force2d')} className="glass-panel p-5 rounded-2xl cursor-pointer hover:shadow-md transition">
+                                        <div className="w-12 h-12 bg-purple-100 text-purple-500 rounded-xl flex items-center justify-center mb-3">📐</div>
+                                        <h3 className="font-bold text-lg">หาแรงลัพธ์ 2 มิติ (เวกเตอร์)</h3>
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    case 'force1d': return <Force1DSimulator />;
+                    case 'force2d': return <Force2DSimulator />;
+                    case 'quiz': return <QuizSystem />;
+                    default: return null;
+                }
+            };
+
+            return (
+                <div className="min-h-screen pb-24 md:pb-0 md:flex">
+                    <aside className="hidden md:flex flex-col w-64 fixed h-full bg-white border-r border-gray-100 shadow-sm z-20">
+                        <div className="p-6">
+                            <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-pink-500">Phys<span className="font-math">Pastel</span></h1>
+                        </div>
+                        <nav className="flex-1 px-4 space-y-2">
+                            <button onClick={() => setActiveTab('home')} className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition ${activeTab === 'home' ? 'bg-blue-50 text-blue-600 font-bold' : 'text-gray-500 hover:bg-gray-50'}`}>
+                                <IconHome /> <span>หน้าหลัก</span>
+                            </button>
+                            <div className="pt-4 pb-2"><p className="px-4 text-xs font-bold text-gray-400 uppercase tracking-wider">ห้องทดลองเรื่องแรง</p></div>
+                            <button onClick={() => setActiveTab('force1d')} className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition ${activeTab === 'force1d' ? 'bg-pink-50 text-pink-600 font-bold' : 'text-gray-500 hover:bg-gray-50'}`}>
+                                <IconPlay /> <span className="text-left">แรงลัพธ์ 1 มิติ</span>
+                            </button>
+                            <button onClick={() => setActiveTab('force2d')} className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition ${activeTab === 'force2d' ? 'bg-purple-50 text-purple-600 font-bold' : 'text-gray-500 hover:bg-gray-50'}`}>
+                                <IconPlay /> <span className="text-left">แรงลัพธ์ 2 มิติ</span>
+                            </button>
+                            <div className="pt-4 pb-2"><p className="px-4 text-xs font-bold text-gray-400 uppercase tracking-wider">ทดสอบ (AI Tutor)</p></div>
+                            <button onClick={() => setActiveTab('quiz')} className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition ${activeTab === 'quiz' ? 'bg-yellow-50 text-yellow-600 font-bold' : 'text-gray-500 hover:bg-gray-50'}`}>
+                                <IconTarget /> <span>แบบฝึกหัด</span>
+                            </button>
+                        </nav>
+                    </aside>
+
+                    <main className="flex-1 md:ml-64 p-4 md:p-8 max-w-4xl mx-auto w-full">
+                        {renderContent()}
+                    </main>
+
+                    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-gray-100 flex justify-around p-3 pb-safe z-50">
+                        <button onClick={() => setActiveTab('home')} className={`flex flex-col items-center p-2 rounded-xl transition ${activeTab === 'home' ? 'text-blue-500' : 'text-gray-400'}`}>
+                            <IconHome /> <span className="text-[10px] mt-1 font-bold">หน้าหลัก</span>
+                        </button>
+                        <button onClick={() => setActiveTab('force1d')} className={`flex flex-col items-center p-2 rounded-xl transition ${activeTab === 'force1d' ? 'text-pink-500' : 'text-gray-400'}`}>
+                            <IconPlay /> <span className="text-[10px] mt-1 font-bold">แรง 1 มิติ</span>
+                        </button>
+                        <button onClick={() => setActiveTab('force2d')} className={`flex flex-col items-center p-2 rounded-xl transition ${activeTab === 'force2d' ? 'text-purple-500' : 'text-gray-400'}`}>
+                            <IconPlay /> <span className="text-[10px] mt-1 font-bold">แรง 2 มิติ</span>
+                        </button>
+                        <button onClick={() => setActiveTab('quiz')} className={`flex flex-col items-center p-2 rounded-xl transition ${activeTab === 'quiz' ? 'text-yellow-500' : 'text-gray-400'}`}>
+                            <IconTarget /> <span className="text-[10px] mt-1 font-bold">แบบฝึกหัด</span>
+                        </button>
+                    </nav>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

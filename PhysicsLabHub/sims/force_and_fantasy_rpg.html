@@ -1,0 +1,1047 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Force & Fantasy RPG</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #87CEEB; font-family: 'Inter', sans-serif; user-select: none; color: white;}
+        .glass-panel { background: rgba(15, 23, 42, 0.65); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); }
+        .hp-bar { transition: width 0.3s ease; height: 8px; border-radius: 4px; background: linear-gradient(90deg, #ef4444, #f87171); }
+        .atb-bar { transition: width 0.1s linear; height: 6px; border-radius: 3px; background: linear-gradient(90deg, #eab308, #fef08a); }
+        .exp-bar { transition: width 0.3s ease; height: 4px; border-radius: 2px; background: linear-gradient(90deg, #3b82f6, #60a5fa); }
+        .bar-bg { background: rgba(0,0,0,0.5); border-radius: 4px; overflow: hidden; width: 100%; border: 1px solid rgba(255,255,255,0.1); }
+        .damage-text { position: absolute; font-weight: bold; pointer-events: none; animation: floatUp 1.5s ease-out forwards; text-shadow: 2px 2px 0 #000; z-index: 100;}
+        @keyframes floatUp { 0% { transform: translateY(0) scale(1); opacity: 1; } 50% { transform: translateY(-30px) scale(1.5); opacity: 1; } 100% { transform: translateY(-50px) scale(1); opacity: 0; } }
+        .btn-sci { background: linear-gradient(45deg, #2563eb, #9333ea); border: 2px solid #7dd3fc; box-shadow: 0 0 10px rgba(125, 211, 252, 0.5); transition: all 0.2s; color: white; cursor: pointer;}
+        .btn-sci:hover:not(:disabled) { transform: scale(1.05); box-shadow: 0 0 15px rgba(216, 180, 254, 0.8); }
+        
+        .rarity-common { border-color: #9ca3af; color: #9ca3af; box-shadow: inset 0 0 5px rgba(156,163,175,0.5); }
+        .rarity-rare { border-color: #3b82f6; color: #93c5fd; box-shadow: inset 0 0 10px rgba(59,130,246,0.5); }
+        .rarity-epic { border-color: #a855f7; color: #d8b4fe; box-shadow: inset 0 0 15px rgba(168,85,247,0.5); }
+        .rarity-legendary { border-color: #eab308; color: #fef08a; box-shadow: inset 0 0 20px rgba(234,179,8,0.5); }
+        
+        .orb-slot { width: 44px; height: 44px; border-radius: 8px; border: 2px dashed #9ca3af; display: flex; align-items: center; justify-content: center; font-size: 11px; cursor: pointer; transition: all 0.2s; background: rgba(0,0,0,0.4); text-align: center;}
+        .orb-slot:hover { border-color: #a78bfa; }
+        .orb-equipped { border-style: solid; background: rgba(0,0,0,0.8); font-weight: bold;}
+        
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <canvas id="game-canvas" class="absolute inset-0 w-full h-full"></canvas>
+
+    <div id="main-menu" class="absolute inset-0 flex flex-col items-center justify-center bg-black/40 backdrop-blur-md z-50">
+        <button onclick="loadGame()" class="absolute top-6 right-6 bg-blue-600 hover:bg-blue-500 px-6 py-2 rounded-lg font-bold shadow-lg text-white">📂 โหลดเกม</button>
+        <h1 class="text-7xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 to-purple-400 mb-2 drop-shadow-[0_4px_10px_rgba(0,0,0,0.5)]">FORCE & FANTASY</h1>
+        <p class="text-2xl text-blue-100 mb-10 drop-shadow-md">ศึกนักวิทยาศาสตร์ทะลุมิติ</p>
+        <button onclick="enterHub()" class="btn-sci py-3 px-10 rounded-full text-2xl font-bold shadow-lg">เข้าสู่แคมป์หลัก</button>
+    </div>
+
+    <div id="hub-menu" class="hidden absolute inset-0 flex flex-col items-center justify-center bg-black/20 backdrop-blur-sm z-40 pointer-events-auto">
+        <button onclick="saveGame()" class="absolute top-6 left-6 bg-white/20 hover:bg-white/40 border border-white/50 px-6 py-2 rounded-lg font-bold shadow-lg text-white">💾 บันทึกเกม</button>
+        
+        <div class="absolute top-6 right-6 glass-panel px-6 py-3 rounded-xl flex gap-6 text-lg border-t-2 border-yellow-400">
+            <span class="font-bold">⚡ โฟตอน: <span id="hub-photons" class="text-yellow-400">0</span></span>
+            <span class="font-bold">🎫 ตั๋ว: <span id="hub-tickets" class="text-pink-400">0</span></span>
+        </div>
+        
+        <h2 class="text-5xl font-bold mb-8 text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">Base Camp</h2>
+        
+        <div class="grid grid-cols-2 gap-6 w-full max-w-3xl px-4">
+            <button onclick="startBattle('TOMB')" class="glass-panel p-6 rounded-2xl hover:bg-purple-900/60 transition flex flex-col items-center border-b-4 border-purple-500">
+                <span class="text-5xl mb-2">⏳</span>
+                <span class="text-2xl font-bold text-purple-300">สุสานกาลเวลา</span>
+                <span class="text-sm text-gray-300 mt-2">ฟาร์มเศษนักวิทยาศาสตร์ (ดรอป 100%)</span>
+            </button>
+            
+            <div class="glass-panel p-6 rounded-2xl flex flex-col items-center justify-center border-b-4 border-red-500 relative">
+                <span class="text-4xl mb-2">🗼</span>
+                <span class="text-xl font-bold text-red-400">หอคอยไร้สิ้นสุด</span>
+                <div class="flex items-center gap-4 mt-2">
+                    <button onclick="changeTowerFloor(-1)" class="bg-gray-700 hover:bg-gray-500 px-3 py-1 rounded text-lg font-bold shadow">-</button>
+                    <span class="text-xl font-bold">ชั้น <span id="tower-floor" class="text-yellow-300">1</span></span>
+                    <button onclick="changeTowerFloor(1)" class="bg-gray-700 hover:bg-gray-500 px-3 py-1 rounded text-lg font-bold shadow">+</button>
+                </div>
+                <button onclick="startBattle('TOWER')" class="btn-sci py-2 px-6 rounded-full mt-4 text-md">ลุยหอคอย!</button>
+            </div>
+
+            <button onclick="openPartyMenu()" class="glass-panel p-6 rounded-2xl hover:bg-green-900/60 transition flex flex-col items-center border-b-4 border-green-500">
+                <span class="text-5xl mb-2">🛡️</span>
+                <span class="text-2xl font-bold text-green-300">จัดทีม & สถานะ</span>
+            </button>
+
+            <button onclick="openGachaMenu()" class="glass-panel p-6 rounded-2xl hover:bg-pink-900/60 transition flex flex-col items-center border-b-4 border-pink-500">
+                <span class="text-5xl mb-2">🔮</span>
+                <span class="text-2xl font-bold text-pink-300">ร้านค้าสุ่ม Orb</span>
+            </button>
+        </div>
+    </div>
+
+    <div id="party-menu" class="hidden absolute inset-0 bg-black/40 z-50 pointer-events-none p-6 flex flex-col">
+        <div class="flex justify-between items-center mb-6 pointer-events-auto">
+            <h2 class="text-4xl font-bold text-green-400 drop-shadow-md">จัดทีมและอัพเกรด</h2>
+            <div class="flex gap-4">
+                <span class="glass-panel px-6 py-2 rounded-lg text-yellow-400 font-bold text-xl">⚡ <span id="party-photons">0</span></span>
+                <button onclick="closePartyMenu()" class="bg-red-600 hover:bg-red-500 px-8 py-2 rounded-lg font-bold text-xl shadow-lg">กลับ</button>
+            </div>
+        </div>
+
+        <div class="flex flex-1 gap-6 overflow-hidden">
+            <div class="w-1/3 glass-panel rounded-xl p-4 flex flex-col border-t-4 border-blue-500 pointer-events-auto">
+                <h3 class="text-xl font-bold mb-4 border-b border-gray-500 pb-2 text-blue-300">ทีมปัจจุบัน (สูงสุด 3)</h3>
+                <div id="party-slots" class="flex flex-col gap-3 mb-4"></div>
+                <h3 class="text-xl font-bold mb-2 border-b border-gray-500 pb-2 text-blue-300">นักวิทยาศาสตร์ที่ปลดล็อค</h3>
+                <div id="roster-list" class="flex-1 overflow-y-auto pr-2 flex flex-col gap-2"></div>
+            </div>
+
+            <div class="w-1/3 flex flex-col relative pointer-events-none">
+                <div id="hero-details" class="hidden flex-col h-full">
+                    <div class="glass-panel rounded-xl p-4 border-t-4 border-green-500 pointer-events-auto mb-4">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h2 id="hd-name" class="text-3xl font-bold text-white drop-shadow-md">Name</h2>
+                                <p id="hd-class" class="text-sm text-gray-300">Class</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-sm font-bold">ระดับ: <span id="hd-rank" class="text-yellow-400">Rank</span></p>
+                                <p class="text-xs font-normal text-gray-300">(เศษ: <span id="hd-shards">0</span>/3)</p>
+                            </div>
+                        </div>
+                        <div class="bg-black/50 p-2 rounded-lg mt-3 border border-gray-600 shadow-inner">
+                            <div class="flex justify-between text-sm mb-1">
+                                <span class="font-bold">Lv. <span id="hd-level" class="text-yellow-300 text-lg">1</span></span>
+                                <span>EXP: <span id="hd-exp">0/100</span></span>
+                            </div>
+                            <div class="bar-bg h-2"><div id="hd-exp-bar" class="exp-bar w-0"></div></div>
+                        </div>
+                    </div>
+
+                    <div class="flex-1 relative flex items-center justify-center pointer-events-none">
+                        <div id="hd-orbs-container" class="relative w-[300px] h-[300px]"></div>
+                    </div>
+
+                    <div class="glass-panel rounded-xl p-4 border-b-4 border-green-500 pointer-events-auto mt-4">
+                        <div class="flex justify-between items-center mb-3">
+                            <span class="font-bold text-green-400 text-lg">แต้มอัพเกรด: <span id="hd-pts" class="text-white">0</span></span>
+                        </div>
+                        <div class="flex justify-between items-center mb-2 text-lg">
+                            <span>❤️ HP: <span id="hd-hp" class="font-bold text-red-300">0</span></span>
+                            <button class="bg-gray-700 hover:bg-green-600 px-3 py-1 rounded font-bold shadow" onclick="addStat('hp')">+</button>
+                        </div>
+                        <div class="flex justify-between items-center mb-2 text-lg">
+                            <span>⚔️ ATK: <span id="hd-atk" class="font-bold text-orange-300">0</span></span>
+                            <button class="bg-gray-700 hover:bg-green-600 px-3 py-1 rounded font-bold shadow" onclick="addStat('atk')">+</button>
+                        </div>
+                        <div class="flex justify-between items-center text-lg">
+                            <span>💨 SPD: <span id="hd-spd" class="font-bold text-blue-300">0</span></span>
+                        </div>
+                    </div>
+                </div>
+                <div id="hero-none-selected" class="absolute inset-0 flex items-center justify-center text-gray-400 text-lg glass-panel rounded-xl pointer-events-auto">
+                    เลือกตัวละครจากเมนูด้านซ้าย
+                </div>
+            </div>
+
+            <div class="w-1/3 glass-panel rounded-xl p-4 flex flex-col border-t-4 border-purple-500 pointer-events-auto">
+                <h3 class="text-xl font-bold mb-4 border-b border-gray-500 pb-2 text-purple-300">กระเป๋า Orb (คลิกสวมใส่)</h3>
+                <div id="inventory-list" class="flex-1 overflow-y-auto pr-2 grid grid-cols-1 gap-3 content-start"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="gacha-menu" class="hidden absolute inset-0 bg-black/80 backdrop-blur-md z-50 pointer-events-auto flex flex-col items-center justify-center">
+        <div class="absolute top-6 right-6 flex gap-6 text-2xl">
+            <span class="font-bold text-yellow-400 drop-shadow-md">⚡ <span id="gacha-photons">0</span></span>
+            <span class="font-bold text-pink-400 drop-shadow-md">🎫 <span id="gacha-tickets">0</span></span>
+        </div>
+        <h2 class="text-6xl font-bold text-pink-400 mb-12 drop-shadow-lg">ร้านค้าเวทมนตร์ Orb</h2>
+        
+        <div class="flex gap-10 mb-10">
+            <div class="glass-panel p-8 rounded-3xl flex flex-col items-center w-72 border-t-4 border-yellow-500 shadow-2xl">
+                <span class="text-7xl mb-6 drop-shadow-md">🎫</span>
+                <h3 class="text-2xl font-bold mb-6">ซื้อตั๋วสุ่ม</h3>
+                <button onclick="buyTicket()" class="bg-yellow-600 hover:bg-yellow-500 py-3 px-8 rounded-full font-bold w-full text-xl shadow-lg">500 ⚡ / ใบ</button>
+            </div>
+            
+            <div class="glass-panel p-8 rounded-3xl flex flex-col items-center w-72 border-t-4 border-pink-500 shadow-2xl relative overflow-hidden">
+                <div class="absolute inset-0 bg-gradient-to-b from-purple-500/30 to-transparent"></div>
+                <span class="text-7xl mb-6 relative z-10 drop-shadow-md">🔮</span>
+                <h3 class="text-2xl font-bold mb-6 relative z-10">สุ่ม Orb อาคม</h3>
+                <button onclick="rollGacha()" class="btn-sci py-3 px-8 rounded-full font-bold w-full text-xl relative z-10 shadow-lg">ใช้ 1 🎫</button>
+            </div>
+        </div>
+
+        <div id="gacha-result" class="h-28 flex items-center justify-center mb-8 text-3xl font-bold transition-all"></div>
+        <button onclick="closeGachaMenu()" class="bg-gray-700 hover:bg-gray-500 py-3 px-12 rounded-full font-bold text-xl shadow-lg">กลับแคมป์</button>
+    </div>
+
+    <div id="battle-hud" class="hidden absolute inset-0 pointer-events-none flex flex-col justify-between p-6 z-10">
+        <div class="glass-panel p-5 rounded-2xl w-80 pointer-events-auto border-t-4 border-red-500 self-end shadow-xl">
+            <div class="flex justify-between mb-2">
+                <h2 id="monster-name" class="text-red-400 font-bold text-xl">Monster</h2>
+                <span id="monster-hp-txt" class="text-sm text-gray-300 font-bold">1000/1000</span>
+            </div>
+            <div class="bar-bg h-4 mb-3"><div id="monster-hp" class="hp-bar w-full h-full"></div></div>
+            <div class="text-sm text-yellow-300 flex justify-between font-bold bg-black/40 p-2 rounded">
+                <span>⚡ Combo Bonus: +<span id="combo-bonus">0</span>%</span>
+                <span id="combo-count" class="text-white drop-shadow-md text-base"></span>
+            </div>
+        </div>
+        
+        <div id="battle-party-container" class="flex justify-start gap-4 pb-4"></div>
+    </div>
+
+    <!-- กล่องคำถามแบบใหม่ เลื่อนไปด้านบนสุดและเล็กลง -->
+    <div id="question-modal" class="hidden absolute top-4 left-1/2 transform -translate-x-1/2 flex items-start justify-center z-30 pointer-events-auto w-full max-w-2xl shadow-2xl">
+        <div class="glass-panel p-5 rounded-2xl w-full border-t-4 border-cyan-400 bg-black/80 backdrop-blur-md">
+            <div class="text-cyan-400 font-bold mb-1 text-xs text-center">⚡ Active Physics Battle ⚡</div>
+            <h2 id="question-text" class="text-xl mb-4 leading-relaxed font-semibold text-center text-white">Question?</h2>
+            <div id="options-container" class="grid grid-cols-2 gap-2"></div>
+        </div>
+    </div>
+
+    <div id="feedback-modal" class="hidden absolute inset-0 flex items-center justify-center bg-black/70 backdrop-blur-sm z-40 pointer-events-auto">
+        <div class="glass-panel p-10 rounded-3xl w-full max-w-lg text-center border-t-4 border-red-500 shadow-2xl">
+            <h2 class="text-4xl font-bold text-red-400 mb-6 drop-shadow-md">พลาดแล้ว!</h2>
+            <p id="feedback-text" class="text-xl mb-8 text-white bg-black/40 p-4 rounded-xl leading-relaxed">Explanation</p>
+            <button onclick="closeFeedback()" class="btn-sci py-3 px-10 rounded-full text-xl font-bold shadow-lg">เข้าใจแล้วลุยต่อ</button>
+        </div>
+    </div>
+
+    <div id="reward-modal" class="hidden absolute inset-0 flex items-center justify-center bg-black/80 backdrop-blur-sm z-50 pointer-events-auto">
+         <div class="glass-panel p-10 rounded-3xl text-center border-t-4 border-yellow-400 max-w-md w-full shadow-2xl">
+             <h2 class="text-5xl font-bold text-yellow-400 mb-8 drop-shadow-lg">🎉 ชัยชนะ!</h2>
+             <div id="reward-content" class="mb-8 text-xl leading-relaxed text-left bg-black/40 p-6 rounded-xl border border-gray-600"></div>
+             <button onclick="enterHub()" class="btn-sci py-3 px-12 rounded-full text-xl font-bold shadow-lg">กลับแคมป์</button>
+         </div>
+    </div>
+
+    <script>
+        const towerQuestions = [
+            { q: "วัตถุมวล 5 kg ถูกแรงลัพธ์กระทำ 20 N วัตถุจะมีความเร่งเท่าใด?", opts: ["4 m/s<sup>2</sup>", "25 m/s<sup>2</sup>", "100 m/s<sup>2</sup>", "0.25 m/s<sup>2</sup>"], ans: 0, exp: "F = ma <br> a = 20 / 5 = 4 m/s<sup>2</sup>" },
+            { q: "ข้อใดคือหน่วยของ 'แรง' (Force)?", opts: ["Joule (J)", "Watt (W)", "Newton (N)", "Pascal (Pa)"], ans: 2, exp: "หน่วยของแรงตามระบบ SI คือ นิวตัน (N)" },
+            { q: "กฎข้อที่ 3 ของนิวตันกล่าวว่าอย่างไร?", opts: ["วัตถุรักษาสภาพนิ่ง", "F = ma", "Action = Reaction", "แรงแปรผันตามมวล"], ans: 2, exp: "ทุกแรงกิริยา ย่อมมีแรงปฏิกิริยาขนาดเท่ากันเสมอ" },
+            { q: "ถ้าความเร็วคงที่ ความเร่งจะเป็นเท่าใด?", opts: ["เพิ่มขึ้น", "ลดลง", "เป็นศูนย์ (0)", "เท่ากับความเร็ว"], ans: 2, exp: "เมื่อความเร็วคงที่ แปลว่าไม่มีการเปลี่ยนแปลงความเร็ว (a = 0)" },
+            { q: "มวล 10 kg ตกแบบเสรี (g=10 m/s<sup>2</sup>) จะมีน้ำหนักเท่าใด?", opts: ["10 N", "100 N", "1 N", "0 N"], ans: 1, exp: "W = mg <br> W = 10 &times; 10 = 100 N" }
+        ];
+
+        const tombQuestions = [
+            { q: "คำอุปสรรค 'ไมโคร' (micro) มีค่าเท่าใด?", opts: ["10<sup>-3</sup>", "10<sup>-6</sup>", "10<sup>-9</sup>", "10<sup>6</sup>"], ans: 1, exp: "ไมโคร (&mu;) = 10<sup>-6</sup>" },
+            { q: "1 กิโลเมตร มีค่าเท่ากับกี่เซนติเมตร?", opts: ["100,000 cm", "10,000 cm", "1,000 cm", "100 cm"], ans: 0, exp: "1 km = 1,000 m = 100,000 cm" },
+            { q: "สัญกรณ์วิทยาศาสตร์ของ 0.00045 คือข้อใด?", opts: ["4.5 &times; 10<sup>-4</sup>", "4.5 &times; 10<sup>-5</sup>", "45 &times; 10<sup>-5</sup>", "4.5 &times; 10<sup>4</sup>"], ans: 0, exp: "เลื่อนทศนิยมไปทางขวา 4 ตำแหน่ง ได้ 4.5 &times; 10<sup>-4</sup>" },
+            { q: "คำอุปสรรค 'นาโน' (nano) มีค่าเท่าใด?", opts: ["10<sup>-6</sup>", "10<sup>-9</sup>", "10<sup>-12</sup>", "10<sup>9</sup>"], ans: 1, exp: "นาโน (n) = 10<sup>-9</sup>" },
+            { q: "คำอุปสรรค 'เมกะ' (mega) มีค่าเท่าใด?", opts: ["10<sup>3</sup>", "10<sup>6</sup>", "10<sup>9</sup>", "10<sup>12</sup>"], ans: 1, exp: "เมกะ (M) = 10<sup>6</sup> (เช่น 1 Megabyte)" }
+        ];
+
+        const orbTypes = [
+            { id: "atk1", name: "F=ma", stat: "atk", valMap: { "Common":5, "Rare":15, "Epic":30, "Legendary":50 } },
+            { id: "spd1", name: "v=u+at", stat: "spd", valMap: { "Common":3, "Rare":10, "Epic":20, "Legendary":35 } },
+            { id: "hp1",  name: "W=Fs", stat: "hp", valMap: { "Common":50, "Rare":150, "Epic":300, "Legendary":500 } }
+        ];
+        const rarities = ["Common", "Rare", "Epic", "Legendary"];
+        const rarityColors = { "Common":"rarity-common", "Rare":"rarity-rare", "Epic":"rarity-epic", "Legendary":"rarity-legendary" };
+
+        const rankNames = ["แรงค์ D", "แรงค์ C", "แรงค์ B", "แรงค์ A", "แรงค์ S", "แรงค์ SS"];
+        const rankColors = ["text-gray-400", "text-green-400", "text-blue-400", "text-purple-400", "text-red-500", "text-yellow-400"];
+        const rankAuraHex = [0x000000, 0x10b981, 0x3b82f6, 0xa855f7, 0xef4444, 0xffd700]; // None, เขียว, ฟ้า, ม่วง, แดง, รุ้ง
+        const rankMult = [1, 1.2, 1.5, 2.0, 3.0, 5.0];
+
+        const heroesDef = [
+            { id: 0, name: "Isaac Newton", class: "Gravity Knight", color: 0x3b82f6, baseHp: 600, baseAtk: 80, baseSpd: 35 },
+            { id: 1, name: "Albert Einstein", class: "Relativity Mage", color: 0xec4899, baseHp: 350, baseAtk: 120, baseSpd: 55 },
+            { id: 2, name: "Marie Curie", class: "Radium Alchemist", color: 0x10b981, baseHp: 450, baseAtk: 100, baseSpd: 50 },
+            { id: 3, name: "Nikola Tesla", class: "Volt Gunner", color: 0xeab308, baseHp: 400, baseAtk: 110, baseSpd: 85 },
+            { id: 4, name: "Galileo Galilei", class: "Astro Sniper", color: 0x8b5cf6, baseHp: 420, baseAtk: 95, baseSpd: 50 },
+            { id: 5, name: "Charles Darwin", class: "Evolutionist", color: 0x84cc16, baseHp: 650, baseAtk: 70, baseSpd: 30 },
+            { id: 6, name: "Ada Lovelace", class: "Cyber Hacker", color: 0x06b6d4, baseHp: 380, baseAtk: 100, baseSpd: 70 },
+            { id: 7, name: "Archimedes", class: "Buoyancy Tank", color: 0xf97316, baseHp: 750, baseAtk: 60, baseSpd: 20 },
+            { id: 8, name: "Thomas Edison", class: "Inventor", color: 0xeef2ff, baseHp: 480, baseAtk: 90, baseSpd: 45 },
+            { id: 9, name: "Stephen Hawking", class: "Void Psychic", color: 0x4f46e5, baseHp: 320, baseAtk: 130, baseSpd: 40 },
+            { id: 10, name: "Michael Faraday", class: "Electro Mage", color: 0x14b8a6, baseHp: 420, baseAtk: 105, baseSpd: 55 },
+            { id: 11, name: "Rosalind Franklin", class: "DNA Healer", color: 0xf43f5e, baseHp: 580, baseAtk: 65, baseSpd: 60 }
+        ];
+
+        let heroes = heroesDef.map(h => ({
+            ...h, level: 1, exp: 0, pts: 0, hp: h.baseHp, maxHp: h.baseHp, atk: h.baseAtk, spd: h.baseSpd, atb: 0, orbs: Array(8).fill(null), mesh: null, basePos: {x:0, y:0, z:0}, isRainbow: false
+        }));
+
+        let player = {
+            photons: 2000, tickets: 2, maxTowerFloor: 1, targetFloor: 1, unlockedSlots: 1,
+            partyIds: [0], 
+            inventory: [],
+            unlockedHeroes: [0], // เริ่มต้นให้มีแค่ 1 ตัว (Newton)
+            heroShards: { 0:0, 1:0, 2:0, 3:0, 4:0, 5:0, 6:0, 7:0, 8:0, 9:0, 10:0, 11:0 },
+            heroRanks: { 0:0, 1:0, 2:0, 3:0, 4:0, 5:0, 6:0, 7:0, 8:0, 9:0, 10:0, 11:0 }
+        };
+
+        let monster = { name: "Monster", hp: 1000, maxHp: 1000, mesh: null, basePos: {x: 4, y: 0.2, z: -1} };
+        
+        let gameState = "MENU", currentMode = "", selectedHeroId = -1, combo = 0, activeHeroIndex = -1, currentQuestion = null, animPhase = 0, pendingDamage = 0;
+
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x87CEEB); 
+        scene.fog = new THREE.FogExp2(0x87CEEB, 0.015);
+        
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        let cameraTargetPos = new THREE.Vector3(0, 6, 14);
+        camera.position.copy(cameraTargetPos);
+        const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('game-canvas'), antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+        const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.8);
+        scene.add(hemiLight);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.9);
+        dirLight.position.set(10, 20, 10);
+        dirLight.castShadow = true;
+        dirLight.shadow.mapSize.width = 1024;
+        dirLight.shadow.mapSize.height = 1024;
+        scene.add(dirLight);
+        
+        const island = new THREE.Group();
+        const dirt = new THREE.Mesh(new THREE.CylinderGeometry(16, 14, 4, 32), new THREE.MeshStandardMaterial({ color: 0x8B5A2B, roughness: 1 }));
+        dirt.position.y = -2; dirt.receiveShadow = true; island.add(dirt);
+
+        const grass = new THREE.Mesh(new THREE.CylinderGeometry(16, 16, 0.4, 32), new THREE.MeshStandardMaterial({ color: 0x7CFC00, roughness: 0.9 }));
+        grass.position.y = 0.2; grass.receiveShadow = true; island.add(grass);
+
+        function createTree(x, z) {
+            const tree = new THREE.Group();
+            const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.6, 2.5, 8), new THREE.MeshStandardMaterial({color: 0x5C4033}));
+            trunk.position.y = 1.25; trunk.castShadow = true;
+            const leaves1 = new THREE.Mesh(new THREE.ConeGeometry(2.5, 3.5, 8), new THREE.MeshStandardMaterial({color: 0x32CD32, flatShading: true}));
+            leaves1.position.y = 3; leaves1.castShadow = true;
+            const leaves2 = new THREE.Mesh(new THREE.ConeGeometry(2, 3, 8), new THREE.MeshStandardMaterial({color: 0x228B22, flatShading: true}));
+            leaves2.position.y = 4.5; leaves2.castShadow = true;
+            tree.add(trunk, leaves1, leaves2);
+            tree.position.set(x, 0.4, z);
+            return tree;
+        }
+
+        function createRock(x, z, scale) {
+            const rock = new THREE.Mesh(new THREE.DodecahedronGeometry(scale), new THREE.MeshStandardMaterial({color: 0xA9A9A9, flatShading: true}));
+            rock.position.set(x, scale * 0.8 + 0.4, z); rock.castShadow = true; return rock;
+        }
+
+        island.add(createTree(-11, -6)); island.add(createTree(10, -8)); island.add(createTree(-9, 7)); island.add(createTree(12, 3));
+        island.add(createRock(-6, -8, 0.9)); island.add(createRock(8, -5, 1.3)); island.add(createRock(5, 9, 0.7)); island.add(createRock(-13, 1, 1.1));
+        island.position.y = -1.5;
+        scene.add(island);
+
+        function createScientistMesh(id, colorHex) {
+            const group = new THREE.Group();
+            
+            const skinMat = new THREE.MeshStandardMaterial({color: 0xffdcb1, roughness: 0.4}); 
+            const hairMatWhite = new THREE.MeshStandardMaterial({color: 0xeeeeee, roughness: 0.8});
+            const hairMatBrown = new THREE.MeshStandardMaterial({color: 0x4a3000, roughness: 0.8});
+            const hairMatBlack = new THREE.MeshStandardMaterial({color: 0x111111, roughness: 0.8});
+            const clothMat = new THREE.MeshStandardMaterial({color: colorHex, roughness: 0.7});
+            const darkClothMat = new THREE.MeshStandardMaterial({color: 0x222222, roughness: 0.8});
+            const woodMat = new THREE.MeshStandardMaterial({color: 0x8b5a2b});
+            const metalMat = new THREE.MeshStandardMaterial({color: 0xaaaaaa, metalness: 0.8, roughness: 0.2});
+            
+            const head = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.8), skinMat);
+            head.position.y = 2.4; head.castShadow = true; group.add(head);
+            
+            let bodyGeometry = new THREE.BoxGeometry(1.1, 1.4, 0.7); 
+            const body = new THREE.Mesh(bodyGeometry, clothMat);
+            body.position.y = 1.3; body.castShadow = true; group.add(body);
+            
+            const armL = new THREE.Mesh(new THREE.BoxGeometry(0.3, 1, 0.3), clothMat);
+            armL.position.set(-0.7, 1.5, 0); armL.castShadow = true; group.add(armL);
+            const armR = new THREE.Mesh(new THREE.BoxGeometry(0.3, 1, 0.3), clothMat);
+            armR.position.set(0.7, 1.5, 0); armR.castShadow = true; group.add(armR);
+
+            const handL = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.25, 0.25), skinMat);
+            handL.position.set(-0.7, 0.9, 0); group.add(handL);
+            const handR = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.25, 0.25), skinMat);
+            handR.position.set(0.7, 0.9, 0); group.add(handR);
+
+            const legL = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.8, 0.4), darkClothMat);
+            legL.position.set(-0.25, 0.4, 0); legL.castShadow = true; group.add(legL);
+            const legR = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.8, 0.4), darkClothMat);
+            legR.position.set(0.25, 0.4, 0); legR.castShadow = true; group.add(legR);
+            
+            if (id === 0) {
+                // Newton
+                const hair = new THREE.Mesh(new THREE.BoxGeometry(1, 0.6, 0.9), hairMatBrown);
+                hair.position.set(0, 2.7, -0.1); group.add(hair);
+                const hair2 = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.8, 0.5), hairMatBrown);
+                hair2.position.set(0, 2.3, -0.3); group.add(hair2);
+                const apple = new THREE.Mesh(new THREE.SphereGeometry(0.2, 8, 8), new THREE.MeshStandardMaterial({color: 0xff0000}));
+                apple.position.set(0.7, 0.7, 0.2); group.add(apple);
+            } else if (id === 1) {
+                // Einstein
+                const hair = new THREE.Mesh(new THREE.DodecahedronGeometry(0.6), hairMatWhite);
+                hair.position.set(0, 2.8, 0); group.add(hair);
+                const hairL = new THREE.Mesh(new THREE.DodecahedronGeometry(0.4), hairMatWhite);
+                hairL.position.set(-0.5, 2.5, 0); group.add(hairL);
+                const hairR = new THREE.Mesh(new THREE.DodecahedronGeometry(0.4), hairMatWhite);
+                hairR.position.set(0.5, 2.5, 0); group.add(hairR);
+                const pipe = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.3), woodMat);
+                pipe.position.set(0.2, 2.2, 0.5); pipe.rotation.x = Math.PI/2; group.add(pipe);
+                const wand = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 1), woodMat);
+                wand.position.set(0.7, 1.2, 0.5); wand.rotation.x = Math.PI/4; group.add(wand);
+            } else if (id === 2) {
+                // Curie
+                const hair = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.3, 0.9), hairMatBrown);
+                hair.position.set(0, 2.8, 0); group.add(hair);
+                const bun = new THREE.Mesh(new THREE.SphereGeometry(0.25), hairMatBrown);
+                bun.position.set(0, 2.9, -0.3); group.add(bun);
+                body.geometry = new THREE.ConeGeometry(0.8, 1.4, 4); body.material = darkClothMat;
+                const flask = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.2, 0.4), new THREE.MeshBasicMaterial({color: 0x00ff00, transparent:true, opacity:0.8}));
+                flask.position.set(0.7, 0.9, 0.4); group.add(flask);
+            } else if (id === 3) {
+                // Tesla
+                const hair = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.2, 0.85), hairMatBlack);
+                hair.position.set(0, 2.85, 0); group.add(hair);
+                const gun = new THREE.Group();
+                const stock = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.4), metalMat);
+                const coil = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.6), new THREE.MeshStandardMaterial({color: 0x00ffff, wireframe: true}));
+                coil.rotation.x = Math.PI/2; coil.position.z = 0.4;
+                gun.add(stock, coil); gun.position.set(0.7, 0.9, 0.3); group.add(gun);
+            } else if (id === 4) {
+                // Galileo
+                const hair = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.4, 0.9), hairMatWhite);
+                hair.position.set(0, 2.8, 0); group.add(hair);
+                const beard = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.4, 0.3), hairMatWhite);
+                beard.position.set(0, 2.1, 0.4); group.add(beard);
+                const telescope = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.15, 1.5), new THREE.MeshStandardMaterial({color: 0xcd7f32}));
+                telescope.rotation.x = Math.PI/2; telescope.position.set(0.7, 1.2, 0.5); group.add(telescope);
+            } else {
+                // Other generics
+                const isMage = id % 2 === 0;
+                if(isMage) {
+                    const hat = new THREE.Mesh(new THREE.ConeGeometry(0.6, 1, 4), clothMat);
+                    hat.position.set(0, 3.2, 0); group.add(hat);
+                    const staff = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 1.5), woodMat);
+                    staff.position.set(0.7, 1.2, 0.3); group.add(staff);
+                } else {
+                    const helmet = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.5, 0.9), metalMat);
+                    helmet.position.set(0, 2.8, 0); group.add(helmet);
+                    const sword = new THREE.Mesh(new THREE.BoxGeometry(0.1, 1.2, 0.3), metalMat);
+                    sword.position.set(0.7, 1.2, 0.5); group.add(sword);
+                }
+            }
+
+            const eyeL = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.1), new THREE.MeshBasicMaterial({color: 0x000000}));
+            eyeL.position.set(-0.2, 2.5, 0.45); group.add(eyeL);
+            const eyeR = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.1), new THREE.MeshBasicMaterial({color: 0x000000}));
+            eyeR.position.set(0.2, 2.5, 0.45); group.add(eyeR);
+
+            // วงแหวนออร่าใต้เท้า เปลี่ยนสีตาม Rank
+            const aura = new THREE.Mesh(
+                new THREE.RingGeometry(0.8, 1.2, 32),
+                new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.8, side: THREE.DoubleSide })
+            );
+            aura.rotation.x = Math.PI / 2;
+            aura.position.y = 0.1;
+            aura.visible = false;
+            group.add(aura);
+            group.aura = aura;
+
+            group.scale.set(0.8, 0.8, 0.8);
+            return group;
+        }
+
+        heroes.forEach(h => {
+            h.mesh = createScientistMesh(h.id, h.color);
+            scene.add(h.mesh);
+            h.mesh.visible = false;
+        });
+
+        monster.mesh = new THREE.Group();
+        const mBody = new THREE.Mesh(new THREE.IcosahedronGeometry(1.4, 0), new THREE.MeshStandardMaterial({ color: 0xef4444, flatShading:true }));
+        mBody.position.y = 1.4; mBody.castShadow = true; monster.mesh.add(mBody);
+        const mEye = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.2, 0.2), new THREE.MeshBasicMaterial({color: 0xffff00}));
+        mEye.position.set(0, 1.8, 1.3); monster.mesh.add(mEye);
+        scene.add(monster.mesh);
+        monster.mesh.visible = false;
+
+        function calcStats(h) {
+            let r = player.heroRanks[h.id] || 0;
+            let mult = rankMult[r];
+            h.maxHp = h.baseHp * mult;
+            h.atk = h.baseAtk * mult;
+            h.spd = h.baseSpd; // SPD Fixed อัพเกรดไม่ได้
+            h.orbs.forEach(orb => {
+                if(orb) {
+                    if(orb.stat === 'hp') h.maxHp += orb.value;
+                    if(orb.stat === 'atk') h.atk += orb.value;
+                    // if(orb.stat === 'spd') h.spd += orb.value; // ตัดระบบบวก SPD จาก Orb ออก
+                }
+            });
+            h.hp = Math.min(h.hp, h.maxHp);
+        }
+
+        function addExp(heroIds, amount) {
+            let logs = "";
+            heroIds.forEach(id => {
+                let h = heroes[id];
+                h.exp += amount;
+                let needed = h.level * 100;
+                if(h.exp >= needed) {
+                    h.exp -= needed; h.level++; h.pts += 3;
+                    logs += `<span style="color:#${h.color.toString(16)}">${h.name}</span> Level UP! (+3 Stat Points)<br>`;
+                }
+            });
+            return logs;
+        }
+
+        function createOrb(typeId, rarityLevel) {
+            let type = orbTypes.find(t => t.id === typeId);
+            let rarity = rarities[rarityLevel];
+            return { id: Math.random().toString(36).substr(2, 9), typeId: type.id, name: type.name, stat: type.stat, rarity: rarity, colorClass: rarityColors[rarity], value: type.valMap[rarity] };
+        }
+
+        window.enterHub = function() {
+            gameState = "HUB";
+            document.getElementById('main-menu').classList.add('hidden');
+            document.getElementById('battle-hud').classList.add('hidden');
+            document.getElementById('reward-modal').classList.add('hidden');
+            document.getElementById('gacha-menu').classList.add('hidden');
+            document.getElementById('party-menu').classList.add('hidden');
+            document.getElementById('hub-menu').classList.remove('hidden');
+            
+            document.getElementById('hub-photons').innerText = player.photons;
+            document.getElementById('hub-tickets').innerText = player.tickets;
+            player.targetFloor = player.maxTowerFloor;
+            document.getElementById('tower-floor').innerText = player.targetFloor;
+
+            heroes.forEach(h => h.mesh.visible = false);
+            monster.mesh.visible = false;
+            cameraTargetPos.set(0, 6, 15);
+        }
+
+        window.changeTowerFloor = function(dir) {
+            let newFloor = player.targetFloor + dir;
+            if(newFloor >= 1 && newFloor <= player.maxTowerFloor) {
+                player.targetFloor = newFloor;
+                document.getElementById('tower-floor').innerText = player.targetFloor;
+            }
+        }
+
+        window.openPartyMenu = function() {
+            gameState = "PARTY";
+            document.getElementById('hub-menu').classList.add('hidden');
+            document.getElementById('party-menu').classList.remove('hidden');
+            document.getElementById('party-photons').innerText = player.photons;
+            
+            cameraTargetPos.set(0, 3, 14);
+
+            heroes.forEach(h => h.mesh.visible = false);
+            monster.mesh.visible = false;
+
+            renderPartyRoster(); renderInventory();
+            if(selectedHeroId === -1 && player.partyIds.length > 0) selectHero(player.partyIds[0]);
+            else if(selectedHeroId !== -1) selectHero(selectedHeroId);
+        }
+        
+        window.closePartyMenu = function() { enterHub(); }
+
+        function renderPartyRoster() {
+            const slotsDiv = document.getElementById('party-slots');
+            slotsDiv.innerHTML = '';
+            for(let i=0; i<3; i++) {
+                if(i < player.unlockedSlots) {
+                    let hId = player.partyIds[i];
+                    if(hId !== undefined) {
+                        let h = heroes[hId];
+                        slotsDiv.innerHTML += `
+                            <div class="glass-panel p-3 rounded-lg flex justify-between items-center border-l-4 shadow pointer-events-auto cursor-pointer hover:bg-white/10" style="border-color:#${h.color.toString(16)}" onclick="selectHero(${h.id})">
+                                <span class="font-bold text-lg">${h.name} <span class="text-xs text-gray-300 bg-black/50 px-2 rounded">Lv.${h.level}</span></span>
+                                <button onclick="removeFromParty(${i}); event.stopPropagation();" class="text-red-400 hover:text-red-300 font-bold bg-black/30 px-3 py-1 rounded">ออก</button>
+                            </div>`;
+                    } else {
+                        slotsDiv.innerHTML += `<div class="border-2 border-dashed border-gray-500 bg-black/20 p-3 rounded-lg text-center text-gray-400 font-bold">ว่าง</div>`;
+                    }
+                } else {
+                    let cost = i === 1 ? 1000 : 3000;
+                    slotsDiv.innerHTML += `
+                        <div class="border border-gray-600 bg-gray-800 p-3 rounded-lg flex justify-between items-center opacity-80 pointer-events-auto">
+                            <span class="font-bold text-gray-400">ล็อก</span>
+                            <button onclick="unlockSlot(${i}, ${cost})" class="bg-yellow-600 hover:bg-yellow-500 px-3 py-1 rounded text-white font-bold shadow">ปลดล็อค ${cost}⚡</button>
+                        </div>`;
+                }
+            }
+
+            const rosterDiv = document.getElementById('roster-list');
+            rosterDiv.innerHTML = '';
+            player.unlockedHeroes.forEach(id => {
+                let h = heroes[id];
+                let inParty = player.partyIds.includes(id);
+                let rank = player.heroRanks[id];
+                rosterDiv.innerHTML += `
+                    <div class="glass-panel p-3 rounded-lg flex justify-between items-center cursor-pointer hover:bg-white/10 pointer-events-auto ${selectedHeroId===id?'ring-2 ring-blue-400':''}" onclick="selectHero(${id})">
+                        <div><span style="color:#${h.color.toString(16)}" class="font-bold text-lg">${h.name}</span> <span class="text-xs bg-black/50 px-1 rounded text-yellow-300">${rankNames[rank]}</span></div>
+                        ${inParty ? '<span class="text-sm text-green-400 font-bold">ในทีม</span>' : `<button onclick="addToParty(${id}); event.stopPropagation();" class="bg-blue-600 hover:bg-blue-500 px-3 rounded text-sm py-1 font-bold shadow">เข้าทีม</button>`}
+                    </div>`;
+            });
+        }
+
+        window.unlockSlot = function(idx, cost) {
+            if(player.photons >= cost) {
+                player.photons -= cost; player.unlockedSlots++;
+                document.getElementById('party-photons').innerText = player.photons; renderPartyRoster();
+            } else alert("โฟตอนไม่พอ!");
+        }
+
+        window.addToParty = function(hId) {
+            if(player.partyIds.length < player.unlockedSlots) { player.partyIds.push(hId); renderPartyRoster(); } else alert("ทีมเต็ม!");
+        }
+        window.removeFromParty = function(idx) { player.partyIds.splice(idx, 1); renderPartyRoster(); }
+
+        window.selectHero = function(id) { 
+            selectedHeroId = id; 
+            
+            heroes.forEach(h => {
+                if(h.id === id) {
+                    h.mesh.position.set(0, 0, 10);
+                    h.mesh.rotation.y = 0; 
+                    h.mesh.visible = true;
+                    // ในหน้าจัดทีม ซ่อนเงาออร่าไว้ก่อน
+                    if(h.mesh.aura) h.mesh.aura.visible = false;
+                } else {
+                    h.mesh.visible = false;
+                }
+            });
+
+            renderPartyRoster(); 
+            renderHeroDetails(); 
+        }
+
+        function renderHeroDetails() {
+            if(selectedHeroId === -1) return;
+            document.getElementById('hero-none-selected').classList.add('hidden');
+            document.getElementById('hero-details').classList.remove('hidden');
+            document.getElementById('hero-details').classList.add('flex');
+            
+            let h = heroes[selectedHeroId];
+            calcStats(h); 
+            
+            document.getElementById('hd-name').innerText = h.name;
+            document.getElementById('hd-name').style.color = `#${h.color.toString(16)}`;
+            document.getElementById('hd-class').innerText = h.class;
+            
+            let rankIdx = player.heroRanks[h.id];
+            let rankEl = document.getElementById('hd-rank');
+            rankEl.innerText = rankNames[rankIdx];
+            rankEl.className = rankColors[rankIdx] + " font-bold";
+            document.getElementById('hd-shards').innerText = player.heroShards[h.id];
+
+            document.getElementById('hd-level').innerText = h.level;
+            document.getElementById('hd-exp').innerText = `${h.exp}/${h.level*100}`;
+            document.getElementById('hd-exp-bar').style.width = `${(h.exp/(h.level*100))*100}%`;
+            document.getElementById('hd-pts').innerText = h.pts;
+            document.getElementById('hd-hp').innerText = Math.floor(h.maxHp);
+            document.getElementById('hd-atk').innerText = Math.floor(h.atk);
+            document.getElementById('hd-spd').innerText = Math.floor(h.spd);
+
+            let orbDiv = document.getElementById('hd-orbs-container');
+            orbDiv.innerHTML = '';
+            let radius = 130; 
+            
+            for(let i=0; i<8; i++) {
+                let angle = (i / 8) * (2 * Math.PI) - (Math.PI / 2); 
+                let x = Math.cos(angle) * radius;
+                let y = Math.sin(angle) * radius;
+                
+                let orb = h.orbs[i];
+                let baseStyle = `position:absolute; left:calc(50% + ${x}px); top:calc(50% + ${y}px); transform:translate(-50%, -50%); width:55px; height:55px; z-index:20;`;
+
+                if(orb) {
+                    orbDiv.innerHTML += `<div onclick="unequipOrb(${i})" class="orb-slot orb-equipped ${orb.colorClass} pointer-events-auto shadow-[0_0_15px_rgba(255,255,255,0.3)] hover:scale-110" style="${baseStyle}" title="ถอดออก">${orb.name.substring(0,4)}<br>+${orb.value}</div>`;
+                } else {
+                    orbDiv.innerHTML += `<div class="orb-slot text-gray-400 border-gray-400 text-3xl pb-2 hover:bg-white/20 pointer-events-auto" style="${baseStyle}" onclick="alert('คลิกเลือก Orb จากกระเป๋าด้านขวาเพื่อติดตั้ง')">+</div>`;
+                }
+            }
+        }
+
+        window.addStat = function(stat) {
+            let h = heroes[selectedHeroId];
+            if(h.pts > 0) {
+                h.pts--;
+                if(stat==='hp') { h.baseHp += 20; h.hp += 20; }
+                if(stat==='atk') h.baseAtk += 5;
+                renderHeroDetails();
+            }
+        }
+
+        window.unequipOrb = function(idx) {
+            let h = heroes[selectedHeroId];
+            player.inventory.push(h.orbs[idx]);
+            h.orbs[idx] = null;
+            renderHeroDetails(); renderInventory();
+        }
+
+        window.equipOrb = function(invIdx) {
+            if(selectedHeroId === -1) return;
+            let h = heroes[selectedHeroId];
+            let emptyIdx = h.orbs.findIndex(o => o === null);
+            if(emptyIdx !== -1) {
+                h.orbs[emptyIdx] = player.inventory.splice(invIdx, 1)[0];
+                renderHeroDetails(); renderInventory();
+            } else alert("ช่องใส่ Orb เต็ม!");
+        }
+
+        function renderInventory() {
+            let invDiv = document.getElementById('inventory-list');
+            invDiv.innerHTML = '';
+            let counts = {};
+            player.inventory.forEach(o => { counts[`${o.typeId}_${o.rarity}`] = (counts[`${o.typeId}_${o.rarity}`]||0) + 1; });
+
+            player.inventory.forEach((o, i) => {
+                let canMerge = counts[`${o.typeId}_${o.rarity}`] >= 3 && o.rarity !== "Legendary";
+                invDiv.innerHTML += `
+                    <div class="glass-panel p-3 rounded-lg flex justify-between items-center pointer-events-auto ${o.colorClass}">
+                        <div class="cursor-pointer flex-1" onclick="equipOrb(${i})">
+                            <span class="font-bold text-lg">[${o.rarity.charAt(0)}] ${o.name}</span>
+                            <span class="text-sm text-white"> (+${o.value} ${o.stat.toUpperCase()})</span>
+                        </div>
+                        ${canMerge ? `<button onclick="mergeOrb('${o.typeId}', '${o.rarity}')" class="bg-purple-600 hover:bg-purple-500 text-white text-sm px-3 py-1 rounded font-bold shadow animate-pulse">รวม (3)</button>` : ''}
+                    </div>`;
+            });
+            if(player.inventory.length === 0) invDiv.innerHTML = '<div class="text-gray-400 text-center mt-6 text-lg">กระเป๋าว่างเปล่า</div>';
+        }
+
+        window.mergeOrb = function(typeId, rarity) {
+            let toRemove = 3;
+            for(let i = player.inventory.length - 1; i >= 0; i--) {
+                let o = player.inventory[i];
+                if(o.typeId === typeId && o.rarity === rarity && toRemove > 0) { player.inventory.splice(i, 1); toRemove--; }
+            }
+            player.inventory.push(createOrb(typeId, rarities.indexOf(rarity) + 1));
+            renderInventory();
+            alert("✨ ผสม Orb สำเร็จ! เลื่อนระดับสูงขึ้น");
+        }
+
+        window.openGachaMenu = function() {
+            document.getElementById('hub-menu').classList.add('hidden');
+            document.getElementById('gacha-menu').classList.remove('hidden');
+            document.getElementById('gacha-photons').innerText = player.photons;
+            document.getElementById('gacha-tickets').innerText = player.tickets;
+            document.getElementById('gacha-result').innerHTML = '';
+        }
+        window.closeGachaMenu = function() { enterHub(); }
+
+        window.buyTicket = function() {
+            if(player.photons >= 500) {
+                player.photons -= 500; player.tickets++;
+                document.getElementById('gacha-photons').innerText = player.photons;
+                document.getElementById('gacha-tickets').innerText = player.tickets;
+            } else alert("โฟตอนไม่พอ!");
+        }
+
+        window.rollGacha = function() {
+            if(player.tickets > 0) {
+                player.tickets--; document.getElementById('gacha-tickets').innerText = player.tickets;
+                let typeId = orbTypes[Math.floor(Math.random()*orbTypes.length)].id;
+                let roll = Math.random();
+                let rarityLvl = roll > 0.9 ? 3 : roll > 0.6 ? 2 : roll > 0.3 ? 1 : 0;
+                let newOrb = createOrb(typeId, rarityLvl);
+                player.inventory.push(newOrb);
+                document.getElementById('gacha-result').innerHTML = `
+                    <div class="glass-panel px-10 py-5 rounded-2xl ${newOrb.colorClass} animate-bounce shadow-2xl border-2">
+                        ได้รับ: [${newOrb.rarity}] ${newOrb.name} (+${newOrb.value} ${newOrb.stat.toUpperCase()})
+                    </div>`;
+            } else alert("ตั๋วไม่พอ!");
+        }
+
+        window.startBattle = function(mode) {
+            if(player.partyIds.length === 0) { alert("จัดทีมก่อน!"); return; }
+            currentMode = mode; gameState = "BATTLE";
+            
+            document.getElementById('hub-menu').classList.add('hidden');
+            document.getElementById('battle-hud').classList.remove('hidden');
+            
+            if(mode === "TOMB") {
+                monster.name = "โกเลมแห่งสุสานกาลเวลา"; monster.maxHp = 1000;
+                monster.mesh.children[0].material.color.setHex(0xa855f7); monster.mesh.scale.setScalar(1.2);
+            } else {
+                let f = player.targetFloor, isBoss = f % 5 === 0;
+                monster.name = isBoss ? `บอสหอคอยชั้น ${f}` : `ผู้เฝ้าหอคอยชั้น ${f}`;
+                monster.maxHp = 800 + (f * 200);
+                monster.mesh.children[0].material.color.setHex(isBoss ? 0xdc2626 : 0xf97316); 
+                monster.mesh.scale.setScalar(isBoss ? 1.5 : 1.0);
+            }
+            monster.hp = monster.maxHp;
+            monster.mesh.position.copy(monster.basePos);
+            monster.mesh.visible = true;
+
+            combo = 0;
+            let startX = player.partyIds.length === 1 ? -2 : (player.partyIds.length === 2 ? -3 : -5);
+            player.partyIds.forEach((id, idx) => {
+                let h = heroes[id];
+                calcStats(h); h.atb = 0;
+                h.basePos = {x: startX + (idx * 2.5), y: 0.4, z: 2};
+                h.mesh.position.copy(h.basePos);
+                h.mesh.visible = true;
+                
+                // หันหน้าเข้าหาศัตรู
+                h.mesh.lookAt(monster.basePos.x, h.mesh.position.y, monster.basePos.z);
+                
+                // จัดการวงแหวนออร่าตามแรงค์
+                let r = player.heroRanks[id] || 0;
+                if (r > 0 && h.mesh.aura) {
+                    h.mesh.aura.visible = true;
+                    if (r === 5) h.isRainbow = true;
+                    else {
+                        h.isRainbow = false;
+                        h.mesh.aura.material.color.setHex(rankAuraHex[r]);
+                    }
+                } else if(h.mesh.aura) {
+                    h.mesh.aura.visible = false;
+                }
+            });
+            monster.mesh.lookAt(0, monster.mesh.position.y, 2);
+            
+            updateBattleUI();
+            cameraTargetPos.set(0, 5, 12);
+        }
+
+        function updateBattleUI() {
+            let container = document.getElementById('battle-party-container');
+            container.innerHTML = '';
+            player.partyIds.forEach((id, idx) => {
+                let h = heroes[id];
+                container.innerHTML += `
+                    <div class="glass-panel p-3 rounded-lg w-40 border-t-4 shadow-lg flex flex-col pointer-events-auto" style="border-color:#${h.color.toString(16)}">
+                        <div class="text-sm font-bold truncate" style="color:#${h.color.toString(16)}">${h.name}</div>
+                        <div class="text-xs text-gray-300 font-bold mt-1">HP: ${Math.floor(h.hp)}/${Math.floor(h.maxHp)}</div>
+                        <div class="bar-bg h-2 mb-2"><div class="hp-bar" style="width:${(h.hp/h.maxHp)*100}%"></div></div>
+                        <div class="text-xs text-yellow-300 font-bold mb-1">ATB: ${Math.floor(h.atb)}%</div>
+                        <div class="bar-bg h-2"><div class="atb-bar" style="width:${h.atb}%"></div></div>
+                    </div>`;
+            });
+            document.getElementById('monster-hp').style.width = `${(monster.hp/monster.maxHp)*100}%`;
+            document.getElementById('monster-hp-txt').innerText = `${Math.floor(monster.hp)}/${monster.maxHp}`;
+            document.getElementById('combo-bonus').innerText = (combo * 5);
+            document.getElementById('combo-count').innerText = combo > 0 ? `${combo} COMBO!` : '';
+        }
+
+        function triggerQuestion(heroIndex) {
+            activeHeroIndex = heroIndex;
+            let pool = currentMode === "TOMB" ? tombQuestions : towerQuestions;
+            currentQuestion = pool[Math.floor(Math.random() * pool.length)];
+            
+            document.getElementById('question-text').innerHTML = currentQuestion.q;
+            let optsDiv = document.getElementById('options-container');
+            optsDiv.innerHTML = '';
+            
+            currentQuestion.opts.forEach((opt, idx) => {
+                optsDiv.innerHTML += `
+                    <button onclick="submitAnswer(${idx})" class="glass-panel p-3 rounded-xl hover:bg-cyan-900/60 transition text-base border border-gray-500 hover:border-cyan-400 font-medium">
+                        ${opt}
+                    </button>`;
+            });
+            document.getElementById('question-modal').classList.remove('hidden');
+        }
+
+        window.submitAnswer = function(ansIndex) {
+            document.getElementById('question-modal').classList.add('hidden');
+            let h = heroes[player.partyIds[activeHeroIndex]];
+            
+            if (ansIndex === currentQuestion.ans) {
+                combo++;
+                let comboMult = 1 + (combo * 0.05);
+                pendingDamage = Math.floor(h.atk * comboMult);
+                gameState = "ANIMATING"; animPhase = 1;
+            } else {
+                combo = 0;
+                document.getElementById('feedback-text').innerHTML = currentQuestion.exp;
+                document.getElementById('feedback-modal').classList.remove('hidden');
+            }
+            updateBattleUI();
+        }
+
+        window.closeFeedback = function() {
+            document.getElementById('feedback-modal').classList.add('hidden');
+            let h = heroes[player.partyIds[activeHeroIndex]];
+            h.atb = 0; 
+            activeHeroIndex = -1;
+            gameState = "BATTLE";
+        }
+
+        function showDamage(amount) {
+            let dmgEl = document.createElement('div');
+            dmgEl.className = 'damage-text text-5xl text-yellow-400';
+            dmgEl.innerText = amount;
+            
+            let vector = new THREE.Vector3(monster.basePos.x, monster.basePos.y, monster.basePos.z);
+            vector.y += 2; 
+            vector.project(camera);
+            
+            let x = (vector.x * .5 + .5) * window.innerWidth;
+            let y = (vector.y * -.5 + .5) * window.innerHeight;
+            
+            dmgEl.style.left = `${x}px`;
+            dmgEl.style.top = `${y}px`;
+            document.body.appendChild(dmgEl);
+            
+            setTimeout(() => { dmgEl.remove(); }, 1500);
+        }
+
+        function winBattle() {
+            gameState = "REWARD"; document.getElementById('battle-hud').classList.add('hidden');
+            let rewardHtml = "";
+            let expG = currentMode === "TOMB" ? 80 : 40 * player.targetFloor;
+            let phoG = currentMode === "TOMB" ? 250 : 150 * player.targetFloor;
+            
+            player.photons += phoG;
+            rewardHtml += `⚡ ได้รับโฟตอน: <span class="text-yellow-400 font-bold">+${phoG}</span><br>`;
+            rewardHtml += `✨ ได้รับ EXP: <span class="text-blue-400 font-bold">+${expG}</span><br>${addExp(player.partyIds, expG)}`;
+            
+            if(currentMode === "TOWER") {
+                if(player.targetFloor === player.maxTowerFloor) {
+                    player.maxTowerFloor++; rewardHtml += `<br>🏰 ปลดล็อคหอคอยชั้นที่ ${player.maxTowerFloor}<br>`;
+                    if(player.targetFloor % 5 === 0) { player.tickets++; rewardHtml += `🎟️ ชนะบอส! ได้รับ <span class="text-pink-400 font-bold">1 ตั๋วสุ่มกาชา</span>`; }
+                }
+            } else {
+                // ระบบดรอปนักวิทยาศาสตร์ 100% สำหรับสุสานกาลเวลา
+                let dropId = Math.floor(Math.random() * heroes.length);
+                let hName = heroes[dropId].name;
+                if(!player.unlockedHeroes.includes(dropId)) {
+                    player.unlockedHeroes.push(dropId);
+                    rewardHtml += `<br>🎉 ปลดล็อคนักวิทยาศาสตร์คนใหม่: <span style="color:#${heroes[dropId].color.toString(16)}" class="font-bold text-2xl">${hName}</span>!`;
+                } else {
+                    player.heroShards[dropId]++;
+                    if(player.heroShards[dropId] >= 3 && player.heroRanks[dropId] < 5) {
+                        player.heroShards[dropId] -= 3; player.heroRanks[dropId]++;
+                        let newRank = player.heroRanks[dropId];
+                        rewardHtml += `<br>🌟 อัพแรงค์! ${hName} เลื่อนขั้นเป็นระดับ <span class="${rankColors[newRank]} font-bold text-2xl">${rankNames[newRank]}</span>!`;
+                    } else {
+                        rewardHtml += `<br>🧩 ได้รับชิ้นส่วนของ ${hName} (${player.heroShards[dropId]}/3)`;
+                    }
+                }
+            }
+            document.getElementById('reward-content').innerHTML = rewardHtml;
+            document.getElementById('reward-modal').classList.remove('hidden');
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const time = Date.now() * 0.002;
+            island.position.y = -1.5 + Math.sin(time * 0.5) * 0.1; 
+            camera.position.lerp(cameraTargetPos, 0.05);
+            camera.lookAt(0, 2, 0);
+
+            if (gameState === "PARTY" && selectedHeroId !== -1) {
+                heroes[selectedHeroId].mesh.rotation.y += 0.01;
+            }
+            else if (gameState === "BATTLE") {
+                monster.mesh.position.y = monster.basePos.y + Math.sin(time) * 0.3;
+                
+                // ตรวจสอบว่ามีใครกำลังตอบคำถามหรือดูผลลัพธ์อยู่ไหม
+                let someoneActing = document.getElementById('question-modal').classList.contains('hidden') === false || 
+                                    document.getElementById('feedback-modal').classList.contains('hidden') === false;
+                
+                if (!someoneActing) {
+                    player.partyIds.forEach((id, idx) => {
+                        let h = heroes[id];
+                        
+                        if(h.isRainbow && h.mesh.aura && h.mesh.aura.visible) {
+                            h.mesh.aura.material.color.setHSL((time * 0.5) % 1, 1, 0.5);
+                        }
+
+                        if (h.atb < 100 && !someoneActing) {
+                            // คำนวณความเร็ว ATB: Base SPD -> Time (2 ถึง 5 วินาที)
+                            let normalizedSpd = Math.min(Math.max(h.spd, 0), 120) / 120; // 0 to 1
+                            let targetSeconds = 5 - (normalizedSpd * 3); // 5 sec (ช้าสุด) ถึง 2 sec (เร็วสุด)
+                            let fillPerFrame = 100 / (targetSeconds * 60); // Assuming 60FPS
+                            
+                            h.atb += fillPerFrame;
+                            
+                            if (h.atb >= 100) { 
+                                h.atb = 100; 
+                                triggerQuestion(idx); 
+                                someoneActing = true; 
+                            }
+                        }
+                    });
+                }
+                updateBattleUI();
+            } 
+            else if (gameState === "ANIMATING") {
+                let h = heroes[player.partyIds[activeHeroIndex]];
+                const target = monster.basePos; const base = h.basePos;
+
+                if (animPhase === 1) { 
+                    // วิ่งเข้าโจมตี (เคลื่อนที่ช้าลง ให้ดูอนิเมชันชัดๆ)
+                    h.mesh.position.lerp(new THREE.Vector3(target.x - 2, target.y, target.z + 1.5), 0.05);
+                    if (h.mesh.position.distanceTo(new THREE.Vector3(target.x - 2, target.y, target.z + 1.5)) < 0.5) {
+                        monster.hp -= pendingDamage; showDamage(pendingDamage);
+                        monster.mesh.position.x = monster.basePos.x + 0.5;
+                        monster.mesh.children[0].material.color.setHex(0xffffff); 
+                        animPhase = 2;
+                        
+                        setTimeout(() => {
+                             let isBoss = currentMode === "TOWER" && player.targetFloor % 5 === 0;
+                             let normCol = currentMode === "TOMB" ? 0xa855f7 : (isBoss ? 0xdc2626 : 0xf97316);
+                             monster.mesh.children[0].material.color.setHex(normCol);
+                             if(monster.hp <= 0) winBattle();
+                        }, 150);
+                    }
+                } else if (animPhase === 2) { 
+                    // ถอยหลังกลับ (ช้าลงเช่นกัน)
+                    h.mesh.position.lerp(base, 0.0375);
+                    monster.mesh.position.x = THREE.MathUtils.lerp(monster.mesh.position.x, monster.basePos.x, 0.05);
+                    if (h.mesh.position.distanceTo(base) < 0.1) {
+                        h.mesh.position.copy(base); h.atb = 0; activeHeroIndex = -1;
+                        if(monster.hp > 0) gameState = "BATTLE";
+                        // หันหน้ากลับมาให้ตรงกับศัตรู
+                        h.mesh.lookAt(monster.basePos.x, h.mesh.position.y, monster.basePos.z);
+                    }
+                }
+                updateBattleUI();
+            }
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        window.saveGame = function() {
+            let saveData = {
+                player: player,
+                heroesData: heroes.map(h => ({
+                    id: h.id, level: h.level, exp: h.exp, pts: h.pts, 
+                    baseHp: h.baseHp, baseAtk: h.baseAtk, baseSpd: h.baseSpd, 
+                    hp: h.hp, maxHp: h.maxHp, atk: h.atk, spd: h.spd,
+                    orbs: h.orbs
+                }))
+            };
+            localStorage.setItem('forceFantasySave', JSON.stringify(saveData));
+            alert('บันทึกเกมสำเร็จ! (ข้อมูลถูกบันทึกลงในเบราว์เซอร์)');
+        }
+
+        window.loadGame = function() {
+            let saved = localStorage.getItem('forceFantasySave');
+            if(saved) {
+                let data = JSON.parse(saved);
+                player = data.player;
+                data.heroesData.forEach(hd => {
+                    let h = heroes.find(x => x.id === hd.id);
+                    if(h) {
+                        Object.assign(h, hd);
+                    }
+                });
+                alert('โหลดเกมสำเร็จ!');
+                enterHub();
+            } else {
+                alert('ไม่พบข้อมูลบันทึกเกม');
+            }
+        }
+
+        window.onload = animate;
+    </script>
+</body>
+</html>

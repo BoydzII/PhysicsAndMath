@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>3D Force & Motion Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- OrbitControls -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <!-- Cannon.js for Physics -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cannon.js/0.6.2/cannon.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        body { 
+            margin: 0; overflow: hidden; font-family: 'Inter', sans-serif; background-color: #0f172a; touch-action: none;
+        }
+        #canvas-container { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1; }
+        
+        /* Custom scrollbar for stats */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        /* UI Panel Styling */
+        .panel {
+            pointer-events: auto;
+            backdrop-filter: blur(10px);
+            background-color: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            transition: max-height 0.3s ease;
+            overflow: hidden;
+        }
+        .ui-layer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10;
+            pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; padding: 1rem;
+        }
+        .header-btn {
+            background: none; border: none; cursor: pointer; color: #475569; font-size: 0.75rem; font-weight: bold; padding: 4px 8px; border-radius: 6px;
+        }
+        .header-btn:hover { background-color: #f1f5f9; }
+    </style>
+</head>
+<body>
+
+    <!-- 3D Canvas -->
+    <div id="canvas-container"></div>
+
+    <div class="ui-layer">
+        
+        <!-- Top Section -->
+        <div class="flex flex-col sm:flex-row justify-between items-start gap-4 h-full">
+            
+            <!-- Left Panel: Controls -->
+            <div class="panel w-full sm:w-64 flex flex-col" id="panel-controls">
+                <div class="flex justify-between items-center p-3 bg-slate-50 border-b border-slate-200 cursor-pointer" onclick="togglePanel('controls-body', 'controls-arrow')">
+                    <h2 class="text-sm font-bold text-slate-800 flex items-center gap-2">🎛️ ตั้งค่าตัวแปร</h2>
+                    <span id="controls-arrow" class="text-xs text-slate-500 transition-transform">▲</span>
+                </div>
+                <div id="controls-body" class="p-4 flex flex-col gap-4 max-h-[500px]">
+                    <!-- Mass -->
+                    <div>
+                        <div class="flex justify-between items-end mb-1">
+                            <label class="text-xs font-semibold text-slate-600">มวล (Mass)</label>
+                            <span id="val-mass" class="text-xs font-bold text-slate-900 bg-slate-100 px-2 py-1 rounded">1.0 kg</span>
+                        </div>
+                        <input type="range" id="slider-mass" min="0.5" max="10" step="0.5" value="1" class="w-full accent-blue-600">
+                    </div>
+                    
+                    <!-- Spring K -->
+                    <div>
+                        <div class="flex justify-between items-end mb-1">
+                            <label class="text-xs font-semibold text-slate-600">ความแข็งยาง (K)</label>
+                            <span id="val-spring" class="text-xs font-bold text-slate-900 bg-slate-100 px-2 py-1 rounded">50 N/m</span>
+                        </div>
+                        <input type="range" id="slider-spring" min="10" max="200" step="10" value="50" class="w-full accent-blue-600">
+                    </div>
+
+                    <!-- Shape and Theme Additions -->
+                    <div class="flex gap-2">
+                        <div class="w-1/2">
+                            <label class="text-xs font-semibold text-slate-600 mb-1 block">รูปทรงวัตถุ</label>
+                            <select id="ui-shape" class="w-full text-xs p-1.5 border border-slate-300 rounded focus:outline-none focus:border-blue-500 text-slate-700">
+                                <option value="box">กล่องสี่เหลี่ยม</option>
+                                <option value="sphere">ทรงกลม</option>
+                                <option value="human">หุ่นมนุษย์</option>
+                            </select>
+                        </div>
+                        <div class="w-1/2">
+                            <label class="text-xs font-semibold text-slate-600 mb-1 block">สีพื้นห้อง</label>
+                            <select id="ui-theme" class="w-full text-xs p-1.5 border border-slate-300 rounded focus:outline-none focus:border-blue-500 text-slate-700">
+                                <option value="dark">อวกาศ (Dark)</option>
+                                <option value="light">ห้องแล็บ (Light)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Reset Button -->
+                    <button id="btn-reset" class="mt-2 w-full bg-slate-800 hover:bg-slate-700 text-white font-semibold py-2 px-4 rounded-lg shadow-sm transition-colors text-xs">
+                        🔄 นำวัตถุกลับจุดเริ่มต้น
+                    </button>
+                    
+                    <!-- Multi Mode Setup -->
+                    <div class="mt-3 p-3 bg-indigo-50 border border-indigo-100 rounded-lg">
+                        <div class="text-xs font-bold text-indigo-800 mb-2 flex items-center gap-1">
+                            <span>🚀 โหมดยิง 3 มวลพร้อมกัน</span>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2 mb-3">
+                            <div>
+                                <label class="text-[10px] text-slate-600 font-semibold block mb-1">ก้อน 1 (kg)</label>
+                                <input type="number" id="multi-m1" value="0.5" step="0.5" min="0.5" class="w-full text-xs p-1.5 border border-slate-300 rounded focus:border-indigo-500 focus:outline-none text-center">
+                            </div>
+                            <div>
+                                <label class="text-[10px] text-slate-600 font-semibold block mb-1">ก้อน 2 (kg)</label>
+                                <input type="number" id="multi-m2" value="1.0" step="0.5" min="0.5" class="w-full text-xs p-1.5 border border-slate-300 rounded focus:border-indigo-500 focus:outline-none text-center">
+                            </div>
+                            <div>
+                                <label class="text-[10px] text-slate-600 font-semibold block mb-1">ก้อน 3 (kg)</label>
+                                <input type="number" id="multi-m3" value="2.0" step="0.5" min="0.5" class="w-full text-xs p-1.5 border border-slate-300 rounded focus:border-indigo-500 focus:outline-none text-center">
+                            </div>
+                        </div>
+                        <button id="btn-prepare-multi" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-3 rounded shadow-sm transition-colors text-xs">
+                            1. จัดเตรียมวัตถุเข้าฐานยิง
+                        </button>
+                    </div>
+
+                    <div class="text-[10px] text-slate-400 text-center mt-1">ใช้นิ้วหรือเมาส์ ลากวัตถุถอยหลังแล้วปล่อยเพื่อยิง</div>
+                </div>
+            </div>
+
+            <!-- Right Panel: Results & Stats -->
+            <div class="panel w-full sm:w-72 flex flex-col" id="panel-stats">
+                <div class="flex justify-between items-center p-3 bg-slate-50 border-b border-slate-200">
+                    <div class="flex-1 cursor-pointer flex justify-between items-center mr-2" onclick="togglePanel('stats-body', 'stats-arrow')">
+                        <h2 class="text-sm font-bold text-slate-800 flex items-center gap-2">📊 สถิติผลลัพธ์</h2>
+                        <span id="stats-arrow" class="text-xs text-slate-500 transition-transform">▲</span>
+                    </div>
+                    <button id="btn-fullscreen" class="header-btn border border-slate-200" title="เต็มจอ">🔲</button>
+                </div>
+                
+                <div id="stats-body" class="p-3 flex flex-col gap-3 max-h-[60vh] sm:max-h-[500px]">
+                    <!-- Realtime Display -->
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="bg-blue-50 border border-blue-100 rounded-lg p-2 text-center">
+                            <div class="text-[10px] text-blue-600 font-medium mb-1">ระยะดึงปัจจุบัน</div>
+                            <div id="val-pull" class="text-sm font-bold text-slate-800">0.00 m</div>
+                        </div>
+                        <div class="bg-orange-50 border border-orange-100 rounded-lg p-2 text-center">
+                            <div class="text-[10px] text-orange-600 font-medium mb-1">แรงดึง (F=kx)</div>
+                            <div id="val-force" class="text-sm font-bold text-slate-800">0 N</div>
+                        </div>
+                        <div class="bg-slate-100 border border-slate-200 rounded-lg p-2 text-center">
+                            <div class="text-[10px] text-slate-600 font-medium mb-1">ความเร็ว (m/s)</div>
+                            <div id="out-vel" class="text-sm font-bold text-slate-800">0.00</div>
+                        </div>
+                        <div class="bg-slate-100 border border-slate-200 rounded-lg p-2 text-center">
+                            <div class="text-[10px] text-slate-600 font-medium mb-1">ระยะเคลื่อนที่ (m)</div>
+                            <div id="out-dist" class="text-sm font-bold text-slate-800">0.00</div>
+                        </div>
+                    </div>
+
+                    <!-- History Table -->
+                    <div class="flex justify-between items-center mt-2">
+                        <span class="text-xs font-bold text-slate-700">ประวัติการยิง</span>
+                        <button id="btn-clear" class="text-[10px] text-red-500 hover:text-red-700 font-medium">ล้างสถิติ</button>
+                    </div>
+                    <div class="overflow-y-auto border border-slate-200 rounded-lg max-h-32 bg-white">
+                        <table class="w-full text-left text-[10px]">
+                            <thead class="bg-slate-100 sticky top-0">
+                                <tr>
+                                    <th class="p-1.5 font-semibold text-slate-600">รอบ</th>
+                                    <th class="p-1.5 font-semibold text-slate-600">มวล</th>
+                                    <th class="p-1.5 font-semibold text-slate-600">ดึง</th>
+                                    <th class="p-1.5 font-semibold text-slate-600">ระยะทาง</th>
+                                </tr>
+                            </thead>
+                            <tbody id="stats-table-body">
+                                <tr><td colspan="4" class="p-2 text-center text-slate-400">ยังไม่มีข้อมูล</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+        
+        <!-- Big Red Shoot Button (Hidden by default) -->
+        <button id="btn-global-shoot" class="absolute bottom-6 left-1/2 transform -translate-x-1/2 bg-red-600 hover:bg-red-500 text-white font-bold py-3 px-12 rounded-full shadow-[0_4px_20px_rgba(220,38,38,0.6)] text-xl border-4 border-white transition-transform active:scale-95 hidden pointer-events-auto z-[100]">
+            🔴 กดยิง!
+        </button>
+        
+    </div>
+
+    <script>
+        // --- 1. UI & State Variables ---
+        const config = { mass: 1.0, springK: 50, pullDistance: 0, shape: 'box', theme: 'dark' };
+        const state = {
+            isDragging: false, isLaunching: false, hasLaunched: false, isStopped: true,
+            totalDistance: 0, lastPos: new THREE.Vector3(), shatterHandled: false, statsRecorded: false
+        };
+        let statsHistory = [];
+        
+        // DOM Elements
+        const uiMass = document.getElementById('slider-mass'), uiMassVal = document.getElementById('val-mass');
+        const uiSpring = document.getElementById('slider-spring'), uiSpringVal = document.getElementById('val-spring');
+        const uiPull = document.getElementById('val-pull'), uiForce = document.getElementById('val-force');
+        const uiVel = document.getElementById('out-vel'), uiDist = document.getElementById('out-dist');
+        const tableBody = document.getElementById('stats-table-body');
+        
+        // --- 2. Three.js & Cannon.js Variables ---
+        let scene, camera, renderer, controls, world;
+        let massMesh, massBody, dragPlaneMesh;
+        let bandLeft, bandRight;
+        let debrisMeshes = [], debrisBodies = [];
+        let multiProjectiles = []; 
+        let isMultiMode = false;
+        
+        // Environment materials for theme switching
+        let floorMat1, floorMat2, envGrid, envWalls = [];
+
+        const polePosL = new THREE.Vector3(-3, 1.5, 0); // ระยะเสาขยายกว้างขึ้น
+        const polePosR = new THREE.Vector3(3, 1.5, 0);
+        
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+
+        // --- 3. Physics & 3D Initialization ---
+        function initApp() {
+            initPhysics();
+            init3D();
+            createEnvironment();
+            createProjectile();
+            setupInteractions();
+            animate();
+        }
+
+        function initPhysics() {
+            world = new CANNON.World();
+            world.gravity.set(0, -9.82, 0);
+            world.broadphase = new CANNON.NaiveBroadphase();
+            world.solver.iterations = 50;
+
+            const matGround = new CANNON.Material();
+            const matMass = new CANNON.Material();
+            const matWall = new CANNON.Material();
+
+            // Ground friction
+            world.addContactMaterial(new CANNON.ContactMaterial(matGround, matMass, { friction: 0.1, restitution: 0.1 }));
+            // Wall bounce
+            world.addContactMaterial(new CANNON.ContactMaterial(matWall, matMass, { friction: 0.0, restitution: 0.8 }));
+
+            // Table Body (200m long, center shifted to Z=50)
+            const tableShape = new CANNON.Box(new CANNON.Vec3(15, 0.5, 100));
+            const tableBody = new CANNON.Body({ mass: 0, material: matGround });
+            tableBody.addShape(tableShape);
+            tableBody.position.set(0, -0.5, 50); 
+            world.addBody(tableBody);
+
+            // Room Walls Physics (Height = 20)
+            function addWallPhysics(x, z, w, d) {
+                const wallShape = new CANNON.Box(new CANNON.Vec3(w/2, 10, d/2));
+                const wallBody = new CANNON.Body({ mass: 0, material: matWall });
+                wallBody.addShape(wallShape);
+                wallBody.position.set(x, 10, z);
+                world.addBody(wallBody);
+            }
+            // Back (Z=-50), Front (Z=150), Left (X=-15), Right (X=15)
+            addWallPhysics(0, -50, 30, 2); // Back wall
+            addWallPhysics(0, 150, 30, 2); // Front wall far away
+            addWallPhysics(-16, 50, 2, 200); // Left wall
+            addWallPhysics(16, 50, 2, 200); // Right wall
+        }
+
+        function init3D() {
+            const container = document.getElementById('canvas-container');
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0f172a); // Dark background
+            scene.fog = new THREE.Fog(0x0f172a, 50, 250);
+
+            camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 30, -40); // View from behind and above
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            container.appendChild(renderer.domElement);
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.target.set(0, 0, 20); // Look towards the front
+            controls.maxPolarAngle = Math.PI / 2 - 0.05; // Don't go below ground
+
+            // Lights
+            const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambient);
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(20, 50, -20);
+            dirLight.castShadow = true;
+            dirLight.shadow.camera.top = 100;
+            dirLight.shadow.camera.bottom = -100;
+            dirLight.shadow.camera.left = -50;
+            dirLight.shadow.camera.right = 50;
+            scene.add(dirLight);
+
+            // Invisible drag plane for raycasting (at y = 0.5 initially)
+            const planeGeo = new THREE.PlaneGeometry(100, 200);
+            planeGeo.rotateX(-Math.PI / 2);
+            const planeMat = new THREE.MeshBasicMaterial({visible: false});
+            dragPlaneMesh = new THREE.Mesh(planeGeo, planeMat);
+            dragPlaneMesh.position.set(0, 0.5, 50);
+            scene.add(dragPlaneMesh);
+        }
+
+        function createEnvironment() {
+            // Table Graphic (สลับสีทุกๆ 10 เมตร คล้ายสนามอเมริกันฟุตบอล)
+            floorMat1 = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.8 });
+            floorMat2 = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.8 });
+            
+            for (let i = 0; i < 20; i++) {
+                const isEven = i % 2 === 0;
+                const stripGeo = new THREE.BoxGeometry(30, 1, 10);
+                const stripMat = isEven ? floorMat1 : floorMat2;
+                const strip = new THREE.Mesh(stripGeo, stripMat);
+                // พื้นยาว 200 เริ่มที่ -50 ถึง 150 ดังนั้นศูนย์กลางท่อนแรกคือ -45
+                strip.position.set(0, -0.5, -45 + (i * 10)); 
+                strip.receiveShadow = true;
+                scene.add(strip);
+            }
+
+            // Grid - ปรับขนาดและไม่ย่อสัดส่วน เพื่อให้เส้นบางและสม่ำเสมอ
+            envGrid = new THREE.GridHelper(200, 200, 0x475569, 0x1e293b);
+            envGrid.position.set(0, 0.01, 50);
+            scene.add(envGrid);
+
+            // Distance Scale Ruler (สเกลวัดระยะด้านหลัง Z = 0 ถึง -10)
+            const rulerGroup = new THREE.Group();
+            for(let i=0; i<=10; i++) {
+                const isMajor = i % 5 === 0;
+                const tickGeo = new THREE.BoxGeometry(isMajor ? 4 : 2, 0.02, 0.1);
+                const tickMat = new THREE.MeshBasicMaterial({ color: isMajor ? 0xffcc00 : 0xffffff });
+                const tick = new THREE.Mesh(tickGeo, tickMat);
+                tick.position.set(0, 0.02, -i);
+                rulerGroup.add(tick);
+                
+                if(i > 0) {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = 64; canvas.height = 64;
+                    const ctx = canvas.getContext('2d');
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = 'lighter 22px Arial'; // ตัวอักษรบางลงและเล็กลง 20%
+                    ctx.textAlign = 'center';
+                    ctx.fillText(i + 'm', 32, 40);
+                    const tex = new THREE.CanvasTexture(canvas);
+                    const spriteMat = new THREE.SpriteMaterial({ map: tex });
+                    const sprite = new THREE.Sprite(spriteMat);
+                    sprite.scale.set(2, 2, 1);
+                    sprite.position.set(-2.5, 0.6, -i); // ยกให้สูงขึ้น 0.6
+                    rulerGroup.add(sprite);
+                }
+            }
+            scene.add(rulerGroup);
+
+            // Walls (Glass-like)
+            function addVisualWall(x, z, w, d) {
+                const geo = new THREE.BoxGeometry(w, 20, d);
+                const mat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.1, side: THREE.DoubleSide });
+                const mesh = new THREE.Mesh(geo, mat);
+                mesh.position.set(x, 10, z);
+                scene.add(mesh);
+                envWalls.push(mat);
+            }
+            addVisualWall(0, -50, 30, 0.5); // Back
+            addVisualWall(0, 150, 30, 0.5); // Front
+            addVisualWall(-15.25, 50, 0.5, 200); // Left
+            addVisualWall(15.25, 50, 0.5, 200); // Right
+
+            // Poles
+            const poleGeo = new THREE.CylinderGeometry(0.3, 0.3, 3, 16);
+            const poleMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.4, metalness: 0.8 });
+            
+            const poleL = new THREE.Mesh(poleGeo, poleMat);
+            poleL.position.copy(polePosL); poleL.castShadow = true; scene.add(poleL);
+            const poleR = new THREE.Mesh(poleGeo, poleMat);
+            poleR.position.copy(polePosR); poleR.castShadow = true; scene.add(poleR);
+
+            // Rubber Bands - ใช้ทรงกระบอกและ MeshBasicMaterial เพื่อให้สีแดงสว่างและเห็นชัด 100% เสมอ
+            const bandGeo = new THREE.CylinderGeometry(0.075, 0.075, 1, 16); 
+            const bandMat = new THREE.MeshBasicMaterial({ color: 0xff0033 }); 
+            bandLeft = new THREE.Mesh(bandGeo, bandMat);
+            bandRight = new THREE.Mesh(bandGeo, bandMat);
+            scene.add(bandLeft);
+            scene.add(bandRight);
+        }
+
+        function getMassSize() { return Math.max(0.6, config.mass * 0.4); } 
+
+        // ฟังก์ชันสร้างวัตถุฟิสิกส์แบบแยกส่วน (รองรับการทำหลายก้อน)
+        function spawnPhysicsObject(mass, shapeType, x, y, z) {
+            const size = Math.max(0.6, mass * 0.4);
+            let shape, mesh;
+            
+            if (shapeType === 'box') {
+                const geo = new THREE.BoxGeometry(size, size, size);
+                const mat = new THREE.MeshStandardMaterial({ color: 0xfbbf24, roughness: 0.3, metalness: 0.2 });
+                mesh = new THREE.Mesh(geo, mat);
+                shape = new CANNON.Box(new CANNON.Vec3(size/2, size/2, size/2));
+            } else if (shapeType === 'sphere') {
+                const geo = new THREE.SphereGeometry(size/2, 32, 32);
+                const mat = new THREE.MeshStandardMaterial({ color: 0xec4899, roughness: 0.3, metalness: 0.2 });
+                mesh = new THREE.Mesh(geo, mat);
+                shape = new CANNON.Sphere(size/2);
+            } else if (shapeType === 'human') {
+                mesh = new THREE.Group();
+                const mat = new THREE.MeshStandardMaterial({ color: 0x10b981, roughness: 0.5 });
+                const body = new THREE.Mesh(new THREE.BoxGeometry(size*0.6, size*0.7, size*0.4), mat);
+                body.position.set(0, -size*0.15, 0); mesh.add(body);
+                const head = new THREE.Mesh(new THREE.SphereGeometry(size*0.25, 16, 16), mat);
+                head.position.set(0, size*0.4, 0); mesh.add(head);
+                mesh.traverse(child => { if(child.isMesh) child.castShadow = true; });
+                shape = new CANNON.Box(new CANNON.Vec3(size*0.3, size/2, size*0.2));
+            }
+
+            mesh.castShadow = true;
+            scene.add(mesh);
+
+            const body = new CANNON.Body({
+                mass: mass,
+                shape: shape,
+                position: new CANNON.Vec3(x, y, z),
+                linearDamping: 0.05,
+                angularDamping: 0.05
+            });
+
+            body.addEventListener("collide", function(e) {
+                if(state.shatterHandled) return;
+                const v = Math.abs(e.contact.getImpactVelocityAlongNormal());
+                if (v > 100) {
+                    state.shatterHandled = true;
+                    setTimeout(() => shatterTarget(mesh, body, mass), 0);
+                }
+            });
+
+            world.addBody(body);
+            return { mesh, body, mass };
+        }
+
+        function createProjectile() {
+            if (massMesh) { scene.remove(massMesh); world.remove(massBody); }
+            const size = getMassSize();
+            dragPlaneMesh.position.y = size / 2; 
+
+            const obj = spawnPhysicsObject(config.mass, config.shape, 0, size/2, 0);
+            massMesh = obj.mesh;
+            massBody = obj.body;
+            
+            updateBands(massBody.position);
+        }
+
+        // Helper เชื่อมยางระหว่าง 2 จุดให้ตรงเผง
+        function updateCylinderBetweenPoints(mesh, pointX, pointY) {
+            const direction = new THREE.Vector3().subVectors(pointY, pointX);
+            const distance = direction.length();
+            const position = new THREE.Vector3().addVectors(pointX, pointY).multiplyScalar(0.5);
+            mesh.position.copy(position);
+            mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction.clone().normalize());
+            mesh.scale.set(1, Math.max(0.01, distance), 1);
+        }
+
+        function updateBands(targetPos) {
+            if(state.shatterHandled || isMultiMode) {
+                updateCylinderBetweenPoints(bandLeft, polePosL, new THREE.Vector3(0, 1.5, 0));
+                updateCylinderBetweenPoints(bandRight, polePosR, new THREE.Vector3(0, 1.5, 0));
+                return;
+            }
+
+            let hookPos = targetPos.clone();
+            const size = getMassSize();
+            
+            if (targetPos.z <= 0 || state.isDragging || !state.hasLaunched) {
+                const offsetZ = config.shape === 'sphere' ? size/2 : (config.shape === 'human' ? size*0.2 : size/2);
+                hookPos.z -= offsetZ; 
+                hookPos.y = targetPos.y; 
+            } else {
+                hookPos.set(0, 1.5, 0); 
+            }
+
+            updateCylinderBetweenPoints(bandLeft, polePosL, hookPos);
+            updateCylinderBetweenPoints(bandRight, polePosR, hookPos);
+        }
+
+        function setupInteractions() {
+            const dom = renderer.domElement;
+
+            dom.addEventListener('pointerdown', (e) => {
+                if(state.hasLaunched && !state.isStopped) return; 
+                if(isMultiMode) return; // ห้ามลากเองในโหมดออโต้ 3 มวล
+                
+                mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+                mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+                
+                raycaster.setFromCamera(mouse, camera);
+                const intersects = raycaster.intersectObject(massMesh, true);
+                
+                if(intersects.length > 0 && !state.shatterHandled) {
+                    state.isDragging = true;
+                    controls.enabled = false; 
+                    state.hasLaunched = false;
+                    state.isStopped = true;
+                    state.statsRecorded = false;
+                    state.totalDistance = 0;
+                    uiVel.innerText = "0.00";
+                    uiDist.innerText = "0.00";
+                    uiVel.classList.remove("text-red-500");
+                }
+            });
+
+            dom.addEventListener('pointermove', (e) => {
+                if (!state.isDragging) return;
+                
+                mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+                mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+                
+                raycaster.setFromCamera(mouse, camera);
+                const intersects = raycaster.intersectObject(dragPlaneMesh);
+                
+                if (intersects.length > 0) {
+                    let point = intersects[0].point;
+                    let z = point.z;
+                    
+                    // Clamp dragging (Max limit 10 meters)
+                    if (z > 0) z = 0; 
+                    if (z < -10) z = -10; // จำกัดระยะดึงที่ 10 เมตร
+
+                    massBody.position.set(0, getMassSize()/2, z);
+                    massBody.velocity.set(0,0,0);
+                    massBody.angularVelocity.set(0,0,0);
+                    
+                    config.pullDistance = Math.abs(z);
+                    uiPull.innerText = config.pullDistance.toFixed(2) + " m";
+                    
+                    // F = kx
+                    const f = config.springK * config.pullDistance;
+                    uiForce.innerText = f.toFixed(0) + " N";
+                    
+                    massMesh.position.copy(massBody.position);
+                    updateBands(massBody.position);
+                }
+            });
+
+            dom.addEventListener('pointerup', () => {
+                if (state.isDragging) {
+                    state.isDragging = false;
+                    controls.enabled = true;
+                    
+                    if (config.pullDistance > 0.5) { // Minimum pull to shoot
+                        state.isLaunching = true;
+                        state.hasLaunched = true;
+                        state.isStopped = false;
+                        state.lastPos.copy(massBody.position);
+                        uiMass.disabled = true; uiSpring.disabled = true;
+                    } else {
+                        // Snap back safely if pull is too weak
+                        resetToOrigin();
+                    }
+                }
+            });
+
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        }
+
+        function shatterTarget(targetMesh, targetBody, mass) {
+            if(!targetMesh) return;
+            scene.remove(targetMesh);
+            world.remove(targetBody);
+            
+            const v = targetBody.velocity;
+            const p = targetBody.position;
+            const size = Math.max(0.6, mass * 0.4);
+            const chunk = size / 2;
+
+            for(let i=0; i<8; i++) {
+                const geo = new THREE.BoxGeometry(chunk, chunk, chunk);
+                const mat = new THREE.MeshStandardMaterial({ color: 0xfbbf24, roughness: 0.5 });
+                const mesh = new THREE.Mesh(geo, mat);
+                mesh.castShadow = true;
+                
+                const shape = new CANNON.Box(new CANNON.Vec3(chunk/2, chunk/2, chunk/2));
+                const body = new CANNON.Body({ mass: mass/8, shape: shape });
+                
+                const dx = (i%2 === 0 ? 1 : -1) * chunk/2;
+                const dy = ((i/2)%2 < 1 ? 1 : -1) * chunk/2;
+                const dz = (i>=4 ? 1 : -1) * chunk/2;
+                
+                body.position.set(p.x + dx, p.y + dy, p.z + dz);
+                body.velocity.set(v.x + (Math.random()-0.5)*50, Math.abs(v.y) + Math.random()*30, v.z + (Math.random()-0.5)*50);
+                
+                scene.add(mesh); world.addBody(body);
+                debrisMeshes.push(mesh); debrisBodies.push(body);
+            }
+            
+            if(!isMultiMode) {
+                state.isStopped = true;
+                state.isLaunching = false;
+                state.statsRecorded = true;
+                uiVel.innerText = "แตกกระจาย!";
+                uiVel.classList.add("text-red-500");
+                recordStats(true);
+            }
+            // เก็บยางเข้าที่เดิม
+            updateBands(new THREE.Vector3(0, 1.5, 0)); 
+            if(bandLeftGeoLine) scene.remove(bandLeftGeoLine);
+            if(bandRightGeoLine) scene.remove(bandRightGeoLine);
+        }
+
+        function cleanMultiProjectiles() {
+            multiProjectiles.forEach(p => {
+                scene.remove(p.mesh);
+                world.remove(p.body);
+            });
+            multiProjectiles = [];
+        }
+
+        function resetToOrigin() {
+            // Clean up debris if any
+            debrisMeshes.forEach(m => scene.remove(m));
+            debrisBodies.forEach(b => world.remove(b));
+            debrisMeshes = []; debrisBodies = [];
+            
+            cleanMultiProjectiles();
+            isMultiMode = false;
+            
+            state.hasLaunched = false;
+            state.isStopped = true;
+            state.isLaunching = false;
+            state.shatterHandled = false;
+            state.statsRecorded = false;
+            config.pullDistance = 0;
+            
+            uiPull.innerText = "0.00 m"; uiForce.innerText = "0 N";
+            uiVel.innerText = "0.00"; uiVel.classList.remove("text-red-500");
+            uiDist.innerText = "0.00";
+            
+            uiMass.disabled = false; uiSpring.disabled = false;
+            document.getElementById('btn-global-shoot').classList.add('hidden');
+
+            createProjectile();
+            updateBands(massBody.position);
+            
+            // Reset camera to view start point nicely
+            camera.position.set(0, 30, -40);
+            controls.target.set(0, 0, 20);
+        }
+
+        // --- 4. UI Events ---
+        uiMass.addEventListener('input', (e) => {
+            config.mass = parseFloat(e.target.value);
+            uiMassVal.innerText = config.mass.toFixed(1) + " kg";
+            if(!state.hasLaunched) resetToOrigin();
+        });
+        uiSpring.addEventListener('input', (e) => {
+            config.springK = parseFloat(e.target.value);
+            uiSpringVal.innerText = config.springK + " N/m";
+            if(state.isDragging) { // Update force live
+                uiForce.innerText = (config.springK * config.pullDistance).toFixed(0) + " N";
+            }
+        });
+
+        // Shape Event
+        document.getElementById('ui-shape').addEventListener('change', (e) => {
+            config.shape = e.target.value;
+            if(!state.hasLaunched) resetToOrigin();
+        });
+
+        // Theme Event
+        document.getElementById('ui-theme').addEventListener('change', (e) => {
+            config.theme = e.target.value;
+            applyTheme();
+        });
+
+        document.getElementById('btn-prepare-multi').addEventListener('click', () => {
+            if(state.hasLaunched && !state.isStopped) return; 
+            
+            isMultiMode = true;
+            if(massMesh) scene.remove(massMesh);
+            if(massBody) world.remove(massBody);
+            cleanMultiProjectiles();
+            
+            let pull = config.pullDistance > 0.5 ? config.pullDistance : 5; // ใช้ระยะเดิม หรือ 5m เป็นค่าเริ่มต้น
+            config.pullDistance = pull;
+            uiPull.innerText = pull.toFixed(2) + " m";
+            uiForce.innerText = (config.springK * pull).toFixed(0) + " N";
+            
+            // ดึงค่ามวลจากช่อง Input 3 ช่อง
+            const m1 = parseFloat(document.getElementById('multi-m1').value) || 0.5;
+            const m2 = parseFloat(document.getElementById('multi-m2').value) || 1.0;
+            const m3 = parseFloat(document.getElementById('multi-m3').value) || 2.0;
+            const masses = [m1, m2, m3];
+            const xOffsets = [-4, 0, 4]; 
+            
+            for(let i=0; i<3; i++) {
+                let sizeY = Math.max(0.6, masses[i] * 0.4) / 2;
+                let proj = spawnPhysicsObject(masses[i], config.shape, xOffsets[i], sizeY, -pull);
+                proj.distance = 0;
+                proj.body.velocity.set(0,0,0);
+                multiProjectiles.push(proj);
+            }
+            
+            state.isLaunching = false;
+            state.hasLaunched = false;
+            state.isStopped = true;
+            state.shatterHandled = false;
+            state.totalDistance = 0;
+            state.statsRecorded = false;
+            
+            uiMass.disabled = true; uiSpring.disabled = true;
+            updateBands(new THREE.Vector3(0, 1.5, 0)); // เก็บยางเข้าที่ตรงกลาง
+
+            // แสดงปุ่มยิงสีแดง
+            document.getElementById('btn-global-shoot').classList.remove('hidden');
+        });
+
+        document.getElementById('btn-global-shoot').addEventListener('click', () => {
+            if (isMultiMode) {
+                state.isLaunching = true;
+                state.hasLaunched = true;
+                state.isStopped = false;
+                state.statsRecorded = false;
+                
+                // ซ่อนปุ่มหลังยิงเสร็จ
+                document.getElementById('btn-global-shoot').classList.add('hidden');
+            }
+        });
+
+        function applyTheme() {
+            if (config.theme === 'light') {
+                scene.background.setHex(0xf1f5f9); // slate-100
+                scene.fog.color.setHex(0xf1f5f9);
+                if (floorMat1) floorMat1.color.setHex(0xcbd5e1);
+                if (floorMat2) floorMat2.color.setHex(0x94a3b8);
+                envGrid.material.color.setHex(0x64748b);
+                envWalls.forEach(mat => mat.color.setHex(0x94a3b8));
+            } else { // dark
+                scene.background.setHex(0x0f172a); // slate-900
+                scene.fog.color.setHex(0x0f172a);
+                if (floorMat1) floorMat1.color.setHex(0x334155);
+                if (floorMat2) floorMat2.color.setHex(0x1e293b);
+                envGrid.material.color.setHex(0x475569);
+                envWalls.forEach(mat => mat.color.setHex(0x38bdf8));
+            }
+        }
+
+        document.getElementById('btn-reset').addEventListener('click', resetToOrigin);
+        
+        function togglePanel(bodyId, arrowId) {
+            const body = document.getElementById(bodyId);
+            const arrow = document.getElementById(arrowId);
+            if (body.style.display === 'none') {
+                body.style.display = 'flex';
+                arrow.style.transform = 'rotate(0deg)';
+            } else {
+                body.style.display = 'none';
+                arrow.style.transform = 'rotate(180deg)';
+            }
+        }
+
+        document.getElementById('btn-fullscreen').addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => console.log(err));
+            } else {
+                document.exitFullscreen();
+            }
+        });
+
+        function recordStats(shattered = false) {
+            statsHistory.push({
+                run: statsHistory.length + 1,
+                mass: config.mass.toFixed(1),
+                pull: config.pullDistance.toFixed(2),
+                dist: shattered ? "แตกพัง" : state.totalDistance.toFixed(2)
+            });
+            renderTable();
+            uiMass.disabled = false; uiSpring.disabled = false; // Re-enable controls
+        }
+
+        function renderTable() {
+            if(statsHistory.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="4" class="p-2 text-center text-slate-400">ยังไม่มีข้อมูล</td></tr>';
+                return;
+            }
+            tableBody.innerHTML = '';
+            // Show latest first
+            [...statsHistory].reverse().forEach(stat => {
+                const tr = document.createElement('tr');
+                tr.className = "border-b border-slate-100 hover:bg-slate-50";
+                tr.innerHTML = `
+                    <td class="p-1.5">${stat.run}</td>
+                    <td class="p-1.5">${stat.mass}</td>
+                    <td class="p-1.5">${stat.pull}</td>
+                    <td class="p-1.5 ${stat.dist === 'แตกพัง' ? 'text-red-500 font-bold' : ''}">${stat.dist}</td>
+                `;
+                tableBody.appendChild(tr);
+            });
+        }
+        document.getElementById('btn-clear').addEventListener('click', () => {
+            statsHistory = []; renderTable();
+        });
+
+        const timeStep = 1 / 60;
+        function animate() {
+            requestAnimationFrame(animate);
+            world.step(timeStep);
+            controls.update();
+
+            // Launching Force Application
+            if (state.isLaunching && !state.shatterHandled) {
+                if (!isMultiMode) {
+                    if (massBody.position.z < 0) {
+                        const currentPull = Math.abs(massBody.position.z);
+                        const forceZ = config.springK * currentPull;
+                        massBody.applyForce(new CANNON.Vec3(0, 0, forceZ), massBody.position);
+                    } else {
+                        state.isLaunching = false; 
+                    }
+                } else {
+                    let stillLaunching = false;
+                    multiProjectiles.forEach(p => {
+                        if (p.body.position.z < 0) {
+                            const currentPull = Math.abs(p.body.position.z);
+                            const forceZ = config.springK * currentPull;
+                            p.body.applyForce(new CANNON.Vec3(0, 0, forceZ), p.body.position);
+                            stillLaunching = true;
+                        }
+                    });
+                    if(!stillLaunching) state.isLaunching = false;
+                }
+            }
+
+            // Sync Main Body or Multi Projectiles
+            if (!state.shatterHandled) {
+                if (!isMultiMode && massMesh && massBody) {
+                    massMesh.position.copy(massBody.position);
+                    massMesh.quaternion.copy(massBody.quaternion);
+                    
+                    if (state.hasLaunched && !state.isDragging && !state.isStopped) {
+                        const moved = massBody.position.distanceTo(state.lastPos);
+                        state.totalDistance += moved;
+                        state.lastPos.copy(massBody.position);
+                        
+                        const speed = massBody.velocity.length();
+                        uiVel.innerText = speed.toFixed(2);
+                        uiDist.innerText = state.totalDistance.toFixed(2);
+
+                        if(massBody.position.z > 20) {
+                            controls.target.copy(massBody.position);
+                        }
+
+                        if (!state.isLaunching && speed < 0.1 && !state.statsRecorded) {
+                            state.statsRecorded = true;
+                            state.isStopped = true;
+                            uiVel.innerText = "0.00";
+                            recordStats();
+                        }
+                    }
+                    
+                    if (!state.hasLaunched || state.isLaunching || state.isDragging) {
+                        updateBands(massBody.position);
+                    }
+                } else if (isMultiMode) {
+                    let allStopped = true;
+                    let maxZ = 0;
+                    let leadProj = null;
+                    
+                    multiProjectiles.forEach(p => {
+                        p.mesh.position.copy(p.body.position);
+                        p.mesh.quaternion.copy(p.body.quaternion);
+                        
+                        if (state.hasLaunched && !state.isStopped) {
+                            const speed = p.body.velocity.length();
+                            p.distance = Math.max(0, p.body.position.z); 
+                            
+                            // ถ้ามีความเร็วหรือยังอยู่ในสภาวะออกแรง แสดงว่ายังไม่หยุด
+                            if (speed > 0.1 || state.isLaunching) allStopped = false;
+                            
+                            if(p.body.position.z > maxZ) {
+                                maxZ = p.body.position.z;
+                                leadProj = p;
+                            }
+                        }
+                    });
+                    
+                    if (leadProj && leadProj.body.position.z > 20) {
+                         controls.target.copy(leadProj.body.position);
+                    }
+                    
+                    if(state.hasLaunched && !state.isLaunching && allStopped && !state.statsRecorded) {
+                        state.statsRecorded = true;
+                        state.isStopped = true;
+                        uiVel.innerText = "0.00";
+                        multiProjectiles.forEach(p => {
+                            statsHistory.push({
+                                run: statsHistory.length + 1,
+                                mass: p.mass.toFixed(1),
+                                pull: config.pullDistance.toFixed(2),
+                                dist: p.distance.toFixed(2)
+                            });
+                        });
+                        renderTable();
+                        uiMass.disabled = false; uiSpring.disabled = false;
+                    }
+                }
+            } 
+            // Sync Debris if Shattered
+            else if (state.shatterHandled) {
+                for(let i=0; i<debrisMeshes.length; i++) {
+                    debrisMeshes[i].position.copy(debrisBodies[i].position);
+                    debrisMeshes[i].quaternion.copy(debrisBodies[i].quaternion);
+                }
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        // Start
+        window.onload = initApp;
+    </script>
+</body>
+</html>

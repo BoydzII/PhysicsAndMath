@@ -1,0 +1,1195 @@
+<!DOCTYPE html>
+<html lang="th" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Physics Simulator: กฎการเคลื่อนที่ของนิวตัน</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: { extend: {} }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Prompt', 'Inter', sans-serif;
+            margin: 0;
+            overflow: hidden;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        #canvas-container {
+            width: 100%;
+            height: 100vh;
+            display: block;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            transition: all 0.3s;
+        }
+        .dark .glass-panel {
+            background: rgba(15, 23, 42, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.875rem;
+            margin-bottom: 0.25rem;
+        }
+        input[type=range] {
+            width: 100%;
+            accent-color: #3b82f6;
+        }
+        .hud-value {
+            font-family: monospace;
+            font-size: 1.1rem;
+        }
+        .eq-panel {
+            font-family: monospace;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 dark:bg-slate-900 dark:text-slate-50">
+
+    <div id="canvas-container" class="absolute inset-0 z-0"></div>
+
+    <div class="absolute top-0 left-0 w-full p-4 z-10 pointer-events-none">
+        <h1 class="text-2xl font-bold drop-shadow-md text-slate-800 dark:text-white">3D Physics Simulator</h1>
+        <p class="text-sm drop-shadow-md text-slate-600 dark:text-slate-300">โมเดลแรงและการเคลื่อนที่แบบซับซ้อน (Multi-body Dynamics)</p>
+    </div>
+
+    <!-- Top Right Action Buttons -->
+    <div class="absolute top-4 right-4 z-20 flex gap-2 pointer-events-auto">
+        <button id="btn-theme" class="glass-panel w-10 h-10 rounded-full flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-700 shadow-md" title="สลับโทนสีสว่าง/มืด">
+            <i class="fas fa-moon dark:hidden"></i>
+            <i class="fas fa-sun hidden dark:block text-yellow-400"></i>
+        </button>
+        <button id="btn-labels-toggle" class="glass-panel w-10 h-10 rounded-full flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-700 shadow-md bg-blue-100 dark:bg-blue-900" title="แสดง/ซ่อนชื่อแรง">
+            <i class="fas fa-font text-blue-600 dark:text-blue-300"></i>
+        </button>
+        <button id="btn-eq-toggle" class="glass-panel w-10 h-10 rounded-full flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-700 shadow-md" title="แสดงสมการการเคลื่อนที่">
+            <i class="fas fa-subscript text-blue-500"></i>
+        </button>
+        <button id="btn-fullscreen" class="glass-panel w-10 h-10 rounded-full flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-700 shadow-md" title="เต็มจอ">
+            <i class="fas fa-expand"></i>
+        </button>
+    </div>
+
+    <div id="panel-eq" class="absolute top-16 right-4 z-10 glass-panel p-4 rounded-xl shadow-lg w-80 pointer-events-auto hidden">
+        <h2 class="text-sm font-bold mb-2 border-b border-slate-300 dark:border-slate-600 pb-1 text-blue-600 dark:text-blue-400"><i class="fas fa-calculator mr-2"></i>สมการลัพธ์ (Live)</h2>
+        <div id="eq-content" class="eq-panel space-y-2 text-slate-700 dark:text-emerald-400">
+            <!-- Equations dynamically injected here -->
+        </div>
+    </div>
+
+    <div class="absolute top-20 left-4 z-10 glass-panel p-4 rounded-xl shadow-lg w-72 md:w-80 pointer-events-auto flex flex-col max-h-[55vh] overflow-y-auto">
+        <h2 class="text-lg font-semibold mb-3 border-b border-slate-300 dark:border-slate-700 pb-2">ผลลัพธ์ของระบบ</h2>
+        <div class="space-y-3 shrink-0">
+            <div>
+                <div class="text-xs text-slate-500 dark:text-slate-400">แรงลัพธ์ระบบ (ΣF)</div>
+                <div class="hud-value text-blue-600 dark:text-sky-400" id="hud-netforce">0.00 N</div>
+            </div>
+            <div>
+                <div class="text-xs text-slate-500 dark:text-slate-400">ความเร่งระบบ (a)</div>
+                <div class="hud-value text-slate-800 dark:text-white" id="hud-accel">0.00 m/s²</div>
+            </div>
+            <div class="flex gap-4">
+                <div class="flex-1">
+                    <div class="text-xs text-slate-500 dark:text-slate-400">ความเร็ว (v)</div>
+                    <div class="hud-value text-slate-800 dark:text-white" id="hud-vel">0.00 m/s</div>
+                </div>
+                <div class="flex-1">
+                    <div class="text-xs text-slate-500 dark:text-slate-400">แรงเสียดทาน (f)</div>
+                    <div class="hud-value text-orange-500 dark:text-orange-400" id="hud-friction">0.00 N</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="mt-4 border-t border-slate-300 dark:border-slate-700 pt-3 shrink-0">
+            <div class="flex justify-between items-center mb-1">
+                <h3 class="text-[13px] font-semibold text-slate-700 dark:text-slate-300"><i class="fas fa-chart-line mr-1"></i> กราฟความสัมพันธ์</h3>
+                <select id="sel-chart-type" class="text-xs bg-white dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-300 dark:border-slate-600 rounded px-2 py-1 outline-none focus:border-blue-500">
+                    <option value="f_vector">แรงดึง (F) กับ แรงเสียดทาน (f) แบบเวกเตอร์</option>
+                    <option value="f_magnitude">ขนาดแรงพยายาม กับ ขนาดแรงเสียดทาน (แบบตำรา)</option>
+                </select>
+            </div>
+            <div class="w-full h-40">
+                <canvas id="frictionChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="absolute bottom-0 left-0 w-full z-10 glass-panel p-4 rounded-t-2xl shadow-[0_-10px_40px_rgba(0,0,0,0.2)] dark:shadow-[0_-10px_40px_rgba(0,0,0,0.5)] pointer-events-auto max-h-[45vh] overflow-y-auto">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row gap-6">
+            
+            <!-- Controls: โหมด และ สภาพแวดล้อม -->
+            <div class="flex-1 space-y-3">
+                <h3 class="font-semibold text-blue-600 dark:text-blue-400 mb-1"><i class="fas fa-layer-group mr-2"></i>รูปแบบระบบ</h3>
+                <div>
+                    <select id="sel-mode" class="w-full bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm rounded px-3 py-2 border border-slate-300 dark:border-slate-600 outline-none focus:border-blue-500">
+                        <option value="1">1. วัตถุชิ้นเดี่ยว (Single Block)</option>
+                        <option value="2">2. วัตถุติดกัน 2 ชิ้น (2 Connected Blocks)</option>
+                        <option value="3">3. วัตถุติดกัน 3 ชิ้น (3 Connected Blocks)</option>
+                        <option value="4">4. วัตถุ 2 ชิ้นซ้อนกัน (Stacked Blocks)</option>
+                    </select>
+                </div>
+                <div>
+                    <div class="slider-label text-slate-600 dark:text-slate-300">
+                        <span>มุมพื้นเอียง (θ)</span>
+                        <span id="val-angle" class="font-mono">30°</span>
+                    </div>
+                    <input type="range" id="inp-angle" min="0" max="90" step="1" value="30">
+                </div>
+                <div>
+                    <div class="slider-label text-slate-600 dark:text-slate-300">
+                        <span>แรงผลัก/ดึง (F) <span class="text-[10px] opacity-75">(กระทำที่ก้อน 1)</span></span>
+                        <span id="val-force" class="font-mono">0 N</span>
+                    </div>
+                    <input type="range" id="inp-force" min="-300" max="300" step="1" value="0">
+                </div>
+            </div>
+
+            <!-- Controls: มวลวัตถุ -->
+            <div class="flex-1 space-y-3 border-t md:border-t-0 md:border-l border-slate-200 dark:border-slate-700 pt-3 md:pt-0 md:pl-6">
+                <h3 class="font-semibold text-purple-600 dark:text-purple-400 mb-1"><i class="fas fa-cubes mr-2"></i>มวล (Mass)</h3>
+                <div>
+                    <div class="slider-label text-blue-600 dark:text-blue-300 font-medium">
+                        <span>วัตถุ 1 (m₁) สีน้ำเงิน</span>
+                        <span id="val-mass1" class="font-mono">10 kg</span>
+                    </div>
+                    <input type="range" id="inp-mass1" min="1" max="50" step="1" value="10">
+                </div>
+                <div id="ctrl-mass2" class="hidden">
+                    <div class="slider-label text-red-600 dark:text-red-400 font-medium">
+                        <span>วัตถุ 2 (m₂) สีแดง</span>
+                        <span id="val-mass2" class="font-mono">5 kg</span>
+                    </div>
+                    <input type="range" id="inp-mass2" min="1" max="50" step="1" value="5">
+                </div>
+                <div id="ctrl-mass3" class="hidden">
+                    <div class="slider-label text-emerald-600 dark:text-emerald-400 font-medium">
+                        <span>วัตถุ 3 (m₃) สีเขียว</span>
+                        <span id="val-mass3" class="font-mono">5 kg</span>
+                    </div>
+                    <input type="range" id="inp-mass3" min="1" max="50" step="1" value="5">
+                </div>
+            </div>
+
+            <!-- Controls: ความเสียดทาน -->
+            <div class="flex-1 space-y-3 border-t md:border-t-0 md:border-l border-slate-200 dark:border-slate-700 pt-3 md:pt-0 md:pl-6">
+                <h3 class="font-semibold text-orange-600 dark:text-orange-400 mb-1"><i class="fas fa-road mr-2"></i>ความเสียดทาน (Friction)</h3>
+                
+                <div class="text-sm font-medium text-slate-700 dark:text-slate-300">สัมประสิทธิ์ที่พื้นเอียง:</div>
+                <div class="flex gap-4">
+                    <div class="flex-1">
+                        <div class="slider-label text-slate-600 dark:text-slate-400"><span class="text-xs">μs (สถิต)</span><span id="val-mus" class="font-mono">0.4</span></div>
+                        <input type="range" id="inp-mus" min="0" max="1" step="0.05" value="0.4">
+                    </div>
+                    <div class="flex-1">
+                        <div class="slider-label text-slate-600 dark:text-slate-400"><span class="text-xs">μk (จลน์)</span><span id="val-muk" class="font-mono">0.3</span></div>
+                        <input type="range" id="inp-muk" min="0" max="1" step="0.05" value="0.3">
+                    </div>
+                </div>
+
+                <div id="ctrl-fric-stack" class="hidden">
+                    <div class="text-sm font-medium text-slate-700 dark:text-slate-300 mt-2">สัมประสิทธิ์ระหว่างวัตถุ 1 และ 2:</div>
+                    <div class="flex gap-4">
+                        <div class="flex-1">
+                            <div class="slider-label text-slate-600 dark:text-slate-400"><span class="text-xs">μs (สถิต)</span><span id="val-mus-st" class="font-mono">0.4</span></div>
+                            <input type="range" id="inp-mus-st" min="0" max="1" step="0.05" value="0.4">
+                        </div>
+                        <div class="flex-1">
+                            <div class="slider-label text-slate-600 dark:text-slate-400"><span class="text-xs">μk (จลน์)</span><span id="val-muk-st" class="font-mono">0.3</span></div>
+                            <input type="range" id="inp-muk-st" min="0" max="1" step="0.05" value="0.3">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex flex-col justify-center gap-3 w-full md:w-40 border-t md:border-t-0 md:border-l border-slate-200 dark:border-slate-700 pt-3 md:pt-0 md:pl-6">
+                <button id="btn-play" class="bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-lg font-semibold transition-colors shadow-lg flex items-center justify-center gap-2">
+                    <i class="fas fa-play"></i> เล่นจำลอง
+                </button>
+                <button id="btn-reset" class="bg-slate-200 hover:bg-slate-300 text-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-white py-2 rounded-lg font-medium transition-colors flex items-center justify-center gap-2">
+                    <i class="fas fa-undo"></i> รีเซ็ต
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // System State
+        const state = {
+            mode: 1, // 1: Single, 2: Connected(2), 3: Connected(3), 4: Stacked
+            chartType: 'f_magnitude',
+            angle: 30,
+            mass1: 10,
+            mass2: 5,
+            mass3: 5,
+            appliedForce: 0,
+            muS: 0.4,
+            muK: 0.3,
+            muS_st: 0.4, 
+            muK_st: 0.3,
+            isPlaying: false,
+            showLabels: true,
+            
+            // Simulation physics tracking
+            pos1: 0, pos2: 0, pos3: 0,
+            vel1: 0, vel2: 0, vel3: 0,
+            acc1: 0, acc2: 0, acc3: 0,
+            
+            netForce: 0,
+            currentFriction: 0,
+            contactF12: 0,
+            contactF23: 0,
+            isSlipping: false,
+            isFallen: false,
+            pos2y: 0,
+            vel2y: 0
+        };
+
+        const CONSTANTS = {
+            g: 9.81,
+            rampLength: 40,
+            pixelsPerMeter: 1
+        };
+
+        // DOM Element Cache
+        const els = {
+            mode: document.getElementById('sel-mode'),
+            angle: document.getElementById('inp-angle'),
+            mass1: document.getElementById('inp-mass1'),
+            mass2: document.getElementById('inp-mass2'),
+            mass3: document.getElementById('inp-mass3'),
+            force: document.getElementById('inp-force'),
+            mus: document.getElementById('inp-mus'),
+            muk: document.getElementById('inp-muk'),
+            mus_st: document.getElementById('inp-mus-st'),
+            muk_st: document.getElementById('inp-muk-st'),
+            
+            valAngle: document.getElementById('val-angle'),
+            valMass1: document.getElementById('val-mass1'),
+            valMass2: document.getElementById('val-mass2'),
+            valMass3: document.getElementById('val-mass3'),
+            valForce: document.getElementById('val-force'),
+            valMus: document.getElementById('val-mus'),
+            valMuk: document.getElementById('val-muk'),
+            valMus_st: document.getElementById('val-mus-st'),
+            valMuk_st: document.getElementById('val-muk-st'),
+            
+            ctrlMass2: document.getElementById('ctrl-mass2'),
+            ctrlMass3: document.getElementById('ctrl-mass3'),
+            ctrlFricSt: document.getElementById('ctrl-fric-stack'),
+            
+            btnPlay: document.getElementById('btn-play'),
+            btnReset: document.getElementById('btn-reset'),
+            btnTheme: document.getElementById('btn-theme'),
+            btnLabels: document.getElementById('btn-labels-toggle'),
+            btnFullscreen: document.getElementById('btn-fullscreen'),
+            btnEq: document.getElementById('btn-eq-toggle'),
+            
+            panelEq: document.getElementById('panel-eq'),
+            eqContent: document.getElementById('eq-content'),
+            
+            hudNetForce: document.getElementById('hud-netforce'),
+            hudAccel: document.getElementById('hud-accel'),
+            hudVel: document.getElementById('hud-vel'),
+            hudFric: document.getElementById('hud-friction'),
+            chartType: document.getElementById('sel-chart-type')
+        };
+
+        els.chartType.addEventListener('change', (e) => {
+            state.chartType = e.target.value;
+            updateChartConfig();
+            updateChartData();
+        });
+
+        els.mode.addEventListener('change', (e) => {
+            state.mode = parseInt(e.target.value);
+            els.ctrlMass2.classList.toggle('hidden', state.mode === 1);
+            els.ctrlMass3.classList.toggle('hidden', state.mode !== 3);
+            els.ctrlFricSt.classList.toggle('hidden', state.mode !== 4);
+            resetSim();
+        });
+
+        els.btnTheme.addEventListener('click', () => {
+            const html = document.documentElement;
+            html.classList.toggle('dark');
+            const isDark = html.classList.contains('dark');
+            
+            // Update Three.js scene colors
+            scene.background = new THREE.Color(isDark ? 0x0f172a : 0xf1f5f9);
+            scene.fog = new THREE.FogExp2(isDark ? 0x0f172a : 0xf1f5f9, 0.02);
+            gridHelper.material.color.setHex(isDark ? 0x334155 : 0xcbd5e1);
+            ambientLight.intensity = isDark ? 0.4 : 0.7;
+            dirLight.intensity = isDark ? 0.8 : 0.5;
+            
+            if (chartInstance) {
+                const textColor = isDark ? '#cbd5e1' : '#475569';
+                const gridColor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+                chartInstance.options.scales.x.title.color = textColor;
+                chartInstance.options.scales.y.title.color = textColor;
+                chartInstance.options.scales.x.ticks.color = textColor;
+                chartInstance.options.scales.y.ticks.color = textColor;
+                chartInstance.options.scales.x.grid.color = gridColor;
+                chartInstance.options.scales.y.grid.color = gridColor;
+                chartInstance.update();
+            }
+        });
+
+        els.btnLabels.addEventListener('click', () => {
+            state.showLabels = !state.showLabels;
+            if (state.showLabels) {
+                els.btnLabels.classList.add('bg-blue-100', 'dark:bg-blue-900');
+            } else {
+                els.btnLabels.classList.remove('bg-blue-100', 'dark:bg-blue-900');
+            }
+            updateArrows();
+        });
+
+        els.btnFullscreen.addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => console.log(err));
+            } else {
+                document.exitFullscreen();
+            }
+        });
+
+        els.btnEq.addEventListener('click', () => {
+            els.panelEq.classList.toggle('hidden');
+        });
+
+        function bindSlider(sliderEl, valEl, stateKey, unit = '', formatFn = val => val) {
+            sliderEl.addEventListener('input', (e) => {
+                let val = parseFloat(e.target.value);
+                // Validation for friction
+                if (stateKey === 'muS' && val < state.muK) { val = state.muK; e.target.value = val; }
+                if (stateKey === 'muK' && val > state.muS) { val = state.muS; e.target.value = val; }
+                if (stateKey === 'muS_st' && val < state.muK_st) { val = state.muK_st; e.target.value = val; }
+                if (stateKey === 'muK_st' && val > state.muS_st) { val = state.muS_st; e.target.value = val; }
+                
+                state[stateKey] = val;
+                valEl.innerText = formatFn(val) + unit;
+                updatePhysics(0); 
+                updateArrows();
+            });
+        }
+
+        bindSlider(els.angle, els.valAngle, 'angle', '°');
+        bindSlider(els.mass1, els.valMass1, 'mass1', ' kg');
+        bindSlider(els.mass2, els.valMass2, 'mass2', ' kg');
+        bindSlider(els.mass3, els.valMass3, 'mass3', ' kg');
+        bindSlider(els.force, els.valForce, 'appliedForce', ' N');
+        bindSlider(els.mus, els.valMus, 'muS', '', v => v.toFixed(2));
+        bindSlider(els.muk, els.valMuk, 'muK', '', v => v.toFixed(2));
+        bindSlider(els.mus_st, els.valMus_st, 'muS_st', '', v => v.toFixed(2));
+        bindSlider(els.muk_st, els.valMuk_st, 'muK_st', '', v => v.toFixed(2));
+
+        function resetSim() {
+            state.isPlaying = false;
+            state.pos1 = 0; state.pos2 = 0; state.pos3 = 0;
+            state.vel1 = 0; state.vel2 = 0; state.vel3 = 0;
+            state.isFallen = false;
+            state.pos2y = 0;
+            state.vel2y = 0;
+            els.btnPlay.innerHTML = '<i class="fas fa-play"></i> เล่นจำลอง';
+            els.btnPlay.className = 'bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-lg font-semibold transition-colors shadow-lg flex items-center justify-center gap-2';
+            updatePhysics(0);
+            updateArrows();
+        }
+
+        els.btnPlay.addEventListener('click', () => {
+            state.isPlaying = !state.isPlaying;
+            els.btnPlay.innerHTML = state.isPlaying ? '<i class="fas fa-pause"></i> หยุดพัก' : '<i class="fas fa-play"></i> เล่นต่อ';
+            els.btnPlay.className = state.isPlaying 
+                ? 'bg-amber-600 hover:bg-amber-500 text-white py-3 rounded-lg font-semibold transition-colors shadow-lg flex items-center justify-center gap-2' 
+                : 'bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-lg font-semibold transition-colors shadow-lg flex items-center justify-center gap-2';
+        });
+
+        els.btnReset.addEventListener('click', resetSim);
+
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x0f172a); // Default dark
+        scene.fog = new THREE.FogExp2(0x0f172a, 0.02);
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 15, 40);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        container.appendChild(renderer.domElement);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.maxPolarAngle = Math.PI / 2 + 0.1;
+
+        // Lights
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+        scene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        dirLight.position.set(10, 20, 10);
+        dirLight.castShadow = true;
+        dirLight.shadow.mapSize.width = 2048;
+        dirLight.shadow.mapSize.height = 2048;
+        dirLight.shadow.camera.near = 0.5;
+        dirLight.shadow.camera.far = 50;
+        dirLight.shadow.camera.left = -30;
+        dirLight.shadow.camera.right = 30;
+        dirLight.shadow.camera.top = 30;
+        dirLight.shadow.camera.bottom = -30;
+        scene.add(dirLight);
+
+        // Environment
+        const groundGeo = new THREE.PlaneGeometry(200, 200);
+        const groundMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.8, transparent: true, opacity: 0.4 });
+        const ground = new THREE.Mesh(groundGeo, groundMat);
+        ground.rotation.x = -Math.PI / 2;
+        ground.position.y = -5;
+        ground.receiveShadow = true;
+        scene.add(ground);
+
+        const gridHelper = new THREE.GridHelper(200, 100, 0x334155, 0x334155);
+        gridHelper.position.y = -4.99;
+        scene.add(gridHelper);
+
+        const rampGroup = new THREE.Group();
+        scene.add(rampGroup);
+
+        const rampThick = 0.5;
+        const rampWidth = 8;
+        const rampGeo = new THREE.BoxGeometry(CONSTANTS.rampLength, rampThick, rampWidth);
+        const rampMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.6, transparent: true, opacity: 0.6 });
+        const ramp = new THREE.Mesh(rampGeo, rampMat);
+        ramp.receiveShadow = true;
+        ramp.castShadow = true;
+        rampGroup.add(ramp);
+
+        // Blocks Array
+        const blocks = [];
+        const blockColors = [0x3b82f6, 0xef4444, 0x10b981]; // Blue, Red, Green
+        
+        for(let i=0; i<3; i++) {
+            const geo = new THREE.BoxGeometry(1, 1, 1);
+            const mat = new THREE.MeshStandardMaterial({ color: blockColors[i], roughness: 0.4, metalness: 0.2 });
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            scene.add(mesh);
+            blocks.push(mesh);
+        }
+
+        // Arrows setup
+        const createArrow = (hex) => new THREE.ArrowHelper(new THREE.Vector3(1,0,0), new THREE.Vector3(), 1, hex, 0.8, 0.5);
+        const arrows = {
+            gravity_x: createArrow(0xef4444),
+            gravity_y: createArrow(0xef4444),
+            normal: createArrow(0x8b5cf6),
+            applied: createArrow(0x22c55e),
+            friction: createArrow(0xf97316),
+            contact12: createArrow(0xfacc15), 
+            contact23: createArrow(0xfacc15),
+            fric_stack: createArrow(0xd946ef) 
+        };
+
+        for (let key in arrows) scene.add(arrows[key]);
+
+        // Text Labels for Arrows
+        function createTextSprite(message, colorHex) {
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.width = 256;
+            canvas.height = 128;
+            context.font = "Bold 44px 'Prompt', sans-serif";
+            context.fillStyle = colorHex;
+            context.textAlign = "center";
+            context.textBaseline = "middle";
+            context.strokeStyle = 'rgba(255, 255, 255, 0.95)';
+            context.lineWidth = 6;
+            context.strokeText(message, 128, 64);
+            context.fillText(message, 128, 64);
+            const texture = new THREE.CanvasTexture(canvas);
+            const spriteMat = new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false });
+            const sprite = new THREE.Sprite(spriteMat);
+            sprite.scale.set(3.5, 1.75, 1);
+            sprite.renderOrder = 999;
+            return sprite;
+        }
+
+        const labels = {
+            gravity_x: createTextSprite('mg sinθ', '#ef4444'),
+            gravity_y: createTextSprite('mg cosθ', '#ef4444'),
+            normal: createTextSprite('N', '#8b5cf6'),
+            applied: createTextSprite('F', '#22c55e'),
+            friction: createTextSprite('f', '#f97316'),
+            contact12: createTextSprite('R12', '#facc15'), 
+            contact23: createTextSprite('R23', '#facc15'),
+            fric_stack: createTextSprite('f', '#d946ef') 
+        };
+
+        for (let key in labels) scene.add(labels[key]);
+
+        function updatePhysics(dt) {
+            const theta = state.angle * Math.PI / 180;
+            const sinT = Math.sin(theta);
+            const cosT = Math.cos(theta);
+            const g = CONSTANTS.g;
+            
+            let m1 = state.mass1, m2 = state.mass2, m3 = state.mass3;
+            let F = state.appliedForce;
+            
+            // Auto stop when velocity is near zero
+            if (Math.abs(state.vel1) < 0.01 && !state.isPlaying) state.vel1 = 0;
+            if (Math.abs(state.vel2) < 0.01 && !state.isPlaying) state.vel2 = 0;
+            if (Math.abs(state.vel3) < 0.01 && !state.isPlaying) state.vel3 = 0;
+
+            let eqHTML = "";
+
+            if (state.mode === 1) { 
+                // Single Block Mode
+                let W_par = m1 * g * sinT;
+                let N = m1 * g * cosT;
+                let F_pending = F - W_par;
+                let fric = 0, a = 0;
+
+                if (state.vel1 === 0) {
+                    let fs_max = state.muS * N;
+                    if (Math.abs(F_pending) <= fs_max) {
+                        fric = -F_pending;
+                    } else {
+                        fric = -Math.sign(F_pending) * (state.muK * N);
+                        a = (F_pending + fric) / m1;
+                    }
+                } else {
+                    fric = -Math.sign(state.vel1) * (state.muK * N);
+                    a = (F_pending + fric) / m1;
+                }
+
+                state.acc1 = a; state.currentFriction = fric; state.netForce = m1 * a;
+                
+                eqHTML = `
+                    <div class="mb-2 text-slate-400"># วัตถุเดี่ยว (Single Block)</div>
+                    <div>W<sub>x</sub> = mg·sin(θ) = ${(W_par).toFixed(2)} N</div>
+                    <div>N = mg·cos(θ) = ${(N).toFixed(2)} N</div>
+                    <div>f<sub>s,max</sub> = μ<sub>s</sub>N = ${(state.muS*N).toFixed(2)} N</div>
+                    <hr class="border-current opacity-30 my-2">
+                    <div>ΣF = F - W<sub>x</sub> + f = m·a</div>
+                    <div>${F} - ${(W_par).toFixed(2)} + ${fric.toFixed(2)} = ${m1} · <b class="text-white">a</b></div>
+                    <div>a = <b class="text-white">${a.toFixed(2)}</b> m/s²</div>
+                `;
+
+            } else if (state.mode === 2 || state.mode === 3) { 
+                // Connected Blocks Mode
+                let num = state.mode;
+                let M = m1 + (num>=2?m2:0) + (num===3?m3:0);
+                let W_par = M * g * sinT;
+                let N_tot = M * g * cosT;
+                let F_pending = F - W_par;
+                let fric = 0, a = 0;
+
+                if (state.vel1 === 0) {
+                    let fs_max = state.muS * N_tot;
+                    if (Math.abs(F_pending) <= fs_max) {
+                        fric = -F_pending;
+                    } else {
+                        fric = -Math.sign(F_pending) * (state.muK * N_tot);
+                        a = (F_pending + fric) / M;
+                    }
+                } else {
+                    fric = -Math.sign(state.vel1) * (state.muK * N_tot);
+                    a = (F_pending + fric) / M;
+                }
+                
+                state.acc1 = a; state.acc2 = a; state.acc3 = a;
+                state.currentFriction = fric; state.netForce = M * a;
+                
+                // Calculate Contact forces
+                let M23 = (num>=2?m2:0) + (num===3?m3:0);
+                let R12 = 0, R23 = 0;
+                
+                if (num >= 2) {
+                    let dir = state.vel1 !== 0 ? Math.sign(state.vel1) : (a !== 0 ? Math.sign(a) : 0);
+                    let f23 = dir !== 0 ? -(state.muK * M23 * g * cosT * dir) : (M23/M)*fric;
+                    // R12 pushes m2+m3 up the ramp
+                    R12 = M23 * a + M23 * g * sinT - f23;
+                    state.contactF12 = R12;
+                }
+                if (num === 3) {
+                    let dir = state.vel1 !== 0 ? Math.sign(state.vel1) : (a !== 0 ? Math.sign(a) : 0);
+                    let f3 = dir !== 0 ? -(state.muK * m3 * g * cosT * dir) : (m3/M)*fric;
+                    R23 = m3 * a + m3 * g * sinT - f3;
+                    state.contactF23 = R23;
+                }
+
+                eqHTML = `
+                    <div class="mb-2 text-slate-400"># พิจารณาทั้งระบบ (System)</div>
+                    <div>M<sub>รวม</sub> = ${M} kg</div>
+                    <div>W<sub>x,รวม</sub> = ${(W_par).toFixed(2)} N</div>
+                    <div>f<sub>รวม</sub> = ${fric.toFixed(2)} N</div>
+                    <div>a = <b class="text-white">${a.toFixed(2)}</b> m/s²</div>
+                    <hr class="border-current opacity-30 my-2">
+                    <div class="mb-1 text-slate-400"># แรงกระทำระหว่างก้อน (Action-Reaction)</div>
+                    <div>R<sub>12</sub> = m<sub>หลัง</sub>(a + g·sinθ) - f<sub>หลัง</sub></div>
+                    <div>R<sub>12</sub> = <b class="text-yellow-400">${R12.toFixed(2)}</b> N</div>
+                    ${num===3 ? `<div>R<sub>23</sub> = <b class="text-yellow-400">${R23.toFixed(2)}</b> N</div>` : ''}
+                `;
+
+            } else if (state.mode === 4) { 
+                // Stacked Blocks Mode (m2 on m1)
+                
+                if (state.isFallen) {
+                    let W1_par = m1 * g * sinT;
+                    let N1 = m1 * g * cosT;
+                    let F_pending_1 = F - W1_par;
+                    let f1 = 0, a1 = 0;
+                    if (state.vel1 === 0) {
+                        if (Math.abs(F_pending_1) <= state.muS * N1) f1 = -F_pending_1;
+                        else { f1 = -Math.sign(F_pending_1) * state.muK * N1; a1 = (F_pending_1 + f1)/m1; }
+                    } else {
+                        f1 = -Math.sign(state.vel1) * state.muK * N1; a1 = (F_pending_1 + f1)/m1;
+                    }
+                    state.acc1 = a1; state.currentFriction = f1;
+
+                    if (state.pos2y > 0) {
+                        state.acc2 = -g * sinT;
+                        eqHTML = `
+                            <div class="mb-2 text-red-400 font-bold"><i class="fas fa-exclamation-triangle mr-1"></i> วัตถุที่ 2 กำลังตก!</div>
+                            <div>a<sub>x</sub> = -g·sinθ = ${(-g*sinT).toFixed(2)} m/s²</div>
+                            <div>a<sub>y</sub> = -g·cosθ = ${(-g*cosT).toFixed(2)} m/s²</div>
+                        `;
+                    } else {
+                        let W2_par = m2 * g * sinT;
+                        let N2 = m2 * g * cosT;
+                        let F_pending_2 = -W2_par;
+                        let f2 = 0, a2 = 0;
+                        if (state.vel2 === 0) {
+                            if (Math.abs(F_pending_2) <= state.muS * N2) f2 = -F_pending_2;
+                            else { f2 = -Math.sign(F_pending_2) * state.muK * N2; a2 = (F_pending_2 + f2)/m2; }
+                        } else {
+                            f2 = -Math.sign(state.vel2) * state.muK * N2; a2 = (F_pending_2 + f2)/m2;
+                        }
+                        state.acc2 = a2;
+                        
+                        eqHTML = `
+                            <div class="mb-2 text-orange-400 font-bold"><i class="fas fa-exclamation-triangle mr-1"></i> วัตถุแยกกันบนพื้นเอียง</div>
+                            <div>a<sub>1</sub> = <b class="text-white">${state.acc1.toFixed(2)}</b> m/s²</div>
+                            <div>a<sub>2</sub> = <b class="text-white">${state.acc2.toFixed(2)}</b> m/s²</div>
+                        `;
+                    }
+                    state.netForce = m1 * state.acc1 + (state.pos2y <= 0 ? m2 * state.acc2 : 0);
+                    state.contactF12 = 0;
+                } else {
+                    let W1_par = m1 * g * sinT;
+                    let W2_par = m2 * g * sinT;
+                    let N1 = (m1 + m2) * g * cosT;
+                    let N2 = m2 * g * cosT;
+
+                    let M = m1 + m2;
+                    let F_pending_sys = F - (W1_par + W2_par);
+                    let f1_stick = 0, a_stick = 0;
+
+                    if (state.vel1 === 0) {
+                        if (Math.abs(F_pending_sys) <= state.muS * N1) { f1_stick = -F_pending_sys; }
+                        else { f1_stick = -Math.sign(F_pending_sys) * state.muK * N1; a_stick = (F_pending_sys + f1_stick) / M; }
+                    } else {
+                        f1_stick = -Math.sign(state.vel1) * state.muK * N1;
+                        a_stick = (F_pending_sys + f1_stick) / M;
+                    }
+
+                    let f2_req = m2 * a_stick + W2_par;
+                    let max_fs2 = state.muS_st * N2;
+                    let fk2 = state.muK_st * N2;
+
+                    // Transition to stick if relative velocity is small and forces allow
+                    if (state.isSlipping && Math.abs(state.vel1 - state.vel2) < 0.05 && Math.abs(f2_req) <= max_fs2) {
+                        state.isSlipping = false;
+                        state.vel2 = state.vel1; // snap to same velocity
+                    }
+                    // Transition to slip if required force exceeds static friction
+                    if (!state.isSlipping && Math.abs(f2_req) > max_fs2) {
+                        state.isSlipping = true;
+                    }
+
+                    if (!state.isSlipping) {
+                        state.acc1 = a_stick;
+                        state.acc2 = a_stick;
+                        state.currentFriction = f1_stick;
+                        state.contactF12 = f2_req;
+                        
+                        eqHTML = `
+                            <div class="mb-2 text-green-400 font-bold"><i class="fas fa-link mr-1"></i> วัตถุเคลื่อนที่ติดกัน</div>
+                            <div>a<sub>sys</sub> = <b class="text-white">${state.acc1.toFixed(2)}</b> m/s²</div>
+                            <div>f (รอยต่อ) = ${f2_req.toFixed(2)} N  (≤ μ<sub>s</sub>N₂)</div>
+                        `;
+                    } else {
+                        let v_rel = state.vel1 - state.vel2;
+                        let f2 = (Math.abs(v_rel) > 0.01) ? Math.sign(v_rel) * fk2 : Math.sign(f2_req) * fk2;
+                        state.contactF12 = f2;
+                        state.acc2 = (f2 - W2_par) / m2;
+                        
+                        let F_pending_1 = F - W1_par - f2;
+                        let f1_slip = 0;
+                        if (state.vel1 === 0) {
+                            if (Math.abs(F_pending_1) <= state.muS * N1) { f1_slip = -F_pending_1; state.acc1 = 0; }
+                            else { f1_slip = -Math.sign(F_pending_1) * state.muK * N1; state.acc1 = (F_pending_1 + f1_slip) / m1; }
+                        } else {
+                            f1_slip = -Math.sign(state.vel1) * state.muK * N1;
+                            state.acc1 = (F_pending_1 + f1_slip) / m1;
+                        }
+                        state.currentFriction = f1_slip;
+                        
+                        eqHTML = `
+                            <div class="mb-2 text-red-400 font-bold"><i class="fas fa-exclamation-triangle mr-1"></i> วัตถุไถลหลุดจากกัน!</div>
+                            <div>f<sub>k</sub> (รอยต่อ) = μ<sub>k</sub>N₂ = ${(fk2).toFixed(2)} N</div>
+                            <div>สมการบน: f<sub>k</sub> - W₂ = m₂a₂</div>
+                            <div>สมการล่าง: F - W₁ - f<sub>k</sub> - f = m₁a₁</div>
+                            <hr class="border-current opacity-30 my-2">
+                            <div>a<sub>ล่าง</sub> = <b class="text-blue-300">${state.acc1.toFixed(2)}</b> m/s²</div>
+                            <div>a<sub>บน</sub> = <b class="text-red-300">${state.acc2.toFixed(2)}</b> m/s²</div>
+                        `;
+                    }
+                }
+                if (!state.isFallen) {
+                    state.netForce = m1 * state.acc1 + m2 * state.acc2;
+                }
+            }
+
+            els.eqContent.innerHTML = eqHTML;
+
+            // Integration & Zero-crossing handling
+            if (state.isPlaying) {
+                const checkZeroCross = (vel, acc, delta) => {
+                    const nextVel = vel + acc * delta;
+                    if (Math.sign(vel) !== Math.sign(nextVel) && vel !== 0) return true;
+                    return false;
+                };
+
+                if (checkZeroCross(state.vel1, state.acc1, dt)) { state.vel1 = 0; state.acc1 = 0; }
+                if (checkZeroCross(state.vel2, state.acc2, dt)) { state.vel2 = 0; state.acc2 = 0; }
+                if (checkZeroCross(state.vel3, state.acc3, dt)) { state.vel3 = 0; state.acc3 = 0; }
+
+                state.vel1 += state.acc1 * dt;
+                
+                if (state.mode === 4) {
+                    if (state.isFallen) {
+                        state.vel2 += state.acc2 * dt;
+                        if (state.pos2y > 0) {
+                            state.vel2y -= g * cosT * dt;
+                            state.pos2y += state.vel2y * dt;
+                            if (state.pos2y <= 0) {
+                                state.pos2y = 0;
+                                state.vel2y = 0;
+                            }
+                        }
+                    } else if (state.isSlipping) {
+                        state.vel2 += state.acc2 * dt;
+                    } else {
+                        state.vel2 = state.vel1;
+                    }
+                } else {
+                    state.vel2 += state.acc2 * dt;
+                }
+                
+                state.vel3 += state.acc1 * dt; 
+
+                state.pos1 += state.vel1 * dt;
+                state.pos2 += state.vel2 * dt;
+                state.pos3 += state.vel3 * dt;
+                
+                // Track Boundaries
+                const limit = CONSTANTS.rampLength / 2 - 3;
+                if (state.pos1 > limit) { state.pos1 = limit; state.vel1 = 0; }
+                if (state.pos1 < -limit) { state.pos1 = -limit; state.vel1 = 0; }
+                
+                if (state.mode === 4) {
+                    const s1 = Math.max(0.6, Math.pow(state.mass1 / 10, 1/3)) * 1.5;
+                    const s2 = Math.max(0.6, Math.pow(state.mass2 / 10, 1/3)) * 1.5;
+                    
+                    if (!state.isFallen) {
+                        // Check if block 2 fell off block 1
+                        if (Math.abs(state.pos2 - state.pos1) > (s1/2 + s2/2) * 0.85) {
+                            state.isFallen = true;
+                            state.pos2y = s1; 
+                            state.vel2y = 0;
+                        }
+                    } else {
+                        if (state.pos2 > limit) { state.pos2 = limit; state.vel2 = 0; }
+                        if (state.pos2 < -limit) { state.pos2 = -limit; state.vel2 = 0; }
+                    }
+                } else {
+                    state.pos2 = state.pos1;
+                    state.pos3 = state.pos1;
+                }
+            }
+
+            // Update HUD
+            els.hudNetForce.innerText = state.netForce.toFixed(2) + ' N';
+            els.hudAccel.innerText = state.acc1.toFixed(2) + ' m/s²';
+            els.hudVel.innerText = state.vel1.toFixed(2) + ' m/s';
+            els.hudFric.innerText = Math.abs(state.currentFriction).toFixed(2) + ' N';
+            
+            updateChartData();
+        }
+
+        function updateArrows() {
+            const theta = state.angle * Math.PI / 180;
+            rampGroup.rotation.z = theta;
+
+            // Geometry calculations
+            const getGlobal = (localX, localY) => ({
+                x: localX * Math.cos(theta) - localY * Math.sin(theta),
+                y: localX * Math.sin(theta) + localY * Math.cos(theta)
+            });
+
+            // Adjust box size visually based on mass (cubic root relationship)
+            const getScale = (m) => Math.max(0.6, Math.pow(m / 10, 1/3));
+            const s1 = getScale(state.mass1) * 1.5;
+            const s2 = getScale(state.mass2) * 1.5;
+            const s3 = getScale(state.mass3) * 1.5;
+
+            // Reset visibility
+            blocks.forEach(b => b.visible = false);
+            for(let key in arrows) {
+                arrows[key].visible = false;
+                if (labels[key]) labels[key].visible = false;
+            }
+
+            const thick = rampThick / 2;
+            
+            const placeLabel = (key, arrowObj, dirVec, length) => {
+                if (state.showLabels && labels[key]) {
+                    labels[key].visible = true;
+                    // Offset label slightly past the arrow tip
+                    labels[key].position.copy(arrowObj.position).add(dirVec.clone().multiplyScalar(length + 0.8));
+                }
+            };
+            
+            // Layout Block 1
+            blocks[0].visible = true;
+            blocks[0].scale.set(s1, s1, s1);
+            const b1y = thick + s1/2;
+            const p1 = getGlobal(state.pos1, b1y);
+            blocks[0].position.set(p1.x, p1.y, 0);
+            blocks[0].rotation.z = theta;
+
+            let forceOrigin = blocks[0].position.clone();
+            
+            if (state.mode === 2 || state.mode === 3) {
+                // Layout Block 2 (Side by side)
+                blocks[1].visible = true;
+                blocks[1].scale.set(s2, s2, s2);
+                const p2 = getGlobal(state.pos2 + (s1/2 + s2/2), thick + s2/2);
+                blocks[1].position.set(p2.x, p2.y, 0);
+                blocks[1].rotation.z = theta;
+                
+                if (Math.abs(state.contactF12) > 0.1) {
+                    arrows.contact12.visible = true;
+                    const dir = Math.sign(state.contactF12);
+                    const Rpos = getGlobal(state.pos1 + s1/2, thick + s2/2);
+                    arrows.contact12.position.set(Rpos.x, Rpos.y, 1.5); // offset Z
+                    const cDir = new THREE.Vector3(Math.cos(theta)*dir, Math.sin(theta)*dir, 0).normalize();
+                    arrows.contact12.setDirection(cDir);
+                    const cLen = Math.abs(state.contactF12)*0.03 + 1;
+                    arrows.contact12.setLength(cLen, 0.4, 0.3);
+                    placeLabel('contact12', arrows.contact12, cDir, cLen);
+                }
+
+                if (state.mode === 3) {
+                    // Layout Block 3
+                    blocks[2].visible = true;
+                    blocks[2].scale.set(s3, s3, s3);
+                    const p3 = getGlobal(state.pos3 + (s1/2 + s2 + s3/2), thick + s3/2);
+                    blocks[2].position.set(p3.x, p3.y, 0);
+                    blocks[2].rotation.z = theta;
+                }
+            } else if (state.mode === 4) {
+                // Layout Block 2 (Stacked on Block 1)
+                blocks[1].visible = true;
+                blocks[1].scale.set(s2, s2, s2);
+                
+                let currentB2y = thick + s2/2; 
+                if (!state.isFallen) {
+                    currentB2y = b1y + s1/2 + s2/2;
+                } else {
+                    currentB2y = thick + s2/2 + state.pos2y;
+                }
+                
+                const p2 = getGlobal(state.pos2, currentB2y);
+                blocks[1].position.set(p2.x, p2.y, 0);
+                blocks[1].rotation.z = theta;
+                
+                // Stack friction arrow
+                if (Math.abs(state.contactF12) > 0.1 && !state.isFallen) {
+                    arrows.fric_stack.visible = true;
+                    const dir = Math.sign(state.contactF12);
+                    const Rpos = getGlobal(state.pos2, b1y + s1/2);
+                    arrows.fric_stack.position.set(Rpos.x, Rpos.y, 1.5);
+                    const cDir = new THREE.Vector3(Math.cos(theta)*dir, Math.sin(theta)*dir, 0).normalize();
+                    arrows.fric_stack.setDirection(cDir);
+                    const cLen = Math.abs(state.contactF12)*0.05 + 1;
+                    arrows.fric_stack.setLength(cLen, 0.4, 0.3);
+                    placeLabel('fric_stack', arrows.fric_stack, cDir, cLen);
+                }
+            }
+
+            // Main Global Forces
+            const vecScale = 0.04; 
+            let totalMass = state.mass1;
+            if (state.mode === 4 && !state.isFallen) {
+                totalMass += state.mass2;
+            } else if (state.mode === 2 || state.mode === 3) {
+                totalMass += state.mass2;
+                if (state.mode === 3) totalMass += state.mass3;
+            }
+            const weight = totalMass * CONSTANTS.g;
+            
+            // เตรียมตัวแปรสำหรับต่อลูกศร (Head-to-tail) ในแนวแกนขนานกับพื้นเอียง
+            let posXOffset = 0; 
+            let negXOffset = 0; 
+            const dirX = new THREE.Vector3(Math.cos(theta), Math.sin(theta), 0).normalize();
+            const dirXNeg = new THREE.Vector3(-Math.cos(theta), -Math.sin(theta), 0).normalize();
+
+            if (weight > 0) {
+                const w_x = weight * Math.sin(theta);
+                const w_y = weight * Math.cos(theta);
+                
+                if (Math.abs(w_x) > 0.1) {
+                    const arrLen = Math.abs(w_x) * vecScale + 1;
+                    arrows.gravity_x.position.copy(forceOrigin).add(dirXNeg.clone().multiplyScalar(negXOffset));
+                    arrows.gravity_x.setDirection(dirXNeg);
+                    arrows.gravity_x.setLength(arrLen, 0.5, 0.3);
+                    arrows.gravity_x.visible = true;
+                    placeLabel('gravity_x', arrows.gravity_x, dirXNeg, arrLen);
+                    negXOffset += arrLen;
+                }
+                
+                if (Math.abs(w_y) > 0.1) {
+                    arrows.gravity_y.position.copy(forceOrigin);
+                    const cDir = new THREE.Vector3(Math.sin(theta), -Math.cos(theta), 0).normalize();
+                    arrows.gravity_y.setDirection(cDir);
+                    const arrLen = w_y * vecScale + 1;
+                    arrows.gravity_y.setLength(arrLen, 0.5, 0.3);
+                    arrows.gravity_y.visible = true;
+                    placeLabel('gravity_y', arrows.gravity_y, cDir, arrLen);
+                }
+            }
+
+            const normalForce = weight * Math.cos(theta);
+            if (normalForce > 0.1) {
+                const nDir = new THREE.Vector3(-Math.sin(theta), Math.cos(theta), 0).normalize();
+                arrows.normal.position.copy(forceOrigin);
+                arrows.normal.setDirection(nDir);
+                const arrLen = normalForce * vecScale + 1;
+                arrows.normal.setLength(arrLen, 0.5, 0.3);
+                arrows.normal.visible = true;
+                placeLabel('normal', arrows.normal, nDir, arrLen);
+            }
+
+            if (Math.abs(state.appliedForce) > 0.1) {
+                const dirStr = Math.sign(state.appliedForce);
+                const arrLen = Math.abs(state.appliedForce) * vecScale + 1;
+                const cDir = dirStr > 0 ? dirX : dirXNeg;
+                
+                if (dirStr > 0) {
+                    arrows.applied.position.copy(forceOrigin).add(cDir.clone().multiplyScalar(posXOffset));
+                    posXOffset += arrLen;
+                } else {
+                    arrows.applied.position.copy(forceOrigin).add(cDir.clone().multiplyScalar(negXOffset));
+                    negXOffset += arrLen;
+                }
+                
+                arrows.applied.setDirection(cDir);
+                arrows.applied.setLength(arrLen, 0.5, 0.3);
+                arrows.applied.visible = true;
+                placeLabel('applied', arrows.applied, cDir, arrLen);
+            }
+
+            if (Math.abs(state.currentFriction) > 0.1) {
+                const dirStr = Math.sign(state.currentFriction);
+                const arrLen = Math.abs(state.currentFriction) * vecScale + 1;
+                const cDir = dirStr > 0 ? dirX : dirXNeg;
+                
+                if (dirStr > 0) {
+                    arrows.friction.position.copy(forceOrigin).add(cDir.clone().multiplyScalar(posXOffset));
+                    posXOffset += arrLen;
+                } else {
+                    arrows.friction.position.copy(forceOrigin).add(cDir.clone().multiplyScalar(negXOffset));
+                    negXOffset += arrLen;
+                }
+                
+                arrows.friction.setDirection(cDir);
+                arrows.friction.setLength(arrLen, 0.5, 0.3);
+                arrows.friction.visible = true;
+                placeLabel('friction', arrows.friction, cDir, arrLen);
+            }
+        }
+
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Clamp delta time to prevent physics explosions on lag
+            const dt = Math.min(clock.getDelta(), 0.1); 
+
+            updatePhysics(dt);
+            updateArrows();
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        let chartInstance = null;
+
+        function updateChartConfig() {
+            if (!chartInstance) return;
+            const isMag = state.chartType === 'f_magnitude';
+            chartInstance.options.scales.x.title.text = isMag ? 'ขนาดแรงพยายาม |F - mg·sinθ| (N)' : 'แรงดึง F (N)';
+            chartInstance.options.scales.y.title.text = isMag ? 'ขนาดแรงเสียดทาน |f| (N)' : 'แรงเสียดทาน f (N)';
+            chartInstance.data.datasets[0].label = isMag ? 'ขนาดแรง-แรงเสียดทาน' : 'ความสัมพันธ์ f-F';
+            chartInstance.update();
+        }
+
+        function initChart() {
+            const ctx = document.getElementById('frictionChart').getContext('2d');
+            const isDark = document.documentElement.classList.contains('dark');
+            const textColor = isDark ? '#cbd5e1' : '#475569';
+            const gridColor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+
+            chartInstance = new Chart(ctx, {
+                type: 'scatter',
+                data: {
+                    datasets: [
+                        {
+                            label: 'ความสัมพันธ์ f-F',
+                            data: [],
+                            borderColor: '#3b82f6',
+                            borderWidth: 2,
+                            showLine: true,
+                            tension: 0, 
+                            pointRadius: 0
+                        },
+                        {
+                            label: 'สถานะปัจจุบัน',
+                            data: [{x: 0, y: 0}],
+                            backgroundColor: '#ef4444',
+                            pointRadius: 6,
+                            pointBorderColor: '#ffffff',
+                            pointBorderWidth: 2,
+                            pointHoverRadius: 8
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            title: { display: true, text: 'แรงดึง F (N)', font: {size: 11, family: 'Prompt'}, color: textColor },
+                            ticks: { font: {size: 10}, color: textColor },
+                            grid: { color: gridColor }
+                        },
+                        y: {
+                            title: { display: true, text: 'แรงเสียดทาน f (N)', font: {size: 11, family: 'Prompt'}, color: textColor },
+                            ticks: { font: {size: 10}, color: textColor },
+                            grid: { color: gridColor }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { 
+                            callbacks: {
+                                label: function(context) {
+                                    return `X: ${context.parsed.x.toFixed(1)}, Y: ${context.parsed.y.toFixed(2)}`;
+                                }
+                            }
+                        }
+                    },
+                    animation: false
+                }
+            });
+        }
+
+        function updateChartData() {
+            if (!chartInstance) return;
+
+            // Calculate overall system mass for graph representation
+            let M = state.mass1;
+            if (state.mode === 2) M += state.mass2;
+            if (state.mode === 3) M += state.mass2 + state.mass3;
+            if (state.mode === 4) M += state.mass2; 
+
+            const theta = state.angle * Math.PI / 180;
+            const W_par = M * CONSTANTS.g * Math.sin(theta);
+            const N = M * CONSTANTS.g * Math.cos(theta);
+            const fs_max = state.muS * N;
+            const fk = state.muK * N;
+
+            // Determine boundaries where state changes between static and kinetic
+            const f_limit_down = W_par - fs_max; 
+            const f_limit_up = W_par + fs_max;   
+
+            let lineData = [];
+            let currentData = [];
+
+            if (state.chartType === 'f_vector') {
+                lineData = [
+                    { x: -350, y: fk }, // Sliding down ramp
+                    { x: f_limit_down - 0.01, y: fk },
+                    { x: f_limit_down, y: fs_max }, // Max static holding it UP
+                    { x: W_par, y: 0 }, // F balances gravity completely
+                    { x: f_limit_up, y: -fs_max }, // Max static holding it DOWN
+                    { x: f_limit_up + 0.01, y: -fk },
+                    { x: 350, y: -fk } // Sliding up ramp
+                ];
+                currentData = [{ x: state.appliedForce, y: state.currentFriction }];
+            } else if (state.chartType === 'f_magnitude') {
+                lineData = [
+                    { x: 0, y: 0 },
+                    { x: fs_max, y: fs_max },
+                    { x: fs_max + 0.01, y: fk },
+                    { x: fs_max + 350, y: fk }
+                ];
+                let F_pending = Math.abs(state.appliedForce - W_par);
+                currentData = [{ x: F_pending, y: Math.abs(state.currentFriction) }];
+            }
+
+            chartInstance.data.datasets[0].data = lineData;
+            chartInstance.data.datasets[1].data = currentData;
+
+            chartInstance.update();
+        }
+
+        // Init
+        window.onload = function() {
+            initChart();
+            updatePhysics(0);
+            updateArrows();
+            animate();
+        };
+
+    </script>
+</body>
+</html>

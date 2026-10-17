@@ -1,0 +1,2200 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Quest: ศึกคำอุปสรรค</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Prompt', sans-serif;
+            background-color: #111827;
+            color: #e5e7eb;
+            overflow: hidden;
+            touch-action: manipulation;
+            user-select: none;
+        }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #1f2937; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #6b7280; }
+
+        .screen { display: none; width: 100vw; height: 100vh; flex-direction: column; overflow-y: auto; overflow-x: hidden; }
+        .active-screen { display: flex; }
+        
+        .char-card.selected {
+            border-color: #facc15;
+            box-shadow: 0 0 15px rgba(250, 204, 21, 0.5);
+            background-color: #374151;
+        }
+
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-5px) rotate(-5deg); }
+            50% { transform: translateX(5px) rotate(5deg); }
+            75% { transform: translateX(-5px) rotate(-5deg); }
+            100% { transform: translateX(0); }
+        }
+        .anim-damage { animation: shake 0.3s ease-in-out; color: #ef4444; }
+        .anim-dodge { animation: shake 0.3s ease-in-out; color: #9ca3af; }
+
+        .worn-out { 
+            filter: grayscale(60%) sepia(30%) hue-rotate(-50deg) drop-shadow(0 0 10px rgba(255,0,0,0.5)); 
+            transform: scale(0.95) rotate(-3deg); 
+            opacity: 0.85;
+            transition: all 0.5s ease;
+        }
+
+        /* --- Floating Text Animations --- */
+        @keyframes floatDamage {
+            0% { transform: translate(-50%, 0) scale(1); opacity: 1; }
+            100% { transform: translate(-50%, -60px) scale(1.2); opacity: 0; }
+        }
+        @keyframes floatCrit {
+            0% { transform: translate(-50%, 0) scale(1.5) rotate(-5deg); opacity: 1; text-shadow: 0 0 20px #ef4444, 0 0 10px #facc15; }
+            40% { transform: translate(-50%, -40px) scale(2.2) rotate(5deg); opacity: 1; }
+            100% { transform: translate(-50%, -80px) scale(1.5) rotate(0deg); opacity: 0; }
+        }
+        @keyframes floatMiss {
+            0% { transform: translate(-50%, 0); opacity: 1; }
+            100% { transform: translate(-20px, -40px); opacity: 0; }
+        }
+        .float-text {
+            position: absolute;
+            left: 50%;
+            pointer-events: none;
+            font-weight: 900;
+            z-index: 50;
+            white-space: nowrap;
+        }
+        .float-dmg { animation: floatDamage 1s ease-out forwards; color: #ef4444; font-size: 2.5rem; text-shadow: 2px 2px 0 #000; }
+        .float-crit { animation: floatCrit 1.2s ease-out forwards; color: #facc15; font-size: 3.5rem; }
+        .float-dodge { animation: floatMiss 1s ease-out forwards; color: #9ca3af; font-size: 2rem; text-shadow: 1px 1px 0 #000; }
+        .float-heal { animation: floatDamage 1s ease-out forwards; color: #4ade80; font-size: 2rem; text-shadow: 1px 1px 0 #000; }
+
+        @keyframes fadeInMove {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .story-text { animation: fadeInMove 1.5s ease-out forwards; opacity: 0; }
+        .story-delay-1 { animation-delay: 1.5s; }
+        .story-delay-2 { animation-delay: 3.0s; }
+        .story-delay-3 { animation-delay: 4.5s; }
+
+        @keyframes fireworks {
+            0% { transform: scale(0); opacity: 1; }
+            100% { transform: scale(2); opacity: 0; }
+        }
+        .firework { position: absolute; width: 10px; height: 10px; border-radius: 50%; animation: fireworks 1s ease-out infinite; }
+
+        .item-slot {
+            width: 3.5rem; height: 3.5rem;
+            background-color: #374151; 
+            border: 2px dashed #4b5563; 
+            border-radius: 0.5rem;
+            display: flex; align-items: center; justify-content: center;
+            position: relative;
+        }
+        .item-slot.equip-slot { border-color: #fbbf24; background-color: #1f2937; } 
+        
+        .tier-glow-1 { border-color: #6b7280; }
+        .tier-glow-2 { border-color: #4ade80; box-shadow: 0 0 12px rgba(74,222,128,0.7); }
+        .tier-glow-3 { border-color: #60a5fa; box-shadow: 0 0 12px rgba(96,165,250,0.7); }
+        .tier-glow-4 { border-color: #c084fc; box-shadow: 0 0 12px rgba(192,132,252,0.7); }
+        .tier-glow-5 { border-color: #f87171; box-shadow: 0 0 12px rgba(248,113,113,0.9); }
+    </style>
+</head>
+<body class="antialiased relative">
+
+    <!-- ปุ่มเปิด/ปิดเสียง มุมขวาล่าง -->
+    <button id="btn-audio-toggle" onclick="toggleAudio()" class="fixed bottom-6 right-6 z-[999] bg-gray-800 border-2 border-blue-500 rounded-full w-14 h-14 flex items-center justify-center text-2xl shadow-[0_0_15px_rgba(59,130,246,0.5)] hover:bg-gray-700 hover:scale-110 transition hidden">
+        🔇
+    </button>
+
+    <!-- 1. Intro Screen -->
+    <div id="screen-intro" class="screen active-screen items-center justify-center bg-gray-900 relative">
+        <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1533613220915-609f661a6fe1?q=80&w=1000&auto=format&fit=crop')] opacity-30 bg-cover bg-center"></div>
+        <div class="z-10 text-center flex flex-col items-center gap-4 w-full max-w-md px-4">
+            <div class="text-sm text-gray-400 mb-2 animate-pulse bg-gray-800 bg-opacity-70 px-4 py-1 rounded-full">( แตะหน้าจอ 1 ครั้งเพื่อเปิดเสียง )</div>
+            <h1 class="text-6xl font-black mb-2 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500 drop-shadow-lg">PHYSICS QUEST</h1>
+            <h2 class="text-3xl font-bold text-yellow-400 mb-8 drop-shadow">ศึกคำอุปสรรค</h2>
+            
+            <div id="save-info-box" class="bg-gray-800 bg-opacity-80 p-4 rounded-xl border border-gray-600 hidden w-full mb-4 shadow-lg">
+                <div class="text-green-400 font-bold mb-1">พบข้อมูลเซฟเกมในเครื่อง!</div>
+                <div id="save-info-details" class="text-gray-300 text-sm"></div>
+            </div>
+
+            <button id="btn-continue" onclick="introLoadGame()" class="hidden w-full bg-green-600 hover:bg-green-500 text-white font-bold py-4 rounded-full text-2xl transition transform hover:scale-105 shadow-[0_0_20px_rgba(34,197,94,0.5)] flex items-center justify-center gap-2">
+                📂 โหลดเกม (Continue)
+            </button>
+            <button onclick="switchScreen('screen-char-select'); sfx.click();" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-full text-xl transition transform hover:scale-105 shadow-[0_0_20px_rgba(37,99,235,0.5)]">
+                ✨ เริ่มเกมใหม่ (New Game)
+            </button>
+        </div>
+    </div>
+
+    <!-- 2. Character Select Screen -->
+    <div id="screen-char-select" class="screen items-center justify-center bg-gray-900 relative p-4">
+        <h2 class="text-3xl font-bold mb-4 text-white">สร้างตัวละครของคุณ</h2>
+        
+        <input type="text" id="input-player-name" placeholder="ตั้งชื่อฮีโร่ของคุณ (สูงสุด 10 ตัวอักษร)" maxlength="10" class="mb-6 px-4 py-3 rounded-lg bg-gray-800 text-white border-2 border-blue-500 text-center text-xl w-full max-w-md focus:outline-none focus:border-yellow-400">
+
+        <div class="flex flex-wrap gap-4 justify-center mb-6" id="char-grid"></div>
+        
+        <div class="bg-gray-800 border border-gray-700 p-4 rounded-xl w-full max-w-md min-h-[160px] mb-6 shadow-lg text-center">
+            <h3 id="char-info-name" class="text-xl font-bold text-yellow-400 mb-2">กรุณาเลือกคลาส</h3>
+            <p id="char-info-desc" class="text-gray-400 mb-3 text-sm">คลิกที่การ์ดด้านบนเพื่อดูข้อมูล</p>
+            <div id="char-info-stats" class="grid grid-cols-2 gap-2 text-md"></div>
+        </div>
+        <button id="btn-start-game" onclick="startStory()" disabled class="bg-gray-600 text-white font-bold py-3 px-12 rounded-lg text-xl opacity-50 cursor-not-allowed transition">
+            เข้าสู่เนื้อเรื่อง
+        </button>
+    </div>
+
+    <!-- 3. Story Intro Screen -->
+    <div id="screen-story" class="screen items-center justify-center bg-black relative p-6">
+        <div class="max-w-2xl text-center space-y-8 z-10">
+            <h2 class="text-3xl font-bold text-yellow-400 story-text">ยินดีต้อนรับ, ผู้กล้า <span id="story-player-name" class="text-white"></span></h2>
+            <p class="text-xl text-gray-300 leading-relaxed story-text story-delay-1">
+                "ในโลกแห่งวิทยาศาสตร์ <span class="text-blue-400 font-bold">คำอุปสรรค (Prefixes)</span> และ <span class="text-green-400 font-bold">การแปลงหน่วย</span> คือรากฐานแห่งเวทมนตร์และเทคโนโลยีที่รักษาสมดุลของโลกใบนี้..."
+            </p>
+            <p class="text-xl text-gray-300 leading-relaxed story-text story-delay-2">
+                "แต่ทว่า <span class="text-red-500 font-bold">จอมมารมิติ</span> ได้บิดเบือนค่าคงที่และสเกลของสสาร ทำให้โลกปั่นป่วน สไลม์ตัวจิ๋วขยายใหญ่เป็นกิโลเมตร!"
+            </p>
+            <p class="text-xl text-yellow-300 leading-relaxed font-bold story-text story-delay-3">
+                "จงใช้ความรู้และไหวพริบด้านฟิสิกส์ของคุณ ปราบมอนสเตอร์และบุกทะลวงรังจอมมาร เพื่อทวงคืนอนาคตของโลกใบนี้กลับมา!"
+            </p>
+            <div class="pt-8 story-text story-delay-3">
+                <button onclick="enterTownFirstTime()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-8 rounded-lg text-xl animate-pulse shadow-[0_0_15px_rgba(37,99,235,0.8)]">
+                    เริ่มการผจญภัย
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. Town Screen -->
+    <div id="screen-town" class="screen bg-gray-900">
+        <div class="p-4 bg-gray-800 flex justify-between items-center border-b border-gray-700 shadow-md flex-wrap gap-2">
+            <div>
+                <span class="text-xl font-bold text-yellow-400" id="town-player-name">Player</span>
+                <span class="ml-2 text-sm bg-blue-600 px-2 py-1 rounded">Lv. <span id="town-player-lvl">1</span></span>
+            </div>
+            <div class="flex gap-4 font-bold text-sm items-center flex-wrap">
+                <div class="text-red-400" title="พลังชีวิต">❤️ <span id="town-player-hp">100/100</span></div>
+                <div class="text-yellow-400" title="พลังกาย">⚡ <span id="town-player-stamina">100/100</span></div>
+                <div class="text-yellow-300" title="Gold">🪙 <span id="town-player-gold">0</span> G</div>
+                <div class="text-green-400 ml-2" title="HP Potion">🧪 <span id="town-player-potions">0</span></div>
+                <div class="text-red-300" title="Power Potion">🍷 <span id="town-player-power-potions">0</span></div>
+                <div class="text-blue-300" title="Shield Scroll">📜 <span id="town-player-scrolls">0</span></div>
+            </div>
+        </div>
+
+        <div class="flex-1 flex flex-col items-center justify-center p-6 space-y-4 relative overflow-y-auto pb-20">
+            <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1590447158019-883d815f8bc7?q=80&w=1000&auto=format&fit=crop')] opacity-10 bg-cover bg-center"></div>
+            <h1 class="text-5xl font-black text-white z-10 drop-shadow-md text-center mt-4">เมืองแห่งวิทยาศาสตร์</h1>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-2xl z-10 mt-4">
+                <button onclick="openDifficultyModal()" class="bg-red-700 hover:bg-red-600 text-white p-6 rounded-xl font-bold text-2xl flex flex-col items-center transition shadow-[0_0_15px_rgba(239,68,68,0.3)] border border-red-500">
+                    <span class="text-4xl mb-2">⚔️</span> ออกผจญภัย
+                </button>
+                <button onclick="openCharacterInfo()" class="bg-blue-700 hover:bg-blue-600 text-white p-6 rounded-xl font-bold text-2xl flex flex-col items-center transition shadow-lg border border-blue-500 relative">
+                    <span class="text-4xl mb-2">🎒</span> ข้อมูลตัวละคร
+                    <span id="badge-stat-points" class="absolute top-2 right-2 bg-yellow-400 text-black text-sm font-black px-2 py-1 rounded-full hidden">!</span>
+                </button>
+                <button onclick="openShop()" class="bg-yellow-700 hover:bg-yellow-600 text-white p-4 rounded-xl font-bold text-xl flex flex-col items-center transition shadow-lg border border-yellow-500">
+                    <span>🛒 ร้านค้า (ซื้อ-ขาย, สุ่มกล่อง)</span>
+                </button>
+                <button onclick="restAtInn()" class="bg-green-700 hover:bg-green-600 text-white p-4 rounded-xl font-bold text-xl flex flex-col items-center transition shadow-lg border border-green-500">
+                    <span>🛌 พักผ่อน (10 G) ฟื้นพลัง</span>
+                </button>
+            </div>
+
+            <!-- ปุ่ม Save / Load แบบกดเองในเมือง -->
+            <div class="mt-6 flex gap-4 w-full max-w-2xl justify-center z-10">
+                <button onclick="manualSave()" class="flex-1 bg-gray-800 hover:bg-gray-700 text-white py-3 rounded-lg font-bold border border-gray-600 shadow-lg transition flex items-center justify-center gap-2">
+                    💾 เซฟเกม
+                </button>
+                <button onclick="manualLoad()" class="flex-1 bg-gray-800 hover:bg-gray-700 text-white py-3 rounded-lg font-bold border border-gray-600 shadow-lg transition flex items-center justify-center gap-2">
+                    📂 โหลดเกม
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal เลือกระดับความยาก -->
+    <div id="modal-difficulty" class="fixed inset-0 bg-black bg-opacity-80 flex justify-center items-center z-50 hidden">
+        <div class="bg-gray-800 border-2 border-red-500 p-6 rounded-xl max-w-md w-full m-4 shadow-lg text-center">
+            <h3 class="text-yellow-400 font-bold text-2xl mb-2">เลือกระดับการผจญภัย</h3>
+            <p class="text-gray-400 text-sm mb-2">สู้ 1 ครั้งใช้ 10 ⚡</p>
+            <p class="text-red-400 font-bold text-xs mb-4 animate-pulse">🔥 ชนะมอนสเตอร์ 7 ตัวติด เพื่อเจอบอส!</p>
+            
+            <div class="bg-gray-900 p-3 rounded mb-4 flex items-center justify-center gap-3 border border-gray-700">
+                <input type="checkbox" id="buff-stamina" class="w-5 h-5 accent-yellow-500 cursor-pointer" onclick="sfx.click()">
+                <label for="buff-stamina" class="text-yellow-300 font-bold cursor-pointer text-sm text-left">
+                    บัพพลังกาย 2 เท่า (สู้ครั้งละ 20 ⚡)<br>
+                    <span class="text-xs text-gray-400">โจมตี +30% และ ป้องกัน +10% ตลอดรอบ</span>
+                </label>
+            </div>
+
+            <div class="flex flex-col gap-3 mb-4" id="difficulty-buttons"></div>
+            <button onclick="closeModal('modal-difficulty')" class="w-full bg-gray-600 hover:bg-gray-500 text-white py-2 rounded font-bold">ยกเลิก</button>
+        </div>
+    </div>
+
+    <!-- 5. Character Info & Inventory Screen -->
+    <div id="screen-character" class="screen bg-gray-900">
+        <div class="p-4 bg-gray-800 flex justify-between items-center border-b border-gray-700 shadow-md">
+            <h2 class="text-2xl font-bold text-yellow-400">ข้อมูลตัวละคร</h2>
+            <button onclick="switchScreen('screen-town'); sfx.click();" class="bg-gray-600 hover:bg-gray-500 text-white px-4 py-2 rounded font-bold">กลับเมือง</button>
+        </div>
+        
+        <div class="flex-1 p-4 flex flex-col md:flex-row gap-6 overflow-y-auto">
+            <div class="flex-1 bg-gray-800 rounded-xl p-6 border border-gray-700 shadow-lg relative">
+                <div class="flex justify-between items-center mb-4">
+                    <div>
+                        <h3 class="text-3xl font-black text-white" id="info-name">Name</h3>
+                        <div class="text-blue-400 font-bold text-lg mt-1">Lv. <span id="info-lvl">1</span></div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-yellow-400 text-sm">แต้มอัปเกรด</div>
+                        <div class="text-3xl font-black text-yellow-400" id="info-points">0</div>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <div class="flex justify-between text-xs text-gray-400 mb-1">
+                        <span>EXP</span>
+                        <span id="info-exp-text">0/100</span>
+                    </div>
+                    <div class="w-full bg-gray-700 rounded-full h-2.5">
+                        <div id="info-exp-bar" class="bg-blue-500 h-2.5 rounded-full" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <div class="bg-gray-900 p-4 rounded-lg grid grid-cols-3 gap-2 text-sm mb-2 text-center">
+                        <div class="text-green-400 font-bold">❤️ HP<br><span id="total-hp">100/100</span></div>
+                        <div class="text-red-400 font-bold">⚔️ ATK<br><span id="total-atk">10</span></div>
+                        <div class="text-blue-400 font-bold">🛡️ DEF<br><span id="total-def">5</span></div>
+                        <div class="text-yellow-400 font-bold">⚡ ST<br><span id="total-stamina">100/100</span></div>
+                        <div class="text-orange-400 font-bold" title="โอกาสติดคริติคอล">💥 Crit<br><span id="total-crit">5</span>%</div>
+                        <div class="text-teal-400 font-bold" title="โอกาสหลบหลีก">🍃 Eva<br><span id="total-eva">0</span>%</div>
+                    </div>
+
+                    <div class="flex justify-between items-center bg-gray-700 p-2 rounded">
+                        <div>
+                            <span class="font-bold text-red-400">STR (<span id="base-str">0</span>)</span>
+                            <div class="text-[10px] text-gray-400">+10 Max HP, +2 ATK</div>
+                        </div>
+                        <button onclick="upgradeStat('str')" class="btn-upgrade bg-yellow-500 text-black font-black w-8 h-8 rounded-full hidden">+</button>
+                    </div>
+                    <div class="flex justify-between items-center bg-gray-700 p-2 rounded">
+                        <div>
+                            <span class="font-bold text-blue-400">DEF (<span id="base-def">0</span>)</span>
+                            <div class="text-[10px] text-gray-400">+2 DEF</div>
+                        </div>
+                        <button onclick="upgradeStat('def')" class="btn-upgrade bg-yellow-500 text-black font-black w-8 h-8 rounded-full hidden">+</button>
+                    </div>
+                    <div class="flex justify-between items-center bg-gray-700 p-2 rounded">
+                        <div>
+                            <span class="font-bold text-yellow-300">SPD (<span id="base-spd">0</span>)</span>
+                            <div class="text-[10px] text-gray-400">+1% Crit, +1% Eva, ATB ไวขึ้น</div>
+                        </div>
+                        <button onclick="upgradeStat('spd')" class="btn-upgrade bg-yellow-500 text-black font-black w-8 h-8 rounded-full hidden">+</button>
+                    </div>
+                    <div class="flex justify-between items-center bg-gray-700 p-2 rounded">
+                        <div>
+                            <span class="font-bold text-purple-400">INT (<span id="base-int">0</span>)</span>
+                            <div class="text-[10px] text-gray-400">เวลาตอบ +5%, ATB ศัตรูช้าลง 1%</div>
+                        </div>
+                        <button onclick="upgradeStat('int')" class="btn-upgrade bg-yellow-500 text-black font-black w-8 h-8 rounded-full hidden">+</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex-1 flex flex-col gap-4">
+                <div class="bg-gray-800 rounded-xl p-4 border border-gray-700 shadow-lg text-center">
+                    <h3 class="font-bold text-gray-300 mb-3 text-sm">อุปกรณ์สวมใส่</h3>
+                    <div class="grid grid-cols-3 gap-3 justify-items-center">
+                        <div class="flex flex-col items-center gap-1"><span class="text-xs text-gray-400">หมวก</span><div id="equip-head" class="item-slot equip-slot"></div></div>
+                        <div class="flex flex-col items-center gap-1"><span class="text-xs text-gray-400">อาวุธ</span><div id="equip-weapon" class="item-slot equip-slot"></div></div>
+                        <div class="flex flex-col items-center gap-1"><span class="text-xs text-gray-400">เกราะ</span><div id="equip-armor" class="item-slot equip-slot"></div></div>
+                        <div class="flex flex-col items-center gap-1"><span class="text-xs text-gray-400">ถุงมือ</span><div id="equip-gloves" class="item-slot equip-slot"></div></div>
+                        <div class="flex flex-col items-center gap-1"><span class="text-xs text-gray-400">รองเท้า</span><div id="equip-shoes" class="item-slot equip-slot"></div></div>
+                        <div class="flex flex-col items-center gap-1"><span class="text-xs text-gray-400">แหวน</span><div id="equip-ring" class="item-slot equip-slot"></div></div>
+                    </div>
+                </div>
+
+                <div class="bg-gray-800 rounded-xl p-4 border border-gray-700 shadow-lg flex-1">
+                    <h3 class="font-bold text-gray-300 text-sm mb-3">กระเป๋า (แตะเพื่อใช้งาน)</h3>
+                    <div class="grid grid-cols-4 gap-2 bg-gray-900 p-3 rounded-lg min-h-[150px] justify-items-center" id="inv-grid"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 6. Shop Screen -->
+    <div id="screen-shop" class="screen bg-gray-900">
+        <div class="p-4 bg-gray-800 flex justify-between items-center border-b border-gray-700">
+            <div>
+                <h2 class="text-2xl font-bold text-yellow-400 flex items-center gap-2">
+                    ร้านค้า <span class="bg-blue-600 text-white text-sm px-2 py-1 rounded">Lv. <span id="shop-level-display">1</span></span>
+                </h2>
+                <div class="text-yellow-300 font-bold mt-1">เงินของคุณ: <span id="shop-gold">0</span> G</div>
+            </div>
+            <button onclick="switchScreen('screen-town'); sfx.click();" class="bg-gray-600 hover:bg-gray-500 text-white px-4 py-2 rounded font-bold">ออกร้านค้า</button>
+        </div>
+        
+        <div class="flex-1 p-4 md:p-8 flex flex-col md:flex-row gap-6 overflow-y-auto">
+            <div class="flex-1 bg-gray-800 rounded-xl p-6 border border-gray-700 shadow-lg overflow-y-auto max-h-[70vh]">
+                
+                <!-- ส่วนการอัปเกรดร้านค้า -->
+                <div id="shop-upgrade-container" class="mb-4 bg-gray-700 p-4 rounded-lg border border-yellow-600 hidden flex-col gap-2 shadow-[0_0_15px_rgba(234,179,8,0.2)]">
+                    <h4 class="text-yellow-400 font-bold text-lg">⬆️ เลื่อนขั้นร้านค้าเป็นระดับ <span id="shop-next-level">2</span></h4>
+                    <p class="text-sm text-gray-300">เพื่อปลดล็อกอาวุธและชุดเกราะระดับที่สูงขึ้น</p>
+                    <div class="text-sm text-yellow-300 bg-gray-800 p-2 rounded" id="shop-upgrade-cost">ใช้เงิน: 500 G</div>
+                    <button id="btn-upgrade-shop" onclick="upgradeShop()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 rounded transition w-full mt-2">ยืนยันการอัปเกรด</button>
+                </div>
+
+                <h3 class="text-xl font-bold text-green-400 mb-4 border-b border-gray-700 pb-2 sticky top-0 bg-gray-800 z-10">รายการสินค้า</h3>
+                <div class="grid grid-cols-1 gap-3" id="shop-buy-list"></div>
+            </div>
+            
+            <div class="flex-1 bg-gray-800 rounded-xl p-6 border border-gray-700 shadow-lg overflow-y-auto max-h-[70vh]">
+                <h3 class="text-xl font-bold text-red-400 mb-4 border-b border-gray-700 pb-2 sticky top-0 bg-gray-800 z-10">กระเป๋าของคุณ (แตะเพื่อขาย)</h3>
+                <div class="grid grid-cols-4 gap-3 bg-gray-900 p-4 rounded-lg justify-items-center" id="shop-sell-grid"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Item Actions -->
+    <div id="modal-item-action" class="fixed inset-0 bg-black bg-opacity-80 flex justify-center items-center z-50 hidden">
+        <div class="bg-gray-800 border-2 border-yellow-500 p-6 rounded-xl max-w-sm w-full m-4 text-center shadow-[0_0_20px_rgba(234,179,8,0.4)]">
+            <div class="text-6xl mb-2 drop-shadow" id="item-action-icon"></div>
+            <h3 class="text-yellow-400 font-bold text-2xl mb-1" id="item-action-name">Item Name</h3>
+            <p class="text-sm text-gray-300 mb-4" id="item-action-desc">Stats...</p>
+            <div class="flex flex-col gap-3" id="item-action-buttons"></div>
+            <button onclick="closeModal('modal-item-action')" class="w-full mt-4 bg-gray-600 hover:bg-gray-500 text-white py-2 rounded font-bold">ยกเลิก</button>
+        </div>
+    </div>
+
+    <!-- 7. Battle Screen -->
+    <div id="screen-battle" class="screen bg-gray-900 relative">
+        <div id="battle-bg" class="absolute inset-0 bg-cover bg-center opacity-30 pointer-events-none transition-all duration-500"></div>
+
+        <!-- Vertical ATB ผู้เล่น ซ้าย -->
+        <div class="absolute left-2 md:left-6 top-[15%] text-blue-400 text-xl md:text-2xl z-20 animate-pulse text-center w-4 md:w-6">⚡</div>
+        <div class="absolute left-2 md:left-6 top-[20%] h-[55%] w-4 md:w-6 bg-gray-800 rounded-full border-2 border-blue-700 overflow-hidden shadow-[0_0_15px_rgba(59,130,246,0.3)] z-20">
+            <div id="player-atb-bar" class="bg-blue-400 w-full absolute bottom-0 transition-all duration-75 shadow-[0_0_10px_rgba(96,165,250,0.8)]" style="height: 0%"></div>
+        </div>
+
+        <!-- Vertical ATB ศัตรู ขวา -->
+        <div class="absolute right-2 md:right-6 top-[15%] text-red-500 text-xl md:text-2xl z-20 animate-bounce text-center w-4 md:w-6">⚔️</div>
+        <div class="absolute right-2 md:right-6 top-[20%] h-[55%] w-4 md:w-6 bg-gray-800 rounded-full border-2 border-red-700 overflow-hidden shadow-[0_0_15px_rgba(239,68,68,0.3)] z-20">
+            <div id="enemy-atb-bar-vertical" class="bg-yellow-500 w-full absolute bottom-0 transition-all duration-75 shadow-[0_0_10px_rgba(234,179,8,0.8)]" style="height: 100%"></div>
+        </div>
+
+        <div class="flex-1 flex flex-col p-4 relative z-10 max-w-lg mx-auto w-full">
+            <!-- ศัตรู -->
+            <div class="flex flex-col items-center justify-center h-[45%] pt-6 relative">
+                <div id="boss-warning" class="absolute top-0 text-red-500 font-black text-3xl animate-pulse hidden drop-shadow-[0_0_10px_rgba(255,0,0,0.8)]">⚠️ WARNING: BOSS ⚠️</div>
+                <h3 id="enemy-name" class="text-2xl font-bold text-red-400 mb-2 drop-shadow-md">...</h3>
+                
+                <div class="relative w-full flex justify-center">
+                    <div class="text-6xl mb-4 transition-transform drop-shadow-[0_0_10px_rgba(255,0,0,0.5)]" id="enemy-sprite"></div>
+                    <div id="enemy-float-container" class="absolute inset-0 pointer-events-none"></div>
+                </div>
+                
+                <div class="w-64 bg-gray-700 rounded-full h-4 mb-1 border border-gray-600 overflow-hidden relative">
+                    <div id="enemy-hp-bar" class="bg-red-500 h-full transition-all duration-300" style="width: 100%"></div>
+                </div>
+                <div class="text-sm mb-2 font-bold drop-shadow">HP: <span id="enemy-hp-text">...</span></div>
+
+                <div class="w-56 bg-gray-800 rounded-full h-3 mb-1 border border-gray-600 overflow-hidden mt-1 shadow-[0_0_10px_rgba(234,179,8,0.5)]">
+                    <div id="enemy-atb-horizontal" class="bg-yellow-500 h-full transition-all duration-75" style="width: 100%"></div>
+                </div>
+                <div class="text-xs text-yellow-500 font-bold mb-2 animate-pulse" id="enemy-atb-text">⏳ เวลานับถอยหลังโจมตี</div>
+            </div>
+
+            <!-- กลาง -->
+            <div class="h-[10%] flex items-center justify-center relative">
+                <div id="battle-log" class="text-md text-yellow-300 font-bold bg-black bg-opacity-70 px-6 py-2 rounded-full shadow-lg text-center w-full border border-gray-600">
+                    การต่อสู้เริ่มขึ้น!
+                </div>
+            </div>
+
+            <!-- ผู้เล่น -->
+            <div class="flex flex-col items-center justify-center h-[45%] relative">
+                <div id="battle-buff-stamina" class="text-xs text-yellow-400 font-bold mb-1 hidden drop-shadow">🔥 บัพพลังกาย (ATK+30%, DEF+10%)</div>
+                <div id="battle-buff-power" class="text-xs text-red-400 font-bold mb-1 hidden drop-shadow">🍷 ยาเสริมพลัง (ATK+50%)</div>
+                <div id="battle-buff-shield" class="text-xs text-blue-400 font-bold mb-2 hidden drop-shadow">📜 คัมภีร์โล่ (เหลือ <span id="shield-charges">0</span> ครั้ง)</div>
+
+                <div class="relative w-full flex justify-center flex-col items-center">
+                    <div class="w-64 bg-gray-700 rounded-full h-4 mb-1 border border-gray-600 overflow-hidden relative">
+                        <div id="player-hp-bar" class="bg-green-500 h-full transition-all duration-300" style="width: 100%"></div>
+                    </div>
+                    <div class="w-64 bg-gray-700 rounded-full h-2 mb-1 border border-gray-600 overflow-hidden relative">
+                        <div id="player-stamina-bar" class="bg-yellow-400 h-full transition-all duration-300" style="width: 100%"></div>
+                    </div>
+                    <div class="text-sm mb-4 font-bold drop-shadow text-center">
+                        ❤️ <span id="player-hp-text">...</span> &nbsp;|&nbsp; ⚡ <span id="player-stamina-text">...</span>
+                    </div>
+                    <div id="player-float-container" class="absolute inset-0 pointer-events-none"></div>
+                </div>
+                
+                <div class="bg-gray-800 p-4 rounded-lg border border-gray-700 w-full max-w-md h-[80px] flex items-center justify-center text-center bg-opacity-90 shadow-[0_0_15px_rgba(0,0,0,0.5)]">
+                    <div id="atb-status-text" class="text-gray-400 font-bold animate-pulse">กำลังชาร์จพลังงาน...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal คำถามฟิสิกส์ -->
+    <div id="modal-question" class="fixed inset-0 bg-black bg-opacity-80 flex justify-center items-center z-50 hidden">
+        <div class="bg-gray-800 border-2 border-blue-500 p-6 rounded-xl max-w-lg w-full m-4 shadow-[0_0_30px_rgba(59,130,246,0.5)]">
+            <h3 class="text-yellow-400 font-bold text-xl mb-2 text-center">ชาร์จพลังเวทย์! (ระดับ <span id="q-diff">1</span>)</h3>
+            
+            <div class="w-full bg-gray-700 rounded-full h-3 mb-4 relative overflow-hidden border border-gray-600">
+                <div id="q-timer-bar" class="bg-yellow-400 h-full transition-all duration-75" style="width: 100%"></div>
+            </div>
+
+            <p id="q-text" class="text-2xl text-center text-white font-bold mb-6">...</p>
+            <div id="q-choices" class="grid grid-cols-2 gap-4"></div>
+
+            <div class="mt-6 grid grid-cols-2 gap-3 border-t border-gray-700 pt-4">
+                <button onclick="useConsumable('hp')" class="bg-green-600 hover:bg-green-500 text-white font-bold py-2 rounded-lg text-sm">ยา HP (<span id="q-potions">0</span>)</button>
+                <button onclick="useConsumable('power')" class="bg-red-600 hover:bg-red-500 text-white font-bold py-2 rounded-lg text-sm">ยา ATK+50% (<span id="q-power">0</span>)</button>
+                <button onclick="useConsumable('shield')" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 rounded-lg text-sm">คัมภีร์โล่ (<span id="q-scrolls">0</span>)</button>
+                <button onclick="fleeFromQuestion()" class="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 rounded-lg text-sm">หนี!</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal สรุปผล -->
+    <div id="modal-result" class="fixed inset-0 bg-black bg-opacity-90 flex justify-center items-center z-50 hidden">
+        <div class="bg-gray-800 border-2 border-gray-600 p-8 rounded-xl max-w-md w-full m-4 text-center">
+            <h2 id="res-title" class="text-5xl font-black mb-4 text-yellow-400 drop-shadow-lg">VICTORY</h2>
+            <div class="text-lg text-gray-300 mb-6 space-y-2">
+                <div id="res-boss-unlock" class="text-green-400 font-bold hidden text-xl animate-pulse mb-2">🏆 ปราบปรามบอสสำเร็จ ปลดล็อกด่านถัดไป! 🏆</div>
+                <div>ได้รับ EXP: <span id="res-exp" class="text-blue-400 font-bold">0</span></div>
+                <div>ได้รับ Gold: <span id="res-pts" class="text-yellow-400 font-bold">0</span> G</div>
+                <div id="res-levelup" class="text-green-400 font-bold hidden text-xl animate-pulse">🎉 LEVEL UP! ได้รับ 3 แต้มสถานะ 🎉</div>
+            </div>
+            <div class="bg-gray-900 p-4 rounded text-sm mb-6 min-h-[60px] max-h-[150px] overflow-y-auto" id="res-drops"></div>
+            
+            <div class="flex gap-4">
+                <button id="btn-next-battle" onclick="nextBattle()" class="flex-1 bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-lg text-lg transition">สู้ต่อไป</button>
+                <button onclick="returnToTownFromBattle()" class="flex-1 bg-gray-600 hover:bg-gray-500 text-white font-bold py-3 rounded-lg text-lg transition">กลับเมือง</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal ฉากจบ (Ending) -->
+    <div id="modal-ending" class="fixed inset-0 bg-black flex justify-center items-center z-[100] hidden overflow-hidden">
+        <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1518928373117-9195b452e69f?q=80&w=1000')] opacity-40 bg-cover bg-center"></div>
+        <div class="absolute top-1/4 left-1/4 bg-yellow-400 firework" style="animation-delay: 0s;"></div>
+        <div class="absolute top-1/3 right-1/4 bg-red-400 firework" style="animation-delay: 0.5s;"></div>
+        <div class="absolute top-1/2 left-1/3 bg-blue-400 firework" style="animation-delay: 0.2s;"></div>
+        <div class="absolute top-1/4 right-1/3 bg-green-400 firework" style="animation-delay: 0.8s;"></div>
+
+        <div class="bg-gray-900 bg-opacity-90 border-2 border-yellow-400 p-8 rounded-xl max-w-2xl w-full m-4 text-center z-10 shadow-[0_0_50px_rgba(250,204,21,0.5)]">
+            <h2 class="text-6xl font-black mb-6 text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-yellow-600 drop-shadow-lg">โลกได้รับการปลดปล่อย!</h2>
+            <p class="text-2xl text-white mb-4 leading-relaxed">
+                ขอขอบคุณฮีโร่ <span id="ending-player-name" class="text-blue-400 font-bold"></span>!
+            </p>
+            <p class="text-lg text-gray-300 mb-8 leading-relaxed">
+                การล่มสลายของจอมมารมิติ ทำให้ค่าคงที่ทางฟิสิกส์และสเกลของสสารกลับคืนสู่สมดุลอีกครั้ง<br>
+                ความรู้ความเข้าใจในเรื่องการแปลงหน่วยและคำอุปสรรคของคุณ ได้พิสูจน์แล้วว่า<br>
+                <span class="text-yellow-300 font-bold">"ปัญญาคือพลังที่ยิ่งใหญ่ที่สุด"</span>
+            </p>
+            <button onclick="continueEndlessMode()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-10 rounded-full text-xl transition transform hover:scale-105 shadow-lg">
+                ผจญภัยต่อไป (Endless Mode)
+            </button>
+        </div>
+    </div>
+
+    <!-- Audio Elements (BGM) -->
+    <!-- เพลงเปิดแนวไฟนอลแฟนตาซี (ใช้ Prelude in C Major ของ Bach ซึ่งเป็นต้นกำเนิดแรงบันดาลใจให้ FF Prelude) -->
+    <audio id="bgm-intro" src="https://upload.wikimedia.org/wikipedia/commons/3/3c/Prelude_in_C_major_by_J.S._Bach.ogg" loop preload="auto"></audio>
+    <audio id="bgm-town" src="https://upload.wikimedia.org/wikipedia/commons/6/69/Chopin_-_Nocturne_Op_9_No_2_E_Flat_Major.ogg" loop preload="auto"></audio>
+    <audio id="bgm-boss" src="https://upload.wikimedia.org/wikipedia/commons/5/5b/Ludwig_van_Beethoven_-_Symphonie_5_c-moll_-_1._Allegro_con_brio.ogg" loop preload="auto"></audio>
+
+    <script>
+        // ==========================================
+        // 0. Audio & Contextual SFX System
+        // ==========================================
+        const audioContext = {
+            musicEnabled: true,
+            currentTrack: null,
+            tracks: {}
+        };
+
+        const spyMusic = {
+            loop: null,
+            step: 0,
+            start: function(ctx) {
+                if(this.loop) return;
+                this.step = 0;
+                this.loop = setInterval(() => {
+                    if(!audioContext.musicEnabled || !ctx) return;
+                    if(ctx.state === 'suspended') ctx.resume();
+                    
+                    const t = ctx.currentTime;
+                    const eighth = 0.16; 
+                    
+                    const isPattern2 = Math.floor(this.step / 10) % 2 === 1;
+                    const pos = this.step % 10;
+                    
+                    let f = 0;
+                    let dur = eighth;
+                    if(pos === 0 || pos === 3) {
+                        f = 196.00;
+                        dur = eighth * 2;
+                    } else if(pos === 6) {
+                        f = isPattern2 ? 174.61 : 233.08; 
+                    } else if(pos === 8) {
+                        f = isPattern2 ? 185.00 : 261.63; 
+                    }
+                    
+                    if(f > 0) {
+                        const osc = ctx.createOscillator();
+                        const gain = ctx.createGain();
+                        const filter = ctx.createBiquadFilter();
+                        
+                        osc.type = 'square';
+                        osc.frequency.setValueAtTime(f / 2, t); 
+                        
+                        filter.type = 'lowpass';
+                        filter.frequency.setValueAtTime(800, t);
+                        filter.frequency.exponentialRampToValueAtTime(100, t + dur);
+
+                        gain.gain.setValueAtTime(0.15, t);
+                        gain.gain.exponentialRampToValueAtTime(0.01, t + dur - 0.02);
+                        
+                        osc.connect(filter);
+                        filter.connect(gain);
+                        gain.connect(ctx.destination);
+                        osc.start(t);
+                        osc.stop(t + dur);
+
+                        const noiseOsc = ctx.createOscillator();
+                        const noiseGain = ctx.createGain();
+                        noiseOsc.type = 'triangle';
+                        noiseOsc.frequency.setValueAtTime(8000, t);
+                        noiseGain.gain.setValueAtTime(0.02, t);
+                        noiseGain.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
+                        noiseOsc.connect(noiseGain);
+                        noiseGain.connect(ctx.destination);
+                        noiseOsc.start(t);
+                        noiseOsc.stop(t + 0.05);
+                    }
+                    this.step++;
+                }, 160); 
+            },
+            stop: function() {
+                if(this.loop) {
+                    clearInterval(this.loop);
+                    this.loop = null;
+                }
+            }
+        };
+
+        const sfx = {
+            ctx: null,
+            init: function() {
+                if(!this.ctx) {
+                    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                    if(AudioCtx) this.ctx = new AudioCtx();
+                }
+                if(this.ctx && this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            },
+            playOsc: function(type, f1, f2, dur, vol, delay=0) {
+                if(!audioContext.musicEnabled || !this.ctx) return;
+                try {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = type;
+                    osc.frequency.setValueAtTime(f1, this.ctx.currentTime + delay);
+                    if(f2) osc.frequency.exponentialRampToValueAtTime(f2, this.ctx.currentTime + delay + dur);
+                    gain.gain.setValueAtTime(vol, this.ctx.currentTime + delay);
+                    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + delay + dur);
+                    osc.connect(gain); 
+                    gain.connect(this.ctx.destination);
+                    osc.start(this.ctx.currentTime + delay);
+                    osc.stop(this.ctx.currentTime + delay + dur);
+                } catch(e) {}
+            },
+            click: function() { this.playOsc('sine', 800, 0, 0.05, 0.1); },
+            shop: function() { 
+                this.playOsc('triangle', 1200, 2000, 0.1, 0.1); 
+                this.playOsc('triangle', 1600, 2400, 0.1, 0.1, 0.08); 
+            },
+            rest: function() { 
+                this.playOsc('sine', 500, 300, 0.4, 0.1); 
+                this.playOsc('sine', 600, 400, 0.4, 0.1, 0.1); 
+            },
+            adventure: function() { this.playOsc('sawtooth', 200, 50, 0.3, 0.2); },
+            encounter: function() {
+                this.playOsc('square', 400, 800, 0.2, 0.15);
+                this.playOsc('square', 800, 400, 0.2, 0.15, 0.2);
+                this.playOsc('sawtooth', 300, 1000, 0.5, 0.25, 0.4);
+            },
+            hit: function() { this.playOsc('sawtooth', 400, 40, 0.15, 0.3); },
+            crit: function() { 
+                this.playOsc('square', 200, 30, 0.15, 0.4);
+                this.playOsc('square', 400, 20, 0.3, 0.5, 0.1);
+            },
+            dodge: function() { this.playOsc('sine', 800, 1000, 0.15, 0.1); },
+            heal: function() { 
+                this.playOsc('sine', 400, 600, 0.2, 0.1);
+                this.playOsc('sine', 600, 800, 0.3, 0.1, 0.1); 
+            }
+        };
+
+        // เพื่อให้เล่นดนตรีฉากเปิดได้ทันทีหลังคลิกครั้งแรก
+        document.body.addEventListener('click', () => {
+            if (!sfx.ctx) sfx.init();
+            if ((document.getElementById('screen-intro').classList.contains('active-screen') || 
+                 document.getElementById('screen-char-select').classList.contains('active-screen')) && 
+                audioContext.musicEnabled && !audioContext.currentTrack) {
+                playBGM('intro');
+            }
+        }, { once: true });
+
+        function initAudio() {
+            audioContext.tracks['intro'] = document.getElementById('bgm-intro');
+            audioContext.tracks['town'] = document.getElementById('bgm-town');
+            audioContext.tracks['boss'] = document.getElementById('bgm-boss');
+            
+            for(let key in audioContext.tracks) {
+                if(audioContext.tracks[key]) audioContext.tracks[key].volume = 0.25; 
+            }
+            document.getElementById('btn-audio-toggle').classList.remove('hidden');
+            document.getElementById('btn-audio-toggle').innerText = audioContext.musicEnabled ? "🔊" : "🔇";
+            sfx.init();
+        }
+
+        function playBGM(trackName) {
+            if(!audioContext.musicEnabled) return;
+            if(audioContext.currentTrack === trackName) return;
+            
+            for(let key in audioContext.tracks) {
+                if(audioContext.tracks[key] && audioContext.tracks[key].pause) {
+                    audioContext.tracks[key].pause();
+                }
+            }
+            spyMusic.stop(); 
+            
+            audioContext.currentTrack = trackName;
+
+            if (trackName === 'battle') {
+                if(!sfx.ctx) sfx.init();
+                spyMusic.start(sfx.ctx); 
+            } else if(audioContext.tracks[trackName]) {
+                audioContext.tracks[trackName].currentTime = 0;
+                let playPromise = audioContext.tracks[trackName].play();
+                if (playPromise !== undefined) {
+                    playPromise.catch(error => console.log("BGM Play prevented:", error));
+                }
+            }
+        }
+
+        function toggleAudio() {
+            if(!sfx.ctx) sfx.init();
+            sfx.click();
+            audioContext.musicEnabled = !audioContext.musicEnabled;
+            const btn = document.getElementById('btn-audio-toggle');
+            if(!audioContext.musicEnabled) {
+                for(let key in audioContext.tracks) {
+                    if(audioContext.tracks[key] && audioContext.tracks[key].pause) audioContext.tracks[key].pause();
+                }
+                spyMusic.stop();
+                btn.innerText = "🔇";
+                audioContext.currentTrack = null;
+            } else {
+                btn.innerText = "🔊";
+                if(document.getElementById('screen-intro').classList.contains('active-screen') || document.getElementById('screen-char-select').classList.contains('active-screen')) {
+                    playBGM('intro');
+                }
+                else if(document.getElementById('screen-town').classList.contains('active-screen')) playBGM('town');
+                else if(document.getElementById('screen-battle').classList.contains('active-screen')) playBGM(bState.isBoss ? 'boss' : 'battle');
+            }
+        }
+
+        // ==========================================
+        // 1. Databases
+        // ==========================================
+        const classesDB = {
+            'knight': { name: 'อัศวิน', icon: '🛡️', hp: 120, atk: 12, def: 8, baseSpd: 1.0, desc: 'เน้นพลังชีวิตและป้องกัน' },
+            'mage': { name: 'นักเวทย์', icon: '🧙‍♂️', hp: 80, atk: 25, def: 3, baseSpd: 1.2, desc: 'เวทมนตร์รุนแรง โจมตีหนัก' },
+            'rogue': { name: 'นักฆ่า', icon: '🗡️', hp: 90, atk: 18, def: 4, baseSpd: 1.8, desc: 'โจมตีไว โอกาสคริติคอลสูง 2 เท่า!' }
+        };
+
+        const prefixesDB = [
+            { name: "เทระ", sym: "T", pwr: 12 }, { name: "จิกะ", sym: "G", pwr: 9 },
+            { name: "เมกะ", sym: "M", pwr: 6 }, { name: "กิโล", sym: "k", pwr: 3 },
+            { name: "เซนติ", sym: "c", pwr: -2 }, { name: "มิลลิ", sym: "m", pwr: -3 },
+            { name: "ไมโคร", sym: "µ", pwr: -6 }, { name: "นาโน", sym: "n", pwr: -9 },
+            { name: "พิโก", sym: "p", pwr: -12 }
+        ];
+        const sortedPrefixes = [...prefixesDB].sort((a,b) => b.pwr - a.pwr);
+
+        const enemiesTier = {
+            1: [ {id:'slime', name:'สไลม์', icon:'💧'}, {id:'boar', name:'หมูป่า', icon:'🐗'}, {id:'goblin', name:'ก๊อบลิน', icon:'👺'} ],
+            2: [ {id:'kobold', name:'โคบอลต์', icon:'🐶'}, {id:'orc', name:'ออร์ค', icon:'👹'} ],
+            3: [ {id:'succubus', name:'ซัคคิวบัส', icon:'🦇'}, {id:'golem', name:'โกเลม', icon:'🪨'}, {id:'minotaur', name:'มิโนทอร์', icon:'🐂'} ],
+            4: [ {id:'lich', name:'ลิช', icon:'💀'}, {id:'basilisk', name:'บาซิลิสก์', icon:'🦎'} ],
+            5: [ {id:'blackdragon', name:'มังกรดำ', icon:'🐉'}, {id:'golddragon', name:'มังกรทอง', icon:'🐲'}, {id:'demonlord', name:'จอมมาร', icon:'😈'} ]
+        };
+
+        const subTiers = [
+            { prefix: "เบบี้", mult: 0.7 },
+            { prefix: "วัยรุ่น", mult: 1.0 },
+            { prefix: "ตัวเต็มวัย", mult: 1.5 }
+        ];
+
+        const tierBaseStats = {
+            1: { hp: 40, atk: 8, def: 2, spd: 0.8, exp: 20, gold: 10 },
+            2: { hp: 80, atk: 18, def: 6, spd: 1.0, exp: 45, gold: 25 },
+            3: { hp: 150, atk: 35, def: 12, spd: 1.2, exp: 100, gold: 50 },
+            4: { hp: 300, atk: 60, def: 20, spd: 1.4, exp: 250, gold: 100 },
+            5: { hp: 800, atk: 120, def: 40, spd: 1.8, exp: 800, gold: 300 }
+        };
+
+        const itemsDB = {
+            // ของกดใช้ / กล่องสุ่ม
+            'potion': { id: 'potion', name: 'HP Potion', type: 'cons', icon: '🧪', statText: 'Heal 40%', price: 15 },
+            'potion_power': { id: 'potion_power', name: 'ยาเสริมพลัง', type: 'cons', icon: '🍷', statText: 'ATK +50% 1ศึก', price: 100, dropStage: 2 },
+            'scroll_shield': { id: 'scroll_shield', name: 'คัมภีร์โล่', type: 'cons', icon: '📜', statText: 'บล็อก 3 ครั้ง', price: 400, dropStage: 3 },
+            'box_jester': { id: 'box_jester', name: 'กล่องพระราชาตัวตลก', type: 'gacha', icon: '🎁', statText: 'สุ่มของสวมใส่ (มีโอกาสได้ของเทพ!)', price: 50 },
+
+            // วัสดุใหม่
+            'ore_tungsten': { id: 'ore_tungsten', name: 'แร่ทังสเตน', type: 'material', tier: 5, icon: '💎', statText: 'ขาย 1500G / อัปร้านค้า', price: 3000 },
+
+            'w1': { id: 'w1', name: 'ดาบไม้', type: 'weapon', tier: 1, icon: '🗡️', statText: 'ATK+5', bonus: { atk: 5, def: 0 }, price: 20 },
+            'a1': { id: 'a1', name: 'เสื้อผ้าเก่า', type: 'armor', tier: 1, icon: '👕', statText: 'DEF+3', bonus: { atk: 0, def: 3 }, price: 20 },
+            'h1': { id: 'h1', name: 'หมวกฟาง', type: 'head', tier: 1, icon: '👒', statText: 'DEF+2', bonus: { atk: 0, def: 2 }, price: 15 },
+            'g1': { id: 'g1', name: 'ถุงมือผ้า', type: 'gloves', tier: 1, icon: '🧤', statText: 'DEF+1', bonus: { atk: 0, def: 1 }, price: 10 },
+            's1': { id: 's1', name: 'รองเท้าฟาง', type: 'shoes', tier: 1, icon: '🥾', statText: 'DEF+1', bonus: { atk: 0, def: 1 }, price: 10 },
+            'r1': { id: 'r1', name: 'แหวนไม้', type: 'ring', tier: 1, icon: '💍', statText: 'ATK+1', bonus: { atk: 1, def: 0 }, price: 25 },
+
+            'w2': { id: 'w2', name: 'ดาบเหล็ก', type: 'weapon', tier: 2, icon: '⚔️', statText: 'ATK+15', bonus: { atk: 15, def: 0 }, price: 80 },
+            'a2': { id: 'a2', name: 'เกราะหนัง', type: 'armor', tier: 2, icon: '🦺', statText: 'DEF+10', bonus: { atk: 0, def: 10 }, price: 80 },
+            'h2': { id: 'h2', name: 'หมวกหนัง', type: 'head', tier: 2, icon: '🪖', statText: 'DEF+6', bonus: { atk: 0, def: 6 }, price: 60 },
+            'g2': { id: 'g2', name: 'ถุงมือหนัง', type: 'gloves', tier: 2, icon: '🥊', statText: 'DEF+4', bonus: { atk: 0, def: 4 }, price: 40 },
+            's2': { id: 's2', name: 'รองเท้าหนัง', type: 'shoes', tier: 2, icon: '👞', statText: 'DEF+4', bonus: { atk: 0, def: 4 }, price: 40 },
+            'r2': { id: 'r2', name: 'แหวนทองแดง', type: 'ring', tier: 2, icon: '💍', statText: 'ATK+4 DEF+2', bonus: { atk: 4, def: 2 }, price: 100 },
+
+            'w3': { id: 'w3', name: 'ดาบเงิน', type: 'weapon', tier: 3, icon: '🗡️', statText: 'ATK+30', bonus: { atk: 30, def: 0 }, price: 200 },
+            'a3': { id: 'a3', name: 'เกราะเหล็ก', type: 'armor', tier: 3, icon: '🛡️', statText: 'DEF+20', bonus: { atk: 0, def: 20 }, price: 200 },
+            'h3': { id: 'h3', name: 'หมวกเหล็ก', type: 'head', tier: 3, icon: '🪖', statText: 'DEF+12', bonus: { atk: 0, def: 12 }, price: 150 },
+            'g3': { id: 'g3', name: 'ถุงมือเหล็ก', type: 'gloves', tier: 3, icon: '🧤', statText: 'DEF+8', bonus: { atk: 0, def: 8 }, price: 100 },
+            's3': { id: 's3', name: 'รองเท้าเหล็ก', type: 'shoes', tier: 3, icon: '👢', statText: 'DEF+8', bonus: { atk: 0, def: 8 }, price: 100 },
+            'r3': { id: 'r3', name: 'แหวนเงิน', type: 'ring', tier: 3, icon: '💍', statText: 'ATK+8 DEF+4', bonus: { atk: 8, def: 4 }, price: 250 },
+
+            'w4': { id: 'w4', name: 'ดาบเวทย์มนตร์', type: 'weapon', tier: 4, icon: '✨', statText: 'ATK+60', bonus: { atk: 60, def: 0 }, price: 500 },
+            'a4': { id: 'a4', name: 'เกราะเวทย์มนตร์', type: 'armor', tier: 4, icon: '🔮', statText: 'DEF+40', bonus: { atk: 0, def: 40 }, price: 500 },
+            'h4': { id: 'h4', name: 'หมวกจอมเวทย์', type: 'head', tier: 4, icon: '🧙', statText: 'DEF+25', bonus: { atk: 0, def: 25 }, price: 350 },
+            'g4': { id: 'g4', name: 'ถุงมือเวทย์มนตร์', type: 'gloves', tier: 4, icon: '✨', statText: 'DEF+15', bonus: { atk: 0, def: 15 }, price: 250 },
+            's4': { id: 's4', name: 'รองเท้าเวทย์มนตร์', type: 'shoes', tier: 4, icon: '🥿', statText: 'DEF+15', bonus: { atk: 0, def: 15 }, price: 250 },
+            'r4': { id: 'r4', name: 'แหวนทอง', type: 'ring', tier: 4, icon: '💍', statText: 'ATK+15 DEF+8', bonus: { atk: 15, def: 8 }, price: 600 },
+
+            'w5': { id: 'w5', name: 'ดาบศักดิ์สิทธิ์', type: 'weapon', tier: 5, icon: '🌟', statText: 'ATK+120', bonus: { atk: 120, def: 0 }, price: 1200 },
+            'a5': { id: 'a5', name: 'เกราะมังกร', type: 'armor', tier: 5, icon: '🐉', statText: 'DEF+80', bonus: { atk: 0, def: 80 }, price: 1200 },
+            'h5': { id: 'h5', name: 'มงกุฎเทพ', type: 'head', tier: 5, icon: '👑', statText: 'DEF+50', bonus: { atk: 0, def: 50 }, price: 800 },
+            'g5': { id: 'g5', name: 'ถุงมือมังกร', type: 'gloves', tier: 5, icon: '🔥', statText: 'DEF+30', bonus: { atk: 0, def: 30 }, price: 600 },
+            's5': { id: 's5', name: 'รองเท้าเทพ', type: 'shoes', tier: 5, icon: '🪽', statText: 'DEF+30', bonus: { atk: 0, def: 30 }, price: 600 },
+            'r5': { id: 'r5', name: 'แหวนแห่งเทพ', type: 'ring', tier: 5, icon: '💍', statText: 'ATK+30 DEF+20', bonus: { atk: 30, def: 20 }, price: 1500 },
+        };
+
+        const battleBackgrounds = {
+            1: "url('https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=1000&auto=format&fit=crop')",
+            2: "url('https://images.unsplash.com/photo-1448375240586-882707db888b?q=80&w=1000&auto=format&fit=crop')",
+            3: "url('https://images.unsplash.com/photo-1518928373117-9195b452e69f?q=80&w=1000&auto=format&fit=crop')",
+            4: "url('https://images.unsplash.com/photo-1502159212845-f31a19546a5d?q=80&w=1000&auto=format&fit=crop')",
+            5: "url('https://images.unsplash.com/photo-1506045412240-22980140a405?q=80&w=1000&auto=format&fit=crop')"
+        };
+
+        // ==========================================
+        // 2. Game State & Save System
+        // ==========================================
+        let pData = {
+            name: "Player",
+            classId: null,
+            unlockedDiff: 1, 
+            shopLevel: 1, // เพิ่มตัวแปรร้านค้า
+            lvl: 1, exp: 0, maxExp: 100,
+            hp: 0, maxHp: 0,
+            stamina: 100, maxStamina: 100,
+            currentAtk: 0, currentDef: 0, evasion: 0, critRate: 5, currentSpdBase: 1.0,
+            stats: { str: 0, def: 0, spd: 0, int: 0 },
+            statPoints: 0,
+            gold: 0, potions: 3, powerPotions: 0, shieldScrolls: 0,
+            equip: { weapon: null, armor: null, head: null, gloves: null, shoes: null, ring: null },
+            inv: new Array(16).fill(null),
+            customItems: {},
+            lastSaveTime: ""
+        };
+
+        let bState = {
+            active: false, enemy: null, currentQuestion: null, currentDiff: 1,
+            killStreak: 0, isBoss: false,
+            buffActive: false, powerBuffActive: false, shieldCharges: 0,
+            effAtk: 0, effDef: 0,
+            loop: null, playerAtb: 0, enemyAtb: 0, isPaused: false, isPlayerTurn: false,
+            qInterval: null, qTimerTotal: 0, qTimerCurrent: 0
+        };
+
+        let itemActionContext = { id: null, type: null, index: -1 }; 
+        let lastQState = { unit: '', speed: -1 }; 
+
+        function saveGame() {
+            pData.lastSaveTime = new Date().toLocaleString('th-TH');
+            localStorage.setItem('physicsQuestSave', JSON.stringify(pData));
+        }
+
+        function manualSave() {
+            sfx.click();
+            saveGame();
+            alert(`💾 บันทึกเกมเรียบร้อยแล้ว!\n\nตัวละคร: ${pData.name} (Lv.${pData.lvl})\nเวลาบันทึก: ${pData.lastSaveTime}`);
+        }
+
+        function manualLoad() {
+            sfx.click();
+            const saved = localStorage.getItem('physicsQuestSave');
+            if (saved) {
+                const temp = JSON.parse(saved);
+                if(confirm(`ต้องการโหลดเซฟเกมใช่หรือไม่? ความคืบหน้าปัจจุบันจะถูกทับ\n\nข้อมูลที่จะโหลด:\nตัวละคร: ${temp.name} (Lv.${temp.lvl})\nบันทึกเมื่อ: ${temp.lastSaveTime || 'ไม่ระบุ'}`)) {
+                    doLoadGame(temp);
+                }
+            } else {
+                alert("❌ ไม่พบข้อมูลเซฟเกมในเบราว์เซอร์นี้");
+            }
+        }
+
+        function introLoadGame() {
+            sfx.click();
+            const saved = localStorage.getItem('physicsQuestSave');
+            if (saved) {
+                doLoadGame(JSON.parse(saved));
+            }
+        }
+
+        function doLoadGame(parsedData) {
+            pData = parsedData;
+            if (!pData.shopLevel) pData.shopLevel = 1; // อัปเดตเซฟเก่าที่ไม่มีตัวแปร shopLevel
+            if (pData.customItems) Object.assign(itemsDB, pData.customItems); 
+            else pData.customItems = {};
+            
+            calcTotalStats();
+            initAudio(); 
+            updateTownUI();
+            switchScreen('screen-town');
+            playBGM('town');
+        }
+
+        function checkExistingSave() {
+            const saved = localStorage.getItem('physicsQuestSave');
+            if (saved) {
+                document.getElementById('btn-continue').classList.remove('hidden');
+                const temp = JSON.parse(saved);
+                const infoBox = document.getElementById('save-info-box');
+                const infoDetails = document.getElementById('save-info-details');
+                infoBox.classList.remove('hidden');
+                infoDetails.innerHTML = `ตัวละคร: <span class="text-white font-bold">${temp.name}</span> (Lv.${temp.lvl})<br>บันทึกเมื่อ: ${temp.lastSaveTime || 'ไม่ระบุ'}`;
+            }
+        }
+
+        // ==========================================
+        // 3. Setup & Core Function
+        // ==========================================
+        function switchScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active-screen'));
+            document.getElementById(screenId).classList.add('active-screen');
+        }
+
+        function closeModal(id) {
+            sfx.click();
+            document.getElementById(id).classList.add('hidden');
+        }
+
+        window.onload = () => {
+            checkExistingSave();
+            const grid = document.getElementById('char-grid');
+            for (const [id, data] of Object.entries(classesDB)) {
+                const card = document.createElement('div');
+                card.className = 'char-card border-2 border-gray-600 bg-gray-800 p-6 rounded-xl cursor-pointer text-center w-32 transition hover:scale-105';
+                card.id = `card-${id}`;
+                card.onclick = () => selectClass(id);
+                card.innerHTML = `<div class="text-5xl mb-3">${data.icon}</div><div class="font-bold text-gray-200">${data.name}</div>`;
+                grid.appendChild(card);
+            }
+        };
+
+        function selectClass(classId) {
+            sfx.click();
+            pData.classId = classId;
+            const cls = classesDB[classId];
+            document.querySelectorAll('.char-card').forEach(c => c.classList.remove('selected'));
+            document.getElementById(`card-${classId}`).classList.add('selected');
+            document.getElementById('char-info-name').innerText = cls.name + " " + cls.icon;
+            document.getElementById('char-info-desc').innerText = cls.desc;
+            document.getElementById('char-info-stats').innerHTML = `
+                <div class="text-green-400">❤️ HP: ${cls.hp}</div>
+                <div class="text-red-400">⚔️ ATK: ${cls.atk}</div>
+                <div class="text-blue-400">🛡️ DEF: ${cls.def}</div>
+                <div class="text-yellow-400">⚡ SPD: ${cls.baseSpd}</div>
+            `;
+            checkStartCondition();
+        }
+
+        document.getElementById('input-player-name').addEventListener('input', checkStartCondition);
+
+        function checkStartCondition() {
+            const name = document.getElementById('input-player-name').value.trim();
+            const btn = document.getElementById('btn-start-game');
+            if (pData.classId && name.length > 0) {
+                btn.disabled = false;
+                btn.className = "bg-green-500 hover:bg-green-400 text-white font-bold py-3 px-12 rounded-lg text-xl transition shadow-[0_0_20px_rgba(34,197,94,0.6)] w-full max-w-md";
+            } else {
+                btn.disabled = true;
+                btn.className = "bg-gray-600 text-white font-bold py-3 px-12 rounded-lg text-xl opacity-50 cursor-not-allowed transition w-full max-w-md";
+            }
+        }
+
+        function startStory() {
+            sfx.click();
+            initAudio(); 
+            const name = document.getElementById('input-player-name').value.trim();
+            pData.name = name || "Player";
+            
+            pData.unlockedDiff = 1;
+            pData.shopLevel = 1;
+            pData.stats = { str: 0, def: 0, spd: 0, int: 0 };
+            pData.lvl = 1; pData.exp = 0; pData.maxExp = 100; pData.statPoints = 0;
+            pData.gold = 100;
+            pData.potions = 3; pData.powerPotions = 0; pData.shieldScrolls = 0;
+            pData.stamina = 100; pData.maxStamina = 100;
+            pData.inv = new Array(16).fill(null);
+            pData.equip = { weapon: null, armor: null, head: null, gloves: null, shoes: null, ring: null };
+            pData.customItems = {};
+            pData.inv[0] = 'w1'; 
+            
+            calcTotalStats();
+            pData.hp = pData.maxHp;
+
+            document.getElementById('story-player-name').innerText = pData.name;
+            switchScreen('screen-story');
+        }
+
+        function enterTownFirstTime() {
+            sfx.click();
+            saveGame();
+            updateTownUI();
+            switchScreen('screen-town');
+            playBGM('town');
+        }
+
+        function calcTotalStats() {
+            const cls = classesDB[pData.classId];
+            
+            let baseHp = cls.hp + ((pData.lvl - 1) * 15) + (pData.stats.str * 10);
+            
+            let bonusAtk = 0, bonusDef = 0;
+            let percAtk = 0, percDef = 0, percHp = 0;
+
+            Object.values(pData.equip).forEach(itemId => {
+                if(itemId && itemsDB[itemId]) {
+                    const itm = itemsDB[itemId];
+                    bonusAtk += itm.bonus.atk || 0;
+                    bonusDef += itm.bonus.def || 0;
+                    if(itm.percentBonus) {
+                        if(itm.percentBonus.type === 'atkPerc') percAtk += itm.percentBonus.val;
+                        if(itm.percentBonus.type === 'defPerc') percDef += itm.percentBonus.val;
+                        if(itm.percentBonus.type === 'hpPerc') percHp += itm.percentBonus.val;
+                    }
+                }
+            });
+
+            const newMaxHp = Math.floor(baseHp * (1 + (percHp / 100)));
+            if(pData.maxHp === 0) pData.hp = newMaxHp;
+            pData.maxHp = newMaxHp;
+            pData.hp = Math.min(pData.hp, pData.maxHp);
+
+            let baseAtk = cls.atk + ((pData.lvl - 1) * 2) + (pData.stats.str * 2) + bonusAtk;
+            pData.currentAtk = Math.floor(baseAtk * (1 + (percAtk / 100)));
+
+            let baseDef = cls.def + ((pData.lvl - 1) * 1) + (pData.stats.def * 2) + bonusDef;
+            pData.currentDef = Math.floor(baseDef * (1 + (percDef / 100)));
+
+            pData.currentSpdBase = cls.baseSpd;
+            pData.evasion = pData.stats.spd * 1; 
+
+            let totalCrit = 5 + pData.stats.spd; 
+            if (pData.classId === 'rogue') totalCrit *= 2; 
+            pData.critRate = totalCrit;
+
+            const badge = document.getElementById('badge-stat-points');
+            if (pData.statPoints > 0) badge.classList.remove('hidden');
+            else badge.classList.add('hidden');
+        }
+
+        // ==========================================
+        // 4. Town, UI & Stats Update
+        // ==========================================
+        function updateTownUI() {
+            document.getElementById('town-player-name').innerText = `${pData.name} (${classesDB[pData.classId].name})`;
+            document.getElementById('town-player-lvl').innerText = pData.lvl;
+            document.getElementById('town-player-hp').innerText = `${Math.floor(pData.hp)}/${pData.maxHp}`;
+            document.getElementById('town-player-stamina').innerText = `${Math.floor(pData.stamina)}/${pData.maxStamina}`;
+            document.getElementById('town-player-gold').innerText = pData.gold;
+            document.getElementById('town-player-potions').innerText = pData.potions;
+            document.getElementById('town-player-power-potions').innerText = pData.powerPotions;
+            document.getElementById('town-player-scrolls').innerText = pData.shieldScrolls;
+        }
+
+        function restAtInn() {
+            if (pData.gold >= 10 && (pData.hp < pData.maxHp || pData.stamina < pData.maxStamina)) {
+                pData.gold -= 10; 
+                pData.hp = pData.maxHp;
+                pData.stamina = pData.maxStamina;
+                sfx.rest();
+                saveGame();
+                updateTownUI();
+                alert("พักผ่อนเต็มอิ่ม ฟื้นฟูพลังชีวิตและพลังกายเต็ม 100%");
+            } else if (pData.gold < 10) {
+                sfx.click(); alert("เงินไม่พอ!");
+            } else {
+                sfx.click(); alert("พลังชีวิตและพลังกายเต็มอยู่แล้ว");
+            }
+        }
+
+        function openDifficultyModal() {
+            sfx.adventure();
+            const container = document.getElementById('difficulty-buttons');
+            container.innerHTML = '';
+            
+            const levels = [
+                { id: 1, name: 'ระดับ 1: ทุ่งหญ้าเริ่มต้น', color: 'green' },
+                { id: 2, name: 'ระดับ 2: ป่าลึก', color: 'blue' },
+                { id: 3, name: 'ระดับ 3: ถ้ำมืดมิด', color: 'purple' },
+                { id: 4, name: 'ระดับ 4: หอคอยเวทมนตร์', color: 'orange' },
+                { id: 5, name: 'ระดับ 5: รังจอมมาร', color: 'red' }
+            ];
+
+            levels.forEach(lv => {
+                const btn = document.createElement('button');
+                if (pData.unlockedDiff >= lv.id) {
+                    btn.className = `bg-${lv.color}-600 hover:bg-${lv.color}-500 text-white font-bold py-3 rounded transition`;
+                    btn.innerText = lv.name;
+                    btn.onclick = () => startExpedition(lv.id);
+                } else {
+                    btn.className = `bg-gray-700 text-gray-500 font-bold py-3 rounded cursor-not-allowed border border-gray-600`;
+                    btn.innerHTML = `🔒 ${lv.name} (ล็อค)`;
+                }
+                container.appendChild(btn);
+            });
+            document.getElementById('modal-difficulty').classList.remove('hidden');
+        }
+
+        function openCharacterInfo() {
+            sfx.click();
+            renderCharacterInfo();
+            switchScreen('screen-character');
+        }
+
+        function renderCharacterInfo() {
+            document.getElementById('info-name').innerText = pData.name;
+            document.getElementById('info-lvl').innerText = pData.lvl;
+            document.getElementById('info-points').innerText = pData.statPoints;
+            
+            document.getElementById('info-exp-text').innerText = `${pData.exp}/${pData.maxExp}`;
+            document.getElementById('info-exp-bar').style.width = `${(pData.exp / pData.maxExp) * 100}%`;
+
+            document.getElementById('total-hp').innerText = `${Math.floor(pData.hp)}/${pData.maxHp}`;
+            document.getElementById('total-stamina').innerText = `${Math.floor(pData.stamina)}/${pData.maxStamina}`;
+            document.getElementById('total-atk').innerText = pData.currentAtk;
+            document.getElementById('total-def').innerText = pData.currentDef;
+            document.getElementById('total-crit').innerText = pData.critRate;
+            document.getElementById('total-eva').innerText = pData.evasion;
+
+            document.getElementById('base-str').innerText = pData.stats.str;
+            document.getElementById('base-def').innerText = pData.stats.def;
+            document.getElementById('base-spd').innerText = pData.stats.spd;
+            document.getElementById('base-int').innerText = pData.stats.int;
+
+            document.querySelectorAll('.btn-upgrade').forEach(btn => {
+                btn.style.display = pData.statPoints > 0 ? 'block' : 'none';
+            });
+
+            renderInventory();
+            renderEquipment();
+        }
+
+        function upgradeStat(statName) {
+            sfx.click();
+            if (pData.statPoints > 0) {
+                pData.stats[statName]++;
+                pData.statPoints--;
+                calcTotalStats();
+                if (statName === 'str') pData.hp += 10;
+                saveGame();
+                renderCharacterInfo();
+            }
+        }
+
+        // ==========================================
+        // 5. Item System (Tap to Action)
+        // ==========================================
+        function createItemNode(itemId, contextType, slotOrIndex) {
+            const item = itemsDB[itemId];
+            if (!item) return '';
+            
+            let glowClass = 'tier-glow-1';
+            if(item.tier) glowClass = `tier-glow-${item.tier}`;
+            if(item.isBossDrop) glowClass = `tier-glow-5 animate-pulse`; 
+
+            return `
+                <div class="w-full h-full bg-gray-700 rounded-lg border-2 ${glowClass} flex flex-col items-center justify-center cursor-pointer transition hover:bg-gray-600 relative z-10" 
+                     onclick="openItemAction('${itemId}', '${contextType}', '${slotOrIndex}')">
+                    <div class="text-3xl">${item.icon}</div>
+                    <div class="absolute bottom-[-6px] right-[-6px] bg-red-600 text-white text-[10px] px-1.5 rounded-full font-black border border-gray-800 drop-shadow max-w-[50px] overflow-hidden whitespace-nowrap text-ellipsis">${item.statText}</div>
+                </div>`;
+        }
+
+        function renderInventory() {
+            const grid = document.getElementById('inv-grid');
+            grid.innerHTML = '';
+            for (let i = 0; i < pData.inv.length; i++) {
+                grid.innerHTML += `<div class="item-slot">${pData.inv[i] ? createItemNode(pData.inv[i], 'inv', i) : ''}</div>`;
+            }
+        }
+
+        function renderEquipment() {
+            ['weapon', 'armor', 'head', 'gloves', 'shoes', 'ring'].forEach(slot => {
+                document.getElementById(`equip-${slot}`).innerHTML = pData.equip[slot] ? createItemNode(pData.equip[slot], 'equip', slot) : '';
+            });
+        }
+
+        function openItemAction(itemId, contextType, slotOrIndex) {
+            sfx.click();
+            const item = itemsDB[itemId];
+            if(!item) return;
+
+            itemActionContext = { id: itemId, type: contextType, indexOrSlot: slotOrIndex };
+            
+            document.getElementById('item-action-icon').innerText = item.icon;
+            document.getElementById('item-action-name').innerText = `${item.name} ${item.tier ? '(Lv.'+item.tier+')' : ''}`;
+            document.getElementById('item-action-desc').innerText = item.statText;
+
+            const btnContainer = document.getElementById('item-action-buttons');
+            btnContainer.innerHTML = '';
+
+            if (contextType === 'inv') {
+                if (item.type !== 'cons' && item.type !== 'gacha' && item.type !== 'material') {
+                    btnContainer.innerHTML += `<button onclick="actionEquip()" class="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-lg font-bold text-lg transition">สวมใส่ (Equip)</button>`;
+                }
+                btnContainer.innerHTML += `<button onclick="actionDiscard()" class="w-full bg-red-700 hover:bg-red-600 text-white py-2 rounded-lg font-bold transition">ทิ้งไอเทม (Discard)</button>`;
+            } 
+            else if (contextType === 'equip') {
+                btnContainer.innerHTML += `<button onclick="actionUnequip()" class="w-full bg-orange-600 hover:bg-orange-500 text-white py-3 rounded-lg font-bold text-lg transition">ถอดอุปกรณ์ (Unequip)</button>`;
+            }
+            else if (contextType === 'shop_inv') {
+                const sellPrice = Math.floor(item.price / 2);
+                btnContainer.innerHTML += `<button onclick="actionSell()" class="w-full bg-green-600 hover:bg-green-500 text-white py-3 rounded-lg font-bold text-lg transition">ขายรับ ${sellPrice} G</button>`;
+                btnContainer.innerHTML += `<button onclick="actionDiscard()" class="w-full bg-red-700 hover:bg-red-600 text-white py-2 rounded-lg font-bold transition">ทิ้งไอเทม (Discard)</button>`;
+            }
+
+            document.getElementById('modal-item-action').classList.remove('hidden');
+        }
+
+        function actionEquip() {
+            sfx.click();
+            const item = itemsDB[itemActionContext.id];
+            const invIndex = parseInt(itemActionContext.indexOrSlot);
+            
+            if(!item.type || item.type === 'cons' || item.type === 'gacha' || item.type === 'material') {
+                alert("ไอเทมนี้สวมใส่ไม่ได้!"); return;
+            }
+
+            const equipSlot = item.type;
+            const oldItem = pData.equip[equipSlot];
+
+            pData.equip[equipSlot] = item.id;
+            pData.inv[invIndex] = oldItem; 
+            
+            calcTotalStats();
+            saveGame();
+            renderCharacterInfo();
+            closeModal('modal-item-action');
+        }
+
+        function actionUnequip() {
+            sfx.click();
+            const slot = itemActionContext.indexOrSlot;
+            const itemId = pData.equip[slot];
+
+            const emptySlot = pData.inv.findIndex(i => i === null);
+            if (emptySlot === -1) {
+                alert("กระเป๋าเต็ม! ไม่สามารถถอดได้"); return;
+            }
+
+            pData.inv[emptySlot] = itemId;
+            pData.equip[slot] = null;
+
+            calcTotalStats();
+            saveGame();
+            renderCharacterInfo();
+            closeModal('modal-item-action');
+        }
+
+        function actionDiscard() {
+            sfx.click();
+            if(confirm("แน่ใจหรือไม่ว่าจะทิ้งไอเทมชิ้นนี้?")) {
+                const invIndex = parseInt(itemActionContext.indexOrSlot);
+                pData.inv[invIndex] = null;
+                saveGame();
+                if (itemActionContext.type === 'shop_inv') renderShop();
+                else renderCharacterInfo();
+                
+                closeModal('modal-item-action');
+            }
+        }
+
+        function actionSell() {
+            sfx.shop();
+            const item = itemsDB[itemActionContext.id];
+            const sellPrice = Math.floor(item.price / 2);
+            const invIndex = parseInt(itemActionContext.indexOrSlot);
+
+            pData.gold += sellPrice;
+            pData.inv[invIndex] = null;
+            
+            saveGame();
+            renderShop();
+            updateTownUI();
+            closeModal('modal-item-action');
+        }
+
+        // ==========================================
+        // 6. Shop & Gacha System
+        // ==========================================
+        function openShop() {
+            sfx.shop();
+            renderShop();
+            switchScreen('screen-shop');
+        }
+
+        function renderShop() {
+            document.getElementById('shop-gold').innerText = pData.gold;
+            document.getElementById('shop-level-display').innerText = pData.shopLevel;
+            
+            // แสดงปุ่มอัปเกรดร้านค้า (ถ้าระดับต่ำกว่า 5)
+            const upgradeCont = document.getElementById('shop-upgrade-container');
+            if (pData.shopLevel < 5) {
+                upgradeCont.style.display = 'flex';
+                document.getElementById('shop-next-level').innerText = pData.shopLevel + 1;
+                
+                const upgradeCosts = { 1: 500, 2: 1000, 3: 3000, 4: 10000 };
+                const reqGold = upgradeCosts[pData.shopLevel];
+                const reqTungsten = (pData.shopLevel === 4) ? 5 : 0;
+                let currentTungsten = pData.inv.filter(i => i === 'ore_tungsten').length;
+                
+                let costText = `ใช้เงิน: ${reqGold} G`;
+                if (reqTungsten > 0) costText += `<br>แร่ทังสเตน: <span class="${currentTungsten >= reqTungsten ? 'text-green-400' : 'text-red-400'}">${currentTungsten}/${reqTungsten} ชิ้น</span>`;
+                
+                document.getElementById('shop-upgrade-cost').innerHTML = costText;
+                
+                const btnUpgrade = document.getElementById('btn-upgrade-shop');
+                if (pData.gold >= reqGold && currentTungsten >= reqTungsten) {
+                    btnUpgrade.disabled = false;
+                    btnUpgrade.className = "bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 rounded transition w-full mt-2";
+                } else {
+                    btnUpgrade.disabled = true;
+                    btnUpgrade.className = "bg-gray-600 text-gray-400 font-bold py-2 rounded cursor-not-allowed w-full mt-2";
+                }
+            } else {
+                upgradeCont.style.display = 'none';
+            }
+            
+            const buyList = document.getElementById('shop-buy-list');
+            buyList.innerHTML = '';
+            for (const [id, item] of Object.entries(itemsDB)) {
+                // ร้านค้าไม่ขาย material และของดรอปจากบอส
+                if(item.type === 'material' || item.isBossDrop) continue; 
+                
+                // ตรวจสอบระดับในการวางขาย (ให้ไอเทมกดใช้มีเลเวลขั้นต่ำด้วย)
+                let reqLevel = item.tier || 1;
+                if(item.dropStage) reqLevel = item.dropStage;
+                
+                // ถ้าสเปคไอเทมสูงกว่าระดับร้านค้า ให้ข้ามไป
+                if(reqLevel > pData.shopLevel) continue; 
+
+                buyList.innerHTML += `
+                    <div class="flex justify-between items-center bg-gray-700 p-3 rounded cursor-pointer hover:bg-gray-600 transition border border-gray-600" onclick="buyItem('${id}')">
+                        <div class="flex items-center gap-3">
+                            <span class="text-3xl">${item.icon}</span>
+                            <div>
+                                <div class="font-bold text-white text-lg">${item.name} ${item.tier ? '(Lv.'+item.tier+')' : ''}</div>
+                                <div class="text-xs text-gray-400">${item.statText}</div>
+                            </div>
+                        </div>
+                        <div class="font-black text-yellow-400 text-lg">${item.price} G</div>
+                    </div>
+                `;
+            }
+
+            const sellGrid = document.getElementById('shop-sell-grid');
+            sellGrid.innerHTML = '';
+            for (let i = 0; i < pData.inv.length; i++) {
+                sellGrid.innerHTML += `<div class="item-slot">${pData.inv[i] ? createItemNode(pData.inv[i], 'shop_inv', i) : ''}</div>`;
+            }
+        }
+
+        function upgradeShop() {
+            const upgradeCosts = { 1: 500, 2: 1000, 3: 3000, 4: 10000 };
+            const reqGold = upgradeCosts[pData.shopLevel];
+            const reqTungsten = (pData.shopLevel === 4) ? 5 : 0;
+            
+            if (pData.gold >= reqGold) {
+                if (reqTungsten > 0) {
+                    let currentTungsten = pData.inv.filter(i => i === 'ore_tungsten').length;
+                    if (currentTungsten < reqTungsten) {
+                        sfx.click();
+                        alert("แร่ทังสเตนไม่พอ!"); return;
+                    }
+                    
+                    // หักแร่ทังสเตน 5 ชิ้น
+                    let removed = 0;
+                    for (let i = 0; i < pData.inv.length; i++) {
+                        if (pData.inv[i] === 'ore_tungsten' && removed < reqTungsten) {
+                            pData.inv[i] = null;
+                            removed++;
+                        }
+                    }
+                }
+                
+                sfx.heal(); // เสียงวิบวับเหมือนเลื่อนขั้น
+                pData.gold -= reqGold;
+                pData.shopLevel++;
+                saveGame();
+                alert(`🎉 ยินดีด้วย! อัปเกรดร้านค้าเป็นระดับ ${pData.shopLevel} สำเร็จ!\nปลดล็อกสินค้าใหม่แล้ว`);
+                renderShop();
+                updateTownUI();
+            }
+        }
+
+        function buyItem(itemId) {
+            const item = itemsDB[itemId];
+            if (pData.gold >= item.price) {
+                if (item.type === 'gacha') {
+                    const emptySlot = pData.inv.findIndex(i => i === null);
+                    if (emptySlot === -1) { sfx.click(); alert("กระเป๋าเต็ม! กรุณาจัดการช่องว่างก่อนสุ่มกล่อง"); return; }
+                    
+                    sfx.shop();
+                    pData.gold -= item.price;
+                    openMysteryBox(emptySlot);
+                    saveGame();
+                    renderShop();
+                    updateTownUI();
+                    return;
+                }
+
+                if (item.type === 'cons') {
+                    sfx.shop();
+                    pData.gold -= item.price;
+                    if(itemId === 'potion') pData.potions++;
+                    else if(itemId === 'potion_power') pData.powerPotions++;
+                    else if(itemId === 'scroll_shield') pData.shieldScrolls++;
+                    saveGame();
+                    alert(`ซื้อ ${item.name} สำเร็จ!`);
+                } else {
+                    const emptySlot = pData.inv.findIndex(i => i === null);
+                    if (emptySlot === -1) { sfx.click(); alert("กระเป๋าเต็ม! กรุณาจัดการช่องว่างก่อน"); return; }
+                    sfx.shop();
+                    pData.gold -= item.price;
+                    pData.inv[emptySlot] = itemId;
+                    saveGame();
+                    alert(`ซื้อ ${item.name} สำเร็จ! ถูกเก็บในกระเป๋า`);
+                }
+                renderShop();
+                updateTownUI();
+            } else {
+                sfx.click();
+                alert("เงินไม่พอ!");
+            }
+        }
+
+        function openMysteryBox(slotIndex) {
+            let roll = Math.random() * 100;
+            let targetTier = 1;
+
+            if (roll < 50) targetTier = 1;         
+            else if (roll < 75) targetTier = 2;    
+            else if (roll < 87) targetTier = 3;    
+            else if (roll < 93) targetTier = 4;    
+            else if (roll < 94) targetTier = 5;    
+            else targetTier = 0;                   
+
+            if (targetTier === 0) {
+                pData.potions++;
+                alert(`🎁 กล่องพระราชาตัวตลก: แย่จัง! คุณได้เกลือ (HP Potion 1 ขวด)`);
+            } else {
+                const gears = Object.keys(itemsDB).filter(k => itemsDB[k].type !== 'cons' && itemsDB[k].type !== 'gacha' && itemsDB[k].type !== 'material' && !itemsDB[k].isBossDrop);
+                const eligible = gears.filter(k => itemsDB[k].tier === targetTier);
+                const reward = eligible[Math.floor(Math.random() * eligible.length)];
+                pData.inv[slotIndex] = reward;
+                
+                let tierMsg = "";
+                if(targetTier === 5) tierMsg = "🎉 แจ็คพอตแตก!! อุปกรณ์ระดับเทพ (Tier 5)";
+                else if(targetTier === 4) tierMsg = "✨ โชคดีมาก! อุปกรณ์ระดับเวทมนตร์ (Tier 4)";
+                else tierMsg = `ได้รับอุปกรณ์ระดับ ${targetTier}`;
+                
+                alert(`🎁 กล่องพระราชาตัวตลก: ${tierMsg}\nคุณได้รับ: ${itemsDB[reward].name}`);
+            }
+        }
+
+        // ==========================================
+        // 7. Dynamic Question Generator
+        // ==========================================
+        function toSuperscript(num) {
+            return `10<sup>${num}</sup>`;
+        }
+
+        function getWrongPowers(correctPwr, count) {
+            let wrongs = new Set();
+            let offsets = [3, -3, 6, -6, 9, -9, 2, -2, 1, -1];
+            offsets = offsets.sort(() => 0.5 - Math.random());
+            for (let off of offsets) {
+                let w = correctPwr + off;
+                if(w !== correctPwr) wrongs.add(w);
+                if(wrongs.size >= count) break;
+            }
+            return Array.from(wrongs);
+        }
+
+        function generateQuestion(diffLevel) {
+            const baseUnits = ['m', 'g', 'A', 'N', 'W', 's'];
+            
+            let availableUnits = baseUnits.filter(u => u !== lastQState.unit);
+            if(availableUnits.length === 0) availableUnits = baseUnits;
+            const u = availableUnits[Math.floor(Math.random() * availableUnits.length)];
+            lastQState.unit = u;
+
+            let qType = diffLevel;
+            if (diffLevel === 4) qType = Math.random() < 0.3 ? 'speed' : 'conv_mid';
+            if (diffLevel === 5) qType = Math.random() < 0.3 ? 'speed' : 'conv_hard';
+
+            let qText = "", ans = "", choices = [];
+
+            if (qType === 1) {
+                let p = prefixesDB[Math.floor(Math.random() * prefixesDB.length)];
+                qText = `คำอุปสรรค "${p.name}" (${p.sym}) มีค่าพหุคูณเท่าใด?`;
+                ans = toSuperscript(p.pwr);
+                let w = getWrongPowers(p.pwr, 3);
+                choices = [ans, toSuperscript(w[0]), toSuperscript(w[1]), toSuperscript(w[2])];
+            } 
+            else if (qType === 2) {
+                let p = prefixesDB[Math.floor(Math.random() * prefixesDB.length)];
+                qText = `พหุคูณ ${toSuperscript(p.pwr)} คือคำอุปสรรคใด?`;
+                ans = `${p.name} (${p.sym})`;
+                let wPrefixes = prefixesDB.filter(x => x.sym !== p.sym).sort(()=>0.5-Math.random()).slice(0,3);
+                choices = [ans, `${wPrefixes[0].name} (${wPrefixes[0].sym})`, `${wPrefixes[1].name} (${wPrefixes[1].sym})`, `${wPrefixes[2].name} (${wPrefixes[2].sym})`];
+            }
+            else if (qType === 3) {
+                let idx1 = Math.floor(Math.random() * (sortedPrefixes.length - 1));
+                let p1 = sortedPrefixes[idx1];
+                let p2 = sortedPrefixes[idx1 + 1]; 
+                
+                if (Math.random() < 0.5) { let temp = p1; p1 = p2; p2 = temp; }
+
+                let diffPwr = p1.pwr - p2.pwr;
+                qText = `1 ${p1.sym}${u} เท่ากับกี่ ${p2.sym}${u}?`;
+                ans = toSuperscript(diffPwr);
+                let w = getWrongPowers(diffPwr, 3);
+                choices = [ans, toSuperscript(w[0]), toSuperscript(w[1]), toSuperscript(w[2])];
+            }
+            else if (qType === 'conv_mid') {
+                let idx1 = Math.floor(Math.random() * sortedPrefixes.length);
+                let step = Math.floor(Math.random() * 3) + 1; 
+                let idx2 = idx1 + step;
+                if (idx2 >= sortedPrefixes.length) idx2 = idx1 - step; 
+                
+                let p1 = sortedPrefixes[idx1];
+                let p2 = sortedPrefixes[idx2];
+                if (Math.random() < 0.5) { let temp = p1; p1 = p2; p2 = temp; }
+
+                let diffPwr = p1.pwr - p2.pwr;
+                qText = `1 ${p1.sym}${u} เท่ากับกี่ ${p2.sym}${u}?`;
+                ans = toSuperscript(diffPwr);
+                let w = getWrongPowers(diffPwr, 3);
+                choices = [ans, toSuperscript(w[0]), toSuperscript(w[1]), toSuperscript(w[2])];
+            }
+            else if (qType === 'conv_hard') {
+                let p1 = prefixesDB[Math.floor(Math.random() * prefixesDB.length)];
+                let p2 = prefixesDB[Math.floor(Math.random() * prefixesDB.length)];
+                while(p1.sym === p2.sym) p2 = prefixesDB[Math.floor(Math.random() * prefixesDB.length)];
+                
+                let diffPwr = p1.pwr - p2.pwr;
+                qText = `1 ${p1.sym}${u} เท่ากับกี่ ${p2.sym}${u}?`;
+                ans = toSuperscript(diffPwr);
+                let w = getWrongPowers(diffPwr, 3);
+                choices = [ans, toSuperscript(w[0]), toSuperscript(w[1]), toSuperscript(w[2])];
+            }
+            else if (qType === 'speed') {
+                const speedVals = [18, 36, 54, 72, 90, 108, 144];
+                let availableSpeeds = speedVals.filter(v => v !== lastQState.speed);
+                if(availableSpeeds.length === 0) availableSpeeds = speedVals;
+                
+                let v = availableSpeeds[Math.floor(Math.random() * availableSpeeds.length)];
+                lastQState.speed = v;
+
+                let correctAns = v * 5 / 18; 
+                qText = `${v} km/h มีค่าเท่ากับกี่ m/s?`;
+                ans = `${correctAns}`;
+                
+                let wrongs = new Set();
+                let shuffledSpeeds = speedVals.sort(()=>0.5-Math.random());
+                for(let sv of shuffledSpeeds) {
+                    let wv = sv * 5 / 18;
+                    if(wv !== correctAns) wrongs.add(`${wv}`);
+                    if(wrongs.size >= 3) break;
+                }
+                choices = [ans, ...Array.from(wrongs).slice(0,3)];
+            }
+
+            choices = choices.sort(() => 0.5 - Math.random());
+            return { qText, ans, choices };
+        }
+
+        // ==========================================
+        // 8. Battle System
+        // ==========================================
+        
+        function showFloatingText(containerId, text, type) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            
+            const el = document.createElement('div');
+            el.innerHTML = text; 
+            el.className = 'float-text';
+            
+            if (type === 'crit') {
+                el.classList.add('float-crit');
+            } else if (type === 'damage') {
+                el.classList.add('float-dmg');
+                const offset = (Math.random() * 40) - 20;
+                el.style.transform = `translate(calc(-50% + ${offset}px), 0)`;
+            } else if (type === 'dodge') {
+                el.classList.add('float-dodge');
+            } else if (type === 'heal') {
+                el.classList.add('float-heal');
+            }
+            
+            container.appendChild(el);
+            setTimeout(() => { if(el.parentNode) el.parentNode.removeChild(el); }, 1200);
+        }
+
+        function startExpedition(diffLevel) {
+            sfx.click();
+            const useBuff = document.getElementById('buff-stamina').checked;
+            enterBattle(diffLevel, useBuff, false);
+        }
+
+        function enterBattle(diffLevel, useBuff, isNextBattle) {
+            let cost = useBuff ? 20 : 10;
+            if (pData.stamina < cost) {
+                alert("พลังกายไม่พอสำหรับการต่อสู้! กรุณากลับไปพักผ่อน");
+                return;
+            }
+
+            sfx.encounter();
+
+            if (!isNextBattle) bState.killStreak = 0;
+            else bState.killStreak++;
+            
+            bState.isBoss = (bState.killStreak === 7);
+
+            pData.stamina -= cost;
+            bState.buffActive = useBuff;
+            bState.powerBuffActive = false; 
+            bState.shieldCharges = 0;       
+            bState.currentDiff = diffLevel;
+            closeModal('modal-difficulty');
+
+            bState.effAtk = Math.floor(pData.currentAtk * (useBuff ? 1.3 : 1.0));
+            bState.effDef = Math.floor(pData.currentDef * (useBuff ? 1.1 : 1.0));
+
+            document.getElementById('battle-bg').style.backgroundImage = battleBackgrounds[diffLevel] || "";
+            document.getElementById('battle-buff-stamina').classList.toggle('hidden', !useBuff);
+            document.getElementById('battle-buff-power').classList.add('hidden');
+            document.getElementById('battle-buff-shield').classList.add('hidden');
+
+            const pool = enemiesTier[diffLevel];
+            const baseEnemy = pool[Math.floor(Math.random() * pool.length)];
+            const baseStats = tierBaseStats[diffLevel];
+
+            if (bState.isBoss) {
+                document.getElementById('boss-warning').classList.remove('hidden');
+                const adultMult = 1.5; 
+                bState.enemy = {
+                    name: `บอส${baseEnemy.name}`,
+                    icon: baseEnemy.icon,
+                    hp: Math.floor(baseStats.hp * adultMult * 2.5), 
+                    maxHp: Math.floor(baseStats.hp * adultMult * 2.5),
+                    atk: Math.floor(baseStats.atk * adultMult * 1.3),
+                    def: Math.floor(baseStats.def * adultMult * 1.5),
+                    spd: baseStats.spd,
+                    exp: Math.floor(baseStats.exp * adultMult * 3),
+                    gold: Math.floor(baseStats.gold * adultMult * 3)
+                };
+                document.getElementById('enemy-sprite').style.transform = "scale(1.5)";
+                playBGM('boss');
+            } else {
+                document.getElementById('boss-warning').classList.add('hidden');
+                document.getElementById('enemy-sprite').style.transform = "scale(1)";
+                const sub = subTiers[Math.floor(Math.random() * subTiers.length)];
+                bState.enemy = {
+                    name: `${sub.prefix}${baseEnemy.name}`,
+                    icon: baseEnemy.icon,
+                    hp: Math.floor(baseStats.hp * sub.mult),
+                    maxHp: Math.floor(baseStats.hp * sub.mult),
+                    atk: Math.floor(baseStats.atk * sub.mult),
+                    def: Math.floor(baseStats.def * sub.mult),
+                    spd: baseStats.spd,
+                    exp: Math.floor(baseStats.exp * sub.mult),
+                    gold: Math.floor(baseStats.gold * sub.mult)
+                };
+                playBGM('battle'); 
+            }
+
+            bState.active = true;
+            document.getElementById('enemy-sprite').classList.remove('worn-out');
+            document.getElementById('enemy-name').innerText = bState.enemy.name;
+            document.getElementById('enemy-sprite').innerText = bState.enemy.icon;
+            
+            updateTownUI(); 
+            updateBattleUI();
+            logBattle(`เผชิญหน้ากับ ${bState.enemy.name}!`);
+            
+            document.getElementById('atb-status-text').innerText = "กำลังชาร์จพลังงาน...";
+            document.getElementById('atb-status-text').className = "text-gray-400 font-bold animate-pulse";
+
+            switchScreen('screen-battle');
+            
+            bState.playerAtb = 0; 
+            bState.enemyAtb = 100; // เริ่มที่ 100
+            bState.isPaused = false; bState.isPlayerTurn = false;
+            
+            if(bState.loop) clearInterval(bState.loop);
+            bState.loop = setInterval(updateATB, 50); 
+        }
+
+        function updateATB() {
+            if(!bState.active || bState.isPaused || bState.isPlayerTurn) return;
+
+            let pSpeed = pData.currentSpdBase * (1 + (pData.stats.spd * 0.1));
+            let eSpeed = bState.enemy.spd * (1 - (pData.stats.int * 0.01)) * 0.5;
+            
+            pSpeed *= 0.6; // ลดความเร็วผู้เล่นลง 40%
+            eSpeed *= 1.1; // เพิ่มความเร็วศัตรูขึ้น 10%
+
+            if(eSpeed < 0.1) eSpeed = 0.1; 
+
+            bState.playerAtb += pSpeed * 2; 
+            bState.enemyAtb -= eSpeed * 2; // นับถอยหลัง
+
+            updateBattleUI();
+
+            if (bState.playerAtb >= 100) {
+                bState.playerAtb = 100;
+                bState.isPlayerTurn = true;
+                bState.isPaused = true;
+                document.getElementById('atb-status-text').innerText = "ถึงตาคุณแล้ว! ระวังคำถาม!";
+                document.getElementById('atb-status-text').className = "text-yellow-400 font-bold";
+                startAttack(); 
+            } else if (bState.enemyAtb <= 0) { // ลดถึง 0 ให้โจมตี
+                bState.enemyAtb = 0;
+                bState.isPaused = true; 
+                setTimeout(enemyTurn, 500); 
+            }
+        }
+
+        function updateBattleUI() {
+            document.getElementById('player-hp-text').innerText = `${Math.floor(Math.max(0, pData.hp))}/${pData.maxHp}`;
+            document.getElementById('player-hp-bar').style.width = `${Math.max(0, (pData.hp / pData.maxHp) * 100)}%`;
+            
+            document.getElementById('player-stamina-text').innerText = `${Math.floor(pData.stamina)}/${pData.maxStamina}`;
+            document.getElementById('player-stamina-bar').style.width = `${Math.max(0, (pData.stamina / pData.maxStamina) * 100)}%`;
+
+            const pAtbPerc = Math.min(100, bState.playerAtb);
+            const eAtbPerc = Math.max(0, bState.enemyAtb);
+            
+            document.getElementById('player-atb-bar').style.height = `${pAtbPerc}%`;
+            
+            const vertBar = document.getElementById('enemy-atb-bar-vertical');
+            const horizBar = document.getElementById('enemy-atb-horizontal');
+            const textTimer = document.getElementById('enemy-atb-text');
+
+            vertBar.style.height = `${eAtbPerc}%`;
+            horizBar.style.width = `${eAtbPerc}%`;
+            
+            if (eAtbPerc <= 30) {
+                vertBar.className = "w-full absolute bottom-0 transition-all duration-75 bg-red-600 shadow-[0_0_15px_rgba(239,68,68,0.9)]";
+                horizBar.className = "h-full transition-all duration-75 bg-red-600 shadow-[0_0_15px_rgba(239,68,68,0.9)]";
+                textTimer.className = "text-xs text-red-500 font-bold mb-2 animate-bounce";
+                textTimer.innerText = "⚠️ มอนสเตอร์เตรียมโจมตี!!";
+            } else {
+                vertBar.className = "w-full absolute bottom-0 transition-all duration-75 bg-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.8)]";
+                horizBar.className = "h-full transition-all duration-75 bg-yellow-500";
+                textTimer.className = "text-xs text-yellow-500 font-bold mb-2 animate-pulse";
+                textTimer.innerText = "⏳ เวลานับถอยหลังโจมตี";
+            }
+
+            const eHpPercent = (bState.enemy.hp / bState.enemy.maxHp) * 100;
+            document.getElementById('enemy-hp-text').innerText = `${Math.floor(Math.max(0, bState.enemy.hp))}`;
+            document.getElementById('enemy-hp-bar').style.width = `${Math.max(0, eHpPercent)}%`;
+
+            const sprite = document.getElementById('enemy-sprite');
+            if (eHpPercent <= 50 && eHpPercent > 0) {
+                sprite.classList.add('worn-out');
+                if(bState.isBoss) sprite.style.transform = "scale(1.4) rotate(-3deg)";
+            } else {
+                sprite.classList.remove('worn-out');
+                if(bState.isBoss) sprite.style.transform = "scale(1.5)";
+                else sprite.style.transform = "scale(1)";
+            }
+
+            if(bState.shieldCharges > 0) {
+                document.getElementById('battle-buff-shield').classList.remove('hidden');
+                document.getElementById('shield-charges').innerText = bState.shieldCharges;
+            } else {
+                document.getElementById('battle-buff-shield').classList.add('hidden');
+            }
+        }
+
+        function logBattle(msg) {
+            document.getElementById('battle-log').innerHTML = msg;
+        }
+
+        function animTarget(id, type) {
+            const el = document.getElementById(id);
+            if(el) {
+                el.classList.add(type);
+                setTimeout(() => el.classList.remove(type), 300);
+            }
+        }
+
+        // ==========================================
+        // 9. Question & Consumables Logic
+        // ==========================================
+        function startAttack() {
+            const qData = generateQuestion(bState.currentDiff);
+            bState.currentQuestion = qData;
+            
+            document.getElementById('q-diff').innerText = bState.currentDiff;
+            document.getElementById('q-text').innerHTML = qData.qText;
+            
+            document.getElementById('q-potions').innerText = pData.potions;
+            document.getElementById('q-power').innerText = pData.powerPotions;
+            document.getElementById('q-scrolls').innerText = pData.shieldScrolls;
+            
+            const container = document.getElementById('q-choices');
+            container.innerHTML = '';
+            qData.choices.forEach(choice => {
+                const btn = document.createElement('button');
+                btn.className = 'bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-2 rounded-lg text-xl shadow-md active:scale-95 transition-transform';
+                btn.innerHTML = choice;
+                btn.onclick = () => { sfx.click(); answerQuestion(choice); };
+                container.appendChild(btn);
+            });
+            document.getElementById('modal-question').classList.remove('hidden');
+
+            let timeLimit = 6 * (1 + (pData.stats.int * 0.05));
+            bState.qTimerTotal = timeLimit;
+            bState.qTimerCurrent = timeLimit;
+            
+            const timerBar = document.getElementById('q-timer-bar');
+            timerBar.classList.replace('bg-red-500', 'bg-yellow-400');
+            timerBar.style.width = '100%';
+
+            if(bState.qInterval) clearInterval(bState.qInterval);
+            
+            bState.qInterval = setInterval(() => {
+                bState.qTimerCurrent -= 0.05; 
+                let pct = (bState.qTimerCurrent / bState.qTimerTotal) * 100;
+                timerBar.style.width = `${Math.max(0, pct)}%`;
+                
+                if(pct <= 25) timerBar.classList.replace('bg-yellow-400', 'bg-red-500');
+
+                if (bState.qTimerCurrent <= 0) {
+                    clearInterval(bState.qInterval);
+                    answerQuestion(null); 
+                }
+            }, 50);
+        }
+
+        function answerQuestion(answer) {
+            if(bState.qInterval) clearInterval(bState.qInterval);
+            closeModal('modal-question');
+
+            if (answer === null) {
+                logBattle("หมดเวลา! การโจมตีพลาดเป้า...");
+                setTimeout(endPlayerTurn, 1000);
+            } else if (answer === bState.currentQuestion.ans) {
+                let multi = bState.powerBuffActive ? 1.5 : 1.0;
+                
+                let isCrit = Math.random() * 100 < pData.critRate;
+                let critMulti = isCrit ? 1.5 : 1.0;
+                
+                if (isCrit) {
+                    logBattle(bState.powerBuffActive ? "<span class='text-orange-400 text-xl'>💥 คริติคอล + พลังทะลวง! โจมตีมหาศาล!</span>" : "<span class='text-orange-400 text-xl'>💥 คริติคอล! พลังโจมตีเพิ่ม 50%!</span>");
+                } else {
+                    logBattle(bState.powerBuffActive ? "ตอบถูก! โจมตีด้วยพลังทะลวง x1.5" : "ตอบถูก! โจมตีรุนแรง");
+                }
+                
+                let atkPower = bState.effAtk * multi * critMulti;
+                const dmg = Math.max(1, Math.floor((atkPower * 1.5) - bState.enemy.def));
+                
+                setTimeout(() => executePlayerAttack(dmg, isCrit), 800);
+            } else {
+                logBattle(`ตอบผิด! (พลาดเป้า...)`);
+                setTimeout(endPlayerTurn, 1500);
+            }
+        }
+
+        function useConsumable(type) {
+            sfx.click();
+            if (type === 'hp') {
+                if (pData.potions > 0 && pData.hp < pData.maxHp) {
+                    pData.potions--;
+                    const heal = Math.floor(pData.maxHp * 0.4);
+                    pData.hp = Math.min(pData.maxHp, pData.hp + heal);
+                    logBattle(`ฟื้นฟู HP ${heal} หน่วย`);
+                    sfx.heal();
+                    showFloatingText('player-float-container', `+${heal}`, 'heal');
+                    resumeAfterConsumable();
+                } else alert("พลังชีวิตเต็ม หรือ ยาหมด!");
+            } else if (type === 'power') {
+                if (pData.powerPotions > 0 && !bState.powerBuffActive) {
+                    pData.powerPotions--;
+                    bState.powerBuffActive = true;
+                    document.getElementById('battle-buff-power').classList.remove('hidden');
+                    logBattle("ใช้ยาเสริมพลัง! โจมตีแรงขึ้น 50%");
+                    sfx.heal();
+                    resumeAfterConsumable();
+                } else alert("ไม่มียา หรือ บัพกำลังทำงานอยู่!");
+            } else if (type === 'shield') {
+                if (pData.shieldScrolls > 0 && bState.shieldCharges === 0) {
+                    pData.shieldScrolls--;
+                    bState.shieldCharges = 3;
+                    logBattle("กางคัมภีร์โล่เวทย์! ป้องกันการโจมตี 3 ครั้ง");
+                    sfx.heal();
+                    resumeAfterConsumable();
+                } else alert("ไม่มีคัมภีร์ หรือ โล่กางอยู่แล้ว!");
+            }
+        }
+
+        function resumeAfterConsumable() {
+            if(bState.qInterval) clearInterval(bState.qInterval);
+            closeModal('modal-question');
+            updateBattleUI();
+            setTimeout(endPlayerTurn, 1000);
+        }
+
+        function fleeFromQuestion() {
+            sfx.click();
+            if(bState.qInterval) clearInterval(bState.qInterval);
+            closeModal('modal-question');
+            
+            if (bState.isBoss) {
+                alert("หนีจากบอสไม่ได้! คุณต้องสู้จนตัวตาย!");
+                setTimeout(endPlayerTurn, 500);
+                return;
+            }
+
+            if (Math.random() > 0.4) {
+                logBattle("หนีรอด!");
+                bState.active = false;
+                clearInterval(bState.loop);
+                setTimeout(() => { updateTownUI(); switchScreen('screen-town'); playBGM('town'); }, 1000);
+            } else {
+                logBattle("หนีไม่พ้น!");
+                setTimeout(endPlayerTurn, 1000);
+            }
+        }
+
+        function executePlayerAttack(dmg, isCrit) {
+            bState.enemy.hp -= dmg;
+            animTarget('enemy-sprite', 'anim-damage');
+            
+            if (isCrit) {
+                sfx.crit();
+                showFloatingText('enemy-float-container', `💥 ${dmg}`, 'crit');
+            } else {
+                sfx.hit();
+                showFloatingText('enemy-float-container', `-${dmg}`, 'damage');
+            }
+            
+            updateBattleUI();
+
+            if (bState.enemy.hp <= 0) setTimeout(winBattle, 1000);
+            else setTimeout(endPlayerTurn, isCrit ? 1500 : 1000);
+        }
+
+        function endPlayerTurn() {
+            bState.playerAtb = 0;
+            bState.isPlayerTurn = false;
+            bState.isPaused = false;
+            document.getElementById('atb-status-text').innerText = "กำลังชาร์จพลังงาน...";
+            document.getElementById('atb-status-text').className = "text-gray-400 font-bold animate-pulse";
+        }
+
+        function enemyTurn() {
+            if (!bState.active) return;
+            
+            if (bState.shieldCharges > 0) {
+                bState.shieldCharges--;
+                animTarget('player-hp-text', 'anim-dodge');
+                sfx.dodge();
+                showFloatingText('player-float-container', 'Shield!', 'dodge');
+                logBattle(`โล่เวทย์มตร์บล็อกการโจมตี! (เหลือ ${bState.shieldCharges} ครั้ง)`);
+                updateBattleUI();
+            } 
+            else if (Math.random() * 100 < pData.evasion) {
+                logBattle(`🍃 ฟุ่บ! หลบการโจมตีได้สำเร็จ!`);
+                animTarget('player-hp-text', 'anim-dodge');
+                sfx.dodge();
+                showFloatingText('player-float-container', 'Miss', 'dodge');
+            } 
+            else {
+                const dmg = Math.max(1, Math.floor(bState.enemy.atk - (bState.effDef * 0.5)));
+                pData.hp -= dmg;
+                animTarget('player-hp-text', 'anim-damage');
+                sfx.hit();
+                showFloatingText('player-float-container', `-${dmg}`, 'damage');
+                logBattle(`${bState.enemy.name} โจมตี! เสียเลือด ${dmg}`);
+                updateBattleUI();
+            }
+
+            bState.enemyAtb = 100; 
+            bState.isPaused = false; 
+
+            if (pData.hp <= 0) setTimeout(loseBattle, 1000);
+        }
+
+        function generateBossItem(baseItemId) {
+            const baseItem = itemsDB[baseItemId];
+            const uniqueId = baseItemId + '_boss_' + Date.now();
+            
+            const bonusTypes = ['atkPerc', 'defPerc', 'hpPerc'];
+            const bType = bonusTypes[Math.floor(Math.random() * bonusTypes.length)];
+            const bVal = Math.floor(Math.random() * 6) + 5; 
+            
+            let bText = "";
+            let bObj = { ...baseItem.bonus };
+            bObj.atk = Math.ceil((bObj.atk || 0) * 1.5);
+            bObj.def = Math.ceil((bObj.def || 0) * 1.5);
+
+            if(bType === 'atkPerc') bText = `ATK +${bVal}%`;
+            else if(bType === 'defPerc') bText = `DEF +${bVal}%`;
+            else if(bType === 'hpPerc') bText = `Max HP +${bVal}%`;
+
+            const newItem = {
+                ...baseItem,
+                id: uniqueId,
+                name: "👑 " + baseItem.name,
+                statText: `+50% สเตตัส / ${bText}`,
+                bonus: bObj,
+                percentBonus: { type: bType, val: bVal },
+                price: baseItem.price * 3,
+                isBossDrop: true
+            };
+            
+            if(!pData.customItems) pData.customItems = {};
+            pData.customItems[uniqueId] = newItem;
+            itemsDB[uniqueId] = newItem;
+            return uniqueId;
+        }
+
+        function winBattle() {
+            bState.active = false;
+            clearInterval(bState.loop);
+            
+            pData.exp += bState.enemy.exp;
+            pData.gold += bState.enemy.gold;
+            
+            document.getElementById('res-title').innerText = "VICTORY!";
+            document.getElementById('res-title').className = "text-5xl font-black mb-4 text-yellow-400 drop-shadow-lg";
+            document.getElementById('res-exp').innerText = bState.enemy.exp;
+            document.getElementById('res-pts').innerText = bState.enemy.gold;
+            
+            const lvUpEl = document.getElementById('res-levelup');
+            lvUpEl.classList.add('hidden');
+            const unlockEl = document.getElementById('res-boss-unlock');
+            unlockEl.classList.add('hidden');
+
+            if (pData.exp >= pData.maxExp) {
+                pData.lvl++;
+                pData.exp -= pData.maxExp;
+                pData.maxExp = Math.floor(pData.maxExp * 1.5);
+                pData.statPoints += 3;
+                calcTotalStats();
+                pData.hp = pData.maxHp; 
+                pData.stamina = pData.maxStamina;
+                lvUpEl.classList.remove('hidden');
+                sfx.heal(); // เสียงอัปเลเวล
+            }
+
+            let showEnding = false;
+            if (bState.isBoss) {
+                bState.killStreak = 0; 
+                if (pData.unlockedDiff === bState.currentDiff && pData.unlockedDiff < 5) {
+                    pData.unlockedDiff++;
+                    unlockEl.classList.remove('hidden');
+                }
+                if (bState.currentDiff === 5) {
+                    showEnding = true; 
+                }
+            }
+
+            let dropHTML = "";
+            let dropChanceCons = bState.isBoss ? 1.0 : 0.5; 
+            if (Math.random() < dropChanceCons) { pData.potions++; dropHTML += `<div>🧪 ได้รับ Potion</div>`; }
+            if (bState.currentDiff >= 2 && Math.random() < (bState.isBoss ? 0.5 : 0.2)) { pData.powerPotions++; dropHTML += `<div>🍷 ได้รับ ยาเสริมพลัง</div>`; }
+            if (bState.currentDiff >= 3 && Math.random() < (bState.isBoss ? 0.3 : 0.1)) { pData.shieldScrolls++; dropHTML += `<div>📜 ได้รับ คัมภีร์โล่</div>`; }
+
+            // ระบบดรอปแร่ทังสเตน (บอสระดับ 2 ขึ้นไป)
+            if (bState.isBoss && bState.currentDiff >= 2) {
+                const dropRates = { 2: 0.10, 3: 0.15, 4: 0.30, 5: 0.50 };
+                if (Math.random() < dropRates[bState.currentDiff]) {
+                    const emptySlot = pData.inv.findIndex(i => i === null);
+                    if (emptySlot !== -1) {
+                        pData.inv[emptySlot] = 'ore_tungsten';
+                        dropHTML += `<div>💎 ไอเทมหายาก!: <span class="text-blue-300 font-bold">แร่ทังสเตน</span></div>`;
+                    } else {
+                        dropHTML += `<div>❌ แร่ทังสเตนดรอป แต่กระเป๋าเต็ม!</div>`;
+                    }
+                }
+            }
+
+            let dropChanceEquip = bState.isBoss ? 1.0 : (0.2 + (bState.currentDiff * 0.1)); 
+            if (Math.random() < dropChanceEquip) {
+                const gears = Object.keys(itemsDB).filter(k => itemsDB[k].type !== 'cons' && itemsDB[k].type !== 'gacha' && itemsDB[k].type !== 'material' && !itemsDB[k].isBossDrop);
+                
+                let roll = Math.random();
+                let t = 1;
+                let d = bState.currentDiff;
+                let bonus = bState.isBoss ? 0.15 : 0;
+                
+                if(d === 1) t = roll < (0.05 + bonus) ? 2 : 1;
+                else if(d === 2) t = roll < (0.05 + bonus) ? 3 : (roll < (0.3 + bonus) ? 2 : 1);
+                else if(d === 3) t = roll < (0.05 + bonus) ? 4 : (roll < (0.2 + bonus) ? 3 : (roll < 0.6 ? 2 : 1));
+                else if(d === 4) t = roll < (0.05 + bonus) ? 5 : (roll < (0.2 + bonus) ? 4 : (roll < 0.6 ? 3 : 2));
+                else t = roll < (0.15 + bonus) ? 5 : (roll < (0.4 + bonus) ? 4 : 3);
+
+                const eligible = gears.filter(k => itemsDB[k].tier === t);
+                if (eligible.length > 0) {
+                    let droppedItem = eligible[Math.floor(Math.random() * eligible.length)];
+                    
+                    if (bState.isBoss) {
+                        droppedItem = generateBossItem(droppedItem);
+                    }
+
+                    const emptySlot = pData.inv.findIndex(i => i === null);
+                    if (emptySlot !== -1) {
+                        pData.inv[emptySlot] = droppedItem;
+                        const dColor = bState.isBoss ? "text-red-400 font-bold animate-pulse" : "text-yellow-300";
+                        dropHTML += `<div>✨ ดรอปอุปกรณ์: <span class="${dColor}">${itemsDB[droppedItem].name} (Lv.${t})</span></div>`;
+                    } else {
+                        dropHTML += `<div>❌ กระเป๋าเต็ม! ทิ้งอุปกรณ์ที่ดรอป</div>`;
+                    }
+                }
+            }
+
+            saveGame(); 
+            document.getElementById('res-drops').innerHTML = dropHTML || "<div class='text-gray-500 text-center'>ไม่มีของดรอป</div>";
+            
+            let cost = bState.buffActive ? 20 : 10;
+            let btnNext = document.getElementById('btn-next-battle');
+            
+            if (showEnding) {
+                btnNext.innerText = `ดูบทสรุป`;
+                btnNext.onclick = triggerEnding;
+                btnNext.className = "flex-1 bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-3 rounded-lg text-lg transition animate-pulse";
+            }
+            else if (bState.isBoss) {
+                btnNext.innerText = `จบการสำรวจบอส`;
+                btnNext.onclick = returnToTownFromBattle;
+                btnNext.className = "flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg text-lg transition";
+            } else {
+                btnNext.innerText = `สู้ต่อไป (ตัวที่ ${bState.killStreak + 1}/8) -${cost}⚡`;
+                btnNext.onclick = nextBattle;
+                if (pData.stamina < cost) {
+                    btnNext.disabled = true;
+                    btnNext.className = "flex-1 bg-gray-600 text-gray-400 font-bold py-3 rounded-lg text-lg cursor-not-allowed";
+                    btnNext.innerText = "พลังกายหมด (ต้องกลับเมือง)";
+                } else {
+                    btnNext.disabled = false;
+                    btnNext.className = "flex-1 bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-lg text-lg transition";
+                }
+            }
+
+            document.getElementById('modal-result').classList.remove('hidden');
+        }
+
+        function nextBattle() {
+            sfx.click();
+            closeModal('modal-result');
+            enterBattle(bState.currentDiff, bState.buffActive, true);
+        }
+
+        function loseBattle() {
+            bState.active = false;
+            bState.killStreak = 0; 
+            clearInterval(bState.loop);
+            
+            document.getElementById('res-title').innerText = "GAME OVER";
+            document.getElementById('res-title').className = "text-5xl font-black mb-4 text-red-500 drop-shadow-lg";
+            document.getElementById('res-exp').innerText = "0";
+            document.getElementById('res-pts').innerText = "0";
+            document.getElementById('res-levelup').classList.add('hidden');
+            document.getElementById('res-boss-unlock').classList.add('hidden');
+            document.getElementById('res-drops').innerHTML = "<div class='text-center text-red-400'>พ่ายแพ้! พลังชีวิตเหลือ 1</div>";
+            
+            pData.hp = 1;
+            saveGame(); 
+            document.getElementById('btn-next-battle').classList.add('hidden');
+            document.getElementById('modal-result').classList.remove('hidden');
+        }
+
+        function returnToTownFromBattle() {
+            sfx.click();
+            closeModal('modal-result');
+            bState.killStreak = 0; 
+            document.getElementById('btn-next-battle').classList.remove('hidden'); 
+            updateTownUI();
+            switchScreen('screen-town');
+            playBGM('town');
+        }
+
+        function triggerEnding() {
+            sfx.click();
+            closeModal('modal-result');
+            document.getElementById('ending-player-name').innerText = pData.name;
+            document.getElementById('modal-ending').classList.remove('hidden');
+            playBGM('town'); 
+        }
+
+        function continueEndlessMode() {
+            sfx.click();
+            closeModal('modal-ending');
+            returnToTownFromBattle();
+        }
+    </script>
+</body>
+</html>

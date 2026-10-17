@@ -1,0 +1,1052 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>แบบจำลองฟิสิกส์: เรื่องแสง (Light Simulation)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom Styles for styling range sliders */
+        input[type=range] {
+            -webkit-appearance: none; /* Hides the slider so that custom slider can be made */
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #3b82f6;
+            cursor: pointer;
+            margin-top: -6px; /* You need to specify a margin in Chrome, but in Firefox and IE it is automatic */
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #475569;
+            border-radius: 2px;
+        }
+        input[type=range]:focus {
+            outline: none;
+        }
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
+            height: 0;
+            overflow: hidden;
+            border-radius: 0.75rem;
+            background-color: #0f172a;
+        }
+        .canvas-container canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        
+        /* Blend mode for color mixing */
+        .color-circle {
+            mix-blend-mode: screen;
+            border-radius: 50%;
+            position: absolute;
+            filter: blur(10px);
+        }
+        .clip-beam {
+            clip-path: polygon(0 35%, 100% 0, 100% 100%, 0 65%);
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-200 font-sans min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-slate-900 border-b border-slate-800 shadow-lg px-6 py-4 flex justify-between items-center sticky top-0 z-50">
+        <div>
+            <h1 class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-teal-300">
+                Light Physics Lab
+            </h1>
+            <p class="text-sm text-slate-400">วิทยาศาสตร์กายภาพ (ฟิสิกส์) ม.5 - พัฒนาโดย โดม</p>
+        </div>
+        
+        <!-- Tab Navigation -->
+        <nav class="flex space-x-2 bg-slate-800 p-1 rounded-lg">
+            <button onclick="switchTab('refraction')" id="tab-refraction" class="px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 bg-blue-600 text-white shadow-sm">
+                การสะท้อนและหักเห
+            </button>
+            <button onclick="switchTab('lenses')" id="tab-lenses" class="px-4 py-2 rounded-md text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-700 transition-all duration-200">
+                การเกิดภาพจากเลนส์
+            </button>
+            <button onclick="switchTab('colors')" id="tab-colors" class="px-4 py-2 rounded-md text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-700 transition-all duration-200">
+                การผสมสีแสง
+            </button>
+            <button onclick="switchTab('perception')" id="tab-perception" class="px-4 py-2 rounded-md text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-700 transition-all duration-200">
+                การมองเห็นสีวัตถุ
+            </button>
+        </nav>
+    </header>
+
+    <main class="flex-grow p-6 flex flex-col items-center">
+        <div class="w-full max-w-6xl flex flex-col lg:flex-row gap-6 h-full relative">
+
+            <!-- ================= MODULE 1: REFRACTION ================= -->
+            <div id="module-refraction" class="w-full flex flex-col lg:flex-row gap-6 animate-fade-in">
+                <!-- Controls -->
+                <div class="w-full lg:w-1/3 bg-slate-900 rounded-xl p-6 border border-slate-800 flex flex-col gap-6 shadow-xl">
+                    <h2 class="text-xl font-semibold text-blue-400 border-b border-slate-700 pb-2">ควบคุมตัวแปร</h2>
+                    
+                    <!-- Incidence Angle -->
+                    <div class="space-y-2">
+                        <div class="flex justify-between">
+                            <label class="text-sm text-slate-300">มุมตกกระทบ (θ₁)</label>
+                            <span id="angle1-val" class="text-sm font-mono text-blue-300">45°</span>
+                        </div>
+                        <input type="range" id="angle1-slider" min="0" max="90" value="45" step="1">
+                    </div>
+
+                    <!-- Medium 1 -->
+                    <div class="space-y-2 bg-slate-800/50 p-4 rounded-lg">
+                        <div class="flex justify-between">
+                            <label class="text-sm text-slate-300">ดัชนีหักเหตัวกลาง 1 (n₁)</label>
+                            <span id="n1-val" class="text-sm font-mono text-teal-300">1.00 (อากาศ)</span>
+                        </div>
+                        <input type="range" id="n1-slider" min="1.0" max="2.5" value="1.0" step="0.01">
+                        <div class="flex gap-2 mt-2">
+                            <button onclick="setN(1, 1.0)" class="text-xs px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded">อากาศ</button>
+                            <button onclick="setN(1, 1.33)" class="text-xs px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded">น้ำ</button>
+                            <button onclick="setN(1, 1.5)" class="text-xs px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded">แก้ว</button>
+                        </div>
+                    </div>
+
+                    <!-- Medium 2 -->
+                    <div class="space-y-2 bg-slate-800/50 p-4 rounded-lg">
+                        <div class="flex justify-between">
+                            <label class="text-sm text-slate-300">ดัชนีหักเหตัวกลาง 2 (n₂)</label>
+                            <span id="n2-val" class="text-sm font-mono text-teal-300">1.50 (แก้ว)</span>
+                        </div>
+                        <input type="range" id="n2-slider" min="1.0" max="2.5" value="1.50" step="0.01">
+                        <div class="flex gap-2 mt-2">
+                            <button onclick="setN(2, 1.0)" class="text-xs px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded">อากาศ</button>
+                            <button onclick="setN(2, 1.33)" class="text-xs px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded">น้ำ</button>
+                            <button onclick="setN(2, 1.5)" class="text-xs px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded">แก้ว</button>
+                        </div>
+                    </div>
+
+                    <!-- Output Data -->
+                    <div class="mt-auto bg-blue-900/20 border border-blue-800/50 p-4 rounded-lg space-y-2">
+                        <h3 class="text-sm font-semibold text-blue-300 mb-2">ผลการคำนวณ (กฎของสเนลล์)</h3>
+                        <p class="text-sm flex justify-between"><span>มุมสะท้อน:</span> <span id="out-reflect" class="font-mono text-yellow-400">45.0°</span></p>
+                        <p class="text-sm flex justify-between"><span>มุมหักเห (θ₂):</span> <span id="out-refract" class="font-mono text-green-400">28.1°</span></p>
+                        <p class="text-sm flex justify-between"><span>มุมวิกฤต:</span> <span id="out-critical" class="font-mono text-red-400">ไม่มี</span></p>
+                    </div>
+                </div>
+
+                <!-- Canvas Area -->
+                <div class="w-full lg:w-2/3 flex flex-col shadow-xl">
+                    <div class="canvas-container shadow-inner border border-slate-700">
+                        <canvas id="refractionCanvas"></canvas>
+                    </div>
+                    <div class="bg-slate-900 p-4 text-sm text-slate-400 border border-t-0 border-slate-700 rounded-b-xl flex justify-between">
+                        <span>สมการ: $n_1 \sin(\theta_1) = n_2 \sin(\theta_2)$</span>
+                        <span>*เส้นประคือเส้นปกติ (Normal Line)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================= MODULE 2: LENSES ================= -->
+            <div id="module-lenses" class="w-full flex flex-col lg:flex-row gap-6 hidden">
+                <!-- Controls -->
+                <div class="w-full lg:w-1/3 bg-slate-900 rounded-xl p-6 border border-slate-800 flex flex-col gap-6 shadow-xl">
+                    <h2 class="text-xl font-semibold text-blue-400 border-b border-slate-700 pb-2">ควบคุมตัวแปร</h2>
+                    
+                    <!-- Lens Type -->
+                    <div class="space-y-2">
+                        <label class="text-sm text-slate-300">ชนิดของเลนส์</label>
+                        <div class="flex gap-2">
+                            <button id="btn-convex" onclick="setLensType('convex')" class="flex-1 py-2 bg-blue-600 text-white rounded shadow text-sm font-medium">เลนส์นูน (+)</button>
+                            <button id="btn-concave" onclick="setLensType('concave')" class="flex-1 py-2 bg-slate-700 text-slate-300 hover:bg-slate-600 rounded text-sm font-medium transition">เลนส์เว้า (-)</button>
+                        </div>
+                    </div>
+
+                    <!-- Object Position -->
+                    <div class="space-y-2 bg-slate-800/50 p-4 rounded-lg">
+                        <div class="flex justify-between">
+                            <label class="text-sm text-slate-300">ระยะวัตถุ (s)</label>
+                            <span id="obj-dist-val" class="text-sm font-mono text-teal-300">300 px</span>
+                        </div>
+                        <input type="range" id="obj-dist-slider" min="50" max="500" value="300" step="1">
+                    </div>
+
+                    <!-- Focal Length -->
+                    <div class="space-y-2 bg-slate-800/50 p-4 rounded-lg">
+                        <div class="flex justify-between">
+                            <label class="text-sm text-slate-300">ความยาวโฟกัส (|f|)</label>
+                            <span id="focal-val" class="text-sm font-mono text-teal-300">150 px</span>
+                        </div>
+                        <input type="range" id="focal-slider" min="50" max="250" value="150" step="1">
+                    </div>
+                    
+                    <!-- Object Height -->
+                    <div class="space-y-2 bg-slate-800/50 p-4 rounded-lg">
+                        <div class="flex justify-between">
+                            <label class="text-sm text-slate-300">ขนาดวัตถุ (y)</label>
+                            <span id="obj-height-val" class="text-sm font-mono text-teal-300">80 px</span>
+                        </div>
+                        <input type="range" id="obj-height-slider" min="20" max="150" value="80" step="1">
+                    </div>
+
+                    <!-- Output Data -->
+                    <div class="mt-auto bg-blue-900/20 border border-blue-800/50 p-4 rounded-lg space-y-2">
+                        <h3 class="text-sm font-semibold text-blue-300 mb-2">ผลการคำนวณ</h3>
+                        <p class="text-sm flex justify-between"><span>ระยะภาพ (s'):</span> <span id="out-sprime" class="font-mono text-white">300.0 px</span></p>
+                        <p class="text-sm flex justify-between"><span>กำลังขยาย (m):</span> <span id="out-mag" class="font-mono text-white">-1.00</span></p>
+                        <p class="text-sm flex justify-between"><span>ชนิดภาพ:</span> <span id="out-img-type" class="font-mono font-bold text-green-400">ภาพจริงหัวกลับ</span></p>
+                    </div>
+                </div>
+
+                <!-- Canvas Area -->
+                <div class="w-full lg:w-2/3 flex flex-col shadow-xl">
+                    <div class="canvas-container shadow-inner border border-slate-700" style="background-color: #0b1121;">
+                        <canvas id="lensesCanvas"></canvas>
+                    </div>
+                    <div class="bg-slate-900 p-4 text-sm text-slate-400 border border-t-0 border-slate-700 rounded-b-xl flex justify-between">
+                        <span>สมการเลนส์บาง: $\frac{1}{f} = \frac{1}{s} + \frac{1}{s'}$</span>
+                        <span>กำลังขยาย: $m = -\frac{s'}{s}$</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================= MODULE 3: COLOR MIXING ================= -->
+            <div id="module-colors" class="w-full flex flex-col lg:flex-row gap-6 hidden">
+                 <!-- Controls -->
+                 <div class="w-full lg:w-1/3 bg-slate-900 rounded-xl p-6 border border-slate-800 flex flex-col gap-6 shadow-xl">
+                    <h2 class="text-xl font-semibold text-blue-400 border-b border-slate-700 pb-2">ผสมแสงสี (Additive)</h2>
+                    <p class="text-sm text-slate-400">ปรับความสว่างของแสงสีปฐมภูมิ (Primary Colors of Light) เพื่อดูผลลัพธ์ของการผสมสีบนฉาก</p>
+                    
+                    <!-- Red Slider -->
+                    <div class="space-y-2 bg-red-950/30 p-4 rounded-lg border border-red-900/30">
+                        <div class="flex justify-between">
+                            <label class="text-sm text-red-400 font-semibold">สีแดง (Red)</label>
+                            <span id="red-val" class="text-sm font-mono text-red-300">100%</span>
+                        </div>
+                        <input type="range" id="red-slider" min="0" max="255" value="255" step="1" style="accent-color: red;">
+                    </div>
+
+                    <!-- Green Slider -->
+                    <div class="space-y-2 bg-green-950/30 p-4 rounded-lg border border-green-900/30">
+                        <div class="flex justify-between">
+                            <label class="text-sm text-green-400 font-semibold">สีเขียว (Green)</label>
+                            <span id="green-val" class="text-sm font-mono text-green-300">100%</span>
+                        </div>
+                        <input type="range" id="green-slider" min="0" max="255" value="255" step="1" style="accent-color: #22c55e;">
+                    </div>
+
+                    <!-- Blue Slider -->
+                    <div class="space-y-2 bg-blue-950/30 p-4 rounded-lg border border-blue-900/30">
+                        <div class="flex justify-between">
+                            <label class="text-sm text-blue-400 font-semibold">สีน้ำเงิน (Blue)</label>
+                            <span id="blue-val" class="text-sm font-mono text-blue-300">100%</span>
+                        </div>
+                        <input type="range" id="blue-slider" min="0" max="255" value="255" step="1" style="accent-color: #3b82f6;">
+                    </div>
+                </div>
+
+                <!-- Color Stage -->
+                <div class="w-full lg:w-2/3 flex flex-col shadow-xl">
+                    <div class="relative w-full aspect-video bg-black rounded-t-xl overflow-hidden border border-slate-700 flex items-center justify-center">
+                        
+                        <!-- Projection Background -->
+                        <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-slate-900 via-black to-black"></div>
+                        
+                        <!-- Lights Container -->
+                        <div class="relative w-64 h-64 md:w-96 md:h-96">
+                            <!-- Red Light -->
+                            <div id="light-red" class="color-circle absolute w-48 h-48 md:w-64 md:h-64 top-0 left-1/2 -translate-x-1/2" style="background-color: rgb(255,0,0);"></div>
+                            <!-- Green Light -->
+                            <div id="light-green" class="color-circle absolute w-48 h-48 md:w-64 md:h-64 bottom-0 left-0" style="background-color: rgb(0,255,0);"></div>
+                            <!-- Blue Light -->
+                            <div id="light-blue" class="color-circle absolute w-48 h-48 md:w-64 md:h-64 bottom-0 right-0" style="background-color: rgb(0,0,255);"></div>
+                        </div>
+
+                    </div>
+                    <div class="bg-slate-900 p-4 text-sm text-slate-400 border border-t-0 border-slate-700 rounded-b-xl text-center">
+                        <span id="mixed-color-name" class="font-semibold text-lg text-white">สีขาว (White)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================= MODULE 4: COLOR PERCEPTION ================= -->
+            <div id="module-perception" class="w-full flex flex-col lg:flex-row gap-6 hidden">
+                 <!-- Controls -->
+                 <div class="w-full lg:w-1/3 bg-slate-900 rounded-xl p-6 border border-slate-800 flex flex-col gap-6 shadow-xl">
+                    <h2 class="text-xl font-semibold text-blue-400 border-b border-slate-700 pb-2">การมองเห็นสีวัตถุ</h2>
+                    <p class="text-sm text-slate-400">เลือกสีของแสงที่ส่องไป สีแท้จริงของวัตถุ และรูปทรง เพื่อสังเกตสีที่ตาเรามองเห็น</p>
+                    
+                    <!-- Light Color -->
+                    <div class="space-y-3 bg-slate-800/50 p-4 rounded-lg">
+                        <label class="text-sm text-slate-300 font-semibold block border-b border-slate-700 pb-1">สีของแสงไฟ (Light Source)</label>
+                        <div class="flex flex-wrap gap-3">
+                            <button id="btn-light-white" onclick="setPercLight('white')" class="btn-perc-light w-8 h-8 rounded-full bg-white ring-offset-2 ring-offset-slate-800 transition-all shadow-[0_0_10px_rgba(255,255,255,0.5)]"></button>
+                            <button id="btn-light-red" onclick="setPercLight('red')" class="btn-perc-light w-8 h-8 rounded-full bg-[#ff0000] ring-offset-2 ring-offset-slate-800 transition-all"></button>
+                            <button id="btn-light-green" onclick="setPercLight('green')" class="btn-perc-light w-8 h-8 rounded-full bg-[#00ff00] ring-offset-2 ring-offset-slate-800 transition-all"></button>
+                            <button id="btn-light-blue" onclick="setPercLight('blue')" class="btn-perc-light w-8 h-8 rounded-full bg-[#0000ff] ring-offset-2 ring-offset-slate-800 transition-all"></button>
+                            <button id="btn-light-yellow" onclick="setPercLight('yellow')" class="btn-perc-light w-8 h-8 rounded-full bg-[#ffff00] ring-offset-2 ring-offset-slate-800 transition-all"></button>
+                            <button id="btn-light-cyan" onclick="setPercLight('cyan')" class="btn-perc-light w-8 h-8 rounded-full bg-[#00ffff] ring-offset-2 ring-offset-slate-800 transition-all"></button>
+                            <button id="btn-light-magenta" onclick="setPercLight('magenta')" class="btn-perc-light w-8 h-8 rounded-full bg-[#ff00ff] ring-offset-2 ring-offset-slate-800 transition-all"></button>
+                        </div>
+                    </div>
+
+                    <!-- Object Shape -->
+                    <div class="space-y-3 bg-slate-800/50 p-4 rounded-lg">
+                        <label class="text-sm text-slate-300 font-semibold block border-b border-slate-700 pb-1">ชนิดของวัตถุ (Object)</label>
+                        <div class="flex gap-2">
+                            <button id="btn-type-box" onclick="setPercObjType('box')" class="btn-perc-type flex-1 py-1.5 bg-blue-600 text-white rounded text-xs font-medium">ฉาก/กล่อง</button>
+                            <button id="btn-type-car" onclick="setPercObjType('car')" class="btn-perc-type flex-1 py-1.5 bg-slate-700 text-slate-300 hover:bg-slate-600 rounded text-xs font-medium transition">รถยนต์</button>
+                            <button id="btn-type-person" onclick="setPercObjType('person')" class="btn-perc-type flex-1 py-1.5 bg-slate-700 text-slate-300 hover:bg-slate-600 rounded text-xs font-medium transition">คน</button>
+                        </div>
+                    </div>
+
+                    <!-- Object Pigment -->
+                    <div class="space-y-3 bg-slate-800/50 p-4 rounded-lg">
+                        <label class="text-sm text-slate-300 font-semibold block border-b border-slate-700 pb-1">สีของวัตถุภายใต้แสงขาว (Pigment)</label>
+                        <div class="flex flex-wrap gap-3">
+                            <button id="btn-obj-white" onclick="setPercObjColor('white')" class="btn-perc-obj w-8 h-8 rounded-full bg-white ring-offset-2 ring-offset-slate-800 transition-all border border-slate-300"></button>
+                            <button id="btn-obj-red" onclick="setPercObjColor('red')" class="btn-perc-obj w-8 h-8 rounded-full bg-[#ff0000] ring-offset-2 ring-offset-slate-800 transition-all"></button>
+                            <button id="btn-obj-green" onclick="setPercObjColor('green')" class="btn-perc-obj w-8 h-8 rounded-full bg-[#00ff00] ring-offset-2 ring-offset-slate-800 transition-all"></button>
+                            <button id="btn-obj-blue" onclick="setPercObjColor('blue')" class="btn-perc-obj w-8 h-8 rounded-full bg-[#0000ff] ring-offset-2 ring-offset-slate-800 transition-all"></button>
+                            <button id="btn-obj-yellow" onclick="setPercObjColor('yellow')" class="btn-perc-obj w-8 h-8 rounded-full bg-[#ffff00] ring-offset-2 ring-offset-slate-800 transition-all"></button>
+                            <button id="btn-obj-cyan" onclick="setPercObjColor('cyan')" class="btn-perc-obj w-8 h-8 rounded-full bg-[#00ffff] ring-offset-2 ring-offset-slate-800 transition-all"></button>
+                            <button id="btn-obj-magenta" onclick="setPercObjColor('magenta')" class="btn-perc-obj w-8 h-8 rounded-full bg-[#ff00ff] ring-offset-2 ring-offset-slate-800 transition-all"></button>
+                            <button id="btn-obj-black" onclick="setPercObjColor('black')" class="btn-perc-obj w-8 h-8 rounded-full bg-black border border-slate-600 ring-offset-2 ring-offset-slate-800 transition-all"></button>
+                        </div>
+                    </div>
+
+                    <!-- Output Box -->
+                    <div class="mt-auto bg-blue-900/20 border border-blue-800/50 p-4 rounded-lg flex items-center gap-4">
+                        <div id="perc-result-color-box" class="w-12 h-12 rounded-lg border-2 border-slate-600 shadow-inner"></div>
+                        <div>
+                            <h3 class="text-xs text-blue-300 mb-1">สีที่สังเกตเห็น</h3>
+                            <p id="perc-result-name" class="font-bold text-white text-lg">สีแดง</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stage -->
+                <div class="w-full lg:w-2/3 flex flex-col shadow-xl">
+                    <div class="relative w-full aspect-video bg-slate-950 rounded-t-xl overflow-hidden border border-slate-700 flex items-center justify-center">
+                        
+                        <!-- Environment Dark Gradient -->
+                        <div class="absolute inset-0 bg-gradient-to-b from-slate-900 to-black opacity-80"></div>
+                        
+                        <!-- Flashlight setup -->
+                        <div class="absolute left-4 md:left-12 top-1/2 -translate-y-1/2 flex items-center z-20">
+                            <!-- Bulb -->
+                            <div id="perc-light-bulb" class="w-4 h-12 rounded-l-full bg-white shadow-[0_0_30px_10px_rgba(255,255,255,0.8)] transition-colors duration-300"></div>
+                            <!-- Flashlight Body -->
+                            <div class="w-16 h-16 bg-gradient-to-r from-slate-600 to-slate-800 rounded-r-lg border border-slate-500 shadow-lg"></div>
+                        </div>
+
+                        <!-- Light Beam -->
+                        <div id="perc-beam" class="absolute left-8 md:left-16 top-1/2 -translate-y-1/2 h-64 md:h-96 w-4/5 origin-left clip-beam transition-colors duration-300 z-10" style="background: linear-gradient(to right, rgba(255,255,255,0.4), transparent);"></div>
+                        
+                        <!-- The Object -->
+                        <div id="perc-obj-container" class="relative z-30 transition-colors duration-300 ml-12">
+                            <!-- SVG Content injected via JS -->
+                        </div>
+
+                        <!-- Observer (Eye Icon) -->
+                        <div class="absolute right-4 md:right-12 top-4 md:top-1/4 text-slate-400 opacity-60 flex flex-col items-center z-40 bg-slate-900/50 p-2 rounded-lg border border-slate-700/50">
+                            <svg class="w-10 h-10 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                            </svg>
+                            <span class="text-[10px] font-medium tracking-wider">ผู้สังเกต</span>
+                        </div>
+                    </div>
+                    <div class="bg-slate-900 p-4 text-sm text-slate-400 border border-t-0 border-slate-700 rounded-b-xl flex justify-between">
+                        <span>หลักการ: วัตถุจะสะท้อนเฉพาะความถี่แสง (สี) ที่ตรงกับสีของตัวเองที่มีในแสงตกกระทบเท่านั้น ส่วนสีอื่นจะถูกดูดกลืน</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        // --- Tab Switching Logic ---
+        // --- Tab Switching Logic ---
+        function switchTab(tabId) {
+            // Hide all modules
+            document.getElementById('module-refraction').classList.add('hidden');
+            document.getElementById('module-lenses').classList.add('hidden');
+            document.getElementById('module-colors').classList.add('hidden');
+            document.getElementById('module-perception').classList.add('hidden');
+            
+            // Reset all tab buttons styling
+            const tabs = ['refraction', 'lenses', 'colors', 'perception'];
+            tabs.forEach(t => {
+                const el = document.getElementById(`tab-${t}`);
+                el.classList.remove('bg-blue-600', 'text-white', 'shadow-sm');
+                el.classList.add('text-slate-400', 'hover:text-white', 'hover:bg-slate-700');
+            });
+
+            // Show active module
+            document.getElementById(`module-${tabId}`).classList.remove('hidden');
+            
+            // Style active tab button
+            const activeTab = document.getElementById(`tab-${tabId}`);
+            activeTab.classList.remove('text-slate-400', 'hover:text-white', 'hover:bg-slate-700');
+            activeTab.classList.add('bg-blue-600', 'text-white', 'shadow-sm');
+
+            // Trigger resizes/redraws for canvas
+            if(tabId === 'refraction') drawRefraction();
+            if(tabId === 'lenses') drawLenses();
+        }
+
+        // ======================================================================
+        // MODULE 1: REFRACTION & SNELL'S LAW
+        // ======================================================================
+        const refCanvas = document.getElementById('refractionCanvas');
+        const refCtx = refCanvas.getContext('2d');
+        
+        let stateRef = {
+            angle1: 45, // degrees
+            n1: 1.00,
+            n2: 1.50
+        };
+
+        function getMaterialName(n) {
+            if(Math.abs(n - 1.0) < 0.05) return "อากาศ";
+            if(Math.abs(n - 1.33) < 0.05) return "น้ำ";
+            if(Math.abs(n - 1.5) < 0.05) return "แก้ว";
+            if(Math.abs(n - 2.42) < 0.05) return "เพชร";
+            return "ตัวกลางอ้างอิง";
+        }
+
+        function setN(medium, val) {
+            document.getElementById(`n${medium}-slider`).value = val;
+            updateRefractionState();
+        }
+
+        function initRefractionEvents() {
+            document.getElementById('angle1-slider').addEventListener('input', (e) => {
+                stateRef.angle1 = parseFloat(e.target.value);
+                updateRefractionState();
+            });
+            document.getElementById('n1-slider').addEventListener('input', (e) => {
+                stateRef.n1 = parseFloat(e.target.value);
+                updateRefractionState();
+            });
+            document.getElementById('n2-slider').addEventListener('input', (e) => {
+                stateRef.n2 = parseFloat(e.target.value);
+                updateRefractionState();
+            });
+            window.addEventListener('resize', drawRefraction);
+        }
+
+        function updateRefractionState() {
+            // Update UI Labels
+            document.getElementById('angle1-val').textContent = stateRef.angle1 + "°";
+            document.getElementById('n1-val').textContent = stateRef.n1.toFixed(2) + ` (${getMaterialName(stateRef.n1)})`;
+            document.getElementById('n2-val').textContent = stateRef.n2.toFixed(2) + ` (${getMaterialName(stateRef.n2)})`;
+
+            // Physics Calculations
+            let theta1Rad = stateRef.angle1 * Math.PI / 180;
+            let sinTheta2 = (stateRef.n1 / stateRef.n2) * Math.sin(theta1Rad);
+            
+            let isTIR = false;
+            let theta2Deg = 0;
+            
+            // Critical Angle
+            let criticalStr = "ไม่มี";
+            if (stateRef.n1 > stateRef.n2) {
+                let criticalRad = Math.asin(stateRef.n2 / stateRef.n1);
+                let criticalDeg = criticalRad * 180 / Math.PI;
+                criticalStr = criticalDeg.toFixed(1) + "°";
+            }
+            document.getElementById('out-critical').textContent = criticalStr;
+
+            if (sinTheta2 > 1) {
+                isTIR = true;
+                document.getElementById('out-refract').textContent = "สะท้อนกลับหมด (TIR)";
+                document.getElementById('out-refract').className = "font-mono text-red-500 font-bold";
+            } else {
+                let theta2Rad = Math.asin(sinTheta2);
+                theta2Deg = theta2Rad * 180 / Math.PI;
+                document.getElementById('out-refract').textContent = theta2Deg.toFixed(1) + "°";
+                document.getElementById('out-refract').className = "font-mono text-green-400";
+            }
+
+            document.getElementById('out-reflect').textContent = stateRef.angle1.toFixed(1) + "°";
+            
+            drawRefraction(isTIR, theta2Deg);
+        }
+
+        function drawRefraction(isTIR = false, theta2Deg = 0) {
+            if(document.getElementById('module-refraction').classList.contains('hidden')) return;
+
+            // Setup canvas resolution
+            const rect = refCanvas.parentElement.getBoundingClientRect();
+            refCanvas.width = rect.width;
+            refCanvas.height = rect.height;
+            const w = refCanvas.width;
+            const h = refCanvas.height;
+            const cx = w / 2;
+            const cy = h / 2;
+
+            refCtx.clearRect(0, 0, w, h);
+
+            // Draw Mediums
+            // Top (n1)
+            refCtx.fillStyle = `rgba(59, 130, 246, ${0.1 * stateRef.n1})`; // darker if denser
+            refCtx.fillRect(0, 0, w, cy);
+            // Bottom (n2)
+            refCtx.fillStyle = `rgba(20, 184, 166, ${0.15 * stateRef.n2})`; 
+            refCtx.fillRect(0, cy, w, cy);
+
+            // Interface Line
+            refCtx.beginPath();
+            refCtx.moveTo(0, cy);
+            refCtx.lineTo(w, cy);
+            refCtx.strokeStyle = "#475569";
+            refCtx.lineWidth = 2;
+            refCtx.stroke();
+
+            // Normal Line
+            refCtx.beginPath();
+            refCtx.moveTo(cx, 0);
+            refCtx.lineTo(cx, h);
+            refCtx.strokeStyle = "rgba(255, 255, 255, 0.3)";
+            refCtx.setLineDash([5, 5]);
+            refCtx.stroke();
+            refCtx.setLineDash([]);
+
+            // Mathematics for rays
+            let theta1Rad = stateRef.angle1 * Math.PI / 180;
+            let rayLength = Math.max(w, h);
+
+            // 1. Incident Ray
+            let incDx = -Math.sin(theta1Rad) * rayLength;
+            let incDy = -Math.cos(theta1Rad) * rayLength;
+            
+            refCtx.beginPath();
+            refCtx.moveTo(cx + incDx, cy + incDy);
+            refCtx.lineTo(cx, cy);
+            refCtx.strokeStyle = "#fbbf24"; // Yellow
+            refCtx.lineWidth = 3;
+            refCtx.shadowColor = "#fbbf24";
+            refCtx.shadowBlur = 10;
+            refCtx.stroke();
+            
+            // Draw Arrow on Incident
+            drawArrow(refCtx, cx + incDx*0.5, cy + incDy*0.5, cx, cy);
+
+            // 2. Reflected Ray (fainter if not TIR)
+            let refDx = Math.sin(theta1Rad) * rayLength;
+            let refDy = -Math.cos(theta1Rad) * rayLength;
+            
+            refCtx.beginPath();
+            refCtx.moveTo(cx, cy);
+            refCtx.lineTo(cx + refDx, cy + refDy);
+            refCtx.strokeStyle = isTIR ? "#fbbf24" : "rgba(251, 191, 36, 0.4)";
+            refCtx.lineWidth = isTIR ? 3 : 2;
+            refCtx.stroke();
+
+            if(!isTIR) {
+                // 3. Refracted Ray
+                let theta2Rad = theta2Deg * Math.PI / 180;
+                let refrDx = Math.sin(theta2Rad) * rayLength;
+                let refrDy = Math.cos(theta2Rad) * rayLength;
+
+                refCtx.beginPath();
+                refCtx.moveTo(cx, cy);
+                refCtx.lineTo(cx + refrDx, cy + refrDy);
+                refCtx.strokeStyle = "#4ade80"; // Green
+                refCtx.lineWidth = 3;
+                refCtx.shadowColor = "#4ade80";
+                refCtx.shadowBlur = 10;
+                refCtx.stroke();
+                
+                drawArrow(refCtx, cx, cy, cx + refrDx*0.5, cy + refrDy*0.5);
+            }
+            refCtx.shadowBlur = 0; // Reset
+        }
+
+        // Helper to draw arrows on lines
+        function drawArrow(ctx, fromX, fromY, toX, toY) {
+            const headlen = 12; // length of head in pixels
+            const dx = toX - fromX;
+            const dy = toY - fromY;
+            const angle = Math.atan2(dy, dx);
+            
+            ctx.beginPath();
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.lineTo(toX - headlen * Math.cos(angle + Math.PI / 6), toY - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.lineTo(toX, toY);
+            ctx.fillStyle = ctx.strokeStyle;
+            ctx.fill();
+        }
+
+        // ======================================================================
+        // MODULE 2: LENSES
+        // ======================================================================
+        const lenCanvas = document.getElementById('lensesCanvas');
+        const lenCtx = lenCanvas.getContext('2d');
+
+        let stateLens = {
+            type: 'convex', // 'convex' or 'concave'
+            focal: 150,
+            s: 300,
+            h: 80
+        };
+
+        function setLensType(type) {
+            stateLens.type = type;
+            if(type === 'convex') {
+                document.getElementById('btn-convex').className = "flex-1 py-2 bg-blue-600 text-white rounded shadow text-sm font-medium";
+                document.getElementById('btn-concave').className = "flex-1 py-2 bg-slate-700 text-slate-300 hover:bg-slate-600 rounded text-sm font-medium transition";
+            } else {
+                document.getElementById('btn-concave').className = "flex-1 py-2 bg-blue-600 text-white rounded shadow text-sm font-medium";
+                document.getElementById('btn-convex').className = "flex-1 py-2 bg-slate-700 text-slate-300 hover:bg-slate-600 rounded text-sm font-medium transition";
+            }
+            updateLensState();
+        }
+
+        function initLensEvents() {
+            document.getElementById('obj-dist-slider').addEventListener('input', (e) => {
+                stateLens.s = parseFloat(e.target.value);
+                updateLensState();
+            });
+            document.getElementById('focal-slider').addEventListener('input', (e) => {
+                stateLens.focal = parseFloat(e.target.value);
+                updateLensState();
+            });
+            document.getElementById('obj-height-slider').addEventListener('input', (e) => {
+                stateLens.h = parseFloat(e.target.value);
+                updateLensState();
+            });
+            window.addEventListener('resize', drawLenses);
+        }
+
+        function updateLensState() {
+            // UI
+            document.getElementById('obj-dist-val').textContent = stateLens.s + " px";
+            document.getElementById('focal-val').textContent = stateLens.focal + " px";
+            document.getElementById('obj-height-val').textContent = stateLens.h + " px";
+
+            // Physics calculation
+            // f is positive for convex, negative for concave
+            let f = stateLens.type === 'convex' ? stateLens.focal : -stateLens.focal;
+            let s = stateLens.s;
+            
+            let s_prime, m, imgType, typeColor;
+
+            if (s === f && stateLens.type === 'convex') {
+                s_prime = Infinity;
+                m = Infinity;
+                imgType = "เกิดภาพที่ระยะอนันต์";
+                typeColor = "text-yellow-400";
+            } else {
+                // 1/f = 1/s + 1/s' => 1/s' = 1/f - 1/s = (s-f)/(sf) => s' = sf/(s-f)
+                s_prime = (s * f) / (s - f);
+                m = -s_prime / s;
+                
+                if (s_prime > 0) {
+                    imgType = "ภาพจริงหัวกลับ (Real Inverted)";
+                    typeColor = "text-green-400";
+                } else {
+                    imgType = "ภาพเสมือนหัวตั้ง (Virtual Upright)";
+                    typeColor = "text-purple-400";
+                }
+            }
+
+            // Update output UI
+            if(s_prime === Infinity) {
+                document.getElementById('out-sprime').textContent = "∞";
+                document.getElementById('out-mag').textContent = "∞";
+            } else {
+                document.getElementById('out-sprime').textContent = s_prime.toFixed(1) + " px";
+                document.getElementById('out-mag').textContent = m.toFixed(2);
+            }
+            
+            const typeEl = document.getElementById('out-img-type');
+            typeEl.textContent = imgType;
+            typeEl.className = `font-mono font-bold ${typeColor}`;
+
+            drawLenses(f, s, s_prime, m);
+        }
+
+        function drawLenses(f, s, s_prime, m) {
+            if(document.getElementById('module-lenses').classList.contains('hidden')) return;
+
+            const rect = lenCanvas.parentElement.getBoundingClientRect();
+            lenCanvas.width = rect.width;
+            lenCanvas.height = rect.height;
+            const w = lenCanvas.width;
+            const h = lenCanvas.height;
+            const cx = w / 2;
+            const cy = h / 2;
+
+            lenCtx.clearRect(0, 0, w, h);
+
+            // Scale factor to fit inside canvas (just purely visual padding)
+            // Center is (cx, cy). Lens is at x=0. Positive x is right. Positive y is down (canvas space).
+            
+            // 1. Principal Axis
+            lenCtx.beginPath();
+            lenCtx.moveTo(0, cy);
+            lenCtx.lineTo(w, cy);
+            lenCtx.strokeStyle = "#475569";
+            lenCtx.lineWidth = 1;
+            lenCtx.stroke();
+
+            // 2. The Beautiful Lens Shape (Glass Effect)
+            const lensH = 160;
+            lenCtx.beginPath();
+            
+            if(stateLens.type === 'convex') {
+                // เลนส์นูน (Biconvex)
+                const lensW = 25; // ความกว้างความนูน
+                lenCtx.moveTo(cx, cy - lensH);
+                lenCtx.quadraticCurveTo(cx + lensW, cy, cx, cy + lensH); // โค้งขวา
+                lenCtx.quadraticCurveTo(cx - lensW, cy, cx, cy - lensH); // โค้งซ้าย
+            } else {
+                // เลนส์เว้า (Biconcave)
+                const edgeW = 15; // ความกว้างขอบ
+                const centerW = 4; // ความกว้างตรงกลางที่คอด
+                lenCtx.moveTo(cx - edgeW, cy - lensH);
+                lenCtx.lineTo(cx + edgeW, cy - lensH); // ขอบบน
+                lenCtx.quadraticCurveTo(cx + centerW, cy, cx + edgeW, cy + lensH); // โค้งเว้าขวา
+                lenCtx.lineTo(cx - edgeW, cy + lensH); // ขอบล่าง
+                lenCtx.quadraticCurveTo(cx - centerW, cy, cx - edgeW, cy - lensH); // โค้งเว้าซ้าย
+            }
+            lenCtx.closePath();
+
+            // สไตล์ของเนื้อแก้วเลนส์ (Glass Styling)
+            lenCtx.fillStyle = "rgba(56, 189, 248, 0.15)";
+            lenCtx.fill();
+            lenCtx.strokeStyle = "#38bdf8";
+            lenCtx.lineWidth = 2;
+            lenCtx.shadowColor = "#38bdf8";
+            lenCtx.shadowBlur = 15; // เรืองแสงขอบเลนส์
+            lenCtx.stroke();
+            lenCtx.shadowBlur = 0; // รีเซ็ต shadow สำหรับวาดอย่างอื่นต่อ
+            
+            // เส้นแกนกลางเลนส์ (สำหรับการอ้างอิงรังสีตกกระทบ-หักเห)
+            lenCtx.beginPath();
+            lenCtx.moveTo(cx, cy - lensH - 10);
+            lenCtx.lineTo(cx, cy + lensH + 10);
+            lenCtx.strokeStyle = "rgba(56, 189, 248, 0.4)";
+            lenCtx.lineWidth = 1;
+            lenCtx.setLineDash([4, 4]);
+            lenCtx.stroke();
+            lenCtx.setLineDash([]);
+
+            // 3. Focal Points (F and F')
+            const absF = Math.abs(f);
+            drawPoint(lenCtx, cx - absF, cy, "F", "#ef4444");
+            drawPoint(lenCtx, cx + absF, cy, "F'", "#ef4444");
+
+            // 4. Object
+            let objX = cx - s;
+            let objY = cy - stateLens.h; // Negative Y because canvas Y grows downwards
+            
+            drawArrowShape(lenCtx, objX, cy, objX, objY, "#eab308"); // Yellow object
+
+            // No image if at focal point for convex
+            if(s === absF && stateLens.type === 'convex') {
+                // Just draw parallel rays
+                drawRay(lenCtx, objX, objY, cx, objY, w, objY + (w-cx)*(objY-cy)/(-absF)); 
+                drawRay(lenCtx, objX, objY, cx, cy, w, cy + (w-cx)*(cy-objY)/(cx-objX));
+                return;
+            }
+
+            // 5. Image
+            let imgX = cx + s_prime;
+            let imgY = cy - (stateLens.h * m); // Canvas Y inversion is handled implicitly here
+            
+            // Draw Image (Dashed if virtual, Solid if real)
+            const isReal = s_prime > 0;
+            if(!isReal) lenCtx.setLineDash([5, 5]);
+            drawArrowShape(lenCtx, imgX, cy, imgX, imgY, isReal ? "#22c55e" : "#c084fc");
+            lenCtx.setLineDash([]);
+
+            // 6. Ray Diagram Tracing
+            lenCtx.lineWidth = 2;
+            
+            // Ray 1: Parallel to axis, then through/away from focus
+            lenCtx.beginPath();
+            lenCtx.moveTo(objX, objY);
+            lenCtx.lineTo(cx, objY); // to lens
+            lenCtx.strokeStyle = "rgba(255,255,255,0.4)";
+            lenCtx.stroke();
+            
+            if (stateLens.type === 'convex') {
+                // Refracts through right focus
+                drawLineExt(lenCtx, cx, objY, cx + absF, cy, isReal ? w : cx-w, isReal);
+                if(!isReal) { // virtual extension backward
+                     lenCtx.setLineDash([4, 4]);
+                     lenCtx.beginPath(); lenCtx.moveTo(cx, objY); lenCtx.lineTo(imgX, imgY); lenCtx.stroke(); lenCtx.setLineDash([]);
+                }
+            } else {
+                // Refracts away from left focus
+                // Actual ray goes right, extension goes to left focus
+                let slope = (objY - cy) / (cx - (cx - absF)); // from left focus to intersection point
+                let endY = objY + slope * (w - cx);
+                lenCtx.beginPath(); lenCtx.moveTo(cx, objY); lenCtx.lineTo(w, endY); lenCtx.stroke();
+                
+                // Virtual extension backward
+                lenCtx.setLineDash([4, 4]);
+                lenCtx.beginPath(); lenCtx.moveTo(cx, objY); lenCtx.lineTo(imgX, imgY); lenCtx.stroke();
+                lenCtx.setLineDash([]);
+            }
+
+            // Ray 2: Through optical center (goes straight)
+            lenCtx.beginPath();
+            lenCtx.moveTo(objX, objY);
+            // Ray continues to edge of screen
+            let slope2 = (cy - objY) / (cx - objX);
+            let end2X = w;
+            let end2Y = cy + slope2 * (w - cx);
+            lenCtx.lineTo(end2X, end2Y);
+            lenCtx.strokeStyle = "rgba(255,255,255,0.2)";
+            lenCtx.stroke();
+            
+            if(!isReal) {
+                lenCtx.setLineDash([4, 4]);
+                lenCtx.beginPath(); lenCtx.moveTo(objX, objY); lenCtx.lineTo(0, objY - slope2 * objX); lenCtx.stroke();
+                lenCtx.setLineDash([]);
+            }
+        }
+
+        // Helper to draw points like Focal points
+        function drawPoint(ctx, x, y, label, color) {
+            ctx.beginPath();
+            ctx.arc(x, y, 4, 0, 2 * Math.PI);
+            ctx.fillStyle = color;
+            ctx.fill();
+            ctx.fillStyle = "#94a3b8";
+            ctx.font = "14px Arial";
+            ctx.fillText(label, x - 5, y + 20);
+        }
+
+        // Helper to draw object/image arrows
+        function drawArrowShape(ctx, baseX, baseY, tipX, tipY, color) {
+            ctx.beginPath();
+            ctx.moveTo(baseX, baseY);
+            ctx.lineTo(tipX, tipY);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 4;
+            ctx.stroke();
+            
+            // Arrow head
+            const headlen = 10;
+            const dx = tipX - baseX;
+            const dy = tipY - baseY;
+            const angle = Math.atan2(dy, dx);
+            
+            ctx.beginPath();
+            ctx.moveTo(tipX, tipY);
+            ctx.lineTo(tipX - headlen * Math.cos(angle - Math.PI / 6), tipY - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.lineTo(tipX - headlen * Math.cos(angle + Math.PI / 6), tipY - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.lineTo(tipX, tipY);
+            ctx.fillStyle = color;
+            ctx.fill();
+        }
+        
+        // Helper to draw extended lines
+        function drawLineExt(ctx, x1, y1, x2, y2, toX, isReal) {
+            let slope = (y2 - y1) / (x2 - x1);
+            let toY = y1 + slope * (toX - x1);
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(toX, toY);
+            ctx.stroke();
+        }
+        function drawRay(ctx, x1, y1, x2, y2, x3, y3) {
+            ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.lineTo(x3,y3); ctx.stroke();
+        }
+
+        // ======================================================================
+        // MODULE 3: COLOR MIXING
+        // ======================================================================
+        function initColorEvents() {
+            const rSlider = document.getElementById('red-slider');
+            const gSlider = document.getElementById('green-slider');
+            const bSlider = document.getElementById('blue-slider');
+
+            const lRed = document.getElementById('light-red');
+            const lGreen = document.getElementById('light-green');
+            const lBlue = document.getElementById('light-blue');
+
+            const updateColors = () => {
+                const r = rSlider.value;
+                const g = gSlider.value;
+                const b = bSlider.value;
+
+                // Update text values
+                document.getElementById('red-val').textContent = Math.round((r/255)*100) + "%";
+                document.getElementById('green-val').textContent = Math.round((g/255)*100) + "%";
+                document.getElementById('blue-val').textContent = Math.round((b/255)*100) + "%";
+
+                // Update light elements
+                lRed.style.backgroundColor = `rgb(${r}, 0, 0)`;
+                lGreen.style.backgroundColor = `rgb(0, ${g}, 0)`;
+                lBlue.style.backgroundColor = `rgb(0, 0, ${b})`;
+
+                // Determine resultant color name broadly
+                let colorName = "มืด (Black)";
+                let rP = r/255, gP = g/255, bP = b/255;
+                const threshold = 0.5;
+
+                if (rP>threshold && gP>threshold && bP>threshold) colorName = "สีขาว (White)";
+                else if (rP>threshold && gP>threshold && bP<=threshold) colorName = "สีเหลือง (Yellow)";
+                else if (rP>threshold && bP>threshold && gP<=threshold) colorName = "สีม่วงแดง (Magenta)";
+                else if (gP>threshold && bP>threshold && rP<=threshold) colorName = "สีฟ้า (Cyan)";
+                else if (rP>threshold && gP<=threshold && bP<=threshold) colorName = "สีแดง (Red)";
+                else if (gP>threshold && rP<=threshold && bP<=threshold) colorName = "สีเขียว (Green)";
+                else if (bP>threshold && rP<=threshold && gP<=threshold) colorName = "สีน้ำเงิน (Blue)";
+                else if (rP>0 || gP>0 || bP>0) colorName = "สีผสม (Mixed Color)";
+                
+                document.getElementById('mixed-color-name').textContent = colorName;
+            };
+
+            rSlider.addEventListener('input', updateColors);
+            gSlider.addEventListener('input', updateColors);
+            bSlider.addEventListener('input', updateColors);
+            
+            updateColors();
+        }
+
+        // ======================================================================
+        // MODULE 4: COLOR PERCEPTION
+        // ======================================================================
+        const objTypes = {
+            'box': '<svg viewBox="0 0 24 24" fill="currentColor" class="w-32 h-32 md:w-48 md:h-48 drop-shadow-[0_10px_20px_rgba(0,0,0,0.8)]"><path d="M3 5v14a2 2 0 002 2h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2z"/></svg>',
+            'car': '<svg viewBox="0 0 24 24" fill="currentColor" class="w-40 h-40 md:w-56 md:h-56 drop-shadow-[0_10px_20px_rgba(0,0,0,0.8)]"><path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.85 7h10.29l1.04 3H5.81l1.04-3zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>',
+            'person': '<svg viewBox="0 0 24 24" fill="currentColor" class="w-32 h-32 md:w-48 md:h-48 drop-shadow-[0_10px_20px_rgba(0,0,0,0.8)]"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>'
+        };
+
+        const colorsMap = {
+            'white': {r:255, g:255, b:255, name: 'สีขาว (White)', hex: '#ffffff'},
+            'red': {r:255, g:0, b:0, name: 'สีแดง (Red)', hex: '#ff0000'},
+            'green': {r:0, g:255, b:0, name: 'สีเขียว (Green)', hex: '#00ff00'},
+            'blue': {r:0, g:0, b:255, name: 'สีน้ำเงิน (Blue)', hex: '#0000ff'},
+            'cyan': {r:0, g:255, b:255, name: 'สีน้ำเงินเขียว (Cyan)', hex: '#00ffff'},
+            'magenta': {r:255, g:0, b:255, name: 'สีแดงม่วง (Magenta)', hex: '#ff00ff'},
+            'yellow': {r:255, g:255, b:0, name: 'สีเหลือง (Yellow)', hex: '#ffff00'},
+            'black': {r:0, g:0, b:0, name: 'สีดำ (Black)', hex: '#222222'}, // Display dark grey so object is still slightly visible
+        };
+
+        let statePerc = {
+            light: 'white',
+            objectColor: 'red',
+            objectType: 'car'
+        };
+
+        function setPercLight(c) { 
+            statePerc.light = c; 
+            updatePerception(); 
+        }
+        
+        function setPercObjColor(c) { 
+            statePerc.objectColor = c; 
+            updatePerception(); 
+        }
+        
+        function setPercObjType(t) { 
+            statePerc.objectType = t; 
+            updatePerception(); 
+        }
+
+        function updatePerception() {
+            // Update UI Ring Highlights
+            document.querySelectorAll('.btn-perc-light').forEach(btn => btn.classList.remove('ring-4', 'ring-blue-400', 'z-10'));
+            const lBtn = document.getElementById(`btn-light-${statePerc.light}`);
+            if(lBtn) lBtn.classList.add('ring-4', 'ring-blue-400', 'z-10');
+            
+            document.querySelectorAll('.btn-perc-obj').forEach(btn => btn.classList.remove('ring-4', 'ring-blue-400', 'z-10'));
+            const oBtn = document.getElementById(`btn-obj-${statePerc.objectColor}`);
+            if(oBtn) oBtn.classList.add('ring-4', 'ring-blue-400', 'z-10');
+            
+            // Update Type buttons
+            document.querySelectorAll('.btn-perc-type').forEach(btn => {
+                btn.classList.remove('bg-blue-600', 'text-white');
+                btn.classList.add('bg-slate-700', 'text-slate-300');
+            });
+            const tBtn = document.getElementById(`btn-type-${statePerc.objectType}`);
+            if(tBtn) {
+                tBtn.classList.remove('bg-slate-700', 'text-slate-300');
+                tBtn.classList.add('bg-blue-600', 'text-white');
+            }
+            
+            // Core Logic: Subtractive Color Mixing (What frequencies are reflected)
+            let lColor = colorsMap[statePerc.light];
+            let oColor = colorsMap[statePerc.objectColor];
+            
+            // The resulting color is the intersection (AND logic) of RGB channels present in both light and object pigment
+            let rR = (lColor.r > 0 && oColor.r > 0) ? 255 : 0;
+            let rG = (lColor.g > 0 && oColor.g > 0) ? 255 : 0;
+            let rB = (lColor.b > 0 && oColor.b > 0) ? 255 : 0;
+            
+            let resultKey = Object.keys(colorsMap).find(k => 
+                colorsMap[k].r === rR && colorsMap[k].g === rG && colorsMap[k].b === rB
+            );
+            
+            if(!resultKey) resultKey = 'black'; // Fallback
+            let resultInfo = colorsMap[resultKey];
+            
+            // --- Visual Updates ---
+            const objContainer = document.getElementById('perc-obj-container');
+            objContainer.innerHTML = objTypes[statePerc.objectType];
+            
+            // Apply calculated color to the SVG object
+            objContainer.style.color = resultInfo.hex;
+            
+            // Slightly tweak shadow if result is black to not completely disappear
+            if(resultKey === 'black') {
+                objContainer.style.color = '#111'; // Pitch dark
+                objContainer.innerHTML = objContainer.innerHTML.replace('drop-shadow-[0_10px_20px_rgba(0,0,0,0.8)]', 'drop-shadow-[0_0_10px_rgba(255,255,255,0.15)]');
+            }
+
+            // Beam and Light Source visual update
+            const beamAlpha = (statePerc.light === 'black') ? 0 : 0.4;
+            document.getElementById('perc-beam').style.background = `linear-gradient(to right, ${lColor.hex}${Math.round(beamAlpha * 255).toString(16).padStart(2, '0')}, transparent)`;
+            
+            const bulb = document.getElementById('perc-light-bulb');
+            bulb.style.backgroundColor = lColor.hex;
+            bulb.style.boxShadow = statePerc.light !== 'black' ? `0 0 30px 10px ${lColor.hex}88` : 'none';
+            
+            // Output Panel text update
+            document.getElementById('perc-result-name').textContent = resultInfo.name;
+            document.getElementById('perc-result-color-box').style.backgroundColor = resultInfo.hex;
+        }
+
+        // ======================================================================
+        // INITIALIZATION
+        // ======================================================================
+        window.onload = () => {
+            initRefractionEvents();
+            initLensEvents();
+            initColorEvents();
+            
+            // Initialize new module
+            updatePerception();
+            
+            // Trigger initial calculations and drawings
+            updateRefractionState();
+            updateLensState();
+            
+            // Add a small delay to ensure rendering boundaries are set correctly
+            setTimeout(() => {
+                drawRefraction();
+                drawLenses();
+            }, 100);
+        };
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>การจำลองการเคลื่อนที่ 3 มิติ - ฟิสิกส์</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        body { margin: 0; overflow: hidden; font-family: 'Sarabun', sans-serif; background-color: #0f172a; }
+        #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
+        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none; }
+        .pointer-events-auto { pointer-events: auto; }
+        
+        /* Custom scrollbar for small screens */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        
+        /* Toast notification */
+        #toast {
+            transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+            opacity: 0; transform: translateY(-20px); pointer-events: none;
+        }
+        #toast.show { opacity: 1; transform: translateY(0); }
+    </style>
+    
+    <!-- Load Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- Load OrbitControls -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+
+    <!-- UI Layer -->
+    <div id="ui-layer" class="flex flex-col justify-between p-4 sm:p-6">
+        
+        <!-- Header & Stats Panel -->
+        <div class="flex flex-col md:flex-row justify-between items-start gap-4 pointer-events-none">
+            
+            <!-- Dashboard Left -->
+            <div class="bg-white/90 backdrop-blur-md p-4 sm:p-5 rounded-2xl shadow-xl border border-slate-200 pointer-events-auto w-full md:w-80 relative">
+                <button id="btn-minimize" class="absolute top-4 right-4 text-slate-400 hover:text-slate-700 bg-slate-100/50 hover:bg-slate-200 rounded-lg p-1 transition-all" title="ย่อ/ขยายแผงควบคุม">
+                    <svg id="icon-chevron" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" /></svg>
+                </button>
+                <h1 class="text-xl sm:text-2xl font-bold text-slate-800 mb-1 pr-8">การเคลื่อนที่ 1D & 2D</h1>
+                <p class="text-xs sm:text-sm text-slate-500 mb-4">วิชาฟิสิกส์: ระยะทาง vs การกระจัด</p>
+                
+                <div class="space-y-3">
+                    <div class="bg-blue-50 rounded-xl p-3 border border-blue-100">
+                        <div class="flex justify-between items-center text-sm">
+                            <span class="font-semibold text-blue-700 flex items-center gap-1">
+                                <div class="w-3 h-3 rounded-full bg-blue-500"></div> ระยะทาง (Distance)
+                            </span>
+                            <span class="font-bold text-slate-700"><span id="val-distance">0.00</span> m</span>
+                        </div>
+                    </div>
+                    <div class="bg-orange-50 rounded-xl p-3 border border-orange-100">
+                        <div class="flex justify-between items-center text-sm">
+                            <span class="font-semibold text-orange-700 flex items-center gap-1">
+                                <div class="w-3 h-1 bg-orange-500 border border-dashed border-orange-700"></div> การกระจัด (Displacement)
+                            </span>
+                            <span class="font-bold text-slate-700"><span id="val-displacement">0.00</span> m</span>
+                        </div>
+                    </div>
+                    
+                    <hr class="border-slate-200 my-2">
+                    
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="bg-slate-50 rounded-xl p-3 border border-slate-200 text-center">
+                            <p class="text-xs text-slate-500 font-semibold mb-1">อัตราเร็ว (Speed)</p>
+                            <p class="font-bold text-blue-700 text-lg"><span id="val-speed">0.00</span></p>
+                            <p class="text-[10px] text-slate-400">m/s</p>
+                        </div>
+                        <div class="bg-slate-50 rounded-xl p-3 border border-slate-200 text-center">
+                            <p class="text-xs text-slate-500 font-semibold mb-1">ความเร็ว (Velocity)</p>
+                            <p class="font-bold text-orange-700 text-lg"><span id="val-velocity">0.00</span></p>
+                            <p class="text-[10px] text-slate-400">m/s</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Extended Settings (Collapsible) -->
+                    <div id="extended-settings" class="transition-all duration-300 ease-in-out overflow-hidden max-h-[500px] opacity-100">
+                        <hr class="border-slate-200 my-3">
+                        
+                        <!-- Color Settings -->
+                        <div class="mb-3">
+                            <p class="text-xs text-slate-600 font-bold mb-2">🎨 ปรับแต่งฉาก (สี)</p>
+                            <div class="flex flex-wrap gap-2">
+                                <label class="text-xs flex items-center gap-2 cursor-pointer text-slate-600 bg-slate-50 border border-slate-200 px-2 py-1 rounded-lg hover:bg-slate-100">
+                                    <input type="color" id="input-color-sky" value="#87CEEB" class="w-5 h-5 rounded cursor-pointer border-0 p-0 bg-transparent"> ท้องฟ้า
+                                </label>
+                                <label class="text-xs flex items-center gap-2 cursor-pointer text-slate-600 bg-slate-50 border border-slate-200 px-2 py-1 rounded-lg hover:bg-slate-100">
+                                    <input type="color" id="input-color-ground" value="#4ade80" class="w-5 h-5 rounded cursor-pointer border-0 p-0 bg-transparent"> พื้นดิน
+                                </label>
+                                <label class="text-xs flex items-center gap-2 cursor-pointer text-slate-600 bg-slate-50 border border-slate-200 px-2 py-1 rounded-lg hover:bg-slate-100">
+                                    <input type="color" id="input-color-grid" value="#16a34a" class="w-5 h-5 rounded cursor-pointer border-0 p-0 bg-transparent"> เส้นกริด
+                                </label>
+                                <label class="text-xs flex items-center gap-2 cursor-pointer text-slate-600 bg-amber-50 border border-amber-200 px-2 py-1 rounded-lg hover:bg-amber-100 transition-colors">
+                                    <input type="checkbox" id="toggle-map" class="rounded cursor-pointer accent-amber-600"> 🏙️ เมือง 3 มิติ
+                                </label>
+                                <label class="text-xs flex items-center gap-2 cursor-pointer text-slate-600 bg-emerald-50 border border-emerald-200 px-2 py-1 rounded-lg hover:bg-emerald-100 transition-colors">
+                                    <input type="checkbox" id="toggle-2d-map" class="rounded cursor-pointer accent-emerald-600"> 🗺️ แผนที่ 2 มิติ
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Coordinate Settings -->
+                        <div>
+                            <p class="text-xs text-slate-600 font-bold mb-2">📍 พิมพ์เพิ่มพิกัด (X, Z) สูงสุด 4 จุด</p>
+                            <div class="grid grid-cols-2 gap-2 text-xs">
+                                <div class="flex border border-slate-200 rounded overflow-hidden">
+                                    <span class="bg-slate-100 px-2 py-1.5 text-slate-500 font-semibold border-r border-slate-200">1</span>
+                                    <input type="number" id="p1-x" placeholder="X" class="w-full px-1 py-1 text-center outline-none"><input type="number" id="p1-z" placeholder="Z" class="w-full px-1 py-1 text-center border-l border-slate-200 outline-none">
+                                </div>
+                                <div class="flex border border-slate-200 rounded overflow-hidden">
+                                    <span class="bg-slate-100 px-2 py-1.5 text-slate-500 font-semibold border-r border-slate-200">2</span>
+                                    <input type="number" id="p2-x" placeholder="X" class="w-full px-1 py-1 text-center outline-none"><input type="number" id="p2-z" placeholder="Z" class="w-full px-1 py-1 text-center border-l border-slate-200 outline-none">
+                                </div>
+                                <div class="flex border border-slate-200 rounded overflow-hidden">
+                                    <span class="bg-slate-100 px-2 py-1.5 text-slate-500 font-semibold border-r border-slate-200">3</span>
+                                    <input type="number" id="p3-x" placeholder="X" class="w-full px-1 py-1 text-center outline-none"><input type="number" id="p3-z" placeholder="Z" class="w-full px-1 py-1 text-center border-l border-slate-200 outline-none">
+                                </div>
+                                <div class="flex border border-slate-200 rounded overflow-hidden">
+                                    <span class="bg-slate-100 px-2 py-1.5 text-slate-500 font-semibold border-r border-slate-200">4</span>
+                                    <input type="number" id="p4-x" placeholder="X" class="w-full px-1 py-1 text-center outline-none"><input type="number" id="p4-z" placeholder="Z" class="w-full px-1 py-1 text-center border-l border-slate-200 outline-none">
+                                </div>
+                            </div>
+                            <button id="btn-apply-coords" class="mt-2 w-full bg-slate-800 hover:bg-slate-900 text-white py-1.5 rounded-lg text-xs font-semibold transition-colors shadow-sm">
+                                📌 สร้างเส้นทางจากพิกัด
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Instructions & Toast Right -->
+            <div class="flex flex-col items-end gap-2 w-full md:w-auto">
+                <div class="bg-indigo-600 text-white text-xs sm:text-sm px-4 py-2 rounded-full shadow-lg pointer-events-auto">
+                    👉 <b>วิธีใช้:</b> เลื่อนเมาส์/ทัช เพื่อหมุนกล้อง และคลิกบนตารางเขียวเพื่อเพิ่มจุดเส้นทาง
+                </div>
+                
+                <!-- Toast Notification -->
+                <div id="toast" class="bg-rose-500 text-white text-sm px-4 py-2 rounded-lg shadow-lg">
+                    ข้อความแจ้งเตือน
+                </div>
+            </div>
+        </div>
+
+        <!-- Controls Bottom -->
+        <div class="bg-white/95 backdrop-blur-md p-4 rounded-2xl shadow-2xl border border-slate-200 pointer-events-auto w-full max-w-2xl mx-auto mt-4 sm:mt-0">
+            <div class="flex flex-col sm:flex-row items-center gap-4">
+                
+                <!-- Time Setting -->
+                <div class="flex items-center gap-2 w-full sm:w-auto">
+                    <label class="text-sm font-semibold text-slate-700 whitespace-nowrap">เวลาที่ใช้ (s):</label>
+                    <input type="number" id="input-time" value="5" min="0.1" step="0.5" class="w-full sm:w-20 bg-slate-100 border border-slate-300 rounded-lg px-3 py-2 text-center font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full">
+                    <button id="btn-play" class="flex-1 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-bold py-2.5 px-4 rounded-xl shadow-md transition-all active:scale-95 flex items-center justify-center gap-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" /></svg>
+                        เริ่มเคลื่อนที่
+                    </button>
+                    <button id="btn-clear" class="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-2.5 px-4 rounded-xl shadow-sm transition-all active:scale-95 flex items-center justify-center gap-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd" /></svg>
+                        ล้างจุด
+                    </button>
+                    <button id="btn-fullscreen" class="bg-indigo-100 hover:bg-indigo-200 text-indigo-700 font-bold py-2.5 px-4 rounded-xl shadow-sm transition-all active:scale-95 flex items-center justify-center" title="เต็มจอ">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M3 4a1 1 0 011-1h4a1 1 0 010 2H6.414l2.293 2.293a1 1 0 11-1.414 1.414L5 6.414V8a1 1 0 01-2 0V4zm9 1a1 1 0 010-2h4a1 1 0 011 1v4a1 1 0 01-2 0V6.414l-2.293 2.293a1 1 0 11-1.414-1.414L13.586 5H12zm-9 7a1 1 0 012 0v1.586l2.293-2.293a1 1 0 111.414 1.414L6.414 15H8a1 1 0 010 2H4a1 1 0 01-1-1v-4zm13-1a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 010-2h1.586l-2.293-2.293a1 1 0 111.414-1.414L15 13.586V12a1 1 0 011-1z" /></svg>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Progress Bar -->
+            <div class="w-full bg-slate-200 rounded-full h-1.5 mt-4 overflow-hidden">
+                <div id="progress-bar" class="bg-gradient-to-r from-emerald-400 to-blue-500 h-1.5 rounded-full" style="width: 0%"></div>
+            </div>
+            
+        </div>
+    </div>
+
+    <!-- Canvas Container -->
+    <div id="canvas-container"></div>
+
+    <script>
+        // DOM Elements
+        const valDistance = document.getElementById('val-distance');
+        const valDisplacement = document.getElementById('val-displacement');
+        const valSpeed = document.getElementById('val-speed');
+        const valVelocity = document.getElementById('val-velocity');
+        const inputTime = document.getElementById('input-time');
+        const btnPlay = document.getElementById('btn-play');
+        const btnClear = document.getElementById('btn-clear');
+        const btnFullscreen = document.getElementById('btn-fullscreen');
+        const progressBar = document.getElementById('progress-bar');
+        const toastEl = document.getElementById('toast');
+        
+        // New DOM Elements
+        const btnMinimize = document.getElementById('btn-minimize');
+        const iconChevron = document.getElementById('icon-chevron');
+        const extendedSettings = document.getElementById('extended-settings');
+        const inputColorSky = document.getElementById('input-color-sky');
+        const inputColorGround = document.getElementById('input-color-ground');
+        const inputColorGrid = document.getElementById('input-color-grid');
+        const toggleMap = document.getElementById('toggle-map');
+        const toggle2dMap = document.getElementById('toggle-2d-map');
+        const btnApplyCoords = document.getElementById('btn-apply-coords');
+
+        // Physics State Variables
+        let waypoints = []; // Three.Vector3 array
+        let totalDistance = 0;
+        let finalDisplacement = 0;
+        let isAnimating = false;
+        let animationTime = 0;
+        let totalAnimationTime = 5; // seconds
+        
+        // Motion state
+        let currentSegmentIndex = 0;
+        let ballSpeed = 0; // units per second
+        let segmentsDistance = []; // Distance of each segment
+        let accumulatedDistance = 0; // Distance covered in animation
+
+        // Three.js Core Variables
+        let scene, camera, renderer, controls;
+        let ball, groundMesh, gridHelper;
+        let pathLine, displacementLine;
+        let pointMarkers = [];
+        
+        // Raycaster for clicking on field
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+        
+        // Clock for animation
+        const clock = new THREE.Clock();
+
+        init();
+        animateLoop();
+
+        function init() {
+            const container = document.getElementById('canvas-container');
+
+            // 1. Scene Setup
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color('#87CEEB'); // Sky blue
+            // ลดหมอกลง: เปลี่ยนค่าความหนาแน่นจาก 0.015 เป็น 0.002
+            scene.fog = new THREE.FogExp2('#87CEEB', 0.002);
+
+            // 2. Camera Setup
+            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 20, 30); // Look from top-angle
+
+            // 3. Renderer Setup
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            container.appendChild(renderer.domElement);
+
+            // 4. Controls Setup (Orbit)
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.maxPolarAngle = Math.PI / 2 - 0.05; // Don't go below ground
+            controls.minDistance = 5;
+            controls.maxDistance = 100;
+
+            // 5. Lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(20, 40, 20);
+            dirLight.castShadow = true;
+            dirLight.shadow.camera.left = -30;
+            dirLight.shadow.camera.right = 30;
+            dirLight.shadow.camera.top = 30;
+            dirLight.shadow.camera.bottom = -30;
+            dirLight.shadow.mapSize.width = 1024;
+            dirLight.shadow.mapSize.height = 1024;
+            scene.add(dirLight);
+
+            // 6. Environment Setup (Field)
+            // Ground
+            const groundGeo = new THREE.PlaneGeometry(100, 100);
+            const groundMat = new THREE.MeshStandardMaterial({ 
+                color: '#4ade80', // Tailwind green-400
+                roughness: 0.8,
+                metalness: 0.1
+            });
+            groundMesh = new THREE.Mesh(groundGeo, groundMat);
+            groundMesh.rotation.x = -Math.PI / 2;
+            groundMesh.receiveShadow = true;
+            scene.add(groundMesh);
+
+            // Grid Helper (Visual unit references, 1 cell = 1 meter)
+            gridHelper = new THREE.GridHelper(100, 100, 0x16a34a, 0x16a34a);
+            gridHelper.position.y = 0.05; // Slightly above ground to prevent z-fighting
+            scene.add(gridHelper);
+            
+            // Axes Helper (Origin)
+            const axesHelper = new THREE.AxesHelper(5);
+            axesHelper.position.y = 0.1;
+            scene.add(axesHelper);
+
+            // 7. Objects (Ball)
+            const ballRadius = 0.5;
+            const ballGeo = new THREE.SphereGeometry(ballRadius, 32, 32);
+            const ballMat = new THREE.MeshStandardMaterial({ 
+                color: '#ef4444', // Red-500
+                roughness: 0.2,
+                metalness: 0.8,
+                // เพิ่มคุณสมบัติการเรืองแสง (Emissive)
+                emissive: '#ef4444', // สีเดียวกับลูกบอล
+                emissiveIntensity: 0 // เริ่มต้นที่ 0 (ไม่เรืองแสง)
+            });
+            ball = new THREE.Mesh(ballGeo, ballMat);
+            ball.castShadow = true;
+            ball.position.set(0, ballRadius, 0); // Center at origin initially
+            scene.add(ball);
+
+            // Pre-add origin as the first waypoint
+            addWaypoint(new THREE.Vector3(0, ballRadius, 0));
+
+            // Events
+            window.addEventListener('resize', onWindowResize);
+            renderer.domElement.addEventListener('pointerdown', onPointerDown);
+            
+            // UI Events
+            btnPlay.addEventListener('click', startMotion);
+            btnClear.addEventListener('click', () => clearWaypoints(false));
+            btnFullscreen.addEventListener('click', toggleFullScreen);
+            
+            // UI Toggle & Settings Events
+            btnMinimize.addEventListener('click', toggleMinimize);
+            inputColorSky.addEventListener('input', (e) => {
+                scene.background = new THREE.Color(e.target.value);
+                scene.fog.color = new THREE.Color(e.target.value);
+            });
+            inputColorGround.addEventListener('input', (e) => {
+                groundMesh.material.color = new THREE.Color(e.target.value);
+            });
+            inputColorGrid.addEventListener('input', (e) => {
+                if (gridHelper) {
+                    scene.remove(gridHelper);
+                    gridHelper.geometry.dispose();
+                    gridHelper.material.dispose();
+                }
+                gridHelper = new THREE.GridHelper(100, 100, e.target.value, e.target.value);
+                gridHelper.position.y = 0.05;
+                scene.add(gridHelper);
+            });
+            
+            let cityGroup = null;
+            toggleMap.addEventListener('change', (e) => {
+                if (e.target.checked) {
+                    if (!cityGroup) {
+                        cityGroup = new THREE.Group();
+                        
+                        // วัสดุต่างๆ สำหรับสร้างเมือง
+                        const matRoad = new THREE.MeshStandardMaterial({ color: '#334155', roughness: 0.9 });
+                        const matBuilding = new THREE.MeshStandardMaterial({ color: '#f8fafc', roughness: 0.8 });
+                        const matRoof = new THREE.MeshStandardMaterial({ color: '#ef4444', roughness: 0.8 }); // หลังคาสีแดง
+                        const matHall = new THREE.MeshStandardMaterial({ color: '#e2e8f0', roughness: 0.5 });
+                        const matStadium = new THREE.MeshStandardMaterial({ color: '#94a3b8', roughness: 0.7 });
+                        const matField = new THREE.MeshStandardMaterial({ color: '#22c55e', roughness: 0.9 });
+
+                        // ฟังก์ชันช่วยวาดเส้นขอบตึกให้ดูเป็นโมเดล
+                        const addEdges = (mesh, color = 0x64748b) => {
+                            const edges = new THREE.EdgesGeometry(mesh.geometry);
+                            const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: color, linewidth: 1 }));
+                            mesh.add(line);
+                        };
+
+                        // 1. สร้างถนนหลัก (Roads) ตัดกัน
+                        const roadWidth = 8;
+                        const roads = [
+                            { w: roadWidth, d: 100, x: -20, z: 0 }, // ถนนแนวตั้ง ซ้าย
+                            { w: roadWidth, d: 100, x: 20, z: 0 },  // ถนนแนวตั้ง ขวา
+                            { w: 100, d: roadWidth, x: 0, z: -20 }, // ถนนแนวนอน บน
+                            { w: 100, d: roadWidth, x: 0, z: 20 }   // ถนนแนวนอน ล่าง
+                        ];
+                        roads.forEach(r => {
+                            const roadGeo = new THREE.PlaneGeometry(r.w, r.d);
+                            const road = new THREE.Mesh(roadGeo, matRoad);
+                            road.rotation.x = -Math.PI / 2;
+                            road.position.set(r.x, 0.02, r.z); // ลอยเหนือพื้นนิดหน่อยกันการทับซ้อน
+                            road.receiveShadow = true;
+                            cityGroup.add(road);
+                        });
+
+                        // 2. สนามกีฬา (Stadium) - มุมซ้ายบน X: -35, Z: -35
+                        const stadiumGroup = new THREE.Group();
+                        const standsGeo = new THREE.TorusGeometry(8, 2.5, 16, 50);
+                        const stands = new THREE.Mesh(standsGeo, matStadium);
+                        stands.rotation.x = -Math.PI / 2;
+                        stands.position.y = 1.25;
+                        stands.castShadow = true; stands.receiveShadow = true;
+                        stadiumGroup.add(stands);
+                        const fieldGeo = new THREE.CylinderGeometry(7.5, 7.5, 0.1, 32);
+                        const field = new THREE.Mesh(fieldGeo, matField);
+                        field.position.y = 0.05;
+                        field.receiveShadow = true;
+                        stadiumGroup.add(field);
+                        stadiumGroup.position.set(-35, 0, -35);
+                        cityGroup.add(stadiumGroup);
+
+                        // 3. อาคาร Hall (Exhibition Hall) - มุมขวาบน X: 35, Z: -35
+                        const hallGroup = new THREE.Group();
+                        const hallBaseGeo = new THREE.BoxGeometry(16, 6, 12);
+                        const hallBase = new THREE.Mesh(hallBaseGeo, matHall);
+                        hallBase.position.y = 3;
+                        hallBase.castShadow = true; hallBase.receiveShadow = true;
+                        addEdges(hallBase);
+                        hallGroup.add(hallBase);
+                        // หลังคาโค้งของ Hall
+                        const hallRoofGeo = new THREE.CylinderGeometry(6, 6, 16, 16, 1, false, 0, Math.PI);
+                        const hallRoof = new THREE.Mesh(hallRoofGeo, new THREE.MeshStandardMaterial({color: '#3b82f6'})); // หลังคาสีน้ำเงิน
+                        hallRoof.rotation.z = Math.PI / 2;
+                        hallRoof.position.y = 6;
+                        hallRoof.castShadow = true;
+                        hallGroup.add(hallRoof);
+                        hallGroup.position.set(35, 0, -35);
+                        cityGroup.add(hallGroup);
+
+                        // 4. หมู่บ้าน (Village) - มุมซ้ายล่าง X: -35, Z: 35
+                        for(let x = -44; x <= -26; x += 6) {
+                            for(let z = 26; z <= 44; z += 6) {
+                                if (Math.random() > 0.15) { // โอกาสเกิดบ้าน 85%
+                                    const houseGroup = new THREE.Group();
+                                    const hBase = new THREE.Mesh(new THREE.BoxGeometry(3, 3, 4), matBuilding);
+                                    hBase.position.y = 1.5; hBase.castShadow = true; hBase.receiveShadow = true;
+                                    addEdges(hBase, 0x94a3b8);
+                                    houseGroup.add(hBase);
+                                    
+                                    // หลังคาทรงจั่ว
+                                    const hRoof = new THREE.Mesh(new THREE.ConeGeometry(2.8, 2, 4), matRoof);
+                                    hRoof.rotation.y = Math.PI / 4; 
+                                    hRoof.position.y = 4; hRoof.castShadow = true;
+                                    houseGroup.add(hRoof);
+                                    
+                                    houseGroup.position.set(x, 0, z);
+                                    houseGroup.rotation.y = (Math.random() > 0.5) ? 0 : Math.PI/2; // หันทิศทางบ้าน
+                                    cityGroup.add(houseGroup);
+                                }
+                            }
+                        }
+
+                        // 5. ตึกเตี้ย/อาคารพาณิชย์ (Low-rise) - มุมขวาล่าง X: 35, Z: 35
+                        const matsLowrise = [
+                            new THREE.MeshStandardMaterial({ color: '#cbd5e1', roughness: 0.7 }),
+                            new THREE.MeshStandardMaterial({ color: '#94a3b8', roughness: 0.7 })
+                        ];
+                        for(let x = 26; x <= 44; x += 6) {
+                            for(let z = 26; z <= 44; z += 6) {
+                                if (Math.random() > 0.2) {
+                                    const height = 3 + Math.random() * 5; // ตึกสูงแค่ 3-8 หน่วย
+                                    const bGeo = new THREE.BoxGeometry(4.5, height, 4.5);
+                                    const b = new THREE.Mesh(bGeo, matsLowrise[Math.floor(Math.random() * matsLowrise.length)]);
+                                    b.position.set(x, height/2, z);
+                                    b.castShadow = true; b.receiveShadow = true;
+                                    addEdges(b);
+                                    cityGroup.add(b);
+                                }
+                            }
+                        }
+
+                        // 6. ต้นไม้ตกแต่งรอบๆ ลานตรงกลาง
+                        const matTree = new THREE.MeshStandardMaterial({color: '#15803d'});
+                        const matTrunk = new THREE.MeshStandardMaterial({color: '#78350f'});
+                        for(let i=0; i<16; i++) {
+                            const angle = (i / 16) * Math.PI * 2;
+                            const tx = Math.cos(angle) * 15;
+                            const tz = Math.sin(angle) * 15;
+                            
+                            const tree = new THREE.Group();
+                            const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.4, 1.5), matTrunk);
+                            trunk.position.y = 0.75; trunk.castShadow = true;
+                            tree.add(trunk);
+                            const leaves = new THREE.Mesh(new THREE.ConeGeometry(1.2, 2.5, 5), matTree);
+                            leaves.position.y = 2.25; leaves.castShadow = true;
+                            tree.add(leaves);
+                            tree.position.set(tx, 0, tz);
+                            cityGroup.add(tree);
+                        }
+                    }
+                    scene.add(cityGroup);
+                    // ปรับสีพื้นดินให้เป็นสีปูน/คอนกรีตเพื่อให้เข้ากับเมือง
+                    if (!toggle2dMap.checked) groundMesh.material.color.set('#64748b'); 
+                } else {
+                    if (cityGroup) scene.remove(cityGroup);
+                    if (!toggle2dMap.checked) groundMesh.material.color.set(inputColorGround.value);
+                }
+            });
+
+            // สร้างแผนที่ 2 มิติบนพื้นดินด้วย Canvas
+            let mapTexture = null;
+            toggle2dMap.addEventListener('change', (e) => {
+                if (e.target.checked) {
+                    if (!mapTexture) {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = 1024; canvas.height = 1024;
+                        const ctx = canvas.getContext('2d');
+
+                        // 1. สีพื้น (ทุ่งหญ้า)
+                        ctx.fillStyle = '#bbf7d0';
+                        ctx.fillRect(0, 0, 1024, 1024);
+
+                        // 2. แม่น้ำ
+                        ctx.beginPath();
+                        ctx.moveTo(0, 150);
+                        ctx.bezierCurveTo(400, 300, 600, 800, 1024, 900);
+                        ctx.lineWidth = 100;
+                        ctx.strokeStyle = '#93c5fd';
+                        ctx.stroke();
+
+                        // 3. ถนน (Grid)
+                        ctx.lineWidth = 15;
+                        ctx.strokeStyle = '#cbd5e1';
+                        for(let x = 112; x < 1024; x += 200) {
+                            ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, 1024); ctx.stroke();
+                        }
+                        for(let y = 112; y < 1024; y += 200) {
+                            ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(1024, y); ctx.stroke();
+                        }
+                        
+                        // 4. วงเวียนตรงกลาง
+                        ctx.beginPath();
+                        ctx.arc(512, 512, 80, 0, Math.PI*2);
+                        ctx.fillStyle = '#94a3b8';
+                        ctx.fill();
+                        ctx.stroke();
+
+                        mapTexture = new THREE.CanvasTexture(canvas);
+                        mapTexture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+                    }
+                    groundMesh.material.map = mapTexture;
+                    groundMesh.material.color.set('#ffffff'); // ตั้งเป็นสีขาวเพื่อให้พื้นผิวแผนที่สว่างชัดเจน
+                } else {
+                    groundMesh.material.map = null;
+                    // คืนค่าสีพื้นเดิม
+                    if (toggleMap.checked) {
+                        groundMesh.material.color.set('#64748b'); 
+                    } else {
+                        groundMesh.material.color.set(inputColorGround.value);
+                    }
+                }
+                groundMesh.material.needsUpdate = true;
+            });
+
+            btnApplyCoords.addEventListener('click', () => {
+                const coords = [
+                    {x: parseFloat(document.getElementById('p1-x').value), z: parseFloat(document.getElementById('p1-z').value)},
+                    {x: parseFloat(document.getElementById('p2-x').value), z: parseFloat(document.getElementById('p2-z').value)},
+                    {x: parseFloat(document.getElementById('p3-x').value), z: parseFloat(document.getElementById('p3-z').value)},
+                    {x: parseFloat(document.getElementById('p4-x').value), z: parseFloat(document.getElementById('p4-z').value)}
+                ];
+
+                let validPoints = 0;
+                coords.forEach(p => { if(!isNaN(p.x) && !isNaN(p.z)) validPoints++; });
+                
+                if (validPoints > 0) {
+                    clearWaypoints(true);
+                    coords.forEach(p => {
+                        if(!isNaN(p.x) && !isNaN(p.z)) {
+                            addWaypoint(new THREE.Vector3(p.x, 0.5, p.z));
+                        }
+                    });
+                    showToast(`สร้างเส้นทางจากพิกัดสำเร็จ ${validPoints} จุด`);
+                } else {
+                    showToast("กรุณากรอกพิกัด X, Z อย่างน้อย 1 คู่");
+                }
+            });
+        } // ปิดฟังก์ชัน init()
+
+        function toggleMinimize() {
+            if (extendedSettings.classList.contains('max-h-[500px]')) {
+                extendedSettings.classList.remove('max-h-[500px]', 'opacity-100');
+                extendedSettings.classList.add('max-h-0', 'opacity-0');
+                iconChevron.style.transform = 'rotate(180deg)';
+            } else {
+                extendedSettings.classList.remove('max-h-0', 'opacity-0');
+                extendedSettings.classList.add('max-h-[500px]', 'opacity-100');
+                iconChevron.style.transform = 'rotate(0deg)';
+            }
+        }
+
+        function updatePhysicsCalculations() {
+            totalDistance = 0;
+            segmentsDistance = [];
+            
+            if (waypoints.length > 1) {
+                for (let i = 0; i < waypoints.length - 1; i++) {
+                    const dist = waypoints[i].distanceTo(waypoints[i+1]);
+                    segmentsDistance.push(dist);
+                    totalDistance += dist;
+                }
+                finalDisplacement = waypoints[0].distanceTo(waypoints[waypoints.length - 1]);
+            } else {
+                finalDisplacement = 0;
+            }
+            
+            if (!isAnimating) {
+                updateUIStats(totalDistance, finalDisplacement, 0, 0);
+            }
+        }
+
+        function updateUIStats(dist, disp, speed, vel) {
+            valDistance.innerText = dist.toFixed(2);
+            valDisplacement.innerText = disp.toFixed(2);
+            valSpeed.innerText = speed.toFixed(2);
+            valVelocity.innerText = vel.toFixed(2);
+        }
+
+        // Add Point on Click
+        function onPointerDown(event) {
+            if (isAnimating) {
+                showToast("กำลังจำลองการเคลื่อนที่ ไม่สามารถเพิ่มจุดได้");
+                return;
+            }
+            
+            // Allow left click only, avoid conflict with OrbitControls drag
+            if (event.button !== 0) return;
+
+            // Calculate mouse position in normalized device coordinates (-1 to +1)
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            // Raycast
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObject(groundMesh);
+
+            if (intersects.length > 0) {
+                const hitPoint = intersects[0].point;
+                // Keep y at ball radius
+                hitPoint.y = ball.geometry.parameters.radius; 
+                addWaypoint(hitPoint);
+            }
+        }
+
+        function addWaypoint(point) {
+            waypoints.push(point);
+
+            // Create Visual Marker
+            const markerGeo = new THREE.CylinderGeometry(0.2, 0.2, 0.1, 16);
+            const markerMat = new THREE.MeshBasicMaterial({ color: 0x3b82f6 }); // Blue
+            const marker = new THREE.Mesh(markerGeo, markerMat);
+            marker.position.copy(point);
+            marker.position.y = 0.05; // Slightly above ground
+            scene.add(marker);
+            pointMarkers.push(marker);
+
+            // Update Lines
+            drawPathLine();
+            if(!isAnimating) drawDisplacementLine(waypoints[waypoints.length - 1]);
+
+            // Update Math
+            updatePhysicsCalculations();
+            
+            // Move ball to start if not playing
+            if(waypoints.length === 1) {
+                ball.position.copy(waypoints[0]);
+            }
+        }
+
+        function drawPathLine() {
+            if (pathLine) {
+                scene.remove(pathLine);
+                pathLine.geometry.dispose();
+                pathLine.material.dispose();
+            }
+
+            if (waypoints.length > 1) {
+                const material = new THREE.LineBasicMaterial({ 
+                    color: 0x2563eb, // blue-600
+                    linewidth: 3 // Note: WebGL line width is often limited to 1, but we request 3
+                });
+                const geometry = new THREE.BufferGeometry().setFromPoints(waypoints);
+                pathLine = new THREE.Line(geometry, material);
+                pathLine.position.y = 0.1; // Float above ground
+                scene.add(pathLine);
+            }
+        }
+
+        function drawDisplacementLine(currentPosition) {
+            if (displacementLine) {
+                scene.remove(displacementLine);
+                displacementLine.geometry.dispose();
+                displacementLine.material.dispose();
+            }
+
+            if (waypoints.length > 0) {
+                const startPoint = waypoints[0];
+                const points = [startPoint, currentPosition];
+                
+                // Using Dashed Line for Displacement
+                const material = new THREE.LineDashedMaterial({
+                    color: 0xf97316, // orange-500
+                    dashSize: 0.5,
+                    gapSize: 0.2,
+                    linewidth: 2
+                });
+                const geometry = new THREE.BufferGeometry().setFromPoints(points);
+                displacementLine = new THREE.Line(geometry, material);
+                displacementLine.computeLineDistances(); // Required for dashed line
+                displacementLine.position.y = 0.12; // Slightly above pathline
+                scene.add(displacementLine);
+            }
+        }
+
+        function startMotion() {
+            if (waypoints.length < 2) {
+                showToast("กรุณาคลิกเพิ่มจุดบนตารางอย่างน้อย 1 จุดเพื่อสร้างเส้นทาง");
+                return;
+            }
+            if (isAnimating) return;
+
+            // Get Time Input
+            let t = parseFloat(inputTime.value);
+            if (isNaN(t) || t <= 0) {
+                t = 5;
+                inputTime.value = 5;
+                showToast("เวลาต้องมากกว่า 0 ตั้งค่าเริ่มต้นเป็น 5 วินาที");
+            }
+            
+            totalAnimationTime = t;
+            
+            // Calculate Constant Speed (v = s/t)
+            // Note: In real physics, speed might change, but for this basic app we assume constant average speed across the whole path.
+            ballSpeed = totalDistance / totalAnimationTime;
+
+            // Reset States
+            isAnimating = true;
+            animationTime = 0;
+            currentSegmentIndex = 0;
+            accumulatedDistance = 0;
+            ball.position.copy(waypoints[0]);
+            
+            btnPlay.disabled = true;
+            btnPlay.classList.add('opacity-50', 'cursor-not-allowed');
+            btnClear.disabled = true;
+            btnClear.classList.add('opacity-50', 'cursor-not-allowed');
+            
+            clock.start();
+        }
+
+        function clearWaypoints(keepEmpty = false) {
+            if(isAnimating) return;
+            
+            // รีเซ็ตการเรืองแสงของลูกบอล
+            ball.material.emissiveIntensity = 0;
+
+            // Remove markers
+            pointMarkers.forEach(m => {
+                scene.remove(m);
+                m.geometry.dispose();
+                m.material.dispose();
+            });
+            pointMarkers = [];
+
+            // Remove lines
+            if(pathLine) { scene.remove(pathLine); pathLine = null; }
+            if(displacementLine) { scene.remove(displacementLine); displacementLine = null; }
+
+            // Reset State
+            waypoints = [];
+            totalDistance = 0;
+            finalDisplacement = 0;
+            
+            // Re-add Origin or stay empty
+            if (keepEmpty === true) {
+                updateUIStats(0, 0, 0, 0);
+            } else {
+                addWaypoint(new THREE.Vector3(0, ball.geometry.parameters.radius, 0));
+                updateUIStats(0, 0, 0, 0);
+            }
+            progressBar.style.width = '0%';
+        }
+
+        function animateLoop() {
+            requestAnimationFrame(animateLoop);
+
+            const deltaTime = clock.getDelta();
+            
+            // Smooth controls
+            controls.update();
+
+            // Handle Physics Animation
+            if (isAnimating) {
+                // Update time
+                animationTime += deltaTime;
+                let currentTotalTime = Math.min(animationTime, totalAnimationTime);
+                
+                // Update Progress bar
+                let progressPercent = (currentTotalTime / totalAnimationTime) * 100;
+                progressBar.style.width = progressPercent + '%';
+
+                // Distance we should have covered by now based on constant speed
+                let expectedDistance = ballSpeed * currentTotalTime;
+                
+                // Find which segment we are currently on
+                let tempDist = 0;
+                let segIndex = 0;
+                let distOnCurrentSegment = 0;
+
+                for (let i = 0; i < segmentsDistance.length; i++) {
+                    if (tempDist + segmentsDistance[i] >= expectedDistance) {
+                        segIndex = i;
+                        distOnCurrentSegment = expectedDistance - tempDist;
+                        break;
+                    }
+                    tempDist += segmentsDistance[i];
+                    // If we exceed bounds (due to float precision at end of animation)
+                    if (i === segmentsDistance.length - 1) {
+                        segIndex = i;
+                        distOnCurrentSegment = segmentsDistance[i];
+                    }
+                }
+
+                // Interpolate position on the current segment
+                const startNode = waypoints[segIndex];
+                const endNode = waypoints[segIndex + 1];
+                
+                if (startNode && endNode) {
+                    const segmentRatio = (segmentsDistance[segIndex] === 0) ? 0 : distOnCurrentSegment / segmentsDistance[segIndex];
+                    ball.position.lerpVectors(startNode, endNode, Math.min(segmentRatio, 1));
+                    
+                    // Effect: ทำให้ลูกบอลกระพริบขณะเคลื่อนที่
+                    // ใช้ Math.sin สร้างค่าคลื่นระหว่าง 0 ถึง 1 ตามเวลา
+                    const blinkSpeed = 10; // ความเร็วกระพริบ
+                    const blinkIntensity = (Math.sin(animationTime * blinkSpeed) + 1) / 2; 
+                    ball.material.emissiveIntensity = blinkIntensity * 1.5; // ปรับความแรงแสงสูงสุดเป็น 1.5
+                }
+
+                // Real-time Physics Math Updates
+                const currentDisplacement = waypoints[0].distanceTo(ball.position);
+                // v = s / t
+                const currentSpeed = (currentTotalTime > 0) ? (expectedDistance / currentTotalTime) : 0;
+                // vec(v) = vec(s) / t
+                const currentVelocity = (currentTotalTime > 0) ? (currentDisplacement / currentTotalTime) : 0;
+
+                updateUIStats(expectedDistance, currentDisplacement, currentSpeed, currentVelocity);
+                drawDisplacementLine(ball.position);
+
+                // Check if Animation Finished
+                if (animationTime >= totalAnimationTime) {
+                    isAnimating = false;
+                    clock.stop();
+                    ball.position.copy(waypoints[waypoints.length - 1]);
+                    
+                    // หยุดการกระพริบเมื่อถึงจุดหมาย
+                    ball.material.emissiveIntensity = 0;
+
+                    // Final precise calculations
+                    const finalSpeed = totalDistance / totalAnimationTime;
+                    const finalVelocity = finalDisplacement / totalAnimationTime;
+                    updateUIStats(totalDistance, finalDisplacement, finalSpeed, finalVelocity);
+                    drawDisplacementLine(ball.position);
+
+                    // Reset buttons
+                    btnPlay.disabled = false;
+                    btnPlay.classList.remove('opacity-50', 'cursor-not-allowed');
+                    btnClear.disabled = false;
+                    btnClear.classList.remove('opacity-50', 'cursor-not-allowed');
+                }
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch((err) => {
+                    showToast(`Error attempting to enable fullscreen: ${err.message}`);
+                });
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        }
+
+        let toastTimeout;
+        function showToast(message) {
+            toastEl.innerText = message;
+            toastEl.classList.add('show');
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toastEl.classList.remove('show');
+            }, 3000);
+        }
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Physics 1D Motion App</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- React & ReactDOM -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  
+  <!-- Babel for JSX compilation in browser -->
+  <script src="https://unpkg.com/@babel/standalone@7.23.10/babel.min.js"></script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
+    
+    :root {
+      --font-thai: 'Sarabun', sans-serif;
+      --font-math: 'Cambria Math', 'Cambria', 'Times New Roman', serif;
+    }
+
+    body {
+      font-family: var(--font-thai);
+      background-color: #fdfbf7;
+      color: #4a4a4a;
+    }
+
+    .math-text {
+      font-family: var(--font-math);
+      font-style: italic;
+    }
+
+    .math-num {
+      font-family: var(--font-math);
+    }
+
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: #f1f1f1; }
+    ::-webkit-scrollbar-thumb { background: #d4a5a5; border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: #c38b8b; }
+
+    @keyframes flipIn {
+      from { transform: rotateY(90deg); opacity: 0; }
+      to { transform: rotateY(0deg); opacity: 1; }
+    }
+    .flip-anim { animation: flipIn 0.3s ease-out forwards; }
+    
+    @keyframes fadeInUp {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    .animate-fade-in-up { animation: fadeInUp 0.4s ease-out forwards; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel" data-type="module">
+    const { useState, useEffect, useRef } = React;
+
+    // --- Icon System ---
+    const Icon = ({ name, size = 20, className = "" }) => (
+      <i className={`fa-solid ${name} ${className}`} style={{ fontSize: size }}></i>
+    );
+
+    const icons = {
+      Play: "fa-play",
+      RotateCcw: "fa-rotate-left",
+      BookOpen: "fa-book-open",
+      PenTool: "fa-pen",
+      ArrowLeft: "fa-arrow-left",
+      CheckCircle: "fa-circle-check",
+      XCircle: "fa-circle-xmark",
+      ChevronRight: "fa-chevron-right",
+      ChevronLeft: "fa-chevron-left",
+      Home: "fa-house",
+      Settings: "fa-gear",
+      FlipHorizontal: "fa-arrows-rotate"
+    };
+
+    // --- UI Helper Components ---
+    const Vec = ({ char }) => (
+      <span className="inline-flex flex-col items-center justify-end leading-[0.8] align-bottom math-text mx-1 font-bold text-indigo-600">
+        <span className="text-[0.6em] mb-[-0.3em] font-normal" style={{ fontStyle: 'normal', fontFamily: 'sans-serif' }}>→</span>
+        <span>{char}</span>
+      </span>
+    );
+
+    const Scalar = ({ char }) => (
+      <span className="math-text mx-1 font-bold text-rose-500">{char}</span>
+    );
+
+    const MathNum = ({ num }) => (
+      <span className="math-num mx-1 font-semibold">{num}</span>
+    );
+
+    const rnd = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+
+    // --- Flashcard Data ---
+    const flashcardsData = [
+      {
+        id: 1,
+        front: <div className="flex flex-col items-center"><span className="text-4xl mb-2"><Vec char="u"/></span><span>ความเร็วต้น</span></div>,
+        backTitle: "ความเร็วต้น (Initial Velocity)",
+        backDesc: <span>ความเร็วของวัตถุ ณ จุดเริ่มต้นของการสังเกต มีทิศทาง (เวกเตอร์)</span>,
+        unit: "m/s",
+        condition: <span>🔑 คีย์เวิร์ด: หากโจทย์บอกว่า 'เริ่มจากจุดหยุดนิ่ง' หรือ 'ปล่อยวัตถุตก' ให้รู้ทันทีว่า <Vec char="u"/> = 0</span>
+      },
+      {
+        id: 2,
+        front: <div className="flex flex-col items-center"><span className="text-4xl mb-2"><Vec char="v"/></span><span>ความเร็วปลาย</span></div>,
+        backTitle: "ความเร็วปลาย (Final Velocity)",
+        backDesc: <span>ความเร็วของวัตถุ ณ จุดสิ้นสุดของการสังเกตที่สนใจ มีทิศทาง (เวกเตอร์)</span>,
+        unit: "m/s",
+        condition: <span>🔑 คีย์เวิร์ด: หากโจทย์บอกว่า 'เบรกจนรถหยุด' หรือ 'เคลื่อนที่จนหยุดนิ่ง' ให้รู้ทันทีว่า <Vec char="v"/> = 0</span>
+      },
+      {
+        id: 3,
+        front: <div className="flex flex-col items-center"><div className="flex items-center space-x-4 mb-2"><span className="text-4xl"><Scalar char="s"/></span> <span className="text-xl">vs</span> <span className="text-4xl"><Vec char="s"/></span></div><span>ระยะทาง vs การกระจัด</span></div>,
+        backTitle: "ระยะทาง (Scalar) vs การกระจัด (Vector)",
+        backDesc: <span>ระยะทาง (<Scalar char="s"/>) คือความยาวตามเส้นทางจริงทั้งหมดที่เดินได้ ส่วนการกระจัด (<Vec char="s"/>) คือเส้นตรงที่ลากจากจุดเริ่มต้นไปยังจุดสุดท้ายเสมอ</span>,
+        unit: "m",
+        condition: <span>💡 ทริคสำคัญ: ถ้ารถเคลื่อนที่เป็นเส้นตรงไปข้างหน้า 'โดยไม่มีการเลี้ยวกลับ' ขนาดของการกระจัดจะเท่ากับระยะทางพอดีเป๊ะ (|<Vec char="s"/>| = <Scalar char="s"/>)</span>
+      },
+      {
+        id: 4,
+        front: <div className="flex flex-col items-center"><span className="text-4xl mb-2"><Vec char="a"/></span><span>ความเร่ง</span></div>,
+        backTitle: "ความเร่ง (Acceleration)",
+        backDesc: <span>ความเร็วที่เปลี่ยนแปลงไปใน 1 วินาที (เวกเตอร์)</span>,
+        unit: "m/s²",
+        condition: <span>🔑 ทริค: ความเร่งทิศเดียวกับความเร็วรถจะ 'เร็วขึ้น', แต่ถ้าความเร่งทิศตรงข้าม (หรือเรียกว่า 'ความหน่วง') รถจะ 'ช้าลง'</span>
+      },
+      {
+        id: 5,
+        front: <div className="flex flex-col items-center"><span className="text-4xl mb-2"><Scalar char="v"/></span><span>อัตราเร็ว vs ความเร็ว</span></div>,
+        backTitle: "อัตราเร็ว (Speed) vs ความเร็ว (Velocity)",
+        backDesc: <span>อัตราเร็วคำนวณจาก ระยะทาง/เวลา (สเกลาร์) ส่วนความเร็วคำนวณจาก การกระจัด/เวลา (เวกเตอร์)</span>,
+        unit: "m/s",
+        condition: <span>💡 ทริค: รถวิ่งเป็นวงกลมกลับมาจุดเดิม อัตราเร็วเฉลี่ย &gt; 0 แต่ความเร็วเฉลี่ย = 0 (เพราะการกระจัดเป็น 0)</span>
+      },
+      {
+        id: 6,
+        front: <div className="flex flex-col items-center"><span className="text-4xl mb-2"><Scalar char="t"/></span><span>เวลา</span></div>,
+        backTitle: "เวลา (Time)",
+        backDesc: <span>ช่วงเวลาที่ใช้ในการเคลื่อนที่หรือการสังเกต เป็นปริมาณสเกลาร์ที่บอกเพียงขนาดเท่านั้น</span>,
+        unit: "s",
+        condition: <span>💡 ทริค: เวลาเดินหน้าเสมอ ไม่มีทิศทาง และไม่มีค่าติดลบ (<Scalar char="t"/> ≥ 0 เสมอ)</span>
+      }
+    ];
+
+    // --- Question Bank (80 Unique Templates) ---
+    // แต่ละฟังก์ชันสร้างโจทย์ที่ไม่ซ้ำกัน พร้อมสุ่มตัวเลขใหม่ทุกครั้ง
+    const questionBank = {
+      easy: [
+        // Concepts
+        () => ({ question: "ปริมาณใดต่อไปนี้เป็น 'ปริมาณสเกลาร์' ทั้งหมด?", options: ["ระยะทาง, อัตราเร็ว, เวลา", "การกระจัด, ความเร็ว", "เวลา, ความเร่ง, อัตราเร็ว", "น้ำหนัก, ระยะทาง"], answer: 0, explanation: "สเกลาร์คือปริมาณที่บอกแค่ 'ขนาด' (ไม่มีทิศทาง) เช่น ระยะทาง อัตราเร็ว และเวลา" }),
+        () => ({ question: "ปริมาณใดต่อไปนี้เป็น 'ปริมาณเวกเตอร์' ทั้งหมด?", options: ["มวล, ระยะทาง", "อัตราเร็ว, เวลา", "การกระจัด, ความเร็ว, ความเร่ง", "น้ำหนัก, อัตราเร็ว"], answer: 2, explanation: "เวกเตอร์ต้องบอกทั้ง 'ขนาด' และ 'ทิศทาง' เช่น การกระจัด ความเร็ว ความเร่ง" }),
+        () => ({ question: "หน่วยของ 'ความเร่ง' ในระบบ SI คือข้อใด?", options: ["m/s", "m/s²", "km/h", "m²"], answer: 1, explanation: "ความเร่งคือความเร็วที่เปลี่ยนไปต่อหนึ่งหน่วยเวลา (m/s) / s = m/s²" }),
+        () => ({ question: "ในการตกแบบเสรี (Free Fall) ความเร่งของวัตถุมีทิศทางอย่างไร?", options: ["ทิศขึ้นเสมอ", "ทิศลงสู่ศูนย์กลางโลกเสมอ", "ทิศทางเดียวกับการเคลื่อนที่", "ไม่มีความเร่ง"], answer: 1, explanation: "การตกแบบเสรีวัตถุจะถูกแรงโน้มถ่วงดึงดูด ทำให้มีความเร่ง g ทิศลงเสมอ" }),
+        () => ({ question: "โยนก้อนหินขึ้นไปในแนวดิ่ง ที่จุด 'สูงสุด' ของการเคลื่อนที่ ปริมาณใดมีค่าเป็นศูนย์?", options: ["ความเร่ง", "เวลา", "ความเร็ว", "การกระจัด"], answer: 2, explanation: "ที่จุดสูงสุด วัตถุจะหยุดนิ่งชั่วขณะก่อนตกลงมา ทำให้ความเร็ว (v) เป็น 0 m/s" }),
+        () => ({ question: "หากโจทย์ระบุว่ารถ 'เริ่มเคลื่อนที่จากจุดหยุดนิ่ง' หมายความว่าอย่างไร?", options: ["v = 0", "u = 0", "a = 0", "s = 0"], answer: 1, explanation: "เริ่มต้นจากหยุดนิ่ง แปลว่า ความเร็วต้น (u) เป็นศูนย์" }),
+        () => ({ question: "หากโจทย์ระบุว่ารถ 'เบรกจนกระทั่งหยุดสนิท' หมายความว่าอย่างไร?", options: ["v = 0", "u = 0", "a = 0", "t = 0"], answer: 0, explanation: "เบรกจนหยุด แปลว่า ความเร็วปลายตอนสุดท้าย (v) เป็นศูนย์" }),
+        () => ({ question: "รถยนต์วิ่งวนรอบสนามรูปวงกลม 1 รอบจนกลับมาที่จุดเดิม ข้อใดกล่าวถูกต้อง?", options: ["การกระจัด = 0", "ระยะทาง = 0", "อัตราเร็วเฉลี่ย = 0", "ถูกทั้ง ก. และ ค."], answer: 0, explanation: "จุดเริ่มต้นและจุดสุดท้ายคือจุดเดียวกัน ทำให้การกระจัดเป็น 0 (แต่ระยะทางไม่เป็น 0)" }),
+        // Simple Calculations
+        () => { let s = rnd(10, 50)*10, t = rnd(2, 10); return { question: <span>รถวิ่งระยะทาง <MathNum num={s}/> เมตร ในเวลา <MathNum num={t}/> วินาที รถมีอัตราเร็วเฉลี่ยเท่าใด?</span>, options: [`${s/t} m/s`, `${s*t} m/s`, `${(s/t)*2} m/s`, `${s-t} m/s`], answer: 0, explanation: <span>v = s/t = {s} / {t} = {s/t} m/s</span> }},
+        () => { let v = rnd(10, 30), t = rnd(2, 10); return { question: <span>ม้าวิ่งด้วยอัตราเร็วคงที่ <MathNum num={v}/> m/s เป็นเวลา <MathNum num={t}/> วินาที ม้าจะวิ่งได้ระยะทางเท่าใด?</span>, options: [`${v/t} m`, `${v*t} m`, `${v+t} m`, `${v*t*2} m`], answer: 1, explanation: <span>s = vt = {v} × {t} = {v*t} m</span> }},
+        () => { let s = rnd(5, 20)*10, v = rnd(5, 20); return { question: <span>คนเดินด้วยอัตราเร็ว <MathNum num={v}/> m/s ต้องการเดินทาง <MathNum num={s}/> เมตร จะต้องใช้เวลากี่วินาที?</span>, options: [`${s*v} s`, `${s/v} s`, `${(s/v)+5} s`, `${s/v/2} s`], answer: 1, explanation: <span>t = s/v = {s} / {v} = {s/v} s</span> }},
+        () => { let g = 10, t = rnd(2, 5); return { question: <span>ปล่อยลูกบอลตกจากตึกสูงแบบเสรี (g = {g} m/s²) เมื่อเวลาผ่านไป <MathNum num={t}/> วินาที ลูกบอลจะมีความเร็วเท่าใด?</span>, options: [`${g*t} m/s`, `${g*t/2} m/s`, `${g+t} m/s`, `${(g*t)*2} m/s`], answer: 0, explanation: <span>ปล่อยแปลว่า u=0; จาก v = u + gt = 0 + ({g})({t}) = {g*t} m/s</span> }},
+        () => { let v = rnd(10, 50); return { question: <span>โยนวัตถุขึ้นฟ้าด้วยความเร็ว <MathNum num={v}/> m/s จะใช้เวลากี่วินาทีวัตถุจึงจะขึ้นไปถึงจุดสูงสุด? (g = 10 m/s²)</span>, options: [`${v/10} s`, `${v*10} s`, `${v/5} s`, `${v} s`], answer: 0, explanation: <span>จุดสูงสุด v=0; จาก v = u - gt -> 0 = {v} - 10t -> t = {v}/10 = {v/10} s</span> }},
+        () => { let d = rnd(3, 8); return { question: <span>เดินไปทางทิศตะวันออก <MathNum num={d}/> เมตร แล้วเดินต่อไปทางทิศตะวันออกอีก <MathNum num={d*2}/> เมตร การกระจัดลัพธ์เป็นเท่าใด?</span>, options: [`${d*3} เมตร ทางตะวันออก`, `${d} เมตร ทางตะวันตก`, `${d*3} เมตร ทางตะวันตก`, `0 เมตร`], answer: 0, explanation: "ทิศเดียวกันนำขนาดมาบวกกัน และทิศเดิม" }},
+        () => { let x = rnd(10, 20), y = rnd(5, x-1); return { question: <span>วิ่งไปทางทิศเหนือ <MathNum num={x}/> เมตร แล้ววิ่งย้อนกลับทางทิศใต้ <MathNum num={y}/> เมตร ระยะทางทั้งหมดคือเท่าใด?</span>, options: [`${x+y} m`, `${x-y} m`, `${x*y} m`, `0 m`], answer: 0, explanation: "ระยะทางคิดตามเส้นทางทั้งหมด นำมาบวกกันเสมอ" }},
+        () => { let x = rnd(10, 20), y = rnd(5, x-1); return { question: <span>จากข้อก่อนหน้า (ไปเหนือ <MathNum num={x}/> m กลับใต้ <MathNum num={y}/> m) ขนาดของการกระจัดคือเท่าใด?</span>, options: [`${x+y} m`, `${x-y} m`, `${y} m`, `0 m`], answer: 1, explanation: "การกระจัดคือเส้นตรงจากจุดเริ่มถึงจุดท้าย (ทิศตรงข้ามนำมาลบกัน)" }},
+        () => { let u = rnd(1, 5)*10, a = rnd(2, 5), t = rnd(2, 5); return { question: <span>รถมีความเร็วเริ่มต้น <MathNum num={u}/> m/s เหยียบคันเร่งด้วยความเร่ง <MathNum num={a}/> m/s² เวลา <MathNum num={t}/> วินาที ความเร็วสุดท้ายเป็นเท่าใด?</span>, options: [`${u + a*t} m/s`, `${u*t} m/s`, `${u - a*t} m/s`, `${a*t} m/s`], answer: 0, explanation: <span>v = u + at = {u} + ({a})({t}) = {u + a*t} m/s</span> }},
+        () => { let v = rnd(20, 50), u = rnd(5, 10), t = rnd(2, 5); return { question: <span>รถเปลี่ยนความเร็วจาก <MathNum num={u}/> m/s เป็น <MathNum num={v}/> m/s ในเวลา <MathNum num={t}/> วินาที รถมีความเร่งเท่าใด?</span>, options: [`${(v-u)/t} m/s²`, `${(v+u)/t} m/s²`, `${v-u} m/s²`, `${(v-u)*t} m/s²`], answer: 0, explanation: <span>a = (v-u)/t = ({v}-{u})/{t} = {(v-u)/t} m/s²</span> }},
+        () => ({ question: "ความชัน (Slope) ของกราฟ ความเร็ว-เวลา (v-t) บอกค่าปริมาณใด?", options: ["ความเร่ง (a)", "การกระจัด (s)", "ความเร็ว (v)", "เวลา (t)"], answer: 0, explanation: "Slope ของกราฟ v-t คือ Δv/Δt ซึ่งก็คือความเร่ง" }),
+        () => ({ question: "พื้นที่ใต้กราฟ ความเร็ว-เวลา (v-t) บอกค่าปริมาณใด?", options: ["การกระจัด (s)", "ความเร่ง (a)", "อัตราเร็ว (v)", "โมเมนตัม"], answer: 0, explanation: "พื้นที่ใต้กราฟ v-t คือผลคูณของ v × t ซึ่งก็คือการกระจัด" }),
+      ],
+      medium: [
+        () => { let u=10, a=2, t=5; let v = u + a*t; return { question: <span>วัตถุเคลื่อนที่ด้วย <Vec char="u"/> = <MathNum num={u}/> m/s มีความเร่ง <Vec char="a"/> = <MathNum num={a}/> m/s² ในเวลา <MathNum num={t}/> วินาที วัตถุมีความเร็วเท่าใด?</span>, options: [`${v} m/s`, `${v+5} m/s`, `${v-5} m/s`, `${u*t} m/s`], answer: 0, explanation: <span>v = u + at = {u} + ({a})({t}) = {v} m/s</span> }},
+        () => { let u=20, a=-4, t=3; let v = u + a*t; return { question: <span>รถวิ่งด้วยความเร็ว <MathNum num={u}/> m/s เบรกทำให้เกิดความหน่วง <MathNum num={Math.abs(a)}/> m/s² นาน <MathNum num={t}/> วินาที รถจะเหลือความเร็วเท่าใด?</span>, options: [`${v} m/s`, `${v+10} m/s`, `0 m/s`, `${u} m/s`], answer: 0, explanation: <span>ความหน่วงคือ a ติดลบ; v = u + at = {u} + ({-a})({t}) = {v} m/s</span> }},
+        () => { let u=10, v=30, t=4; let s = ((u+v)/2)*t; return { question: <span>รถคันหนึ่งเพิ่มความเร็วจาก <MathNum num={u}/> m/s เป็น <MathNum num={v}/> m/s ในเวลา <MathNum num={t}/> วินาที รถวิ่งไปได้ระยะทางกี่เมตร?</span>, options: [`${s} m`, `${s*2} m`, `${s/2} m`, `${(v-u)*t} m`], answer: 0, explanation: <span>s = ((u+v)/2) × t = (({u}+{v})/2) × {t} = {s} m</span> }},
+        () => { let u=0, a=4, s=50; let v = Math.sqrt(u*u + 2*a*s); return { question: <span>เครื่องบินเร่งเครื่องจากหยุดนิ่งด้วยความเร่ง <MathNum num={a}/> m/s² ไปตามรันเวย์เป็นระยะ <MathNum num={s}/> m จะมีความเร็วปลายกี่ m/s?</span>, options: [`${v} m/s`, `${v*2} m/s`, `${v/2} m/s`, `${Math.floor(v)+5} m/s`], answer: 0, explanation: <span>v² = u² + 2as = 0 + 2({a})({s}) = {v*v} -> v = {v} m/s</span> }},
+        () => { let u=0, a=2, t=5; let s = u*t + 0.5*a*t*t; return { question: <span>นักวิ่งเริ่มวิ่งจากจุดสตาร์ทด้วยความเร่ง <MathNum num={a}/> m/s² เป็นเวลา <MathNum num={t}/> วินาที เขาจะวิ่งได้ระยะทางกี่เมตร?</span>, options: [`${s} m`, `${s*2} m`, `${a*t} m`, `${s+5} m`], answer: 0, explanation: <span>s = ut + 0.5at² = 0 + 0.5({a})({t}²) = {s} m</span> }},
+        // Free fall medium
+        () => { let t=3, g=10; let s = 0.5*g*t*t; return { question: <span>ปล่อยก้อนหินตกจากหน้าผา ใช้เวลา <MathNum num={t}/> วินาที ตกถึงพื้นทราย หน้าผาสูงประมาณกี่เมตร? (g=10)</span>, options: [`${s} m`, `${s*2} m`, `${g*t} m`, `${s/2} m`], answer: 0, explanation: <span>ปล่อยแปลว่า u=0; h = ut + 0.5gt² = 0 + 0.5(10)({t}²) = {s} m</span> }},
+        () => { let s=20, g=10; let v = Math.sqrt(2*g*s); return { question: <span>ปล่อยลูกแอปเปิลตกจากกิ่งไม้ที่สูง <MathNum num={s}/> เมตร ขณะกระทบพื้นแอปเปิลจะมีความเร็วเท่าใด? (g=10)</span>, options: [`${v} m/s`, `${v/2} m/s`, `${v*2} m/s`, `0 m/s`], answer: 0, explanation: <span>v² = u² + 2gh = 0 + 2(10)({s}) = {v*v} -> v = {v} m/s</span> }},
+        () => { let u=40, g=10; let s = (u*u)/(2*g); return { question: <span>ยิงปืนขึ้นฟ้าแนวดิ่งด้วยความเร็วต้น <MathNum num={u}/> m/s กระสุนจะขึ้นไปได้สูงสุดกี่เมตร? (g=10)</span>, options: [`${s} m`, `${s*2} m`, `${u*10} m`, `${s/2} m`], answer: 0, explanation: <span>จุดสูงสุด v=0; v² = u² - 2gs -> 0 = {u}² - 2(10)s -> s = {s} m</span> }},
+        () => { let u=30, g=10; let t = 2*(u/g); return { question: <span>โยนลูกบอลขึ้นฟ้าด้วยความเร็ว <MathNum num={u}/> m/s ลูกบอลจะลอยอยู่ในอากาศนานกี่วินาทีก่อนตกลงมาถึงมือ? (g=10)</span>, options: [`${t} s`, `${t/2} s`, `${t*2} s`, `${u/10} s`], answer: 0, explanation: <span>เวลาขาขึ้น = u/g = {u/10}s; เวลาทั้งหมด (ขึ้น+ลง) = {t}s</span> }},
+        () => { let u=50, g=10, t=2; let v = u - g*t; return { question: <span>โยนวัตถุขึ้นด้วยความเร็ว <MathNum num={u}/> m/s เมื่อเวลาผ่านไป <MathNum num={t}/> วินาที วัตถุจะมีความเร็วเท่าใดและทิศใด?</span>, options: [`${v} m/s ทิศขึ้น`, `${v} m/s ทิศลง`, `${u+g*t} m/s ทิศขึ้น`, `0 m/s`], answer: 0, explanation: <span>v = u - gt = {u} - 10({t}) = {v} m/s ค่าเป็นบวกแสดงว่ายังเคลื่อนที่ทิศขึ้น</span> }},
+        () => { let u=20, v=40, s=150; let a = (v*v - u*u)/(2*s); return { question: <span>รถเร่งเครื่องจาก <MathNum num={u}/> m/s เป็น <MathNum num={v}/> m/s ในระยะทาง <MathNum num={s}/> เมตร รถมีความเร่งเท่าใด?</span>, options: [`${a} m/s²`, `${a*2} m/s²`, `${a/2} m/s²`, `${v-u} m/s²`], answer: 0, explanation: <span>v² = u² + 2as -> {v}² = {u}² + 2(a)({s}) -> {v*v} - {u*u} = {2*s}a -> a = {a} m/s²</span> }},
+        () => { let u=15, a=3, t=4; let s = u*t + 0.5*a*t*t; return { question: <span>รถเคลื่อนที่ด้วยความเร็ว <MathNum num={u}/> m/s แล้วเร่งเครื่อง <MathNum num={a}/> m/s² นาน <MathNum num={t}/> วินาที ได้ระยะทางเท่าใด?</span>, options: [`${s} m`, `${u*t} m`, `${s+10} m`, `${s*2} m`], answer: 0, explanation: <span>s = ut + 0.5at² = ({u})({t}) + 0.5({a})({t}²) = {s} m</span> }},
+        () => ({ question: "ถ้าวัตถุเคลื่อนที่ด้วย 'ความเร็วคงที่' ค่าความเร่งจะมีค่าเท่าใด?", options: ["0 m/s²", "คงที่แต่ไม่เป็นศูนย์", "เพิ่มขึ้นเรื่อยๆ", "ลดลงเรื่อยๆ"], answer: 0, explanation: "ความเร็วคงที่ แปลว่าไม่มีการเปลี่ยนแปลงความเร็ว ดังนั้น ความเร่ง a = 0" }),
+        () => ({ question: "ความเร็วเฉลี่ย (Average Velocity) คิดจากสมการใด?", options: ["การกระจัดทั้งหมด / เวลาทั้งหมด", "ระยะทางทั้งหมด / เวลาทั้งหมด", "(ความเร็วต้น + ความเร็วปลาย) / 2 เสมอ", "ความเร็วสูงสุด / 2"], answer: 0, explanation: "ความเร็ว (เวกเตอร์) ต้องสัมพันธ์กับการกระจัด (เวกเตอร์)" }),
+        () => { let s1=100, t1=10, s2=50, t2=5; let v = (s1+s2)/(t1+t2); return { question: <span>วิ่งช่วงแรก <MathNum num={s1}/> m ใน <MathNum num={t1}/> s และช่วงที่สอง <MathNum num={s2}/> m ใน <MathNum num={t2}/> s อัตราเร็วเฉลี่ยตลอดทางคือ?</span>, options: [`${v} m/s`, `${s1/t1} m/s`, `${s2/t2} m/s`, `${v*2} m/s`], answer: 0, explanation: <span>v_avg = s_total / t_total = ({s1}+{s2}) / ({t1}+{t2}) = {v} m/s</span> }},
+        () => { let v=30, t=5; let a = v/t; return { question: <span>รถหยุดนิ่งที่สัญญาณไฟ พอไฟเขียวก็เร่งเครื่องจนมีความเร็ว <MathNum num={v}/> m/s ใน <MathNum num={t}/> วินาที ความเร่งเฉลี่ยคือ?</span>, options: [`${a} m/s²`, `${a/2} m/s²`, `${a*2} m/s²`, `${v*t} m/s²`], answer: 0, explanation: <span>a = (v-u)/t = ({v}-0)/{t} = {a} m/s²</span> }},
+        () => { let u=25, t=5, v=0; let s = ((u+v)/2)*t; return { question: <span>รถเบรกจากความเร็ว <MathNum num={u}/> m/s จนหยุดนิ่ง ใช้เวลา <MathNum num={t}/> วินาที ระยะเบรกคือเท่าใด?</span>, options: [`${s} m`, `${s*2} m`, `${u*t} m`, `${s/2} m`], answer: 0, explanation: <span>s = ((u+v)/2)t = ({u}/2) × {t} = {s} m</span> }},
+        () => { let u=0, v=20, s=40; let a = (v*v)/(2*s); return { question: <span>เสือชีตาห์ซุ่มรอเหยื่อ แล้วพุ่งตัวด้วยความเร่งคงที่จนมีความเร็ว <MathNum num={v}/> m/s ในระยะ <MathNum num={s}/> m ความเร่งของเสือคือ?</span>, options: [`${a} m/s²`, `${a*2} m/s²`, `${v/s} m/s²`, `${s/v} m/s²`], answer: 0, explanation: <span>v² = u² + 2as -> {v}² = 0 + 2a({s}) -> a = {a} m/s²</span> }},
+        () => { let u=10, v=10, t=10; return { question: <span>รถวิ่งด้วยความเร็วคงที่ <MathNum num={u}/> m/s เป็นเวลา <MathNum num={t}/> วินาที ระยะทางทั้งหมดและค่าความเร่งคือเท่าใด?</span>, options: [`100 m, 0 m/s²`, `100 m, 10 m/s²`, `0 m, 0 m/s²`, `10 m, 1 m/s²`], answer: 0, explanation: <span>ความเร็วคงที่ a=0; s = vt = 10×10 = 100 m</span> }},
+        () => { let s=50, t=5, a=2; let u = (s - 0.5*a*t*t)/t; return { question: <span>รถเร่งเครื่อง <MathNum num={a}/> m/s² เป็นเวลา <MathNum num={t}/> วินาที ได้ระยะทาง <MathNum num={s}/> เมตร ความเร็วต้นก่อนเร่งคือเท่าใด?</span>, options: [`${u} m/s`, `0 m/s`, `${u+5} m/s`, `${s/t} m/s`], answer: 0, explanation: <span>s = ut + 0.5at² -> 50 = 5u + 0.5(2)(25) -> 50 = 5u + 25 -> u = {u} m/s</span> }},
+      ],
+      hard: [
+        () => { let u=30, a=-5; let s = -(u*u)/(2*a); return { question: <span>รถวิ่งด้วยความเร็ว <MathNum num={u}/> m/s คนขับเหยียบเบรกเกิดความหน่วง <MathNum num={Math.abs(a)}/> m/s² รถจะไถลไปไกลเท่าใดก่อนหยุดสนิท?</span>, options: [`${s} m`, `${s/2} m`, `${s*2} m`, `${u*u} m`], answer: 0, explanation: <span>v² = u² + 2as -> 0 = {u}² + 2({a})s -> s = {u*u} / {Math.abs(2*a)} = {s} m</span> }},
+        () => { let u=20, a=-4; let t = -u/a; return { question: <span>เรือสปีดโบ๊ทวิ่งมาด้วยความเร็ว <MathNum num={u}/> m/s ดับเครื่องยนต์ทำให้มีความหน่วง <MathNum num={Math.abs(a)}/> m/s² นานเท่าใดเรือจึงจะหยุด?</span>, options: [`${t} s`, `${t*2} s`, `${t/2} s`, `${u*a} s`], answer: 0, explanation: <span>v = u + at -> 0 = {u} + ({a})t -> t = {t} s</span> }},
+        // Free fall Hard
+        () => { let v=20, h=60; let u=-v; let t1 = (-u + Math.sqrt(u*u - 4*5*(-h)))/(2*5); let t_rounded = Math.round(t1*10)/10; return { question: <span>บอลลูนกำลังลอยขึ้นด้วยความเร็ว 20 m/s ปล่อยถุงทรายลงมาขณะอยู่สูง 60 เมตร ถุงทรายตกถึงพื้นในเวลากี่วินาที? (g=10)</span>, options: [`6 s`, `2 s`, `4 s`, `8 s`], answer: 0, explanation: <span>บอลลูนลอยขึ้น ทำให้ความเร็วต้นถุงทราย u = +20 ทิศขึ้น (ให้ขึ้นบวก) s = -60; จาก s = ut - 5t² -> -60 = 20t - 5t² -> t² - 4t - 12 = 0 -> (t-6)(t+2)=0 -> t = 6s</span> }},
+        () => { let h=45, g=10, v = Math.sqrt(2*g*h); return { question: <span>ปล่อยหินจากดาดฟ้าตึกสูง <MathNum num={h}/> เมตร กระทบพื้น หินจะกระทบพื้นด้วยความเร็วเท่าใด? (g=10)</span>, options: [`${v} m/s`, `15 m/s`, `45 m/s`, `90 m/s`], answer: 0, explanation: <span>v² = u² + 2gs = 0 + 2(10)(45) = 900 -> v = 30 m/s</span> }},
+        () => { let u=10, h=40; return { question: <span>โยนวัตถุลงตรงๆ ด้วยความเร็วต้น 10 m/s จากตึกสูง 40 m จะกระทบพื้นด้วยความเร็วกี่ m/s? (g=10)</span>, options: [`30 m/s`, `20 m/s`, `40 m/s`, `50 m/s`], answer: 0, explanation: <span>v² = u² + 2gs (ให้ลงบวก) = 10² + 2(10)(40) = 100 + 800 = 900 -> v = 30 m/s</span> }},
+        () => { let h=80; return { question: <span>วัตถุตกอย่างอิสระจากความสูง 80 เมตร ในช่วง 1 วินาทีสุดท้ายก่อนกระทบพื้น วัตถุเคลื่อนที่ได้ระยะทางกี่เมตร?</span>, options: [`35 m`, `40 m`, `20 m`, `45 m`], answer: 0, explanation: <span>หาเวลาทั้งหมดจาก h=5t² -> 80=5t² -> t=4s; ระยะตก 3s แรก = 5(3²) = 45m; ดังนั้น 1 วินาทีสุดท้ายตก = 80-45 = 35m</span> }},
+        () => { let u=30, h=25; return { question: <span>โยนหินขึ้นฟ้าด้วยความเร็ว 30 m/s นานเท่าใดหินจึงจะอยู่สูงจากพื้น 25 เมตร? (g=10)</span>, options: [`1 และ 5 วินาที`, `2.5 วินาที`, `1 วินาที`, `5 วินาที`], answer: 0, explanation: <span>s = ut - 5t² -> 25 = 30t - 5t² -> t² - 6t + 5 = 0 -> (t-1)(t-5) = 0</span> }},
+        () => { let v=40; return { question: <span>ยิงจรวดขึ้นตรงๆ ด้วยความเร็ว 40 m/s หลังจากนั้น 5 วินาที จรวดจะอยู่สูงจากพื้นกี่เมตร?</span>, options: [`75 m`, `100 m`, `125 m`, `200 m`], answer: 0, explanation: <span>s = ut - 0.5gt² = 40(5) - 5(5²) = 200 - 125 = 75 m</span> }},
+        () => { let u=20, a=-2, s=84; return { question: <span>รถวิ่งด้วยความเร็ว 20 m/s เบรกด้วยความหน่วง 2 m/s² จะใช้เวลาเท่าใดจึงจะไถลไปได้ 84 เมตร?</span>, options: [`6 s`, `8 s`, `10 s`, `14 s`], answer: 0, explanation: <span>s = ut + 0.5at² -> 84 = 20t - t² -> t² - 20t + 84 = 0 -> (t-6)(t-14)=0 ตอบ 6s (14s คือรถถอยหลังซึ่งเป็นไปไม่ได้)</span> }},
+        () => { return { question: <span>รถไฟ A ยาว 50m วิ่งด้วย 10 m/s สวนทางกับรถไฟ B ยาว 100m วิ่งด้วย 20 m/s รถไฟทั้งสองจะใช้เวลาสวนกันพ้นกี่วินาที?</span>, options: [`5 s`, `10 s`, `15 s`, `3 s`], answer: 0, explanation: <span>ความเร็วสัมพัทธ์ (สวนกัน) = 10+20=30 m/s; ระยะทางรวม = 50+100=150 m; t = s/v = 150/30 = 5 s</span> }},
+        () => { let v1=60, v2=40; return { question: <span>ขับรถไปเมือง A ด้วยอัตราเร็ว 60 km/h ขากลับขับด้วย 40 km/h อัตราเร็วเฉลี่ยตลอดการเดินทางคือเท่าใด?</span>, options: [`48 km/h`, `50 km/h`, `52 km/h`, `24 km/h`], answer: 0, explanation: <span>อัตราเร็วเฉลี่ย (ระยะเท่ากัน) = 2(v1v2)/(v1+v2) = 2(60)(40)/100 = 4800/100 = 48 km/h</span> }},
+        () => { return { question: <span>เด็กชายโยนลูกบอลขึ้นไปในแนวดิ่ง ลูกบอลกลับมาถึงมือในเวลา 4 วินาที ความเร็วที่ใช้โยนลูกบอลคือเท่าใด? (g=10)</span>, options: [`20 m/s`, `40 m/s`, `10 m/s`, `80 m/s`], answer: 0, explanation: <span>เวลาขึ้น+ลง = 4s แสดงว่าเวลาขาขึ้น = 2s; v = u - gt -> 0 = u - 10(2) -> u = 20 m/s</span> }},
+        () => { let u=15, h=20; return { question: <span>ชายคนหนึ่งยืนบนหน้าผาสูง 20 m ขว้างหินลงตรงๆ ด้วยความเร็ว 15 m/s หินกระทบพื้นด้วยความเร็วเท่าใด?</span>, options: [`25 m/s`, `20 m/s`, `35 m/s`, `10 m/s`], answer: 0, explanation: <span>v² = u² + 2gh = 15² + 2(10)(20) = 225 + 400 = 625 -> v = 25 m/s</span> }},
+        () => { return { question: <span>ความเร่งโน้มถ่วงบนดวงจันทร์มีค่าประมาณ 1.6 m/s² หากปล่อยของให้ตกจากจุดเดียวกัน เวลาบนดวงจันทร์จะเป็นอย่างไรเทียบกับโลก?</span>, options: [`ใช้เวลามากกว่าบนโลก`, `ใช้เวลาน้อยกว่าบนโลก`, `ใช้เวลาเท่ากัน`, `ไม่มีข้อถูก`], answer: 0, explanation: <span>จาก s = 0.5gt² ถ้า g น้อยลง (แรงดึงดูดน้อย) วัตถุจะตกช้าลง จึงใช้เวลา 'มากกว่า'</span> }},
+        () => { return { question: <span>รถสองคัน A และ B วิ่งด้วยความเร็ว v และ 2v เบรกด้วยความหน่วง a เท่ากัน ระยะเบรกของ B จะเป็นกี่เท่าของ A?</span>, options: [`4 เท่า`, `2 เท่า`, `1 เท่า`, `8 เท่า`], answer: 0, explanation: <span>ระยะเบรก s = u² / 2a ; ถ้าความเร็ว u เพิ่มเป็น 2 เท่า ระยะเบรกจะเพิ่มเป็น 2² = 4 เท่า</span> }},
+        () => { let v=10, a=2; return { question: <span>รถยนต์หยุดนิ่ง เริ่มออกตัวด้วยความเร่ง 2 m/s² ในขณะเดียวกันจักรยานวิ่งผ่านไปด้วยความเร็วคงที่ 10 m/s รถยนต์จะตามทันในกี่วินาที?</span>, options: [`10 s`, `5 s`, `20 s`, `15 s`], answer: 0, explanation: <span>ให้ระยะทางเท่ากัน; s_car = 0.5(2)t² = t²; s_bike = 10t; ดังนั้น t² = 10t -> t = 10 s</span> }},
+        () => { return { question: <span>ความเร็วของเครื่องบินเพิ่มจาก 100 m/s เป็น 120 m/s ในระยะทาง 1100 เมตร จงหาเวลาที่ใช้ในช่วงนี้</span>, options: [`10 s`, `11 s`, `20 s`, `5 s`], answer: 0, explanation: <span>s = ((u+v)/2)t -> 1100 = ((100+120)/2)t -> 1100 = 110t -> t = 10 s</span> }},
+        () => { return { question: <span>หยดน้ำหยดจากหลังคาสูง 5 ม. ทุกๆ 0.5 วินาที ขณะที่หยดแรกกระทบพื้น หยดที่สองอยู่สูงจากพื้นกี่เมตร?</span>, options: [`3.75 m`, `1.25 m`, `2.5 m`, `0 m`], answer: 0, explanation: <span>หยดแรกตกถึงพื้นใช้เวลา: 5=5t² -> t=1s; หยดสองตกมา 0.5s ได้ระยะ s=5(0.5)²=1.25m; สูงจากพื้น = 5 - 1.25 = 3.75 m</span> }},
+        () => { return { question: <span>ปาหินขึ้นแนวดิ่ง ถ้าความเร็วลดลงครึ่งหนึ่งของความเร็วต้น วัตถุจะอยู่ที่ความสูงเป็นเศษส่วนเท่าใดของความสูงสูงสุด?</span>, options: [`3/4`, `1/2`, `1/4`, `1/3`], answer: 0, explanation: <span>v²=u²-2gs -> (u/2)²=u²-2gh -> u²/4 = u²-2gh -> 2gh = 3u²/4; เทียบกับจุดสูงสุด H=u²/2g; จะได้ h = (3/4)H</span> }},
+        () => { return { question: <span>รถวิ่ง 10 m/s คนขับเห็นสุนัขตัดหน้า ใช้เวลาตอบสนอง 0.5s ก่อนเหยียบเบรก เบรกด้วยความหน่วง 5 m/s² ระยะหยุดรถทั้งหมดคือ?</span>, options: [`15 m`, `10 m`, `5 m`, `20 m`], answer: 0, explanation: <span>ระยะคิด(vคงที่) = 10(0.5)=5m; ระยะเบรก(v²=u²+2as) = 10²/(2*5) = 10m; รวม 5+10 = 15m</span> }},
+      ],
+      veryHard: [
+        () => { return { question: <span>ปล่อยหินก้อนแรกตกลงในบ่อลึก 20 m อีก 1 วินาทีต่อมา ปาหินก้อนที่สองตามลงไป หินทั้งสองตกถึงก้นบ่อพร้อมกัน หินก้อนที่สองถูกปาด้วยความเร็วต้นเท่าใด?</span>, options: [`15 m/s`, `10 m/s`, `20 m/s`, `5 m/s`], answer: 0, explanation: <span>เวลาหินแรกตกถึงก้น 20=5t² -> t=2s; หินก้อนสองใช้เวลา 2-1=1s ถึงก้นบ่อ; 20 = u(1) + 5(1)² -> u = 15 m/s</span> }},
+        () => { return { question: <span>โยนวัตถุขึ้นด้วยความเร็ว u จากตึกสูง h วัตถุตกถึงพื้นในเวลา 4s แต่ถ้าขว้างลงด้วยความเร็ว u เท่ากัน จะถึงพื้นใน 2s ตึกสูงเท่าใด?</span>, options: [`40 m`, `20 m`, `60 m`, `30 m`], answer: 0, explanation: <span>(1) -h = u(4)-5(16) -> h=80-4u; (2) h = u(2)+5(4) -> h=2u+20; แก้สมการ 80-4u = 2u+20 -> 6u=60 -> u=10; h=2(10)+20 = 40m</span> }},
+        () => { return { question: <span>ลิฟต์กำลังเคลื่อนที่ขึ้นด้วยความเร็ว 5 m/s คนในลิฟต์ทำเหรียญหลุดมือขณะลิฟต์อยู่สูงจากพื้น 10 m เหรียญจะตกถึงพื้นในเวลากี่วินาที?</span>, options: [`2 s`, `1 s`, `3 s`, `1.5 s`], answer: 0, explanation: <span>ความเร็วเหรียญเทียบพื้น = +5 m/s (ทิศขึ้น); ตกพื้น s=-10; -10 = 5t - 5t² -> t² - t - 2 = 0 -> (t-2)(t+1)=0 -> t=2s</span> }},
+        () => { return { question: <span>บอลลูนลอยลงด้วยความเร็ว 10 m/s คนบนบอลลูนปาของขึ้นด้วยความเร็ว 20 m/s เทียบกับบอลลูน ของมีความเร็วต้นเทียบกับพื้นเท่าใดและทิศใด?</span>, options: [`10 m/s ทิศขึ้น`, `30 m/s ทิศขึ้น`, `10 m/s ทิศลง`, `30 m/s ทิศลง`], answer: 0, explanation: <span>ความเร็วของเทียบกับพื้น = ความเร็วบอลลูน + ความเร็วของเทียบกับบอลลูน = (-10 ลง) + (+20 ขึ้น) = +10 m/s (ทิศขึ้น)</span> }},
+        () => { return { question: <span>ตำรวจขับรถตามผู้ร้ายด้วยความเร็ว 40 m/s ผู้ร้ายวิ่งด้วยความเร็ว 30 m/s คงที่ เมื่อห่างกัน 100 เมตร ตำรวจเบรกด้วยความหน่วง 2 m/s² จะเกิดการชนกันหรือไม่?</span>, options: [`ไม่ชน`, `ชนพอดี`, `ชนและเลยไป`, `ข้อมูลไม่เพียงพอ`], answer: 0, explanation: <span>ความเร็วสัมพัทธ์ u_rel=10 m/s; หยุดเมื่อ v_rel=0; ระยะเบรกสัมพัทธ์ s = 10²/(2*2) = 25m ซึ่งน้อยกว่า 100m จึงไม่ชน</span> }},
+        () => { return { question: <span>จรวดพุ่งขึ้นจากพื้นด้วยความเร่ง 2 m/s² เป็นเวลา 10 วินาที เชื้อเพลิงหมด จรวดจะขึ้นไปได้สูงสุดจากพื้นเท่าใด? (g=10)</span>, options: [`120 m`, `100 m`, `20 m`, `200 m`], answer: 0, explanation: <span>ช่วงแรก: s1 = 0.5(2)(10²) = 100m, v = 0+2(10) = 20m/s; ช่วงสอง(เชื้อเพลิงหมด): ขึ้นไปได้อีก s2 = v²/2g = 400/20 = 20m; รวม 120m</span> }},
+        () => { return { question: <span>ก้อนหินถูกปล่อยจากบอลลูนที่กำลังลอยขึ้นด้วยความเร่ง a ถ้าหินใช้เวลาตกถึงพื้น t วินาที ความเร็วบอลลูนขณะปล่อยคือเท่าใด? (ให้ h เป็นความสูงขณะปล่อย)</span>, options: [`(h - 0.5gt²)/t`, `h/t`, `gt`, `(h + 0.5gt²)/t`], answer: 0, explanation: <span>จาก s = ut + 0.5gt² (ให้ลงเป็นบวก); h = -ut + 0.5gt² -> ut = 0.5gt² - h -> u = (0.5gt² - h)/t = (0.5gt² - h)/t หรือจัดรูปได้ (ถ้าขึ้นบวก -h = ut - 0.5gt² -> ut = 0.5gt² - h) ข้อมูลตามสูตร</span> }}, 
+        () => { return { question: <span>รถวิ่งมาด้วยความเร็ว 30 m/s เบรกจนหยุดในเวลา 5 s ในช่วง 1 วินาทีสุดท้ายก่อนหยุด รถไถลไปได้ระยะทางเท่าใด?</span>, options: [`3 m`, `5 m`, `6 m`, `15 m`], answer: 0, explanation: <span>หาความหน่วง a = 30/5 = 6 m/s²; 1 วินาทีสุดท้าย (เทียบกับถอยหลังจากหยุด) ระยะทาง = 0.5*a*(1²) = 0.5(6)(1) = 3 m</span> }},
+        () => { return { question: <span>ลูกปืนยิงทะลุแผ่นไม้ 1 แผ่น ความเร็วลดลง 10% ถ้านำแผ่นไม้ชนิดเดียวกันมาวางซ้อนกัน ลูกปืนจะทะลุแผ่นไม้ได้มากที่สุดกี่แผ่น?</span>, options: [`5 แผ่น`, `10 แผ่น`, `9 แผ่น`, `4 แผ่น`], answer: 0, explanation: <span>v1 = 0.9u; v1² = u² - 2as -> 0.81u² = u² - 2as -> 2as = 0.19u² (สูญเสีย 19% ต่อแผ่น) ทะลุได้ n = u² / 0.19u² = 5.26 แผ่น ดังนั้นทะลุได้เต็ม 5 แผ่น</span> }},
+        () => { return { question: <span>วัตถุ 2 ก้อน A และ B ปล่อยจากความสูง H และ 4H ตามลำดับ อัตราส่วนของเวลาที่ A และ B ใช้ตกถึงพื้นคือเท่าใด?</span>, options: [`1 : 2`, `1 : 4`, `2 : 1`, `4 : 1`], answer: 0, explanation: <span>จาก t = sqrt(2h/g); t สัดส่วนตรงกับ sqrt(h); ดังนั้น t_A : t_B = sqrt(H) : sqrt(4H) = 1 : 2</span> }},
+        () => { return { question: <span>ชายคนหนึ่งวิ่งไล่รถประจำทางซึ่งจอดอยู่ ห่างกัน 20 m ด้วยความเร็ว 6 m/s คงที่ ขณะเดียวกันรถบัสออกตัวด้วยความเร่ง 1 m/s² เขาจะตามทันหรือไม่?</span>, options: [`ตามไม่ทัน`, `ตามทันใน 4 วินาที`, `ตามทันใน 10 วินาที`, `ตามทันใน 5 วินาที`], answer: 0, explanation: <span>ชาย: 6t; รถ: 20 + 0.5(1)t²; 6t = 20 + 0.5t² -> t² - 12t + 40 = 0 -> b²-4ac = 144 - 160 &lt; 0 ไม่มีคำตอบจริง = ตามไม่ทัน</span> }},
+        () => { return { question: <span>ปล่อยหินก้อนหนึ่งจากปากบ่อลึก ได้ยินเสียงกระทบน้ำในอีก 3 วินาทีต่อมา หากความเร็วเสียงคือ 340 m/s บ่อน้ำลึกประมาณกี่เมตร? (g=10)</span>, options: [`40 m`, `45 m`, `50 m`, `30 m`], answer: 0, explanation: <span>t_ตก + t_เสียง = 3; sqrt(2h/10) + h/340 = 3; ประมาณ h=40m (ตก 2.82s เสียง 0.12s ใกล้เคียงสุด)</span> }},
+        () => { return { question: <span>ทิ้งหินลงจากตึก 2 วินาทีต่อมาทิ้งหินก้อนที่ 2 ตามมา หินทั้งสองก้อนจะอยู่ห่างกันมากขึ้นเรื่อยๆ ด้วยอัตราความเร็วคงที่เท่าใด? (g=10)</span>, options: [`20 m/s`, `10 m/s`, `5 m/s`, `ไม่คงที่`], answer: 0, explanation: <span>ความเร็วสัมพัทธ์ของหินก้อนแรกเทียบก้อนที่สอง = v1 - v2 = 10t - 10(t-2) = 20 m/s คงที่!</span> }},
+        () => { return { question: <span>ระยะทางที่วัตถุตกอย่างอิสระในวินาทีที่ 3 เป็นกี่เท่าของระยะทางในวินาทีที่ 1? (g=10)</span>, options: [`5 เท่า`, `3 เท่า`, `9 เท่า`, `4 เท่า`], answer: 0, explanation: <span>ระยะในวินาทีที่ n สูตร s_n = u + g/2(2n-1) ; s_3 = 5(5)=25, s_1 = 5(1)=5; อัตราส่วน = 25/5 = 5 เท่า</span> }},
+        () => { return { question: <span>ปาบอล 2 ลูกขึ้นแนวดิ่งด้วยความเร็ว u เท่ากัน ลูกที่สองปาหลังจากลูกแรก 1 วินาที บอลทั้งสองจะชนกันที่เวลาใดนับจากปาลูกแรก?</span>, options: [`u/g + 0.5 s`, `u/g + 1 s`, `u/g - 0.5 s`, `u/g s`], answer: 0, explanation: <span>ลูกแรกขาลง ลูกสองขาขึ้น เวลาสมมาตร จะพบกันครึ่งทางของความต่างเวลา 1s คือเวลาขาขึ้นสุด (u/g) + 0.5 วินาที</span> }},
+        () => { return { question: <span>วัตถุเคลื่อนที่ด้วยสมการความเร็ว v = 4t + 2 (m/s) เมื่อเวลา t=2s ถึง t=4s วัตถุได้ระยะทางกี่เมตร?</span>, options: [`28 m`, `20 m`, `24 m`, `32 m`], answer: 0, explanation: <span>อินทิเกรต (หรือพท.กราฟเส้นตรง) s = 2t² + 2t; s(4) = 32+8=40, s(2) = 8+4=12; s = 40-12 = 28 m</span> }},
+        () => { return { question: <span>โยนวัตถุขึ้นด้วยความเร็ว u ภายในเสี้ยววินาที t ที่วัตถุผ่านจุดความสูง h ขาขึ้นและขาลง ความสัมพันธ์ใดถูกต้อง?</span>, options: [`t1 + t2 = 2u/g`, `t1 * t2 = 2h/g`, `ถูกทั้ง ก. และ ข.`, `ไม่มีข้อถูก`], answer: 2, explanation: <span>จาก h = ut - 0.5gt² -> 0.5gt² - ut + h = 0 ผลบวกราก = -b/a = u/(g/2) = 2u/g, ผลคูณราก = c/a = h/(g/2) = 2h/g</span> }},
+        () => { return { question: <span>กราฟความเร่ง a เทียบกับการกระจัด s มีพื้นที่ใต้กราฟ (Integral a ds) คือปริมาณใด?</span>, options: [`(v² - u²)/2`, `v - u`, `v² - u²`, `(v - u)/2`], answer: 0, explanation: <span>a = v(dv/ds) -> a ds = v dv -> อินทิเกรตจะได้ 0.5v² - 0.5u²</span> }},
+        () => { return { question: <span>รถไฟขบวนหนึ่งเคลื่อนที่จากสถานี A ไป B เริ่มด้วยความเร่ง a จากนั้นวิ่งความเร็วคงที่ แล้วเบรกด้วยความหน่วง a ใช้เวลาทั้งหมด t ระยะทางคือ?</span>, options: [`สามารถคำนวณได้ถ้าทราบ Vmax`, `at²/2`, `at²/4`, `at²`], answer: 0, explanation: <span>โจทย์ข้อนี้เป็นกราฟ v-t รูปสี่เหลี่ยมคางหมู ต้องทราบความเร็วสูงสุด (Vmax) หรือเวลาช่วงที่วิ่งคงที่จึงจะหาระยะได้</span> }},
+        () => { return { question: <span>รถเร่งจากหยุดนิ่งด้วย a1 แล้วเบรกด้วย a2 จนหยุดนิ่ง ใช้เวลารวม t วินาที ความเร็วสูงสุด Vmax มีค่าเท่าใด?</span>, options: [`(a1*a2*t) / (a1+a2)`, `(a1+a2)*t / 2`, `sqrt(a1*a2)*t`, `(a1+a2)*t`], answer: 0, explanation: <span>Vmax = a1*t1 = a2*t2; และ t1+t2 = t; จะได้ Vmax/a1 + Vmax/a2 = t -> Vmax(1/a1 + 1/a2) = t -> Vmax = (a1*a2*t)/(a1+a2)</span> }},
+      ]
+    };
+
+    // Helper: Shuffle Array
+    const shuffleArray = (array) => [...array].sort(() => Math.random() - 0.5);
+
+    // --- Main Application Component ---
+    function App() {
+      const [currentScreen, setCurrentScreen] = useState('home');
+      const [flashcardIdx, setFlashcardIdx] = useState(0);
+      const [isFlipped, setIsFlipped] = useState(false);
+      const [learnTab, setLearnTab] = useState('flashcard'); 
+      
+      // Test Config: Changed amount options to [5, 10, 20]
+      const [testConfig, setTestConfig] = useState({ difficulty: 'easy', amount: 5 });
+      const [testData, setTestData] = useState([]);
+      const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
+      const [score, setScore] = useState(0);
+      const [selectedAnswer, setSelectedAnswer] = useState(null);
+      const [isAnswered, setIsAnswered] = useState(false);
+
+      const startTest = () => {
+        // ดึงคลังข้อสอบตามระดับความยาก
+        const pool = questionBank[testConfig.difficulty];
+        // สับเปลี่ยน (Shuffle) คลังทั้งหมด เพื่อให้ไม่ซ้ำแพทเทิร์นเดิม
+        const shuffledPool = shuffleArray(pool);
+        // เลือกจำนวนข้อตามที่ตั้งค่า
+        const selectedFns = shuffledPool.slice(0, testConfig.amount);
+        
+        // รันฟังก์ชันสร้างข้อสอบและสับเปลี่ยนชอยส์
+        const generatedQuestions = selectedFns.map(fn => {
+          const q = fn();
+          const originalOptions = [...q.options];
+          const correctAnswerText = originalOptions[q.answer];
+          
+          q.options = shuffleArray(q.options);
+          q.answer = q.options.indexOf(correctAnswerText);
+          
+          return q;
+        });
+
+        setTestData(generatedQuestions);
+        setCurrentQuestionIdx(0);
+        setScore(0);
+        setSelectedAnswer(null);
+        setIsAnswered(false);
+        setCurrentScreen('testing');
+      };
+
+      const handleAnswer = (index) => {
+        if (isAnswered) return;
+        setSelectedAnswer(index);
+        setIsAnswered(true);
+        if (index === testData[currentQuestionIdx].answer) setScore(s => s + 1);
+      };
+
+      const nextQuestion = () => {
+        if (currentQuestionIdx + 1 < testData.length) {
+          setCurrentQuestionIdx(prev => prev + 1);
+          setSelectedAnswer(null);
+          setIsAnswered(false);
+        } else {
+          setCurrentScreen('result');
+        }
+      };
+
+      // --- Screens ---
+      const renderHome = () => (
+        <div className="flex flex-col items-center justify-center min-h-screen p-6 bg-gradient-to-br from-blue-50 via-pink-50 to-purple-50">
+          <div className="bg-white/80 backdrop-blur-md p-8 rounded-3xl shadow-xl border border-white/50 text-center max-w-md w-full">
+            <div className="w-24 h-24 mx-auto bg-gradient-to-tr from-indigo-200 to-rose-200 rounded-full flex items-center justify-center mb-6 shadow-inner">
+               <span className="text-4xl font-bold text-indigo-500 math-text">1D</span>
+            </div>
+            <h1 className="text-3xl font-bold text-gray-800 mb-2">ฟิสิกส์ ม.ปลาย</h1>
+            <h2 className="text-xl text-gray-600 mb-8 font-medium">การเคลื่อนที่ใน 1 มิติ</h2>
+            
+            <div className="space-y-4">
+              <button onClick={() => setCurrentScreen('learn')} className="w-full flex items-center justify-center space-x-3 bg-gradient-to-r from-blue-400 to-indigo-400 hover:from-blue-500 hover:to-indigo-500 text-white p-4 rounded-2xl transition-all shadow-md hover:shadow-lg transform hover:-translate-y-1">
+                <Icon name={icons.BookOpen} size={24} /> <span className="text-lg font-semibold ml-2">โหมดฝึกเรียนรู้ & แบบจำลอง</span>
+              </button>
+              
+              <button onClick={() => setCurrentScreen('setupTest')} className="w-full flex items-center justify-center space-x-3 bg-gradient-to-r from-rose-400 to-pink-400 hover:from-rose-500 hover:to-pink-500 text-white p-4 rounded-2xl transition-all shadow-md hover:shadow-lg transform hover:-translate-y-1">
+                <Icon name={icons.PenTool} size={24} /> <span className="text-lg font-semibold ml-2">แบบทดสอบวัดความเข้าใจ</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+
+      const AdvancedSimulation = () => {
+        const [p1, setP1] = useState({ s: 40, t: 4 }); 
+        const [p2, setP2] = useState({ s: -20, t: 2 }); 
+        const [simState, setSimState] = useState('idle'); 
+        const [pos, setPos] = useState(0); 
+        const [elapsedTime, setElapsedTime] = useState(0);
+        const [accumulatedDistance, setAccumulatedDistance] = useState(0);
+        
+        const animRef = useRef(null);
+
+        const target1 = p1.s;
+        const target2 = target1 + p2.s;
+        const minPos = Math.min(0, target1, target2) - 10; 
+        const maxPos = Math.max(0, target1, target2) + 10; 
+        const totalRange = Math.max(maxPos - minPos, 1); 
+
+        const getPercent = (value) => ((value - minPos) / totalRange) * 100;
+
+        useEffect(() => {
+          if (simState === 'part1' || simState === 'part2') {
+            let startTime = performance.now();
+            const startPos = simState === 'part1' ? 0 : target1;
+            const targetPos = simState === 'part1' ? target1 : target2;
+            const duration = (simState === 'part1' ? p1.t : p2.t) * 1000; 
+            const startDist = simState === 'part1' ? 0 : Math.abs(p1.s);
+            const startT = simState === 'part1' ? 0 : p1.t;
+
+            const animate = (currentTime) => {
+              const timePassed = currentTime - startTime;
+              let progress = timePassed / duration;
+              if (progress >= 1) progress = 1;
+
+              const currentP = startPos + (targetPos - startPos) * progress;
+              setPos(currentP);
+              setElapsedTime(startT + (timePassed / 1000) * (progress >= 1 ? 1 : 1));
+              setAccumulatedDistance(startDist + Math.abs(currentP - startPos));
+
+              if (progress < 1) {
+                animRef.current = requestAnimationFrame(animate);
+              } else {
+                setSimState(simState === 'part1' ? 'part2' : 'finished');
+              }
+            };
+            animRef.current = requestAnimationFrame(animate);
+          }
+          return () => cancelAnimationFrame(animRef.current);
+        }, [simState, p1, p2, target1, target2]);
+
+        const handlePlay = () => { setPos(0); setElapsedTime(0); setAccumulatedDistance(0); setSimState('part1'); };
+        const handleReset = () => { cancelAnimationFrame(animRef.current); setPos(0); setElapsedTime(0); setAccumulatedDistance(0); setSimState('idle'); };
+
+        const totalT = p1.t + p2.t;
+        const finalDistance = Math.abs(p1.s) + Math.abs(p2.s);
+        const finalDisplacement = p1.s + p2.s;
+        const avgSpeed = totalT > 0 ? finalDistance / totalT : 0;
+        const avgVelocity = totalT > 0 ? finalDisplacement / totalT : 0;
+        const isMovingLeft = (simState === 'part1' && p1.s < 0) || (simState === 'part2' && p2.s < 0);
+
+        return (
+          <div className="bg-white p-6 rounded-3xl shadow-sm border border-indigo-50 mb-6">
+            <div className="flex justify-between items-center mb-4 border-b pb-4">
+              <h3 className="text-xl font-bold text-gray-800 flex items-center">
+                <Icon name={icons.Play} className="text-indigo-500 mr-2" size={20}/> แบบจำลอง: การเคลื่อนที่ 2 ช่วง
+              </h3>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100">
+                <h4 className="font-bold text-blue-800 mb-2">ช่วงที่ 1 (Part 1)</h4>
+                <div className="flex space-x-2">
+                  <div className="flex-1">
+                    <label className="text-xs text-gray-500">การกระจัด (m)</label>
+                    <input type="number" value={p1.s} onChange={e => setP1({...p1, s: Number(e.target.value)})} disabled={simState !== 'idle'} className="w-full p-2 rounded-lg border text-center font-bold math-num" />
+                  </div>
+                  <div className="flex-1">
+                    <label className="text-xs text-gray-500">เวลา (s)</label>
+                    <input type="number" min="0.1" step="0.1" value={p1.t} onChange={e => setP1({...p1, t: Math.max(0.1, Number(e.target.value))})} disabled={simState !== 'idle'} className="w-full p-2 rounded-lg border text-center font-bold math-num" />
+                  </div>
+                </div>
+              </div>
+              <div className="bg-rose-50/50 p-4 rounded-xl border border-rose-100">
+                <h4 className="font-bold text-rose-800 mb-2">ช่วงที่ 2 (Part 2)</h4>
+                <div className="flex space-x-2">
+                  <div className="flex-1">
+                    <label className="text-xs text-gray-500">การกระจัด (m)</label>
+                    <input type="number" value={p2.s} onChange={e => setP2({...p2, s: Number(e.target.value)})} disabled={simState !== 'idle'} className="w-full p-2 rounded-lg border text-center font-bold math-num" />
+                  </div>
+                  <div className="flex-1">
+                    <label className="text-xs text-gray-500">เวลา (s)</label>
+                    <input type="number" min="0.1" step="0.1" value={p2.t} onChange={e => setP2({...p2, t: Math.max(0.1, Number(e.target.value))})} disabled={simState !== 'idle'} className="w-full p-2 rounded-lg border text-center font-bold math-num" />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-center space-x-4 mb-6">
+              <button onClick={handlePlay} disabled={simState !== 'idle'} className="px-6 py-2 bg-emerald-500 text-white rounded-full font-bold hover:bg-emerald-600 disabled:opacity-50 flex items-center transition-colors shadow-sm">
+                <Icon name={icons.Play} size={18} className="mr-2" /> เริ่มการจำลอง
+              </button>
+              <button onClick={handleReset} className="px-6 py-2 bg-gray-200 text-gray-700 rounded-full font-bold hover:bg-gray-300 flex items-center transition-colors">
+                <Icon name={icons.RotateCcw} size={18} className="mr-2" /> รีเซ็ต
+              </button>
+            </div>
+            <div className="relative w-full h-32 bg-slate-50 rounded-xl overflow-hidden border-2 border-slate-200 mb-6 flex items-center shadow-inner">
+              <div className="absolute top-1/2 left-0 w-full h-0.5 bg-gray-300"></div>
+              <div className="absolute top-1/2 w-0.5 h-4 bg-gray-800 -translate-y-1/2" style={{ left: `${getPercent(0)}%` }}></div>
+              <div className="absolute top-[60%] text-xs font-bold text-gray-800 math-num -translate-x-1/2" style={{ left: `${getPercent(0)}%` }}>0</div>
+              {p1.s !== 0 && (
+                <>
+                  <div className="absolute top-1/2 w-0.5 h-3 bg-blue-400 -translate-y-1/2" style={{ left: `${getPercent(target1)}%` }}></div>
+                  <div className="absolute top-[60%] text-[10px] text-blue-600 math-num -translate-x-1/2" style={{ left: `${getPercent(target1)}%` }}>{target1}m</div>
+                </>
+              )}
+              {p2.s !== 0 && (
+                <>
+                  <div className="absolute top-1/2 w-0.5 h-3 bg-rose-400 -translate-y-1/2" style={{ left: `${getPercent(target2)}%` }}></div>
+                  <div className="absolute top-[60%] text-[10px] text-rose-600 math-num -translate-x-1/2" style={{ left: `${getPercent(target2)}%` }}>{target2}m</div>
+                </>
+              )}
+              <div className="absolute top-1/2 -translate-y-[85%] transition-transform duration-75" style={{ left: `${getPercent(pos)}%`, transform: `translate(-50%, -85%) ${isMovingLeft ? 'scaleX(-1)' : 'scaleX(1)'}`, zIndex: 10 }}>
+                <div className="text-3xl filter drop-shadow-md">🚗</div>
+              </div>
+              {Math.abs(pos) > 0.1 && (
+                <div className={`absolute top-[30%] h-1 bg-indigo-500 flex items-center transition-all duration-75 ${pos < 0 ? 'justify-start' : 'justify-end'}`} style={{ left: pos >= 0 ? `${getPercent(0)}%` : `${getPercent(pos)}%`, width: `${Math.abs(getPercent(pos) - getPercent(0))}%` }}>
+                  <div className="w-3 h-3 border-t-[3px] border-r-[3px] border-indigo-500" style={{ transform: pos < 0 ? 'rotate(-135deg)' : 'rotate(45deg)', marginRight: pos > 0 ? '-1px' : '0', marginLeft: pos < 0 ? '-1px' : '0' }}></div>
+                </div>
+              )}
+            </div>
+            <div className="grid grid-cols-3 gap-2 md:gap-4 text-center mb-6">
+              <div className="bg-amber-50 p-2 rounded-xl">
+                <div className="text-xs text-gray-500">เวลา (Live)</div>
+                <div className="font-bold text-amber-600 math-num">{elapsedTime.toFixed(1)} s</div>
+              </div>
+              <div className="bg-rose-50 p-2 rounded-xl">
+                <div className="text-xs text-gray-500">ระยะทาง (Live)</div>
+                <div className="font-bold text-rose-600 math-num">{accumulatedDistance.toFixed(1)} m</div>
+              </div>
+              <div className="bg-indigo-50 p-2 rounded-xl">
+                <div className="text-xs text-gray-500">การกระจัด (Live)</div>
+                <div className="font-bold text-indigo-600 math-num">{pos.toFixed(1)} m</div>
+              </div>
+            </div>
+            {(simState === 'finished' || simState === 'idle') && (
+              <div className="bg-slate-800 text-white p-5 rounded-2xl animate-fade-in-up">
+                <h4 className="font-bold mb-3 flex items-center text-emerald-400">
+                  <Icon name={icons.CheckCircle} size={18} className="mr-2"/> สรุปผลการเคลื่อนที่
+                </h4>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div>
+                    <div className="text-gray-400 text-xs">ระยะทางรวม</div>
+                    <div className="font-bold text-xl math-num text-rose-300">{finalDistance} m</div>
+                  </div>
+                  <div>
+                    <div className="text-gray-400 text-xs">การกระจัดรวม</div>
+                    <div className="font-bold text-xl math-num text-indigo-300">{finalDisplacement} m</div>
+                  </div>
+                  <div>
+                    <div className="text-gray-400 text-xs">อัตราเร็วเฉลี่ย (<Scalar char="v"/>)</div>
+                    <div className="font-bold text-xl math-num text-orange-300">{avgSpeed.toFixed(2)} m/s</div>
+                  </div>
+                  <div>
+                    <div className="text-gray-400 text-xs">ความเร็วเฉลี่ย (<Vec char="v"/>)</div>
+                    <div className="font-bold text-xl math-num text-cyan-300">{avgVelocity.toFixed(2)} m/s</div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      };
+
+      // --- New Free Fall Simulation Component ---
+      const FreeFallSimulation = () => {
+        const [mode, setMode] = useState('drop'); 
+        const [u, setU] = useState(20); 
+        const [h, setH] = useState(50);
+        const [g, setG] = useState(10); 
+        
+        const [simState, setSimState] = useState('idle'); 
+        const [t, setT] = useState(0); 
+        const [y, setY] = useState(50); 
+        const [v, setV] = useState(0); 
+        
+        const animRef = useRef(null);
+
+        const actualU = mode === 'drop' ? 0 : u;
+        const safeH = Math.max(0, h);
+        const safeG = Math.max(0.1, g);
+        
+        const totalTime = (actualU + Math.sqrt(actualU * actualU + 2 * safeG * safeH)) / safeG;
+        const maxHeight = actualU > 0 ? safeH + (actualU * actualU) / (2 * safeG) : safeH;
+        const finalVelocity = actualU - safeG * totalTime; 
+
+        const displayMaxHeight = Math.max(10, maxHeight * 1.15); 
+        const getPercent = (val) => Math.max(0, Math.min(100, (val / displayMaxHeight) * 100));
+
+        useEffect(() => {
+          if (simState === 'idle') {
+            setY(safeH);
+            setT(0);
+            setV(actualU);
+          }
+        }, [simState, safeH, actualU]);
+
+        useEffect(() => {
+          if (simState === 'running') {
+            let startTime = performance.now();
+            const animate = (currentTime) => {
+              const elapsedTime = (currentTime - startTime) / 1000; 
+              if (elapsedTime >= totalTime) {
+                setT(totalTime);
+                setY(0);
+                setV(finalVelocity);
+                setSimState('finished');
+              } else {
+                setT(elapsedTime);
+                setY(safeH + actualU * elapsedTime - 0.5 * safeG * elapsedTime * elapsedTime);
+                setV(actualU - safeG * elapsedTime);
+                animRef.current = requestAnimationFrame(animate);
+              }
+            };
+            animRef.current = requestAnimationFrame(animate);
+          }
+          return () => cancelAnimationFrame(animRef.current);
+        }, [simState, safeH, actualU, safeG, totalTime, finalVelocity]);
+
+        const handlePlay = () => setSimState('running');
+        const handleReset = () => { cancelAnimationFrame(animRef.current); setSimState('idle'); };
+
+        return (
+          <div className="bg-white p-6 rounded-3xl shadow-sm border border-indigo-50 mb-6">
+            <div className="flex justify-between items-center mb-4 border-b pb-4">
+              <h3 className="text-xl font-bold text-gray-800 flex items-center">
+                <Icon name={icons.Play} className="text-indigo-500 mr-2" size={20}/> แบบจำลอง: การตกแบบเสรี (แนวดิ่ง)
+              </h3>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              <div className="bg-sky-50 p-4 rounded-xl border border-sky-100">
+                <h4 className="font-bold text-sky-800 mb-2">ตั้งค่าเริ่มต้น</h4>
+                <div className="flex space-x-2 mb-4">
+                   <button onClick={() => {setMode('drop'); setSimState('idle');}} className={`flex-1 py-2 rounded-lg border text-sm font-bold transition-all shadow-sm ${mode === 'drop' ? 'bg-sky-500 text-white border-sky-600' : 'bg-white text-gray-500 hover:bg-gray-50'}`}>ปล่อยตก (u=0)</button>
+                   <button onClick={() => {setMode('throw'); setSimState('idle');}} className={`flex-1 py-2 rounded-lg border text-sm font-bold transition-all shadow-sm ${mode === 'throw' ? 'bg-sky-500 text-white border-sky-600' : 'bg-white text-gray-500 hover:bg-gray-50'}`}>โยนขึ้น (u&gt;0)</button>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs text-gray-500">ความสูงต้น h (m)</label>
+                    <input type="number" min="0" value={h} onChange={e => {setH(Number(e.target.value)); setSimState('idle');}} disabled={simState !== 'idle'} className="w-full p-2 rounded-lg border text-center font-bold math-num" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500">ความเร่ง g (m/s²)</label>
+                    <input type="number" min="0.1" step="0.1" value={g} onChange={e => {setG(Number(e.target.value)); setSimState('idle');}} disabled={simState !== 'idle'} className="w-full p-2 rounded-lg border text-center font-bold math-num" />
+                  </div>
+                  {mode === 'throw' && (
+                    <div className="col-span-2">
+                      <label className="text-xs text-gray-500">ความเร็วต้น u (m/s)</label>
+                      <input type="number" value={u} onChange={e => {setU(Number(e.target.value)); setSimState('idle');}} disabled={simState !== 'idle'} className="w-full p-2 rounded-lg border text-center font-bold math-num" />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex flex-col justify-center items-center p-2">
+                 <div className="flex space-x-4 mb-6">
+                  <button onClick={handlePlay} disabled={simState !== 'idle'} className="px-6 py-3 bg-emerald-500 text-white rounded-full font-bold hover:bg-emerald-600 disabled:opacity-50 flex items-center transition-colors shadow-md transform hover:-translate-y-0.5">
+                    <Icon name={icons.Play} size={18} className="mr-2" /> เริ่มการจำลอง
+                  </button>
+                  <button onClick={handleReset} className="px-6 py-3 bg-gray-200 text-gray-700 rounded-full font-bold hover:bg-gray-300 flex items-center transition-colors shadow-sm">
+                    <Icon name={icons.RotateCcw} size={18} className="mr-2" /> รีเซ็ต
+                  </button>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-3 w-full text-center">
+                  <div className="bg-amber-50 p-3 rounded-xl border border-amber-100">
+                    <div className="text-xs text-amber-600 font-semibold mb-1">เวลา (t)</div>
+                    <div className="font-bold text-amber-700 math-num text-lg">{t.toFixed(2)} s</div>
+                  </div>
+                  <div className="bg-indigo-50 p-3 rounded-xl border border-indigo-100">
+                    <div className="text-xs text-indigo-600 font-semibold mb-1">ความเร็ว (v)</div>
+                    <div className="font-bold text-indigo-700 math-num text-lg">{v.toFixed(2)} m/s</div>
+                  </div>
+                  <div className="bg-rose-50 p-3 rounded-xl border border-rose-100 col-span-2">
+                    <div className="text-xs text-rose-600 font-semibold mb-1">ความสูงจากพื้น (y)</div>
+                    <div className="font-bold text-rose-700 math-num text-xl">{y.toFixed(2)} m</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Visualizer */}
+            <div className="relative w-full h-[350px] bg-gradient-to-b from-sky-50 to-blue-100 rounded-2xl overflow-hidden border-2 border-slate-200 mb-6 flex flex-col shadow-inner">
+              <div className="relative flex-1 w-full">
+                 {/* Height markers */}
+                 <div className="absolute left-8 top-4 bottom-0 border-l-2 border-dashed border-slate-400 opacity-50"></div>
+                 
+                 <div className="absolute left-10 text-xs text-slate-600 font-bold math-num bg-white/70 px-2 py-0.5 rounded-full" style={{ bottom: `${getPercent(safeH)}%`, transform: 'translateY(50%)' }}>h = {safeH}m</div>
+                 {maxHeight > safeH && (
+                    <div className="absolute left-10 text-xs text-rose-600 font-bold math-num bg-rose-50/80 px-2 py-0.5 rounded-full border border-rose-100" style={{ bottom: `${getPercent(maxHeight)}%`, transform: 'translateY(50%)' }}>H_max = {maxHeight.toFixed(1)}m</div>
+                 )}
+                 
+                 {/* Object */}
+                 <div 
+                    className="absolute left-1/2 transition-transform duration-75 text-5xl filter drop-shadow-md z-10 -ml-6"
+                    style={{ 
+                      bottom: `${getPercent(y)}%`,
+                    }}
+                  >
+                    🍎
+                  </div>
+              </div>
+
+              {/* Ground */}
+              <div className="h-10 w-full bg-emerald-500 border-t-4 border-emerald-600 flex items-center justify-center text-emerald-100 text-sm font-bold z-20 shadow-[0_-4px_10px_rgba(0,0,0,0.15)]">
+                 พื้นดิน (y = 0)
+              </div>
+            </div>
+
+            {(simState === 'finished' || simState === 'idle') && (
+              <div className="bg-slate-800 text-white p-5 rounded-2xl animate-fade-in-up">
+                <h4 className="font-bold mb-4 flex items-center text-sky-400 border-b border-slate-700 pb-3">
+                  <Icon name={icons.CheckCircle} size={18} className="mr-2"/> สรุปผลการเคลื่อนที่แนวดิ่ง
+                </h4>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div>
+                    <div className="text-slate-400 text-xs mb-1">เวลาทั้งหมดในอากาศ (t)</div>
+                    <div className="font-bold text-xl math-num text-amber-300">{totalTime.toFixed(2)} s</div>
+                  </div>
+                  <div>
+                    <div className="text-slate-400 text-xs mb-1">ความเร็วขณะกระทบพื้น (v)</div>
+                    <div className="font-bold text-xl math-num text-indigo-300">{finalVelocity.toFixed(2)} m/s</div>
+                  </div>
+                  <div>
+                    <div className="text-slate-400 text-xs mb-1">การกระจัดลัพธ์ (s)</div>
+                    <div className="font-bold text-xl math-num text-cyan-300">{-safeH} m</div>
+                  </div>
+                  <div>
+                    <div className="text-slate-400 text-xs mb-1">ความสูงสูงสุดจากพื้น (H_max)</div>
+                    <div className="font-bold text-xl math-num text-rose-300">{maxHeight.toFixed(2)} m</div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      };
+
+      const renderLearn = () => {
+        const card = flashcardsData[flashcardIdx];
+        const nextCard = () => { setIsFlipped(false); setTimeout(() => setFlashcardIdx((prev) => (prev + 1) % flashcardsData.length), 150); };
+        const prevCard = () => { setIsFlipped(false); setTimeout(() => setFlashcardIdx((prev) => (prev - 1 + flashcardsData.length) % flashcardsData.length), 150); };
+
+        return (
+          <div className="min-h-screen bg-slate-50 p-4 sm:p-6 pb-20">
+            <div className="max-w-3xl mx-auto">
+              <button onClick={() => setCurrentScreen('home')} className="flex items-center text-gray-600 hover:text-indigo-500 mb-6 transition-colors font-bold">
+                <Icon name={icons.ArrowLeft} size={20} className="mr-2" /> กลับหน้าหลัก
+              </button>
+              
+              <div className="flex bg-white rounded-xl p-1 mb-6 shadow-sm border overflow-x-auto whitespace-nowrap">
+                 <button onClick={() => {setLearnTab('flashcard'); setIsFlipped(false);}} className={`flex-1 py-2 px-3 text-sm md:text-base text-center rounded-lg font-bold transition-all ${learnTab === 'flashcard' ? 'bg-indigo-100 text-indigo-700' : 'text-gray-500 hover:bg-gray-50'}`}>แฟลชการ์ด</button>
+                 <button onClick={() => setLearnTab('sim')} className={`flex-1 py-2 px-3 text-sm md:text-base text-center rounded-lg font-bold transition-all ${learnTab === 'sim' ? 'bg-indigo-100 text-indigo-700' : 'text-gray-500 hover:bg-gray-50'}`}>แนวราบ 2 ช่วง</button>
+                 <button onClick={() => setLearnTab('freefall')} className={`flex-1 py-2 px-3 text-sm md:text-base text-center rounded-lg font-bold transition-all ${learnTab === 'freefall' ? 'bg-indigo-100 text-indigo-700' : 'text-gray-500 hover:bg-gray-50'}`}>ตกเสรี (แนวดิ่ง)</button>
+              </div>
+
+              {learnTab === 'sim' && <AdvancedSimulation />}
+              {learnTab === 'freefall' && <FreeFallSimulation />}
+
+              {learnTab === 'flashcard' && (
+                <div className="flex flex-col items-center">
+                  <div className="text-gray-500 mb-2 font-bold math-num">{flashcardIdx + 1} / {flashcardsData.length}</div>
+                  <div className="relative w-full max-w-md perspective-1000 mb-8 cursor-pointer group" onClick={() => setIsFlipped(!isFlipped)}>
+                    <div className={`w-full min-h-[320px] bg-white rounded-3xl shadow-lg border-2 ${isFlipped ? 'border-rose-200' : 'border-indigo-100'} p-8 flex flex-col justify-center items-center text-center transition-all duration-300 transform group-hover:shadow-xl`}>
+                      <div key={isFlipped ? 'back' : 'front'} className="flip-anim w-full">
+                        {!isFlipped ? (
+                          <div className="text-3xl font-bold text-gray-800 flex flex-col items-center">
+                            {card.front}
+                            <p className="text-sm text-gray-400 mt-6 font-normal flex items-center"><Icon name={icons.FlipHorizontal} size={16} className="mr-2"/> แตะเพื่อพลิกดูความหมาย</p>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col items-center w-full">
+                             <h3 className="text-2xl font-bold text-indigo-600 mb-4">{card.backTitle}</h3>
+                             <div className="text-gray-700 mb-4 leading-relaxed font-medium">{card.backDesc}</div>
+                             <div className="bg-gray-100 px-4 py-1 rounded-full text-sm text-gray-600 font-bold mb-6">หน่วย: <span className="math-num text-indigo-600 ml-1">{card.unit}</span></div>
+                             {card.condition && (
+                               <div className="bg-rose-50 border border-rose-100 text-rose-700 p-4 rounded-xl text-left w-full text-sm font-medium">{card.condition}</div>
+                             )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex space-x-6">
+                    <button onClick={prevCard} className="p-4 bg-white rounded-full shadow border hover:bg-gray-50 text-indigo-500"><Icon name={icons.ChevronLeft} size={24}/></button>
+                    <button onClick={nextCard} className="p-4 bg-white rounded-full shadow border hover:bg-gray-50 text-indigo-500"><Icon name={icons.ChevronRight} size={24}/></button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      };
+
+      const renderTestSetup = () => (
+        <div className="flex flex-col items-center justify-center min-h-screen p-6 bg-gradient-to-br from-rose-50 via-orange-50 to-amber-50">
+          <div className="w-full max-w-md">
+            <button onClick={() => setCurrentScreen('home')} className="flex items-center text-gray-600 hover:text-rose-500 mb-6 transition-colors">
+              <Icon name={icons.ArrowLeft} size={20} className="mr-2" /> กลับหน้าหลัก
+            </button>
+
+            <div className="bg-white/90 backdrop-blur-md p-8 rounded-3xl shadow-xl border border-white/50">
+              <div className="flex items-center justify-center w-16 h-16 bg-rose-100 text-rose-500 rounded-full mx-auto mb-4">
+                <Icon name={icons.Settings} size={32} />
+              </div>
+              <h2 className="text-2xl font-bold text-center text-gray-800 mb-8">ตั้งค่าแบบทดสอบ</h2>
+
+              <div className="mb-6">
+                <label className="block text-sm font-semibold text-gray-600 mb-3">ระดับความยาก</label>
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { id: 'easy', label: 'ง่าย (Easy)', color: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
+                    { id: 'medium', label: 'ปานกลาง (Medium)', color: 'bg-blue-100 text-blue-700 border-blue-200' },
+                    { id: 'hard', label: 'ยาก (Hard)', color: 'bg-amber-100 text-amber-700 border-amber-200' },
+                    { id: 'veryHard', label: 'ยากมาก (Very Hard)', color: 'bg-rose-100 text-rose-700 border-rose-200' },
+                  ].map(lvl => (
+                    <button
+                      key={lvl.id}
+                      onClick={() => setTestConfig({...testConfig, difficulty: lvl.id})}
+                      className={`p-3 rounded-xl border transition-all ${testConfig.difficulty === lvl.id ? `ring-2 ring-offset-2 ring-${lvl.color.split('-')[1]}-400 ${lvl.color}` : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'}`}
+                    >
+                      <div className="font-semibold">{lvl.label}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mb-8">
+                <label className="block text-sm font-semibold text-gray-600 mb-3">จำนวนข้อ (ไม่ซ้ำ)</label>
+                <div className="flex space-x-3">
+                  {[5, 10, 20].map(num => (
+                    <button
+                      key={num}
+                      onClick={() => setTestConfig({...testConfig, amount: num})}
+                      className={`flex-1 py-3 rounded-xl border transition-all ${testConfig.amount === num ? 'bg-indigo-100 text-indigo-700 border-indigo-300 ring-2 ring-offset-2 ring-indigo-400 font-bold' : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'}`}
+                    >
+                      <span className="math-num text-lg">{num}</span> ข้อ
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <button onClick={startTest} className="w-full py-4 bg-gradient-to-r from-rose-400 to-pink-500 hover:from-rose-500 hover:to-pink-600 text-white rounded-2xl font-bold text-lg shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1 flex justify-center items-center">
+                เริ่มทำแบบทดสอบ <Icon name={icons.Play} size={20} className="ml-2" />
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+
+      const renderTesting = () => {
+        const q = testData[currentQuestionIdx];
+        const progress = ((currentQuestionIdx) / testData.length) * 100;
+
+        return (
+          <div className="min-h-screen bg-slate-50 p-4 sm:p-6 pb-24 flex flex-col items-center">
+            <div className="w-full max-w-2xl">
+              <div className="flex justify-between items-center mb-4">
+                <button 
+                  onClick={() => { if(window.confirm('ต้องการออกจากการทดสอบใช่หรือไม่? คะแนนจะไม่ถูกบันทึก')) setCurrentScreen('home'); }}
+                  className="text-gray-400 hover:text-rose-500 transition-colors"
+                >
+                  <Icon name={icons.XCircle} size={24} />
+                </button>
+                <div className="text-gray-500 font-semibold math-num">
+                  {currentQuestionIdx + 1} / {testData.length}
+                </div>
+              </div>
+              
+              <div className="w-full bg-gray-200 rounded-full h-2 mb-8 overflow-hidden">
+                <div className="bg-indigo-500 h-2 rounded-full transition-all duration-300 ease-out" style={{ width: `${progress}%` }}></div>
+              </div>
+
+              <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-md border border-gray-100 mb-6 min-h-[150px] flex items-center justify-center text-center">
+                <h3 className="text-xl sm:text-2xl font-bold text-gray-800 leading-relaxed">{q.question}</h3>
+              </div>
+
+              <div className="space-y-3">
+                {q.options.map((opt, idx) => {
+                  let btnClass = "w-full p-4 rounded-2xl text-left font-medium border-2 transition-all duration-200 ";
+                  if (!isAnswered) {
+                    btnClass += selectedAnswer === idx ? "border-indigo-400 bg-indigo-50 text-indigo-700" : "border-gray-100 bg-white hover:border-indigo-200 hover:bg-indigo-50/50 text-gray-700";
+                  } else {
+                    if (idx === q.answer) btnClass += "border-emerald-400 bg-emerald-50 text-emerald-700 shadow-sm"; 
+                    else if (idx === selectedAnswer) btnClass += "border-rose-400 bg-rose-50 text-rose-700"; 
+                    else btnClass += "border-gray-100 bg-gray-50 text-gray-400 opacity-50"; 
+                  }
+
+                  return (
+                    <button key={idx} disabled={isAnswered} onClick={() => handleAnswer(idx)} className={btnClass}>
+                      <div className="flex justify-between items-center">
+                        <span className="text-lg math-num">{opt}</span>
+                        {isAnswered && idx === q.answer && <Icon name={icons.CheckCircle} size={20} className="text-emerald-500" />}
+                        {isAnswered && idx === selectedAnswer && idx !== q.answer && <Icon name={icons.XCircle} size={20} className="text-rose-500" />}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {isAnswered && (
+                <div className="mt-8 animate-fade-in-up">
+                  <div className="bg-indigo-50/80 p-5 rounded-2xl border border-indigo-100 mb-6 text-indigo-900">
+                    <span className="font-bold flex items-center mb-2"><Icon name={icons.BookOpen} size={18} className="mr-2"/> คำอธิบาย:</span>
+                    <div className="text-sm sm:text-base opacity-90 leading-relaxed">{q.explanation}</div>
+                  </div>
+
+                  <button onClick={nextQuestion} className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold text-lg shadow-md flex justify-center items-center transition-colors">
+                    {currentQuestionIdx + 1 < testData.length ? 'ข้อถัดไป' : 'ดูผลคะแนน'} <Icon name={icons.ChevronRight} size={20} className="ml-2" />
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      };
+
+      const renderResult = () => {
+        const percentage = (score / testData.length) * 100;
+        let message = ""; let colorClass = "";
+        if (percentage >= 80) { message = "ยอดเยี่ยมมาก! อนาคตนักฟิสิกส์"; colorClass = "text-emerald-500"; }
+        else if (percentage >= 50) { message = "ทำได้ดี! ฝึกอีกนิดจะเก่งขึ้นแน่นอน"; colorClass = "text-amber-500"; }
+        else { message = "พยายามเข้านะ! ทบทวนบทเรียนอีกรอบ"; colorClass = "text-rose-500"; }
+
+        return (
+          <div className="min-h-screen bg-slate-50 p-6 flex flex-col items-center justify-center">
+            <div className="w-full max-w-md bg-white p-8 rounded-3xl shadow-xl text-center">
+              <div className="w-32 h-32 mx-auto bg-gray-50 rounded-full flex items-center justify-center border-4 border-dashed border-gray-200 mb-6 relative">
+                 <div className="absolute inset-0 rounded-full border-4 border-indigo-500" style={{ clipPath: `polygon(0 0, 100% 0, 100% ${percentage}%, 0 ${percentage}%)`, opacity: 0.2 }}></div>
+                 <div className={`text-4xl font-bold math-num ${colorClass}`}>{score}<span className="text-xl text-gray-400">/{testData.length}</span></div>
+              </div>
+              
+              <h2 className={`text-2xl font-bold mb-2 ${colorClass}`}>{message}</h2>
+              <p className="text-gray-500 mb-8">ระดับ: <span className="font-semibold uppercase">{testConfig.difficulty}</span></p>
+
+              <div className="space-y-3">
+                <button onClick={startTest} className="w-full py-4 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-2xl font-bold transition-colors flex justify-center items-center">
+                  <Icon name={icons.RotateCcw} size={20} className="mr-2" /> ลองทำใหม่อีกครั้ง
+                </button>
+                <button onClick={() => setCurrentScreen('home')} className="w-full py-4 bg-indigo-600 text-white hover:bg-indigo-700 rounded-2xl font-bold shadow-md transition-colors flex justify-center items-center">
+                  <Icon name={icons.Home} size={20} className="mr-2" /> กลับหน้าหลัก
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      };
+
+      return (
+        <div className="antialiased font-thai selection:bg-indigo-200 selection:text-indigo-900">
+          {currentScreen === 'home' && renderHome()}
+          {currentScreen === 'learn' && renderLearn()}
+          {currentScreen === 'setupTest' && renderTestSetup()}
+          {currentScreen === 'testing' && renderTesting()}
+          {currentScreen === 'result' && renderResult()}
+        </div>
+      );
+    }
+
+    // Render App
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>

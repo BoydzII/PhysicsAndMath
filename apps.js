@@ -126,6 +126,8 @@
   var APPS = [
     { key: 'work',        ic: 'work',        name: 'ส่งงานออนไลน์',      level: 'ทุกวิชา',
       dir: 'WorkDesk/', teacher: 'index.html', student: 'index.html' },
+    { key: 'lab',         ic: 'science',     name: 'คลังการทดลองฟิสิกส์เสมือนจริง', level: 'ซิมมูเลชัน 2D/3D · ม.ต้น–ม.ปลาย',
+      dir: 'PhysicsLabHub/', teacher: 'index.html', student: 'index.html' },
     { key: 'found',       ic: 'found',       name: 'ปรับพื้นฐานฟิสิกส์',  level: 'ก่อนเรียน ม.4',
       dir: 'PhysicsFoundation/', teacher: 'foundation.html', student: 'index.html' },
     { key: 'physics1',    ic: 'book',        name: 'ฟิสิกส์ 1 (Interactive Notebook)', level: 'ฟิสิกส์ ม.4',

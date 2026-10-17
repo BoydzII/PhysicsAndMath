@@ -2416,7 +2416,7 @@ function json_(o) {
 }
 
 function doGet() {
-  return json_({ ok: true, service: 'quiz-bank', version: 25, subjects: SUBJECTS,
+  return json_({ ok: true, service: 'quiz-bank', version: 26, subjects: SUBJECTS,
                  note: 'ใช้งานผ่าน POST จากแอพเท่านั้น' });
 }
 
@@ -2436,6 +2436,7 @@ function route_(action, req) {
   switch (action) {
     case 'ping':          return apiPing_(req);
     case 'login':         return apiLogin_(req);
+    case 'googleLogin':   return apiGoogleLogin_(req);
     case 'changePass':    return apiChangePass_(req);
     case 'adminLogin':    return apiAdminLogin_(req);
     case 'adminPass':     return apiAdminPass_(req);
@@ -2638,6 +2639,119 @@ function apiLogin_(req) {
                     name: String(me.name || ''), cls: normCls_(me.cls), no: me.no })
   };
 }
+
+/* ====== เข้าสู่ระบบด้วยอีเมลโรงเรียน (@pcschool.ac.th) และแอดมิน (รุ่น 26) ===
+   แก้ปัญหานักเรียนตั้งรหัสผ่านแล้วลืมรหัสกันเยอะมาก โดยให้ล็อกอินผ่านบัญชี Google ของโรงเรียน
+   - theboydz@gmail.com -> ผู้ดูแลหลัก (Main Admin)
+   - รหัสประจำตัว 5 หลัก เช่น 30201@pcschool.ac.th -> นักเรียน (ไม่ต้องใช้รหัสผ่าน และไม่บังคับตั้งรหัสใหม่)
+   - อีเมลครู @pcschool.ac.th ที่ชื่อผู้ใช้ตรงกับในแผ่น teachers -> ครูผู้สอน (แอดมินรอง)
+   ตรวจสอบความถูกต้องของโทเคนกับเซิร์ฟเวอร์ Google โดยตรง (tokeninfo / userinfo) ปลอมจากหน้าเว็บไม่ได้ */
+var GOOGLE_ADMIN_EMAILS = ['theboydz@gmail.com'];
+var GOOGLE_SCHOOL_DOMAIN = 'pcschool.ac.th';
+
+function verifyGoogleToken_(req) {
+  var idToken = String(req.idToken || '').trim();
+  var accessToken = String(req.accessToken || '').trim();
+  var info = null;
+  if (accessToken) {
+    var r1 = UrlFetchApp.fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+      headers: { Authorization: 'Bearer ' + accessToken },
+      muteHttpExceptions: true
+    });
+    if (r1.getResponseCode() === 200) {
+      try { info = JSON.parse(r1.getContentText()); } catch (e) {}
+    }
+  }
+  if (!info && idToken) {
+    var r2 = UrlFetchApp.fetch('https://oauth2.googleapis.com/tokeninfo?id_token=' + encodeURIComponent(idToken), {
+      muteHttpExceptions: true
+    });
+    if (r2.getResponseCode() === 200) {
+      try { info = JSON.parse(r2.getContentText()); } catch (e) {}
+    }
+  }
+  if (!info || !info.email) {
+    throw new Error('ตรวจสอบบัญชี Google ไม่สำเร็จ กรุณากดเข้าสู่ระบบด้วยเมลโรงเรียนใหม่อีกครั้ง');
+  }
+  if (String(info.email_verified) === 'false') {
+    throw new Error('อีเมล Google นี้ยังไม่ได้ยืนยันตัวตน');
+  }
+  return {
+    email: String(info.email).trim().toLowerCase(),
+    name: String(info.name || req.name || '').trim()
+  };
+}
+
+function apiGoogleLogin_(req) {
+  if (autoRoster_()) throw new Error('HUB: ชีตนี้รับเฉพาะการลงชื่อผ่านหน้าพอร์ทัล (ชีตศูนย์กลาง)');
+  var g = verifyGoogleToken_(req);
+  var email = g.email;
+
+  /* 1) แอดมินหลัก (theboydz@gmail.com) */
+  if (GOOGLE_ADMIN_EMAILS.indexOf(email) >= 0) {
+    return {
+      token: makeToken_({ role: 'admin' }),
+      role: 'main',
+      classes: null,
+      isDefault: false,
+      email: email,
+      hub: hubMake_({ role: 'admin' })
+    };
+  }
+
+  var parts = email.split('@');
+  var localPart = parts[0] || '';
+  var domain = parts[1] || '';
+
+  if (domain !== GOOGLE_SCHOOL_DOMAIN) {
+    throw new Error('กรุณาใช้อีเมลโรงเรียน (@' + GOOGLE_SCHOOL_DOMAIN + ') เช่น 30201@' + GOOGLE_SCHOOL_DOMAIN + ' (สำหรับแอดมินใช้ theboydz@gmail.com)');
+  }
+
+  /* 2) นักเรียน: รหัสประจำตัวตัวเลข @pcschool.ac.th */
+  if (/^\d{4,6}$/.test(localPart)) {
+    var sid = normSid_(localPart);
+    var row = findStudentRow_(sid);
+    if (row < 0) {
+      throw new Error('ไม่พบเลขประจำตัว ' + sid + ' (' + email + ') ในชีตนี้ (' + bookName_() + ') — ให้ครูส่งรายชื่อนักเรียนขึ้นชีตก่อน');
+    }
+    var me = readStudentRow_(row);
+    if (String(me.active) === 'false' || String(me.active) === '0') {
+      throw new Error('บัญชีนี้ถูกระงับการใช้งาน');
+    }
+    var sh = sheet_('students');
+    sh.getRange(me._row, C_LOGIN).setValue(new Date());
+    try { CacheService.getScriptCache().remove(failKey_(sidKey_(sid))); } catch (e) {}
+    return {
+      token: makeToken_({ role: 'student', sid: normSid_(me.sid) || sid }),
+      profile: { sid: normSid_(me.sid) || sid, name: me.name, no: me.no, cls: me.cls, email: email },
+      mustChange: false,
+      hub: hubMake_({ role: 'student', sid: normSid_(me.sid) || sid,
+                      name: String(me.name || ''), cls: normCls_(me.cls), no: me.no })
+    };
+  }
+
+  /* 3) ครูผู้สอนที่ใช้เมล @pcschool.ac.th (เทียบชื่อหน้า @ กับชื่อผู้ใช้ในแผ่น teachers) */
+  var t = findTeacher_(normUser_(localPart));
+  if (t) {
+    if (String(t.active) === 'false' || String(t.active) === '0') {
+      throw new Error('บัญชีนี้ถูกระงับการใช้งาน');
+    }
+    var cls = parseClasses_(t.classes);
+    if (!cls.length) throw new Error('บัญชีครู (' + email + ') ยังไม่ได้กำหนดชั้นที่ดูแล — แจ้งผู้ดูแลหลักให้กำหนดก่อน');
+    var sbj = parseSubjects_(t.subjects);
+    sheet_('teachers').getRange(t._row, SHEETS.teachers.indexOf('lastLogin') + 1).setValue(new Date());
+    dropCache_('teachers');
+    return {
+      token: makeToken_({ role: 'admin', sub: normUser_(t.user), cls: cls, sbj: sbj }),
+      role: 'sub', user: normUser_(t.user), name: String(t.name || g.name || ''), classes: cls,
+      subjects: sbj, mustChange: false, email: email,
+      hub: hubMake_({ role: 'admin', sub: normUser_(t.user) })
+    };
+  }
+
+  throw new Error('อีเมล ' + email + ' ไม่ใช่รูปแบบรหัสนักเรียน (เช่น 30201@' + GOOGLE_SCHOOL_DOMAIN + ') และยังไม่ได้ลงทะเบียนเป็นครูผู้สอนในชีตนี้');
+}
+
 
 function apiChangePass_(req) {
   var t = needStudent_(req);

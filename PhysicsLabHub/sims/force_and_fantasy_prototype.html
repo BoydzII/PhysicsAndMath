@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Force & Fantasy: Prototype</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Kanit', sans-serif;
+            background-color: #1a1a2e;
+            color: white;
+            user-select: none;
+        }
+        #game-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1;
+        }
+        .ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 10;
+            pointer-events: none; /* Let clicks pass through to canvas if needed */
+        }
+        .pointer-events-auto {
+            pointer-events: auto;
+        }
+        
+        /* Glassmorphism Panels */
+        .glass-panel {
+            background: rgba(16, 24, 39, 0.7);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        /* Progress Bars */
+        .bar-bg { background-color: rgba(255,255,255,0.2); border-radius: 999px; overflow: hidden; height: 8px; margin-top: 4px;}
+        .hp-bar { height: 100%; background: linear-gradient(90deg, #ef4444, #f87171); transition: width 0.3s; }
+        .atb-bar { height: 100%; background: linear-gradient(90deg, #eab308, #fde047); transition: width 0.1s linear; }
+
+        /* Floating Text Animation */
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(-50px) scale(1.5); }
+        }
+        .damage-text {
+            position: absolute;
+            font-weight: 800;
+            text-shadow: 2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000;
+            animation: floatUp 1.5s ease-out forwards;
+            pointer-events: none;
+            z-index: 20;
+        }
+
+        /* Buttons */
+        .btn-sci {
+            background: linear-gradient(45deg, #3b82f6, #8b5cf6);
+            border: 2px solid #a78bfa;
+            transition: all 0.2s;
+        }
+        .btn-sci:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(139, 92, 246, 0.6);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 3D Canvas -->
+    <canvas id="game-canvas"></canvas>
+
+    <div class="ui-layer flex flex-col justify-between p-4">
+        
+        <!-- Main Menu -->
+        <div id="main-menu" class="absolute inset-0 flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm pointer-events-auto z-50">
+            <h1 class="text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500 mb-2 text-center" style="-webkit-text-stroke: 1px white;">
+                FORCE & FANTASY
+            </h1>
+            <p class="text-xl mb-12 text-cyan-200">ศึกข้ามกาลเวลาไขปริศนาฟิสิกส์</p>
+            
+            <div class="flex flex-col gap-4 w-64">
+                <button onclick="startGame()" class="btn-sci pointer-events-auto py-3 px-6 rounded-full text-lg font-bold">New Game</button>
+                <button class="glass-panel pointer-events-auto py-3 px-6 rounded-full text-lg font-bold text-gray-400 border-gray-600 cursor-not-allowed">Load Game (WIP)</button>
+                <button class="glass-panel pointer-events-auto py-3 px-6 rounded-full text-lg font-bold text-gray-400 border-gray-600 cursor-not-allowed">Settings</button>
+            </div>
+        </div>
+
+        <!-- Battle HUD (Hidden initially) -->
+        <div id="battle-hud" class="hidden w-full h-full flex-col justify-between pointer-events-none">
+            
+            <!-- Top: Monster Info & Combo -->
+            <div class="flex justify-between items-start">
+                <div class="glass-panel p-4 rounded-xl w-64 pointer-events-auto">
+                    <h2 id="monster-name" class="font-bold text-red-400 text-lg">Omega Golem</h2>
+                    <div class="bar-bg h-4"><div id="monster-hp" class="hp-bar w-full"></div></div>
+                    <div class="text-right text-xs mt-1"><span id="monster-hp-txt">1500/1500</span> HP</div>
+                </div>
+                
+                <div class="glass-panel p-4 rounded-xl text-center">
+                    <div class="text-sm text-gray-300">Momentum Combo</div>
+                    <div class="text-3xl font-black text-yellow-400" id="combo-display">0x</div>
+                    <div class="text-xs text-green-400">+<span id="bonus-display">0</span>% Damage</div>
+                </div>
+            </div>
+
+            <!-- Bottom: Party Info -->
+            <div class="flex justify-center gap-4 mb-4">
+                <!-- Character Cards generated by JS -->
+                <div id="party-container" class="flex gap-4"></div>
+            </div>
+        </div>
+
+        <!-- Question Modal -->
+        <div id="question-modal" class="hidden absolute inset-0 flex items-center justify-center bg-black/80 backdrop-blur-md pointer-events-auto z-40">
+            <div class="glass-panel p-8 rounded-2xl max-w-2xl w-full border-t-4 border-cyan-400">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-2xl font-bold text-cyan-300">⚡ Time Dilation: Physics Quiz</h3>
+                    <span id="acting-hero-name" class="bg-cyan-900 px-3 py-1 rounded text-sm">Hero Turn</span>
+                </div>
+                <p id="question-text" class="text-xl mb-6 leading-relaxed">คำถามฟิสิกส์จะปรากฏที่นี่?</p>
+                <div id="options-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Options generated by JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Professor Notes (Feedback Modal) -->
+        <div id="feedback-modal" class="hidden absolute inset-0 flex items-center justify-center bg-black/80 pointer-events-auto z-50">
+            <div class="bg-gradient-to-br from-indigo-900 to-purple-900 p-8 rounded-2xl max-w-lg w-full border-2 border-red-400 shadow-[0_0_30px_rgba(239,68,68,0.3)]">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-12 h-12 bg-red-500 rounded-full flex items-center justify-center text-2xl">❌</div>
+                    <h3 class="text-2xl font-bold text-white">การโจมตีล้มเหลว!</h3>
+                </div>
+                <div class="bg-black/40 p-4 rounded-lg mb-6">
+                    <h4 class="text-cyan-300 font-bold mb-2">👨‍🔬 Professor Notes:</h4>
+                    <p id="feedback-text" class="text-gray-200">คำอธิบายที่ถูกต้องจะปรากฏที่นี่</p>
+                </div>
+                <button onclick="closeFeedback()" class="w-full btn-sci py-3 rounded-xl font-bold text-lg">เข้าใจแล้ว!</button>
+            </div>
+        </div>
+        
+    </div>
+
+    <script>
+        
+        // --- Game Database ---
+        const questions = [
+            {
+                q: "วัตถุมวล 5 kg ถูกแรงลัพธ์กระทำ 20 N วัตถุจะมีความเร่งเท่าใด?",
+                opts: ["4 m/s²", "25 m/s²", "100 m/s²", "0.25 m/s²"],
+                ans: 0,
+                exp: "ตามกฎข้อที่ 2 ของนิวตัน F = ma <br> 20 = 5 * a <br> a = 20/5 = 4 m/s²"
+            },
+            {
+                q: "กฎข้อที่ 3 ของนิวตัน (Action = Reaction) หมายความว่าอย่างไร?",
+                opts: ["แรงทุกแรงต้องมีมวลเสมอ", "แรงกิริยาและแรงปฏิกิริยามีขนาดเท่ากันแต่ทิศตรงข้าม", "วัตถุจะรักษาสภาพนิ่งหากไม่มีแรงมากระทำ", "แรงเสียดทานจะแปรผันตรงกับน้ำหนัก"],
+                ans: 1,
+                exp: "กฎข้อ 3: ทุกแรงกิริยา ย่อมมีแรงปฏิกิริยาที่มีขนาดเท่ากัน แต่มีทิศทางตรงกันข้ามเสมอ"
+            },
+            {
+                q: "ข้อใดคือหน่วยของ 'แรง' ในระบบ SI?",
+                opts: ["Joule (J)", "Watt (W)", "Newton (N)", "Pascal (Pa)"],
+                ans: 2,
+                exp: "หน่วยของแรงคือ นิวตัน (Newton หรือ N) ตั้งเพื่อเป็นเกียรติแก่ เซอร์ ไอแซก นิวตัน"
+            },
+            {
+                q: "แรงเสียดทานจลน์ (Kinetic Friction) จะเกิดขึ้นเมื่อใด?",
+                opts: ["เมื่อวัตถุอยู่นิ่ง", "เมื่อวัตถุกำลังเคลื่อนที่", "เมื่อวัตถุอยู่ในอวกาศ", "เมื่อวัตถุตกอย่างอิสระ"],
+                ans: 1,
+                exp: "แรงเสียดทานจลน์ (fk) เกิดขึ้นในขณะที่วัตถุกำลังเคลื่อนที่ไปบนพื้นผิว"
+            },
+            {
+                q: "หากปล่อยขนนกและลูกเหล็กให้ตกอย่างอิสระในสภาวะ 'สุญญากาศ' (ไม่มีอากาศ) ข้อใดถูก?",
+                opts: ["ลูกเหล็กตกถึงพื้นก่อน", "ขนนกตกถึงพื้นก่อน", "ทั้งสองตกถึงพื้นพร้อมกัน", "ทั้งสองลอยเคว้งไม่ตก"],
+                ans: 2,
+                exp: "ในสุญญากาศ ไม่มีแรงต้านอากาศ วัตถุทุกชนิดจะตกลงมาด้วยความเร่งเท่ากัน (g) จึงถึงพื้นพร้อมกัน"
+            }
+        ];
+
+        // Party Data
+        let party = [
+            { id: 0, name: "Sir Isaac", class: "Knight", hp: 500, maxHp: 500, atk: 80, spd: 30, color: 0x3b82f6, atb: 0, mesh: null, basePos: {x: -3, y: 1, z: 2} },
+            { id: 1, name: "Neo", class: "Cyborg", hp: 350, maxHp: 350, atk: 120, spd: 55, color: 0xec4899, atb: 0, mesh: null, basePos: {x: 0, y: 1, z: 2} },
+            { id: 2, name: "Shinobi", class: "Ninja", hp: 400, maxHp: 400, atk: 90, spd: 70, color: 0xeab308, atb: 0, mesh: null, basePos: {x: 3, y: 1, z: 2} }
+        ];
+
+        // Monster Data
+        let monster = {
+            name: "Omega Golem",
+            hp: 2500,
+            maxHp: 2500,
+            mesh: null,
+            basePos: {x: 0, y: 2, z: -4}
+        };
+
+        // Game State
+        let gameState = "MENU"; // MENU, BATTLE, QUESTION, ANIMATING
+        let combo = 0;
+        let activeHeroIndex = -1;
+        let currentQuestion = null;
+
+        const canvas = document.getElementById('game-canvas');
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x87ceeb); // Sky blue
+        scene.fog = new THREE.Fog(0x87ceeb, 10, 50);
+
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 6, 8);
+        camera.lookAt(0, 1, 0);
+
+        const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        dirLight.position.set(5, 10, 5);
+        dirLight.castShadow = true;
+        scene.add(dirLight);
+
+        // Environment (Floating Island)
+        const islandGeo = new THREE.CylinderGeometry(8, 6, 2, 32);
+        const islandMat = new THREE.MeshPhongMaterial({ color: 0x4ade80, flatShading: true });
+        const island = new THREE.Mesh(islandGeo, islandMat);
+        island.position.y = -1;
+        island.receiveShadow = true;
+        scene.add(island);
+
+        // Decorative crystals
+        for(let i=0; i<5; i++) {
+            const crysGeo = new THREE.ConeGeometry(0.5, 2, 4);
+            const crysMat = new THREE.MeshPhongMaterial({ color: 0x8b5cf6, transparent: true, opacity: 0.8 });
+            const crys = new THREE.Mesh(crysGeo, crysMat);
+            crys.position.set((Math.random() - 0.5) * 12, 0, (Math.random() - 0.5) * 12 - 4);
+            crys.rotation.x = (Math.random() - 0.5) * 0.5;
+            scene.add(crys);
+        }
+
+        function createCharacterModels() {
+            // Sir Isaac (Cube/Knight)
+            party[0].mesh = new THREE.Mesh(
+                new THREE.BoxGeometry(1, 2, 1),
+                new THREE.MeshPhongMaterial({ color: party[0].color })
+            );
+            
+            // Neo (Cylinder/Gunner)
+            party[1].mesh = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.5, 0.5, 2, 16),
+                new THREE.MeshPhongMaterial({ color: party[1].color })
+            );
+            
+            // Shinobi (Cone/Ninja)
+            party[2].mesh = new THREE.Mesh(
+                new THREE.ConeGeometry(0.7, 2, 8),
+                new THREE.MeshPhongMaterial({ color: party[2].color })
+            );
+
+            party.forEach(hero => {
+                hero.mesh.position.set(hero.basePos.x, hero.basePos.y, hero.basePos.z);
+                hero.mesh.castShadow = true;
+                scene.add(hero.mesh);
+            });
+
+            // Monster (Sphere/Golem)
+            monster.mesh = new THREE.Mesh(
+                new THREE.IcosahedronGeometry(1.5, 1),
+                new THREE.MeshPhongMaterial({ color: 0xef4444, flatShading: true })
+            );
+            monster.mesh.position.set(monster.basePos.x, monster.basePos.y, monster.basePos.z);
+            monster.mesh.castShadow = true;
+            scene.add(monster.mesh);
+        }
+
+        createCharacterModels();
+
+        function initPartyUI() {
+            const container = document.getElementById('party-container');
+            container.innerHTML = '';
+            party.forEach((hero, index) => {
+                container.innerHTML += `
+                    <div class="glass-panel p-3 rounded-xl w-48 pointer-events-auto relative">
+                        <div class="font-bold text-sm flex justify-between">
+                            <span style="color: #${hero.color.toString(16)}">${hero.name}</span>
+                            <span class="text-gray-400 text-xs">${hero.class}</span>
+                        </div>
+                        <div class="text-xs text-gray-300">HP: ${hero.hp}/${hero.maxHp} | ATK: ${hero.atk}</div>
+                        <div class="bar-bg"><div id="hp-bar-${index}" class="hp-bar w-full"></div></div>
+                        <div class="bar-bg mt-2 bg-gray-700"><div id="atb-bar-${index}" class="atb-bar w-0"></div></div>
+                    </div>
+                `;
+            });
+        }
+
+        // ... existing updateUI and showDamage functions remain unchanged ...
+        function updateUI() {
+            party.forEach((hero, index) => {
+                document.getElementById(`atb-bar-${index}`).style.width = `${hero.atb}%`;
+                if(hero.atb >= 100) document.getElementById(`atb-bar-${index}`).style.boxShadow = "0 0 10px #fde047";
+                else document.getElementById(`atb-bar-${index}`).style.boxShadow = "none";
+            });
+
+            const hpPercent = Math.max(0, (monster.hp / monster.maxHp) * 100);
+            document.getElementById('monster-hp').style.width = `${hpPercent}%`;
+            document.getElementById('monster-hp-txt').innerText = `${Math.ceil(monster.hp)}/${monster.maxHp}`;
+            document.getElementById('combo-display').innerText = `${combo}x`;
+            document.getElementById('bonus-display').innerText = `${combo * 5}`;
+        }
+
+        function showDamage(damage, color = "#ff0000", isCrit = false) {
+            const div = document.createElement('div');
+            div.className = 'damage-text text-4xl';
+            if(isCrit) div.classList.add('text-yellow-400', 'text-5xl');
+            else div.style.color = color;
+            div.innerText = Math.ceil(damage);
+            const vector = monster.mesh.position.clone();
+            vector.y += 2;
+            vector.project(camera);
+            div.style.left = `${(vector.x * .5 + .5) * window.innerWidth}px`;
+            div.style.top = `${(vector.y * -.5 + .5) * window.innerHeight}px`;
+            document.body.appendChild(div);
+            setTimeout(() => div.remove(), 1500);
+        }
+
+        function triggerQuestion(hIndex) {
+            gameState = "QUESTION";
+            activeHeroIndex = hIndex;
+            const hero = party[hIndex];
+            
+            cameraTargetPos.set(hero.basePos.x, hero.basePos.y + 2, hero.basePos.z + 5);
+
+            // เลือกชุดข้อสอบตามโหมด
+            let pool = currentMode === "TOMB" ? tombQuestions : towerQuestions;
+            currentQuestion = pool[Math.floor(Math.random() * pool.length)];
+            
+            document.getElementById('acting-hero-name').innerText = `${hero.name}'s Turn`;
+            document.getElementById('acting-hero-name').style.backgroundColor = `#${hero.color.toString(16)}`;
+            document.getElementById('question-text').innerText = currentQuestion.q;
+            
+            const optsContainer = document.getElementById('options-container');
+            optsContainer.innerHTML = '';
+            
+            currentQuestion.opts.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'bg-gray-800 hover:bg-cyan-700 border border-gray-600 p-4 rounded-lg text-left transition-colors font-semibold text-lg';
+                btn.innerText = opt;
+                btn.onclick = () => answerQuestion(idx);
+                optsContainer.appendChild(btn);
+            });
+
+            document.getElementById('question-modal').classList.remove('hidden');
+        }
+
+        function answerQuestion(selectedIdx) {
+            document.getElementById('question-modal').classList.add('hidden');
+            const hero = party[activeHeroIndex];
+            
+            if (selectedIdx === currentQuestion.ans) {
+                combo++;
+                const bonusMulti = 1 + (combo * 0.05);
+                const damage = hero.atk * bonusMulti * (Math.random() * 0.2 + 0.9);
+                performAttackAnimation(hero, damage);
+            } else {
+                combo = 0;
+                hero.atb = 0;
+                showFeedbackModal(currentQuestion.exp);
+            }
+        }
+
+        function showFeedbackModal(explanation) {
+            gameState = "EXPLANATION";
+            document.getElementById('feedback-text').innerHTML = explanation;
+            document.getElementById('feedback-modal').classList.remove('hidden');
+            cameraTargetPos.set(0, 6, 8);
+        }
+
+        window.closeFeedback = function() {
+            document.getElementById('feedback-modal').classList.add('hidden');
+            gameState = "BATTLE";
+        }
+
+        let animatingHero = null;
+        let animPhase = 0;
+        let pendingDamage = 0;
+        let cameraTargetPos = new THREE.Vector3(0, 6, 8);
+
+        function performAttackAnimation(hero, damage) {
+            gameState = "ANIMATING";
+            animatingHero = hero;
+            pendingDamage = damage;
+            animPhase = 1;
+            cameraTargetPos.set(0, 6, 8);
+        }
+
+        // --- ระบบของรางวัลจบการต่อสู้ ---
+        function handleBattleWin() {
+            gameState = "REWARD";
+            document.getElementById('battle-hud').classList.add('hidden');
+            
+            let rewardText = "";
+            player.gold += 100;
+            rewardText += "ได้รับ 100 💰 Gold<br>";
+
+            if(currentMode === "TOMB") {
+                let lockedIds = [1, 2].filter(id => player.crystals[id] === -1);
+                // มีโอกาสได้ตัวใหม่ถ้ายังปลดไม่หมด
+                if(lockedIds.length > 0 && Math.random() > 0.4) {
+                    let newId = lockedIds[Math.floor(Math.random() * lockedIds.length)];
+                    player.crystals[newId] = 0; // ปลดล็อก
+                    player.partyIds.push(newId); // ยัดเข้าปาร์ตี้ออโต้เพื่อโชว์
+                    rewardText += `<br><span class="text-3xl">✨</span> ปลดล็อกเพื่อนร่วมทางใหม่: <span style="color:#${allHeroes[newId].color.toString(16)}" class="font-bold">${allHeroes[newId].name}</span>!`;
+                } else {
+                    // ถ้าปลดหมดแล้วหรือสุ่มไม่ได้ตัว ให้คริสตัลอัพแรงค์
+                    let unlockedIds = [0, 1, 2].filter(id => player.crystals[id] >= 0);
+                    let targetId = unlockedIds[Math.floor(Math.random() * unlockedIds.length)];
+                    player.crystals[targetId]++;
+                    const greek = ["α (Alpha)", "β (Beta)", "Σ (Sigma)"];
+                    rewardText += `<br>💎 ได้รับคริสตัล ${greek[targetId]} ของ ${allHeroes[targetId].name} (Rank UP!)`;
+                }
+            } else if (currentMode === "TOWER") {
+                let isBoss = towerFloor % 10 === 0;
+                if(isBoss) {
+                    player.tickets += 1;
+                    rewardText += "<br>🎫 ปราบบอสสำเร็จ! ได้รับตั๋วสุ่มกาชา 1 ใบ<br>";
+                    rewardText += "<br>🔮 " + generateOrbString();
+                }
+                towerFloor++;
+                rewardText += `<br>พร้อมลุยต่อในหอคอยชั้นที่ ${towerFloor}`;
+            }
+
+            document.getElementById('reward-content').innerHTML = rewardText;
+            document.getElementById('reward-modal').classList.remove('hidden');
+        }
+
+        window.returnToHub = function() {
+            enterHub();
+        }
+
+        // --- ระบบ Gacha และ Orb ---
+        function generateOrbString() {
+            let f = orbFormulas[Math.floor(Math.random() * orbFormulas.length)];
+            let roll = Math.random();
+            let rarity, colorClass, val;
+            
+            if(roll > 0.9) { rarity = "Legendary"; colorClass = "rarity-legendary text-yellow-400"; val = 50; }
+            else if(roll > 0.7) { rarity = "Epic"; colorClass = "rarity-epic text-purple-400"; val = 30; }
+            else if(roll > 0.4) { rarity = "Rare"; colorClass = "rarity-rare text-blue-400"; val = 15; }
+            else { rarity = "Common"; colorClass = "rarity-common text-gray-300"; val = 5; }
+
+            let orb = { name: f.name, stat: f.stat, desc: f.desc, rarity: rarity, colorClass: colorClass, value: val };
+            player.orbs.push(orb);
+            return `<span class="${colorClass} font-bold p-2 bg-black/50 rounded">[${rarity}] Orb: ${f.name} (+${val} ${f.stat.toUpperCase()})</span>`;
+        }
+
+        window.openGachaMenu = function() { document.getElementById('gacha-menu').classList.remove('hidden'); document.getElementById('gacha-result').innerHTML = ''; }
+        window.closeGachaMenu = function() { document.getElementById('gacha-menu').classList.add('hidden'); enterHub(); }
+        
+        window.rollGacha = function() {
+            if(player.tickets > 0) {
+                player.tickets--;
+                let resHTML = generateOrbString();
+                document.getElementById('gacha-result').innerHTML = `<div class="glass-panel p-6 rounded-xl animate-bounce text-2xl">${resHTML}</div>`;
+                document.getElementById('hub-tickets').innerText = player.tickets;
+            } else {
+                document.getElementById('gacha-result').innerHTML = `<div class="text-red-500 text-xl font-bold bg-black/50 p-4 rounded-xl">ตั๋วไม่พอ! ไปลุยบอสหอคอย (ชั้นหาร 10 ลงตัว) เพื่อหาตั๋ว</div>`;
+            }
+        }
+
+        window.openPartyMenu = function() {
+            document.getElementById('party-menu').classList.remove('hidden');
+            document.getElementById('unused-orbs-count').innerText = player.orbs.length;
+            const list = document.getElementById('party-list');
+            list.innerHTML = '';
+            
+            [0, 1, 2].forEach(id => {
+                if(player.crystals[id] === -1) return; // ซ่อนตัวที่ยังไม่ปลดล็อก
+                let hero = allHeroes[id];
+                let st = heroStates[id];
+                
+                let slotsHTML = "";
+                for(let i=0; i<8; i++) {
+                    let orb = st.orbs[i];
+                    if(orb) {
+                        slotsHTML += `<div class="orb-slot orb-equipped ${orb.colorClass}" title="${orb.name} +${orb.value}">${orb.name.substring(0,4)}</div>`;
+                    } else {
+                        let canEquip = player.orbs.length > 0;
+                        slotsHTML += `<div class="orb-slot hover:bg-gray-700" onclick="if(${canEquip}) equipRandomOrb(${id}, ${i})">+</div>`;
+                    }
+                }
+
+                list.innerHTML += `
+                    <div class="glass-panel p-4 rounded-xl min-w-[280px]">
+                        <h3 class="text-2xl font-bold" style="color:#${hero.color.toString(16)}">${hero.name}</h3>
+                        <p class="text-sm text-yellow-400 font-bold mb-2">แรงค์: ${player.crystals[id]} 💎</p>
+                        <div class="mb-4 text-sm bg-black/30 p-2 rounded">
+                            ❤️ HP: ${st.maxHp}<br>
+                            ⚔️ ATK: ${st.atk}<br>
+                            💨 SPD: ${st.spd}
+                        </div>
+                        <p class="text-xs text-gray-400 mb-1">Orb Slots (สูงสุด 8 ลูก)</p>
+                        <div class="grid grid-cols-4 gap-2">
+                            ${slotsHTML}
+                        </div>
+                    </div>
+                `;
+            });
+        }
+        
+        window.closePartyMenu = function() { document.getElementById('party-menu').classList.add('hidden'); }
+
+        window.equipRandomOrb = function(heroId, slotIdx) {
+            if(player.orbs.length > 0) {
+                let orb = player.orbs.pop();
+                heroStates[heroId].orbs[slotIdx] = orb;
+                calculateStats();
+                openPartyMenu(); // Refresh หน้าต่าง
+            }
+        }
+
+        // --- Game Loop ---
+        window.onload = function() {
+            animate();
+        };
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const time = Date.now() * 0.002;
+            island.position.y = -1 + Math.sin(time * 0.5) * 0.1;
+            
+            if(gameState !== "ANIMATING") {
+                monster.mesh.position.y = monster.basePos.y + Math.sin(time) * 0.2;
+                monster.mesh.rotation.y += 0.01;
+            }
+
+            camera.position.lerp(cameraTargetPos, 0.05);
+
+            if (gameState === "BATTLE") {
+                let heroReady = false;
+                party.forEach((hero, idx) => {
+                    if (hero.atb < 100) {
+                        hero.atb += hero.spd * 0.02;
+                        if (hero.atb >= 100) {
+                            hero.atb = 100;
+                            if(!heroReady) { triggerQuestion(idx); heroReady = true; }
+                        }
+                    }
+                });
+                updateUI();
+            } 
+            else if (gameState === "ANIMATING" && animatingHero) {
+                const target = monster.basePos;
+                const base = animatingHero.basePos;
+                const mesh = animatingHero.mesh;
+
+                if (animPhase === 1) {
+                    mesh.position.lerp(new THREE.Vector3(target.x, target.y, target.z + 1.5), 0.2);
+                    if (mesh.position.distanceTo(target) < 2.0) {
+                        monster.hp -= pendingDamage;
+                        showDamage(pendingDamage, "#ffffff", combo > 2);
+                        monster.mesh.position.x = monster.basePos.x + (Math.random()-0.5)*0.5;
+                        animPhase = 2;
+                        
+                        if(monster.hp <= 0) {
+                            handleBattleWin(); // สลับไปฟังก์ชันแจกของรางวัล
+                        }
+                    }
+                } else if (animPhase === 2) {
+                    mesh.position.lerp(new THREE.Vector3(base.x, base.y, base.z), 0.15);
+                    monster.mesh.position.x = THREE.MathUtils.lerp(monster.mesh.position.x, monster.basePos.x, 0.1);
+                    if (mesh.position.distanceTo(base) < 0.1) {
+                        mesh.position.copy(base);
+                        animatingHero.atb = 0;
+                        animatingHero = null;
+                        if(monster.hp > 0) gameState = "BATTLE";
+                    }
+                }
+                updateUI();
+            }
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+    </script>
+</body>
+</html>

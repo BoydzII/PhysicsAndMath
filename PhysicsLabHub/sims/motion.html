@@ -1,0 +1,753 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { Play, RotateCcw, BookOpen, PenTool, ArrowLeft, CheckCircle, XCircle, ChevronRight, ChevronLeft, Home, Settings, FlipHorizontal } from 'lucide-react';
+
+// --- Font Setup & Animations ---
+const fontStyle = `
+  @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
+  
+  :root {
+    --font-thai: 'Sarabun', sans-serif;
+    --font-math: 'Cambria Math', 'Cambria', 'Times New Roman', serif;
+  }
+
+  body {
+    font-family: var(--font-thai);
+    background-color: #fdfbf7;
+    color: #4a4a4a;
+  }
+
+  .math-text {
+    font-family: var(--font-math);
+    font-style: italic;
+  }
+
+  .math-num {
+    font-family: var(--font-math);
+  }
+
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar { width: 8px; }
+  ::-webkit-scrollbar-track { background: #f1f1f1; }
+  ::-webkit-scrollbar-thumb { background: #d4a5a5; border-radius: 10px; }
+  ::-webkit-scrollbar-thumb:hover { background: #c38b8b; }
+
+  /* Animations */
+  @keyframes flipIn {
+    from { transform: rotateY(90deg); opacity: 0; }
+    to { transform: rotateY(0deg); opacity: 1; }
+  }
+  .flip-anim { animation: flipIn 0.3s ease-out forwards; }
+  
+  @keyframes fadeInUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  .animate-fade-in-up { animation: fadeInUp 0.4s ease-out forwards; }
+`;
+
+// --- UI Helper Components ---
+const Vec = ({ char }) => (
+  <span className="inline-flex flex-col items-center justify-end leading-[0.8] align-bottom math-text mx-1 font-bold text-indigo-600">
+    <span className="text-[0.6em] mb-[-0.3em] font-normal" style={{ fontStyle: 'normal', fontFamily: 'sans-serif' }}>→</span>
+    <span>{char}</span>
+  </span>
+);
+
+const Scalar = ({ char }) => (
+  <span className="math-text mx-1 font-bold text-rose-500">{char}</span>
+);
+
+const MathNum = ({ num }) => (
+  <span className="math-num mx-1 font-semibold">{num}</span>
+);
+
+// --- Flashcard Data ---
+const flashcardsData = [
+  {
+    id: 1,
+    front: <div className="flex flex-col items-center"><span className="text-4xl mb-2"><Vec char="u"/></span><span>ความเร็วต้น</span></div>,
+    backTitle: "ความเร็วต้น (Initial Velocity)",
+    backDesc: <span>ความเร็วของวัตถุ ณ จุดเริ่มต้นของการสังเกต มีทิศทาง (เวกเตอร์)</span>,
+    unit: "m/s",
+    condition: <span>🔑 คีย์เวิร์ด: หากโจทย์บอกว่า 'เริ่มจากจุดหยุดนิ่ง' หรือ 'ปล่อยวัตถุตก' ให้รู้ทันทีว่า <Vec char="u"/> = 0</span>
+  },
+  {
+    id: 2,
+    front: <div className="flex flex-col items-center"><span className="text-4xl mb-2"><Vec char="v"/></span><span>ความเร็วปลาย</span></div>,
+    backTitle: "ความเร็วปลาย (Final Velocity)",
+    backDesc: <span>ความเร็วของวัตถุ ณ จุดสิ้นสุดของการสังเกตที่สนใจ มีทิศทาง (เวกเตอร์)</span>,
+    unit: "m/s",
+    condition: <span>🔑 คีย์เวิร์ด: หากโจทย์บอกว่า 'เบรกจนรถหยุด' หรือ 'เคลื่อนที่จนหยุดนิ่ง' ให้รู้ทันทีว่า <Vec char="v"/> = 0</span>
+  },
+  {
+    id: 3,
+    front: <div className="flex flex-col items-center"><div className="flex items-center space-x-4 mb-2"><span className="text-4xl"><Scalar char="s"/></span> <span className="text-xl">vs</span> <span className="text-4xl"><Vec char="s"/></span></div><span>ระยะทาง vs การกระจัด</span></div>,
+    backTitle: "ระยะทาง (Scalar) vs การกระจัด (Vector)",
+    backDesc: <span>ระยะทาง (<Scalar char="s"/>) คือความยาวตามเส้นทางจริงทั้งหมดที่เดินได้ ส่วนการกระจัด (<Vec char="s"/>) คือเส้นตรงที่ลากจากจุดเริ่มต้นไปยังจุดสุดท้ายเสมอ</span>,
+    unit: "m",
+    condition: <span>💡 ทริคสำคัญ: ถ้ารถเคลื่อนที่เป็นเส้นตรงไปข้างหน้า 'โดยไม่มีการเลี้ยวกลับ' ขนาดของการกระจัดจะเท่ากับระยะทางพอดีเป๊ะ (|<Vec char="s"/>| = <Scalar char="s"/>)</span>
+  },
+  {
+    id: 4,
+    front: <div className="flex flex-col items-center"><span className="text-4xl mb-2"><Vec char="a"/></span><span>ความเร่ง</span></div>,
+    backTitle: "ความเร่ง (Acceleration)",
+    backDesc: <span>ความเร็วที่เปลี่ยนแปลงไปใน 1 วินาที (เวกเตอร์)</span>,
+    unit: "m/s²",
+    condition: <span>🔑 ทริค: ความเร่งทิศเดียวกับความเร็วรถจะ 'เร็วขึ้น', แต่ถ้าความเร่งทิศตรงข้าม (หรือเรียกว่า 'ความหน่วง') รถจะ 'ช้าลง'</span>
+  },
+  {
+    id: 5,
+    front: <div className="flex flex-col items-center"><span className="text-4xl mb-2"><Scalar char="v"/></span><span>อัตราเร็ว vs ความเร็ว</span></div>,
+    backTitle: "อัตราเร็ว (Speed) vs ความเร็ว (Velocity)",
+    backDesc: <span>อัตราเร็วคำนวณจาก ระยะทาง/เวลา (สเกลาร์) ส่วนความเร็วคำนวณจาก การกระจัด/เวลา (เวกเตอร์)</span>,
+    unit: "m/s",
+    condition: <span>💡 ทริค: รถวิ่งเป็นวงกลมกลับมาจุดเดิม อัตราเร็วเฉลี่ย &gt; 0 แต่ความเร็วเฉลี่ย = 0 (เพราะการกระจัดเป็น 0)</span>
+  },
+  {
+    id: 6,
+    front: <div className="flex flex-col items-center"><span className="text-4xl mb-2"><Scalar char="t"/></span><span>เวลา</span></div>,
+    backTitle: "เวลา (Time)",
+    backDesc: <span>ช่วงเวลาที่ใช้ในการเคลื่อนที่หรือการสังเกต เป็นปริมาณสเกลาร์ที่บอกเพียงขนาดเท่านั้น</span>,
+    unit: "s",
+    condition: <span>💡 ทริค: เวลาเดินหน้าเสมอ ไม่มีทิศทาง และไม่มีค่าติดลบ (<Scalar char="t"/> ≥ 0 เสมอ)</span>
+  }
+];
+
+// --- Simulation Component ---
+const AdvancedSimulation = () => {
+  const [p1, setP1] = useState({ s: 40, t: 4 }); 
+  const [p2, setP2] = useState({ s: -20, t: 2 }); 
+  
+  const [simState, setSimState] = useState('idle'); 
+  const [pos, setPos] = useState(0); 
+  const [elapsedTime, setElapsedTime] = useState(0);
+  const [accumulatedDistance, setAccumulatedDistance] = useState(0);
+  
+  const animRef = useRef(null);
+
+  const target1 = p1.s;
+  const target2 = target1 + p2.s;
+  const minPos = Math.min(0, target1, target2) - 10; 
+  const maxPos = Math.max(0, target1, target2) + 10; 
+  const totalRange = Math.max(maxPos - minPos, 1); 
+
+  const getPercent = (value) => ((value - minPos) / totalRange) * 100;
+
+  useEffect(() => {
+    if (simState === 'part1' || simState === 'part2') {
+      let startTime = performance.now();
+      
+      const startPos = simState === 'part1' ? 0 : target1;
+      const targetPos = simState === 'part1' ? target1 : target2;
+      const duration = (simState === 'part1' ? p1.t : p2.t) * 1000; 
+      const startDist = simState === 'part1' ? 0 : Math.abs(p1.s);
+      const startT = simState === 'part1' ? 0 : p1.t;
+
+      const animate = (currentTime) => {
+        const timePassed = currentTime - startTime;
+        let progress = timePassed / duration;
+        if (progress >= 1) progress = 1;
+
+        const currentP = startPos + (targetPos - startPos) * progress;
+        setPos(currentP);
+        setElapsedTime(startT + (timePassed / 1000) * (progress >= 1 ? 1 : 1));
+        setAccumulatedDistance(startDist + Math.abs(currentP - startPos));
+
+        if (progress < 1) {
+          animRef.current = requestAnimationFrame(animate);
+        } else {
+          setSimState(simState === 'part1' ? 'part2' : 'finished');
+        }
+      };
+      
+      animRef.current = requestAnimationFrame(animate);
+    }
+    return () => cancelAnimationFrame(animRef.current);
+  }, [simState, p1, p2, target1, target2]);
+
+  const handlePlay = () => {
+    setPos(0); setElapsedTime(0); setAccumulatedDistance(0); setSimState('part1');
+  };
+
+  const handleReset = () => {
+    cancelAnimationFrame(animRef.current);
+    setPos(0); setElapsedTime(0); setAccumulatedDistance(0); setSimState('idle');
+  };
+
+  const totalT = p1.t + p2.t;
+  const finalDistance = Math.abs(p1.s) + Math.abs(p2.s);
+  const finalDisplacement = p1.s + p2.s;
+  const avgSpeed = totalT > 0 ? finalDistance / totalT : 0;
+  const avgVelocity = totalT > 0 ? finalDisplacement / totalT : 0;
+
+  const isMovingLeft = (simState === 'part1' && p1.s < 0) || (simState === 'part2' && p2.s < 0);
+
+  return (
+    <div className="bg-white p-6 rounded-3xl shadow-sm border border-indigo-50 mb-6">
+      <div className="flex justify-between items-center mb-4 border-b pb-4">
+        <h3 className="text-xl font-bold text-gray-800 flex items-center">
+          <Play className="text-indigo-500 mr-2" size={20}/>
+          แบบจำลอง: การเคลื่อนที่ 2 ช่วง
+        </h3>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100">
+          <h4 className="font-bold text-blue-800 mb-2">ช่วงที่ 1 (Part 1)</h4>
+          <div className="flex space-x-2">
+            <div className="flex-1">
+              <label className="text-xs text-gray-500">การกระจัด (m)</label>
+              <input type="number" value={p1.s} onChange={e => setP1({...p1, s: Number(e.target.value)})} disabled={simState !== 'idle'} className="w-full p-2 rounded-lg border text-center font-bold math-num" />
+            </div>
+            <div className="flex-1">
+              <label className="text-xs text-gray-500">เวลา (s)</label>
+              <input type="number" min="0.1" step="0.1" value={p1.t} onChange={e => setP1({...p1, t: Math.max(0.1, Number(e.target.value))})} disabled={simState !== 'idle'} className="w-full p-2 rounded-lg border text-center font-bold math-num" />
+            </div>
+          </div>
+        </div>
+        <div className="bg-rose-50/50 p-4 rounded-xl border border-rose-100">
+          <h4 className="font-bold text-rose-800 mb-2">ช่วงที่ 2 (Part 2)</h4>
+          <div className="flex space-x-2">
+            <div className="flex-1">
+              <label className="text-xs text-gray-500">การกระจัด (m)</label>
+              <input type="number" value={p2.s} onChange={e => setP2({...p2, s: Number(e.target.value)})} disabled={simState !== 'idle'} className="w-full p-2 rounded-lg border text-center font-bold math-num" />
+            </div>
+            <div className="flex-1">
+              <label className="text-xs text-gray-500">เวลา (s)</label>
+              <input type="number" min="0.1" step="0.1" value={p2.t} onChange={e => setP2({...p2, t: Math.max(0.1, Number(e.target.value))})} disabled={simState !== 'idle'} className="w-full p-2 rounded-lg border text-center font-bold math-num" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex justify-center space-x-4 mb-6">
+        <button onClick={handlePlay} disabled={simState !== 'idle'} className="px-6 py-2 bg-emerald-500 text-white rounded-full font-bold hover:bg-emerald-600 disabled:opacity-50 flex items-center transition-colors shadow-sm">
+          <Play size={18} fill="currentColor" className="mr-2" /> เริ่มการจำลอง
+        </button>
+        <button onClick={handleReset} className="px-6 py-2 bg-gray-200 text-gray-700 rounded-full font-bold hover:bg-gray-300 flex items-center transition-colors">
+          <RotateCcw size={18} className="mr-2" /> รีเซ็ต
+        </button>
+      </div>
+
+      <div className="relative w-full h-32 bg-slate-50 rounded-xl overflow-hidden border-2 border-slate-200 mb-6 flex items-center shadow-inner">
+        <div className="absolute top-1/2 left-0 w-full h-0.5 bg-gray-300"></div>
+        
+        <div className="absolute top-1/2 w-0.5 h-4 bg-gray-800 -translate-y-1/2" style={{ left: `${getPercent(0)}%` }}></div>
+        <div className="absolute top-[60%] text-xs font-bold text-gray-800 math-num -translate-x-1/2" style={{ left: `${getPercent(0)}%` }}>0</div>
+
+        {p1.s !== 0 && (
+          <>
+            <div className="absolute top-1/2 w-0.5 h-3 bg-blue-400 -translate-y-1/2" style={{ left: `${getPercent(target1)}%` }}></div>
+            <div className="absolute top-[60%] text-[10px] text-blue-600 math-num -translate-x-1/2" style={{ left: `${getPercent(target1)}%` }}>{target1}m</div>
+          </>
+        )}
+        {p2.s !== 0 && (
+          <>
+            <div className="absolute top-1/2 w-0.5 h-3 bg-rose-400 -translate-y-1/2" style={{ left: `${getPercent(target2)}%` }}></div>
+            <div className="absolute top-[60%] text-[10px] text-rose-600 math-num -translate-x-1/2" style={{ left: `${getPercent(target2)}%` }}>{target2}m</div>
+          </>
+        )}
+        
+        {/* Car Object */}
+        <div 
+          className="absolute top-1/2 -translate-y-[85%] transition-transform duration-75"
+          style={{ 
+            left: `${getPercent(pos)}%`, 
+            transform: `translate(-50%, -85%) ${isMovingLeft ? 'scaleX(-1)' : 'scaleX(1)'}`,
+            zIndex: 10
+          }}
+        >
+          <div className="text-3xl filter drop-shadow-md">🚗</div>
+        </div>
+
+        {/* Live Displacement Vector (Blue) with Arrowhead */}
+        {Math.abs(pos) > 0.1 && (
+          <div 
+            className={`absolute top-[30%] h-1 bg-indigo-500 flex items-center transition-all duration-75 ${pos < 0 ? 'justify-start' : 'justify-end'}`}
+            style={{ 
+              left: pos >= 0 ? `${getPercent(0)}%` : `${getPercent(pos)}%`,
+              width: `${Math.abs(getPercent(pos) - getPercent(0))}%`
+            }}
+          >
+            {/* Arrowhead rendering logic */}
+            <div 
+              className="w-3 h-3 border-t-[3px] border-r-[3px] border-indigo-500"
+              style={{ 
+                transform: pos < 0 ? 'rotate(-135deg)' : 'rotate(45deg)',
+                marginRight: pos > 0 ? '-1px' : '0',
+                marginLeft: pos < 0 ? '-1px' : '0'
+              }}
+            ></div>
+          </div>
+        )}
+      </div>
+
+      <div className="grid grid-cols-3 gap-2 md:gap-4 text-center mb-6">
+        <div className="bg-amber-50 p-2 rounded-xl">
+          <div className="text-xs text-gray-500">เวลา (Live)</div>
+          <div className="font-bold text-amber-600 math-num">{elapsedTime.toFixed(1)} s</div>
+        </div>
+        <div className="bg-rose-50 p-2 rounded-xl">
+          <div className="text-xs text-gray-500">ระยะทาง (Live)</div>
+          <div className="font-bold text-rose-600 math-num">{accumulatedDistance.toFixed(1)} m</div>
+        </div>
+        <div className="bg-indigo-50 p-2 rounded-xl">
+          <div className="text-xs text-gray-500">การกระจัด (Live)</div>
+          <div className="font-bold text-indigo-600 math-num">{pos.toFixed(1)} m</div>
+        </div>
+      </div>
+
+      {(simState === 'finished' || simState === 'idle') && (
+        <div className="bg-slate-800 text-white p-5 rounded-2xl animate-fade-in-up">
+          <h4 className="font-bold mb-3 flex items-center text-emerald-400">
+            <CheckCircle size={18} className="mr-2"/> สรุปผลการเคลื่อนที่
+          </h4>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+              <div className="text-gray-400 text-xs">ระยะทางรวม</div>
+              <div className="font-bold text-xl math-num text-rose-300">{finalDistance} m</div>
+            </div>
+            <div>
+              <div className="text-gray-400 text-xs">การกระจัดรวม</div>
+              <div className="font-bold text-xl math-num text-indigo-300">{finalDisplacement} m</div>
+            </div>
+            <div>
+              <div className="text-gray-400 text-xs">อัตราเร็วเฉลี่ย (<Scalar char="v"/>)</div>
+              <div className="font-bold text-xl math-num text-orange-300">{avgSpeed.toFixed(2)} m/s</div>
+            </div>
+            <div>
+              <div className="text-gray-400 text-xs">ความเร็วเฉลี่ย (<Vec char="v"/>)</div>
+              <div className="font-bold text-xl math-num text-cyan-300">{avgVelocity.toFixed(2)} m/s</div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// --- Question Generator (Full Version) ---
+const generateQuestions = (difficulty, amount) => {
+  const questions = [];
+  for (let i = 0; i < amount; i++) {
+    let q = {};
+    let s, v, u, t, a;
+    const type = Math.floor(Math.random() * 3);
+
+    if (difficulty === 'easy') {
+      if (type === 0) { 
+        q = {
+          question: "ปริมาณใดต่อไปนี้เป็นปริมาณเวกเตอร์ทั้งหมด?",
+          options: ["ระยะทาง, อัตราเร็ว", "การกระจัด, ความเร็ว", "เวลา, ความเร่ง", "มวล, น้ำหนัก"],
+          answer: 1,
+          explanation: <span>การกระจัด (<Vec char="s"/>) และความเร็ว (<Vec char="v"/>) เป็นปริมาณที่ต้องบอกทั้งขนาดและทิศทาง</span>
+        };
+      } else if (type === 1) { 
+        s = (Math.floor(Math.random() * 10) + 1) * 10; 
+        t = (Math.floor(Math.random() * 5) + 1) * 2; 
+        v = s / t;
+        q = {
+          question: <span>รถยนต์คันหนึ่งวิ่งได้ระยะทาง <MathNum num={s}/> เมตร ในเวลา <MathNum num={t}/> วินาที รถคันนี้มีอัตราเร็วเฉลี่ยเท่าใด?</span>,
+          options: [`${v} m/s`, `${v * 2} m/s`, `${(s*t).toFixed(1)} m/s`, `${(v/2).toFixed(1)} m/s`],
+          answer: 0,
+          explanation: <span>จากสูตร <Scalar char="v"/> = <Scalar char="s"/>/<Scalar char="t"/> = {s}/{t} = {v} m/s</span>
+        };
+      } else { 
+        q = {
+          question: "หน่วยของความเร่งในระบบ SI คือข้อใด?",
+          options: ["m/s", "m/s²", "N", "J"],
+          answer: 1,
+          explanation: "ความเร่ง (Acceleration) คือความเร็วที่เปลี่ยนไปในหนึ่งหน่วยเวลา จึงมีหน่วยเป็น เมตรต่อวินาที² (m/s²)"
+        };
+      }
+    } else if (difficulty === 'medium') {
+      if (type === 0) { 
+        u = Math.floor(Math.random() * 5) * 5; 
+        a = Math.floor(Math.random() * 4) + 2; 
+        t = Math.floor(Math.random() * 5) + 2; 
+        v = u + (a * t);
+        q = {
+          question: <span>วัตถุเคลื่อนที่ด้วยความเร็วต้น <MathNum num={u}/> m/s มีความเร่งคงที่ <MathNum num={a}/> m/s² เมื่อเวลาผ่านไป <MathNum num={t}/> วินาที วัตถุจะมีความเร็วเท่าใด?</span>,
+          options: [`${v-5} m/s`, `${v} m/s`, `${v+a} m/s`, `${u*t} m/s`],
+          answer: 1,
+          explanation: <span>จากสูตร <Vec char="v"/> = <Vec char="u"/> + <Vec char="a"/><Scalar char="t"/> = {u} + ({a})({t}) = {v} m/s</span>
+        };
+      } else if (type === 1) { 
+        u = 10; v = 30;
+        t = Math.floor(Math.random() * 5) + 2;
+        s = ((u + v) / 2) * t;
+        q = {
+          question: <span>รถยนต์เร่งเครื่องจากความเร็ว <MathNum num={u}/> m/s เป็น <MathNum num={v}/> m/s ในเวลา <MathNum num={t}/> วินาที รถยนต์เคลื่อนที่ได้ระยะทางกี่เมตร?</span>,
+          options: [`${s - 10} m`, `${s + 20} m`, `${s} m`, `${s * 2} m`],
+          answer: 2,
+          explanation: <span>จากสูตร <Scalar char="s"/> = ((<Vec char="u"/> + <Vec char="v"/>)/2) × <Scalar char="t"/> = (({u}+{v})/2) × {t} = {s} m</span>
+        };
+      } else { 
+        u = Math.floor(Math.random() * 3) * 10; 
+        v = u + (Math.floor(Math.random() * 3) + 2) * 10; 
+        t = Math.floor(Math.random() * 4) + 2;
+        a = (v - u) / t;
+        q = {
+          question: <span>รถคันหนึ่งเพิ่มความเร็วจาก <MathNum num={u}/> m/s เป็น <MathNum num={v}/> m/s ในเวลา <MathNum num={t}/> วินาที จงหาความเร่งของรถคันนี้</span>,
+          options: [`${a} m/s²`, `${a/2} m/s²`, `${a+2} m/s²`, `${(v+u)/t} m/s²`],
+          answer: 0,
+          explanation: <span>จากสูตร <Vec char="a"/> = (<Vec char="v"/> - <Vec char="u"/>)/<Scalar char="t"/> = ({v} - {u})/{t} = {a} m/s²</span>
+        };
+      }
+    } else if (difficulty === 'hard') {
+      if (type === 0) { 
+        u = (Math.floor(Math.random() * 3) + 2) * 10; 
+        a = -(Math.floor(Math.random() * 3) + 2); 
+        v = 0; 
+        s = -(u * u) / (2 * a);
+        q = {
+          question: <span>รถวิ่งด้วยความเร็ว <MathNum num={u}/> m/s คนขับเหยียบเบรกทำให้เกิดความหน่วง <MathNum num={Math.abs(a)}/> m/s² รถจะไถลไปได้ไกลเท่าใดก่อนจะหยุดสนิท?</span>,
+          options: [`${s} m`, `${s/2} m`, `${s*2} m`, `${s+10} m`],
+          answer: 0,
+          explanation: <span>จากสูตร <Vec char="v"/>² = <Vec char="u"/>² + 2<Vec char="a"/><Vec char="s"/>; (0)² = ({u})² + 2({a})<Vec char="s"/>; <Vec char="s"/> = {-u*u}/{2*a} = {s} m</span>
+        };
+      } else { 
+        u = 0;
+        a = Math.floor(Math.random() * 3) * 2 + 2; 
+        t = Math.floor(Math.random() * 4) + 3; 
+        s = (u * t) + (0.5 * a * t * t);
+        q = {
+          question: <span>เครื่องบินเริ่มออกตัวจากจุดหยุดนิ่งด้วยความเร่ง <MathNum num={a}/> m/s² เป็นเวลา <MathNum num={t}/> วินาที เครื่องบินวิ่งไปได้ระยะทางเท่าใดบนรันเวย์?</span>,
+          options: [`${s*2} m`, `${s} m`, `${(a*t)} m`, `${s/2} m`],
+          answer: 1,
+          explanation: <span>จากสูตร <Vec char="s"/> = <Vec char="u"/><Scalar char="t"/> + 1/2<Vec char="a"/><Scalar char="t"/>² = 0 + 0.5({a})({t})² = {s} m</span>
+        };
+      }
+    } else { 
+      if (type === 0) { 
+        u = (Math.floor(Math.random() * 3) + 2) * 10; 
+        const g = -10;
+        v = 0;
+        s = -(u * u) / (2 * g);
+        q = {
+          question: <span>โยนวัตถุขึ้นในแนวดิ่งด้วยความเร็ว <MathNum num={u}/> m/s วัตถุจะขึ้นไปได้สูงสุดกี่เมตร? (กำหนดให้ g = 10 m/s²)</span>,
+          options: [`${s} m`, `${s*2} m`, `${u} m`, `${s/2} m`],
+          answer: 0,
+          explanation: <span>ที่จุดสูงสุด <Vec char="v"/> = 0 m/s; จาก <Vec char="v"/>² = <Vec char="u"/>² + 2<Vec char="g"/><Vec char="s"/>; 0 = ({u})² + 2(-10)<Vec char="s"/>; <Vec char="s"/> = {u*u}/20 = {s} m</span>
+        };
+      } else { 
+        u = 30; 
+        s = 25; 
+        q = {
+          question: <span>โยนก้อนหินขึ้นในแนวดิ่งด้วยความเร็ว <MathNum num={u}/> m/s นานเท่าใดก้อนหินจึงจะอยู่สูงจากพื้น <MathNum num={s}/> เมตร? (กำหนด g = 10 m/s²)</span>,
+          options: ["1 และ 5 วินาที", "2 และ 3 วินาที", "1 วินาที", "5 วินาที"],
+          answer: 0,
+          explanation: <span>จาก <Vec char="s"/> = <Vec char="u"/><Scalar char="t"/> + 1/2<Vec char="g"/><Scalar char="t"/>²; 25 = 30<Scalar char="t"/> - 5<Scalar char="t"/>²; หาร 5 จะได้ <Scalar char="t"/>² - 6<Scalar char="t"/> + 5 = 0; (<Scalar char="t"/>-1)(<Scalar char="t"/>-5) = 0</span>
+        };
+      }
+    }
+    
+    // Shuffle
+    const originalOptions = [...q.options];
+    const correctAnswerText = originalOptions[q.answer];
+    for (let j = q.options.length - 1; j > 0; j--) {
+        const k = Math.floor(Math.random() * (j + 1));
+        [q.options[j], q.options[k]] = [q.options[k], q.options[j]];
+    }
+    q.answer = q.options.indexOf(correctAnswerText);
+    questions.push(q);
+  }
+  return questions;
+};
+
+// --- Main Application Component ---
+export default function App() {
+  const [currentScreen, setCurrentScreen] = useState('home');
+  const [flashcardIdx, setFlashcardIdx] = useState(0);
+  const [isFlipped, setIsFlipped] = useState(false);
+  const [learnTab, setLearnTab] = useState('flashcard'); 
+  
+  // Test State
+  const [testConfig, setTestConfig] = useState({ difficulty: 'easy', amount: 10 });
+  const [testData, setTestData] = useState([]);
+  const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
+  const [score, setScore] = useState(0);
+  const [selectedAnswer, setSelectedAnswer] = useState(null);
+  const [isAnswered, setIsAnswered] = useState(false);
+
+  useEffect(() => {
+    const styleSheet = document.createElement("style");
+    styleSheet.innerText = fontStyle;
+    document.head.appendChild(styleSheet);
+    return () => styleSheet.remove();
+  }, []);
+
+  const startTest = () => {
+    const questions = generateQuestions(testConfig.difficulty, testConfig.amount);
+    setTestData(questions);
+    setCurrentQuestionIdx(0);
+    setScore(0);
+    setSelectedAnswer(null);
+    setIsAnswered(false);
+    setCurrentScreen('testing');
+  };
+
+  const handleAnswer = (index) => {
+    if (isAnswered) return;
+    setSelectedAnswer(index);
+    setIsAnswered(true);
+    if (index === testData[currentQuestionIdx].answer) setScore(s => s + 1);
+  };
+
+  const nextQuestion = () => {
+    if (currentQuestionIdx + 1 < testData.length) {
+      setCurrentQuestionIdx(prev => prev + 1);
+      setSelectedAnswer(null);
+      setIsAnswered(false);
+    } else {
+      setCurrentScreen('result');
+    }
+  };
+
+  // --- Screens ---
+  const renderHome = () => (
+    <div className="flex flex-col items-center justify-center min-h-screen p-6 bg-gradient-to-br from-blue-50 via-pink-50 to-purple-50">
+      <div className="bg-white/80 backdrop-blur-md p-8 rounded-3xl shadow-xl border border-white/50 text-center max-w-md w-full">
+        <div className="w-24 h-24 mx-auto bg-gradient-to-tr from-indigo-200 to-rose-200 rounded-full flex items-center justify-center mb-6 shadow-inner">
+           <span className="text-4xl font-bold text-indigo-500 math-text">1D</span>
+        </div>
+        <h1 className="text-3xl font-bold text-gray-800 mb-2">ฟิสิกส์ ม.ปลาย</h1>
+        <h2 className="text-xl text-gray-600 mb-8 font-medium">การเคลื่อนที่ใน 1 มิติ</h2>
+        
+        <div className="space-y-4">
+          <button onClick={() => setCurrentScreen('learn')} className="w-full flex items-center justify-center space-x-3 bg-gradient-to-r from-blue-400 to-indigo-400 hover:from-blue-500 hover:to-indigo-500 text-white p-4 rounded-2xl transition-all shadow-md hover:shadow-lg transform hover:-translate-y-1">
+            <BookOpen size={24} /> <span className="text-lg font-semibold">โหมดฝึกเรียนรู้ & แบบจำลอง</span>
+          </button>
+          
+          <button onClick={() => setCurrentScreen('setupTest')} className="w-full flex items-center justify-center space-x-3 bg-gradient-to-r from-rose-400 to-pink-400 hover:from-rose-500 hover:to-pink-500 text-white p-4 rounded-2xl transition-all shadow-md hover:shadow-lg transform hover:-translate-y-1">
+            <PenTool size={24} /> <span className="text-lg font-semibold">แบบทดสอบวัดความเข้าใจ</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderLearn = () => {
+    const card = flashcardsData[flashcardIdx];
+    const nextCard = () => { setIsFlipped(false); setTimeout(() => setFlashcardIdx((prev) => (prev + 1) % flashcardsData.length), 150); };
+    const prevCard = () => { setIsFlipped(false); setTimeout(() => setFlashcardIdx((prev) => (prev - 1 + flashcardsData.length) % flashcardsData.length), 150); };
+
+    return (
+      <div className="min-h-screen bg-slate-50 p-4 sm:p-6 pb-20">
+        <div className="max-w-3xl mx-auto">
+          <button onClick={() => setCurrentScreen('home')} className="flex items-center text-gray-600 hover:text-indigo-500 mb-6 transition-colors font-bold">
+            <ArrowLeft size={20} className="mr-2" /> กลับหน้าหลัก
+          </button>
+          
+          <div className="flex bg-white rounded-xl p-1 mb-6 shadow-sm border">
+             <button onClick={() => {setLearnTab('flashcard'); setIsFlipped(false);}} className={`flex-1 py-2 text-center rounded-lg font-bold transition-all ${learnTab === 'flashcard' ? 'bg-indigo-100 text-indigo-700' : 'text-gray-500 hover:bg-gray-50'}`}>แฟลชการ์ดจำตัวแปร</button>
+             <button onClick={() => setLearnTab('sim')} className={`flex-1 py-2 text-center rounded-lg font-bold transition-all ${learnTab === 'sim' ? 'bg-indigo-100 text-indigo-700' : 'text-gray-500 hover:bg-gray-50'}`}>แบบจำลอง 2 ช่วง</button>
+          </div>
+
+          {learnTab === 'sim' && <AdvancedSimulation />}
+
+          {learnTab === 'flashcard' && (
+            <div className="flex flex-col items-center">
+              <div className="text-gray-500 mb-2 font-bold math-num">{flashcardIdx + 1} / {flashcardsData.length}</div>
+              
+              <div className="relative w-full max-w-md perspective-1000 mb-8 cursor-pointer group" onClick={() => setIsFlipped(!isFlipped)}>
+                <div className={`w-full min-h-[320px] bg-white rounded-3xl shadow-lg border-2 ${isFlipped ? 'border-rose-200' : 'border-indigo-100'} p-8 flex flex-col justify-center items-center text-center transition-all duration-300 transform group-hover:shadow-xl`}>
+                  
+                  <div key={isFlipped ? 'back' : 'front'} className="flip-anim w-full">
+                    {!isFlipped ? (
+                      <div className="text-3xl font-bold text-gray-800 flex flex-col items-center">
+                        {card.front}
+                        <p className="text-sm text-gray-400 mt-6 font-normal flex items-center"><FlipHorizontal size={16} className="mr-2"/> แตะเพื่อพลิกดูความหมาย</p>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center w-full">
+                         <h3 className="text-2xl font-bold text-indigo-600 mb-4">{card.backTitle}</h3>
+                         <div className="text-gray-700 mb-4 leading-relaxed font-medium">{card.backDesc}</div>
+                         <div className="bg-gray-100 px-4 py-1 rounded-full text-sm text-gray-600 font-bold mb-6">หน่วย: <span className="math-num text-indigo-600 ml-1">{card.unit}</span></div>
+                         
+                         {card.condition && (
+                           <div className="bg-rose-50 border border-rose-100 text-rose-700 p-4 rounded-xl text-left w-full text-sm font-medium">
+                             {card.condition}
+                           </div>
+                         )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex space-x-6">
+                <button onClick={prevCard} className="p-4 bg-white rounded-full shadow border hover:bg-gray-50 text-indigo-500"><ChevronLeft size={24}/></button>
+                <button onClick={nextCard} className="p-4 bg-white rounded-full shadow border hover:bg-gray-50 text-indigo-500"><ChevronRight size={24}/></button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  const renderTestSetup = () => (
+    <div className="flex flex-col items-center justify-center min-h-screen p-6 bg-gradient-to-br from-rose-50 via-orange-50 to-amber-50">
+      <div className="w-full max-w-md">
+        <button onClick={() => setCurrentScreen('home')} className="flex items-center text-gray-600 hover:text-rose-500 mb-6 transition-colors">
+          <ArrowLeft size={20} className="mr-2" /> กลับหน้าหลัก
+        </button>
+
+        <div className="bg-white/90 backdrop-blur-md p-8 rounded-3xl shadow-xl border border-white/50">
+          <div className="flex items-center justify-center w-16 h-16 bg-rose-100 text-rose-500 rounded-full mx-auto mb-4">
+            <Settings size={32} />
+          </div>
+          <h2 className="text-2xl font-bold text-center text-gray-800 mb-8">ตั้งค่าแบบทดสอบ</h2>
+
+          <div className="mb-6">
+            <label className="block text-sm font-semibold text-gray-600 mb-3">ระดับความยาก</label>
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { id: 'easy', label: 'ง่าย (Easy)', color: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
+                { id: 'medium', label: 'ปานกลาง (Medium)', color: 'bg-blue-100 text-blue-700 border-blue-200' },
+                { id: 'hard', label: 'ยาก (Hard)', color: 'bg-amber-100 text-amber-700 border-amber-200' },
+                { id: 'veryHard', label: 'ยากมาก (Very Hard)', color: 'bg-rose-100 text-rose-700 border-rose-200' },
+              ].map(lvl => (
+                <button
+                  key={lvl.id}
+                  onClick={() => setTestConfig({...testConfig, difficulty: lvl.id})}
+                  className={`p-3 rounded-xl border transition-all ${testConfig.difficulty === lvl.id ? `ring-2 ring-offset-2 ring-${lvl.color.split('-')[1]}-400 ${lvl.color}` : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'}`}
+                >
+                  <div className="font-semibold">{lvl.label}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="mb-8">
+            <label className="block text-sm font-semibold text-gray-600 mb-3">จำนวนข้อ</label>
+            <div className="flex space-x-3">
+              {[10, 20, 30].map(num => (
+                <button
+                  key={num}
+                  onClick={() => setTestConfig({...testConfig, amount: num})}
+                  className={`flex-1 py-3 rounded-xl border transition-all ${testConfig.amount === num ? 'bg-indigo-100 text-indigo-700 border-indigo-300 ring-2 ring-offset-2 ring-indigo-400 font-bold' : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'}`}
+                >
+                  <span className="math-num text-lg">{num}</span> ข้อ
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <button onClick={startTest} className="w-full py-4 bg-gradient-to-r from-rose-400 to-pink-500 hover:from-rose-500 hover:to-pink-600 text-white rounded-2xl font-bold text-lg shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1 flex justify-center items-center">
+            เริ่มทำแบบทดสอบ <Play size={20} className="ml-2 fill-current" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderTesting = () => {
+    const q = testData[currentQuestionIdx];
+    const progress = ((currentQuestionIdx) / testData.length) * 100;
+
+    return (
+      <div className="min-h-screen bg-slate-50 p-4 sm:p-6 pb-24 flex flex-col items-center">
+        <div className="w-full max-w-2xl">
+          <div className="flex justify-between items-center mb-4">
+            <button 
+              onClick={() => { if(window.confirm('ต้องการออกจากการทดสอบใช่หรือไม่? คะแนนจะไม่ถูกบันทึก')) setCurrentScreen('home'); }}
+              className="text-gray-400 hover:text-rose-500 transition-colors"
+            >
+              <XCircle size={24} />
+            </button>
+            <div className="text-gray-500 font-semibold math-num">
+              {currentQuestionIdx + 1} / {testData.length}
+            </div>
+          </div>
+          
+          <div className="w-full bg-gray-200 rounded-full h-2 mb-8 overflow-hidden">
+            <div className="bg-indigo-500 h-2 rounded-full transition-all duration-300 ease-out" style={{ width: `${progress}%` }}></div>
+          </div>
+
+          <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-md border border-gray-100 mb-6 min-h-[150px] flex items-center justify-center text-center">
+            <h3 className="text-xl sm:text-2xl font-bold text-gray-800 leading-relaxed">{q.question}</h3>
+          </div>
+
+          <div className="space-y-3">
+            {q.options.map((opt, idx) => {
+              let btnClass = "w-full p-4 rounded-2xl text-left font-medium border-2 transition-all duration-200 ";
+              if (!isAnswered) {
+                btnClass += selectedAnswer === idx ? "border-indigo-400 bg-indigo-50 text-indigo-700" : "border-gray-100 bg-white hover:border-indigo-200 hover:bg-indigo-50/50 text-gray-700";
+              } else {
+                if (idx === q.answer) btnClass += "border-emerald-400 bg-emerald-50 text-emerald-700 shadow-sm"; 
+                else if (idx === selectedAnswer) btnClass += "border-rose-400 bg-rose-50 text-rose-700"; 
+                else btnClass += "border-gray-100 bg-gray-50 text-gray-400 opacity-50"; 
+              }
+
+              return (
+                <button key={idx} disabled={isAnswered} onClick={() => handleAnswer(idx)} className={btnClass}>
+                  <div className="flex justify-between items-center">
+                    <span className="text-lg math-num">{opt}</span>
+                    {isAnswered && idx === q.answer && <CheckCircle className="text-emerald-500" size={20}/>}
+                    {isAnswered && idx === selectedAnswer && idx !== q.answer && <XCircle className="text-rose-500" size={20}/>}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          {isAnswered && (
+            <div className="mt-8 animate-fade-in-up">
+              <div className="bg-indigo-50/80 p-5 rounded-2xl border border-indigo-100 mb-6 text-indigo-900">
+                <span className="font-bold flex items-center mb-2"><BookOpen size={18} className="mr-2"/> คำอธิบาย:</span>
+                <div className="text-sm sm:text-base opacity-90 leading-relaxed">{q.explanation}</div>
+              </div>
+
+              <button onClick={nextQuestion} className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold text-lg shadow-md flex justify-center items-center transition-colors">
+                {currentQuestionIdx + 1 < testData.length ? 'ข้อถัดไป' : 'ดูผลคะแนน'} <ChevronRight size={20} className="ml-2" />
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  const renderResult = () => {
+    const percentage = (score / testData.length) * 100;
+    let message = ""; let colorClass = "";
+    if (percentage >= 80) { message = "ยอดเยี่ยมมาก! อนาคตนักฟิสิกส์"; colorClass = "text-emerald-500"; }
+    else if (percentage >= 50) { message = "ทำได้ดี! ฝึกอีกนิดจะเก่งขึ้นแน่นอน"; colorClass = "text-amber-500"; }
+    else { message = "พยายามเข้านะ! ทบทวนบทเรียนอีกรอบ"; colorClass = "text-rose-500"; }
+
+    return (
+      <div className="min-h-screen bg-slate-50 p-6 flex flex-col items-center justify-center">
+        <div className="w-full max-w-md bg-white p-8 rounded-3xl shadow-xl text-center">
+          <div className="w-32 h-32 mx-auto bg-gray-50 rounded-full flex items-center justify-center border-4 border-dashed border-gray-200 mb-6 relative">
+             <div className="absolute inset-0 rounded-full border-4 border-indigo-500" style={{ clipPath: `polygon(0 0, 100% 0, 100% ${percentage}%, 0 ${percentage}%)`, opacity: 0.2 }}></div>
+             <div className={`text-4xl font-bold math-num ${colorClass}`}>{score}<span className="text-xl text-gray-400">/{testData.length}</span></div>
+          </div>
+          
+          <h2 className={`text-2xl font-bold mb-2 ${colorClass}`}>{message}</h2>
+          <p className="text-gray-500 mb-8">ระดับ: <span className="font-semibold uppercase">{testConfig.difficulty}</span></p>
+
+          <div className="space-y-3">
+            <button onClick={startTest} className="w-full py-4 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-2xl font-bold transition-colors flex justify-center items-center">
+              <RotateCcw size={20} className="mr-2" /> ลองทำใหม่อีกครั้ง
+            </button>
+            <button onClick={() => setCurrentScreen('home')} className="w-full py-4 bg-indigo-600 text-white hover:bg-indigo-700 rounded-2xl font-bold shadow-md transition-colors flex justify-center items-center">
+              <Home size={20} className="mr-2" /> กลับหน้าหลัก
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="antialiased font-thai selection:bg-indigo-200 selection:text-indigo-900">
+      {currentScreen === 'home' && renderHome()}
+      {currentScreen === 'learn' && renderLearn()}
+      {currentScreen === 'setupTest' && renderTestSetup()}
+      {currentScreen === 'testing' && renderTesting()}
+      {currentScreen === 'result' && renderResult()}
+    </div>
+  );
+}

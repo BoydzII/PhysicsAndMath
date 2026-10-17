@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Lab: Projectile Motion 3D</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #f8fafc; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        #game-canvas { cursor: grab; }
+        #game-canvas:active { cursor: grabbing; }
+        input[type=range] { accent-color: #0284c7; }
+        input:disabled, button:disabled, select:disabled { opacity: 0.6; cursor: not-allowed; }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="text-slate-800 flex h-screen">
+
+    <!-- เมนูหลัก (Main Menu) -->
+    <div id="main-menu" class="absolute inset-0 bg-white/80 backdrop-blur-md z-50 flex flex-col items-center justify-center">
+        <h1 class="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-sky-500 to-emerald-500 mb-3 drop-shadow-sm">Projectile Physics Lab</h1>
+        <p class="text-2xl text-slate-600 mb-12 font-medium">ห้องปฏิบัติการจำลองวิถีโค้ง 3 มิติ</p>
+        
+        <div class="flex gap-8">
+            <button onclick="initGame('practice')" class="bg-sky-100 hover:bg-sky-200 text-sky-700 border-2 border-sky-300 font-bold py-5 px-10 rounded-2xl text-xl shadow-lg transition transform hover:scale-105 flex flex-col items-center">
+                <span class="text-3xl mb-1">📘</span> โหมดฝึกซ้อม
+                <span class="text-sm font-normal mt-2 text-sky-600/80">เน้นทำความเข้าใจ กระสุนไม่จำกัด</span>
+            </button>
+            <button onclick="openBattleConfig()" class="bg-gradient-to-br from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 text-white font-bold py-5 px-10 rounded-2xl text-xl shadow-lg transition transform hover:scale-105 flex flex-col items-center border-2 border-indigo-300">
+                <span class="text-3xl mb-1">⚔️</span> โหมด Battle
+                <span class="text-sm font-normal mt-2 text-indigo-100">จำกัดกระสุนและเวลา ท้าทายสถิติ</span>
+            </button>
+        </div>
+        
+        <button onclick="showLeaderboard()" class="mt-8 text-slate-500 hover:text-slate-700 underline font-medium">🏆 ดูสถิติคะแนน (Leaderboard)</button>
+    </div>
+
+    <!-- ตั้งค่า Battle Mode -->
+    <div id="battle-config-modal" class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+        <div class="bg-white border-2 border-indigo-200 p-8 rounded-3xl max-w-md w-full shadow-2xl">
+            <h2 class="text-2xl font-bold text-indigo-700 mb-6 flex items-center gap-2">
+                <span>⚙️</span> ตั้งค่าโหมด Battle
+            </h2>
+            
+            <div class="space-y-6">
+                <div>
+                    <label class="flex justify-between text-slate-700 font-bold mb-2">
+                        <span>จำนวนกระสุน (ลูก)</span>
+                        <span id="val-battle-ammo" class="text-indigo-600 text-lg">10</span>
+                    </label>
+                    <input type="range" id="config-ammo" min="5" max="20" value="10" class="w-full">
+                </div>
+                
+                <div>
+                    <label class="flex justify-between text-slate-700 font-bold mb-2">
+                        <span>เวลาจำกัด (นาที)</span>
+                        <span id="val-battle-time" class="text-purple-600 text-lg">10</span>
+                    </label>
+                    <input type="range" id="config-time" min="5" max="15" value="10" class="w-full">
+                </div>
+                
+                <div class="bg-indigo-50 p-4 rounded-xl text-sm text-indigo-800 border border-indigo-100">
+                    <p class="font-bold mb-1">💡 ยิ่งตั้งค่าน้อย ยิ่งได้คะแนนโบนัสเยอะ!</p>
+                    <p>จบเกมเมื่อเคลียร์ทุกด่าน, กระสุนหมด, หรือเวลาหมด</p>
+                </div>
+            </div>
+            
+            <div class="flex gap-4 mt-8">
+                <button onclick="closeBattleConfig()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-3 rounded-xl transition">ยกเลิก</button>
+                <button onclick="initGame('battle')" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-xl transition shadow-md">เริ่มการทดสอบ!</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- หน้าต่างบรีฟโจทย์ (Mission Briefing) -->
+    <div id="briefing-modal" class="absolute inset-0 bg-slate-900/60 backdrop-blur-md z-40 flex items-center justify-center hidden">
+        <div class="bg-white border-t-4 border-sky-500 p-8 rounded-2xl max-w-xl w-full shadow-2xl">
+            <h2 id="briefing-title" class="text-3xl font-bold text-slate-800 mb-3">โจทย์ข้อที่ 1</h2>
+            <div class="text-slate-600 space-y-4 mb-8 text-lg">
+                <p id="briefing-desc">รายละเอียดโจทย์...</p>
+                <div class="bg-slate-50 p-5 rounded-xl border border-slate-200 font-mono text-sm shadow-inner">
+                    <p class="text-sky-600 mb-3 font-bold text-base flex items-center gap-2"><span>📍</span> พิกัดและอุปสรรค:</p>
+                    <ul class="space-y-2 text-slate-700" id="briefing-data"></ul>
+                    <p class="text-slate-400 text-xs mt-4 italic border-t border-slate-200 pt-2">*จุดยิงเริ่มต้นอยู่ที่พิกัดประมาณ (X: 0, Y: 0, Z: -13)</p>
+                </div>
+            </div>
+            <button onclick="acceptMission()" class="w-full bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-4 rounded-xl text-xl transition shadow-md flex justify-center items-center gap-2">
+                <span>📝</span> พร้อมตั้งค่าการยิง
+            </button>
+        </div>
+    </div>
+
+    <!-- พื้นที่แสดงผล 3D (ซ้าย) -->
+    <div id="game-canvas" class="flex-grow relative">
+        <!-- HUD ข้อมูลฟิสิกส์ -->
+        <div class="absolute top-4 left-4 bg-white/80 backdrop-blur-md p-4 rounded-xl border border-slate-200 shadow-lg pointer-events-none w-72">
+            <h2 class="text-lg font-bold text-sky-700 mb-2 border-b border-slate-200 pb-1">Telemetry (เรียลไทม์)</h2>
+            <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm font-mono text-slate-600">
+                <p>เวลา: <span id="hud-t" class="text-slate-800 font-bold">0.00</span>s</p>
+                <p>ความเร็ว: <span id="hud-v" class="text-slate-800 font-bold">0.00</span></p>
+                <p>ระยะราบ: <span id="hud-sx" class="text-emerald-600 font-bold">0.00</span>m</p>
+                <p>ความสูง: <span id="hud-sy" class="text-sky-600 font-bold">0.00</span>m</p>
+            </div>
+            <p class="text-[10px] text-slate-400 mt-3 text-center">คลิกซ้ายลาก=หมุน | กลิ้งเมาส์=ซูม</p>
+        </div>
+
+        <!-- HUD Battle Mode -->
+        <div id="battle-hud" class="absolute top-4 right-4 flex gap-3 pointer-events-none hidden">
+            <div class="bg-white/80 backdrop-blur-md px-5 py-2 rounded-xl border border-slate-200 shadow-lg flex items-center gap-2">
+                <span class="text-xl">⏱️</span>
+                <span id="hud-time-left" class="text-2xl font-black font-mono text-slate-700">10:00</span>
+            </div>
+            <div class="bg-white/80 backdrop-blur-md px-5 py-2 rounded-xl border border-slate-200 shadow-lg flex items-center gap-2">
+                <span class="text-xl">💣</span>
+                <span class="text-slate-500 font-bold">กระสุน:</span>
+                <span id="hud-ammo-left" class="text-2xl font-black text-rose-500">10</span>
+            </div>
+        </div>
+
+        <!-- หน้าจอข้อความ -->
+        <div id="message-overlay" class="absolute inset-0 flex items-center justify-center hidden pointer-events-none bg-slate-900/20 backdrop-blur-sm z-30 transition-opacity">
+            <div class="text-center bg-white/95 p-8 rounded-3xl shadow-2xl border-2 border-sky-100">
+                <h1 id="message-text" class="text-5xl font-black text-slate-800 tracking-wide mb-3"></h1>
+                <p id="message-subtext" class="text-xl text-slate-500 font-medium"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- แผงควบคุม (ขวา) -->
+    <div class="w-[400px] bg-slate-50 border-l border-slate-200 p-6 flex flex-col gap-5 overflow-y-auto z-20 shadow-[-10px_0_20px_rgba(0,0,0,0.02)] relative">
+        <div class="text-center mb-1">
+            <h1 class="text-2xl font-black text-sky-600">Control Panel</h1>
+            <p class="text-xs text-slate-500 mt-1">ตั้งค่าพารามิเตอร์การยิง</p>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
+            <div class="absolute top-0 right-0 bg-sky-500 text-white text-[10px] font-bold px-3 py-1 rounded-bl-lg">
+                คะแนน: <span id="score-display">0</span>
+            </div>
+            <h3 class="font-bold text-lg text-emerald-600 pr-16" id="panel-level-title">โจทย์ข้อที่ 1</h3>
+            <p class="text-sm text-slate-500 mt-1 font-mono" id="panel-target-info">เป้า: Z = -100m, Y = 5m</p>
+        </div>
+
+        <!-- ตั้งค่ากระสุน -->
+        <div class="space-y-1">
+            <label class="block text-sm font-bold text-slate-700 ml-1">ประเภทกระสุน (มวล - m)</label>
+            <select id="ammo-select" class="control-input w-full bg-white text-slate-700 p-3 rounded-xl border border-slate-300 focus:outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 shadow-sm transition">
+                <option value="10">⚪ กระสุนมาตรฐาน (มวล 10 kg)</option>
+                <option value="50">⚫ กระสุนเหล็กหนัก (มวล 50 kg)</option>
+                <option value="2">🔵 กระสุนมวลเบา (มวล 2 kg)</option>
+            </select>
+            <p class="text-[11px] text-slate-400 mt-1 ml-1">พลังงาน (E) คงที่: มวลน้อย -> ความเร็วต้น (u) สูง</p>
+        </div>
+
+        <!-- ส่วนควบคุมการยิง -->
+        <div class="space-y-5 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+            <div>
+                <label class="flex justify-between text-sm font-bold text-slate-700 mb-2">
+                    <span>มุมเงย (Elevation - θ)</span>
+                    <span class="text-sky-600 bg-sky-50 px-2 rounded"><span id="val-angle">45</span>°</span>
+                </label>
+                <input type="range" id="slider-angle" min="0" max="90" value="45" class="control-input w-full">
+            </div>
+            
+            <div>
+                <label class="flex justify-between text-sm font-bold text-slate-700 mb-2">
+                    <span>ทิศทาง (Azimuth - φ)</span>
+                    <span class="text-purple-600 bg-purple-50 px-2 rounded"><span id="val-dir">0</span>°</span>
+                </label>
+                <input type="range" id="slider-dir" min="-45" max="45" value="0" class="control-input w-full">
+            </div>
+
+            <div>
+                <label class="flex justify-between text-sm font-bold text-slate-700 mb-2">
+                    <span>ความเร็วต้น (Velocity - u)</span>
+                    <span class="text-emerald-600 bg-emerald-50 px-2 rounded"><span id="val-power">50</span> m/s</span>
+                </label>
+                <input type="range" id="slider-power" min="10" max="100" value="50" class="control-input w-full">
+                <div class="flex justify-between text-[10px] text-slate-400 mt-1 font-mono">
+                    <span>Min: 10</span>
+                    <span>Max: <span id="max-power-label">100</span></span>
+                </div>
+            </div>
+        </div>
+
+        <button id="btn-fire" class="control-input w-full bg-gradient-to-r from-rose-500 to-orange-500 hover:from-rose-400 hover:to-orange-400 text-white font-black py-4 rounded-2xl text-xl shadow-lg transition transform active:scale-95 flex justify-center items-center gap-2 mt-2">
+            <span>🔥</span> ทำการยิง! <span>🚀</span>
+        </button>
+
+        <div class="mt-auto bg-slate-100 p-4 rounded-xl border border-slate-200 text-xs font-mono text-slate-500">
+            <h4 class="font-bold text-slate-700 mb-2 border-b border-slate-300 pb-1">สมการ (g = 9.81 m/s²)</h4>
+            <ul class="space-y-1.5 ml-2">
+                <li>S<sub>x</sub> = (u cosθ)t</li>
+                <li>S<sub>y</sub> = (u sinθ)t - ½gt²</li>
+                <li>H<sub>max</sub> = (u² sin²θ) / 2g</li>
+                <li>R<sub>max</sub> = (u² sin2θ) / g</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- สรุปผลเกม -->
+    <div id="result-modal" class="absolute inset-0 bg-white/90 backdrop-blur-md z-[60] flex items-center justify-center hidden">
+        <div class="bg-white border-2 border-slate-200 p-8 rounded-3xl max-w-lg w-full shadow-2xl text-center">
+            <h1 id="res-title" class="text-4xl font-black text-slate-800 mb-2">จบการทดสอบ!</h1>
+            <p id="res-desc" class="text-slate-500 mb-6">สรุปผลการทดลองของคุณ</p>
+            
+            <div class="bg-slate-50 p-6 rounded-2xl border border-slate-200 space-y-3 text-left mb-6 font-mono text-slate-700">
+                <div class="flex justify-between border-b border-slate-200 pb-2">
+                    <span>คะแนนเคลียร์ด่าน:</span>
+                    <span id="res-base" class="font-bold">0</span>
+                </div>
+                <div class="flex justify-between border-b border-slate-200 pb-2 text-sky-600">
+                    <span>โบนัสเวลาที่เหลือ:</span>
+                    <span id="res-time" class="font-bold">0</span>
+                </div>
+                <div class="flex justify-between border-b border-slate-200 pb-2 text-rose-500">
+                    <span>โบนัสกระสุนที่เหลือ:</span>
+                    <span id="res-ammo" class="font-bold">0</span>
+                </div>
+                <div class="flex justify-between pt-2 text-xl text-emerald-600">
+                    <span class="font-black">คะแนนรวมสุทธิ:</span>
+                    <span id="res-total" class="font-black">0</span>
+                </div>
+            </div>
+            
+            <div class="mb-6">
+                <input type="text" id="player-name" placeholder="กรอกชื่อของคุณ..." maxlength="15" class="w-full text-center bg-white text-slate-800 p-4 rounded-xl border-2 border-slate-300 focus:outline-none focus:border-sky-500 font-bold text-lg">
+            </div>
+            
+            <button onclick="saveAndShowLeaderboard()" class="w-full bg-sky-600 hover:bg-sky-500 text-white font-bold py-4 rounded-xl transition shadow-md text-lg">
+                💾 บันทึกสถิติ
+            </button>
+        </div>
+    </div>
+
+    <!-- Leaderboard -->
+    <div id="leaderboard-modal" class="absolute inset-0 bg-slate-900/70 backdrop-blur-sm z-[70] flex items-center justify-center hidden">
+        <div class="bg-white p-8 rounded-3xl max-w-md w-full shadow-2xl">
+            <h2 class="text-3xl font-black text-slate-800 mb-6 text-center">🏆 Hall of Fame</h2>
+            
+            <div class="bg-slate-50 rounded-xl border border-slate-200 h-64 overflow-y-auto mb-6 p-2">
+                <table class="w-full text-left">
+                    <thead class="text-xs text-slate-400 uppercase bg-slate-100 sticky top-0">
+                        <tr>
+                            <th class="px-4 py-2 rounded-l-lg">อันดับ</th>
+                            <th class="px-4 py-2">ชื่อ</th>
+                            <th class="px-4 py-2 text-right rounded-r-lg">คะแนน</th>
+                        </tr>
+                    </thead>
+                    <tbody id="leaderboard-body" class="text-slate-700 font-medium"></tbody>
+                </table>
+            </div>
+            
+            <button onclick="returnToMenu()" class="w-full bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-3 rounded-xl transition">
+                กลับสู่เมนูหลัก
+            </button>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <!-- เพิ่ม Tone.js สำหรับระบบเสียง -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+
+    <script>
+        // --- 1. Audio Setup (Tone.js) ---
+        let audioInitialized = false;
+        let sfxFire, sfxHit, sfxWin;
+
+        async function initAudio() {
+            if (audioInitialized) return;
+            await Tone.start();
+            
+            // เสียงยิงปืนใหญ่ (Noise explosion)
+            sfxFire = new Tone.MembraneSynth({
+                pitchDecay: 0.1, octaves: 4, oscillator: { type: "sine" },
+                envelope: { attack: 0.01, decay: 0.4, sustain: 0.01, release: 1.2 }
+            }).toDestination();
+            sfxFire.volume.value = -5;
+
+            // เสียงกระทบสิ่งกีดขวาง (Metal Hit)
+            sfxHit = new Tone.MetalSynth({
+                frequency: 100, envelope: { attack: 0.001, decay: 0.4, release: 0.2 },
+                harmonicity: 5.1, modulationIndex: 32, resonance: 4000, octaves: 1.5
+            }).toDestination();
+            sfxHit.volume.value = -10;
+
+            // เสียงชนะ (Victory Arpeggio)
+            sfxWin = new Tone.PolySynth(Tone.Synth, {
+                oscillator: { type: "triangle" }, envelope: { attack: 0.05, decay: 0.1, sustain: 0.3, release: 1 }
+            }).toDestination();
+            sfxWin.volume.value = -8;
+
+            audioInitialized = true;
+        }
+
+        function playFireSound() { if(audioInitialized) sfxFire.triggerAttackRelease("C1", "8n"); }
+        function playHitSound() { if(audioInitialized) sfxHit.triggerAttackRelease("16n"); }
+        function playWinSound() { 
+            if(!audioInitialized) return;
+            const now = Tone.now();
+            sfxWin.triggerAttackRelease("C4", "8n", now);
+            sfxWin.triggerAttackRelease("E4", "8n", now + 0.15);
+            sfxWin.triggerAttackRelease("G4", "8n", now + 0.3);
+            sfxWin.triggerAttackRelease("C5", "4n", now + 0.45);
+        }
+
+        // --- 2. Three.js Setup ---
+        let scene, camera, renderer, controls;
+        let cannonGroup, barrelPivot, barrel, firePoint;
+        let activeProjectile = null;
+        let trailMarkers = [];
+        let explosions = [];
+        
+        let wallMeshes = []; 
+        let wallBoxes = [];
+        let targetMesh;
+        let targetBBox; 
+        
+        // --- 3. Game State ---
+        let isFlying = false;
+        let flightTime = 0;
+        let currentLevelIdx = 0;
+        let score = 0;
+        
+        let mode = 'practice';
+        let currentAmmo = 0;
+        let totalSeconds = 0;
+        let timerInterval = null;
+
+        const levels = [
+            { id: 1, title: "โจทย์ข้อ 1: พื้นฐานวิถีโค้ง", desc: "ทดลองยิงเป้าหมายที่อยู่บนพื้นราบข้างหน้า ลองปรับมุมและความเร็วให้สัมพันธ์กัน", target: {x: 0, y: 0, z: -100}, walls: [] },
+            { id: 2, title: "โจทย์ข้อ 2: ข้ามสิ่งกีดขวาง", desc: "มีกำแพงสูงขวางอยู่ตรงกลาง คุณต้องหามุม (θ) ที่ทำให้วิถีโค้ง (H max) ข้ามพ้นพอดี", target: {x: 0, y: 0, z: -160}, walls: [ {x: 0, h: 25, z: -80, w: 60, d: 4, type: 'wall'} ] },
+            { id: 3, title: "โจทย์ข้อ 3: พลิกแพลงซ้ายขวา", desc: "เป้าหมายไม่ได้อยู่ตรงกลาง! ต้องปรับทิศทาง Azimuth ให้แม่นยำ", target: {x: -60, y: 0, z: -180}, walls: [ {x: -30, h: 30, z: -90, w: 70, d: 5, type: 'wall'} ] },
+            { id: 4, title: "โจทย์ข้อ 4: ภูเขาสูงชัน", desc: "อุปสรรคครั้งนี้สูงมาก! กระสุนธรรมดาอาจทำความเร็วต้นไม่พอข้าม ลองพิจารณาลด 'มวล' กระสุน", target: {x: 0, y: 0, z: -250}, walls: [ {x: 0, h: 65, z: -120, w: 100, d: 20, type: 'mountain'} ] },
+            { id: 5, title: "โจทย์ข้อ 5: เป้าหมายบนตึกสูง", desc: "เป้าหมายถูกนำไปวางไว้บนดาดฟ้าตึกที่ความสูง 40 เมตร! ต้องคำนวณระยะ (S_y) ตอนตกกระทบให้แม่นยำ", target: {x: 40, y: 40, z: -200}, walls: [ {x: 40, h: 40, z: -200, w: 30, d: 30, type: 'building'} ] }
+        ];
+
+        const CANNON_ENERGY = 50000; 
+
+        window.onload = function() {
+            initScene();
+            buildCannon();
+            setupUI();
+            animate();
+            setControlsEnabled(false); 
+        };
+
+        // --- UI & Flow ---
+        async function initGame(selectedMode) {
+            await initAudio(); // เริ่มต้นระบบเสียง (ผู้ใช้คลิกปุ่มแล้ว อนุญาตให้เล่นเสียงได้)
+            startGame(selectedMode);
+        }
+
+        function openBattleConfig() {
+            document.getElementById('battle-config-modal').classList.remove('hidden');
+            document.getElementById('config-ammo').addEventListener('input', (e) => {
+                document.getElementById('val-battle-ammo').innerText = e.target.value;
+            });
+            document.getElementById('config-time').addEventListener('input', (e) => {
+                document.getElementById('val-battle-time').innerText = e.target.value;
+            });
+        }
+        
+        function closeBattleConfig() {
+            document.getElementById('battle-config-modal').classList.add('hidden');
+        }
+
+        function startGame(selectedMode) {
+            mode = selectedMode;
+            document.getElementById('main-menu').classList.add('hidden');
+            document.getElementById('battle-config-modal').classList.add('hidden');
+            
+            currentLevelIdx = 0;
+            score = 0;
+            document.getElementById('score-display').innerText = score;
+            
+            if (mode === 'battle') {
+                currentAmmo = parseInt(document.getElementById('config-ammo').value);
+                totalSeconds = parseInt(document.getElementById('config-time').value) * 60;
+                document.getElementById('battle-hud').classList.remove('hidden');
+                updateBattleHUD();
+                startBattleTimer();
+            } else {
+                document.getElementById('battle-hud').classList.add('hidden');
+                clearInterval(timerInterval);
+            }
+            showBriefing(currentLevelIdx);
+        }
+
+        function showBriefing(idx) {
+            if (idx >= levels.length) { handleGameEnd(true); return; }
+            const lvl = levels[idx];
+            setControlsEnabled(false);
+
+            document.getElementById('briefing-title').innerText = lvl.title;
+            document.getElementById('briefing-desc').innerText = lvl.desc;
+            
+            let dataHtml = `<li>🎯 เป้าหมาย: พิกัด <span class="font-bold text-sky-600">X=${lvl.target.x}, Z=${lvl.target.z}</span>, ความสูง <span class="font-bold text-sky-600">Y=${lvl.target.y}m</span></li>`;
+            if (lvl.walls.length > 0) {
+                lvl.walls.forEach((w, i) => {
+                    let typeName = w.type === 'building' ? 'อาคาร' : (w.type === 'mountain' ? 'ภูเขา' : 'กำแพง');
+                    dataHtml += `<li>🧱 ${typeName}ที่ ${i+1}: สูง <span class="text-rose-500 font-bold">${w.h}m</span> (X=${w.x}, Z=${w.z})</li>`;
+                });
+            } else {
+                dataHtml += `<li class="text-emerald-500">✅ ไม่มีอุปสรรคกีดขวาง</li>`;
+            }
+            document.getElementById('briefing-data').innerHTML = dataHtml;
+            document.getElementById('panel-level-title').innerText = lvl.title;
+            document.getElementById('panel-target-info').innerText = `เป้า: X=${lvl.target.x}, Y=${lvl.target.y}, Z=${lvl.target.z}`;
+
+            loadLevel3D(idx);
+            document.getElementById('briefing-modal').classList.remove('hidden');
+        }
+
+        function acceptMission() {
+            document.getElementById('briefing-modal').classList.add('hidden');
+            setControlsEnabled(true);
+        }
+
+        function setControlsEnabled(enabled) {
+            document.querySelectorAll('.control-input').forEach(input => input.disabled = !enabled);
+        }
+
+        // --- Battle Mechanics ---
+        function startBattleTimer() {
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                if (isFlying) return; 
+                totalSeconds--;
+                updateBattleHUD();
+                if (totalSeconds <= 0) {
+                    clearInterval(timerInterval);
+                    handleGameEnd(false, "หมดเวลา!");
+                }
+            }, 1000);
+        }
+
+        function updateBattleHUD() {
+            if (mode !== 'battle') return;
+            let m = Math.floor(Math.max(0, totalSeconds) / 60);
+            let s = Math.max(0, totalSeconds) % 60;
+            document.getElementById('hud-time-left').innerText = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+            document.getElementById('hud-ammo-left').innerText = currentAmmo;
+            
+            if(totalSeconds < 60) document.getElementById('hud-time-left').classList.replace('text-slate-700', 'text-rose-600');
+            else document.getElementById('hud-time-left').classList.replace('text-rose-600', 'text-slate-700');
+            
+            if(currentAmmo <= 3) document.getElementById('hud-ammo-left').className = "text-2xl font-black text-rose-600 animate-pulse";
+            else document.getElementById('hud-ammo-left').className = "text-2xl font-black text-sky-600";
+        }
+
+        function handleGameEnd(isVictory, reason = "") {
+            setControlsEnabled(false);
+            clearInterval(timerInterval);
+            
+            if (mode === 'practice') {
+                showMsg("🎉 จบหลักสูตร!", "เยี่ยมยอด คุณเข้าใจหลักการโปรเจคไทล์แล้ว", "text-emerald-500");
+                if (isVictory) playWinSound();
+                setTimeout(() => {
+                    document.getElementById('message-overlay').classList.add('hidden');
+                    returnToMenu();
+                }, 4000);
+                return;
+            }
+
+            if (isVictory) playWinSound();
+            document.getElementById('res-title').innerText = isVictory ? "🎉 ภารกิจสำเร็จ!" : "💀 ภารกิจล้มเหลว";
+            document.getElementById('res-title').className = `text-4xl font-black mb-2 ${isVictory ? 'text-emerald-600' : 'text-rose-600'}`;
+            document.getElementById('res-desc').innerText = reason || (isVictory ? "เคลียร์ตึกและกำแพงได้ทั้งหมด!" : "กระสุนหมดก่อนเคลียร์เป้าหมาย");
+            
+            let baseScore = score;
+            let ammoBonus = isVictory ? currentAmmo * 200 : 0;
+            let timeBonus = isVictory ? totalSeconds * 5 : 0;
+            let finalScore = baseScore + ammoBonus + timeBonus;
+            score = finalScore; 
+            
+            document.getElementById('res-base').innerText = baseScore.toLocaleString();
+            document.getElementById('res-time').innerText = `+${timeBonus.toLocaleString()}`;
+            document.getElementById('res-ammo').innerText = `+${ammoBonus.toLocaleString()}`;
+            document.getElementById('res-total').innerText = finalScore.toLocaleString();
+            
+            document.getElementById('player-name').value = "";
+            document.getElementById('result-modal').classList.remove('hidden');
+        }
+
+        function saveAndShowLeaderboard() {
+            let name = document.getElementById('player-name').value.trim() || "Anonymous";
+            let lb = JSON.parse(localStorage.getItem('physics_lb') || '[]');
+            lb.push({ name: name, score: score, date: new Date().toLocaleDateString() });
+            lb.sort((a, b) => b.score - a.score);
+            lb = lb.slice(0, 10);
+            localStorage.setItem('physics_lb', JSON.stringify(lb));
+            
+            document.getElementById('result-modal').classList.add('hidden');
+            showLeaderboard();
+        }
+
+        function showLeaderboard() {
+            document.getElementById('main-menu').classList.add('hidden');
+            document.getElementById('leaderboard-modal').classList.remove('hidden');
+            
+            let lb = JSON.parse(localStorage.getItem('physics_lb') || '[]');
+            let tbody = document.getElementById('leaderboard-body');
+            tbody.innerHTML = '';
+            
+            if (lb.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="3" class="text-center py-4 text-slate-400">ยังไม่มีสถิติ</td></tr>`;
+            } else {
+                lb.forEach((entry, idx) => {
+                    let medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx+1}.`;
+                    tbody.innerHTML += `
+                        <tr class="border-b border-slate-100 hover:bg-slate-50 transition">
+                            <td class="px-4 py-3 font-bold">${medal}</td>
+                            <td class="px-4 py-3">${entry.name}</td>
+                            <td class="px-4 py-3 text-right font-bold text-sky-600">${entry.score.toLocaleString()}</td>
+                        </tr>
+                    `;
+                });
+            }
+        }
+
+        function returnToMenu() {
+            document.getElementById('leaderboard-modal').classList.add('hidden');
+            document.getElementById('result-modal').classList.add('hidden');
+            document.getElementById('main-menu').classList.remove('hidden');
+        }
+
+        // --- Three.js Setup ---
+        function initScene() {
+            const container = document.getElementById('game-canvas');
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x87CEEB); // Sky blue
+            scene.fog = new THREE.FogExp2(0x87CEEB, 0.002);
+
+            camera = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 2000);
+            camera.position.set(40, 30, 40);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            container.appendChild(renderer.domElement);
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.target.set(0, 5, -50);
+            controls.maxDistance = 500;
+            controls.maxPolarAngle = Math.PI / 2 + 0.05; 
+
+            const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambient);
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(100, 200, 100);
+            dirLight.castShadow = true;
+            dirLight.shadow.camera.top = 300;
+            dirLight.shadow.camera.bottom = -300;
+            dirLight.shadow.camera.left = -300;
+            dirLight.shadow.camera.right = 300;
+            scene.add(dirLight);
+
+            // พื้นสีเข้มขึ้นเพื่อให้เห็นกริดชัด
+            const groundGeo = new THREE.PlaneGeometry(2000, 2000);
+            const groundMat = new THREE.MeshStandardMaterial({ color: 0x4ade80, roughness: 1.0, metalness: 0.0 });
+            const ground = new THREE.Mesh(groundGeo, groundMat);
+            ground.rotation.x = -Math.PI / 2;
+            ground.receiveShadow = true;
+            scene.add(ground);
+
+            const gridHelper = new THREE.GridHelper(1000, 100, 0x1e293b, 0xf8fafc);
+            gridHelper.position.y = 0.1;
+            scene.add(gridHelper);
+
+            createEnvironment(); 
+
+            window.addEventListener('resize', () => {
+                camera.aspect = container.clientWidth / container.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(container.clientWidth, container.clientHeight);
+            });
+        }
+
+        function createEnvironment() {
+            const leavesGeo = new THREE.ConeGeometry(5, 12, 7);
+            const leavesMat = new THREE.MeshStandardMaterial({color: 0x15803d, flatShading: true});
+            const trunkGeo = new THREE.CylinderGeometry(1, 1.5, 4, 6);
+            const trunkMat = new THREE.MeshStandardMaterial({color: 0x78350f});
+            const rockGeo = new THREE.DodecahedronGeometry(4, 1);
+            const rockMat = new THREE.MeshStandardMaterial({color: 0x64748b, roughness: 0.9});
+            const mountGeo = new THREE.ConeGeometry(80, 150, 16);
+            const mountMat = new THREE.MeshStandardMaterial({color: 0x475569, flatShading: true});
+
+            for(let i = 0; i < 120; i++) {
+                let x = (Math.random() - 0.5) * 800;
+                let z = (Math.random() - 0.5) * 800;
+                
+                // Clear path in the center strip
+                if (Math.abs(x) < 100 && z > -400 && z < 100) continue;
+
+                if (Math.random() > 0.4) {
+                    let t = new THREE.Group();
+                    let trunk = new THREE.Mesh(trunkGeo, trunkMat);
+                    trunk.position.y = 2;
+                    trunk.castShadow = true;
+                    let leaves = new THREE.Mesh(leavesGeo, leavesMat);
+                    leaves.position.y = 8;
+                    leaves.castShadow = true;
+                    t.add(trunk); t.add(leaves);
+                    t.position.set(x, 0, z);
+                    let s = 0.6 + Math.random() * 1.5; // เล็กบ้างใหญ่บ้าง
+                    t.scale.set(s, s, s);
+                    scene.add(t);
+                } else if(Math.random() > 0.1) {
+                    let r = new THREE.Mesh(rockGeo, rockMat);
+                    r.position.set(x, 1, z);
+                    let sr = 0.5 + Math.random() * 2;
+                    r.scale.set(sr, sr * 0.6, sr);
+                    r.rotation.y = Math.random() * Math.PI;
+                    r.castShadow = true;
+                    scene.add(r);
+                } else {
+                    let m = new THREE.Mesh(mountGeo, mountMat);
+                    m.position.set(x * 1.5, 0, z * 1.5 - 200);
+                    scene.add(m);
+                }
+            }
+        }
+
+        function buildCannon() {
+            cannonGroup = new THREE.Group();
+            scene.add(cannonGroup);
+
+            // --- 1. ฐานรองปืนใหญ่ (Carriage Base) ---
+            const carriage = new THREE.Group();
+            carriage.position.y = 3;
+            cannonGroup.add(carriage);
+
+            const woodMat = new THREE.MeshStandardMaterial({color: 0x451a03, roughness: 0.9}); 
+            const metalMat = new THREE.MeshStandardMaterial({color: 0x1e293b, metalness: 0.8, roughness: 0.3}); 
+
+            const sideGeo = new THREE.BoxGeometry(1.5, 4, 14);
+            const sideL = new THREE.Mesh(sideGeo, woodMat); sideL.position.set(-3.5, 0, 0); sideL.castShadow = true; carriage.add(sideL);
+            const sideR = new THREE.Mesh(sideGeo, woodMat); sideR.position.set(3.5, 0, 0); sideR.castShadow = true; carriage.add(sideR);
+
+            const crossGeo = new THREE.BoxGeometry(5.5, 2, 3);
+            const crossF = new THREE.Mesh(crossGeo, woodMat); crossF.position.set(0, -1, -4); crossF.castShadow = true; carriage.add(crossF);
+            const crossB = new THREE.Mesh(crossGeo, woodMat); crossB.position.set(0, -1, 4); crossB.castShadow = true; carriage.add(crossB);
+
+            const edgeGeo = new THREE.BoxGeometry(1.6, 4.2, 0.5);
+            const edge1 = new THREE.Mesh(edgeGeo, metalMat); edge1.position.set(-3.5, 0, -6.8); carriage.add(edge1);
+            const edge2 = edge1.clone(); edge2.position.set(3.5, 0, -6.8); carriage.add(edge2);
+            const edge3 = edge1.clone(); edge3.position.set(-3.5, 0, 6.8); carriage.add(edge3);
+            const edge4 = edge1.clone(); edge4.position.set(3.5, 0, 6.8); carriage.add(edge4);
+
+            // --- 2. ล้อ (Wheels) ---
+            function createWheel() {
+                const wheelGrp = new THREE.Group();
+                const rim = new THREE.Mesh(new THREE.TorusGeometry(3, 0.6, 16, 32), woodMat); rim.castShadow = true; wheelGrp.add(rim);
+                const tire = new THREE.Mesh(new THREE.TorusGeometry(3.2, 0.2, 8, 32), metalMat); wheelGrp.add(tire);
+                const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, 1.5, 16), metalMat); hub.rotation.x = Math.PI / 2; wheelGrp.add(hub);
+                const spokeGeo = new THREE.CylinderGeometry(0.2, 0.2, 6, 8);
+                for(let i=0; i<4; i++) {
+                    const spoke = new THREE.Mesh(spokeGeo, woodMat);
+                    spoke.rotation.z = (Math.PI / 4) * i;
+                    wheelGrp.add(spoke);
+                }
+                return wheelGrp;
+            }
+
+            const wL = createWheel(); wL.rotation.y = Math.PI / 2; wL.position.set(-5, 3, 2); cannonGroup.add(wL);
+            const wR = createWheel(); wR.rotation.y = Math.PI / 2; wR.position.set(5, 3, 2); cannonGroup.add(wR);
+
+            // --- 3. จุดหมุนและกระบอกปืน (Barrel) ---
+            barrelPivot = new THREE.Group();
+            barrelPivot.position.set(0, 5, 2); 
+            cannonGroup.add(barrelPivot);
+
+            const ironMat = new THREE.MeshStandardMaterial({color: 0x334155, metalness: 0.8, roughness: 0.3});
+            const goldMat = new THREE.MeshStandardMaterial({color: 0xb45309, metalness: 0.9, roughness: 0.2});
+
+            const barrelBack = new THREE.Mesh(new THREE.CylinderGeometry(2.0, 2.4, 6, 32), ironMat);
+            barrelBack.rotation.x = -Math.PI / 2; barrelBack.position.z = -1; barrelBack.castShadow = true; barrelPivot.add(barrelBack);
+
+            const cascabel = new THREE.Mesh(new THREE.SphereGeometry(1.3, 16, 16), ironMat);
+            cascabel.position.z = 2.5; barrelPivot.add(cascabel);
+
+            const barrelFront = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 2.0, 8, 32), ironMat);
+            barrelFront.rotation.x = -Math.PI / 2; barrelFront.position.z = -8; barrelFront.castShadow = true; barrelPivot.add(barrelFront);
+            
+            const muzzle = new THREE.Mesh(new THREE.CylinderGeometry(1.7, 1.5, 2, 32), ironMat);
+            muzzle.rotation.x = -Math.PI / 2; muzzle.position.z = -12.5; muzzle.castShadow = true; barrelPivot.add(muzzle);
+
+            const ring1 = new THREE.Mesh(new THREE.TorusGeometry(2.05, 0.2, 8, 32), goldMat); ring1.position.z = -4; barrelPivot.add(ring1);
+            const ring2 = new THREE.Mesh(new THREE.TorusGeometry(1.7, 0.15, 8, 32), goldMat); ring2.position.z = -11; barrelPivot.add(ring2);
+
+            firePoint = new THREE.Object3D();
+            firePoint.position.set(0, 0, -13); 
+            barrelPivot.add(firePoint);
+
+            updateCannonRotation();
+        }
+
+        // --- สร้างลวดลายเป้าหมาย ---
+        function createTargetTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 512; canvas.height = 512;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, 512, 512); // ขาว
+            ctx.beginPath(); ctx.arc(256, 256, 240, 0, Math.PI * 2); ctx.fillStyle = '#ef4444'; ctx.fill(); // แดงนอก
+            ctx.beginPath(); ctx.arc(256, 256, 160, 0, Math.PI * 2); ctx.fillStyle = '#ffffff'; ctx.fill(); // ขาวกลาง
+            ctx.beginPath(); ctx.arc(256, 256, 80, 0, Math.PI * 2); ctx.fillStyle = '#ef4444'; ctx.fill(); // แดงใน (Bullseye)
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        function setupUI() {
+            const angleSlider = document.getElementById('slider-angle');
+            const dirSlider = document.getElementById('slider-dir');
+            const powerSlider = document.getElementById('slider-power');
+            const ammoSelect = document.getElementById('ammo-select');
+
+            angleSlider.addEventListener('input', (e) => {
+                document.getElementById('val-angle').innerText = e.target.value; updateCannonRotation();
+            });
+            dirSlider.addEventListener('input', (e) => {
+                document.getElementById('val-dir').innerText = e.target.value; updateCannonRotation();
+            });
+            powerSlider.addEventListener('input', (e) => {
+                document.getElementById('val-power').innerText = e.target.value;
+            });
+            ammoSelect.addEventListener('change', () => {
+                const mass = parseFloat(ammoSelect.value);
+                const maxV = Math.floor(Math.sqrt((2 * CANNON_ENERGY) / mass));
+                powerSlider.max = maxV; document.getElementById('max-power-label').innerText = maxV;
+                if (parseFloat(powerSlider.value) > maxV) {
+                    powerSlider.value = maxV; document.getElementById('val-power').innerText = maxV;
+                }
+            });
+
+            document.getElementById('btn-fire').addEventListener('click', fireProjectile);
+            ammoSelect.dispatchEvent(new Event('change'));
+        }
+
+        function updateCannonRotation() {
+            const elev = document.getElementById('slider-angle').value;
+            const az = document.getElementById('slider-dir').value;
+            barrelPivot.rotation.x = THREE.MathUtils.degToRad(elev);
+            cannonGroup.rotation.y = -THREE.MathUtils.degToRad(az);
+        }
+
+        function loadLevel3D(idx) {
+            const lvl = levels[idx];
+
+            wallMeshes.forEach(m => scene.remove(m));
+            wallMeshes = [];
+            wallBoxes = [];
+            if (targetMesh) scene.remove(targetMesh);
+
+            lvl.walls.forEach(w => {
+                const geo = new THREE.BoxGeometry(w.w, w.h, w.d);
+                let mat;
+                if (w.type === 'building') mat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.3 });
+                else if (w.type === 'mountain') mat = new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.9 });
+                else mat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.7, roughness: 0.2 });
+                
+                const mesh = new THREE.Mesh(geo, mat);
+                mesh.position.set(w.x, w.h / 2, w.z);
+                mesh.castShadow = true; mesh.receiveShadow = true;
+                const edges = new THREE.EdgesGeometry(geo);
+                mesh.add(new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0xbae6fd })));
+
+                scene.add(mesh);
+                wallMeshes.push(mesh);
+                wallBoxes.push(new THREE.Box3().setFromObject(mesh));
+            });
+
+            // สร้างเป้ากลมแบบกีฬายิงธนูและเสา
+            const tex = createTargetTexture();
+            const tgtGeo = new THREE.CylinderGeometry(5, 5, 2, 32); 
+            const tgtMat = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.5 });
+            targetMesh = new THREE.Mesh(tgtGeo, tgtMat);
+            targetMesh.rotation.x = Math.PI / 2;
+            
+            const fixedY = lvl.target.y + 5; // ลอยขึ้น 5 เมตรเสมอ
+            targetMesh.position.set(lvl.target.x, fixedY, lvl.target.z);
+            targetMesh.castShadow = true;
+            scene.add(targetMesh);
+            
+            // เสาไม้รองรับเป้า
+            const standGeo = new THREE.BoxGeometry(1.5, fixedY, 1.5);
+            const standMat = new THREE.MeshStandardMaterial({color: 0x5c2b07, roughness: 0.9});
+            const stand = new THREE.Mesh(standGeo, standMat);
+            stand.position.set(lvl.target.x, fixedY / 2, lvl.target.z - 1); 
+            stand.castShadow = true;
+            scene.add(stand);
+            
+            wallMeshes.push(stand);
+            wallBoxes.push(new THREE.Box3().setFromObject(stand)); // ยิงโดนเสาก็ถือว่าพลาด
+            
+            targetBBox = new THREE.Sphere(targetMesh.position, 5.5);
+
+            camera.position.set(50, 40, 70);
+            controls.target.set(lvl.target.x / 2, Math.max(5, lvl.target.y / 2), lvl.target.z / 2);
+            controls.update();
+        }
+
+        function fireProjectile() {
+            if (isFlying) return;
+            if (mode === 'battle') {
+                if (currentAmmo <= 0) return; 
+                currentAmmo--; updateBattleHUD();
+            }
+            
+            setControlsEnabled(false);
+            playFireSound(); // เสียงยิง
+
+            trailMarkers.forEach(m => scene.remove(m)); trailMarkers = [];
+
+            const mass = parseFloat(document.getElementById('ammo-select').value);
+            const v0 = parseFloat(document.getElementById('slider-power').value);
+
+            let radius = 1.2; let color = 0xffffff;
+            if (mass === 50) { radius = 2.0; color = 0x334155; }
+            if (mass === 2) { radius = 0.8; color = 0x3b82f6; }
+
+            const mesh = new THREE.Mesh(new THREE.SphereGeometry(radius, 16, 16), new THREE.MeshStandardMaterial({color: color, metalness: 0.5}));
+            mesh.castShadow = true;
+
+            const spawnPos = new THREE.Vector3(); firePoint.getWorldPosition(spawnPos); mesh.position.copy(spawnPos);
+            const basePos = new THREE.Vector3(); barrelPivot.getWorldPosition(basePos);
+            const direction = new THREE.Vector3().subVectors(spawnPos, basePos).normalize();
+            const velocity = direction.multiplyScalar(v0);
+
+            scene.add(mesh);
+            activeProjectile = { mesh, velocity, radius, startPos: spawnPos.clone() };
+            
+            isFlying = true; flightTime = 0;
+            createExplosion(spawnPos, 0xffaa00, 2, 0.5);
+        }
+
+        function createExplosion(pos, color, scaleMax, lifeSpan = 1.0) {
+            const mesh = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 16), new THREE.MeshBasicMaterial({color: color, transparent: true, opacity: 0.8}));
+            mesh.position.copy(pos); scene.add(mesh);
+            explosions.push({ mesh, life: lifeSpan, maxLife: lifeSpan, scaleMax });
+        }
+
+        function showMsg(text, subtext, colorClass) {
+            const overlay = document.getElementById('message-overlay');
+            const msgEl = document.getElementById('message-text');
+            const subEl = document.getElementById('message-subtext');
+            msgEl.className = `text-5xl font-black mb-3 ${colorClass}`;
+            msgEl.innerText = text; subEl.innerText = subtext;
+            overlay.classList.remove('hidden');
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const dt = 1 / 60; 
+
+            if (isFlying && activeProjectile) {
+                flightTime += dt;
+                const p = activeProjectile;
+                
+                p.mesh.position.x += p.velocity.x * dt;
+                p.mesh.position.y += p.velocity.y * dt;
+                p.mesh.position.z += p.velocity.z * dt;
+                p.velocity.y -= 9.81 * dt; 
+
+                const distXZ = Math.sqrt(Math.pow(p.mesh.position.x - p.startPos.x, 2) + Math.pow(p.mesh.position.z - p.startPos.z, 2));
+                document.getElementById('hud-t').innerText = flightTime.toFixed(2);
+                document.getElementById('hud-sx').innerText = distXZ.toFixed(1);
+                document.getElementById('hud-sy').innerText = Math.max(0, p.mesh.position.y).toFixed(1);
+                document.getElementById('hud-v').innerText = p.velocity.length().toFixed(1);
+
+                if (Math.floor(flightTime * 60) % 3 === 0) {
+                    const tm = new THREE.Mesh(new THREE.SphereGeometry(0.3, 4, 4), new THREE.MeshBasicMaterial({color: 0xffffff}));
+                    tm.position.copy(p.mesh.position); scene.add(tm); trailMarkers.push(tm);
+                }
+
+                let collided = false; let isWin = false; let hitReason = "";
+
+                if (p.mesh.position.y <= p.radius) {
+                    collided = true; hitReason = "ground";
+                    createExplosion(p.mesh.position, 0x64748b, 4, 1.0);
+                }
+
+                if (!collided && targetMesh) {
+                    if (p.mesh.position.distanceTo(targetBBox.center) < (targetBBox.radius + p.radius)) {
+                        collided = true; isWin = true;
+                        createExplosion(targetMesh.position, 0xef4444, 10, 1.5); 
+                    }
+                }
+
+                if (!collided) {
+                    for (let i = 0; i < wallBoxes.length; i++) {
+                        if (wallBoxes[i].containsPoint(p.mesh.position)) {
+                            collided = true;
+                            hitReason = levels[currentLevelIdx].walls[i] ? levels[currentLevelIdx].walls[i].type : "wall";
+                            createExplosion(p.mesh.position, 0x64748b, 6, 1.0); 
+                            break;
+                        }
+                    }
+                }
+
+                if (collided) {
+                    scene.remove(p.mesh); isFlying = false;
+
+                    if (isWin) {
+                        score += 500; document.getElementById('score-display').innerText = score;
+                        playWinSound();
+                        showMsg("🎯 เข้าเป้าอย่างสวยงาม!", "คำนวณระยะและมุมได้แม่นยำมาก", "text-emerald-500");
+                        
+                        setTimeout(() => {
+                            document.getElementById('message-overlay').classList.add('hidden');
+                            currentLevelIdx++; showBriefing(currentLevelIdx);
+                        }, 3500);
+                    } else {
+                        playHitSound();
+                        let failSub = hitReason === "ground" ? "กระสุนตกถึงพื้นก่อน ลองเพิ่มมุมเงยหรือความเร็ว" : "กระสุนชนสิ่งกีดขวาง! ลองปรับสมการวิถีโค้งใหม่นะ";
+                        showMsg("❌ พลาดไปนิดเดียว", failSub, "text-rose-500");
+                        
+                        setTimeout(() => {
+                            document.getElementById('message-overlay').classList.add('hidden');
+                            if (mode === 'battle' && currentAmmo <= 0) handleGameEnd(false);
+                            else setControlsEnabled(true);
+                        }, 3000);
+                    }
+                }
+            }
+
+            explosions.forEach((exp, idx) => {
+                exp.life -= dt;
+                const progress = 1 - (exp.life / exp.maxLife);
+                const scale = 1 + (progress * exp.scaleMax);
+                exp.mesh.scale.set(scale, scale, scale);
+                exp.mesh.material.opacity = exp.life / exp.maxLife;
+                if (exp.life <= 0) { scene.remove(exp.mesh); explosions.splice(idx, 1); }
+            });
+
+            controls.update(); renderer.render(scene, camera);
+        }
+    </script>
+</body>
+</html>

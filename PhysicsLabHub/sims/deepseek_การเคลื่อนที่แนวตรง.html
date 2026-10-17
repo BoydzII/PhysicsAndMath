@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>แอปการเคลื่อนที่ในแนวตรง (Kinematics 1D)</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #e0e7ff, #f0f4ff);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+            padding: 30px;
+            max-width: 900px;
+            width: 100%;
+        }
+        h1 {
+            text-align: center;
+            color: #1e3a8a;
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+        .subtitle {
+            text-align: center;
+            color: #475569;
+            margin-bottom: 25px;
+        }
+        .input-section {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: #f8fafc;
+            padding: 15px;
+            border-radius: 12px;
+            min-width: 120px;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .input-group label {
+            font-weight: bold;
+            color: #334155;
+            margin-bottom: 5px;
+        }
+        .input-group input {
+            width: 100px;
+            padding: 10px;
+            border: 2px solid #cbd5e1;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 1.1em;
+            outline: none;
+            transition: border 0.3s;
+        }
+        .input-group input:focus {
+            border-color: #3b82f6;
+        }
+        .unit {
+            font-size: 0.85em;
+            color: #64748b;
+            margin-top: 4px;
+        }
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin: 15px 0;
+        }
+        button {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 30px;
+            font-weight: bold;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: #3b82f6;
+            color: white;
+            box-shadow: 0 4px 10px rgba(59,130,246,0.4);
+        }
+        button:hover {
+            background: #2563eb;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(37,99,235,0.5);
+        }
+        button:active {
+            transform: translateY(0);
+        }
+        button.reset {
+            background: #ef4444;
+            box-shadow: 0 4px 10px rgba(239,68,68,0.4);
+        }
+        button.reset:hover {
+            background: #dc2626;
+        }
+        button:disabled {
+            background: #94a3b8;
+            box-shadow: none;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .result-box {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin: 15px 0;
+            background: #f1f5f9;
+            padding: 15px;
+            border-radius: 15px;
+        }
+        .result-item {
+            text-align: center;
+            font-size: 1.2em;
+        }
+        .result-value {
+            font-weight: bold;
+            color: #0f172a;
+            background: white;
+            padding: 8px 20px;
+            border-radius: 20px;
+            display: inline-block;
+            margin-top: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        .canvas-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        canvas {
+            background: #ffffff;
+            border: 2px solid #e2e8f0;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+        .graph-title {
+            text-align: center;
+            font-weight: bold;
+            color: #475569;
+            margin-bottom: 5px;
+        }
+        .live-info {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 0.95em;
+            color: #1e293b;
+        }
+        @media (max-width: 700px) {
+            .canvas-container {
+                flex-direction: column;
+                align-items: center;
+            }
+            canvas {
+                width: 100%;
+                height: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 การเคลื่อนที่ในแนวตรง</h1>
+        <p class="subtitle">Kinematics 1D : v = u + at , s = ut + ½at²</p>
+
+        <div class="input-section">
+            <div class="input-group">
+                <label>ความเร็วต้น (u)</label>
+                <input type="number" id="u" value="0" step="any" placeholder="m/s">
+                <span class="unit">m/s</span>
+            </div>
+            <div class="input-group">
+                <label>ความเร่ง (a)</label>
+                <input type="number" id="a" value="2" step="any" placeholder="m/s²">
+                <span class="unit">m/s²</span>
+            </div>
+            <div class="input-group">
+                <label>เวลา (t)</label>
+                <input type="number" id="t" value="5" step="any" min="0.1" placeholder="s">
+                <span class="unit">วินาที</span>
+            </div>
+        </div>
+
+        <div class="btn-group">
+            <button id="calcBtn">🔍 คำนวณ</button>
+            <button id="playBtn" disabled>▶ เล่นอนิเมชัน</button>
+            <button id="stopBtn" disabled>⏹️ หยุด</button>
+            <button id="resetBtn" class="reset">🔄 รีเซ็ต</button>
+        </div>
+
+        <div class="result-box" id="resultBox" style="display: none;">
+            <div class="result-item">ความเร็วปลาย (v) <br> <span class="result-value" id="vDisplay">-</span> m/s</div>
+            <div class="result-item">การกระจัด (s) <br> <span class="result-value" id="sDisplay">-</span> m</div>
+        </div>
+
+        <div class="canvas-container">
+            <div>
+                <div class="graph-title">🎬 อนิเมชันการเคลื่อนที่</div>
+                <canvas id="animCanvas" width="500" height="200"></canvas>
+                <div class="live-info" id="liveInfo">เวลา 0.00 s | ความเร็ว 0.00 m/s | ระยะทาง 0.00 m</div>
+            </div>
+            <div>
+                <div class="graph-title">📈 กราฟ v-t และ s-t</div>
+                <canvas id="graphCanvas" width="350" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ดึง element
+        const uInput = document.getElementById('u');
+        const aInput = document.getElementById('a');
+        const tInput = document.getElementById('t');
+        const calcBtn = document.getElementById('calcBtn');
+        const playBtn = document.getElementById('playBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const resultBox = document.getElementById('resultBox');
+        const vDisplay = document.getElementById('vDisplay');
+        const sDisplay = document.getElementById('sDisplay');
+        const animCanvas = document.getElementById('animCanvas');
+        const animCtx = animCanvas.getContext('2d');
+        const graphCanvas = document.getElementById('graphCanvas');
+        const graphCtx = graphCanvas.getContext('2d');
+        const liveInfo = document.getElementById('liveInfo');
+
+        // ตัวแปรสถานะ
+        let u = 0, a = 2, t = 5;
+        let v = 0, s = 0;
+        let animationId = null;
+        let animationStartTime = null;
+        let animationPaused = false;
+        let currentAnimTime = 0; // เวลาปัจจุบันในอนิเมชัน (0 ถึง t)
+        
+        // ข้อมูลที่คำนวณไว้สำหรับ scale
+        let minDisp = 0, maxDisp = 0, maxAbsDisp = 0;
+
+        // ฟังก์ชันคำนวณ
+        function calculate() {
+            u = parseFloat(uInput.value) || 0;
+            a = parseFloat(aInput.value) || 0;
+            t = parseFloat(tInput.value) || 0;
+            if (t <= 0) t = 0.1; // กันเวลาเป็นศูนย์หรือติดลบ
+            
+            v = u + a * t;
+            s = u * t + 0.5 * a * t * t;
+            
+            // คำนวณ displacement สูงสุด/ต่ำสุดในช่วง [0,t] สำหรับการ scale อนิเมชัน
+            const dispAt0 = 0;
+            const dispAtT = s;
+            let critTime = null;
+            if (Math.abs(a) > 1e-9) {
+                critTime = -u / a; // เวลาที่ความเร็วเป็น 0
+            }
+            let dispAtCrit = null;
+            if (critTime !== null && critTime > 0 && critTime < t) {
+                dispAtCrit = u * critTime + 0.5 * a * critTime * critTime;
+            }
+            const displacements = [dispAt0, dispAtT];
+            if (dispAtCrit !== null) displacements.push(dispAtCrit);
+            minDisp = Math.min(...displacements);
+            maxDisp = Math.max(...displacements);
+            maxAbsDisp = Math.max(Math.abs(minDisp), Math.abs(maxDisp), 0.1);
+            
+            // แสดงผลลัพธ์
+            vDisplay.textContent = v.toFixed(2);
+            sDisplay.textContent = s.toFixed(2);
+            resultBox.style.display = 'flex';
+            
+            // เปิดปุ่ม play, วาดเฟรมเริ่มต้น
+            playBtn.disabled = false;
+            stopBtn.disabled = true;
+            resetAnimation();
+            drawStaticScene();
+            drawGraphAxes(); // วาดกราฟเปล่าเตรียมไว้
+        }
+
+        // รีเซ็ตอนิเมชันกลับไปที่ t=0
+        function resetAnimation() {
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+            }
+            currentAnimTime = 0;
+            animationStartTime = null;
+            animationPaused = false;
+            stopBtn.disabled = true;
+            playBtn.disabled = false;
+            drawStaticScene();
+            updateLiveInfo(0);
+            drawGraphAxes();
+        }
+
+        // วาดฉากนิ่ง (วัตถุที่จุดเริ่มต้น)
+        function drawStaticScene() {
+            animCtx.clearRect(0, 0, animCanvas.width, animCanvas.height);
+            drawAnimBackground();
+            const pos = getAnimX(0); // displacement = 0 ที่ t=0
+            drawObject(pos);
+        }
+
+        // วาดพื้นหลังถนน
+        function drawAnimBackground() {
+            const w = animCanvas.width;
+            const h = animCanvas.height;
+            // ถนน
+            animCtx.fillStyle = '#374151';
+            animCtx.fillRect(0, h-40, w, 40);
+            // เส้นประกลางถนน
+            animCtx.strokeStyle = '#fbbf24';
+            animCtx.lineWidth = 2;
+            animCtx.setLineDash([20, 15]);
+            animCtx.beginPath();
+            animCtx.moveTo(0, h-20);
+            animCtx.lineTo(w, h-20);
+            animCtx.stroke();
+            animCtx.setLineDash([]); // reset
+            // เครื่องหมายบอกตำแหน่ง start (origin)
+            const originX = w/2;
+            animCtx.fillStyle = '#10b981';
+            animCtx.beginPath();
+            animCtx.moveTo(originX, h-50);
+            animCtx.lineTo(originX-8, h-65);
+            animCtx.lineTo(originX+8, h-65);
+            animCtx.closePath();
+            animCtx.fill();
+            animCtx.fillStyle = '#10b981';
+            animCtx.font = '12px sans-serif';
+            animCtx.fillText('0', originX-15, h-70);
+        }
+
+        // แปลง displacement เป็นพิกัด x บน canvas (origin กลาง canvas)
+        function getAnimX(displacement) {
+            const w = animCanvas.width;
+            const originX = w / 2;
+            const scale = (w/2 - 40) / maxAbsDisp; // pixel ต่อ meter
+            return originX + displacement * scale;
+        }
+
+        // วาดวัตถุ (รถ)
+        function drawObject(x) {
+            const yBase = animCanvas.height - 50;
+            animCtx.save();
+            // ตัวรถ
+            animCtx.fillStyle = '#ef4444';
+            animCtx.shadowColor = 'rgba(0,0,0,0.3)';
+            animCtx.shadowBlur = 5;
+            animCtx.fillRect(x-20, yBase-15, 40, 15);
+            // หลังคา
+            animCtx.fillStyle = '#b91c1c';
+            animCtx.fillRect(x-12, yBase-25, 24, 10);
+            // ล้อ
+            animCtx.fillStyle = '#1e293b';
+            animCtx.shadowBlur = 3;
+            animCtx.beginPath();
+            animCtx.arc(x-12, yBase, 6, 0, Math.PI*2);
+            animCtx.fill();
+            animCtx.beginPath();
+            animCtx.arc(x+12, yBase, 6, 0, Math.PI*2);
+            animCtx.fill();
+            animCtx.restore();
+        }
+
+        // อัปเดตข้อความสด
+        function updateLiveInfo(time) {
+            const vel = u + a * time;
+            const disp = u * time + 0.5 * a * time * time;
+            liveInfo.textContent = `เวลา ${time.toFixed(2)} s | ความเร็ว ${vel.toFixed(2)} m/s | ระยะทาง ${disp.toFixed(2)} m`;
+        }
+
+        // เริ่มเล่นอนิเมชัน
+        function playAnimation() {
+            if (animationId) return;
+            stopBtn.disabled = false;
+            playBtn.disabled = true;
+            animationPaused = false;
+            
+            // ถ้า currentAnimTime ถึง t แล้ว ให้เริ่มใหม่
+            if (currentAnimTime >= t) {
+                currentAnimTime = 0;
+                drawStaticScene();
+                updateLiveInfo(0);
+                drawGraphAxes();
+            }
+            
+            animationStartTime = performance.now() - currentAnimTime * 1000; // สมมติเวลาในอนิเมชันเป็นวินาทีจริง (scale 1:1)
+            
+            function step(now) {
+                if (animationPaused) {
+                    animationId = null;
+                    return;
+                }
+                const elapsed = (now - animationStartTime) / 1000; // แปลงเป็นวินาที
+                currentAnimTime = Math.min(elapsed, t);
+                
+                // วาดอนิเมชัน
+                animCtx.clearRect(0, 0, animCanvas.width, animCanvas.height);
+                drawAnimBackground();
+                const disp = u * currentAnimTime + 0.5 * a * currentAnimTime * currentAnimTime;
+                const objX = getAnimX(disp);
+                drawObject(objX);
+                updateLiveInfo(currentAnimTime);
+                
+                // วาดกราฟ real-time
+                drawGraphRealTime(currentAnimTime);
+                
+                if (currentAnimTime < t) {
+                    animationId = requestAnimationFrame(step);
+                } else {
+                    // อนิเมชันจบ
+                    animationId = null;
+                    playBtn.disabled = false;
+                    stopBtn.disabled = true;
+                    updateLiveInfo(t);
+                }
+            }
+            animationId = requestAnimationFrame(step);
+        }
+
+        function stopAnimation() {
+            if (animationId) {
+                animationPaused = true;
+                cancelAnimationFrame(animationId);
+                animationId = null;
+            }
+            playBtn.disabled = false;
+            stopBtn.disabled = true;
+        }
+
+        // รีเซ็ตทั้งหมด
+        function fullReset() {
+            stopAnimation();
+            resetAnimation();
+            resultBox.style.display = 'none';
+            uInput.value = 0;
+            aInput.value = 2;
+            tInput.value = 5;
+            u = 0; a = 2; t = 5;
+            v = 0; s = 0;
+            playBtn.disabled = true;
+            drawStaticScene();
+            drawGraphAxes();
+            liveInfo.textContent = 'เวลา 0.00 s | ความเร็ว 0.00 m/s | ระยะทาง 0.00 m';
+        }
+
+        // ----- กราฟ v-t และ s-t -----
+        function drawGraphAxes() {
+            const w = graphCanvas.width;
+            const h = graphCanvas.height;
+            graphCtx.clearRect(0, 0, w, h);
+            
+            // แบ่งกราฟครึ่งบน: v-t, ครึ่งล่าง: s-t
+            const midY = h/2;
+            // เส้นแบ่ง
+            graphCtx.strokeStyle = '#cbd5e1';
+            graphCtx.lineWidth = 1;
+            graphCtx.beginPath();
+            graphCtx.moveTo(0, midY);
+            graphCtx.lineTo(w, midY);
+            graphCtx.stroke();
+            
+            // วาดแกนสำหรับ v-t (บน)
+            drawSubGraph(graphCtx, 0, 0, w, midY, 'v (m/s)', '#2563eb', u, a, t, 'v');
+            // วาดแกนสำหรับ s-t (ล่าง)
+            drawSubGraph(graphCtx, 0, midY, w, midY, 's (m)', '#16a34a', u, a, t, 's');
+        }
+
+        function drawSubGraph(ctx, x0, y0, width, height, label, color, u, a, t, type) {
+            ctx.save();
+            ctx.translate(x0, y0);
+            // ขอบกราฟ
+            const margin = {top: 10, right: 10, bottom: 25, left: 45};
+            const graphW = width - margin.left - margin.right;
+            const graphH = height - margin.top - margin.bottom;
+            
+            // พื้นหลังกราฟ
+            ctx.fillStyle = '#f8fafc';
+            ctx.fillRect(margin.left, margin.top, graphW, graphH);
+            
+            // แกน
+            ctx.strokeStyle = '#334155';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            // แกนตั้ง
+            ctx.moveTo(margin.left, margin.top);
+            ctx.lineTo(margin.left, margin.top + graphH);
+            // แกนนอน
+            ctx.moveTo(margin.left, margin.top + graphH);
+            ctx.lineTo(margin.left + graphW, margin.top + graphH);
+            ctx.stroke();
+            
+            // label
+            ctx.fillStyle = color;
+            ctx.font = 'bold 11px sans-serif';
+            ctx.fillText(label, margin.left + 5, margin.top - 2);
+            
+            // หาค่าสูงสุด/ต่ำสุดสำหรับสเกล
+            let yMin, yMax;
+            if (type === 'v') {
+                const v0 = u;
+                const vEnd = u + a * t;
+                yMin = Math.min(v0, vEnd, 0);
+                yMax = Math.max(v0, vEnd, 0);
+            } else { // s
+                const s0 = 0;
+                const sEnd = u * t + 0.5 * a * t * t;
+                let sCrit = null;
+                if (Math.abs(a) > 1e-9) {
+                    const tCrit = -u/a;
+                    if (tCrit > 0 && tCrit < t) {
+                        sCrit = u * tCrit + 0.5 * a * tCrit * tCrit;
+                    }
+                }
+                yMin = Math.min(s0, sEnd, sCrit ?? Infinity, 0);
+                yMax = Math.max(s0, sEnd, sCrit ?? -Infinity, 0);
+            }
+            // เพิ่ม padding
+            const pad = Math.max((yMax - yMin) * 0.1, 0.5);
+            yMin -= pad;
+            yMax += pad;
+            if (yMin === yMax) { yMin -= 1; yMax += 1; }
+            
+            const scaleX = graphW / t;
+            const scaleY = graphH / (yMax - yMin);
+            
+            // ฟังก์ชัน map
+            function toX(time) { return margin.left + time * scaleX; }
+            function toY(val) { return margin.top + graphH - (val - yMin) * scaleY; }
+            
+            // เส้นกริดและตัวเลข
+            ctx.strokeStyle = '#e2e8f0';
+            ctx.lineWidth = 0.5;
+            ctx.fillStyle = '#64748b';
+            ctx.font = '9px sans-serif';
+            // เวลา
+            for (let i = 0; i <= 4; i++) {
+                const timeVal = (i/4) * t;
+                const x = toX(timeVal);
+                ctx.beginPath();
+                ctx.moveTo(x, margin.top);
+                ctx.lineTo(x, margin.top + graphH);
+                ctx.stroke();
+                ctx.fillText(timeVal.toFixed(1)+'s', x-12, margin.top+graphH+14);
+            }
+            // ค่า y
+            const ySteps = 4;
+            for (let i = 0; i <= ySteps; i++) {
+                const val = yMin + (i/ySteps)*(yMax-yMin);
+                const y = toY(val);
+                ctx.beginPath();
+                ctx.moveTo(margin.left, y);
+                ctx.lineTo(margin.left+graphW, y);
+                ctx.stroke();
+                ctx.fillText(val.toFixed(1), 2, y+3);
+            }
+            
+            // วาดเส้นโค้ง (static เตรียมไว้)
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            for (let time=0; time<=t; time+=t/200) {
+                let val;
+                if (type==='v') val = u + a*time;
+                else val = u*time + 0.5*a*time*time;
+                const px = toX(time);
+                const py = toY(val);
+                if (time===0) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
+            }
+            ctx.stroke();
+            
+            ctx.restore();
+        }
+
+        // วาดกราฟ real-time (เพิ่มจุดเคลื่อนที่)
+        function drawGraphRealTime(currentTime) {
+            // เราเรียก drawGraphAxes แล้ววาดจุดบนเส้นอีกครั้งดีกว่า? 
+            // เพื่อประสิทธิภาพ เราจะวาดกราฟใหม่ทั้งแผ่นแต่ลงจุด highlight
+            drawGraphAxes(); // วาดเส้นเต็ม
+            // เพิ่มจุดปัจจุบัน
+            const w = graphCanvas.width;
+            const h = graphCanvas.height;
+            const midY = h/2;
+            
+            function drawCurrentPoint(ctx, x0, y0, width, height, u, a, t, type, currentTime) {
+                const margin = {top:10, right:10, bottom:25, left:45};
+                const graphW = width - margin.left - margin.right;
+                const graphH = height - margin.top - margin.bottom;
+                let yMin, yMax;
+                if (type==='v') {
+                    const v0=u, vEnd=u+a*t;
+                    yMin = Math.min(v0,vEnd,0); yMax = Math.max(v0,vEnd,0);
+                } else {
+                    const s0=0, sEnd=u*t+0.5*a*t*t;
+                    let sCrit=null;
+                    if(Math.abs(a)>1e-9){
+                        const tCrit=-u/a;
+                        if(tCrit>0 && tCrit<t) sCrit=u*tCrit+0.5*a*tCrit*tCrit;
+                    }
+                    yMin=Math.min(s0,sEnd,sCrit??Infinity,0);
+                    yMax=Math.max(s0,sEnd,sCrit??-Infinity,0);
+                }
+                const pad = Math.max((yMax-yMin)*0.1,0.5);
+                yMin-=pad; yMax+=pad;
+                if(yMin===yMax){yMin-=1; yMax+=1;}
+                const scaleX = graphW/t;
+                const scaleY = graphH/(yMax-yMin);
+                function toX(time){return margin.left+time*scaleX;}
+                function toY(val){return margin.top+graphH-(val-yMin)*scaleY;}
+                let val;
+                if(type==='v') val=u+a*currentTime;
+                else val=u*currentTime+0.5*a*currentTime*currentTime;
+                const px=toX(currentTime);
+                const py=toY(val);
+                ctx.save();
+                ctx.translate(x0,y0);
+                ctx.fillStyle = type==='v' ? '#1e3a8a' : '#14532d';
+                ctx.beginPath();
+                ctx.arc(px, py, 5, 0, 2*Math.PI);
+                ctx.fill();
+                ctx.fillStyle = 'white';
+                ctx.beginPath();
+                ctx.arc(px, py, 2, 0, 2*Math.PI);
+                ctx.fill();
+                ctx.restore();
+            }
+            
+            drawCurrentPoint(graphCtx, 0, 0, w, midY, u, a, t, 'v', currentTime);
+            drawCurrentPoint(graphCtx, 0, midY, w, midY, u, a, t, 's', currentTime);
+        }
+
+        // Event Listeners
+        calcBtn.addEventListener('click', calculate);
+        playBtn.addEventListener('click', playAnimation);
+        stopBtn.addEventListener('click', stopAnimation);
+        resetBtn.addEventListener('click', fullReset);
+
+        // เริ่มต้น
+        drawStaticScene();
+        drawGraphAxes();
+        // ค่า default พร้อมคำนวณ
+        // (ไม่บังคับ คำนวณเมื่อกด)
+    </script>
+</body>
+</html>

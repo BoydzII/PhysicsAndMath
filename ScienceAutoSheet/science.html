@@ -1344,7 +1344,7 @@ table td,table th,.num,.xpstat b,.tick,
    *** ห้ามลบบรรทัดเครื่องหมาย @@BUILTIN@@ ทั้งสองอัน ตัวสร้างไฟล์ใช้หาตำแหน่ง ***
    ========================================================================== */
 /* @@BUILTIN@@ */
-const BUILTIN = {"url":"","studentOnly":false,"lockCloud":false,"logo":"","header":null,"about":null,"build":"2026-09-30 08:33","ver":"v8.264","books":[{"url":"https://script.google.com/macros/s/AKfycbxVa8BYYQeIhBDmg85w2UBwsIqt6a2YudehUfCbyMny9T-5TTh1UfFxsJjTk9HLNuFc/exec","name":"ชีตวิทยาศาสตร์กายภาพ"},{"url":"https://script.google.com/macros/s/AKfycbzuuRbnE_oB7a9vx7zZizyPVEKao31ERDTU82DvydMuRTDqVoQvgns9EsjTIzpbBjuM/exec","name":"ชีตฟิสิกส์"}]};
+const BUILTIN = {"url":"","studentOnly":false,"lockCloud":false,"logo":"","header":null,"about":null,"build":"2026-10-17 18:54","ver":"v8.279","books":[{"url":"https://script.google.com/macros/s/AKfycbxVa8BYYQeIhBDmg85w2UBwsIqt6a2YudehUfCbyMny9T-5TTh1UfFxsJjTk9HLNuFc/exec","name":"ชีตวิทยาศาสตร์กายภาพ"},{"url":"https://script.google.com/macros/s/AKfycbzuuRbnE_oB7a9vx7zZizyPVEKao31ERDTU82DvydMuRTDqVoQvgns9EsjTIzpbBjuM/exec","name":"ชีตฟิสิกส์"}]};
 /* @@BUILTIN-END@@ */
 
 /* ถ่ายภาพซอร์สของหน้านี้ไว้ตั้งแต่สคริปต์เพิ่งเริ่มทำงาน
@@ -2496,10 +2496,12 @@ function renderGate() {
       '</div>' : '') +
     '<h2>' + (stu ? 'ลงชื่อเข้าใช้ (นักเรียน)' : 'เข้าใช้สำหรับครูและผู้ดูแล') + '</h2>' +
     '<div class="lead">' + SUBJECT_INFO.title + '<br>' +
-      (stu ? 'ใช้<b>เลขประจำตัวนักเรียน</b>เป็นชื่อผู้ใช้ ' +
-             'ถ้ายังไม่เคยเปลี่ยนรหัส ให้ใช้รหัสตั้งต้นที่ครูแจ้ง (1111)'
-           : '<b>ครูผู้สอน (แอดมินรอง):</b> กรอกชื่อผู้ใช้และรหัสผ่านที่คุณได้รับ<br>' +
-             '<b>ผู้ดูแลหลัก:</b> เว้นว่างช่องชื่อผู้ใช้ แล้วใส่รหัสผ่านผู้ดูแล') + '</div>' +
+      (stu ? 'เข้าสู่ระบบด้วย<b>เมลโรงเรียน (@pcschool.ac.th)</b> โดยไม่ต้องจำรหัสผ่าน'
+           : 'ผู้ดูแลหลักเข้าด้วย <b>theboydz@gmail.com</b> · ครูผู้สอนเข้าด้วยเมลโรงเรียนหรือรหัสผ่าน') + '</div>' +
+    '<button type="button" id="gGoogleBtn" style="width:100%;min-height:48px;margin:4px 0 12px;padding:10px 14px;border-radius:10px;border:1.5px solid var(--brand,#1c4b8c);background:var(--brand,#1c4b8c);color:#fff;font:inherit;font-size:15.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 3px 10px rgba(28,75,140,.18)">' +
+      '<svg width="20" height="20" viewBox="0 0 48 48" style="background:#fff;border-radius:50%;padding:2px;flex:none"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>' +
+      '<span>' + (stu ? 'เข้าด้วยเมลโรงเรียน (@pcschool.ac.th)' : 'เข้าด้วยบัญชี Google (ผู้ดูแล / ครู)') + '</span></button>' +
+    '<div style="text-align:center;color:var(--muted,#6b7480);font-size:12.5px;margin:4px 0 8px">หรือกรอกรหัสผ่านแบบเดิม</div>' +
     (stu
       ? '<label class="f" for="gSid">เลขประจำตัวนักเรียน <span class="hint">(ตัวเลขไม่เกิน ' +
           SID_MAX + ' หลัก)</span></label>' +
@@ -2549,6 +2551,9 @@ function renderGate() {
   if (tStu) tStu.addEventListener('click', () => { if (GATE.mode !== 'student') { GATE.mode = 'student'; renderGate(); } });
   const tAdm = $('#tabGateAdm');
   if (tAdm) tAdm.addEventListener('click', () => { if (GATE.mode !== 'admin') { GATE.mode = 'admin'; renderGate(); } });
+
+  const gBtn = $('#gGoogleBtn');
+  if (gBtn) gBtn.addEventListener('click', gateGoogleLogin);
 
   const sidEl = $('#gSid');
   if (sidEl) {
@@ -2669,6 +2674,123 @@ function renderGate() {
   if (first) first.focus();
 }
 
+let __gsiPromise = null;
+function ensureGateGsi() {
+  if (window.google && window.google.accounts && window.google.accounts.oauth2) return Promise.resolve();
+  if (__gsiPromise) return __gsiPromise;
+  __gsiPromise = new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = 'https://accounts.google.com/gsi/client';
+    s.async = true;
+    s.onload = () => resolve();
+    s.onerror = () => { __gsiPromise = null; reject(new Error('โหลดระบบ Google ไม่สำเร็จ กรุณาเช็กสัญญาณอินเทอร์เน็ต')); };
+    document.head.appendChild(s);
+  });
+  return __gsiPromise;
+}
+
+async function gateGoogleLogin() {
+  if (GATE.busy) return;
+  const btn = $('#gGoogleBtn');
+  const orig = btn ? btn.innerHTML : '';
+  gateMsg('');
+  try {
+    if (btn) { btn.disabled = true; btn.textContent = 'กำลังเปิดหน้าต่างเลือกบัญชี Google…'; }
+    await ensureGateGsi();
+    const tokResp = await new Promise((resolve, reject) => {
+      const client = window.google.accounts.oauth2.initTokenClient({
+        client_id: '125092357274-5q8em74tm3pfhlkvpelk1hdveq4qdlmb.apps.googleusercontent.com',
+        scope: 'openid email profile',
+        prompt: 'select_account',
+        callback: (resp) => {
+          if (resp && resp.access_token) resolve(resp);
+          else reject(new Error('ไม่ได้รับสิทธิ์จาก Google'));
+        },
+        error_callback: (err) => {
+          reject(new Error(err && err.type === 'popup_closed' ? 'ปิดหน้าต่างเลือกบัญชีก่อนเสร็จสิ้น' : 'เปิดหน้าต่าง Google ไม่สำเร็จ'));
+        }
+      });
+      client.requestAccessToken();
+    });
+    if (btn) btn.textContent = 'กำลังตรวจสอบเมลโรงเรียน…';
+    const uRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+      headers: { Authorization: 'Bearer ' + tokResp.access_token }
+    });
+    if (!uRes.ok) throw new Error('ตรวจสอบบัญชี Google ไม่สำเร็จ');
+    const info = await uRes.json();
+    const email = String(info.email || '').trim().toLowerCase();
+    const displayName = String(info.name || '').trim();
+    const atIdx = email.indexOf('@');
+    const localPart = atIdx > 0 ? email.slice(0, atIdx) : '';
+    const domain = atIdx > 0 ? email.slice(atIdx + 1) : '';
+
+    if (email !== 'theboydz@gmail.com' && domain !== 'pcschool.ac.th') {
+      throw new Error('บัญชี ' + email + ' ไม่ใช่เมลโรงเรียน (@pcschool.ac.th) กรุณาเลือกเมลโรงเรียนปากช่อง');
+    }
+
+    if (studentOnlyBuild() && email === 'theboydz@gmail.com') {
+      throw new Error('ไฟล์ฉบับนักเรียนไม่อนุญาตให้เข้าใช้ในฐานะผู้ดูแลหลัก');
+    }
+
+    if (/^\d{4,6}$/.test(localPart)) {
+      const lockLeft = devLockLeft(localPart);
+      if (lockLeft) {
+        throw new ApiError('เครื่องนี้เพิ่งใช้เข้าสอบในชื่อ ' +
+          ((devLockRead() || {}).name || '—') + ' จึงยังเข้าใช้ในชื่ออื่นไม่ได้ ' +
+          'เหลืออีก ' + devLockText(lockLeft));
+      }
+    }
+
+    GATE.busy = true;
+    let r;
+    try {
+      r = await hubAuth('googleLogin', {
+        accessToken: tokResp.access_token,
+        email: email,
+        name: displayName
+      });
+    } catch (err) {
+      const msg = err.message || String(err);
+      if (/ไม่รู้จักคำสั่ง/.test(msg) && /^\d{4,6}$/.test(localPart)) {
+        r = await hubAuth('login', { sid: localPart, pass: '1111' });
+      } else {
+        throw err;
+      }
+    }
+
+    const isAdm = r.role === 'main' || r.role === 'sub' || email === 'theboydz@gmail.com';
+    if (isAdm) {
+      const isSub = r.role === 'sub';
+      const mySub = isSub ? (r.subjects || []) : [];
+      if (mySub.length && mySub.indexOf(SUBJECT) < 0) {
+        throw new Error('บัญชีนี้สอน' + mySub.map(subjectName).join(' และ ') + ' จึงเข้าใช้วิชานี้ไม่ได้');
+      }
+      setAuth('admin', r.token, {
+        name: isSub ? (r.name || displayName || 'ครูผู้สอน') : 'ผู้ดูแล',
+        sub: isSub ? (r.user || localPart) : '', classes: isSub ? (r.classes || []) : null,
+        subjects: mySub
+      });
+      renderGate(); render();
+      toast('เข้าใช้ด้วยบัญชี ' + email + ' เรียบร้อย', 'ok');
+    } else {
+      const prof = r.profile || { sid: localPart, name: displayName, cls: '', no: '' };
+      setAuth('student', r.token, prof);
+      DB.mode = 'solo';
+      DB.profile = { name: prof.name || '', room: normCls(prof.cls || ''),
+                     no: String(prof.no || ''), sid: String(prof.sid || localPart) };
+      save(true);
+      devLockSet(prof.sid || localPart, prof.name || '');
+      renderGate(); render();
+      toast('ยินดีต้อนรับ ' + (prof.name || email), 'ok');
+    }
+  } catch (e) {
+    gateMsg(esc(e.message || String(e)));
+  } finally {
+    GATE.busy = false;
+    if (btn) { btn.disabled = false; btn.innerHTML = orig; }
+  }
+}
+
 /* ── รหัสเดียวทุกชีต (ชีตรุ่น 18) ──────────────────────────────────────────
    ชีตใบแรกใน BUILTIN.books (วิทยาศาสตร์กายภาพ) เป็นศูนย์กลาง ตรวจรหัสที่นั่นที่เดียว
    ได้ "บัตรผ่าน" อายุสิบนาที แล้วเอาไปแลกเป็นการเข้าใช้ของชีตวิชานี้ โดยชีตนี้ไม่ถามรหัสซ้ำ
@@ -2713,7 +2835,8 @@ async function hubAuth(action, params) {
     }
   }
   if (!r) r = await api(action, params, { noToken: true });
-  hubRemember(action === 'login' ? 'student' : 'admin', r, h, own, hub);
+  const isStudentAuth = action === 'login' || (action === 'googleLogin' && r && r.role === 'student');
+  hubRemember(isStudentAuth ? 'student' : 'admin', r, h, own, hub);
   return r;
 }
 /** รวมโทเคนลงก้อนเดียวกับหน้าปก — ถ้าในเครื่องมีคนอื่นลงชื่อค้างอยู่ เริ่มก้อนใหม่ ไม่ปนกัน */

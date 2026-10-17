@@ -173,3 +173,8 @@ IJSOAutoSheet/*
 !IJSOAutoSheet/ijso.html
 !IJSOAutoSheet/index.html
 !IJSOAutoSheet/README-ijso.md
+
+# ---- คลังการทดลองฟิสิกส์เสมือนจริง (Physics Lab Hub + ซิมมูเลชัน 27 เรื่อง) ----
+!PhysicsLabHub/
+!PhysicsLabHub/**
+

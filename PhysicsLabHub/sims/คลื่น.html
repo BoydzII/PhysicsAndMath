@@ -1,0 +1,1071 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>แบบจำลอง 3 มิติ: คลื่นกลและคลื่นผิวน้ำ (Mechanical & Water Waves)</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Sarabun', sans-serif;
+            background-color: #0f172a; 
+            touch-action: none; 
+        }
+        
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1;
+        }
+
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Custom Range Slider */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: #3b82f6;
+            cursor: pointer;
+            margin-top: -8px;
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 6px;
+            cursor: pointer;
+            background: #475569;
+            border-radius: 3px;
+        }
+        input[type=range]:focus {
+            outline: none;
+        }
+
+        /* Checkbox styling */
+        .custom-checkbox {
+            appearance: none;
+            width: 1.25rem;
+            height: 1.25rem;
+            border: 2px solid #475569;
+            border-radius: 0.25rem;
+            background-color: transparent;
+            display: inline-block;
+            position: relative;
+            cursor: pointer;
+        }
+        .custom-checkbox:checked {
+            background-color: #3b82f6;
+            border-color: #3b82f6;
+        }
+        .custom-checkbox:checked::after {
+            content: '';
+            position: absolute;
+            left: 5px;
+            top: 2px;
+            width: 5px;
+            height: 10px;
+            border: solid white;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .collapsed {
+            max-height: 0px !important;
+            opacity: 0;
+            padding-top: 0 !important;
+            padding-bottom: 0 !important;
+            overflow: hidden;
+            border-width: 0 !important;
+        }
+
+        .section-title {
+            color: #94a3b8;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+    </style>
+</head>
+<body class="text-white">
+
+    <div id="canvas-container"></div>
+
+    <div id="ui-panel" class="absolute top-4 right-4 z-10 w-80 max-w-[calc(100vw-2rem)] flex flex-col rounded-xl glass-panel">
+        
+        <!-- Header -->
+        <div class="flex items-center justify-between p-4 border-b border-white/10 cursor-pointer bg-white/5 rounded-t-xl hover:bg-white/10 transition-colors" id="panel-header">
+            <h1 class="text-lg font-bold text-blue-400 drop-shadow-md flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h4l3-9 5 18 3-9h5"/></svg>
+                คลื่นฟิสิกส์ 3 มิติ
+            </h1>
+            <button id="toggle-panel-btn" class="text-gray-300 hover:text-white p-1">
+                <svg id="toggle-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
+            </button>
+        </div>
+
+        <!-- Controls Content -->
+        <div id="panel-content" class="p-4 flex flex-col gap-4 overflow-y-auto max-h-[75vh] no-scrollbar">
+            
+            <!-- 1D Wave Types -->
+            <div class="flex flex-col">
+                <div class="section-title">คลื่น 1 มิติ (1D Waves)</div>
+                <div class="grid grid-cols-1 gap-1.5">
+                    <label class="flex items-center p-2 border border-white/10 rounded-lg cursor-pointer hover:bg-white/5 transition-colors">
+                        <input type="radio" name="waveType" value="string" class="mr-3 w-4 h-4 text-blue-600">
+                        <span class="text-sm">คลื่นในเส้นเชือก (ตามขวาง)</span>
+                    </label>
+                    <label class="flex items-center p-2 border border-white/10 rounded-lg cursor-pointer hover:bg-white/5 transition-colors">
+                        <input type="radio" name="waveType" value="spring-transverse" class="mr-3 w-4 h-4 text-blue-600">
+                        <span class="text-sm">คลื่นสปริง (ตามขวาง)</span>
+                    </label>
+                    <label class="flex items-center p-2 border border-white/10 rounded-lg cursor-pointer hover:bg-white/5 transition-colors">
+                        <input type="radio" name="waveType" value="spring-longitudinal" checked class="mr-3 w-4 h-4 text-blue-600">
+                        <span class="text-sm">คลื่นสปริง (ตามยาว)</span>
+                    </label>
+                    <label class="flex items-center justify-center p-2 border border-blue-500/30 rounded-lg cursor-pointer hover:bg-blue-900/30 transition-colors bg-blue-900/10 mt-1">
+                        <input type="radio" name="waveType" value="string-superposition" class="mr-3 w-4 h-4 text-blue-500">
+                        <span class="text-sm font-semibold text-blue-300">การรวมกันของคลื่น (เส้นเชือก)</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- 2D Water Waves -->
+            <div class="flex flex-col">
+                <div class="section-title">คลื่นผิวน้ำ (2D Water Waves)</div>
+                <div class="grid grid-cols-2 gap-1.5">
+                    <label class="flex items-center p-2 border border-white/10 rounded-lg cursor-pointer hover:bg-white/5 transition-colors">
+                        <input type="radio" name="waveType" value="water-reflection" class="mr-2 w-4 h-4 text-blue-600">
+                        <span class="text-xs">การสะท้อน (แตะสร้างคลื่น)</span>
+                    </label>
+                    <label class="flex items-center p-2 border border-white/10 rounded-lg cursor-pointer hover:bg-white/5 transition-colors">
+                        <input type="radio" name="waveType" value="water-refraction" class="mr-2 w-4 h-4 text-blue-600">
+                        <span class="text-xs">การหักเห</span>
+                    </label>
+                    <label class="flex items-center p-2 border border-white/10 rounded-lg cursor-pointer hover:bg-white/5 transition-colors">
+                        <input type="radio" name="waveType" value="water-diffraction" class="mr-2 w-4 h-4 text-blue-600">
+                        <span class="text-xs">การเลี้ยวเบน</span>
+                    </label>
+                    <label class="flex items-center p-2 border border-white/10 rounded-lg cursor-pointer hover:bg-white/5 transition-colors">
+                        <input type="radio" name="waveType" value="water-interference" class="mr-2 w-4 h-4 text-blue-600">
+                        <span class="text-xs">การแทรกสอด</span>
+                    </label>
+                    <label class="flex items-center justify-center p-2 border border-blue-500/30 rounded-lg cursor-pointer hover:bg-blue-900/30 transition-colors col-span-2 bg-blue-900/10">
+                        <input type="radio" name="waveType" value="water-custom" class="mr-2 w-4 h-4 text-blue-500">
+                        <span class="text-xs font-semibold text-blue-300">📍 จุดกำเนิดอิสระ (แตะที่ผิวน้ำเพื่อสร้างคลื่น)</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Wave Components Toggle (Visible only for 1D Waves) -->
+            <div id="components-section" class="flex flex-col bg-white/5 p-3 rounded-lg border border-white/10">
+                <div class="section-title mb-2 text-white">แสดงส่วนประกอบคลื่น</div>
+                <div class="grid grid-cols-1 gap-2">
+                    <label class="flex items-center cursor-pointer">
+                        <input type="checkbox" id="show-equilibrium" class="custom-checkbox mr-3" checked>
+                        <span class="text-sm text-gray-200">เส้นสมดุล (Equilibrium)</span>
+                    </label>
+                    <label class="flex items-center cursor-pointer">
+                        <input type="checkbox" id="show-amplitude" class="custom-checkbox mr-3" checked>
+                        <span class="text-sm text-gray-200">แอมพลิจูด (Amplitude)</span>
+                    </label>
+                    <label class="flex items-center cursor-pointer">
+                        <input type="checkbox" id="show-wavelength" class="custom-checkbox mr-3" checked>
+                        <span class="text-sm text-gray-200">ความยาวคลื่น (Wavelength)</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Superposition Controls -->
+            <div id="superposition-controls" class="flex flex-col bg-white/5 p-3 rounded-lg border border-white/10 hidden">
+                <div class="section-title mb-2 text-white">ควบคุมคลื่นดล (Pulse) 2 ฝั่ง</div>
+                <div class="flex flex-col gap-3 mb-3">
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-gray-300">แอมพลิจูดซ้าย</span>
+                            <span id="amp-left-val" class="text-blue-400 font-mono">1.5</span>
+                        </div>
+                        <input type="range" id="amp-left" min="-3" max="3" step="0.1" value="1.5">
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-gray-300">แอมพลิจูดขวา</span>
+                            <span id="amp-right-val" class="text-blue-400 font-mono">1.5</span>
+                        </div>
+                        <input type="range" id="amp-right" min="-3" max="3" step="0.1" value="1.5">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-2 mb-2">
+                    <button id="trigger-left-btn" class="bg-indigo-600 hover:bg-indigo-500 text-white py-1.5 px-2 rounded font-medium text-xs transition-colors shadow-lg">ปล่อยฝั่งซ้าย</button>
+                    <button id="trigger-right-btn" class="bg-pink-600 hover:bg-pink-500 text-white py-1.5 px-2 rounded font-medium text-xs transition-colors shadow-lg">ปล่อยฝั่งขวา</button>
+                </div>
+                <button id="trigger-both-btn" class="w-full bg-blue-600 hover:bg-blue-500 text-white py-2 px-4 rounded font-medium transition-colors shadow-lg shadow-blue-900/50 text-sm mb-2">
+                    ปล่อยพร้อมกัน 2 ฝั่ง
+                </button>
+                <button id="reset-superposition-btn" class="w-full bg-slate-600 hover:bg-slate-500 text-white py-1.5 px-4 rounded font-medium transition-colors text-sm">
+                    ล้างคลื่น
+                </button>
+            </div>
+
+            <!-- Water Wave Controls -->
+            <div id="water-controls" class="flex flex-col bg-white/5 p-3 rounded-lg border border-white/10 hidden">
+                <div class="section-title mb-2 text-white">ควบคุมการเกิดคลื่นผิวน้ำ</div>
+                <button id="trigger-wave-btn" class="w-full bg-teal-600 hover:bg-teal-500 text-white py-2 px-4 rounded-lg font-medium transition-colors shadow-lg shadow-teal-900/50 flex items-center justify-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="4"></circle><line x1="12" y1="2" x2="12" y2="4"></line><line x1="12" y1="20" x2="12" y2="22"></line><line x1="2" y1="12" x2="4" y2="12"></line><line x1="20" y1="12" x2="22" y2="12"></line></svg>
+                    <span>สร้างคลื่น (Pulse)</span>
+                </button>
+                <button id="reset-wave-btn" class="w-full mt-2 bg-slate-600 hover:bg-slate-500 text-white py-1.5 px-4 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
+                    <span>ล้างคลื่น (Reset)</span>
+                </button>
+                <div class="flex items-center justify-between bg-black/20 p-2 rounded-lg mt-2 border border-white/5">
+                    <span class="text-xs text-gray-300">รูปแบบแสดงผล:</span>
+                    <button id="toggle-water-render-btn" class="text-xs bg-indigo-600 hover:bg-indigo-500 text-white py-1 px-3 rounded transition-colors shadow-lg">แผ่นผิวน้ำ</button>
+                </div>
+            </div>
+
+            <!-- Sliders -->
+            <div class="flex flex-col gap-4 mt-1">
+                <div id="main-amp-container">
+                    <div class="flex justify-between text-sm mb-1">
+                        <span class="text-gray-300">แอมพลิจูด</span>
+                        <span id="amp-val" class="text-blue-400 font-mono">1.0</span>
+                    </div>
+                    <input type="range" id="amplitude" min="0.2" max="3" step="0.1" value="1.0">
+                </div>
+                <div>
+                    <div class="flex justify-between text-sm mb-1">
+                        <span class="text-gray-300">ความถี่</span>
+                        <span id="freq-val" class="text-blue-400 font-mono">1.0 Hz</span>
+                    </div>
+                    <input type="range" id="frequency" min="0.2" max="3" step="0.1" value="1.0">
+                </div>
+                <div>
+                    <div class="flex justify-between text-sm mb-1">
+                        <span class="text-gray-300">ความยาวคลื่น</span>
+                        <span id="wave-val" class="text-blue-400 font-mono">5.0 m</span>
+                    </div>
+                    <input type="range" id="wavelength" min="2" max="15" step="0.5" value="5.0">
+                </div>
+            </div>
+
+            <hr class="border-white/10 my-1">
+
+            <div class="flex gap-2">
+                <button id="play-pause-btn" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-2 px-4 rounded-lg font-medium transition-colors shadow-lg shadow-blue-900/50 flex items-center justify-center gap-2">
+                    <svg id="icon-pause" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
+                    <svg id="icon-play" class="hidden" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                    <span id="play-text">หยุดพัก</span>
+                </button>
+                <button id="fullscreen-btn" class="bg-slate-700 hover:bg-slate-600 text-white py-2 px-4 rounded-lg font-medium transition-colors flex items-center justify-center border border-white/10" title="เต็มจอ">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+                </button>
+            </div>
+            
+        </div>
+    </div>
+
+    <!-- 3D Library Imports -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <script>
+        let params = {
+            waveType: 'spring-longitudinal', // Default state
+            amplitude: 1.0,
+            frequency: 1.0,
+            wavelength: 5.0,
+            ampLeft: 1.5,
+            ampRight: 1.5,
+            pulses1D: [],
+            isPlaying: true,
+            time: 0,
+            showEquilibrium: true,
+            showAmplitude: true,
+            showWavelength: true,
+            waterTime: 0,
+            waterActive: false,
+            waterRenderMode: 'plane', // กำหนดค่าเริ่มต้นเป็นแบบแผ่น (plane) หรืออนุภาค (particles)
+            customSources: [],
+            sourceMarkers: []
+        };
+
+        const panelContent = document.getElementById('panel-content');
+        const toggleIcon = document.getElementById('toggle-icon');
+        const componentsSection = document.getElementById('components-section');
+
+        // Panel Toggle
+        document.getElementById('panel-header').addEventListener('click', () => {
+            panelContent.classList.toggle('collapsed');
+            toggleIcon.innerHTML = panelContent.classList.contains('collapsed') 
+                ? '<polyline points="6 9 12 15 18 9"></polyline>' 
+                : '<polyline points="18 15 12 9 6 15"></polyline>';
+        });
+
+        // Event Listeners for Wave Types
+        document.querySelectorAll('input[name="waveType"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                params.waveType = e.target.value;
+                params.time = 0; // Reset phase
+                params.waterTime = 0; // Reset water wave
+                params.waterActive = false;
+                params.pulses1D = [];
+                
+                // เคลียร์จุดกำเนิดคลื่นแบบแตะอิสระ
+                params.customSources = [];
+                params.sourceMarkers.forEach(m => {
+                    if(m.parent) m.parent.remove(m);
+                });
+                params.sourceMarkers = [];
+                
+                const waterControls = document.getElementById('water-controls');
+
+                // Show/Hide Components section based on wave category
+                if (params.waveType.includes('water')) {
+                    componentsSection.style.display = 'none';
+                    document.getElementById('superposition-controls').classList.add('hidden');
+                    document.getElementById('main-amp-container').classList.remove('hidden');
+                    waterControls.classList.remove('hidden');
+                    // Optional: auto-adjust params for better water view
+                    if(params.waveType === 'water-diffraction' || params.waveType === 'water-interference') {
+                        document.getElementById('wavelength').value = 3;
+                        params.wavelength = 3;
+                        document.getElementById('wave-val').innerText = "3.0 m";
+                    }
+                } else {
+                    componentsSection.style.display = 'flex';
+                    waterControls.classList.add('hidden');
+                    
+                    if (params.waveType === 'string-superposition') {
+                        document.getElementById('superposition-controls').classList.remove('hidden');
+                        document.getElementById('main-amp-container').classList.add('hidden');
+                    } else {
+                        document.getElementById('superposition-controls').classList.add('hidden');
+                        document.getElementById('main-amp-container').classList.remove('hidden');
+                    }
+                }
+                updateEnvironmentVisibility();
+            });
+        });
+
+        // Event Listeners for Checkboxes
+        document.getElementById('show-equilibrium').addEventListener('change', (e) => params.showEquilibrium = e.target.checked);
+        document.getElementById('show-amplitude').addEventListener('change', (e) => params.showAmplitude = e.target.checked);
+        document.getElementById('show-wavelength').addEventListener('change', (e) => params.showWavelength = e.target.checked);
+
+        // Event Listeners for Sliders
+        const setupSlider = (id, paramName, displayId, suffix = '') => {
+            const el = document.getElementById(id);
+            const displayEl = document.getElementById(displayId);
+            el.addEventListener('input', (e) => {
+                const val = parseFloat(e.target.value);
+                params[paramName] = val;
+                displayEl.innerText = val.toFixed(1) + suffix;
+            });
+        };
+        setupSlider('amplitude', 'amplitude', 'amp-val');
+        setupSlider('frequency', 'frequency', 'freq-val', ' Hz');
+        setupSlider('wavelength', 'wavelength', 'wave-val', ' m');
+        
+        setupSlider('amp-left', 'ampLeft', 'amp-left-val');
+        setupSlider('amp-right', 'ampRight', 'amp-right-val');
+
+        // Superposition Buttons
+        document.getElementById('trigger-left-btn').addEventListener('click', () => {
+            params.pulses1D.push({ origin: 'left', startTime: params.time, amplitude: params.ampLeft });
+        });
+        document.getElementById('trigger-right-btn').addEventListener('click', () => {
+            params.pulses1D.push({ origin: 'right', startTime: params.time, amplitude: params.ampRight });
+        });
+        document.getElementById('trigger-both-btn').addEventListener('click', () => {
+            params.pulses1D.push({ origin: 'left', startTime: params.time, amplitude: params.ampLeft });
+            params.pulses1D.push({ origin: 'right', startTime: params.time, amplitude: params.ampRight });
+        });
+        document.getElementById('reset-superposition-btn').addEventListener('click', () => {
+            params.pulses1D = [];
+        });
+
+        // Water Wave Buttons
+        document.getElementById('trigger-wave-btn').addEventListener('click', () => {
+            params.waterActive = true;
+            params.waterTime = 0; 
+            if (params.waveType === 'water-custom' || params.waveType === 'water-reflection') {
+                params.customSources.forEach(s => s.startTime = params.time);
+            }
+        });
+        document.getElementById('reset-wave-btn').addEventListener('click', () => {
+            params.waterActive = false;
+            params.waterTime = 0;
+            
+            // ล้างจุดกำเนิดคลื่นแบบแตะอิสระ
+            params.customSources = [];
+            params.sourceMarkers.forEach(m => {
+                if(m.parent) m.parent.remove(m);
+            });
+            params.sourceMarkers = [];
+        });
+
+        // Toggle Water Render Mode
+        document.getElementById('toggle-water-render-btn').addEventListener('click', (e) => {
+            if (params.waterRenderMode === 'plane') {
+                params.waterRenderMode = 'particles';
+                e.target.innerText = 'อนุภาคน้ำ';
+            } else {
+                params.waterRenderMode = 'plane';
+                e.target.innerText = 'แผ่นผิวน้ำ';
+            }
+            updateEnvironmentVisibility();
+        });
+
+        // Play/Pause & Fullscreen
+        document.getElementById('play-pause-btn').addEventListener('click', () => {
+            params.isPlaying = !params.isPlaying;
+            document.getElementById('icon-play').classList.toggle('hidden');
+            document.getElementById('icon-pause').classList.toggle('hidden');
+            document.getElementById('play-text').innerText = params.isPlaying ? "หยุดพัก" : "เล่นต่อ";
+            if(params.isPlaying) lastTime = performance.now();
+        });
+        document.getElementById('fullscreen-btn').addEventListener('click', () => {
+            if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+            else document.exitFullscreen();
+        });
+
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x0f172a, 0.015);
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 15, 25); 
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container.appendChild(renderer.domElement);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.maxDistance = 60;
+        controls.minDistance = 2;
+        controls.target.set(0, 0, 0);
+
+        // Lighting
+        scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        dirLight.position.set(10, 20, 10);
+        scene.add(dirLight);
+
+        // Grid
+        const gridHelper = new THREE.GridHelper(50, 50, 0x475569, 0x1e293b);
+        gridHelper.position.y = -5;
+        scene.add(gridHelper);
+
+        // 1. Equilibrium Line (Dashed)
+        const eqMaterial = new THREE.LineDashedMaterial({ color: 0xffffff, dashSize: 0.5, gapSize: 0.5 });
+        const eqGeometry = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-20, 0, 0), new THREE.Vector3(20, 0, 0)]);
+        const eqLine = new THREE.Line(eqGeometry, eqMaterial);
+        eqLine.computeLineDistances();
+        scene.add(eqLine);
+
+        // 2. Amplitude Arrow
+        const ampDir = new THREE.Vector3(0, 1, 0);
+        const ampOrigin = new THREE.Vector3(0, 0, 0);
+        const ampArrow = new THREE.ArrowHelper(ampDir, ampOrigin, 1, 0xff3333, 0.5, 0.3);
+        scene.add(ampArrow);
+
+        // 3. Wavelength Helper (Line with arrows on both sides)
+        const wlGroup = new THREE.Group();
+        const wlLineGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0), new THREE.Vector3(1,0,0)]);
+        const wlLineMat = new THREE.LineBasicMaterial({ color: 0x33ff33, linewidth: 2 });
+        const wlLine = new THREE.Line(wlLineGeo, wlLineMat);
+        wlGroup.add(wlLine);
+        // Left arrow head
+        const wlArrowL = new THREE.ArrowHelper(new THREE.Vector3(-1,0,0), new THREE.Vector3(0,0,0), 0.01, 0x33ff33, 0.5, 0.3);
+        // Right arrow head
+        const wlArrowR = new THREE.ArrowHelper(new THREE.Vector3(1,0,0), new THREE.Vector3(1,0,0), 0.01, 0x33ff33, 0.5, 0.3);
+        wlGroup.add(wlArrowL);
+        wlGroup.add(wlArrowR);
+        scene.add(wlGroup);
+
+        // --- 1D Wave Setup (Continuous Line + Markers) ---
+        const num1D = 800; // จำนวนข้อต่อ (Segments) สำหรับสร้างเส้นเชือกและสปริง
+        const domain1D = 30;
+        const startX1D = -domain1D / 2;
+        
+        // ใช้ Cylinder (ทรงกระบอก) ยืดระหว่างจุด เพื่อให้เส้นเชือกและสปริงดูเป็นเส้นทึบต่อเนื่องและไม่ขาดจากกันแม้ยืดออก
+        const lineGeo1D = new THREE.CylinderGeometry(0.08, 0.08, 1, 8);
+        lineGeo1D.rotateX(Math.PI / 2); // หมุนเรขาคณิตให้ชี้ไปทางแกน Z เพื่อให้ใช้ฟังก์ชัน lookAt() ได้พอดี
+        const lineMat1D = new THREE.MeshPhongMaterial({ color: 0x38bdf8, shininess: 80 }); 
+        const waveLine1D = new THREE.InstancedMesh(lineGeo1D, lineMat1D, num1D - 1);
+        waveLine1D.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+        scene.add(waveLine1D);
+
+        // Markers to show particle movement
+        const markerGeo = new THREE.SphereGeometry(0.125, 16, 16); // ลดขนาดรัศมีลง 50% จาก 0.25 เป็น 0.125
+        const markerMat = new THREE.MeshPhongMaterial({ color: 0xff3333, shininess: 100 }); 
+        const instMesh1D = new THREE.InstancedMesh(markerGeo, markerMat, Math.floor(num1D / 25) + 2);
+        instMesh1D.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+        scene.add(instMesh1D);
+
+        const data1D = [];
+        const dummy = new THREE.Object3D();
+        const springRadius = 1.2;
+        const totalCoils = 30;
+
+        for (let i = 0; i < num1D; i++) {
+            const x0 = startX1D + (i / (num1D - 1)) * domain1D;
+            const angle = (i / num1D) * totalCoils * Math.PI * 2;
+            
+            data1D.push({
+                x0: x0,
+                y0_spring: springRadius * Math.cos(angle),
+                z0_spring: springRadius * Math.sin(angle),
+                isMarker: (i % 25 === 0)
+            });
+        }
+
+        // --- 2D Water Wave Setup (Continuous Plane) ---
+        const gridSize = 120; // High resolution grid for realistic water
+        const domain2D = 30;
+        const startX2D = -domain2D / 2;
+        const startZ2D = -domain2D / 2;
+        
+        const waterGeo = new THREE.PlaneGeometry(domain2D, domain2D, gridSize - 1, gridSize - 1);
+        waterGeo.rotateX(-Math.PI / 2); // Make flat on XZ plane
+        
+        // Add vertex color attribute
+        waterGeo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(waterGeo.attributes.position.count * 3), 3));
+
+        const waterMat = new THREE.MeshPhongMaterial({ 
+            vertexColors: true, // Enable vertex colors for depth illusion
+            shininess: 150,
+            transparent: true,
+            opacity: 0.85,
+            side: THREE.DoubleSide,
+            flatShading: false // Smooth shading is crucial for water
+        });
+        const waterMesh = new THREE.Mesh(waterGeo, waterMat);
+        scene.add(waterMesh);
+        
+        // Cache initial vertices for fast lookup
+        const waterVertices = [];
+        const posAttrInit = waterGeo.attributes.position;
+        for (let i = 0; i < posAttrInit.count; i++) {
+            waterVertices.push({
+                x: posAttrInit.getX(i),
+                z: posAttrInit.getZ(i)
+            });
+        }
+
+        // --- 2D Water Wave Setup (Particles / เม็ดอนุภาคกลมๆ) ---
+        const particleGeo = new THREE.SphereGeometry(0.08, 8, 8); // ปรับขนาดจุดให้เล็กลง (0.08)
+        const particleMat = new THREE.MeshPhongMaterial({ color: 0x38bdf8, shininess: 80 });
+        const waterParticles = new THREE.InstancedMesh(particleGeo, particleMat, posAttrInit.count);
+        waterParticles.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+        scene.add(waterParticles);
+
+        // --- Visual Environment Objects for Water Waves ---
+        const envGroup = new THREE.Group();
+        scene.add(envGroup);
+
+        const wallMat = new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.7 });
+        
+        // Reflection Wall (Diagonal-ish or flat)
+        const wallReflect = new THREE.Mesh(new THREE.BoxGeometry(2, 4, domain2D), wallMat);
+        wallReflect.position.set(8, 0, 0); // Wall at x = 8
+        envGroup.add(wallReflect);
+
+        // Diffraction Walls (Slit)
+        const wallDiff1 = new THREE.Mesh(new THREE.BoxGeometry(2, 4, 14), wallMat);
+        wallDiff1.position.set(0, 0, 8); // Top block
+        envGroup.add(wallDiff1);
+        const wallDiff2 = new THREE.Mesh(new THREE.BoxGeometry(2, 4, 14), wallMat);
+        wallDiff2.position.set(0, 0, -8); // Bottom block (leaves gap from z=-1 to 1)
+        envGroup.add(wallDiff2);
+
+        // Refraction Medium Boundary (Shallow water indicator)
+        const shallowGeo = new THREE.PlaneGeometry(domain2D/2 + 2, domain2D);
+        const shallowMat = new THREE.MeshBasicMaterial({ color: 0xfde047, transparent: true, opacity: 0.2, side: THREE.DoubleSide });
+        const shallowPlane = new THREE.Mesh(shallowGeo, shallowMat);
+        shallowPlane.rotation.x = -Math.PI / 2;
+        shallowPlane.position.set(domain2D/4, -1, 0); // Exists from x=0 to +15
+        envGroup.add(shallowPlane);
+
+        // Interference Sources Markers
+        const sourceMat = new THREE.MeshBasicMaterial({ color: 0xff3333 });
+        const sourceGeo = new THREE.SphereGeometry(0.3, 16, 16); // ลดขนาดรัศมีลง 50% จาก 0.6 เป็น 0.3
+        const src1 = new THREE.Mesh(sourceGeo, sourceMat);
+        const src2 = new THREE.Mesh(sourceGeo, sourceMat);
+        src1.position.set(-5, 0.5, -8); // Spaced out further
+        src2.position.set(-5, 0.5, 8);
+        envGroup.add(src1);
+        envGroup.add(src2);
+
+        // --- ระบบ Raycaster สำหรับการแตะ/คลิกเพื่อสร้างคลื่นอิสระ ---
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+        
+        const clickPlaneGeo = new THREE.PlaneGeometry(domain2D, domain2D);
+        const clickPlaneMat = new THREE.MeshBasicMaterial({ visible: false });
+        const clickPlane = new THREE.Mesh(clickPlaneGeo, clickPlaneMat);
+        clickPlane.rotation.x = -Math.PI / 2;
+        scene.add(clickPlane);
+
+        renderer.domElement.addEventListener('pointerdown', (event) => {
+            if (params.waveType !== 'water-custom' && params.waveType !== 'water-reflection') return;
+            
+            // ป้องกันกรณีไปกดโดน UI ให้ตรวจสอบว่ากดที่แคนวาสโดยตรงหรือไม่
+            if (event.target !== renderer.domElement) return;
+
+            const rect = renderer.domElement.getBoundingClientRect();
+            mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+            mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObject(clickPlane);
+
+            if (intersects.length > 0) {
+                const point = intersects[0].point;
+                
+                // ไม่ให้วางจุดกำเนิดคลื่นหลังกำแพง หรือในเนื้อกำแพง (สำหรับการสะท้อน)
+                if (params.waveType === 'water-reflection' && point.x >= 7.0) return;
+
+                // จำกัดจำนวนจุดสูงสุดไว้ที่ 10 จุดเพื่อป้องกันไม่ให้ไอแพดกระตุก
+                if (params.customSources.length >= 10) {
+                    const oldMarker = params.sourceMarkers.shift();
+                    scene.remove(oldMarker);
+                    params.customSources.shift();
+                }
+
+                // บันทึกตำแหน่งจุดกำเนิดคลื่นที่เพิ่งถูกแตะ
+                params.customSources.push({
+                    x: point.x,
+                    z: point.z,
+                    startTime: params.time
+                });
+
+                // วางจุดสีแดง (Marker) ตรงตำแหน่งที่แตะ
+                const marker = new THREE.Mesh(sourceGeo, sourceMat);
+                marker.position.set(point.x, 0.5, point.z);
+                scene.add(marker);
+                params.sourceMarkers.push(marker);
+
+                // สั่งให้คลื่นเริ่มทำงานทันที
+                params.waterActive = true;
+            }
+        });
+
+        function updateEnvironmentVisibility() {
+            const wt = params.waveType;
+            const is1D = !wt.includes('water');
+            const isSuperposition = wt === 'string-superposition';
+            
+            // Toggle Meshes
+            waveLine1D.visible = is1D;
+            instMesh1D.visible = is1D;
+            
+            if (is1D) {
+                waterMesh.visible = false;
+                waterParticles.visible = false;
+            } else {
+                waterMesh.visible = params.waterRenderMode === 'plane';
+                waterParticles.visible = params.waterRenderMode === 'particles';
+            }
+            
+            // Toggle Helpers
+            eqLine.visible = is1D && params.showEquilibrium;
+            ampArrow.visible = is1D && params.showAmplitude && !isSuperposition;
+            wlGroup.visible = is1D && params.showWavelength && !isSuperposition;
+
+            // Hide all 2D environments first
+            wallReflect.visible = false;
+            wallDiff1.visible = false;
+            wallDiff2.visible = false;
+            shallowPlane.visible = false;
+            src1.visible = false;
+            src2.visible = false;
+
+            if (wt === 'water-reflection') wallReflect.visible = true;
+            if (wt === 'water-diffraction') {
+                wallDiff1.visible = true;
+                wallDiff2.visible = true;
+            }
+            if (wt === 'water-refraction') shallowPlane.visible = true;
+            if (wt === 'water-interference') {
+                src1.visible = true;
+                src2.visible = true;
+            }
+            
+            // Adjust camera gently based on mode
+            if(!is1D && camera.position.y < 15) {
+                // Better top-down view for water
+                camera.position.lerp(new THREE.Vector3(0, 20, 15), 0.1); 
+            }
+        }
+        updateEnvironmentVisibility(); // Initial call
+
+        let lastTime = performance.now();
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const now = performance.now();
+            const dt = (now - lastTime) / 1000;
+            lastTime = now;
+
+            if (params.isPlaying) {
+                params.time += dt * params.frequency;
+                if (params.waterActive) {
+                    params.waterTime += dt * params.frequency;
+                }
+            }
+
+            const k = (2 * Math.PI) / params.wavelength;
+            const omega = 2 * Math.PI; // Normalized
+            const A = params.amplitude;
+            const t = params.time;
+            const wt_phase = omega * params.waterTime;
+
+            const is1D = !params.waveType.includes('water');
+
+            if (is1D) {
+                const isSuperposition = params.waveType === 'string-superposition';
+                
+                // Update 1D Components Helpers visibility dynamically
+                eqLine.visible = params.showEquilibrium;
+                ampArrow.visible = params.showAmplitude && !isSuperposition;
+                wlGroup.visible = params.showWavelength && !isSuperposition;
+
+                // --- Helper Placement Logic ---
+                // Find a crest position for Amplitude arrow
+                // Phase = k*x - w*t. Crest is where Phase = PI/2. So x = (PI/2 + w*t)/k
+                let crestX = ((Math.PI/2) + omega * t) / k;
+                // Keep it near the center (modulo wavelength)
+                crestX = (crestX % params.wavelength);
+                if(crestX > params.wavelength/2) crestX -= params.wavelength; // shift to center
+                
+                if(params.showAmplitude) {
+                    ampArrow.position.set(crestX, 0, 0);
+                    ampArrow.setLength(A + 0.1, 0.4, 0.2); 
+                }
+                
+                if(params.showWavelength) {
+                    const wlY = A + 1; // Hover above wave
+                    wlGroup.position.set(crestX, wlY, 0);
+                    // Stretch line to length of wavelength
+                    wlLine.geometry.setFromPoints([new THREE.Vector3(0,0,0), new THREE.Vector3(params.wavelength, 0, 0)]);
+                    wlArrowR.position.set(params.wavelength, 0, 0);
+                }
+
+                // --- 1D Wave Line & Marker Update ---
+                let markerIdx = 0;
+                
+                // ใช้ Vector3 reuse เพื่อประสิทธิภาพ (ลด Garbage Collection ทำให้ iPad ไม่กระตุก)
+                const p1 = new THREE.Vector3();
+                const p2 = new THREE.Vector3();
+                
+                // ฟังก์ชันย่อยคำนวณพิกัดแต่ละจุดตามสมการคลื่น
+                const getPos = (index, targetVec) => {
+                    const data = data1D[index];
+                    let x = data.x0, y = 0, z = 0;
+
+                    if (params.waveType === 'string-superposition') {
+                        // โหมดการแทรกสอด (คลื่นดล)
+                        const v = params.frequency * params.wavelength; 
+                        const pulseWidth = params.wavelength / 4; 
+                        
+                        let totalDisplacement = 0;
+                        for(let i=0; i<params.pulses1D.length; i++) {
+                            const p = params.pulses1D[i];
+                            const dt = params.time - p.startTime;
+                            if(dt < 0) continue;
+                            
+                            const d = v * dt;
+                            // ให้คลื่นเริ่มจากนอกจอเล็กน้อย จะได้เข้ามาแบบลื่นไหล
+                            let xc = (p.origin === 'left') ? (startX1D - 5) + d : (startX1D + domain1D + 5) - d;
+                            
+                            // Gaussian pulse shape
+                            totalDisplacement += p.amplitude * Math.exp( -Math.pow(x - xc, 2) / (2 * Math.pow(pulseWidth, 2)) );
+                        }
+                        y = totalDisplacement;
+                        
+                    } else {
+                        // โหมดคลื่นต่อเนื่องปกติ
+                        const phase = k * data.x0 - omega * t;
+                        const displacement = A * Math.sin(phase);
+                        const edgeFade = Math.min(1, (data.x0 - startX1D) / 2) * Math.min(1, ((startX1D + domain1D) - data.x0) / 2);
+
+                        if (params.waveType === 'string') {
+                            y = displacement * edgeFade;
+                        } else if (params.waveType === 'spring-transverse') {
+                            x = data.x0;
+                            y = data.y0_spring + displacement * edgeFade;
+                            z = data.z0_spring;
+                        } else if (params.waveType === 'spring-longitudinal') {
+                            x = data.x0 + displacement * edgeFade;
+                            y = data.y0_spring;
+                            z = data.z0_spring;
+                        }
+                    }
+
+                    targetVec.set(x, y, z);
+                    return data.isMarker;
+                };
+
+                // อัปเดต Marker และยืดเส้นกระบอก (Cylinder) เชื่อมระหว่างจุด
+                for (let i = 0; i < num1D - 1; i++) {
+                    const isMarker = getPos(i, p1);
+                    getPos(i + 1, p2);
+                    
+                    // 1. จัดการลูกกลมสีแดง (Marker)
+                    if (isMarker) {
+                        dummy.position.copy(p1);
+                        dummy.scale.set(1, 1, 1);
+                        dummy.rotation.set(0, 0, 0);
+                        dummy.updateMatrix();
+                        instMesh1D.setMatrixAt(markerIdx++, dummy.matrix);
+                    }
+                    
+                    // 2. จัดการท่อทรงกระบอก (ยืดเชื่อมระหว่าง p1 และ p2 แบบสมบูรณ์)
+                    const dist = p1.distanceTo(p2);
+                    dummy.position.copy(p1).lerp(p2, 0.5); // วางไว้จุดกึ่งกลาง
+                    dummy.lookAt(p2); // หันหน้ากระบอกไปหาจุดถัดไป
+                    dummy.scale.set(1, 1, dist); // ยืดความยาวกระบอกให้เท่าระยะห่าง
+                    dummy.updateMatrix();
+                    waveLine1D.setMatrixAt(i, dummy.matrix);
+                }
+                
+                // เช็ค Marker สำหรับจุดสุดท้าย
+                if (getPos(num1D - 1, p1)) {
+                    dummy.position.copy(p1);
+                    dummy.scale.set(1, 1, 1);
+                    dummy.rotation.set(0, 0, 0);
+                    dummy.updateMatrix();
+                    instMesh1D.setMatrixAt(markerIdx, dummy.matrix);
+                }
+
+                waveLine1D.instanceMatrix.needsUpdate = true;
+                instMesh1D.instanceMatrix.needsUpdate = true;
+
+            } else {
+                // --- 2D Water Wave Plane Update ---
+                const posAttr = waterMesh.geometry.attributes.position;
+                const colorAttr = waterMesh.geometry.attributes.color;
+                const tmpColor = new THREE.Color();
+                
+                for (let i = 0; i < posAttr.count; i++) {
+                    const data = waterVertices[i];
+                    let x = data.x;
+                    let z = data.z;
+                    let y = 0;
+
+                    if (params.waveType === 'water-reflection') {
+                        // โหมดสะท้อนแบบกำหนดจุดกำเนิดคลื่นเอง (จำลองภาพเสมือนของแหล่งกำเนิด)
+                        if (x < 7.5) {
+                            if (params.waterActive) {
+                                for (let s = 0; s < params.customSources.length; s++) {
+                                    const source = params.customSources[s];
+                                    const timeActive = params.time - source.startTime;
+                                    
+                                    if (timeActive > 0) {
+                                        // 1. คลื่นตกกระทบ (กระจายจากจุดที่แตะ)
+                                        const distInc = Math.sqrt((x - source.x)*(x - source.x) + (z - source.z)*(z - source.z));
+                                        const phaseInc = k * distInc - omega * timeActive;
+                                        
+                                        if (phaseInc <= 0) {
+                                            const ampInc = A / (1 + 0.15 * distInc);
+                                            y += ampInc * Math.sin(phaseInc);
+                                        }
+
+                                        // 2. คลื่นสะท้อน (เสมือนกระจายจากแหล่งกำเนิดภาพเสมือนหลังกำแพง สะท้อนกำแพงที่ x = 8)
+                                        const virtualSourceX = 16 - source.x; 
+                                        const distRef = Math.sqrt((x - virtualSourceX)*(x - virtualSourceX) + (z - source.z)*(z - source.z));
+                                        const phaseRef = k * distRef - omega * timeActive;
+                                        
+                                        if (phaseRef <= 0) {
+                                            const ampRef = A / (1 + 0.15 * distRef);
+                                            y += ampRef * Math.sin(phaseRef);
+                                        }
+                                    }
+                                }
+                            }
+                        } else {
+                            y = 0; // จุดที่อยู่หลังกำแพงไม่เกิดคลื่น
+                        }
+                    } 
+                    else if (params.waveType === 'water-diffraction') {
+                        // Wall at x = 0, gap roughly z in [-2, 2]
+                        const p_min = k * (-15);
+                        if (x < -0.5) {
+                            const p_inc = k * x;
+                            if (params.waterActive && (p_inc - p_min <= wt_phase)) {
+                                y = A * Math.sin(p_inc - omega * t);
+                            }
+                        } else if (x > 0.5) {
+                            // Huygens principle: sum of point sources at the gap
+                            const gapSources = 7;
+                            let sum = 0;
+                            for(let s=0; s<gapSources; s++) {
+                                let sz = -1.5 + (3 * s / (gapSources - 1));
+                                let dist = Math.sqrt(x*x + (z - sz)*(z - sz));
+                                const p_diff = 15 * k + k * dist; // phase distance from start
+                                if (params.waterActive && (p_diff - p_min <= wt_phase)) {
+                                    sum += (A / gapSources) * 1.5 * Math.sin(k * dist - omega * t);
+                                }
+                            }
+                            // Fade out extremely high angles slightly for realism
+                            const angleFade = Math.max(0, 1 - Math.abs(z)/(x+5));
+                            y = sum * angleFade;
+                        } else {
+                            // Inside the wall width
+                            if (Math.abs(z) > 1.5) y = 0; // Blocked by wall
+                            else {
+                                const p_inc = k * x;
+                                if (params.waterActive && (p_inc - p_min <= wt_phase)) {
+                                    y = A * Math.sin(p_inc - omega * t); 
+                                }
+                            }
+                        }
+                    }
+                    else if (params.waveType === 'water-refraction') {
+                        // Boundary at x = 0
+                        const angle1 = Math.PI / 6; // 30 deg incident
+                        const k1 = k;
+                        const k1x = k1 * Math.cos(angle1);
+                        const k1z = k1 * Math.sin(angle1);
+                        const p_min = k1x * (-15) + k1z * (-15);
+
+                        // Shallow water -> slower speed -> shorter wavelength -> higher k
+                        const n = 2.0; // Increased Refractive index for clearer bending
+                        const k2 = k1 * n; 
+                        // Snell's Law: k1z = k2z (continuity at boundary)
+                        const k2z = k1z;
+                        const k2x = Math.sqrt(k2*k2 - k2z*k2z);
+
+                        if (x < 0) {
+                            const p_inc = k1x * x + k1z * z;
+                            if (params.waterActive && (p_inc - p_min <= wt_phase)) {
+                                y = A * Math.sin(p_inc - omega * t);
+                            }
+                        } else {
+                            const p_med2 = k2x * x + k2z * z;
+                            if (params.waterActive && (p_med2 - p_min <= wt_phase)) {
+                                y = A * Math.sin(p_med2 - omega * t);
+                            }
+                        }
+                    }
+                    else if (params.waveType === 'water-interference') {
+                        // Two point sources moved further apart
+                        const s1x = -5, s1z = -8;
+                        const s2x = -5, s2z = 8;
+                        const dist1 = Math.sqrt((x-s1x)*(x-s1x) + (z-s1z)*(z-s1z));
+                        const dist2 = Math.sqrt((x-s2x)*(x-s2x) + (z-s2z)*(z-s2z));
+                        
+                        if (params.waterActive) {
+                            if (k * dist1 <= wt_phase) {
+                                const amp1 = A / (1 + 0.1 * dist1);
+                                y += amp1 * Math.sin(k * dist1 - omega * t);
+                            }
+                            if (k * dist2 <= wt_phase) {
+                                const amp2 = A / (1 + 0.1 * dist2);
+                                y += amp2 * Math.sin(k * dist2 - omega * t);
+                            }
+                        }
+                    }
+                    else if (params.waveType === 'water-custom') {
+                        // โหมดกำหนดจุดอิสระด้วยการคลิก/แตะหน้าจอ
+                        if (params.waterActive) {
+                            for (let s = 0; s < params.customSources.length; s++) {
+                                const source = params.customSources[s];
+                                const dist = Math.sqrt((x - source.x)*(x - source.x) + (z - source.z)*(z - source.z));
+                                const timeActive = params.time - source.startTime;
+                                
+                                if (timeActive > 0) {
+                                    const sourcePhase = k * dist - omega * timeActive;
+                                    // ให้คลื่นแผ่ออกเป็นวงกลมจากจุดศูนย์กลางเมื่อเวลาผ่านไป (พัลส์กระจายตัว)
+                                    if (sourcePhase <= 0) { 
+                                        const amp = A / (1 + 0.15 * dist); // ลดทอนแอมพลิจูดตามระยะทาง
+                                        y += amp * Math.sin(sourcePhase);
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Apply slight edge fade to whole pool to prevent ugly boundaries
+                    const edgeFade = Math.min(1, (x - startX2D) / 2) * Math.min(1, ((startX2D + domain2D) - x) / 2)
+                                   * Math.min(1, (z - startZ2D) / 2) * Math.min(1, ((startZ2D + domain2D) - z) / 2);
+                    
+                    y *= edgeFade;
+
+                    if (params.waterRenderMode === 'plane') {
+                        posAttr.setY(i, y);
+                        
+                        // Dynamic coloring based on height and medium
+                        let isShallow = (params.waveType === 'water-refraction' && x > 0);
+                        let baseHue = isShallow ? 0.45 : 0.55; // Cyan for shallow, Blue for deep
+                        const colorVal = 0.5 + (y / (A * 2.5)); 
+                        tmpColor.setHSL(baseHue, 0.8, Math.max(0.2, Math.min(0.9, colorVal))); 
+                        colorAttr.setXYZ(i, tmpColor.r, tmpColor.g, tmpColor.b);
+                    } else {
+                        // อัปเดตอนุภาคกลมๆ (Particle Mode)
+                        dummy.position.set(x, y, z);
+                        dummy.scale.set(1, 1, 1);
+                        dummy.updateMatrix();
+                        waterParticles.setMatrixAt(i, dummy.matrix);
+                    }
+                }
+                
+                if (params.waterRenderMode === 'plane') {
+                    posAttr.needsUpdate = true;
+                    colorAttr.needsUpdate = true;
+                    waterMesh.geometry.computeVertexNormals(); // Compute normals for realistic 3D shading
+                } else {
+                    waterParticles.instanceMatrix.needsUpdate = true;
+                }
+            }
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        window.onload = () => animate();
+
+    </script>
+</body>
+</html>

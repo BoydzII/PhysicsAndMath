@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Physics Lab: Pulley Systems</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body { font-family: 'Kanit', sans-serif; background-color: #0f172a; color: #e2e8f0; overflow: hidden; margin: 0; }
+        #canvas-container { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 0; }
+        .glass-panel { background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 10px;}
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 10px; }
+        .tab-btn.active { border-bottom: 2px solid #3b82f6; color: #60a5fa; font-weight: bold; background: rgba(59, 130, 246, 0.1); }
+        
+        /* Interactive Slider styling */
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
+        input[type=range]:focus { outline: none; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 20px; width: 20px; border-radius: 50%; background: #3b82f6; cursor: pointer; margin-top: -8px; box-shadow: 0 0 10px rgba(59, 130, 246, 0.5); border: 2px solid #fff;}
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 6px; cursor: pointer; background: #334155; border-radius: 3px; border: 1px solid #1e293b; }
+        
+        /* Highlight pull slider */
+        #slider-pull::-webkit-slider-thumb { background: #ef4444; box-shadow: 0 0 15px rgba(239, 68, 68, 0.6); border: 2px solid #fff; height: 24px; width: 24px; margin-top: -10px;}
+        #slider-pull::-webkit-slider-runnable-track { background: #475569; height: 8px;}
+
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .stat-box { background: rgba(0,0,0,0.3); border: 1px solid #334155; border-radius: 0.5rem; padding: 0.75rem; }
+        
+        /* New animations/transitions for toggle */
+        .panel-hidden { transform: translateX(-100%); }
+        @media (min-width: 768px) {
+            .panel-hidden { transform: translateX(-100%); }
+        }
+    </style>
+</head>
+<body class="h-screen w-screen relative overflow-hidden">
+
+    <div id="canvas-container"></div>
+
+    <div class="absolute inset-0 z-10 flex flex-col md:flex-row pointer-events-none">
+        
+        <!-- Left Panel: Controls & Info -->
+        <div id="ui-panel-container" class="w-full md:w-[400px] h-[60%] md:h-full p-4 flex flex-col pointer-events-auto transition-transform duration-300 relative">
+            <button onclick="toggleUIPanel()" id="toggle-btn" class="hidden md:flex absolute top-1/2 -right-4 w-8 h-16 bg-gray-800 border border-gray-600 rounded-r-xl items-center justify-center text-white shadow-xl cursor-pointer hover:bg-gray-700 z-50 transition-colors">
+                ◀
+            </button>
+            <div class="glass-panel rounded-2xl shadow-2xl flex-1 flex flex-col overflow-hidden border-t border-l border-white/10 relative z-40">
+                
+                <div class="p-5 border-b border-gray-700 bg-gradient-to-r from-gray-900 to-gray-800">
+                    <h1 class="text-2xl font-bold text-white flex items-center gap-2">
+                        <span class="text-blue-500">⚙️</span> Pulley Lab 3D
+                    </h1>
+                    <p class="text-sm text-gray-400 mt-1">ฟิสิกส์ ม.4: ระบบรอกและมวลถ่วง</p>
+                </div>
+
+                <div class="flex border-b border-gray-700 bg-gray-900">
+                    <button onclick="switchTab('simulation')" id="tab-simulation" class="tab-btn active flex-1 py-3 text-sm transition-colors hover:bg-gray-800">จำลอง 3 มิติ</button>
+                    <button onclick="switchTab('theory')" id="tab-theory" class="tab-btn flex-1 py-3 text-sm transition-colors hover:bg-gray-800">หลักการรอก</button>
+                    <button onclick="switchTab('quiz')" id="tab-quiz" class="tab-btn flex-1 py-3 text-sm transition-colors hover:bg-gray-800">ทดสอบ</button>
+                </div>
+
+                <div class="flex-1 overflow-y-auto custom-scrollbar relative p-5">
+                    
+                    <!-- SIMULATION TAB -->
+                    <div id="content-simulation" class="fade-in block space-y-5">
+                        
+                        <div>
+                            <label class="block text-sm font-semibold mb-2 text-blue-300">เลือกระบบรอก:</label>
+                            <select id="pulley-type" onchange="resetAndBuildSystem()" class="w-full bg-gray-800 border border-gray-600 rounded-lg p-2 text-white focus:outline-none focus:border-blue-500 shadow-inner">
+                                <option value="fixed">1. รอกเดี่ยวตายตัว (M.A. = 1)</option>
+                                <option value="movable">2. รอกเดี่ยวเคลื่อนที่ (M.A. = 2)</option>
+                                <option value="sys1">3. รอกพวงระบบที่ 1 (M.A. = 8)</option>
+                                <option value="sys2">4. รอกพวงระบบที่ 2 (M.A. = 4)</option>
+                                <option value="sys3">5. รอกพวงระบบที่ 3 (M.A. = 7)</option>
+                            </select>
+                        </div>
+
+                        <div class="space-y-4 pt-2 border-t border-gray-700">
+                            <div>
+                                <label class="flex justify-between text-sm mb-1">
+                                    <span class="text-gray-300">มวลของวัตถุหลัก (W):</span> 
+                                    <span id="lbl-mass" class="font-mono text-blue-400 font-bold">50 kg</span>
+                                </label>
+                                <input type="range" id="slider-mass" min="10" max="100" step="5" value="50" oninput="updateMass()">
+                            </div>
+                            
+                            <div class="bg-gray-800/80 p-3 rounded-lg border border-red-900/50 shadow-inner">
+                                <label class="flex justify-between text-sm mb-2 text-red-300 font-bold">
+                                    <span>🏋️ มวลถ่วงเพื่อดึงเชือก:</span> 
+                                    <span id="lbl-pull" class="font-mono">0.0 m</span>
+                                </label>
+                                <input type="range" id="slider-pull" min="0" max="100" value="0" oninput="updateSimulationState()">
+                                <p class="text-[10px] text-gray-400 mt-2 text-center">เลื่อนเพื่อจำลองการปล่อยมวลถ่วงดึงวัตถุขึ้น</p>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-3 mt-4">
+                            <div class="stat-box">
+                                <div class="text-xs text-gray-400 mb-1">จำนวนเส้นเชือกพยุง (n)</div>
+                                <div id="calc-n" class="text-xl font-mono text-white font-bold">1</div>
+                            </div>
+                            <div class="stat-box">
+                                <div class="text-xs text-gray-400 mb-1">การได้เปรียบเชิงกล (M.A.)</div>
+                                <div id="calc-ma" class="text-xl font-mono text-yellow-400 font-bold">1</div>
+                            </div>
+                            <div class="stat-box border-blue-800/50 bg-blue-900/20">
+                                <div class="text-xs text-gray-400 mb-1">น้ำหนักวัตถุ (W)</div>
+                                <div id="calc-w" class="text-lg font-mono text-blue-300">500 N</div>
+                            </div>
+                            <div class="stat-box border-red-800/50 bg-red-900/20">
+                                <div class="text-xs text-gray-400 mb-1">น้ำหนักมวลถ่วง (E = W/n)</div>
+                                <div id="calc-e" class="text-lg font-mono text-red-400 font-bold">500 N</div>
+                            </div>
+                            <div class="stat-box">
+                                <div class="text-xs text-gray-400 mb-1">ระยะวัตถุขึ้น (h)</div>
+                                <div id="calc-h" class="text-lg font-mono text-green-400">0.0 m</div>
+                            </div>
+                            <div class="stat-box">
+                                <div class="text-xs text-gray-400 mb-1">ระยะมวลถ่วงลง (s)</div>
+                                <div id="calc-s" class="text-lg font-mono text-orange-400">0.0 m</div>
+                            </div>
+                        </div>
+                        <p class="text-[10px] text-gray-500 text-center mt-2">* ลองใช้เมาส์คลิกลากกล่องสีแดงขึ้น-ลงในภาพ 3 มิติได้โดยตรง</p>
+                        
+                        <!-- NEW: Formula Accordion -->
+                        <div class="mt-4 border border-blue-900/50 rounded-lg overflow-hidden">
+                            <button onclick="toggleFormula()" class="w-full text-left bg-blue-900/30 p-3 text-blue-300 text-sm font-bold flex justify-between items-center hover:bg-blue-900/50 transition">
+                                <span>💡 กดเพื่อดูสูตรคำนวณรอกระบบนี้</span>
+                                <span id="formula-icon">▼</span>
+                            </button>
+                            <div id="formula-content" class="hidden bg-gray-900/80 p-4 text-sm text-gray-300 space-y-2 border-t border-blue-900/50 leading-relaxed">
+                                <!-- Formulas injected here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- THEORY TAB -->
+                    <div id="content-theory" class="fade-in hidden space-y-4">
+                        <h2 class="text-lg font-bold text-blue-400">หลักการทำงานของรอก (Pulley)</h2>
+                        <p class="text-sm text-gray-300">รอกคือล้อที่มีร่องตรงขอบสำหรับคล้องเชือก ใช้เพื่อเปลี่ยนทิศทางของแรง หรือช่วยผ่อนแรงในการยกของ</p>
+                        
+                        <div class="bg-gray-800 p-4 rounded-lg border-l-4 border-blue-500">
+                            <h3 class="font-bold text-white mb-2">1. รอกเดี่ยวตายตัว (Fixed Pulley)</h3>
+                            <ul class="text-sm text-gray-400 list-disc pl-4 space-y-1">
+                                <li>ยึดติดกับที่ ไม่เคลื่อนที่ขณะใช้งาน</li>
+                                <li><span class="text-red-400 font-semibold">ไม่ผ่อนแรง</span> (E = W)</li>
+                                <li>มวลถ่วงที่ใช้ต้องหนักเท่ากับวัตถุพอดี</li>
+                                <li>M.A. = 1</li>
+                            </ul>
+                        </div>
+
+                        <div class="bg-gray-800 p-4 rounded-lg border-l-4 border-green-500">
+                            <h3 class="font-bold text-white mb-2">2. รอกเดี่ยวเคลื่อนที่ (Movable Pulley)</h3>
+                            <ul class="text-sm text-gray-400 list-disc pl-4 space-y-1">
+                                <li>ตัวรอกเคลื่อนที่ขึ้นลงพร้อมกับวัตถุ</li>
+                                <li><span class="text-green-400 font-semibold">ผ่อนแรงได้ครึ่งหนึ่ง</span> (E = W/2)</li>
+                                <li>มวลถ่วงที่ใช้เบาลงครึ่งหนึ่ง แต่ต้องดึงเชือกลงลึกกว่าเดิม 2 เท่า</li>
+                                <li>M.A. = 2</li>
+                            </ul>
+                        </div>
+
+                        <div class="bg-gray-800 p-4 rounded-lg border-l-4 border-yellow-500">
+                            <h3 class="font-bold text-white mb-2">3. รอกพวง (Block and Tackle)</h3>
+                            <ul class="text-sm text-gray-400 list-disc pl-4 space-y-1">
+                                <li><strong>ระบบที่ 1:</strong> รอกเคลื่อนที่หลายตัวเรียงกัน ผูกเชือกต่อกันเป็นทอดๆ M.A. = 2ⁿ</li>
+                                <li><strong>ระบบที่ 2:</strong> รอกตับบน (ตายตัว) และล่าง (เคลื่อนที่) ใช้เชือกเส้นเดียวคล้องสลับ M.A. = n (จำนวนเส้นเชือกพยุงรอกตับล่าง)</li>
+                                <li><strong>ระบบที่ 3:</strong> ปลายเชือกทุกเส้นผูกกับวัตถุโดยตรง ดึงขึ้นพร้อมกัน M.A. = 2ⁿ - 1</li>
+                                <li>สังเกตขนาดของมวลถ่วง (กล่องสีแดง) จะเล็กลงเรื่อยๆ เมื่อระบบมีการผ่อนแรงสูงขึ้น</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- QUIZ TAB -->
+                    <div id="content-quiz" class="fade-in hidden">
+                        <div id="quiz-setup">
+                            <h2 class="text-lg font-bold text-blue-400 mb-2">ทดสอบความรู้เรื่องรอก</h2>
+                            <p class="text-sm text-gray-400 mb-6">ท้าทายความเข้าใจของคุณด้วยแบบทดสอบ 3 ระดับ</p>
+                            
+                            <div class="space-y-3">
+                                <button onclick="startQuiz('easy')" class="w-full bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white p-3 rounded-lg font-bold transition shadow-lg">ระดับง่าย (ความเข้าใจพื้นฐาน)</button>
+                                <button onclick="startQuiz('medium')" class="w-full bg-gradient-to-r from-yellow-600 to-yellow-500 hover:from-yellow-500 hover:to-yellow-400 text-white p-3 rounded-lg font-bold transition shadow-lg">ระดับปานกลาง (การคำนวณ)</button>
+                                <button onclick="startQuiz('hard')" class="w-full bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white p-3 rounded-lg font-bold transition shadow-lg">ระดับยาก (รอกพวงและประสิทธิภาพ)</button>
+                            </div>
+                        </div>
+
+                        <div id="quiz-active" class="hidden">
+                            <div class="flex justify-between items-center mb-4">
+                                <span id="quiz-level-badge" class="text-xs px-2 py-1 rounded shadow text-white font-bold">Level</span>
+                                <span id="quiz-progress" class="text-sm text-gray-400 font-mono">1 / 5</span>
+                            </div>
+                            
+                            <div id="question-text" class="text-[15px] font-semibold text-white mb-6 leading-relaxed">
+                                Question
+                            </div>
+
+                            <div id="options-container" class="space-y-2">
+                                <!-- Options dynamically injected here -->
+                            </div>
+                            
+                            <button id="next-btn" onclick="nextQuestion()" class="mt-6 w-full bg-blue-600 hover:bg-blue-500 hidden text-white p-3 rounded-lg font-bold transition shadow-lg">ข้อต่อไป ➔</button>
+                        </div>
+
+                        <div id="quiz-result" class="hidden text-center py-8">
+                            <div class="text-5xl mb-4">🎯</div>
+                            <h2 class="text-2xl font-bold text-white mb-2">สรุปคะแนน</h2>
+                            <div id="score-text" class="text-5xl font-mono text-blue-400 font-bold mb-6 drop-shadow-[0_0_10px_rgba(59,130,246,0.5)]">0 / 5</div>
+                            <button onclick="resetQuiz()" class="bg-gray-700 hover:bg-gray-600 border border-gray-500 text-white px-6 py-2 rounded-full transition">เล่นอีกครั้ง</button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Panel: Instructions overlay for 3D view -->
+        <div class="hidden md:flex flex-1 items-end justify-end p-6 pointer-events-none">
+            <div class="bg-black/60 backdrop-blur-md text-white px-5 py-3 rounded-2xl text-sm border border-white/10 flex items-center gap-3 shadow-xl">
+                <span class="text-2xl">🖱️</span> 
+                <div>
+                    <p class="font-bold">ควบคุมมุมกล้อง</p>
+                    <p class="text-gray-300 text-xs">คลิกซ้ายค้างเพื่อหมุน / เลื่อนลูกกลิ้งเพื่อซูม</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Modal for Notifications -->
+    <div id="custom-modal" class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center hidden opacity-0 transition-opacity duration-300">
+        <div class="bg-gray-900 border border-gray-700 rounded-2xl max-w-sm w-full mx-4 overflow-hidden transform scale-95 transition-transform duration-300 shadow-2xl" id="modal-content">
+            <div id="modal-header" class="p-4 bg-gray-800 text-center">
+                <div id="modal-icon" class="text-4xl mb-2">✅</div>
+                <h3 id="modal-title" class="text-xl font-bold">Title</h3>
+            </div>
+            <div class="p-6">
+                <p id="modal-body" class="text-gray-300 text-sm mb-6 leading-relaxed">Message goes here...</p>
+                <button onclick="closeModal()" class="w-full bg-gray-700 hover:bg-gray-600 text-white py-3 rounded-xl font-bold transition">เข้าใจแล้ว</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- NEW: UI TOGGLE & FORMULA ---
+        let isPanelOpen = true;
+        function toggleUIPanel() {
+            const panel = document.getElementById('ui-panel-container');
+            const btn = document.getElementById('toggle-btn');
+            isPanelOpen = !isPanelOpen;
+            if (isPanelOpen) {
+                panel.classList.remove('panel-hidden');
+                btn.innerText = '◀';
+            } else {
+                panel.classList.add('panel-hidden');
+                btn.innerText = '▶';
+            }
+        }
+
+        let isFormulaOpen = false;
+        function toggleFormula() {
+            const content = document.getElementById('formula-content');
+            const icon = document.getElementById('formula-icon');
+            isFormulaOpen = !isFormulaOpen;
+            if (isFormulaOpen) {
+                content.classList.remove('hidden');
+                icon.innerText = '▲';
+            } else {
+                content.classList.add('hidden');
+                icon.innerText = '▼';
+            }
+        }
+
+        const pulleyFormulas = {
+            'fixed': '<b>รอกเดี่ยวตายตัว (Fixed Pulley)</b><br>• สูตร: E = W<br>• การได้เปรียบเชิงกล (M.A.) = 1<br>• ระยะดึงเชือก: s = h<br><span class="text-xs text-gray-400">*ไม่ช่วยผ่อนแรง แต่ช่วยเปลี่ยนทิศทางแรง</span>',
+            'movable': '<b>รอกเดี่ยวเคลื่อนที่ (Movable Pulley)</b><br>• สูตร: E = W / 2<br>• การได้เปรียบเชิงกล (M.A.) = 2<br>• ระยะดึงเชือก: s = 2h<br><span class="text-xs text-gray-400">*ช่วยผ่อนแรงได้ครึ่งหนึ่ง แต่ต้องดึงเชือกยาวขึ้น 2 เท่า</span>',
+            'sys1': '<b>รอกพวงระบบที่ 1</b><br>• สูตร: E = W / 2ⁿ (n = จำนวนรอกเคลื่อนที่)<br>• การได้เปรียบเชิงกล (M.A.) = 2ⁿ<br>• ในภาพนี้ n=3 ดังนั้น E = W / 8',
+            'sys2': '<b>รอกพวงระบบที่ 2</b><br>• สูตร: E = W / n (n = จำนวนเส้นเชือกที่ช่วยพยุง)<br>• การได้เปรียบเชิงกล (M.A.) = n<br>• ในภาพนี้คล้องเชือก 4 เส้น ดังนั้น E = W / 4',
+            'sys3': '<b>รอกพวงระบบที่ 3</b><br>• สูตร: E = W / (2ⁿ - 1) (n = จำนวนรอกทั้งหมด)<br>• การได้เปรียบเชิงกล (M.A.) = 2ⁿ - 1<br>• ในภาพนี้ n=3 ดังนั้น E = W / 7'
+        };
+
+        // --- UI & TAB NAVIGATION ---
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`tab-${tabId}`).classList.add('active');
+            
+            document.getElementById('content-simulation').classList.add('hidden');
+            document.getElementById('content-theory').classList.add('hidden');
+            document.getElementById('content-quiz').classList.add('hidden');
+            
+            document.getElementById(`content-${tabId}`).classList.remove('hidden');
+        }
+
+        // --- CUSTOM MODAL ---
+        function showModal(title, message, isCorrect) {
+            const modal = document.getElementById('custom-modal');
+            const titleEl = document.getElementById('modal-title');
+            const headerEl = document.getElementById('modal-header');
+            const iconEl = document.getElementById('modal-icon');
+            
+            titleEl.innerText = title;
+            document.getElementById('modal-body').innerHTML = message;
+            
+            if (isCorrect) {
+                headerEl.className = 'p-4 bg-green-900/50 text-center border-b border-green-700';
+                titleEl.className = 'text-xl font-bold text-green-400';
+                iconEl.innerText = '🎉';
+            } else {
+                headerEl.className = 'p-4 bg-red-900/50 text-center border-b border-red-700';
+                titleEl.className = 'text-xl font-bold text-red-400';
+                iconEl.innerText = '💡';
+            }
+            
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                document.getElementById('modal-content').classList.remove('scale-95');
+                document.getElementById('modal-content').classList.add('scale-100');
+            }, 10);
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('custom-modal');
+            modal.classList.add('opacity-0');
+            document.getElementById('modal-content').classList.remove('scale-100');
+            document.getElementById('modal-content').classList.add('scale-95');
+            setTimeout(() => { modal.classList.add('hidden'); }, 300);
+        }
+
+        // --- QUIZ DATA ---
+        const quizData = {
+            easy: [
+                { q: "รอกเดี่ยวตายตัว (Fixed Pulley) มีประโยชน์หลักอย่างไร?", options: ["ช่วยผ่อนแรงได้ครึ่งหนึ่ง", "เปลี่ยนทิศทางของแรงดึง", "ลดน้ำหนักของวัตถุ", "เพิ่มปริมาณงานที่ได้"], a: 1, exp: "รอกเดี่ยวตายตัวไม่ช่วยผ่อนแรง (M.A.=1) แต่อำนวยความสะดวกโดยเปลี่ยนทิศทางแรง เช่น จากดึงขึ้นเป็นดึงลง" },
+                { q: "ถ้ายกวัตถุหนัก 100 นิวตัน ด้วยรอกเดี่ยวตายตัว ต้องออกแรงดึงเชือกเท่าใด?", options: ["50 นิวตัน", "100 นิวตัน", "200 นิวตัน", "0 นิวตัน"], a: 1, exp: "รอกเดี่ยวตายตัว M.A. = 1 ดังนั้น แรงพยายาม (E) = น้ำหนัก (W) = 100 นิวตัน" },
+                { q: "รอกประเภทใดที่ 'ผ่อนแรงได้ครึ่งหนึ่ง' ของน้ำหนักวัตถุ?", options: ["รอกเดี่ยวตายตัว", "รอกพวง 1 ตัว", "รอกเดี่ยวเคลื่อนที่", "รอกไม่มีการผ่อนแรง"], a: 2, exp: "รอกเดี่ยวเคลื่อนที่ (Movable Pulley) มีเชือก 2 เส้นช่วยรับน้ำหนัก จึงออกแรงเพียงครึ่งเดียว (E = W/2)" }
+            ],
+            medium: [
+                { q: "ระบบรอกประกอบด้วยเชือก 4 เส้นช่วยพยุงวัตถุ (n=4) ถ้ายกมวล 40 kg จะต้องออกแรงดึง (E) กี่นิวตัน? (g=10)", options: ["100 N", "400 N", "10 N", "1600 N"], a: 0, exp: "น้ำหนัก W = mg = 40x10 = 400 N. <br>สูตร E = W/n = 400/4 = 100 N" },
+                { q: "ชายคนหนึ่งใช้รอกเดี่ยวเคลื่อนที่ดึงวัตถุหนัก 600 N ขึ้นไปสูง 2 เมตร เขาต้องดึงเชือกเป็นระยะทางกี่เมตร?", options: ["1 เมตร", "2 เมตร", "4 เมตร", "8 เมตร"], a: 2, exp: "รอกเดี่ยวเคลื่อนที่มี n=2. ระยะที่ดึง (s) = n × ความสูง (h) <br>s = 2 × 2 = 4 เมตร (ผ่อนแรงแต่เสียเปรียบระยะทาง)" }
+            ],
+            hard: [
+                { q: "รอกระบบหนึ่งมีเชือกรับน้ำหนัก 5 เส้น (n=5) แต่มีประสิทธิภาพ (Efficiency) เพียง 80% เนื่องจากแรงเสียดทาน ถ้ายกน้ำหนัก 1000 N ต้องออกแรงดึงจริงกี่นิวตัน?", options: ["200 N", "250 N", "160 N", "800 N"], a: 1, exp: "แรงอุดมคติ E_ideal = 1000/5 = 200 N.<br>ประสิทธิภาพ = (E_ideal / E_real) × 100%<br>80 = (200 / E_real) × 100 -> E_real = 200 / 0.8 = 250 N" },
+                { q: "ในระบบรอกที่ไม่มีแรงเสียดทาน งานที่กระทำ (Work input) เทียบกับงานที่ได้รับ (Work output) จะเป็นอย่างไร?", options: ["งานที่กระทำน้อยกว่า", "งานที่กระทำมากกว่า", "เท่ากันเสมอ", "ขึ้นอยู่กับจำนวนรอก"], a: 2, exp: "ตามกฎอนุรักษ์พลังงานในระบบอุดมคติ (ไม่มีการสูญเสีย) งานที่ให้ (E × s) จะเท่ากับ งานที่ได้ (W × h) เสมอ เครื่องกลไม่ช่วยลด 'งาน' แต่ช่วยลด 'แรง'" }
+            ]
+        };
+
+        let currentQuiz = [];
+        let currentQuestionIndex = 0;
+        let score = 0;
+
+        function startQuiz(level) {
+            currentQuiz = [...quizData[level]].sort(() => Math.random() - 0.5);
+            currentQuestionIndex = 0;
+            score = 0;
+            
+            document.getElementById('quiz-setup').classList.add('hidden');
+            document.getElementById('quiz-active').classList.remove('hidden');
+            
+            const badge = document.getElementById('quiz-level-badge');
+            const bgColors = { easy: 'bg-green-500', medium: 'bg-yellow-500', hard: 'bg-red-500' };
+            const names = { easy: 'ระดับง่าย', medium: 'ระดับปานกลาง', hard: 'ระดับยาก' };
+            badge.innerText = names[level];
+            badge.className = `text-xs px-2 py-1 rounded shadow text-white font-bold ${bgColors[level]}`;
+            
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            document.getElementById('next-btn').classList.add('hidden');
+            document.getElementById('quiz-progress').innerText = `${currentQuestionIndex + 1} / ${currentQuiz.length}`;
+            
+            const qData = currentQuiz[currentQuestionIndex];
+            document.getElementById('question-text').innerHTML = qData.q;
+            
+            const optionsContainer = document.getElementById('options-container');
+            optionsContainer.innerHTML = '';
+            
+            qData.options.forEach((opt, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'w-full text-left bg-gray-800 hover:bg-gray-700 border border-gray-600 p-4 rounded-xl text-white transition text-sm shadow-sm';
+                btn.innerHTML = `<span class="inline-block w-6 h-6 bg-gray-700 rounded-full text-center mr-2 text-gray-400 font-bold">${String.fromCharCode(65+index)}</span> ${opt}`;
+                btn.onclick = () => checkAnswer(index, btn);
+                optionsContainer.appendChild(btn);
+            });
+        }
+
+        function checkAnswer(selectedIndex, btnElement) {
+            const buttons = document.getElementById('options-container').querySelectorAll('button');
+            buttons.forEach(b => { b.onclick = null; b.classList.remove('hover:bg-gray-700'); });
+            
+            const qData = currentQuiz[currentQuestionIndex];
+            const isCorrect = selectedIndex === qData.a;
+            
+            if (isCorrect) {
+                btnElement.classList.replace('bg-gray-800', 'bg-green-900');
+                btnElement.classList.replace('border-gray-600', 'border-green-500');
+                score++;
+                showModal("ถูกต้อง! เยี่ยมมาก", qData.exp, true);
+            } else {
+                btnElement.classList.replace('bg-gray-800', 'bg-red-900');
+                btnElement.classList.replace('border-gray-600', 'border-red-500');
+                buttons[qData.a].classList.replace('bg-gray-800', 'bg-green-900');
+                buttons[qData.a].classList.replace('border-gray-600', 'border-green-500');
+                showModal("ยังไม่ถูกนะ", qData.exp, false);
+            }
+            
+            document.getElementById('next-btn').classList.remove('hidden');
+        }
+
+        function nextQuestion() {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < currentQuiz.length) {
+                loadQuestion();
+            } else {
+                showResult();
+            }
+        }
+
+        function showResult() {
+            document.getElementById('quiz-active').classList.add('hidden');
+            document.getElementById('quiz-result').classList.remove('hidden');
+            document.getElementById('score-text').innerText = `${score} / ${currentQuiz.length}`;
+        }
+
+        function resetQuiz() {
+            document.getElementById('quiz-result').classList.add('hidden');
+            document.getElementById('quiz-setup').classList.remove('hidden');
+        }
+
+        // --- THREE.JS SIMULATION ENGINE ---
+        let scene, camera, renderer;
+        let systemGroup;
+        
+        // --- NEW PRECISE DIMENSIONS ---
+        // ใช้พิกัดที่เป๊ะทางคณิตศาสตร์เพื่อป้องกันเชือกทะลุกล่อง
+        const CEILING_Y = 8;
+        const GROUND_Y = 0;
+        const R = 0.5; // รัศมีรอกเล็กลง เพื่อให้วางชิดกันได้
+        const LOAD_SIZE = 1.0; // ปรับขนาดวัตถุให้เล็กลง ป้องกันเชือกซ้อนทับ
+        
+        // Colors
+        const colors = {
+            bg: 0x87ceeb, // ปรับสีพื้นหลังเป็นสีฟ้าอ่อนตามที่ต้องการ (Sky Blue)
+            pulley: 0x64748b,
+            pulleyRim: 0x94a3b8,
+            rope: 0xd4d4d8, // Silver rope
+            load: 0x3b82f6,
+            effortWeight: 0xef4444, // กล่องมวลถ่วงสีแดง
+            ceiling: 0x1e293b,
+            anchor: 0x475569
+        };
+
+        // Geometries & Materials
+        const geoPulley = new THREE.CylinderGeometry(R, R, 0.3, 32);
+        geoPulley.rotateX(Math.PI / 2); 
+        const matPulley = new THREE.MeshPhongMaterial({ color: colors.pulley, flatShading: false });
+        
+        const geoLoad = new THREE.BoxGeometry(LOAD_SIZE, LOAD_SIZE, LOAD_SIZE);
+        const matLoad = new THREE.MeshPhongMaterial({ color: colors.load });
+        const matEffort = new THREE.MeshPhongMaterial({ color: colors.effortWeight });
+
+        const matRope = new THREE.MeshPhongMaterial({ color: colors.rope });
+        
+        let currentState = {
+            type: 'fixed', mass: 50, pullRatio: 0, n: 1, maxS: 6.0,
+            ropes: [], pulleys: {}, loadBox: null, loadBracket: null, effortBox: null
+        };
+
+        function init3D() {
+            const container = document.getElementById('canvas-container');
+            
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(colors.bg);
+            scene.fog = new THREE.FogExp2(colors.bg, 0.02);
+
+            camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
+            camera.position.set(0, 5, 20);
+            
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            container.appendChild(renderer.domElement);
+
+            const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambient);
+            
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.7);
+            dirLight.position.set(10, 20, 15);
+            dirLight.castShadow = true;
+            dirLight.shadow.mapSize.width = 1024;
+            dirLight.shadow.mapSize.height = 1024;
+            scene.add(dirLight);
+
+            const fillLight = new THREE.DirectionalLight(0x60a5fa, 0.3);
+            fillLight.position.set(-10, 5, -10);
+            scene.add(fillLight);
+
+            // Floor & Ceiling
+            const geoPlane = new THREE.PlaneGeometry(100, 100);
+            const floor = new THREE.Mesh(geoPlane, new THREE.MeshPhongMaterial({ color: 0x94a3b8, depthWrite: false })); // สว่างขึ้นเข้ากับพื้นฟ้า
+            floor.rotation.x = -Math.PI / 2;
+            floor.position.y = GROUND_Y;
+            floor.receiveShadow = true;
+            scene.add(floor);
+            
+            const grid = new THREE.GridHelper(40, 40, 0x64748b, 0x64748b);
+            grid.position.y = 0.01;
+            scene.add(grid);
+
+            const ceiling = new THREE.Mesh(new THREE.BoxGeometry(40, 1, 10), new THREE.MeshPhongMaterial({ color: colors.ceiling }));
+            ceiling.position.y = CEILING_Y + 0.5;
+            ceiling.castShadow = true;
+            ceiling.receiveShadow = true;
+            scene.add(ceiling);
+
+            systemGroup = new THREE.Group();
+            scene.add(systemGroup);
+
+            // Camera & Drag Controls
+            let isDragging = false;
+            let isDraggingEffort = false; // สำหรับลากกล่องสีแดง
+            let prevX = 0; let prevY = 0;
+            let lon = -90; let lat = 10;
+            const interactEl = renderer.domElement;
+            const raycaster = new THREE.Raycaster();
+            const mouse = new THREE.Vector2();
+            
+            interactEl.addEventListener('mousedown', (e) => { 
+                const rect = interactEl.getBoundingClientRect();
+                mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+                mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+                raycaster.setFromCamera(mouse, camera);
+                
+                if (currentState.effortBox) {
+                    const intersects = raycaster.intersectObject(currentState.effortBox);
+                    if (intersects.length > 0) {
+                        isDraggingEffort = true;
+                        prevY = e.clientY;
+                        return; // หยุดทำงาน ไม่หมุนกล้อง
+                    }
+                }
+
+                isDragging = true; 
+                prevX = e.clientX; 
+                prevY = e.clientY; 
+            });
+            window.addEventListener('mouseup', () => { 
+                isDragging = false; 
+                isDraggingEffort = false;
+            });
+            window.addEventListener('mousemove', (e) => {
+                if (isDraggingEffort) {
+                    const deltaY = e.clientY - prevY; // ลากเมาส์ลง ค่าจะเป็นบวก
+                    const slider = document.getElementById('slider-pull');
+                    let currentVal = parseFloat(slider.value);
+                    slider.value = Math.max(0, Math.min(100, currentVal + deltaY * 0.5)); // ปรับความไวด้วย 0.5
+                    updateSimulationState();
+                    prevY = e.clientY;
+                    return;
+                }
+
+                if (!isDragging) return;
+                lon -= (e.clientX - prevX) * 0.5;
+                lat += (e.clientY - prevY) * 0.5;
+                lat = Math.max(-10, Math.min(80, lat));
+                prevX = e.clientX; prevY = e.clientY;
+                updateCameraPosition();
+            });
+            
+            interactEl.addEventListener('touchstart', (e) => { 
+                const rect = interactEl.getBoundingClientRect();
+                mouse.x = ((e.touches[0].clientX - rect.left) / rect.width) * 2 - 1;
+                mouse.y = -((e.touches[0].clientY - rect.top) / rect.height) * 2 + 1;
+                raycaster.setFromCamera(mouse, camera);
+                
+                if (currentState.effortBox) {
+                    const intersects = raycaster.intersectObject(currentState.effortBox);
+                    if (intersects.length > 0) {
+                        isDraggingEffort = true;
+                        prevY = e.touches[0].clientY;
+                        return;
+                    }
+                }
+
+                isDragging = true; 
+                prevX = e.touches[0].clientX; 
+                prevY = e.touches[0].clientY; 
+            }, {passive: false});
+            window.addEventListener('touchend', () => { 
+                isDragging = false; 
+                isDraggingEffort = false;
+            });
+            window.addEventListener('touchmove', (e) => {
+                if (isDraggingEffort) {
+                    e.preventDefault(); // ป้องกันหน้าจอเลื่อนเวลาทัชลากกล่อง
+                    const deltaY = e.touches[0].clientY - prevY;
+                    const slider = document.getElementById('slider-pull');
+                    let currentVal = parseFloat(slider.value);
+                    slider.value = Math.max(0, Math.min(100, currentVal + deltaY * 0.5));
+                    updateSimulationState();
+                    prevY = e.touches[0].clientY;
+                    return;
+                }
+
+                if (!isDragging) return;
+                lon -= (e.touches[0].clientX - prevX) * 0.5;
+                lat += (e.touches[0].clientY - prevY) * 0.5;
+                lat = Math.max(-10, Math.min(80, lat));
+                prevX = e.touches[0].clientX; prevY = e.touches[0].clientY;
+                updateCameraPosition();
+            }, {passive: false});
+            
+            interactEl.addEventListener('wheel', (e) => {
+                const radius = camera.position.distanceTo(new THREE.Vector3(0,5,0));
+                let newRadius = radius + e.deltaY * 0.02;
+                newRadius = Math.max(10, Math.min(40, newRadius));
+                updateCameraPosition(newRadius);
+            }, {passive: true});
+
+            function updateCameraPosition(forcedRadius = null) {
+                const radius = forcedRadius || camera.position.distanceTo(new THREE.Vector3(0, 5, 0));
+                const phi = THREE.MathUtils.degToRad(90 - lat);
+                const theta = THREE.MathUtils.degToRad(lon);
+                camera.position.x = radius * Math.sin(phi) * Math.cos(theta);
+                camera.position.y = radius * Math.cos(phi) + 5;
+                camera.position.z = radius * Math.sin(phi) * Math.sin(theta);
+                camera.lookAt(0, 5, 0);
+            }
+            updateCameraPosition(18);
+            window.addEventListener('resize', onWindowResize, false);
+            
+            resetAndBuildSystem();
+            animate();
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function clearSystem() {
+            while(systemGroup.children.length > 0) {
+                const child = systemGroup.children[0];
+                if(child.geometry) child.geometry.dispose();
+                if(child.material) child.material.dispose();
+                systemGroup.remove(child);
+            }
+            currentState.ropes = [];
+            currentState.pulleys = {};
+        }
+
+        function createPulley(x, y, isFixed) {
+            const group = new THREE.Group();
+            group.position.set(x, y, 0);
+
+            const wheel = new THREE.Mesh(geoPulley, matPulley);
+            wheel.castShadow = true;
+            wheel.receiveShadow = true;
+            group.add(wheel);
+            
+            const axle = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.5, 16).rotateX(Math.PI/2), new THREE.MeshPhongMaterial({color: 0x222222}));
+            group.add(axle);
+
+            if (isFixed) {
+                const bracket = new THREE.Mesh(new THREE.BoxGeometry(0.2, CEILING_Y - y, 0.3), new THREE.MeshPhongMaterial({color: colors.anchor}));
+                bracket.position.y = (CEILING_Y - y)/2;
+                group.add(bracket);
+            } else {
+                const bracket = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.8, 0.3), new THREE.MeshPhongMaterial({color: colors.anchor}));
+                bracket.position.y = -0.4;
+                group.add(bracket);
+            }
+            
+            systemGroup.add(group);
+            return { mesh: group, wheel: wheel, isFixed: isFixed };
+        }
+
+        function drawRopeSegment(p1, p2) {
+            const distance = p1.distanceTo(p2);
+            if(distance < 0.01) return null; 
+            const rope = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, distance, 8), matRope);
+            rope.castShadow = true;
+            rope.position.copy(p1).lerp(p2, 0.5);
+            rope.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), p2.clone().sub(p1).normalize());
+            systemGroup.add(rope);
+            currentState.ropes.push(rope);
+        }
+
+        function clearRopes() {
+            currentState.ropes.forEach(r => { r.geometry.dispose(); systemGroup.remove(r); });
+            currentState.ropes = [];
+        }
+
+        function buildSystem(type) {
+            currentState.pulleys = {}; 
+            
+            currentState.loadBox = new THREE.Mesh(geoLoad, matLoad);
+            currentState.loadBox.castShadow = true;
+            systemGroup.add(currentState.loadBox);
+
+            currentState.effortBox = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), matEffort);
+            currentState.effortBox.castShadow = true;
+            systemGroup.add(currentState.effortBox);
+
+            let bracketWidth = LOAD_SIZE;
+            let bracketCenter = 0;
+            currentState.maxS = 6.0; // ระยะการดึงมวลถ่วงสูงสุด
+
+            if (type === 'fixed') {
+                currentState.n = 1;
+                // ขยับศูนย์กลางรอกเดี่ยวตายตัวไปที่ 1.0 และขยายขนาดล้อรอก 2 เท่า (รัศมี = 1.0)
+                currentState.pulleys.p0 = createPulley(1.0, 7.5, true);
+                currentState.pulleys.p0.wheel.scale.set(2, 2, 2); 
+                bracketCenter = 0;
+            } else if (type === 'movable') {
+                currentState.n = 2;
+                currentState.pulleys.p0 = createPulley(0.0, 2.0, false);
+                currentState.pulleys.p1 = createPulley(1.0, 7.5, true);
+                bracketCenter = 0;
+            } else if (type === 'sys1') { // ระบบที่ 1: M.A.=8 (รอกเคลื่อนที่ 3 ตัว)
+                currentState.n = 8;
+                currentState.maxS = 5.0; // ปรับลดระยะเพื่อไม่ให้รอกชนเพดาน
+                currentState.pulleys.p0 = createPulley(0.5, 2.0, false);
+                currentState.pulleys.p1 = createPulley(1.0, 3.0, false);
+                currentState.pulleys.p2 = createPulley(1.5, 4.5, false);
+                currentState.pulleys.p3 = createPulley(2.5, 7.5, true);
+                bracketCenter = 0.5; 
+            } else if (type === 'sys2') { // ระบบที่ 2: Block & Tackle M.A.=4
+                currentState.n = 4;
+                currentState.pulleys.p0 = createPulley(-1.0, 2.0, false);
+                currentState.pulleys.p1 = createPulley(1.0, 2.0, false);
+                currentState.pulleys.p2 = createPulley(0.0, 7.5, true);
+                currentState.pulleys.p3 = createPulley(2.0, 7.5, true);
+                bracketWidth = 2.4; 
+                bracketCenter = 0;
+            } else if (type === 'sys3') { // ระบบที่ 3: เชือกทุกเส้นผูกกับวัตถุ M.A.=7
+                currentState.n = 7;
+                currentState.maxS = 3.5; // ปรับลดเพื่อไม่ให้วัตถุชนรอก
+                currentState.pulleys.p0 = createPulley(0.5, 7.5, true);
+                currentState.pulleys.p1 = createPulley(1.0, 6.0, false);
+                currentState.pulleys.p2 = createPulley(1.5, 4.0, false);
+                bracketWidth = 1.4;
+                bracketCenter = 0.5;
+            }
+
+            currentState.loadBracket = new THREE.Mesh(new THREE.BoxGeometry(bracketWidth, 0.2, 0.4), new THREE.MeshPhongMaterial({color: colors.anchor}));
+            currentState.loadBracket.position.x = bracketCenter;
+            currentState.loadBox.position.x = bracketCenter;
+            systemGroup.add(currentState.loadBracket);
+        }
+
+        function updateSimulationState() {
+            const pullSlider = document.getElementById('slider-pull');
+            currentState.pullRatio = parseFloat(pullSlider.value) / 100;
+            
+            const s = currentState.pullRatio * currentState.maxS; // ระยะดึงเชือก
+            const h = s / currentState.n; // ระยะวัตถุขึ้น
+            
+            const w = currentState.mass * 10;
+            const n = currentState.n;
+            const e = w / n;
+            
+            document.getElementById('calc-n').innerText = n;
+            document.getElementById('calc-ma').innerText = n;
+            document.getElementById('calc-w').innerText = `${w} N`;
+            document.getElementById('calc-e').innerText = `${e.toFixed(0)} N`;
+            document.getElementById('calc-h').innerText = `${h.toFixed(2)} m`;
+            document.getElementById('calc-s').innerText = `${s.toFixed(2)} m`;
+            document.getElementById('lbl-pull').innerText = `${s.toFixed(1)} m`;
+
+            const baseLoadY = LOAD_SIZE / 2;
+            const currentLoadY = baseLoadY + h;
+            currentState.loadBox.position.y = currentLoadY;
+            currentState.loadBracket.position.y = currentLoadY + (LOAD_SIZE/2) + 0.1;
+            
+            const effortMass = currentState.mass / n;
+            const eScale = Math.max(0.4, Math.cbrt(effortMass / 50) * LOAD_SIZE * 0.9); 
+            currentState.effortBox.scale.set(eScale, eScale, eScale);
+
+            clearRopes();
+            
+            // Helper functions สำหรับวาดเชือกและหมุนรอก
+            const rope = (x1, y1, x2, y2) => drawRopeSegment(new THREE.Vector3(x1, y1, 0), new THREE.Vector3(x2, y2, 0));
+            const rot = (p, amt) => { if(p.wheel) p.wheel.rotation.z = amt; };
+            const movY = (p, y) => { p.mesh.position.y = y; };
+
+            let pullX = 0;
+            let pullStartY = 0;
+            const type = currentState.type;
+            const bY = currentState.loadBracket.position.y; // Load Bracket Center Y
+            const CEIL = CEILING_Y;
+
+            if (type === 'fixed') {
+                const p0 = currentState.pulleys.p0;
+                rot(p0, -s);
+                // ขอบซ้ายรอกอยู่ที่ X=0, ขอบขวาอยู่ที่ X=2.0
+                rope(0, bY, 0, p0.mesh.position.y);
+                rope(2.0, p0.mesh.position.y, 2.0, p0.mesh.position.y - s);
+                pullX = 2.0; pullStartY = p0.mesh.position.y - s;
+            } 
+            else if (type === 'movable') {
+                const p0 = currentState.pulleys.p0; const p1 = currentState.pulleys.p1;
+                movY(p0, bY + 0.6);
+                rot(p0, h); rot(p1, -s);
+                rope(-0.5, CEIL, -0.5, p0.mesh.position.y);
+                rope(0.5, p0.mesh.position.y, 0.5, p1.mesh.position.y);
+                rope(1.5, p1.mesh.position.y, 1.5, p1.mesh.position.y - s);
+                pullX = 1.5; pullStartY = p1.mesh.position.y - s;
+            }
+            else if (type === 'sys1') { 
+                const p = currentState.pulleys;
+                movY(p.p0, bY + 0.6);
+                movY(p.p1, 3.0 + 2*h);
+                movY(p.p2, 4.5 + 4*h);
+                rot(p.p0, h); rot(p.p1, 2*h); rot(p.p2, 4*h); rot(p.p3, -s);
+                
+                rope(0, CEIL, 0, p.p0.mesh.position.y);
+                rope(1.0, p.p0.mesh.position.y, 1.0, p.p1.mesh.position.y); // ขอบขวา p0 ไป แกน p1
+                rope(0.5, CEIL, 0.5, p.p1.mesh.position.y);
+                rope(1.5, p.p1.mesh.position.y, 1.5, p.p2.mesh.position.y); // ขอบขวา p1 ไป แกน p2
+                rope(1.0, CEIL, 1.0, p.p2.mesh.position.y);
+                rope(2.0, p.p2.mesh.position.y, 2.0, p.p3.mesh.position.y); // ขอบขวา p2 ไป ขอบซ้าย p3
+                rope(3.0, p.p3.mesh.position.y, 3.0, p.p3.mesh.position.y - s);
+                pullX = 3.0; pullStartY = p.p3.mesh.position.y - s;
+            }
+            else if (type === 'sys2') { 
+                const p = currentState.pulleys;
+                movY(p.p0, bY + 0.6); movY(p.p1, bY + 0.6);
+                rot(p.p0, s); rot(p.p1, s); rot(p.p2, -s); rot(p.p3, -s);
+                
+                rope(-1.5, CEIL, -1.5, p.p0.mesh.position.y);
+                rope(-0.5, p.p0.mesh.position.y, -0.5, p.p2.mesh.position.y);
+                rope(0.5, p.p2.mesh.position.y, 0.5, p.p1.mesh.position.y);
+                rope(1.5, p.p1.mesh.position.y, 1.5, p.p3.mesh.position.y);
+                rope(2.5, p.p3.mesh.position.y, 2.5, p.p3.mesh.position.y - s);
+                pullX = 2.5; pullStartY = p.p3.mesh.position.y - s;
+            }
+            else if (type === 'sys3') { 
+                const p = currentState.pulleys;
+                movY(p.p1, 6.0 - h);     // รอกกลางเคลื่อนที่ลง
+                movY(p.p2, 4.0 - 3*h);   // รอกล่างเคลื่อนที่ลง
+                rot(p.p0, -s); rot(p.p1, -s); rot(p.p2, -s);
+                
+                rope(0.0, bY, 0.0, p.p0.mesh.position.y); // คานรับน้ำหนัก ซ้าย -> p0
+                rope(1.0, p.p0.mesh.position.y, 1.0, p.p1.mesh.position.y); // ขอบขวา p0 -> แกน p1
+                rope(0.5, bY, 0.5, p.p1.mesh.position.y); // คานรับน้ำหนัก กลาง -> p1
+                rope(1.5, p.p1.mesh.position.y, 1.5, p.p2.mesh.position.y); // ขอบขวา p1 -> แกน p2
+                rope(1.0, bY, 1.0, p.p2.mesh.position.y); // คานรับน้ำหนัก ขวา -> p2
+                rope(2.0, p.p2.mesh.position.y, 2.0, p.p2.mesh.position.y - s);
+                pullX = 2.0; pullStartY = p.p2.mesh.position.y - s;
+            }
+            
+            currentState.effortBox.position.set(pullX, pullStartY - (eScale/2), 0);
+        }
+
+        function updateMass() {
+            const massSlider = document.getElementById('slider-mass');
+            currentState.mass = parseFloat(massSlider.value);
+            document.getElementById('lbl-mass').innerText = `${currentState.mass} kg`;
+            
+            // Visual scale load box (Max size limit applied to prevent clipping)
+            const scale = Math.min(1.4, 0.6 + (currentState.mass / 100) * 0.6);
+            currentState.loadBox.scale.set(scale, scale, scale);
+            
+            updateSimulationState();
+        }
+
+        function resetAndBuildSystem() {
+            const type = document.getElementById('pulley-type').value;
+            currentState.type = type;
+            document.getElementById('slider-pull').value = 0;
+            
+            // อัปเดตข้อความสูตรตามประเภทรอก
+            if (pulleyFormulas[type]) {
+                document.getElementById('formula-content').innerHTML = pulleyFormulas[type];
+            }
+
+            clearSystem();
+            buildSystem(type);
+            updateMass();
+            updateSimulationState();
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+        }
+
+        window.onload = function() {
+            init3D();
+        };
+    </script>
+</body>
+</html>

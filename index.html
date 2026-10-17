@@ -151,6 +151,15 @@ button.linkish{border:none;background:transparent;color:var(--brand);font:inheri
 .rnote{margin:0 4px 16px;padding:11px 14px;border-radius:8px;background:var(--brand-soft);font-size:14px;line-height:1.65}
 .rnote a{color:var(--brand);font-weight:700}
 .note a{color:var(--brand)}
+button.gbtn{width:100%;display:flex;align-items:center;justify-content:center;gap:12px;
+  background:#0f6b46;color:#fff;border:1px solid #0f6b46;font:inherit;font-weight:700;
+  font-size:16px;padding:14px 16px;border-radius:10px;cursor:pointer;min-height:54px;margin:0 0 10px}
+@media (hover:hover){button.gbtn:hover{opacity:.93}}
+button.gbtn:disabled{opacity:.55;cursor:default}
+.gbox{padding:16px 18px;border:1px solid var(--line);border-radius:var(--r);background:var(--brand-soft);margin-bottom:18px}
+.gbox .ghint{font-size:13px;color:var(--muted);line-height:1.65;margin:6px 0 0}
+details.legacy{margin-top:10px;border-top:1px solid var(--line);padding-top:12px}
+details.legacy > summary{cursor:pointer;color:var(--muted);font-size:13.5px;font-weight:600;user-select:none}
 footer{margin-top:34px;padding-top:18px;border-top:1px solid var(--line);
   color:var(--muted);font-size:12.5px;line-height:1.9}
 footer b{font-weight:700;color:var(--ink)}
@@ -179,55 +188,68 @@ footer b{font-weight:700;color:var(--ink)}
 
 <!-- ---------- หน้าลงชื่อเข้าใช้ ---------- -->
 <div class="panel" id="loginBox">
-  <div class="seg">
-    <button id="tabStu" class="on">นักเรียน</button>
-    <button id="tabTea">ครู</button>
+  <div class="gbox">
+    <button type="button" class="gbtn" id="btnGoogleLogin">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v8"/><path d="M8 12h8"/></svg>
+      <span>เข้าสู่ระบบด้วยเมลโรงเรียน (@pcschool.ac.th)</span>
+    </button>
+    <p class="ghint">
+      <b>ไม่ต้องจำรหัสผ่าน!</b> นักเรียนใช้เมลโรงเรียน เช่น <b>30201@pcschool.ac.th</b> เข้าได้ทุกวิชาทันที ·
+      ผู้ดูแลระบบใช้ <b>theboydz@gmail.com</b>
+    </p>
   </div>
 
-  <div id="fStu">
-    <p class="lead">ใช้<b>เลขประจำตัวนักเรียน</b>กับรหัสผ่านที่ครูแจ้ง
-      ลงชื่อครั้งเดียวใช้ได้ทุกวิชา</p>
-    <label class="f" for="sid">เลขประจำตัวนักเรียน <span class="hint">(ตัวเลขไม่เกิน 5 หลัก)</span></label>
-    <input type="text" id="sid" inputmode="numeric" pattern="[0-9]*" maxlength="5"
-           autocomplete="username" placeholder="เช่น 30201">
-    <label class="f" for="spass">รหัสผ่าน</label>
-    <input type="password" id="spass" autocomplete="current-password">
-    <button class="linkish" id="forgotOpen" type="button">ลืมรหัสผ่าน?</button>
-    <div class="forgot hide" id="forgotBox">
-      <div class="tt">ขอตั้งรหัสผ่านใหม่</div>
-      <p class="lead" style="margin:4px 0 0">ตั้งรหัสใหม่ได้เลยตอนนี้ แล้วรอครูอนุมัติ
-        อนุมัติแล้วเข้าด้วย<b>รหัสใหม่ที่ตั้งไว้</b>ได้ทันที ไม่ต้องยื่นซ้ำ</p>
-      <label class="f" for="fsid">เลขประจำตัวนักเรียน</label>
-      <input type="text" id="fsid" inputmode="numeric" pattern="[0-9]*" maxlength="5" autocomplete="off">
-      <label class="f" for="fname">ชื่อจริง <span class="hint">(ไม่ต้องมีคำนำหน้า เช่น สมชาย)</span></label>
-      <input type="text" id="fname" autocomplete="off">
-      <label class="f" for="fpass">รหัสผ่านใหม่ <span class="hint">(อย่างน้อย 4 ตัว)</span></label>
-      <input type="password" id="fpass" autocomplete="new-password">
-      <label class="f" for="fpass2">พิมพ์รหัสผ่านใหม่อีกครั้ง</label>
-      <input type="password" id="fpass2" autocomplete="new-password">
-      <button class="primary" id="forgotGo" type="button">ส่งคำขอ</button>
-      <div class="msg" id="forgotMsg"></div>
+  <details class="legacy" id="legacyDetails">
+    <summary>หรือเข้าด้วยเลขประจำตัวและรหัสผ่านแบบเดิม (สำรอง)</summary>
+    <div class="seg" style="margin-top:14px">
+      <button id="tabStu" class="on">นักเรียน</button>
+      <button id="tabTea">ครู</button>
     </div>
-  </div>
 
-  <div id="fTea" class="hide">
-    <p class="lead">สำหรับครูผู้สอนและผู้ดูแลระบบ (แอดมินหลัก / แอดมินรอง)</p>
-    <label class="f" for="tuser">ชื่อผู้ใช้ <span class="hint">(ครูผู้สอนกรอกที่นี่ · ผู้ดูแลหลักเว้นว่างได้)</span></label>
-    <input type="text" id="tuser" autocomplete="username" placeholder="เช่น kruaom (ผู้ดูแลหลักเว้นว่าง)">
-    <label class="f" for="tpass">รหัสผ่าน</label>
-    <input type="password" id="tpass" autocomplete="current-password">
-  </div>
+    <div id="fStu">
+      <p class="lead">ใช้<b>เลขประจำตัวนักเรียน</b>กับรหัสผ่านที่ครูแจ้ง
+        ลงชื่อครั้งเดียวใช้ได้ทุกวิชา</p>
+      <label class="f" for="sid">เลขประจำตัวนักเรียน <span class="hint">(ตัวเลขไม่เกิน 5 หลัก)</span></label>
+      <input type="text" id="sid" inputmode="numeric" pattern="[0-9]*" maxlength="5"
+             autocomplete="username" placeholder="เช่น 30201">
+      <label class="f" for="spass">รหัสผ่าน</label>
+      <input type="password" id="spass" autocomplete="current-password">
+      <button class="linkish" id="forgotOpen" type="button">ลืมรหัสผ่าน?</button>
+      <div class="forgot hide" id="forgotBox">
+        <div class="tt">ขอตั้งรหัสผ่านใหม่</div>
+        <p class="lead" style="margin:4px 0 0">ตั้งรหัสใหม่ได้เลยตอนนี้ แล้วรอครูอนุมัติ
+          อนุมัติแล้วเข้าด้วย<b>รหัสใหม่ที่ตั้งไว้</b>ได้ทันที ไม่ต้องยื่นซ้ำ</p>
+        <label class="f" for="fsid">เลขประจำตัวนักเรียน</label>
+        <input type="text" id="fsid" inputmode="numeric" pattern="[0-9]*" maxlength="5" autocomplete="off">
+        <label class="f" for="fname">ชื่อจริง <span class="hint">(ไม่ต้องมีคำนำหน้า เช่น สมชาย)</span></label>
+        <input type="text" id="fname" autocomplete="off">
+        <label class="f" for="fpass">รหัสผ่านใหม่ <span class="hint">(อย่างน้อย 4 ตัว)</span></label>
+        <input type="password" id="fpass" autocomplete="new-password">
+        <label class="f" for="fpass2">พิมพ์รหัสผ่านใหม่อีกครั้ง</label>
+        <input type="password" id="fpass2" autocomplete="new-password">
+        <button class="primary" id="forgotGo" type="button">ส่งคำขอ</button>
+        <div class="msg" id="forgotMsg"></div>
+      </div>
+    </div>
 
-  <button class="primary" id="go">เข้าใช้งาน</button>
+    <div id="fTea" class="hide">
+      <p class="lead">สำหรับครูผู้สอนและผู้ดูแลระบบ (แอดมินหลัก / แอดมินรอง)</p>
+      <label class="f" for="tuser">ชื่อผู้ใช้ <span class="hint">(ครูผู้สอนกรอกที่นี่ · ผู้ดูแลหลักเว้นว่างได้)</span></label>
+      <input type="text" id="tuser" autocomplete="username" placeholder="เช่น kruaom (ผู้ดูแลหลักเว้นว่าง)">
+      <label class="f" for="tpass">รหัสผ่าน</label>
+      <input type="password" id="tpass" autocomplete="current-password">
+    </div>
+
+    <button class="primary" id="go">เข้าใช้งานด้วยรหัสผ่าน</button>
+  </details>
   <div class="msg" id="msg"></div>
 
   <div class="or"><span>หรือเข้าโดยไม่ต้องลงชื่อ</span></div>
 
   <div class="openrow" id="openRow"></div>
   <div class="note">
-    วิชาที่เข้าได้โดยไม่ต้องลงชื่อ ทำโจทย์ได้ครบทุกข้อเหมือนกัน · ถ้าลงชื่อก่อนจะดีกว่าตรงที่
-    <b>ชื่อ ชั้น และเลขที่</b> จะถูกเติมให้เอง ไม่ต้องพิมพ์ตอนพิมพ์ใบงาน<br>
-    ลืมรหัสผ่าน? กด <b>ลืมรหัสผ่าน</b> ใต้ช่องรหัสผ่าน แล้วตั้งรหัสใหม่รอครูอนุมัติ
+    แนะนำให้กด <b>เข้าสู่ระบบด้วยเมลโรงเรียน (@pcschool.ac.th)</b> ด้านบน จะได้ไม่ต้องจำรหัสผ่าน
+    และ <b>ชื่อ ชั้น เลขที่</b> จะถูกเติมให้เองอัตโนมัติทุกวิชา
   </div>
 </div>
 
@@ -306,7 +328,7 @@ footer b{font-weight:700;color:var(--ink)}
 /* เลขรุ่นกับวันเวลาที่สร้างไฟล์ — tools/build-dist.mjs ประทับให้ตอนขึ้นเว็บ
    *** ห้ามลบบรรทัดเครื่องหมาย @@VER@@ ทั้งสองอัน ตัวสร้างไฟล์ใช้หาตำแหน่ง *** */
 /* @@VER@@ */
-const APP_VER = "v8.264", BUILD_AT = "2026-09-30 08:33";
+const APP_VER = "v8.279", BUILD_AT = "2026-10-17 18:54";
 /* @@VER-END@@ */
 
 /* ---- ค่าที่ต้องตั้ง ------------------------------------------------------ */
@@ -431,7 +453,11 @@ const SUBJECTS = [
     desc: 'ถ่ายรูปใบงานหรือแนบ PDF ส่งครู · ดูกำหนดส่ง คะแนน และงานที่ค้าง<br>' +
           'ครูตรวจ ให้คะแนน และดูนักเรียนที่ต้องติดตามได้ในหน้าเดียว' },
 
-  /* ปรับพื้นฐานฟิสิกส์ — คณิตศาสตร์ที่ใช้ในฟิสิกส์ ใช้ก่อนขึ้น ม.4 และทบทวนระหว่างเรียนฟิสิกส์ ม.4–ม.6 */
+  { key: 'lab', ic: 'science', name: 'คลังการทดลองฟิสิกส์เสมือนจริง', level: 'ซิมมูเลชัน 2D/3D · ม.ต้น–ม.ปลาย', grades: [1, 2, 3, 4, 5, 6],
+    dir: 'PhysicsLabHub/', teacher: 'index.html', student: 'index.html', openFree: true,
+    desc: 'รวมเว็บแอปซิมมูเลชันฟิสิกส์โต้ตอบ 27 เรื่อง (ระบบรอก 3D, การเคลื่อนที่, โปรเจกไทล์, แม่เหล็กไฟฟ้า, แสงและเสียง)<br>' +
+          'เข้าใช้งานด้วยเมลโรงเรียน @pcschool.ac.th ไม่ต้องจำรหัสผ่าน' },
+
   { key: 'found', ic: 'found', name: 'ปรับพื้นฐานฟิสิกส์', level: 'ก่อนเรียน ม.4', grades: [4, 5, 6, 3],
     dir: 'PhysicsFoundation/', teacher: 'foundation.html', student: 'index.html', openFree: true,
     desc: 'ชุดการเรียนรู้ 12 ขั้น · คณิตศาสตร์ที่ใช้ในฟิสิกส์<br>' +
@@ -956,6 +982,150 @@ async function hubRun() {
   if (bad.length) { hubSay('เชื่อมไม่สำเร็จ — ' + bad.join(' · ')); return; }
   await hubPaint();
 }
+
+/* ---- เข้าสู่ระบบด้วย Google (@pcschool.ac.th / theboydz@gmail.com) ------- */
+const GOOGLE_CLIENT_ID = '125092357274-5q8em74tm3pfhlkvpelk1hdveq4qdlmb.apps.googleusercontent.com';
+const SUPER_ADMIN_EMAIL = 'theboydz@gmail.com';
+const SCHOOL_DOMAIN = 'pcschool.ac.th';
+
+let gsiLoaded = false;
+function ensureGsi() {
+  if (window.google && window.google.accounts && window.google.accounts.oauth2) return Promise.resolve();
+  if (gsiLoaded) return gsiLoaded;
+  gsiLoaded = new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = 'https://accounts.google.com/gsi/client';
+    s.async = true;
+    s.onload = () => resolve();
+    s.onerror = () => { gsiLoaded = null; reject(new Error('โหลดระบบเข้าสู่ระบบของ Google ไม่สำเร็จ กรุณาเช็กอินเทอร์เน็ต')); };
+    document.head.appendChild(s);
+  });
+  return gsiLoaded;
+}
+
+async function googleSignIn() {
+  if (busy) return;
+  const gBtn = $('#btnGoogleLogin');
+  const origHtml = gBtn ? gBtn.innerHTML : '';
+  say('');
+  try {
+    if (gBtn) { gBtn.disabled = true; gBtn.textContent = 'กำลังเปิดหน้าต่างเลือกบัญชี Google…'; }
+    await ensureGsi();
+    const tokenResp = await new Promise((resolve, reject) => {
+      const client = window.google.accounts.oauth2.initTokenClient({
+        client_id: GOOGLE_CLIENT_ID,
+        scope: 'openid email profile',
+        prompt: 'select_account',
+        callback: (resp) => {
+          if (resp && resp.access_token) resolve(resp);
+          else reject(new Error(resp && resp.error ? 'ยกเลิกการเข้าสู่ระบบ (' + resp.error + ')' : 'ไม่ได้รับสิทธิ์จาก Google'));
+        },
+        error_callback: (err) => {
+          reject(new Error(err && err.type === 'popup_closed' ? 'ปิดหน้าต่างเข้าสู่ระบบก่อนเสร็จสิ้น' : 'เปิดหน้าต่าง Google ไม่สำเร็จ'));
+        }
+      });
+      client.requestAccessToken();
+    });
+    if (gBtn) gBtn.textContent = 'กำลังตรวจสอบบัญชีโรงเรียน…';
+    const uRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+      headers: { Authorization: 'Bearer ' + tokenResp.access_token }
+    });
+    if (!uRes.ok) throw new Error('ตรวจสอบข้อมูลบัญชี Google ไม่สำเร็จ');
+    const info = await uRes.json();
+    const email = String(info.email || '').trim().toLowerCase();
+    const displayName = String(info.name || '').trim();
+    const atIdx = email.indexOf('@');
+    const localPart = atIdx > 0 ? email.slice(0, atIdx) : '';
+    const domain = atIdx > 0 ? email.slice(atIdx + 1) : '';
+
+    if (email !== SUPER_ADMIN_EMAIL && domain !== SCHOOL_DOMAIN) {
+      throw new Error('บัญชี ' + email + ' ไม่ใช่เมลโรงเรียน (@pcschool.ac.th) กรุณากดปุ่มใหม่แล้วเลือกเมลโรงเรียนปากช่อง');
+    }
+
+    busy = true;
+    const rs = await hubLoginAll('googleLogin', {
+      accessToken: tokenResp.access_token,
+      email: email,
+      name: displayName
+    });
+    const good = rs.filter(x => x.data && x.data.token);
+    if (good.length) {
+      const tokens = {};
+      good.forEach(x => { tokens[x.bk.url] = x.data.token; });
+      const first = good[0], r = first.data;
+      if (r.role === 'main' || r.role === 'sub' || email === SUPER_ADMIN_EMAIL) {
+        const isSub = r.role === 'sub';
+        showPicker(writeSession('admin', r.token, {
+          name: isSub ? (r.name || displayName || 'ครูผู้สอน') : 'ผู้ดูแลหลัก',
+          sub: isSub ? (r.user || localPart) : '',
+          email: email,
+          classes: r.classes || null,
+          subjects: r.subjects || null
+        }, tokens, first.bk.url));
+      } else {
+        const prof = r.profile || { sid: localPart, name: displayName || ('นักเรียน ' + localPart), cls: '', no: '' };
+        if (prof.cls) prof.cls = normCls(prof.cls);
+        prof.email = email;
+        showPicker(writeSession('student', r.token, prof, tokens, first.bk.url));
+      }
+      return;
+    }
+
+    /* Fallback กรณีที่ชีตยังไม่ได้ Deploy appsscript-Code.gs รุ่น 26 */
+    const unknownCmd = rs.some(x => /ไม่รู้จักคำสั่ง/.test(String(x.err || '')));
+    if (unknownCmd && /^\d{4,6}$/.test(localPart)) {
+      const fbRs = await hubLoginAll('login', { sid: localPart, pass: '1111' });
+      const fbGood = fbRs.filter(x => x.data && x.data.token);
+      if (fbGood.length) {
+        const tokens = {};
+        fbGood.forEach(x => { tokens[x.bk.url] = x.data.token; });
+        const first = fbGood[0], prof = first.data.profile || {};
+        if (prof.cls) prof.cls = normCls(prof.cls);
+        prof.email = email;
+        showPicker(writeSession('student', first.data.token, prof, tokens, first.bk.url));
+        return;
+      }
+    }
+
+    /* หากชีตยังไม่ได้อัปเดตรุ่น 26 แต่ยืนยันตัวตนด้วย Google @pcschool.ac.th หรือ theboydz@gmail.com สำเร็จแล้ว
+       ให้สร้างเซสชันเข้าหน้าเลือกวิชาได้ทันที (เข้าวิชาที่ไม่พึ่งชีตและคลังซิมมูเลชันได้ครบ) */
+    if (email === SUPER_ADMIN_EMAIL) {
+      showPicker(writeSession('admin', 'google-oauth:' + email, {
+        name: 'ผู้ดูแลหลัก (' + email + ')',
+        sub: '',
+        email: email
+      }, {}, BOOKS[0].url));
+      if (unknownCmd) {
+        sayPick('เข้าสู่ระบบผู้ดูแลหลักด้วย <b>' + email + '</b> สำเร็จแล้ว · หมายเหตุ: หากต้องการจัดการชีตคะแนนโดยไม่กรอกรหัสผ่าน ให้วางโค้ด <code>appsscript-Code.gs</code> รุ่น 26 ใน Apps Script แล้ว Deploy รุ่นใหม่');
+      }
+      return;
+    }
+    if (/^\d{4,6}$/.test(localPart)) {
+      showPicker(writeSession('student', 'google-oauth:' + email, {
+        sid: localPart,
+        name: displayName || ('นักเรียน ' + localPart),
+        cls: '',
+        no: '',
+        email: email
+      }, {}, BOOKS[0].url));
+      if (unknownCmd) {
+        sayPick('เข้าสู่ระบบด้วยเมลโรงเรียน <b>' + email + '</b> สำเร็จแล้ว');
+      } else if (rs[0] && rs[0].err) {
+        sayPick('เข้าสู่ระบบด้วยเมล <b>' + email + '</b> สำเร็จแล้ว (' + rs[0].err + ')');
+      }
+      return;
+    }
+
+    throw new Error((rs[0] && rs[0].err) || 'เข้าสู่ระบบด้วย Google ไม่สำเร็จ');
+  } catch (e) {
+    say(e.message || String(e), 'bad');
+  } finally {
+    busy = false;
+    if (gBtn) { gBtn.disabled = false; gBtn.innerHTML = origHtml; }
+  }
+}
+const btnGoogle = $('#btnGoogleLogin');
+if (btnGoogle) btnGoogle.addEventListener('click', googleSignIn);
 
 /* ---- เหตุการณ์ ----------------------------------------------------------- */
 $('#tabStu').addEventListener('click', () => {

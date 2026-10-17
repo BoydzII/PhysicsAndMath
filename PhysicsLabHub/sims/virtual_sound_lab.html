@@ -1,0 +1,1892 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Virtual Sound Lab - By โดม</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600&display=swap');
+        
+        body {
+            font-family: 'Sarabun', sans-serif;
+            background-color: #0f172a; /* Slate 900 */
+            color: #f8fafc;
+            overflow-x: hidden;
+        }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: #10b981; /* Emerald 500 */
+            cursor: pointer;
+            margin-top: -8px;
+            box-shadow: 0 0 10px #10b981;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #334155;
+            border-radius: 2px;
+        }
+        
+        .tab-btn.active {
+            border-bottom: 2px solid #10b981;
+            color: #10b981;
+            font-weight: bold;
+        }
+
+        canvas {
+            background-color: #020617;
+            border: 1px solid #1e293b;
+            border-radius: 0.5rem;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center py-8 px-4">
+
+    <header class="text-center mb-8">
+        <h1 class="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">
+            Virtual Sound Lab 🎧
+        </h1>
+        <p class="text-slate-400 mt-2">ห้องปฏิบัติการเสียงเสมือนจริง โดย โดม</p>
+    </header>
+
+    <div class="w-full max-w-5xl bg-slate-800 rounded-xl shadow-2xl overflow-hidden border border-slate-700">
+        <!-- Tabs -->
+        <div class="flex flex-wrap border-b border-slate-700 bg-slate-800/50">
+            <button class="tab-btn active w-1/3 sm:flex-1 py-3 sm:py-4 text-center hover:bg-slate-700 transition text-sm sm:text-base border-r border-slate-700 sm:border-none" onclick="switchTab('beats')">1. บีตส์</button>
+            <button class="tab-btn w-1/3 sm:flex-1 py-3 sm:py-4 text-center hover:bg-slate-700 transition text-sm sm:text-base border-r border-slate-700 sm:border-none" onclick="switchTab('doppler')">2. ดอปเพลอร์</button>
+            <button class="tab-btn w-1/3 sm:flex-1 py-3 sm:py-4 text-center hover:bg-slate-700 transition text-sm sm:text-base border-slate-700 sm:border-none" onclick="switchTab('resonance')">3. เรโซแนนซ์</button>
+            <button class="tab-btn w-1/3 sm:flex-1 py-3 sm:py-4 text-center hover:bg-slate-700 transition text-sm sm:text-base border-r border-t sm:border-t-0 border-slate-700 sm:border-none" onclick="switchTab('echo')">4. การสะท้อน</button>
+            <button class="tab-btn w-1/3 sm:flex-1 py-3 sm:py-4 text-center hover:bg-slate-700 transition text-sm sm:text-base border-r border-t sm:border-t-0 border-slate-700 sm:border-none" onclick="switchTab('refraction')">5. การหักเห</button>
+            <button class="tab-btn w-1/3 sm:flex-1 py-3 sm:py-4 text-center hover:bg-slate-700 transition text-sm sm:text-base border-t sm:border-t-0 border-slate-700 sm:border-none border-r sm:border-none" onclick="switchTab('harmonics')">6. ฮาร์มอนิก</button>
+            <button class="tab-btn w-full sm:flex-1 py-3 sm:py-4 text-center hover:bg-slate-700 transition text-sm sm:text-base border-t sm:border-t-0 border-slate-700 sm:border-none bg-emerald-900/20" onclick="switchTab('properties')">7. สมบัติทั้ง 4</button>
+            <button class="tab-btn w-full sm:flex-1 py-3 sm:py-4 text-center hover:bg-slate-700 transition text-sm sm:text-base border-t sm:border-t-0 border-slate-700 sm:border-none bg-purple-900/20" onclick="switchTab('apps')">8. ประยุกต์ใช้</button>
+        </div>
+
+        <!-- Module 1: Beats -->
+        <div id="tab-beats" class="p-6 block">
+            <div class="mb-4 bg-slate-900 p-4 rounded-lg border border-slate-700">
+                <h2 class="text-xl font-semibold text-emerald-400 mb-2">ภารกิจ: นักล่าบีตส์ (Beats)</h2>
+                <p class="text-sm text-slate-300">ปรับความถี่ของแหล่งกำเนิดเสียงทั้ง 2 ให้ต่างกันเล็กน้อย สังเกตการซ้อนทับของคลื่น (Superposition) และฟังเสียงจังหวะว้าวๆ (Beats) ที่เกิดขึ้น</p>
+            </div>
+            
+            <div class="flex flex-col md:flex-row gap-6">
+                <div class="flex-1">
+                    <canvas id="canvas-beats" width="600" height="300" class="w-full h-auto"></canvas>
+                    <div class="mt-4 text-center">
+                        <button id="btn-play-beats" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 px-6 rounded-full transition shadow-[0_0_15px_rgba(16,185,129,0.5)]">
+                            ▶ เปิด/ปิด เสียง Oscilloscope
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="w-full md:w-1/3 flex flex-col gap-6 bg-slate-900 p-6 rounded-lg border border-slate-700">
+                    <div>
+                        <div class="flex justify-between mb-2">
+                            <label class="text-cyan-400 font-semibold">ความถี่ 1 ($f_1$)</label>
+                            <span id="val-f1" class="text-white">440 Hz</span>
+                        </div>
+                        <input type="range" id="slider-f1" min="400" max="480" value="440" step="1">
+                    </div>
+                    <div>
+                        <div class="flex justify-between mb-2">
+                            <label class="text-purple-400 font-semibold">ความถี่ 2 ($f_2$)</label>
+                            <span id="val-f2" class="text-white">444 Hz</span>
+                        </div>
+                        <input type="range" id="slider-f2" min="400" max="480" value="444" step="1">
+                    </div>
+                    <div class="mt-auto pt-4 border-t border-slate-700 text-center">
+                        <p class="text-slate-400 text-sm">ความถี่บีตส์ ($f_B = |f_1 - f_2|$)</p>
+                        <p class="text-3xl font-bold text-yellow-400 mt-1"><span id="val-beat">4</span> Hz</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Module 2: Doppler Effect -->
+        <div id="tab-doppler" class="p-6 hidden">
+            <div class="mb-4 bg-slate-900 p-4 rounded-lg border border-slate-700">
+                <h2 class="text-xl font-semibold text-emerald-400 mb-2">ภารกิจ: สังเกตการณ์หน้าคลื่น (Doppler & Shock Wave)</h2>
+                <p class="text-sm text-slate-300">ปรับความเร็วของแหล่งกำเนิดเสียง (จุดสีแดง) สังเกตความยาวคลื่นด้านหน้าที่หดสั้นลง (เสียงแหลม) และด้านหลังที่ยืดยาวออก (เสียงทุ้ม) ทดลองปรับความเร็วให้มากกว่าความเร็วเสียง (Mach > 1) เพื่อดู Sonic Boom</p>
+            </div>
+
+            <div class="flex flex-col md:flex-row gap-6">
+                <div class="flex-1 relative">
+                    <canvas id="canvas-doppler" width="600" height="350" class="w-full h-auto"></canvas>
+                </div>
+                
+                <div class="w-full md:w-1/3 flex flex-col gap-6 bg-slate-900 p-6 rounded-lg border border-slate-700">
+                    <div>
+                        <div class="flex justify-between mb-2">
+                            <label class="text-emerald-400 font-semibold">ความเร็วแหล่งกำเนิด ($v_s$)</label>
+                            <span id="val-vs" class="text-white">0.5 Mach</span>
+                        </div>
+                        <input type="range" id="slider-vs" min="0" max="2" value="0.5" step="0.1">
+                        <p class="text-xs text-slate-400 mt-2">อัตราส่วนเทียบกับความเร็วเสียง (Mach Number)</p>
+                    </div>
+                    
+                    <div class="mt-auto text-center space-y-4">
+                        <div id="doppler-status" class="px-4 py-2 rounded bg-blue-900/50 text-blue-300 border border-blue-700">
+                            Subsonic (ช้ากว่าเสียง)
+                        </div>
+                        <button id="btn-reset-doppler" class="w-full bg-slate-700 hover:bg-slate-600 text-white py-2 rounded transition">
+                            ล้างหน้าจอ (Clear Waves)
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Module 3: Resonance Tube -->
+        <div id="tab-resonance" class="p-6 hidden">
+             <div class="mb-4 bg-slate-900 p-4 rounded-lg border border-slate-700">
+                <h2 class="text-xl font-semibold text-emerald-400 mb-2">ภารกิจ: ตามหา Antinode (Resonance Tube)</h2>
+                <p class="text-sm text-slate-300">ใช้ส้อมเสียงความถี่ 340 Hz เคาะปากหลอด แล้วเลื่อนปรับระดับน้ำในหลอดเพื่อหาตำแหน่งความยาวหลอด (L) ที่เกิดการสั่นพ้อง (เสียงจะดังที่สุด และเกิดคลื่นนิ่ง)</p>
+            </div>
+
+            <div class="flex flex-col md:flex-row gap-6">
+                <div class="flex-1 flex justify-center bg-slate-900 py-4 rounded-lg border border-slate-700 relative">
+                    <canvas id="canvas-resonance" width="300" height="400"></canvas>
+                    <div id="resonance-glow" class="absolute top-0 left-0 w-full h-full pointer-events-none rounded-lg transition-opacity duration-300 opacity-0" style="box-shadow: inset 0 0 50px rgba(16, 185, 129, 0.8);"></div>
+                </div>
+                
+                <div class="w-full md:w-1/3 flex flex-col gap-6 bg-slate-900 p-6 rounded-lg border border-slate-700">
+                    <div>
+                        <label class="text-emerald-400 font-semibold block mb-2">ความถี่ส้อมเสียง: 340 Hz</label>
+                        <p class="text-xs text-slate-400">(สมมติความเร็วเสียง = 340 m/s ดังนั้น $\lambda$ = 1 m)</p>
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between mb-2">
+                            <label class="text-cyan-400 font-semibold">ระดับความลึกของอากาศ (L)</label>
+                            <span id="val-water" class="text-white">0.50 m</span>
+                        </div>
+                        <!-- ค่า 0 ถึง 1 เมตร -->
+                        <input type="range" id="slider-water" min="0.05" max="0.95" value="0.5" step="0.01">
+                    </div>
+
+                    <div class="mt-auto text-center">
+                        <button id="btn-hit-fork" class="bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 px-6 rounded-full w-full transition shadow-[0_0_15px_rgba(147,51,234,0.5)]">
+                            ตีส้อมเสียง 🎵
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Module 4: Echo (Reflection) -->
+        <div id="tab-echo" class="p-6 hidden">
+            <div class="mb-4 bg-slate-900 p-4 rounded-lg border border-slate-700">
+                <h2 class="text-xl font-semibold text-emerald-400 mb-2">ภารกิจ: โซนาร์สำรวจใต้ทะเล (Echo & Reflection)</h2>
+                <p class="text-sm text-slate-300">คลื่นเสียงสามารถสะท้อนได้ ทดลองส่งคลื่นโซนาร์จากเรือ จับเวลาที่คลื่นเดินทางไป-กลับ เพื่อหาความลึกของก้นทะเล <br><span class="text-emerald-300">(ใบ้: $s = \frac{vt}{2}$ โดยความเร็วเสียงในน้ำทะเล $v \approx 1500$ m/s)</span></p>
+            </div>
+            
+            <div class="flex flex-col md:flex-row gap-6">
+                <div class="flex-1 bg-slate-900 rounded-lg overflow-hidden border border-slate-700 relative">
+                    <canvas id="canvas-echo" width="600" height="400" class="w-full h-auto block"></canvas>
+                    <div class="absolute top-4 right-4 bg-black/60 px-4 py-2 rounded text-emerald-400 font-mono text-xl border border-emerald-500">
+                        Timer: <span id="val-timer">0.000</span> s
+                    </div>
+                </div>
+                
+                <div class="w-full md:w-1/3 flex flex-col gap-6 bg-slate-900 p-6 rounded-lg border border-slate-700">
+                    <div>
+                        <div class="flex justify-between mb-2">
+                            <label class="text-cyan-400 font-semibold">ปรับความลึกก้นทะเล (ปริศนา)</label>
+                        </div>
+                        <input type="range" id="slider-depth" min="100" max="1500" value="500" step="10">
+                        <p class="text-xs text-slate-400 mt-2 text-center">(ครูสามารถสั่งให้เด็กซ่อน Slider นี้แล้วทายความลึกได้)</p>
+                    </div>
+                    
+                    <div class="mt-auto text-center">
+                        <button id="btn-ping" class="bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-3 px-6 rounded-full w-full transition shadow-[0_0_15px_rgba(8,145,178,0.5)]">
+                            📡 ส่งคลื่นโซนาร์ (Ping!)
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Module 5: Refraction -->
+        <div id="tab-refraction" class="p-6 hidden">
+            <div class="mb-4 bg-slate-900 p-4 rounded-lg border border-slate-700">
+                <h2 class="text-xl font-semibold text-emerald-400 mb-2">ภารกิจ: เสียงแว่วกลางดึก (Refraction)</h2>
+                <p class="text-sm text-slate-300">ทำไมตอนกลางคืนเราถึงได้ยินเสียงดนตรีจากงานวัดที่อยู่ไกลๆ ได้ชัดเจนกว่าตอนกลางวัน? ทดลองเปลี่ยนเวลาเพื่อดูการหักเหของทิศทางเสียง (เสียงมักจะเลี้ยวเบนเข้าหาบริเวณที่ "อากาศเย็นกว่า" เสมอ เนื่องจาก $v$ น้อยกว่า)</p>
+            </div>
+            
+            <div class="flex flex-col md:flex-row gap-6">
+                <div class="flex-1 rounded-lg overflow-hidden border border-slate-700">
+                    <canvas id="canvas-refraction" width="600" height="350" class="w-full h-auto block"></canvas>
+                </div>
+                
+                <div class="w-full md:w-1/3 flex flex-col gap-4 bg-slate-900 p-6 rounded-lg border border-slate-700">
+                    <h3 class="text-lg font-semibold text-white mb-2">สภาพอากาศ (อุณหภูมิ)</h3>
+                    
+                    <button id="btn-day" class="border-2 border-orange-500 bg-orange-900/40 hover:bg-orange-900/60 text-orange-300 py-3 rounded transition font-bold">
+                        ☀️ กลางวัน (พื้นร้อน / อากาศเย็น)
+                    </button>
+                    <button id="btn-night" class="border-2 border-blue-500 bg-blue-600 text-white py-3 rounded transition font-bold shadow-[0_0_15px_rgba(59,130,246,0.5)]">
+                        🌙 กลางคืน (พื้นเย็น / อากาศร้อน)
+                    </button>
+
+                    <div class="mt-4 p-3 bg-slate-800 rounded text-sm text-slate-300 border border-slate-600">
+                        <span id="refract-desc" class="text-blue-300">กลางคืน: พื้นดินคลายความร้อนทำให้อากาศด้านล่างเย็นกว่าด้านบน คลื่นเสียงจึงหักเหโค้งลงดิน ทำให้เราได้ยินเสียงจากแหล่งกำเนิดที่อยู่ไกลๆ</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Module 6: Harmonics -->
+        <div id="tab-harmonics" class="p-6 hidden">
+            <div class="mb-4 bg-slate-900 p-4 rounded-lg border border-slate-700">
+                <h2 class="text-xl font-semibold text-emerald-400 mb-2">ภารกิจ: สายกีตาร์มหัศจรรย์ (Standing Waves on a String)</h2>
+                <p class="text-sm text-slate-300">การสั่นของสายกีตาร์ที่ถูกขึงตึงสองข้าง ทำให้เกิดคลื่นนิ่ง ทดลองเปลี่ยนจำนวนลูป (Harmonic) เพื่อฟังความถี่ (ความแหลม) ที่เพิ่มขึ้นเป็นจำนวนเท่าตัว ($f_n = n \times f_1$)</p>
+            </div>
+            
+            <div class="flex flex-col md:flex-row gap-6">
+                <div class="flex-1 bg-slate-900 rounded-lg flex items-center justify-center p-4 border border-slate-700">
+                    <canvas id="canvas-harmonics" width="600" height="250" class="w-full h-auto"></canvas>
+                </div>
+                
+                <div class="w-full md:w-1/3 flex flex-col gap-3 bg-slate-900 p-6 rounded-lg border border-slate-700">
+                    <h3 class="text-lg font-semibold text-white mb-2">เลือกฮาร์มอนิก (n)</h3>
+                    
+                    <button class="btn-harmonic bg-slate-700 hover:bg-slate-600 text-white py-2 rounded transition active border-2 border-emerald-500" data-n="1">
+                        n = 1 (Fundamental : 110 Hz)
+                    </button>
+                    <button class="btn-harmonic bg-slate-700 hover:bg-slate-600 text-white py-2 rounded transition border-2 border-transparent" data-n="2">
+                        n = 2 (2nd Harmonic : 220 Hz)
+                    </button>
+                    <button class="btn-harmonic bg-slate-700 hover:bg-slate-600 text-white py-2 rounded transition border-2 border-transparent" data-n="3">
+                        n = 3 (3rd Harmonic : 330 Hz)
+                    </button>
+                    <button class="btn-harmonic bg-slate-700 hover:bg-slate-600 text-white py-2 rounded transition border-2 border-transparent" data-n="4">
+                        n = 4 (4th Harmonic : 440 Hz)
+                    </button>
+                    
+                    <button id="btn-pluck" class="mt-4 bg-orange-600 hover:bg-orange-500 text-white font-bold py-3 rounded-full transition shadow-[0_0_15px_rgba(234,88,12,0.5)]">
+                        🎸 ดีดสายกีตาร์
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Module 7: 4 Wave Properties -->
+        <div id="tab-properties" class="p-6 hidden">
+            <div class="mb-4 bg-slate-900 p-4 rounded-lg border border-slate-700">
+                <h2 class="text-xl font-semibold text-emerald-400 mb-2">ภารกิจ: สุดยอดปรมาจารย์คลื่น (4 Wave Properties)</h2>
+                <p class="text-sm text-slate-300">คลื่นเสียงมีพฤติกรรมหลัก 4 ประการ ทดลองเลือกแหล่งกำเนิดเสียงในสถานการณ์ต่างๆ เพื่อสังเกตปรากฏการณ์ การสะท้อน, การหักเห, การเลี้ยวเบน และ การแทรกสอด</p>
+            </div>
+            
+            <div class="flex flex-col md:flex-row gap-6">
+                <div class="flex-1 rounded-lg overflow-hidden border border-slate-700 relative bg-[#020617]">
+                    <canvas id="canvas-properties" width="600" height="400" class="w-full h-auto block cursor-crosshair"></canvas>
+                </div>
+                
+                <div class="w-full md:w-1/3 flex flex-col gap-3 bg-slate-900 p-6 rounded-lg border border-slate-700">
+                    <h3 class="text-lg font-semibold text-white mb-2">เลือกปรากฏการณ์</h3>
+                    
+                    <button class="btn-prop active bg-slate-700 hover:bg-slate-600 text-white py-2 rounded transition border-2 border-emerald-500" data-mode="reflect">
+                        1. การสะท้อน (Reflection)
+                    </button>
+                    <button class="btn-prop bg-slate-700 hover:bg-slate-600 text-white py-2 rounded transition border-2 border-transparent" data-mode="refract">
+                        2. การหักเห (Refraction)
+                    </button>
+                    <button class="btn-prop bg-slate-700 hover:bg-slate-600 text-white py-2 rounded transition border-2 border-transparent" data-mode="diffract">
+                        3. การเลี้ยวเบน (Diffraction)
+                    </button>
+                    <button class="btn-prop bg-slate-700 hover:bg-slate-600 text-white py-2 rounded transition border-2 border-transparent" data-mode="interfere">
+                        4. การแทรกสอด (Interference)
+                    </button>
+
+                    <!-- การควบคุมเพิ่มเติม (แยกตามแต่ละสมบัติ) -->
+                    <div class="mt-2">
+                        <label class="text-white text-sm">ความเร็วแอนิเมชันคลื่น</label>
+                        <input type="range" id="slider-prop-speed" min="0.1" max="2.0" step="0.1" value="0.8" class="w-full mt-1">
+                    </div>
+
+                    <!-- แผงควบคุม: การหักเห -->
+                    <div id="ctrl-refract" class="hidden mt-2 p-3 bg-slate-800 rounded-lg border border-slate-600">
+                        <label class="text-xs text-emerald-300">ความเร็วตัวกลาง 1 (ด้านบน): <span id="val-v1">1.0</span>v</label>
+                        <input type="range" id="slider-v1" min="0.5" max="2.0" step="0.1" value="1.0" class="w-full mb-3 mt-1">
+                        <label class="text-xs text-orange-300">ความเร็วตัวกลาง 2 (ด้านล่าง): <span id="val-v2">1.5</span>v</label>
+                        <input type="range" id="slider-v2" min="0.5" max="2.0" step="0.1" value="1.5" class="w-full mt-1">
+                    </div>
+
+                    <!-- แผงควบคุม: การเลี้ยวเบน -->
+                    <div id="ctrl-diffract" class="hidden mt-2 p-3 bg-slate-800 rounded-lg border border-slate-600 flex gap-2">
+                        <button id="btn-diff-slit" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white text-sm py-2 rounded transition border border-emerald-400">ช่องแคบ (Slit)</button>
+                        <button id="btn-diff-edge" class="flex-1 bg-slate-700 hover:bg-slate-600 text-white text-sm py-2 rounded transition border border-slate-500">ขอบมุม (Edge)</button>
+                    </div>
+
+                    <!-- แผงควบคุม: การแทรกสอด -->
+                    <div id="ctrl-interfere" class="hidden mt-2 p-3 bg-slate-800 rounded-lg border border-slate-600">
+                        <p class="text-xs text-yellow-300 mb-2">🖱️ <strong>Tip:</strong> ใช้เมาส์ลากลำโพงในจอเพื่อเปลี่ยนตำแหน่งได้!</p>
+                        <label class="flex items-center gap-2 text-sm text-white cursor-pointer">
+                            <input type="checkbox" id="chk-nodes" checked class="w-4 h-4 accent-emerald-500">
+                            แสดงเส้นแนวบัพ (Node) / ปฏิบัพ (Antinode)
+                        </label>
+                    </div>
+
+                    <div class="mt-4 p-4 bg-slate-800 rounded-lg text-sm text-slate-300 border border-slate-600 h-full flex flex-col justify-center">
+                        <h4 id="prop-title" class="font-bold text-emerald-400 mb-2 text-base">การสะท้อน (Reflection)</h4>
+                        <p id="prop-desc">เมื่อคลื่นเสียงเดินทางไปตกกระทบสิ่งกีดขวาง... (ดูการตกกระทบและการสะท้อน)</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Module 8: Applications -->
+        <div id="tab-apps" class="p-6 hidden">
+            <div class="mb-6 bg-slate-900 p-4 rounded-lg border border-slate-700">
+                <h2 class="text-xl font-semibold text-purple-400 mb-2">ภารกิจ: นวัตกรรมคลื่นเสียง (Sound Applications)</h2>
+                <p class="text-sm text-slate-300">นำความรู้เรื่องสมบัติของคลื่นมาสร้างเทคโนโลยี ทดลองใช้งานระบบจำลองเพื่อดูว่าเราประยุกต์ใช้ "การแทรกสอด" และ "การสะท้อน" ในชีวิตประจำวันได้อย่างไร</p>
+            </div>
+            
+            <div class="flex gap-4 mb-6">
+                <button id="btn-app-anc" class="flex-1 border-2 border-purple-500 bg-purple-600 text-white font-bold py-3 px-4 rounded transition shadow-[0_0_15px_rgba(147,51,234,0.5)]">
+                    🎧 หูฟังตัดเสียงรบกวน (ANC)
+                </button>
+                <button id="btn-app-ultra" class="flex-1 border-2 border-slate-600 bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-4 rounded transition">
+                    🩺 เครื่องอัลตราซาวด์
+                </button>
+            </div>
+
+            <!-- App 1: ANC Simulator -->
+            <div id="app-anc-view" class="flex flex-col md:flex-row gap-6 block">
+                <div class="flex-1 bg-slate-900 rounded-lg overflow-hidden border border-slate-700 relative">
+                    <div class="absolute top-2 left-4 text-xs font-bold text-red-400">เสียงรบกวนภายนอก (Noise)</div>
+                    <div class="absolute top-[110px] left-4 text-xs font-bold text-blue-400">คลื่นเสียงต้านจากหูฟัง (Anti-Noise)</div>
+                    <div class="absolute top-[230px] left-4 text-xs font-bold text-emerald-400">เสียงลัพธ์ที่หูเราได้ยิน (Result = Interference)</div>
+                    <canvas id="canvas-anc" width="600" height="350" class="w-full h-auto block"></canvas>
+                </div>
+                
+                <div class="w-full md:w-1/3 flex flex-col gap-6 bg-slate-900 p-6 rounded-lg border border-slate-700">
+                    <div>
+                        <h3 class="text-lg font-semibold text-white mb-2">แผงควบคุม ANC (แทรกสอดหักล้าง)</h3>
+                        <p class="text-xs text-slate-400 mb-4">ปรับให้เฟสตรงข้ามกัน (180 องศา) และแอมพลิจูดเท่ากัน เพื่อหักล้างเสียงรบกวนให้เป็น 0</p>
+                        
+                        <div class="flex justify-between mb-1 mt-4">
+                            <label class="text-blue-400 font-semibold text-sm">การเลื่อนเฟส (Phase Shift)</label>
+                            <span id="val-anc-phase" class="text-white text-sm">0°</span>
+                        </div>
+                        <input type="range" id="slider-anc-phase" min="0" max="360" value="0" step="1">
+                        
+                        <div class="flex justify-between mb-1 mt-4">
+                            <label class="text-blue-400 font-semibold text-sm">ความดังเสียงต้าน (Amplitude)</label>
+                            <span id="val-anc-amp" class="text-white text-sm">50%</span>
+                        </div>
+                        <input type="range" id="slider-anc-amp" min="0" max="100" value="50" step="1">
+                    </div>
+                    
+                    <div class="mt-auto text-center space-y-3">
+                        <div id="anc-status" class="text-sm font-bold p-2 rounded bg-slate-800 text-slate-400 border border-slate-600">
+                            สถานะ: รอการปรับจูน...
+                        </div>
+                        <button id="btn-play-anc" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-6 rounded-full w-full transition shadow-[0_0_15px_rgba(37,99,235,0.5)]">
+                            ▶ ทดสอบฟังเสียงลัพธ์
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- App 2: Ultrasound Simulator -->
+            <div id="app-ultra-view" class="flex flex-col md:flex-row gap-6 hidden">
+                <div class="flex-1 bg-black rounded-lg overflow-hidden border border-slate-700 relative cursor-crosshair">
+                    <canvas id="canvas-ultra" width="600" height="350" class="w-full h-auto block"></canvas>
+                    <div class="absolute top-2 left-2 px-2 py-1 bg-slate-800/80 rounded text-xs text-slate-300 border border-slate-600">ร่างกายน้องทารก (ซ่อนอยู่)</div>
+                    <div class="absolute top-2 right-2 px-2 py-1 bg-emerald-900/80 rounded text-xs text-emerald-300 border border-emerald-600">จอมอนิเตอร์หมอสูติฯ</div>
+                </div>
+                
+                <div class="w-full md:w-1/3 flex flex-col gap-4 bg-slate-900 p-6 rounded-lg border border-slate-700">
+                    <h3 class="text-lg font-semibold text-white">หลักการอัลตราซาวด์</h3>
+                    <p class="text-sm text-slate-300">ใช้หลักการ <strong class="text-emerald-400">การสะท้อนของเสียง (Reflection)</strong></p>
+                    <p class="text-xs text-slate-400 leading-relaxed">
+                        หัวตรวจ (Probe) จะส่งคลื่นเสียงความถี่สูงมากลงไปในร่างกาย เมื่อคลื่นชนกับอวัยวะที่มีความหนาแน่นต่างกัน (เช่น น้ำคร่ำ กับ ผิวทารก) คลื่นจะสะท้อนกลับมา เครื่องจะคำนวณ "เวลา" ที่เสียงเดินทางไป-กลับ เพื่อสร้างเป็นจุดภาพ (Pixel) บนหน้าจอ
+                    </p>
+                    
+                    <div class="mt-4 p-3 bg-slate-800 rounded text-sm text-yellow-300 border border-slate-600">
+                        🖱️ <strong>วิธีเล่น:</strong> ใช้เมาส์เลื่อน (ลาก) บริเวณครึ่งซ้ายของจอ เพื่อจำลองการสแกนหัวตรวจลงบนหน้าท้อง แล้วสังเกตภาพที่ปรากฏบนจอฝั่งขวา!
+                    </div>
+
+                    <div class="mt-auto text-center">
+                        <button id="btn-clear-ultra" class="bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 px-6 rounded transition w-full">
+                            ลบภาพหน้าจอ (Clear Scan)
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- Tab Switching Logic ---
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('[id^="tab-"]').forEach(tab => tab.classList.add('hidden'));
+            
+            event.target.classList.add('active');
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+            document.getElementById(`tab-${tabId}`).classList.add('block');
+        }
+
+        // ==========================================
+        // MODULE 1: BEATS & OSCILLOSCOPE
+        // ==========================================
+        const ctxBeats = document.getElementById('canvas-beats').getContext('2d');
+        let audioCtx, osc1, osc2, analyserBeats;
+        let isBeatsPlaying = false;
+        
+        const sliderF1 = document.getElementById('slider-f1');
+        const sliderF2 = document.getElementById('slider-f2');
+        const valF1 = document.getElementById('val-f1');
+        const valF2 = document.getElementById('val-f2');
+        const valBeat = document.getElementById('val-beat');
+
+        function updateBeatsText() {
+            valF1.innerText = `${sliderF1.value} Hz`;
+            valF2.innerText = `${sliderF2.value} Hz`;
+            valBeat.innerText = Math.abs(sliderF1.value - sliderF2.value);
+            if(osc1) osc1.frequency.value = sliderF1.value;
+            if(osc2) osc2.frequency.value = sliderF2.value;
+        }
+
+        sliderF1.addEventListener('input', updateBeatsText);
+        sliderF2.addEventListener('input', updateBeatsText);
+
+        function initAudioBeats() {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            analyserBeats = audioCtx.createAnalyser();
+            analyserBeats.fftSize = 2048;
+            
+            const gainNode = audioCtx.createGain();
+            gainNode.gain.value = 0.15; // Volume control
+
+            osc1 = audioCtx.createOscillator();
+            osc2 = audioCtx.createOscillator();
+            osc1.type = 'sine';
+            osc2.type = 'sine';
+            
+            osc1.connect(gainNode);
+            osc2.connect(gainNode);
+            gainNode.connect(analyserBeats);
+            analyserBeats.connect(audioCtx.destination);
+            
+            osc1.frequency.value = sliderF1.value;
+            osc2.frequency.value = sliderF2.value;
+            
+            osc1.start();
+            osc2.start();
+        }
+
+        document.getElementById('btn-play-beats').addEventListener('click', (e) => {
+            if (!isBeatsPlaying) {
+                if(!audioCtx) initAudioBeats();
+                else audioCtx.resume();
+                e.target.innerText = "⏹ ปิดเสียง";
+                e.target.classList.replace('bg-emerald-600', 'bg-red-600');
+                e.target.classList.replace('hover:bg-emerald-500', 'hover:bg-red-500');
+                e.target.style.boxShadow = "0 0 15px rgba(220, 38, 38, 0.5)";
+                isBeatsPlaying = true;
+            } else {
+                audioCtx.suspend();
+                e.target.innerText = "▶ เปิดเสียง Oscilloscope";
+                e.target.classList.replace('bg-red-600', 'bg-emerald-600');
+                e.target.classList.replace('hover:bg-red-500', 'hover:bg-emerald-500');
+                e.target.style.boxShadow = "0 0 15px rgba(16, 185, 129, 0.5)";
+                isBeatsPlaying = false;
+            }
+        });
+
+        function drawBeats() {
+            requestAnimationFrame(drawBeats);
+            const canvas = document.getElementById('canvas-beats');
+            const width = canvas.width;
+            const height = canvas.height;
+
+            ctxBeats.clearRect(0, 0, width, height);
+
+            // Grid
+            ctxBeats.strokeStyle = '#1e293b';
+            ctxBeats.lineWidth = 1;
+            for(let i=0; i<width; i+=50) { ctxBeats.beginPath(); ctxBeats.moveTo(i,0); ctxBeats.lineTo(i,height); ctxBeats.stroke(); }
+            for(let i=0; i<height; i+=50) { ctxBeats.beginPath(); ctxBeats.moveTo(0,i); ctxBeats.lineTo(width,i); ctxBeats.stroke(); }
+            
+            ctxBeats.strokeStyle = '#334155';
+            ctxBeats.beginPath(); ctxBeats.moveTo(0, height/2); ctxBeats.lineTo(width, height/2); ctxBeats.stroke();
+
+            if(!isBeatsPlaying) return;
+
+            const bufferLength = analyserBeats.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+            analyserBeats.getByteTimeDomainData(dataArray);
+
+            ctxBeats.lineWidth = 3;
+            ctxBeats.strokeStyle = '#10b981'; // Emerald
+            ctxBeats.shadowBlur = 10;
+            ctxBeats.shadowColor = '#10b981';
+            ctxBeats.beginPath();
+
+            const sliceWidth = width * 1.0 / bufferLength;
+            let x = 0;
+
+            for (let i = 0; i < bufferLength; i++) {
+                const v = dataArray[i] / 128.0;
+                const y = v * height / 2;
+                if (i === 0) ctxBeats.moveTo(x, y);
+                else ctxBeats.lineTo(x, y);
+                x += sliceWidth;
+            }
+            ctxBeats.lineTo(width, height / 2);
+            ctxBeats.stroke();
+            ctxBeats.shadowBlur = 0; // reset
+        }
+        drawBeats();
+
+
+        // ==========================================
+        // MODULE 2: DOPPLER EFFECT
+        // ==========================================
+        const canvasDoppler = document.getElementById('canvas-doppler');
+        const ctxDoppler = canvasDoppler.getContext('2d');
+        const sliderVs = document.getElementById('slider-vs');
+        const valVs = document.getElementById('val-vs');
+        const dopplerStatus = document.getElementById('doppler-status');
+        
+        let waves = [];
+        let sourceX = 0;
+        const waveSpeed = 2; // Pixel per frame representing speed of sound (v)
+        let frameCount = 0;
+        const emitInterval = 15; // Emit wave every N frames
+
+        sliderVs.addEventListener('input', (e) => {
+            valVs.innerText = `${e.target.value} Mach`;
+            const mach = parseFloat(e.target.value);
+            if(mach < 1) {
+                dopplerStatus.innerText = "Subsonic (ช้ากว่าเสียง)";
+                dopplerStatus.className = "px-4 py-2 rounded bg-blue-900/50 text-blue-300 border border-blue-700";
+            } else if(mach === 1) {
+                dopplerStatus.innerText = "Transonic (เท่ากับเสียง)";
+                dopplerStatus.className = "px-4 py-2 rounded bg-yellow-900/50 text-yellow-300 border border-yellow-700";
+            } else {
+                dopplerStatus.innerText = "Supersonic (เร็วกว่าเสียง - Shock Wave!)";
+                dopplerStatus.className = "px-4 py-2 rounded bg-red-900/50 text-red-300 border border-red-700";
+            }
+        });
+
+        document.getElementById('btn-reset-doppler').addEventListener('click', () => {
+            waves = [];
+            sourceX = 0;
+        });
+
+        function drawDoppler() {
+            requestAnimationFrame(drawDoppler);
+            
+            // Only animate if tab is visible (optimization)
+            if(document.getElementById('tab-doppler').classList.contains('hidden')) return;
+
+            const width = canvasDoppler.width;
+            const height = canvasDoppler.height;
+            const centerY = height / 2;
+            const mach = parseFloat(sliderVs.value);
+            const vs = mach * waveSpeed;
+
+            ctxDoppler.clearRect(0, 0, width, height);
+
+            // Move source
+            sourceX += vs;
+            if (sourceX > width + 50) {
+                sourceX = -50; // Wrap around
+                waves = []; // clear waves on wrap
+            }
+
+            // Emit wave
+            if (frameCount % emitInterval === 0) {
+                waves.push({ x: sourceX, y: centerY, radius: 0 });
+            }
+
+            // Draw and update waves
+            ctxDoppler.lineWidth = 1.5;
+            for (let i = waves.length - 1; i >= 0; i--) {
+                let w = waves[i];
+                w.radius += waveSpeed;
+
+                // Fading effect based on size
+                let alpha = Math.max(0, 1 - (w.radius / (width*0.8)));
+                ctxDoppler.strokeStyle = `rgba(56, 189, 248, ${alpha})`; // Sky blue
+                
+                ctxDoppler.beginPath();
+                ctxDoppler.arc(w.x, w.y, w.radius, 0, Math.PI * 2);
+                ctxDoppler.stroke();
+
+                // Remove old waves
+                if (alpha <= 0) {
+                    waves.splice(i, 1);
+                }
+            }
+
+            // Draw Source (Red Dot)
+            ctxDoppler.fillStyle = '#ef4444'; // Red 500
+            ctxDoppler.shadowBlur = 10;
+            ctxDoppler.shadowColor = '#ef4444';
+            ctxDoppler.beginPath();
+            ctxDoppler.arc(sourceX, centerY, 6, 0, Math.PI * 2);
+            ctxDoppler.fill();
+            ctxDoppler.shadowBlur = 0;
+
+            frameCount++;
+        }
+        drawDoppler();
+
+        // ==========================================
+        // MODULE 3: RESONANCE TUBE
+        // ==========================================
+        const canvasRes = document.getElementById('canvas-resonance');
+        const ctxRes = canvasRes.getContext('2d');
+        const sliderWater = document.getElementById('slider-water');
+        const valWater = document.getElementById('val-water');
+        const glowFx = document.getElementById('resonance-glow');
+        
+        // Physics constants for simulation
+        const freqResonance = 340; // Hz
+        const speedOfSound = 340; // m/s
+        const lambda = speedOfSound / freqResonance; // 1.0 m
+        // Resonance occurs at L = lambda/4 (0.25m), 3lambda/4 (0.75m)
+        const resPoints = [lambda/4, (3*lambda)/4]; 
+        const tolerance = 0.03; // margin of error to trigger resonance visually
+        
+        let tubeAudioCtx;
+        let isResonating = false;
+
+        sliderWater.addEventListener('input', (e) => {
+            valWater.innerText = `${parseFloat(e.target.value).toFixed(2)} m`;
+        });
+
+        function drawResonance() {
+            requestAnimationFrame(drawResonance);
+            if(document.getElementById('tab-resonance').classList.contains('hidden')) return;
+
+            const width = canvasRes.width;
+            const height = canvasRes.height;
+            ctxRes.clearRect(0, 0, width, height);
+
+            const L = parseFloat(sliderWater.value); // Air column length (0 to 1)
+            
+            // Tube dimensions
+            const tubeWidth = 60;
+            const tubeX = width/2 - tubeWidth/2;
+            const tubeY = 50;
+            const tubeHeight = 300; // Represents 1 meter
+            
+            // Map L (0-1m) to pixels
+            const airPixels = L * tubeHeight;
+            const waterPixels = tubeHeight - airPixels;
+            const waterY = tubeY + airPixels;
+
+            // Draw Tube Back
+            ctxRes.fillStyle = '#1e293b';
+            ctxRes.fillRect(tubeX, tubeY, tubeWidth, tubeHeight);
+
+            // Check Resonance
+            isResonating = false;
+            for(let p of resPoints) {
+                if(Math.abs(L - p) < tolerance) {
+                    isResonating = true;
+                    break;
+                }
+            }
+
+            // Draw Standing Wave if resonating
+            if (isResonating) {
+                glowFx.style.opacity = 1;
+                ctxRes.strokeStyle = 'rgba(16, 185, 129, 0.5)'; // Emerald
+                ctxRes.lineWidth = 2;
+                
+                // Draw nodes/antinodes wave envelope
+                // At closed end (water) = Node (amplitude 0)
+                // At open end = Antinode (max amplitude)
+                
+                const time = Date.now() / 50; // for animation
+                const maxAmp = tubeWidth / 2 - 5;
+                
+                ctxRes.beginPath();
+                for(let y = tubeY; y <= waterY; y+=2) {
+                    // Normalize position along air column (0 at top, 1 at water)
+                    let pos = (y - tubeY) / airPixels; 
+                    // Equation for standing wave envelope in closed tube
+                    // Amplitude is max at pos=0, min at pos=1
+                    let env = Math.cos(pos * Math.PI / 2); 
+                    // Add oscillation over time
+                    let xOffset = maxAmp * env * Math.sin(time);
+                    
+                    if(y === tubeY) ctxRes.moveTo(tubeX + tubeWidth/2 + xOffset, y);
+                    else ctxRes.lineTo(tubeX + tubeWidth/2 + xOffset, y);
+                }
+                ctxRes.stroke();
+
+                ctxRes.beginPath();
+                for(let y = tubeY; y <= waterY; y+=2) {
+                    let pos = (y - tubeY) / airPixels; 
+                    let env = Math.cos(pos * Math.PI / 2); 
+                    let xOffset = maxAmp * env * Math.sin(time + Math.PI); // Opposite phase
+                    
+                    if(y === tubeY) ctxRes.moveTo(tubeX + tubeWidth/2 + xOffset, y);
+                    else ctxRes.lineTo(tubeX + tubeWidth/2 + xOffset, y);
+                }
+                ctxRes.stroke();
+            } else {
+                glowFx.style.opacity = 0;
+            }
+
+            // Draw Water
+            ctxRes.fillStyle = 'rgba(56, 189, 248, 0.6)'; // Blue
+            ctxRes.fillRect(tubeX, waterY, tubeWidth, waterPixels);
+            
+            // Draw Tube Outline
+            ctxRes.strokeStyle = '#94a3b8';
+            ctxRes.lineWidth = 3;
+            ctxRes.beginPath();
+            ctxRes.moveTo(tubeX, tubeY);
+            ctxRes.lineTo(tubeX, tubeY + tubeHeight);
+            ctxRes.lineTo(tubeX + tubeWidth, tubeY + tubeHeight);
+            ctxRes.lineTo(tubeX + tubeWidth, tubeY);
+            ctxRes.stroke();
+            
+            // Draw Ruler Marks
+            ctxRes.fillStyle = '#64748b';
+            ctxRes.font = '10px Arial';
+            ctxRes.textAlign = 'right';
+            for(let i=0; i<=10; i++) {
+                let markY = tubeY + (i/10)*tubeHeight;
+                ctxRes.fillRect(tubeX - 10, markY, 10, 2);
+                if(i%2 === 0) ctxRes.fillText((i/10).toFixed(1) + 'm', tubeX - 15, markY + 4);
+            }
+
+            // Draw Tuning Fork at top
+            ctxRes.strokeStyle = '#cbd5e1';
+            ctxRes.lineWidth = 4;
+            ctxRes.lineCap = 'round';
+            ctxRes.beginPath();
+            ctxRes.moveTo(width/2 - 15, tubeY - 40); ctxRes.lineTo(width/2 - 15, tubeY - 15);
+            ctxRes.arc(width/2, tubeY - 15, 15, Math.PI, 0, true);
+            ctxRes.lineTo(width/2 + 15, tubeY - 40);
+            ctxRes.moveTo(width/2, tubeY); ctxRes.lineTo(width/2, tubeY - 15); // handle
+            ctxRes.stroke();
+            // vibration marks if resonating
+            if(isResonating) {
+                ctxRes.strokeStyle = '#a855f7'; // Purple
+                ctxRes.lineWidth = 1;
+                ctxRes.beginPath();
+                let vOffset = Math.sin(Date.now() / 20) * 3;
+                ctxRes.moveTo(width/2 - 25 + vOffset, tubeY - 30); ctxRes.lineTo(width/2 - 20 + vOffset, tubeY - 35);
+                ctxRes.moveTo(width/2 + 25 - vOffset, tubeY - 30); ctxRes.lineTo(width/2 + 20 - vOffset, tubeY - 35);
+                ctxRes.stroke();
+            }
+        }
+        drawResonance();
+
+        document.getElementById('btn-hit-fork').addEventListener('click', () => {
+            if(!tubeAudioCtx) tubeAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if(tubeAudioCtx.state === 'suspended') tubeAudioCtx.resume();
+            
+            const osc = tubeAudioCtx.createOscillator();
+            const gainNode = tubeAudioCtx.createGain();
+            
+            osc.type = 'sine';
+            osc.frequency.value = freqResonance; // 340 Hz
+            
+            osc.connect(gainNode);
+            gainNode.connect(tubeAudioCtx.destination);
+            
+            osc.start(tubeAudioCtx.currentTime);
+            
+            // ตรวจสอบว่าอยู่ในตำแหน่งสั่นพ้องหรือไม่
+            const L = parseFloat(sliderWater.value);
+            let isRes = false;
+            let diffToRes = 1;
+
+            for(let p of resPoints) {
+                let diff = Math.abs(L - p);
+                if(diff < tolerance) {
+                    isRes = true;
+                    diffToRes = diff;
+                    break;
+                }
+            }
+            
+            if (isRes) {
+                // กรณีเกิดการสั่นพ้อง (Resonance) : เสียงดัง กังวาน และยาวนาน
+                // คำนวณความดังตามความแม่นยำของจุด (ยิ่งตรงเป๊ะยิ่งดัง)
+                let maxVol = 0.8 - (diffToRes / tolerance) * 0.3; // ระดับเสียง 0.5 ถึง 0.8
+                
+                gainNode.gain.setValueAtTime(0, tubeAudioCtx.currentTime);
+                gainNode.gain.linearRampToValueAtTime(maxVol, tubeAudioCtx.currentTime + 0.05); // เสียงค่อยๆ ดังขึ้นอย่างรวดเร็ว (Attack)
+                gainNode.gain.exponentialRampToValueAtTime(0.001, tubeAudioCtx.currentTime + 3.0); // เสียงค่อยๆ เบาลงยาว 3 วินาที (Long Decay)
+                osc.stop(tubeAudioCtx.currentTime + 3.1);
+            } else {
+                // กรณีไม่เกิดการสั่นพ้อง : เสียงเบา และสั้นมาก
+                gainNode.gain.setValueAtTime(0, tubeAudioCtx.currentTime);
+                gainNode.gain.linearRampToValueAtTime(0.15, tubeAudioCtx.currentTime + 0.02); // เสียงเบา (Volume 0.15)
+                gainNode.gain.exponentialRampToValueAtTime(0.001, tubeAudioCtx.currentTime + 0.4); // เสียงดับไวใน 0.4 วินาที (Short Decay)
+                osc.stop(tubeAudioCtx.currentTime + 0.5);
+            }
+        });
+
+        
+        // ==========================================
+        // MODULE 4: ECHO (REFLECTION)
+        // ==========================================
+        const ctxEcho = document.getElementById('canvas-echo').getContext('2d');
+        const sliderDepth = document.getElementById('slider-depth');
+        const valTimer = document.getElementById('val-timer');
+        const btnPing = document.getElementById('btn-ping');
+        
+        let echoState = {
+            pinging: false,
+            returning: false,
+            y: 50, // Boat position
+            depth: 500, // actual depth in meters
+            timer: 0,
+            animStart: 0,
+            v_water: 1500 // m/s
+        };
+
+        function drawEcho() {
+            requestAnimationFrame(drawEcho);
+            if(document.getElementById('tab-echo').classList.contains('hidden')) return;
+            
+            const canvas = document.getElementById('canvas-echo');
+            const w = canvas.width;
+            const h = canvas.height;
+            ctxEcho.clearRect(0,0,w,h);
+
+            // Draw Sky & Water
+            ctxEcho.fillStyle = '#0f172a'; ctxEcho.fillRect(0,0,w,50); // Sky
+            let waterGrad = ctxEcho.createLinearGradient(0,50,0,h);
+            waterGrad.addColorStop(0, '#0369a1'); // Ocean surface
+            waterGrad.addColorStop(1, '#082f49'); // Deep sea
+            ctxEcho.fillStyle = waterGrad;
+            ctxEcho.fillRect(0,50,w,h-50);
+
+            // Calculate seabed Y pos mapped to canvas (Max depth 1500m)
+            const maxDepth = 1500;
+            const targetDepth = parseInt(sliderDepth.value);
+            const seaBedY = 50 + (targetDepth / maxDepth) * (h - 100);
+
+            // Draw Seabed
+            ctxEcho.fillStyle = '#451a03'; // Brown ground
+            ctxEcho.beginPath();
+            ctxEcho.moveTo(0, seaBedY);
+            ctxEcho.lineTo(w, seaBedY);
+            ctxEcho.lineTo(w, h);
+            ctxEcho.lineTo(0, h);
+            ctxEcho.fill();
+
+            // Draw Boat
+            ctxEcho.fillStyle = '#cbd5e1';
+            ctxEcho.beginPath();
+            ctxEcho.moveTo(w/2 - 30, 20); ctxEcho.lineTo(w/2 + 30, 20);
+            ctxEcho.lineTo(w/2 + 20, 50); ctxEcho.lineTo(w/2 - 20, 50);
+            ctxEcho.fill();
+            
+            // Ping Animation
+            if(echoState.pinging) {
+                let now = performance.now();
+                let dt = (now - echoState.animStart) / 1000; // seconds elapsed in real time
+                
+                // Scale visual speed so it doesn't happen too fast (Animation time vs Real physical time)
+                // Physical time = (targetDepth * 2) / 1500
+                let totalPhysicalTime = (targetDepth * 2) / echoState.v_water;
+                
+                // Let's make the animation take exactly 2 seconds regardless of physical depth for visibility, 
+                // but the timer will show the REAL physical time.
+                let animProgress = dt / 2.0; 
+                
+                if (animProgress <= 0.5) {
+                    // Going down
+                    echoState.y = 50 + (animProgress/0.5) * (seaBedY - 50);
+                    valTimer.innerText = (totalPhysicalTime * (animProgress/1.0)).toFixed(3);
+                } else if (animProgress <= 1.0) {
+                    // Returning
+                    echoState.returning = true;
+                    echoState.y = seaBedY - ((animProgress-0.5)/0.5) * (seaBedY - 50);
+                    valTimer.innerText = (totalPhysicalTime * (animProgress/1.0)).toFixed(3);
+                } else {
+                    // Ping complete
+                    echoState.pinging = false;
+                    echoState.returning = false;
+                    valTimer.innerText = totalPhysicalTime.toFixed(3);
+                    playPingSound(800); // Return ping sound
+                }
+
+                // Draw Ping Wave
+                ctxEcho.strokeStyle = echoState.returning ? '#f43f5e' : '#10b981'; // Red up, Emerald down
+                ctxEcho.lineWidth = 3;
+                ctxEcho.beginPath();
+                ctxEcho.arc(w/2, echoState.y, 15 + Math.sin(now/50)*5, 0, Math.PI*2);
+                ctxEcho.stroke();
+                
+                // Ripples
+                ctxEcho.strokeStyle = `rgba(${echoState.returning ? '244,63,94' : '16,185,129'}, 0.3)`;
+                ctxEcho.beginPath();
+                ctxEcho.arc(w/2, echoState.y, 30 + Math.sin(now/50)*10, 0, Math.PI*2);
+                ctxEcho.stroke();
+            }
+        }
+        drawEcho();
+
+        btnPing.addEventListener('click', () => {
+            if(echoState.pinging) return;
+            echoState.pinging = true;
+            echoState.returning = false;
+            echoState.animStart = performance.now();
+            valTimer.innerText = "0.000";
+            playPingSound(400); // Start ping sound
+        });
+
+        function playPingSound(freq) {
+            let ac = new (window.AudioContext || window.webkitAudioContext)();
+            let osc = ac.createOscillator();
+            let gain = ac.createGain();
+            osc.frequency.value = freq;
+            osc.type = 'sine';
+            osc.connect(gain);
+            gain.connect(ac.destination);
+            osc.start();
+            gain.gain.setValueAtTime(0.5, ac.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.3);
+            osc.stop(ac.currentTime + 0.3);
+        }
+
+        // ==========================================
+        // MODULE 5: REFRACTION
+        // ==========================================
+        const ctxRefract = document.getElementById('canvas-refraction').getContext('2d');
+        const btnDay = document.getElementById('btn-day');
+        const btnNight = document.getElementById('btn-night');
+        const refractDesc = document.getElementById('refract-desc');
+        
+        let refractMode = 'night'; // 'day' or 'night'
+        let soundParticles = [];
+
+        btnDay.addEventListener('click', () => {
+            refractMode = 'day';
+            btnDay.className = "border-2 border-orange-500 bg-orange-600 text-white py-3 rounded transition font-bold shadow-[0_0_15px_rgba(249,115,22,0.5)]";
+            btnNight.className = "border-2 border-blue-500 bg-blue-900/40 hover:bg-blue-900/60 text-blue-300 py-3 rounded transition font-bold";
+            refractDesc.innerText = "กลางวัน: พื้นดินดูดซับความร้อนทำให้อากาศด้านล่างร้อนกว่าด้านบน คลื่นเสียงมีความเร็วในที่ร้อนมากกว่า จึงหักเหโค้งขึ้นฟ้า ทำให้คนที่อยู่ไกลๆ ไม่ค่อยได้ยินเสียง";
+            refractDesc.className = "text-orange-300";
+            soundParticles = [];
+        });
+
+        btnNight.addEventListener('click', () => {
+            refractMode = 'night';
+            btnNight.className = "border-2 border-blue-500 bg-blue-600 text-white py-3 rounded transition font-bold shadow-[0_0_15px_rgba(59,130,246,0.5)]";
+            btnDay.className = "border-2 border-orange-500 bg-orange-900/40 hover:bg-orange-900/60 text-orange-300 py-3 rounded transition font-bold";
+            refractDesc.innerText = "กลางคืน: พื้นดินคลายความร้อนทำให้อากาศด้านล่างเย็นกว่าด้านบน คลื่นเสียงจึงหักเหโค้งลงดิน ทำให้เราได้ยินเสียงจากแหล่งกำเนิดที่อยู่ไกลๆ (เสียงลอยต่ำ)";
+            refractDesc.className = "text-blue-300";
+            soundParticles = [];
+        });
+
+        function drawRefraction() {
+            requestAnimationFrame(drawRefraction);
+            if(document.getElementById('tab-refraction').classList.contains('hidden')) return;
+            
+            const w = ctxRefract.canvas.width;
+            const h = ctxRefract.canvas.height;
+            ctxRefract.clearRect(0,0,w,h);
+
+            // Draw Background Gradient (Temperature map)
+            let bgGrad = ctxRefract.createLinearGradient(0, 0, 0, h);
+            if (refractMode === 'day') {
+                bgGrad.addColorStop(0, '#0f172a'); // Cool air top
+                bgGrad.addColorStop(1, '#7c2d12'); // Hot ground bottom
+            } else {
+                bgGrad.addColorStop(0, '#7c2d12'); // Hot air top
+                bgGrad.addColorStop(1, '#0f172a'); // Cool ground bottom
+            }
+            ctxRefract.fillStyle = bgGrad;
+            ctxRefract.fillRect(0,0,w,h);
+
+            // Draw ground
+            ctxRefract.fillStyle = '#020617';
+            ctxRefract.fillRect(0, h-40, w, 40);
+
+            // Draw Speaker (Source) left
+            ctxRefract.fillStyle = '#94a3b8';
+            ctxRefract.fillRect(40, h-80, 30, 40);
+            ctxRefract.beginPath(); ctxRefract.moveTo(70, h-80); ctxRefract.lineTo(90, h-90); ctxRefract.lineTo(90, h-30); ctxRefract.lineTo(70, h-40); ctxRefract.fill();
+            
+            // Draw Listener (Right)
+            ctxRefract.fillStyle = '#38bdf8';
+            ctxRefract.beginPath(); ctxRefract.arc(w-60, h-60, 15, 0, Math.PI*2); ctxRefract.fill();
+            ctxRefract.fillRect(w-65, h-45, 10, 20); // body
+
+            // Emit particles
+            if(Math.random() < 0.2) {
+                // Emit rays at slightly different starting angles
+                for(let angle = -0.3; angle <= 0.3; angle += 0.15) {
+                    soundParticles.push({
+                        x: 95, 
+                        y: h-60, 
+                        vx: 4 * Math.cos(angle), 
+                        vy: 4 * Math.sin(angle),
+                        life: 1.0
+                    });
+                }
+            }
+
+            // Update & Draw Particles
+            ctxRefract.fillStyle = 'rgba(255, 255, 255, 0.7)';
+            for(let i = soundParticles.length-1; i >= 0; i--) {
+                let p = soundParticles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                
+                // Refraction physics simplified: accelerate towards cooler region
+                if (refractMode === 'day') {
+                    p.vy -= 0.03; // Bend UP
+                } else {
+                    p.vy += 0.03; // Bend DOWN
+                }
+                
+                p.life -= 0.002;
+
+                ctxRefract.beginPath();
+                ctxRefract.arc(p.x, p.y, 2, 0, Math.PI*2);
+                ctxRefract.fill();
+
+                // Hit ground or die
+                if(p.y > h-40 || p.x > w || p.life <= 0 || p.y < 0) {
+                    soundParticles.splice(i, 1);
+                }
+            }
+        }
+        drawRefraction();
+
+        // ==========================================
+        // MODULE 6: HARMONICS
+        // ==========================================
+        const ctxHarmonics = document.getElementById('canvas-harmonics').getContext('2d');
+        const btnHarmonics = document.querySelectorAll('.btn-harmonic');
+        const btnPluck = document.getElementById('btn-pluck');
+        
+        let activeHarmonic = 1;
+        let stringAmp = 0; // Amplitude of vibration
+        const baseFreq = 110; // A2 note
+
+        btnHarmonics.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                btnHarmonics.forEach(b => {
+                    b.classList.remove('active', 'border-emerald-500');
+                    b.classList.add('border-transparent');
+                });
+                e.target.classList.add('active', 'border-emerald-500');
+                e.target.classList.remove('border-transparent');
+                activeHarmonic = parseInt(e.target.dataset.n);
+                // pluck automatically on change
+                btnPluck.click();
+            });
+        });
+
+        function drawHarmonics() {
+            requestAnimationFrame(drawHarmonics);
+            if(document.getElementById('tab-harmonics').classList.contains('hidden')) return;
+
+            const w = ctxHarmonics.canvas.width;
+            const h = ctxHarmonics.canvas.height;
+            ctxHarmonics.clearRect(0,0,w,h);
+
+            // Draw Guitar Fretboard background
+            ctxHarmonics.fillStyle = '#451a03'; // Dark wood
+            ctxHarmonics.fillRect(50, h/2 - 20, w-100, 40);
+            
+            // Draw string boundaries (Nut & Bridge)
+            ctxHarmonics.fillStyle = '#e2e8f0';
+            ctxHarmonics.fillRect(45, h/2 - 25, 10, 50);
+            ctxHarmonics.fillRect(w-55, h/2 - 25, 10, 50);
+
+            // Decay amplitude
+            if(stringAmp > 0) {
+                stringAmp *= 0.98; // Damping
+                if(stringAmp < 0.1) stringAmp = 0;
+            }
+
+            // Draw String
+            ctxHarmonics.strokeStyle = '#f8fafc';
+            ctxHarmonics.lineWidth = 3;
+            ctxHarmonics.beginPath();
+            
+            const stringLen = w - 100;
+            const startX = 50;
+            const time = performance.now() / 50;
+
+            for(let x = 0; x <= stringLen; x += 2) {
+                // Standing wave equation: y = A * sin(n * pi * x / L) * cos(omega * t)
+                let env = Math.sin((activeHarmonic * Math.PI * x) / stringLen);
+                let yOffset = stringAmp * env * Math.cos(time);
+                
+                if(x === 0) ctxHarmonics.moveTo(startX + x, h/2 + yOffset);
+                else ctxHarmonics.lineTo(startX + x, h/2 + yOffset);
+            }
+            ctxHarmonics.stroke();
+
+            // Draw Nodes (Red Dots)
+            ctxHarmonics.fillStyle = '#ef4444';
+            for(let i=0; i<=activeHarmonic; i++) {
+                let nodeX = startX + (i * stringLen / activeHarmonic);
+                ctxHarmonics.beginPath();
+                ctxHarmonics.arc(nodeX, h/2, 5, 0, Math.PI*2);
+                ctxHarmonics.fill();
+            }
+        }
+        drawHarmonics();
+
+        btnPluck.addEventListener('click', () => {
+            stringAmp = 40; // Max amplitude visual
+            
+            // Play Audio
+            let ac = new (window.AudioContext || window.webkitAudioContext)();
+            let osc = ac.createOscillator();
+            let gain = ac.createGain();
+            
+            // frequency = n * f1
+            osc.frequency.value = baseFreq * activeHarmonic;
+            
+            // Guitar-ish sound
+            osc.type = activeHarmonic === 1 ? 'triangle' : 'sine'; 
+            
+            osc.connect(gain);
+            gain.connect(ac.destination);
+            
+            osc.start();
+            gain.gain.setValueAtTime(0.8, ac.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 2.0); // Pluck decay
+            osc.stop(ac.currentTime + 2.1);
+        });
+
+        // ==========================================
+        // MODULE 7: 4 WAVE PROPERTIES
+        // ==========================================
+        const canvasProp = document.getElementById('canvas-properties');
+        const ctxProp = canvasProp.getContext('2d');
+        const btnProps = document.querySelectorAll('.btn-prop');
+        const propTitle = document.getElementById('prop-title');
+        const propDesc = document.getElementById('prop-desc');
+        
+        // UI Controls
+        const sliderPropSpeed = document.getElementById('slider-prop-speed');
+        const ctrlRefract = document.getElementById('ctrl-refract');
+        const ctrlDiffract = document.getElementById('ctrl-diffract');
+        const ctrlInterfere = document.getElementById('ctrl-interfere');
+        
+        const sliderV1 = document.getElementById('slider-v1');
+        const sliderV2 = document.getElementById('slider-v2');
+        const valV1 = document.getElementById('val-v1');
+        const valV2 = document.getElementById('val-v2');
+        
+        const btnDiffSlit = document.getElementById('btn-diff-slit');
+        const btnDiffEdge = document.getElementById('btn-diff-edge');
+        const chkNodes = document.getElementById('chk-nodes');
+
+        let currentProp = 'reflect'; 
+        let propTime = 0;
+        let diffMode = 'slit'; // 'slit' or 'edge'
+        
+        // For Interference (Draggable sources)
+        let src1Pos = { x: 200, y: 120 };
+        let src2Pos = { x: 200, y: 280 };
+        let draggedSrc = null;
+
+        // Mouse Events for Canvas
+        canvasProp.addEventListener('mousedown', (e) => {
+            if (currentProp !== 'interfere') return;
+            const rect = canvasProp.getBoundingClientRect();
+            // Map coordinates because canvas style width/height might differ from physical width/height
+            const scaleX = canvasProp.width / rect.width;
+            const scaleY = canvasProp.height / rect.height;
+            const mouseX = (e.clientX - rect.left) * scaleX;
+            const mouseY = (e.clientY - rect.top) * scaleY;
+
+            if (Math.hypot(mouseX - src1Pos.x, mouseY - src1Pos.y) < 30) draggedSrc = src1Pos;
+            else if (Math.hypot(mouseX - src2Pos.x, mouseY - src2Pos.y) < 30) draggedSrc = src2Pos;
+        });
+
+        canvasProp.addEventListener('mousemove', (e) => {
+            if (!draggedSrc) return;
+            const rect = canvasProp.getBoundingClientRect();
+            const scaleX = canvasProp.width / rect.width;
+            const scaleY = canvasProp.height / rect.height;
+            draggedSrc.x = (e.clientX - rect.left) * scaleX;
+            draggedSrc.y = (e.clientY - rect.top) * scaleY;
+        });
+
+        canvasProp.addEventListener('mouseup', () => draggedSrc = null);
+        canvasProp.addEventListener('mouseleave', () => draggedSrc = null);
+
+        // Control Events
+        sliderV1.addEventListener('input', e => valV1.innerText = e.target.value);
+        sliderV2.addEventListener('input', e => valV2.innerText = e.target.value);
+        
+        btnDiffSlit.addEventListener('click', () => {
+            diffMode = 'slit';
+            btnDiffSlit.className = "flex-1 bg-emerald-600 hover:bg-emerald-500 text-white text-sm py-2 rounded transition border border-emerald-400";
+            btnDiffEdge.className = "flex-1 bg-slate-700 hover:bg-slate-600 text-white text-sm py-2 rounded transition border border-slate-500";
+        });
+        btnDiffEdge.addEventListener('click', () => {
+            diffMode = 'edge';
+            btnDiffEdge.className = "flex-1 bg-emerald-600 hover:bg-emerald-500 text-white text-sm py-2 rounded transition border border-emerald-400";
+            btnDiffSlit.className = "flex-1 bg-slate-700 hover:bg-slate-600 text-white text-sm py-2 rounded transition border border-slate-500";
+        });
+
+        // ข้อมูลหลักการทั้ง 4 ประการ
+        const propInfo = {
+            'reflect': {
+                title: 'การสะท้อน (Reflection)',
+                desc: 'ลูกศรแสดงทิศทางคลื่นตกกระทบชนกำแพง และสะท้อนกลับด้วยมุมตกกระทบ = มุมสะท้อน เกิดการซ้อนทับกัน'
+            },
+            'refract': {
+                title: 'การหักเห (Refraction)',
+                desc: 'ปรับความเร็วคลื่นตัวกลาง 1 และ 2 เพื่อดูการเปลี่ยนแปลงความยาวคลื่น ทิศทางลูกศรจะหักเหเบนเข้า/ออก จากเส้นตั้งฉาก ตามกฎของสเนลล์ (Snell\'s Law)'
+            },
+            'diffract': {
+                title: 'การเลี้ยวเบน (Diffraction)',
+                desc: 'เมื่อคลื่นหน้าตรงเดินทางผ่านช่องแคบ หรือขอบมุมกำแพง คลื่นจะสามารถอ้อมสิ่งกีดขวางแผ่เป็นวงกลมออกไปด้านหลังได้ (ตามหลักของฮอยเกนส์)'
+            },
+            'interfere': {
+                title: 'การแทรกสอด (Interference)',
+                desc: 'คลื่นจากลำโพง 2 ตัวซ้อนทับกัน เส้นประสีเขียวคือแนว "ปฏิบัพ" (เสริมกัน/เสียงดัง) เส้นประสีแดงคือแนว "บัพ" (หักล้าง/เสียงเบา) *ลองลากลำโพงเปลี่ยนตำแหน่งดูสิ!*'
+            }
+        };
+
+        // เปลี่ยนโหมดเมื่อกดปุ่ม
+        btnProps.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                btnProps.forEach(b => {
+                    b.classList.remove('active', 'border-emerald-500');
+                    b.classList.add('border-transparent');
+                });
+                e.target.classList.add('active', 'border-emerald-500');
+                e.target.classList.remove('border-transparent');
+                
+                currentProp = e.target.dataset.mode;
+                propTitle.innerText = propInfo[currentProp].title;
+                propDesc.innerText = propInfo[currentProp].desc;
+                
+                // Show/Hide specific controls
+                ctrlRefract.classList.add('hidden');
+                ctrlDiffract.classList.add('hidden');
+                ctrlInterfere.classList.add('hidden');
+                
+                if(currentProp === 'refract') ctrlRefract.classList.remove('hidden');
+                if(currentProp === 'diffract') ctrlDiffract.classList.remove('hidden');
+                if(currentProp === 'interfere') ctrlInterfere.classList.remove('hidden');
+            });
+        });
+        
+        // เลือกเริ่มต้น (Initialize active text)
+        propTitle.innerText = propInfo['reflect'].title;
+        propDesc.innerText = propInfo['reflect'].desc;
+
+        // Helper: วาดไอคอนลำโพง
+        function drawSpeakerIcon(ctx, x, y) {
+            ctx.fillStyle = '#94a3b8'; // Slate 400
+            ctx.fillRect(x - 15, y - 10, 10, 20); // ฐาน
+            ctx.beginPath();
+            ctx.moveTo(x - 5, y - 10);
+            ctx.lineTo(x + 5, y - 20);
+            ctx.lineTo(x + 5, y + 20);
+            ctx.lineTo(x - 5, y + 10);
+            ctx.fill(); // กรวย
+        }
+
+        // Helper: วาดลูกศรแสดงทิศทางคลื่น
+        function drawArrow(ctx, fromx, fromy, tox, toy, color) {
+            const headlen = 12; 
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const angle = Math.atan2(dy, dx);
+            
+            ctx.strokeStyle = color;
+            ctx.fillStyle = color;
+            ctx.lineWidth = 3;
+            
+            ctx.beginPath();
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.lineTo(tox, toy);
+            ctx.fill();
+        }
+
+        function drawProperties() {
+            requestAnimationFrame(drawProperties);
+            if(document.getElementById('tab-properties').classList.contains('hidden')) return;
+
+            const w = ctxProp.canvas.width;
+            const h = ctxProp.canvas.height;
+            ctxProp.clearRect(0,0,w,h);
+            
+            let currentSpeed = parseFloat(sliderPropSpeed.value);
+            propTime += currentSpeed; 
+            const baseWavelength = 30; 
+
+            // ==========================================
+            // 1. REFLECTION (การสะท้อน)
+            // ==========================================
+            if (currentProp === 'reflect') {
+                const srcX = 150, srcY = h/2;
+                const wallX = 450;
+                
+                // กำแพง
+                ctxProp.fillStyle = '#64748b';
+                ctxProp.fillRect(wallX, 0, 20, h);
+                
+                drawSpeakerIcon(ctxProp, srcX, srcY);
+                
+                let distToWall = wallX - srcX;
+                ctxProp.lineWidth = 2.5;
+
+                for (let r = (propTime % baseWavelength); r < 800; r += baseWavelength) {
+                    if (r <= distToWall) {
+                        // คลื่นตกกระทบ (สีเขียว)
+                        ctxProp.strokeStyle = 'rgba(16, 185, 129, 0.8)';
+                        ctxProp.beginPath(); ctxProp.arc(srcX, srcY, r, -Math.PI/2.5, Math.PI/2.5); ctxProp.stroke();
+                    } else {
+                        // คลื่นสะท้อน (สีแดง)
+                        let virtualX = wallX + distToWall;
+                        ctxProp.strokeStyle = 'rgba(244, 63, 94, 0.8)';
+                        ctxProp.save();
+                        ctxProp.beginPath(); ctxProp.rect(0, 0, wallX, h); ctxProp.clip(); // วาดเฉพาะหน้ากำแพง
+                        ctxProp.beginPath(); ctxProp.arc(virtualX, srcY, r, Math.PI/2, Math.PI*1.5); ctxProp.stroke();
+                        ctxProp.restore();
+                    }
+                }
+                
+                // ลูกศรทิศทางตกกระทบ และ สะท้อน
+                drawArrow(ctxProp, srcX + 30, srcY, wallX - 20, srcY, '#10b981'); // เขียวไปขวา
+                drawArrow(ctxProp, wallX - 20, srcY + 20, srcX + 100, srcY + 20, '#f43f5e'); // แดงกลับซ้าย
+            } 
+            
+            // ==========================================
+            // 2. REFRACTION (การหักเห - Plane Waves)
+            // ==========================================
+            else if (currentProp === 'refract') {
+                const boundaryY = h/2;
+                let v1 = parseFloat(sliderV1.value);
+                let v2 = parseFloat(sliderV2.value);
+                
+                // พื้นหลังตัวกลาง
+                ctxProp.fillStyle = '#0f172a'; // ด้านบน (Medium 1)
+                ctxProp.fillRect(0, 0, w, boundaryY);
+                ctxProp.fillStyle = '#1e293b'; // ด้านล่าง (Medium 2)
+                ctxProp.fillRect(0, boundaryY, w, h-boundaryY);
+                
+                // เส้นรอยต่อ
+                ctxProp.strokeStyle = 'rgba(255,255,255,0.4)';
+                ctxProp.lineWidth = 2;
+                ctxProp.beginPath(); ctxProp.moveTo(0, boundaryY); ctxProp.lineTo(w, boundaryY); ctxProp.stroke();
+                // เส้นตั้งฉาก (Normal Line)
+                ctxProp.setLineDash([5, 5]);
+                ctxProp.beginPath(); ctxProp.moveTo(w/2, 0); ctxProp.lineTo(w/2, h); ctxProp.stroke();
+                ctxProp.setLineDash([]);
+
+                let lambda1 = baseWavelength * v1;
+                let lambda2 = baseWavelength * v2;
+                let theta1 = Math.PI / 6; // มุมตกกระทบ 30 องศา (วัดจากเส้นตั้งฉาก)
+                
+                // การวาดคลื่นตัวกลางที่ 1 (ตกกระทบ)
+                ctxProp.save();
+                ctxProp.beginPath(); ctxProp.rect(0, 0, w, boundaryY); ctxProp.clip();
+                ctxProp.translate(w/2, boundaryY);
+                ctxProp.rotate(-theta1); // หมุนระบบพิกัดให้แกน Y ชี้สวนทางคลื่น
+                
+                let offset1 = (propTime * v1) % lambda1;
+                ctxProp.strokeStyle = 'rgba(16, 185, 129, 0.8)';
+                ctxProp.lineWidth = 3;
+                for(let y = -800; y <= 0; y += lambda1) {
+                     ctxProp.beginPath(); ctxProp.moveTo(-w, y + offset1); ctxProp.lineTo(w, y + offset1); ctxProp.stroke();
+                }
+                // ลูกศรตกกระทบ
+                drawArrow(ctxProp, -30, -180, -30, -20, '#10b981');
+                drawArrow(ctxProp, 30, -180, 30, -20, '#10b981');
+                ctxProp.restore();
+
+                // การวาดคลื่นตัวกลางที่ 2 (หักเห)
+                let isTIR = Math.abs((v2/v1) * Math.sin(theta1)) > 1.0; // สะท้อนกลับหมดหรือไม่?
+                
+                ctxProp.save();
+                if (!isTIR) {
+                    ctxProp.beginPath(); ctxProp.rect(0, boundaryY, w, h-boundaryY); ctxProp.clip();
+                    ctxProp.translate(w/2, boundaryY);
+                    
+                    let theta2 = Math.asin((v2/v1) * Math.sin(theta1)); // กฎของสเนลล์
+                    ctxProp.rotate(-theta2);
+                    
+                    let offset2 = (propTime * v2) % lambda2; // phase ตรงกันที่รอยต่อพอดี
+                    ctxProp.strokeStyle = 'rgba(250, 204, 21, 0.8)'; // สีเหลือง
+                    for(let y = 0; y <= 800; y += lambda2) {
+                         ctxProp.beginPath(); ctxProp.moveTo(-w, y + offset2); ctxProp.lineTo(w, y + offset2); ctxProp.stroke();
+                    }
+                    // ลูกศรหักเห
+                    drawArrow(ctxProp, -30, 20, -30, 180, '#facc15');
+                    drawArrow(ctxProp, 30, 20, 30, 180, '#facc15');
+                } else {
+                    // เกิดการสะท้อนกลับหมด (Total Internal Reflection)
+                    // (จริงๆ ต้องวาดย้อนกลับไปตัวกลาง 1 แต่ละไว้เพื่อให้สังเกตคลื่นที่หายไป)
+                    ctxProp.fillStyle = 'rgba(244, 63, 94, 0.9)';
+                    ctxProp.font = 'bold 20px Arial';
+                    ctxProp.fillText('สะท้อนกลับหมด (Total Internal Reflection)!', w/2 - 180, boundaryY + 50);
+                }
+                ctxProp.restore();
+            }
+            
+            // ==========================================
+            // 3. DIFFRACTION (การเลี้ยวเบน - Plane Waves)
+            // ==========================================
+            else if (currentProp === 'diffract') {
+                const wallX = 250;
+                const gapSize = 100;
+                let offset = propTime % baseWavelength;
+                
+                ctxProp.lineWidth = 3;
+                
+                // กำแพง
+                ctxProp.fillStyle = '#64748b';
+                if (diffMode === 'slit') {
+                    ctxProp.fillRect(wallX, 0, 20, (h - gapSize)/2);
+                    ctxProp.fillRect(wallX, (h + gapSize)/2, 20, h);
+                } else {
+                    ctxProp.fillRect(wallX, 0, 20, h/2); // กำแพงมีแค่ครึ่งบน (ขอบมุม)
+                }
+                
+                // คลื่นหน้าตรง (ตกกระทบซ้าย)
+                ctxProp.strokeStyle = 'rgba(16, 185, 129, 0.6)';
+                for(let x = (offset % baseWavelength) - baseWavelength; x < wallX; x += baseWavelength) {
+                    if (x > 0) {
+                        ctxProp.beginPath(); ctxProp.moveTo(x, 0); ctxProp.lineTo(x, h); ctxProp.stroke();
+                    }
+                }
+                // ลูกศรตกกระทบ
+                drawArrow(ctxProp, 50, h/4, 150, h/4, '#10b981');
+                drawArrow(ctxProp, 50, h*0.75, 150, h*0.75, '#10b981');
+
+                // คลื่นเลี้ยวเบน (ฝั่งขวา)
+                if (diffMode === 'slit') {
+                    // เลี้ยวเบนจากช่องแคบ (แผ่เป็นวงกลม)
+                    ctxProp.strokeStyle = 'rgba(56, 189, 248, 0.8)';
+                    for(let r = offset; r < 600; r += baseWavelength) {
+                        if (r > 10) {
+                            ctxProp.beginPath();
+                            ctxProp.arc(wallX + 10, h/2, r, -Math.PI/2, Math.PI/2);
+                            ctxProp.stroke();
+                        }
+                    }
+                    // ลูกศรเลี้ยวเบน
+                    drawArrow(ctxProp, wallX+50, h/2, wallX+150, h/2, '#38bdf8');
+                    drawArrow(ctxProp, wallX+40, h/2-30, wallX+120, h/2-100, '#38bdf8');
+                    drawArrow(ctxProp, wallX+40, h/2+30, wallX+120, h/2+100, '#38bdf8');
+                } 
+                else if (diffMode === 'edge') {
+                    // เลี้ยวเบนอ้อมขอบมุม
+                    ctxProp.strokeStyle = 'rgba(56, 189, 248, 0.8)';
+                    for(let r = offset; r < 600; r += baseWavelength) {
+                        // ส่วนที่ทะลุไปตรงๆ (ครึ่งล่าง)
+                        if(wallX + r < w) {
+                            ctxProp.beginPath(); ctxProp.moveTo(wallX + r, h/2); ctxProp.lineTo(wallX + r, h); ctxProp.stroke();
+                        }
+                        // ส่วนที่เลี้ยวเบน (ครึ่งบน)
+                        if (r > 0) {
+                            ctxProp.beginPath();
+                            ctxProp.arc(wallX + 10, h/2, r, -Math.PI/2, 0);
+                            ctxProp.stroke();
+                        }
+                    }
+                    // ลูกศรตรงทะลุไป
+                    drawArrow(ctxProp, wallX+50, h*0.75, wallX+150, h*0.75, '#38bdf8');
+                    // ลูกศรเลี้ยวเบนขึ้น
+                    drawArrow(ctxProp, wallX+50, h/2-30, wallX+120, h/2-120, '#38bdf8');
+                }
+            }
+            
+            // ==========================================
+            // 4. INTERFERENCE (การแทรกสอด)
+            // ==========================================
+            else if (currentProp === 'interfere') {
+                ctxProp.lineWidth = 2;
+                let offset = propTime % baseWavelength;
+
+                // วาดคลื่นวงกลมจากแหล่งกำเนิดทั้ง 2
+                ctxProp.strokeStyle = 'rgba(56, 189, 248, 0.5)'; // สีฟ้า Src1
+                for (let r = offset; r < 800; r += baseWavelength) {
+                    if(r>10) { ctxProp.beginPath(); ctxProp.arc(src1Pos.x, src1Pos.y, r, 0, Math.PI*2); ctxProp.stroke(); }
+                }
+                
+                ctxProp.strokeStyle = 'rgba(16, 185, 129, 0.5)'; // สีเขียว Src2
+                for (let r = offset; r < 800; r += baseWavelength) {
+                    if(r>10) { ctxProp.beginPath(); ctxProp.arc(src2Pos.x, src2Pos.y, r, 0, Math.PI*2); ctxProp.stroke(); }
+                }
+                
+                drawSpeakerIcon(ctxProp, src1Pos.x, src1Pos.y);
+                drawSpeakerIcon(ctxProp, src2Pos.x, src2Pos.y);
+
+                // --- การคำนวณและวาดเส้นแนวบัพ (Node) และ ปฏิบัพ (Antinode) ---
+                if (chkNodes.checked) {
+                    const lambda = baseWavelength;
+                    const dx = src2Pos.x - src1Pos.x;
+                    const dy = src2Pos.y - src1Pos.y;
+                    const d = Math.hypot(dx, dy); // ระยะห่างระหว่างแหล่งกำเนิด
+                    const midX = src1Pos.x + dx/2;
+                    const midY = src1Pos.y + dy/2;
+                    const axisAngle = Math.atan2(dy, dx); // แกนที่เชื่อมลำโพง
+                    const maxN = Math.floor(d / lambda);
+
+                    // Helper วาดเส้นประ
+                    const drawNodalLine = (angle, color, labelText) => {
+                        ctxProp.strokeStyle = color;
+                        ctxProp.setLineDash([8, 8]);
+                        ctxProp.beginPath();
+                        ctxProp.moveTo(midX, midY);
+                        const ex = midX + Math.cos(angle) * 800;
+                        const ey = midY + Math.sin(angle) * 800;
+                        ctxProp.lineTo(ex, ey);
+                        ctxProp.stroke();
+                        ctxProp.setLineDash([]);
+                        
+                        if (labelText) { // วาด Text ชี้แนว
+                            ctxProp.fillStyle = color;
+                            ctxProp.font = 'bold 12px Arial';
+                            // วางป้ายใกล้ขอบจอ
+                            let lx = midX + Math.cos(angle) * 150;
+                            let ly = midY + Math.sin(angle) * 150;
+                            ctxProp.fillText(labelText, lx - 20, ly);
+                        }
+                    };
+
+                    // แนวกลาง (A0 - ปฏิบัพกลาง) ตั้งฉากกับแกนเสมอ
+                    drawNodalLine(axisAngle + Math.PI/2, '#10b981', 'A0 (เสียงดัง)');
+                    drawNodalLine(axisAngle - Math.PI/2, '#10b981', '');
+
+                    for (let n = 1; n <= maxN; n++) {
+                        // มุม ปฏิบัพ (Antinode): d*sin(theta) = n*lambda -> เสียงดัง เสริมกัน
+                        let valA = (n * lambda) / d;
+                        if (valA <= 1) {
+                            let theta = Math.asin(valA);
+                            drawNodalLine(axisAngle + Math.PI/2 + theta, '#10b981', n===1?'A1':'');
+                            drawNodalLine(axisAngle + Math.PI/2 - theta, '#10b981', '');
+                            drawNodalLine(axisAngle - Math.PI/2 + theta, '#10b981', '');
+                            drawNodalLine(axisAngle - Math.PI/2 - theta, '#10b981', '');
+                        }
+                    }
+                    
+                    for (let n = 0; n <= maxN; n++) {
+                        // มุม บัพ (Node): d*sin(theta) = (n+0.5)*lambda -> เสียงเบา หักล้างกัน
+                        let valN = ((n + 0.5) * lambda) / d;
+                        if (valN <= 1) {
+                            let theta = Math.asin(valN);
+                            drawNodalLine(axisAngle + Math.PI/2 + theta, '#f43f5e', n===0?'N1 (เสียงเบา)':'');
+                            drawNodalLine(axisAngle + Math.PI/2 - theta, '#f43f5e', '');
+                            drawNodalLine(axisAngle - Math.PI/2 + theta, '#f43f5e', '');
+                            drawNodalLine(axisAngle - Math.PI/2 - theta, '#f43f5e', '');
+                        }
+                    }
+                }
+            }
+        }
+        
+        // เริ่มแอนิเมชัน
+        drawProperties();
+
+        // ==========================================
+        // MODULE 8: APPLICATIONS (ประยุกต์ใช้)
+        // ==========================================
+        const btnAppAnc = document.getElementById('btn-app-anc');
+        const btnAppUltra = document.getElementById('btn-app-ultra');
+        const viewAnc = document.getElementById('app-anc-view');
+        const viewUltra = document.getElementById('app-ultra-view');
+        
+        // Tab switching inside Module 8
+        btnAppAnc.addEventListener('click', () => {
+            viewAnc.classList.remove('hidden'); viewUltra.classList.add('hidden');
+            btnAppAnc.className = "flex-1 border-2 border-purple-500 bg-purple-600 text-white font-bold py-3 px-4 rounded transition shadow-[0_0_15px_rgba(147,51,234,0.5)]";
+            btnAppUltra.className = "flex-1 border-2 border-slate-600 bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-4 rounded transition";
+        });
+        btnAppUltra.addEventListener('click', () => {
+            viewUltra.classList.remove('hidden'); viewAnc.classList.add('hidden');
+            btnAppUltra.className = "flex-1 border-2 border-emerald-500 bg-emerald-600 text-white font-bold py-3 px-4 rounded transition shadow-[0_0_15px_rgba(16,185,129,0.5)]";
+            btnAppAnc.className = "flex-1 border-2 border-slate-600 bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-4 rounded transition";
+        });
+
+        // --- 8.1 Active Noise Cancellation (ANC) ---
+        const ctxAnc = document.getElementById('canvas-anc').getContext('2d');
+        const sliderAncPhase = document.getElementById('slider-anc-phase');
+        const sliderAncAmp = document.getElementById('slider-anc-amp');
+        const valAncPhase = document.getElementById('val-anc-phase');
+        const valAncAmp = document.getElementById('val-anc-amp');
+        const ancStatus = document.getElementById('anc-status');
+        const btnPlayAnc = document.getElementById('btn-play-anc');
+
+        let ancTime = 0;
+        let isAncAudioPlaying = false;
+        let ancAudioCtx, ancGain;
+
+        sliderAncPhase.addEventListener('input', (e) => { valAncPhase.innerText = `${e.target.value}°`; updateAncAudio(); });
+        sliderAncAmp.addEventListener('input', (e) => { valAncAmp.innerText = `${e.target.value}%`; updateAncAudio(); });
+
+        function updateAncAudio() {
+            if (!isAncAudioPlaying || !ancGain) return;
+            // คำนวณความดังลัพธ์จากการแทรกสอดทางคณิตศาสตร์ เพื่อส่งไปคุม Volume ลำโพง
+            let A1 = 1.0; // Noise base
+            let A2 = parseFloat(sliderAncAmp.value) / 50.0; // Anti-noise
+            let phaseRad = parseFloat(sliderAncPhase.value) * Math.PI / 180;
+            // สมการรวมแอมพลิจูดคลื่น
+            let resultAmp = Math.sqrt(A1*A1 + A2*A2 + 2*A1*A2*Math.cos(phaseRad));
+            // ปรับ gain ระดับเสียงสูงสุดไม่ให้หนวกหู (0.2)
+            ancGain.gain.setValueAtTime((resultAmp / 2.0) * 0.2, ancAudioCtx.currentTime);
+        }
+
+        btnPlayAnc.addEventListener('click', () => {
+            if (!isAncAudioPlaying) {
+                if(!ancAudioCtx) {
+                    ancAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    const osc = ancAudioCtx.createOscillator();
+                    ancGain = ancAudioCtx.createGain();
+                    osc.type = 'sawtooth'; // เสียง Hum รบกวน
+                    osc.frequency.value = 150;
+                    osc.connect(ancGain);
+                    ancGain.connect(ancAudioCtx.destination);
+                    osc.start();
+                } else {
+                    ancAudioCtx.resume();
+                }
+                isAncAudioPlaying = true;
+                btnPlayAnc.innerText = "⏹ ปิดเสียงลัพธ์";
+                btnPlayAnc.className = "bg-red-600 hover:bg-red-500 text-white font-bold py-2 px-6 rounded-full w-full transition shadow-[0_0_15px_rgba(220,38,38,0.5)]";
+                updateAncAudio();
+            } else {
+                ancAudioCtx.suspend();
+                isAncAudioPlaying = false;
+                btnPlayAnc.innerText = "▶ ทดสอบฟังเสียงลัพธ์";
+                btnPlayAnc.className = "bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-6 rounded-full w-full transition shadow-[0_0_15px_rgba(37,99,235,0.5)]";
+            }
+        });
+
+        function drawANC() {
+            requestAnimationFrame(drawANC);
+            if(document.getElementById('tab-apps').classList.contains('hidden') || viewAnc.classList.contains('hidden')) return;
+
+            const w = ctxAnc.canvas.width;
+            const h = ctxAnc.canvas.height;
+            ctxAnc.clearRect(0,0,w,h);
+            
+            // วาดเส้นแบ่ง
+            ctxAnc.strokeStyle = '#334155'; ctxAnc.lineWidth = 1;
+            ctxAnc.beginPath(); ctxAnc.moveTo(0, 115); ctxAnc.lineTo(w, 115); ctxAnc.stroke();
+            ctxAnc.beginPath(); ctxAnc.moveTo(0, 235); ctxAnc.lineTo(w, 235); ctxAnc.stroke();
+            ctxAnc.setLineDash([5,5]);
+            ctxAnc.beginPath(); ctxAnc.moveTo(0, 57); ctxAnc.lineTo(w, 57); ctxAnc.stroke();
+            ctxAnc.beginPath(); ctxAnc.moveTo(0, 175); ctxAnc.lineTo(w, 175); ctxAnc.stroke();
+            ctxAnc.beginPath(); ctxAnc.moveTo(0, 292); ctxAnc.lineTo(w, 292); ctxAnc.stroke();
+            ctxAnc.setLineDash([]);
+
+            ancTime += 0.15;
+            let A_noise = 30; // แอมพลิจูดเสียงรบกวน
+            let A_anti = (parseFloat(sliderAncAmp.value) / 50) * 30; // ปรับได้สูงสุด 60 (2 เท่า)
+            let phaseDeg = parseFloat(sliderAncPhase.value);
+            let phaseRad = phaseDeg * Math.PI / 180;
+            
+            ctxAnc.lineWidth = 3;
+
+            // 1. Noise Wave (Red)
+            ctxAnc.strokeStyle = '#f87171';
+            ctxAnc.beginPath();
+            for(let x=0; x<w; x+=2) {
+                let y = 57 + A_noise * Math.sin(x/20 - ancTime);
+                if(x===0) ctxAnc.moveTo(x, y); else ctxAnc.lineTo(x, y);
+            }
+            ctxAnc.stroke();
+
+            // 2. Anti-Noise Wave (Blue)
+            ctxAnc.strokeStyle = '#60a5fa';
+            ctxAnc.beginPath();
+            for(let x=0; x<w; x+=2) {
+                let y = 175 + A_anti * Math.sin(x/20 - ancTime + phaseRad);
+                if(x===0) ctxAnc.moveTo(x, y); else ctxAnc.lineTo(x, y);
+            }
+            ctxAnc.stroke();
+
+            // 3. Result Wave (Green or White)
+            let isPerfect = false;
+            // เช็คว่าเฟสตรงข้ามกันเป๊ะ (178-182) และแอมพลิจูดเท่ากัน (48-52) หรือไม่
+            if (Math.abs(phaseDeg - 180) <= 2 && Math.abs(sliderAncAmp.value - 50) <= 2) {
+                isPerfect = true;
+                ancStatus.innerText = "✨ สุดยอด! คุณตัดเสียงรบกวนได้สมบูรณ์ (Destructive Interference)";
+                ancStatus.className = "text-sm font-bold p-2 rounded bg-emerald-900/50 text-emerald-400 border border-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.3)]";
+            } else {
+                ancStatus.innerText = "สถานะ: กำลังปรับจูน... (ลองตั้งเฟสให้ตรงข้ามสิ)";
+                ancStatus.className = "text-sm font-bold p-2 rounded bg-slate-800 text-slate-400 border border-slate-600";
+            }
+
+            ctxAnc.strokeStyle = isPerfect ? '#10b981' : '#f8fafc';
+            if (isPerfect) { ctxAnc.shadowBlur = 10; ctxAnc.shadowColor = '#10b981'; }
+            ctxAnc.beginPath();
+            for(let x=0; x<w; x+=2) {
+                // รวมคลื่นตามหลัก Superposition
+                let val1 = A_noise * Math.sin(x/20 - ancTime);
+                let val2 = A_anti * Math.sin(x/20 - ancTime + phaseRad);
+                let y = 292 + (val1 + val2); 
+                if(x===0) ctxAnc.moveTo(x, y); else ctxAnc.lineTo(x, y);
+            }
+            ctxAnc.stroke();
+            ctxAnc.shadowBlur = 0;
+        }
+        drawANC();
+
+        // --- 8.2 Ultrasound (Reflection) ---
+        const canvasUltra = document.getElementById('canvas-ultra');
+        const ctxUltra = canvasUltra.getContext('2d');
+        const btnClearUltra = document.getElementById('btn-clear-ultra');
+        
+        let ultraProbeX = 150;
+        let scanPixels = []; // เก็บตำแหน่งที่คลื่นสะท้อนเจอ
+        let isUltraScanning = false;
+
+        // คำนวณขอบเขตของทารก (Baby shape math)
+        // ใช้ 2 วงกลมประกอบกันเป็นหัวและตัว
+        function getHitDepth(px) {
+            let hits = [];
+            // หัวเด็ก (Center X: 150, Y: 120, Radius: 35)
+            let dx1 = px - 150;
+            if (35*35 - dx1*dx1 >= 0) hits.push(120 - Math.sqrt(35*35 - dx1*dx1)); 
+            
+            // ตัวเด็ก (Center X: 150, Y: 210, Radius: 50)
+            let dx2 = px - 150;
+            if (50*50 - dx2*dx2 >= 0) hits.push(210 - Math.sqrt(50*50 - dx2*dx2));
+            
+            // ขา (Center X: 170, Y: 270, Radius: 20)
+            let dx3 = px - 170;
+            if (20*20 - dx3*dx3 >= 0) hits.push(270 - Math.sqrt(20*20 - dx3*dx3));
+
+            if (hits.length > 0) return Math.min(...hits); // เอาพื้นผิวที่ตื้นที่สุด (สะท้อนก่อน)
+            return null; // ทะลุ ไม่เจออะไร
+        }
+
+        canvasUltra.addEventListener('mousemove', (e) => {
+            const rect = canvasUltra.getBoundingClientRect();
+            const scaleX = canvasUltra.width / rect.width;
+            let mx = (e.clientX - rect.left) * scaleX;
+            // จำกัดให้หัวตรวจอยู่แค่ฝั่งซ้าย (0-300)
+            if (mx > 20 && mx < 280) {
+                ultraProbeX = mx;
+                isUltraScanning = true;
+                
+                // ตรวจจับการสะท้อน
+                let depth = getHitDepth(ultraProbeX);
+                if (depth !== null) {
+                    // เก็บค่าเข้า array เพื่อวาดบนจอขวา (บวก x ไป 300)
+                    scanPixels.push({x: ultraProbeX + 300, y: depth});
+                }
+            } else {
+                isUltraScanning = false;
+            }
+        });
+
+        canvasUltra.addEventListener('mouseleave', () => isUltraScanning = false);
+        btnClearUltra.addEventListener('click', () => scanPixels = []);
+
+        function drawUltra() {
+            requestAnimationFrame(drawUltra);
+            if(document.getElementById('tab-apps').classList.contains('hidden') || viewUltra.classList.contains('hidden')) return;
+
+            const w = ctxUltra.canvas.width;
+            const h = ctxUltra.canvas.height;
+            const midX = w / 2;
+            
+            ctxUltra.fillStyle = '#000';
+            ctxUltra.fillRect(0, 0, w, h);
+
+            // --- ฝั่งซ้าย: ร่างกายจริง (ซ่อนรูปทารกไว้จางๆ มากๆ) ---
+            ctxUltra.fillStyle = '#111827'; // ผิวหนัง
+            ctxUltra.fillRect(0, 50, midX, h-50);
+            
+            // รูปทารกแอบซ่อนอยู่
+            ctxUltra.fillStyle = '#1f2937'; // จางจนแทบมองไม่เห็น
+            ctxUltra.beginPath(); ctxUltra.arc(150, 120, 35, 0, Math.PI*2); ctxUltra.fill();
+            ctxUltra.beginPath(); ctxUltra.arc(150, 210, 50, 0, Math.PI*2); ctxUltra.fill();
+            ctxUltra.beginPath(); ctxUltra.arc(170, 270, 20, 0, Math.PI*2); ctxUltra.fill();
+
+            // --- วาดหัวตรวจ (Probe) และลำแสงโซนาร์ ---
+            ctxUltra.fillStyle = '#cbd5e1';
+            ctxUltra.fillRect(ultraProbeX - 15, 20, 30, 30);
+            
+            if (isUltraScanning) {
+                // ลำแสงส่งลงไป
+                let hitY = getHitDepth(ultraProbeX) || h;
+                
+                let gradient = ctxUltra.createLinearGradient(0, 50, 0, hitY);
+                gradient.addColorStop(0, 'rgba(56, 189, 248, 0.4)');
+                gradient.addColorStop(1, 'rgba(56, 189, 248, 0)');
+                
+                ctxUltra.fillStyle = gradient;
+                ctxUltra.beginPath();
+                ctxUltra.moveTo(ultraProbeX - 5, 50);
+                ctxUltra.lineTo(ultraProbeX + 5, 50);
+                ctxUltra.lineTo(ultraProbeX + 15, hitY);
+                ctxUltra.lineTo(ultraProbeX - 15, hitY);
+                ctxUltra.fill();
+
+                // วาดจุดสะท้อนบนร่างจริง (สีฟ้า)
+                if (hitY < h) {
+                    ctxUltra.fillStyle = '#38bdf8';
+                    ctxUltra.beginPath(); ctxUltra.arc(ultraProbeX, hitY, 3, 0, Math.PI*2); ctxUltra.fill();
+                }
+            }
+
+            // --- เส้นแบ่งหน้าจอซ้าย-ขวา ---
+            ctxUltra.strokeStyle = '#334155';
+            ctxUltra.lineWidth = 2;
+            ctxUltra.beginPath(); ctxUltra.moveTo(midX, 0); ctxUltra.lineTo(midX, h); ctxUltra.stroke();
+
+            // --- ฝั่งขวา: หน้าจอมอนิเตอร์อัลตราซาวด์ ---
+            // เส้น Grid
+            ctxUltra.strokeStyle = '#064e3b';
+            ctxUltra.lineWidth = 1;
+            for(let i=midX; i<w; i+=20) { ctxUltra.beginPath(); ctxUltra.moveTo(i,0); ctxUltra.lineTo(i,h); ctxUltra.stroke(); }
+            for(let i=0; i<h; i+=20) { ctxUltra.beginPath(); ctxUltra.moveTo(midX,i); ctxUltra.lineTo(w,i); ctxUltra.stroke(); }
+
+            // วาด Pixel ที่สะท้อนมาได้ (Scan History)
+            ctxUltra.fillStyle = '#34d399'; // Emerald 400
+            for(let p of scanPixels) {
+                // วาดให้หนาหน่อยเหมือนจอมอนิเตอร์เก่าๆ
+                ctxUltra.fillRect(p.x - 2, p.y - 2, 4, 4); 
+            }
+            
+            // วาดเส้นสแกนสีเขียววิ่งบนจอมอนิเตอร์ตามหัวตรวจ
+            ctxUltra.strokeStyle = 'rgba(16, 185, 129, 0.5)';
+            ctxUltra.lineWidth = 2;
+            ctxUltra.beginPath(); 
+            ctxUltra.moveTo(ultraProbeX + midX, 0); 
+            ctxUltra.lineTo(ultraProbeX + midX, h); 
+            ctxUltra.stroke();
+        }
+        drawUltra();
+
+    </script>
+</body>
+</html>
