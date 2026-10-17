@@ -52,6 +52,7 @@ try {
    เอามาจาก Apps Script ของชีตวิชานั้น → จัดการการทำให้ใช้งานได้ → URL เว็บแอป (ลงท้าย /exec) */
 const PHYS_APPS_URL = 'https://script.google.com/macros/s/AKfycbzuuRbnE_oB7a9vx7zZizyPVEKao31ERDTU82DvydMuRTDqVoQvgns9EsjTIzpbBjuM/exec';
 const PSCI_APPS_URL = 'https://script.google.com/macros/s/AKfycbxVa8BYYQeIhBDmg85w2UBwsIqt6a2YudehUfCbyMny9T-5TTh1UfFxsJjTk9HLNuFc/exec';
+const WORK_APPS_URL = 'https://script.google.com/macros/s/AKfycbyKZicAzLfUfc7UXPMrGsejrq9DyOU7w3AyinaueUsarp72UZD6w8gYbv_FtpUfasbDkw/exec';
 
 // ที่อยู่เว็บแอปของ "ห้องเรียนสมดุลกล" ซึ่งใช้ชีตคนละใบกับสี่วิชาข้างบน
 // เอามาจาก Apps Script ของชีตสมดุลกล → ทำให้ใช้งานได้ → เว็บแอป (ลงท้าย /exec)
@@ -60,8 +61,9 @@ const PSCI_APPS_URL = 'https://script.google.com/macros/s/AKfycbxVa8BYYQeIhBDmg8
    ประทับลงทุกไฟล์เป็น BUILTIN.books แอปจะได้รู้ว่าต้องไปลงชื่อที่ไหนก่อน
    ต้องตรงกับ BOOKS ในหน้าปก (index.html) — ใบแรกของทั้งสองที่ต้องเป็นใบเดียวกัน */
 const SHEET_BOOKS = [
-  { url: PSCI_APPS_URL, name: 'ชีตวิทยาศาสตร์กายภาพ' },
-  { url: PHYS_APPS_URL, name: 'ชีตฟิสิกส์' }
+  { url: PSCI_APPS_URL, name: 'ชีตวิทยาศาสตร์กายภาพ (ศูนย์กลาง)' },
+  { url: PHYS_APPS_URL, name: 'ชีตฟิสิกส์' },
+  { url: WORK_APPS_URL, name: 'ชีตส่งงาน', autoRoster: true }
 ];
 const EQ_APPS_URL = 'https://script.google.com/macros/s/AKfycbwiwNszVH4qwYNNr5o35r4JVWPbY66mM5XoQF-orwe-PmwvCM5wR9Gpw65nmQfPwT_W/exec';
 

@@ -202,7 +202,7 @@ var LOCK_MINUTES = 10;
    เพิ่มวิชาใหม่ในอนาคต แค่เติมชื่อลงในรายการนี้
    ⚠ ต้องเติมก่อนเปิดใช้เสมอ ถ้าลืม normSubject_ จะตกกลับไปเป็นวิชาเริ่มต้น
      แล้วข้อมูลของวิชาใหม่จะถูกบันทึกปนกับฟิสิกส์โดยไม่มีอะไรฟ้อง           */
-var SUBJECTS = ['physics', 'math', 'physci', 'ijso'];
+var SUBJECTS = ['physics', 'math', 'physci', 'ijso', 'chem', 'science', 'bio', 'physfound'];
 var DEFAULT_SUBJECT = 'physics';
 function normSubject_(v) {
   var s = String(v == null ? '' : v).trim().toLowerCase();
@@ -2683,7 +2683,6 @@ function verifyGoogleToken_(req) {
 }
 
 function apiGoogleLogin_(req) {
-  if (autoRoster_()) throw new Error('HUB: ชีตนี้รับเฉพาะการลงชื่อผ่านหน้าพอร์ทัล (ชีตศูนย์กลาง)');
   var g = verifyGoogleToken_(req);
   var email = g.email;
 
@@ -2711,6 +2710,9 @@ function apiGoogleLogin_(req) {
   if (/^\d{4,6}$/.test(localPart)) {
     var sid = normSid_(localPart);
     var row = findStudentRow_(sid);
+    if (row < 0 && autoRoster_()) {
+      row = autoAddStudent_({ sid: sid, name: g.name || ('นักเรียน ' + sid), cls: '', no: '' });
+    }
     if (row < 0) {
       throw new Error('ไม่พบเลขประจำตัว ' + sid + ' (' + email + ') ในชีตนี้ (' + bookName_() + ') — ให้ครูส่งรายชื่อนักเรียนขึ้นชีตก่อน');
     }

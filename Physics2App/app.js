@@ -861,20 +861,30 @@ function checkAnswers(showToastNotice = true) {
 }
 
 function loadStudentProfile() {
-  const saved = localStorage.getItem('physics2_student_profile');
-  if (saved) {
-    try {
-      const data = JSON.parse(saved);
-      if (document.getElementById('studentNameInput') && data.name) {
-        document.getElementById('studentNameInput').value = data.name;
-      }
-      if (document.getElementById('studentRoomInput') && data.room) {
-        document.getElementById('studentRoomInput').value = data.room;
-      }
-      if (document.getElementById('studentNoInput') && data.no) {
-        document.getElementById('studentNoInput').value = data.no;
-      }
-    } catch(e) {}
+  let data = {};
+  try {
+    const saved = localStorage.getItem('physics2_student_profile');
+    if (saved) data = JSON.parse(saved) || {};
+  } catch(e) {}
+  try {
+    const portal = JSON.parse(localStorage.getItem('pcportal.v1') || 'null');
+    if (portal && portal.profile) {
+      if (!data.name && portal.profile.name) data.name = portal.profile.name;
+      if (!data.room && portal.profile.cls) data.room = portal.profile.cls;
+      if (!data.no && portal.profile.no) data.no = String(portal.profile.no);
+      if (portal.profile.sid) data.sid = String(portal.profile.sid);
+      if (portal.profile.email) data.email = String(portal.profile.email);
+      localStorage.setItem('physics2_student_profile', JSON.stringify(data));
+    }
+  } catch(e) {}
+  if (document.getElementById('studentNameInput') && data.name) {
+    document.getElementById('studentNameInput').value = data.name;
+  }
+  if (document.getElementById('studentRoomInput') && data.room) {
+    document.getElementById('studentRoomInput').value = data.room;
+  }
+  if (document.getElementById('studentNoInput') && data.no) {
+    document.getElementById('studentNoInput').value = data.no;
   }
 }
 
@@ -1041,15 +1051,11 @@ function submitToGoogleSheets() {
     return;
   }
 
+  const DEFAULT_PHYS_URL = 'https://script.google.com/macros/s/AKfycbzuuRbnE_oB7a9vx7zZizyPVEKao31ERDTU82DvydMuRTDqVoQvgns9EsjTIzpbBjuM/exec';
   let sheetsUrl = localStorage.getItem('physics2_sheets_webhook_url');
-  if (!sheetsUrl) {
-    sheetsUrl = prompt(
-      'กรุณาใส่ Google Apps Script Web App URL สำหรับรับข้อมูลคะแนน (หากยังไม่มี ให้กดยืนยันเพื่อบันทึกจำลอง):',
-      'https://script.google.com/macros/s/AKfycbz_MOCK_PHYSICS_WEBAPP/exec'
-    );
-    if (sheetsUrl) {
-      localStorage.setItem('physics2_sheets_webhook_url', sheetsUrl);
-    }
+  if (!sheetsUrl || sheetsUrl.includes('MOCK')) {
+    sheetsUrl = DEFAULT_PHYS_URL;
+    localStorage.setItem('physics2_sheets_webhook_url', sheetsUrl);
   }
 
   const payload = {
