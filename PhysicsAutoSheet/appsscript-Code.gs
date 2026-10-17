@@ -1332,7 +1332,23 @@ function apiHubSetup_(req) {
   props_().setProperty('HUB_ROLE', role);
   if (role === 'member' && req.autoRoster) props_().setProperty('AUTO_ROSTER', '1');
   else props_().deleteProperty('AUTO_ROSTER');
+  try {
+    if (role === 'hub') book_().rename('คลังโจทย์ออนไลน์ · วิทยาศาสตร์กายภาพ (ชีตศูนย์กลาง)');
+    else if (req.autoRoster) book_().rename('ส่งงานออนไลน์ · โรงเรียนปากช่อง');
+    else book_().rename('คลังโจทย์ออนไลน์ · ฟิสิกส์');
+  } catch (e) {}
   return apiHubStatus_(req);
+}
+
+/** ฟังก์ชันช่วยเปลี่ยนชื่อไฟล์ Google Sheet ใน Google Drive ให้ตรงกับชื่อแอป (กดรันจากหน้า Apps Script ได้เลย) */
+function renameToHubSheet() {
+  book_().rename('คลังโจทย์ออนไลน์ · วิทยาศาสตร์กายภาพ (ชีตศูนย์กลาง)');
+}
+function renameToPhysicsSheet() {
+  book_().rename('คลังโจทย์ออนไลน์ · ฟิสิกส์');
+}
+function renameToWorkDeskSheet() {
+  book_().rename('ส่งงานออนไลน์ · โรงเรียนปากช่อง');
 }
 
 /* ====== ลืมรหัสผ่าน — นักเรียนยื่นคำขอ ครูอนุมัติ (รุ่น 19) ==================

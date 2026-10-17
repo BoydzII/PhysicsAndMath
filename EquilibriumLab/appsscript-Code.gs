@@ -37,6 +37,11 @@ function doGet() {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
+/** เปลี่ยนชื่อไฟล์ Google Sheet ใน Google Drive ให้ตรงกับชื่อแอป (กดรันจากหน้า Apps Script ได้เลย) */
+function renameToEquilibriumSheet() {
+  SpreadsheetApp.getActiveSpreadsheet().rename('ห้องเรียนสมดุลกล · ฟิสิกส์ ม.4');
+}
+
 function doPost(e) {
   var out;
   try {

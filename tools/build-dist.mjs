@@ -61,9 +61,9 @@ const WORK_APPS_URL = 'https://script.google.com/macros/s/AKfycbyKZicAzLfUfc7UXP
    ประทับลงทุกไฟล์เป็น BUILTIN.books แอปจะได้รู้ว่าต้องไปลงชื่อที่ไหนก่อน
    ต้องตรงกับ BOOKS ในหน้าปก (index.html) — ใบแรกของทั้งสองที่ต้องเป็นใบเดียวกัน */
 const SHEET_BOOKS = [
-  { url: PSCI_APPS_URL, name: 'ชีตวิทยาศาสตร์กายภาพ (ศูนย์กลาง)' },
-  { url: PHYS_APPS_URL, name: 'ชีตฟิสิกส์' },
-  { url: WORK_APPS_URL, name: 'ชีตส่งงาน', autoRoster: true }
+  { url: PSCI_APPS_URL, name: 'คลังโจทย์ออนไลน์ · วิทยาศาสตร์กายภาพ (ชีตศูนย์กลาง)' },
+  { url: PHYS_APPS_URL, name: 'คลังโจทย์ออนไลน์ · ฟิสิกส์' },
+  { url: WORK_APPS_URL, name: 'ส่งงานออนไลน์ · โรงเรียนปากช่อง', autoRoster: true }
 ];
 const EQ_APPS_URL = 'https://script.google.com/macros/s/AKfycbwiwNszVH4qwYNNr5o35r4JVWPbY66mM5XoQF-orwe-PmwvCM5wR9Gpw65nmQfPwT_W/exec';
 

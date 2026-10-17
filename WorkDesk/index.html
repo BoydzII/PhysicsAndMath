@@ -269,8 +269,8 @@ const urlOf = action => TEST_API || (/^reset/.test(action) ? HUB_URL : WORK_URL)
    ต้องตรงกับ BOOKS ในหน้าพอร์ทัล (index.html) */
 const PHYS_URL = 'https://script.google.com/macros/s/AKfycbzuuRbnE_oB7a9vx7zZizyPVEKao31ERDTU82DvydMuRTDqVoQvgns9EsjTIzpbBjuM/exec';
 const LOCK_BOOKS = [
-  { url: HUB_URL, name: 'ชีตศูนย์กลาง', apps: 'หน้าหลัก · คณิต · วิทย์ · เคมี · ชีวะ · วิทย์กายภาพ · สมดุลกล · ปรับพื้นฐาน' },
-  { url: PHYS_URL, name: 'ชีตฟิสิกส์', apps: 'ฟิสิกส์ ม.4' }
+  { url: HUB_URL, name: 'คลังโจทย์ออนไลน์ · วิทยาศาสตร์กายภาพ (ชีตศูนย์กลาง)', apps: 'หน้าหลัก · คณิต · วิทย์ · เคมี · ชีวะ · วิทย์กายภาพ · IJSO · ปรับพื้นฐาน' },
+  { url: PHYS_URL, name: 'คลังโจทย์ออนไลน์ · ฟิสิกส์', apps: 'ฟิสิกส์ ม.4–ม.6' }
 ];
 /** รุ่นชีตที่ต้องมีคำสั่งนี้ — ใช้บอกครูว่าต้องวางโค้ดรุ่นไหนเมื่อชีตยังเป็นรุ่นเก่า */
 const needVer = action => action === 'workMarkSave' ? 25 : /^work(Mark|Sign)/.test(action) ? 24 : /^work(Scores|Notify|NoteRead)$/.test(action) ? 22 : /^workSheet/.test(action) ? 21 : 19;

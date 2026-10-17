@@ -328,7 +328,7 @@ footer b{font-weight:700;color:var(--ink)}
 /* เลขรุ่นกับวันเวลาที่สร้างไฟล์ — tools/build-dist.mjs ประทับให้ตอนขึ้นเว็บ
    *** ห้ามลบบรรทัดเครื่องหมาย @@VER@@ ทั้งสองอัน ตัวสร้างไฟล์ใช้หาตำแหน่ง *** */
 /* @@VER@@ */
-const APP_VER = "v8.280", BUILD_AT = "2026-10-17 20:14";
+const APP_VER = "v8.281", BUILD_AT = "2026-10-17 20:29";
 /* @@VER-END@@ */
 
 /* ---- ค่าที่ต้องตั้ง ------------------------------------------------------ */
@@ -349,12 +349,12 @@ const APP_VER = "v8.280", BUILD_AT = "2026-10-17 20:14";
    เพิ่มชีตใหม่ในอนาคต: เติมหนึ่งบรรทัดที่นี่ ที่อื่นไม่ต้องแก้
    ──────────────────────────────────────────────────────────────────────────── */
 const BOOKS = [
-  { url: 'https://script.google.com/macros/s/AKfycbxVa8BYYQeIhBDmg85w2UBwsIqt6a2YudehUfCbyMny9T-5TTh1UfFxsJjTk9HLNuFc/exec', name: 'ชีตวิทยาศาสตร์กายภาพ' },
-  { url: 'https://script.google.com/macros/s/AKfycbzuuRbnE_oB7a9vx7zZizyPVEKao31ERDTU82DvydMuRTDqVoQvgns9EsjTIzpbBjuM/exec', name: 'ชีตฟิสิกส์' },
+  { url: 'https://script.google.com/macros/s/AKfycbxVa8BYYQeIhBDmg85w2UBwsIqt6a2YudehUfCbyMny9T-5TTh1UfFxsJjTk9HLNuFc/exec', name: 'คลังโจทย์ออนไลน์ · วิทยาศาสตร์กายภาพ (ชีตศูนย์กลาง)' },
+  { url: 'https://script.google.com/macros/s/AKfycbzuuRbnE_oB7a9vx7zZizyPVEKao31ERDTU82DvydMuRTDqVoQvgns9EsjTIzpbBjuM/exec', name: 'คลังโจทย์ออนไลน์ · ฟิสิกส์' },
   /* ชีตส่งงานออนไลน์ (สำเนาของชีตศูนย์กลาง) — แยกไว้เพื่อไม่ให้การอัปโหลดไฟล์ถ่วงการลงชื่อเข้าใช้
      autoRoster: รับรายชื่อนักเรียนจากบัตรผ่านของศูนย์กลางเอง และไม่รับรหัสผ่านตรง (ชีตรุ่น 20)
      ต้องตรงกับ WORK_URL ใน WorkDesk/index.html */
-  { url: 'https://script.google.com/macros/s/AKfycbyKZicAzLfUfc7UXPMrGsejrq9DyOU7w3AyinaueUsarp72UZD6w8gYbv_FtpUfasbDkw/exec', name: 'ชีตส่งงาน', autoRoster: true }
+  { url: 'https://script.google.com/macros/s/AKfycbyKZicAzLfUfc7UXPMrGsejrq9DyOU7w3AyinaueUsarp72UZD6w8gYbv_FtpUfasbDkw/exec', name: 'ส่งงานออนไลน์ · โรงเรียนปากช่อง', autoRoster: true }
 ];
 /* ใบหลัก = ใบแรกในรายการ ใช้กับวิชาที่ยังไม่มีชีตของตัวเอง (คณิต วิทย์ ชีวะ เคมี)
    ห้ามสลับใบแรกโดยไม่ย้ายข้อมูล เพราะวิชากลุ่มนั้นอ่านที่อยู่จากใบหลัก
