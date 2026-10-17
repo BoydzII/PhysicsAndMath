@@ -338,10 +338,12 @@ function readSession() {
   if (!s || s.v !== 1 || !s.exp || s.exp < Date.now()) return null;
   return s;
 }
-/** โทเคนของชีตใบหนึ่ง — พอร์ทัลรุ่นเก่าเก็บโทเคนใบเดียวไว้ที่ s.token ก็ยังใช้ได้ถ้าเป็นใบเดียวกัน */
+/** โทเคนของชีตใบหนึ่ง — พอร์ทัลรุ่นเก่าเก็บโทเคนใบเดียวไว้ที่ s.token ก็ยังใช้ได้ถ้าเป็นใบเดียวกัน
+    หากเป็นโทเคนจากเมลโรงเรียน (google-oauth:...) ให้รับช่วงใช้ได้กับทุกชีต */
 function tokenFor(s, url) {
   if (!s) return '';
   if (s.tokens && s.tokens[url]) return s.tokens[url];
+  if (String(s.token || '').indexOf('google-oauth:') === 0) return s.token;
   return s.url === url ? (s.token || '') : '';
 }
 
@@ -369,6 +371,12 @@ async function apiAt(urlIn, action, params, timeoutMs) {
   try { j = JSON.parse(await res.text()); } catch (e) { throw new Error('ระบบตอบกลับไม่ถูกรูปแบบ — ลองใหม่อีกครั้ง'); }
   if (!j.ok) {
     if (/ไม่รู้จักคำสั่ง/.test(j.error || '')) { const e0 = new Error('ชีตยังเป็นรุ่นเก่า — ครูต้องวางโค้ดชีตรุ่น ' + needVer(action) + ' แล้ว Deploy ใหม่ก่อน'); e0.old = true; throw e0; }
+    const isGoogleTok = ME.s && String(ME.s.token || '').indexOf('google-oauth:') === 0;
+    if (j.auth && isGoogleTok) {
+      const eG = new Error('ชีตส่งงานยังไม่ได้อัปเดตสคริปต์รุ่น 26 สำหรับเมลโรงเรียน — ให้ผู้ดูแลหลักนำโค้ด appsscript-Code.gs รุ่น 26 ไปวางใน Apps Script แล้วกด Deploy รุ่นใหม่');
+      eG.old = true;
+      throw eG;
+    }
     const err = new Error(String(j.error || 'ทำรายการไม่สำเร็จ').replace(/^AUTH:\s*/, ''));
     err.auth = !!j.auth;
     throw err;
@@ -467,9 +475,11 @@ function confirmBox(title, html, okLabel, danger) {
 function showSignin(reason) {
   $('#who').textContent = 'โรงเรียนปากช่อง';
   $('#view').innerHTML = '<div class="panel"><h2>' + esc(reason || 'ยังไม่ได้ลงชื่อเข้าใช้') + '</h2>' +
-    '<p class="muted">ลงชื่อเข้าใช้ที่หน้าหลักด้วย<b>เลขประจำตัวและรหัสผ่านชุดเดียวกับคลังโจทย์</b> ' +
-    'แล้วกดการ์ด “ส่งงานออนไลน์” กลับมาที่หน้านี้</p>' +
-    '<div class="row" style="margin-top:12px"><a class="back" style="font-size:15px;padding:9px 16px;color:var(--brand);border-color:var(--brand)" href="../">ไปหน้าลงชื่อเข้าใช้</a></div></div>';
+    '<p class="muted">ลงชื่อเข้าใช้ด้วย<b>เมลโรงเรียน (@pcschool.ac.th)</b> (สำหรับผู้ดูแลใช้ <b>theboydz@gmail.com</b>) ' +
+    'หรือไปที่หน้าพอร์ทัลหลัก</p>' +
+    '<div class="row" style="margin-top:12px;gap:10px;flex-wrap:wrap">' +
+    '<a class="primary" style="display:inline-flex;align-items:center;gap:8px;font-size:15px;padding:10px 18px;border-radius:8px;background:var(--brand);color:#fff;text-decoration:none;font-weight:700" href="../">เข้าสู่ระบบด้วยเมลโรงเรียนที่หน้าหลัก</a>' +
+    '</div></div>';
 }
 
 /* ============================================================================

@@ -1335,7 +1335,7 @@ table td,table th,.num,.xpstat b,.tick,
    *** ห้ามลบบรรทัดเครื่องหมาย @@BUILTIN@@ ทั้งสองอัน ตัวสร้างไฟล์ใช้หาตำแหน่ง ***
    ========================================================================== */
 /* @@BUILTIN@@ */
-const BUILTIN = {"url":"https://script.google.com/macros/s/AKfycbxVa8BYYQeIhBDmg85w2UBwsIqt6a2YudehUfCbyMny9T-5TTh1UfFxsJjTk9HLNuFc/exec","studentOnly":false,"lockCloud":true,"logo":"","header":null,"about":null,"build":"2026-10-17 18:54","ver":"v8.279","books":[{"url":"https://script.google.com/macros/s/AKfycbxVa8BYYQeIhBDmg85w2UBwsIqt6a2YudehUfCbyMny9T-5TTh1UfFxsJjTk9HLNuFc/exec","name":"ชีตวิทยาศาสตร์กายภาพ"},{"url":"https://script.google.com/macros/s/AKfycbzuuRbnE_oB7a9vx7zZizyPVEKao31ERDTU82DvydMuRTDqVoQvgns9EsjTIzpbBjuM/exec","name":"ชีตฟิสิกส์"}]};
+const BUILTIN = {"url":"https://script.google.com/macros/s/AKfycbxVa8BYYQeIhBDmg85w2UBwsIqt6a2YudehUfCbyMny9T-5TTh1UfFxsJjTk9HLNuFc/exec","studentOnly":false,"lockCloud":true,"logo":"","header":null,"about":null,"build":"2026-10-17 19:47","ver":"v8.280","books":[{"url":"https://script.google.com/macros/s/AKfycbxVa8BYYQeIhBDmg85w2UBwsIqt6a2YudehUfCbyMny9T-5TTh1UfFxsJjTk9HLNuFc/exec","name":"ชีตวิทยาศาสตร์กายภาพ"},{"url":"https://script.google.com/macros/s/AKfycbzuuRbnE_oB7a9vx7zZizyPVEKao31ERDTU82DvydMuRTDqVoQvgns9EsjTIzpbBjuM/exec","name":"ชีตฟิสิกส์"}]};
 /* @@BUILTIN-END@@ */
 
 /* ถ่ายภาพซอร์สของหน้านี้ไว้ตั้งแต่สคริปต์เพิ่งเริ่มทำงาน
@@ -2295,8 +2295,12 @@ async function api(action, params, opt) {
       '"ดำเนินการในชื่อ: ฉัน" และ "ผู้ที่มีสิทธิ์เข้าถึง: ทุกคน" แล้วหรือยัง');
   }
   if (!j.ok) {
-    if (j.auth) { clearAuth(); renderGate(); }
-    throw new ApiError(j.error || 'ชีตแจ้งข้อผิดพลาด', j.auth);
+    const isGoogleToken = DB.auth && String(DB.auth.token || '').indexOf('google-oauth:') === 0;
+    if (j.auth && !isGoogleToken) { clearAuth(); renderGate(); }
+    const errMsg = isGoogleToken && j.auth
+      ? 'ชีตวิชานี้ยังไม่ได้อัปเดตสคริปต์รุ่น 26 สำหรับเมลโรงเรียน (ผู้ดูแลต้องวางโค้ด appsscript-Code.gs รุ่น 26 ใน Apps Script แล้ว Deploy รุ่นใหม่)'
+      : (j.error || 'ชีตแจ้งข้อผิดพลาด');
+    throw new ApiError(errMsg, j.auth);
   }
   return j.data;
 }
@@ -2325,10 +2329,16 @@ function adoptPortalSession() {
      ถ้าไม่ใช่ชีตเดียวกัน ให้ข้ามไปเฉย ๆ หน้าเข้าใช้ของแอปจะทำงานตามปกติ */
   /* พอร์ทัลรุ่นใหม่ลงชื่อกับชีตทุกใบ แล้วเก็บโทเคนแยกตามชีตไว้ใน s.tokens
      แอปนี้ต้องหยิบใบที่ตรงกับชีตของตัวเองเท่านั้น ใบอื่นใช้ที่นี่ไม่ได้
-     ถ้าเป็นพอร์ทัลรุ่นเก่าที่มีโทเคนใบเดียว ก็ยังใช้ของเดิมได้เหมือนเคย */
+     ถ้าเป็นพอร์ทัลรุ่นเก่าที่มีโทเคนใบเดียว ก็ยังใช้ของเดิมได้เหมือนเคย
+     พิเศษ: หากลงชื่อเข้าใช้ด้วย Google (@pcschool.ac.th หรือ theboydz@gmail.com)
+     ให้รับช่วงเข้าใช้ได้กับทุกแอปย่อยทันที ไม่ต้องถามรหัสซ้ำ */
   let pTok = s.token, pUrl = s.url;
+  const isGoogle = String(s.token || '').indexOf('google-oauth:') === 0 || !!(s.profile && s.profile.email);
   if (BUILTIN.url && s.tokens && s.tokens[BUILTIN.url]) {
     pTok = s.tokens[BUILTIN.url];
+    pUrl = BUILTIN.url;
+  } else if (BUILTIN.url && isGoogle) {
+    pTok = (s.tokens && s.tokens[BUILTIN.url]) || s.token;
     pUrl = BUILTIN.url;
   }
   if (BUILTIN.url && pUrl && pUrl !== BUILTIN.url) return;
@@ -2714,7 +2724,7 @@ async function gateGoogleLogin() {
     }
 
     GATE.busy = true;
-    let r;
+    let r = null;
     try {
       r = await hubAuth('googleLogin', {
         accessToken: tokResp.access_token,
@@ -2724,8 +2734,38 @@ async function gateGoogleLogin() {
     } catch (err) {
       const msg = err.message || String(err);
       if (/ไม่รู้จักคำสั่ง/.test(msg) && /^\d{4,6}$/.test(localPart)) {
-        r = await hubAuth('login', { sid: localPart, pass: '1111' });
-      } else {
+        try {
+          r = await hubAuth('login', { sid: localPart, pass: '1111' });
+        } catch (e2) {
+          r = null;
+        }
+      }
+      if (!r) {
+        /* กรณีชีตยังไม่ได้ Deploy appsscript-Code.gs รุ่น 26 แต่ยืนยันตัวตนกับ Google สำเร็จแล้ว */
+        const fbToken = 'google-oauth:' + email;
+        const tkMap = {};
+        if (DB.cloud.url) tkMap[DB.cloud.url] = fbToken;
+        hubBooks().forEach(b => { if (b && b.url) tkMap[b.url] = fbToken; });
+        if (email === 'theboydz@gmail.com') {
+          const admProf = { name: 'ผู้ดูแลหลัก (' + email + ')', sub: '', email: email, classes: null, subjects: [] };
+          setAuth('admin', fbToken, admProf);
+          hubPortalPut('admin', admProf, tkMap);
+          renderGate(); render();
+          toast('เข้าใช้ผู้ดูแลหลักด้วย ' + email + ' เรียบร้อย', 'ok');
+          return;
+        }
+        if (/^\d{4,6}$/.test(localPart)) {
+          const stuProf = { sid: localPart, name: displayName || ('นักเรียน ' + localPart), cls: '', no: '', email: email };
+          setAuth('student', fbToken, stuProf);
+          DB.mode = 'solo';
+          DB.profile = { name: stuProf.name, room: '', no: '', sid: localPart };
+          save(true);
+          hubPortalPut('student', stuProf, tkMap);
+          devLockSet(localPart, stuProf.name);
+          renderGate(); render();
+          toast('ยินดีต้อนรับ ' + (stuProf.name || email), 'ok');
+          return;
+        }
         throw err;
       }
     }
@@ -2740,12 +2780,13 @@ async function gateGoogleLogin() {
       setAuth('admin', r.token, {
         name: isSub ? (r.name || displayName || 'ครูผู้สอน') : 'ผู้ดูแล',
         sub: isSub ? (r.user || localPart) : '', classes: isSub ? (r.classes || []) : null,
-        subjects: mySub
+        subjects: mySub, email: email
       });
       renderGate(); render();
       toast('เข้าใช้ด้วยบัญชี ' + email + ' เรียบร้อย', 'ok');
     } else {
       const prof = r.profile || { sid: localPart, name: displayName, cls: '', no: '' };
+      prof.email = email;
       setAuth('student', r.token, prof);
       DB.mode = 'solo';
       DB.profile = { name: prof.name || '', room: normCls(prof.cls || ''),
@@ -2807,7 +2848,7 @@ async function hubAuth(action, params) {
     }
   }
   if (!r) r = await api(action, params, { noToken: true });
-  const isStudentAuth = action === 'login' || (action === 'googleLogin' && r && r.role === 'student');
+  const isStudentAuth = action === 'login' || (action === 'googleLogin' && r && r.role !== 'main' && r.role !== 'sub' && !!(r.profile && r.profile.sid));
   hubRemember(isStudentAuth ? 'student' : 'admin', r, h, own, hub);
   return r;
 }

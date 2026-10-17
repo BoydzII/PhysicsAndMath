@@ -2723,6 +2723,7 @@ function apiGoogleLogin_(req) {
     try { CacheService.getScriptCache().remove(failKey_(sidKey_(sid))); } catch (e) {}
     return {
       token: makeToken_({ role: 'student', sid: normSid_(me.sid) || sid }),
+      role: 'student',
       profile: { sid: normSid_(me.sid) || sid, name: me.name, no: me.no, cls: me.cls, email: email },
       mustChange: false,
       hub: hubMake_({ role: 'student', sid: normSid_(me.sid) || sid,

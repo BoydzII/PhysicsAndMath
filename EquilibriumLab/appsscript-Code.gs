@@ -54,6 +54,7 @@ function route(b) {
   switch (String(b.action || '')) {
     case 'ping':        return apiPing(subject);
     case 'codeLogin':   return apiCodeLogin(subject, b);
+    case 'googleLogin': return apiGoogleLogin(subject, b);
     case 'rosterSave':  return apiRosterSave(subject, b);
     case 'rosterList':  return apiRosterList(subject);
     case 'submit':      return apiSubmit(subject, b);
@@ -129,6 +130,56 @@ function apiCodeLogin(subject, b) {
     name: String(hit.name || ''), room: String(hit.room || ''),
     no: String(hit.no || ''), sid: String(hit.sid || ''),
     token: Utilities.base64EncodeWebSafe(subject + '|' + code + '|' + Date.now()),
+    exp: Date.now() + 12 * 3600 * 1000
+  };
+}
+
+/** เข้าใช้ด้วยเมลโรงเรียน (@pcschool.ac.th) หรือแอดมิน (theboydz@gmail.com) */
+function apiGoogleLogin(subject, b) {
+  var accessToken = String(b.accessToken || '').trim();
+  var email = String(b.email || '').trim().toLowerCase();
+  var name = String(b.name || '').trim();
+  if (accessToken) {
+    var resp = UrlFetchApp.fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+      headers: { Authorization: 'Bearer ' + accessToken },
+      muteHttpExceptions: true
+    });
+    if (resp.getResponseCode() === 200) {
+      try {
+        var info = JSON.parse(resp.getContentText());
+        if (info && info.email) email = String(info.email).trim().toLowerCase();
+        if (info && info.name) name = String(info.name).trim();
+      } catch (e) {}
+    }
+  }
+  if (!email) throw new Error('ตรวจสอบบัญชี Google ไม่สำเร็จ');
+  if (email === 'theboydz@gmail.com') {
+    return {
+      role: 'teacher', name: 'ผู้ดูแลหลัก (' + email + ')', room: '', no: '', sid: '', code: '',
+      token: Utilities.base64EncodeWebSafe(subject + '|admin|' + Date.now()),
+      exp: Date.now() + 12 * 3600 * 1000
+    };
+  }
+  var parts = email.split('@');
+  var localPart = parts[0] || '';
+  var domain = parts[1] || '';
+  if (domain !== 'pcschool.ac.th') throw new Error('กรุณาใช้เมลโรงเรียน (@pcschool.ac.th)');
+  var sid = localPart.replace(/\D/g, '');
+  var r = readAll(sheetOf(SHEET_ROSTER, ROSTER_HEAD));
+  var hit = null;
+  if (sid) {
+    r.rows.forEach(function (x) {
+      if (String(x.subject || '') === subject && String(x.sid || '').trim() === sid) hit = x;
+    });
+  }
+  return {
+    role: 'student',
+    name: hit ? String(hit.name || name) : (name || ('นักเรียน ' + sid)),
+    room: hit ? String(hit.room || '') : '',
+    no: hit ? String(hit.no || '') : '',
+    sid: sid,
+    code: hit ? String(hit.code || '') : '',
+    token: Utilities.base64EncodeWebSafe(subject + '|' + (sid || email) + '|' + Date.now()),
     exp: Date.now() + 12 * 3600 * 1000
   };
 }

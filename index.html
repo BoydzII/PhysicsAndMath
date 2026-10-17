@@ -328,7 +328,7 @@ footer b{font-weight:700;color:var(--ink)}
 /* เลขรุ่นกับวันเวลาที่สร้างไฟล์ — tools/build-dist.mjs ประทับให้ตอนขึ้นเว็บ
    *** ห้ามลบบรรทัดเครื่องหมาย @@VER@@ ทั้งสองอัน ตัวสร้างไฟล์ใช้หาตำแหน่ง *** */
 /* @@VER@@ */
-const APP_VER = "v8.279", BUILD_AT = "2026-10-17 18:54";
+const APP_VER = "v8.280", BUILD_AT = "2026-10-17 19:47";
 /* @@VER-END@@ */
 
 /* ---- ค่าที่ต้องตั้ง ------------------------------------------------------ */
@@ -1089,25 +1089,28 @@ async function googleSignIn() {
 
     /* หากชีตยังไม่ได้อัปเดตรุ่น 26 แต่ยืนยันตัวตนด้วย Google @pcschool.ac.th หรือ theboydz@gmail.com สำเร็จแล้ว
        ให้สร้างเซสชันเข้าหน้าเลือกวิชาได้ทันที (เข้าวิชาที่ไม่พึ่งชีตและคลังซิมมูเลชันได้ครบ) */
+    const fbToken = 'google-oauth:' + email;
+    const fbTokens = {};
+    BOOKS.forEach(b => { if (b && b.url) fbTokens[b.url] = fbToken; });
     if (email === SUPER_ADMIN_EMAIL) {
-      showPicker(writeSession('admin', 'google-oauth:' + email, {
+      showPicker(writeSession('admin', fbToken, {
         name: 'ผู้ดูแลหลัก (' + email + ')',
         sub: '',
         email: email
-      }, {}, BOOKS[0].url));
+      }, fbTokens, BOOKS[0].url));
       if (unknownCmd) {
         sayPick('เข้าสู่ระบบผู้ดูแลหลักด้วย <b>' + email + '</b> สำเร็จแล้ว · หมายเหตุ: หากต้องการจัดการชีตคะแนนโดยไม่กรอกรหัสผ่าน ให้วางโค้ด <code>appsscript-Code.gs</code> รุ่น 26 ใน Apps Script แล้ว Deploy รุ่นใหม่');
       }
       return;
     }
     if (/^\d{4,6}$/.test(localPart)) {
-      showPicker(writeSession('student', 'google-oauth:' + email, {
+      showPicker(writeSession('student', fbToken, {
         sid: localPart,
         name: displayName || ('นักเรียน ' + localPart),
         cls: '',
         no: '',
         email: email
-      }, {}, BOOKS[0].url));
+      }, fbTokens, BOOKS[0].url));
       if (unknownCmd) {
         sayPick('เข้าสู่ระบบด้วยเมลโรงเรียน <b>' + email + '</b> สำเร็จแล้ว');
       } else if (rs[0] && rs[0].err) {
