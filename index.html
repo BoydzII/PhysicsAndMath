@@ -194,12 +194,13 @@ footer b{font-weight:700;color:var(--ink)}
       <span>เข้าสู่ระบบด้วยเมลโรงเรียน (@pcschool.ac.th)</span>
     </button>
     <p class="ghint">
-      <b>ไม่ต้องจำรหัสผ่าน!</b> นักเรียนใช้เมลโรงเรียน เช่น <b>30201@pcschool.ac.th</b> เข้าได้ทุกวิชาทันที ·
-      ผู้ดูแลระบบใช้ <b>theboydz@gmail.com</b>
+      <b>ไม่ต้องใช้รหัสผ่าน!</b> เข้าใช้งานด้วย Google เพียงคลิกเดียว<br>
+      · นักเรียน: ใช้เมลโรงเรียน เช่น <b>30201@pcschool.ac.th</b><br>
+      · ผู้ดูแลระบบ: ใช้ <b>theboydz@gmail.com</b>
     </p>
   </div>
 
-  <details class="legacy" id="legacyDetails">
+  <details class="legacy hide" id="legacyDetails" style="display:none!important">
     <summary>หรือเข้าด้วยเลขประจำตัวและรหัสผ่านแบบเดิม (สำรอง)</summary>
     <div class="seg" style="margin-top:14px">
       <button id="tabStu" class="on">นักเรียน</button>
@@ -248,8 +249,7 @@ footer b{font-weight:700;color:var(--ink)}
 
   <div class="openrow" id="openRow"></div>
   <div class="note">
-    แนะนำให้กด <b>เข้าสู่ระบบด้วยเมลโรงเรียน (@pcschool.ac.th)</b> ด้านบน จะได้ไม่ต้องจำรหัสผ่าน
-    และ <b>ชื่อ ชั้น เลขที่</b> จะถูกเติมให้เองอัตโนมัติทุกวิชา
+    เข้าสู่ระบบด้วยเมลโรงเรียน <b>(@pcschool.ac.th)</b> หรือ <b>theboydz@gmail.com</b> เพียงคลิกเดียว ไม่ต้องมีรหัสผ่านแยกอีกต่อไป
   </div>
 </div>
 
@@ -268,7 +268,7 @@ footer b{font-weight:700;color:var(--ink)}
   </div>
 
   <!-- เครื่องมือของครู — ขึ้นเฉพาะตอนครูลงชื่อเข้าใช้ -->
-  <div class="panel hide" id="teaBox" style="margin-bottom:26px">
+  <div class="panel hide" id="teaBox" style="display:none!important">
     <div class="tt">ตั้งรหัสนักเรียนให้ตรงกันทุกชีต</div>
     <p class="lead" style="margin:6px 0 0">แต่ละวิชาใช้ชีตของตัวเอง และ<b>รหัสผ่านของแต่ละชีตเก็บแยกกัน</b>
       เด็กที่รหัสสองชีตไม่ตรงกันจะเข้าได้บางวิชาและไม่ได้บางวิชา
@@ -282,7 +282,7 @@ footer b{font-weight:700;color:var(--ink)}
   </div>
 
   <!-- เชื่อมชีต — ขึ้นเฉพาะผู้ดูแลหลัก ทำครั้งเดียว -->
-  <div class="panel hide" id="hubBox" style="margin-bottom:26px">
+  <div class="panel hide" id="hubBox" style="display:none!important">
     <div class="tt">รหัสเดียวทุกวิชา — ใช้ชีตวิทยาศาสตร์กายภาพเป็นศูนย์กลาง</div>
     <p class="lead" style="margin:6px 0 0">เชื่อมแล้ว ครูและนักเรียนใช้<b>รหัสของชีตวิทยาศาสตร์กายภาพ</b>ชุดเดียว
       เข้าได้ทุกวิชา เปลี่ยนรหัสที่วิชาไหนก็มีผลทุกวิชา — ชีตอื่นจะไม่ถามรหัสของตัวเองอีก
@@ -328,7 +328,7 @@ footer b{font-weight:700;color:var(--ink)}
 /* เลขรุ่นกับวันเวลาที่สร้างไฟล์ — tools/build-dist.mjs ประทับให้ตอนขึ้นเว็บ
    *** ห้ามลบบรรทัดเครื่องหมาย @@VER@@ ทั้งสองอัน ตัวสร้างไฟล์ใช้หาตำแหน่ง *** */
 /* @@VER@@ */
-const APP_VER = "v8.281", BUILD_AT = "2026-10-17 20:29";
+const APP_VER = "v8.282", BUILD_AT = "2026-10-24 23:51";
 /* @@VER-END@@ */
 
 /* ---- ค่าที่ต้องตั้ง ------------------------------------------------------ */
@@ -728,11 +728,9 @@ function showPicker(s) {
       '<span class="bd"><h2>' + s.name + '<span class="tag">' + s.level + '</span></h2>' +
       '<p>' + s.desc + '</p></span>' +
       '<span class="go">' + icon('next', 18) + '</span></a>').join('');
-  // เครื่องมือของครูขึ้นเฉพาะตอนครูลงชื่อเข้าใช้ นักเรียนไม่ต้องเห็น
-  $('#teaBox').classList.toggle('hide', !teacher);
-  $('#hubBox').classList.toggle('hide', !(teacher && !isSub));
-  if (teacher && !isSub) hubPaint();
-  resetNotePaint(s);
+  // เข้าสู่ระบบด้วย Google โดยตรง — ไม่ต้องใช้เครื่องมือซิงค์รหัสผ่าน
+  const tb = $('#teaBox'); if (tb) tb.classList.add('hide');
+  const hb = $('#hubBox'); if (hb) hb.classList.add('hide');
   $('#loginBox').classList.add('hide');
   $('#pickBox').classList.remove('hide');
 }
@@ -1043,18 +1041,39 @@ async function googleSignIn() {
     }
 
     busy = true;
-    const rs = await hubLoginAll('googleLogin', {
-      accessToken: tokenResp.access_token,
-      email: email,
-      name: displayName
-    });
+    /* ยิง googleLogin ไปยังทุกชีตโดยตรง ไม่ต้องผ่าน Hub หรือรหัสผ่านแยก */
+    const rs = await Promise.all(BOOKS.map(async function (bk) {
+      try {
+        return { bk: bk, data: await api('googleLogin', {
+          accessToken: tokenResp.access_token,
+          email: email,
+          name: displayName
+        }, bk.url) };
+      } catch (e) {
+        return { bk: bk, err: e.message || String(e) };
+      }
+    }));
     const good = rs.filter(x => x.data && x.data.token);
+    const tokens = {};
+    good.forEach(x => { tokens[x.bk.url] = x.data.token; });
+    const fbToken = 'google-oauth:' + email;
+
+    if (email === SUPER_ADMIN_EMAIL) {
+      const primaryToken = good.length ? good[0].data.token : fbToken;
+      BOOKS.forEach(b => { if (b && b.url) tokens[b.url] = tokens[b.url] || primaryToken; });
+      showPicker(writeSession('admin', primaryToken, {
+        name: 'ผู้ดูแลหลัก (' + email + ')',
+        sub: '',
+        email: email
+      }, tokens, BOOKS[0].url));
+      return;
+    }
+
     if (good.length) {
-      const tokens = {};
-      good.forEach(x => { tokens[x.bk.url] = x.data.token; });
       const first = good[0], r = first.data;
-      if (r.role === 'main' || r.role === 'sub' || email === SUPER_ADMIN_EMAIL) {
+      if (r.role === 'main' || r.role === 'sub') {
         const isSub = r.role === 'sub';
+        BOOKS.forEach(b => { if (b && b.url) tokens[b.url] = tokens[b.url] || r.token; });
         showPicker(writeSession('admin', r.token, {
           name: isSub ? (r.name || displayName || 'ครูผู้สอน') : 'ผู้ดูแลหลัก',
           sub: isSub ? (r.user || localPart) : '',
@@ -1062,60 +1081,25 @@ async function googleSignIn() {
           classes: r.classes || null,
           subjects: r.subjects || null
         }, tokens, first.bk.url));
-      } else {
-        const prof = r.profile || { sid: localPart, name: displayName || ('นักเรียน ' + localPart), cls: '', no: '' };
-        if (prof.cls) prof.cls = normCls(prof.cls);
-        prof.email = email;
-        showPicker(writeSession('student', r.token, prof, tokens, first.bk.url));
-      }
-      return;
-    }
-
-    /* Fallback กรณีที่ชีตยังไม่ได้ Deploy appsscript-Code.gs รุ่น 26 */
-    const unknownCmd = rs.some(x => /ไม่รู้จักคำสั่ง/.test(String(x.err || '')));
-    if (unknownCmd && /^\d{4,6}$/.test(localPart)) {
-      const fbRs = await hubLoginAll('login', { sid: localPart, pass: '1111' });
-      const fbGood = fbRs.filter(x => x.data && x.data.token);
-      if (fbGood.length) {
-        const tokens = {};
-        fbGood.forEach(x => { tokens[x.bk.url] = x.data.token; });
-        const first = fbGood[0], prof = first.data.profile || {};
-        if (prof.cls) prof.cls = normCls(prof.cls);
-        prof.email = email;
-        showPicker(writeSession('student', first.data.token, prof, tokens, first.bk.url));
         return;
       }
-    }
-
-    /* หากชีตยังไม่ได้อัปเดตรุ่น 26 แต่ยืนยันตัวตนด้วย Google @pcschool.ac.th หรือ theboydz@gmail.com สำเร็จแล้ว
-       ให้สร้างเซสชันเข้าหน้าเลือกวิชาได้ทันที (เข้าวิชาที่ไม่พึ่งชีตและคลังซิมมูเลชันได้ครบ) */
-    const fbToken = 'google-oauth:' + email;
-    const fbTokens = {};
-    BOOKS.forEach(b => { if (b && b.url) fbTokens[b.url] = fbToken; });
-    if (email === SUPER_ADMIN_EMAIL) {
-      showPicker(writeSession('admin', fbToken, {
-        name: 'ผู้ดูแลหลัก (' + email + ')',
-        sub: '',
-        email: email
-      }, fbTokens, BOOKS[0].url));
-      if (unknownCmd) {
-        sayPick('เข้าสู่ระบบผู้ดูแลหลักด้วย <b>' + email + '</b> สำเร็จแล้ว · หมายเหตุ: หากต้องการจัดการชีตคะแนนโดยไม่กรอกรหัสผ่าน ให้วางโค้ด <code>appsscript-Code.gs</code> รุ่น 26 ใน Apps Script แล้ว Deploy รุ่นใหม่');
-      }
+      const prof = r.profile || { sid: localPart, name: displayName || ('นักเรียน ' + localPart), cls: '', no: '' };
+      if (prof.cls) prof.cls = normCls(prof.cls);
+      prof.email = email;
+      BOOKS.forEach(b => { if (b && b.url) tokens[b.url] = tokens[b.url] || r.token; });
+      showPicker(writeSession('student', r.token, prof, tokens, first.bk.url));
       return;
     }
+
     if (/^\d{4,6}$/.test(localPart)) {
+      BOOKS.forEach(b => { if (b && b.url) tokens[b.url] = tokens[b.url] || fbToken; });
       showPicker(writeSession('student', fbToken, {
         sid: localPart,
         name: displayName || ('นักเรียน ' + localPart),
         cls: '',
         no: '',
         email: email
-      }, fbTokens, BOOKS[0].url));
-      if (unknownCmd) {
-        sayPick('เข้าสู่ระบบด้วยเมลโรงเรียน <b>' + email + '</b> สำเร็จแล้ว');
-      } else if (rs[0] && rs[0].err) {
-        sayPick('เข้าสู่ระบบด้วยเมล <b>' + email + '</b> สำเร็จแล้ว (' + rs[0].err + ')');
-      }
+      }, tokens, BOOKS[0].url));
       return;
     }
 
