@@ -336,14 +336,18 @@ function readSession() {
   let s = null;
   try { s = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null'); } catch (e) { return null; }
   if (!s || s.v !== 1 || !s.exp || s.exp < Date.now()) return null;
+  /* บัตรผ่านสำรอง google-oauth: ที่แอปรุ่นก่อนสร้างไว้ ไม่มีลายเซ็น ชีตไม่รับ — ทิ้งแล้วให้ลงชื่อใหม่ที่หน้าหลัก */
+  const fake = t => String(t || '').indexOf('google-oauth:') === 0;
+  if (fake(s.token) || Object.values(s.tokens || {}).some(fake)) {
+    try { localStorage.removeItem(SESSION_KEY); } catch (e) {}
+    return null;
+  }
   return s;
 }
-/** โทเคนของชีตใบหนึ่ง — พอร์ทัลรุ่นเก่าเก็บโทเคนใบเดียวไว้ที่ s.token ก็ยังใช้ได้ถ้าเป็นใบเดียวกัน
-    หากเป็นโทเคนจากเมลโรงเรียน (google-oauth:...) ให้รับช่วงใช้ได้กับทุกชีต */
+/** โทเคนของชีตใบหนึ่ง — พอร์ทัลรุ่นเก่าเก็บโทเคนใบเดียวไว้ที่ s.token ก็ยังใช้ได้ถ้าเป็นใบเดียวกัน */
 function tokenFor(s, url) {
   if (!s) return '';
   if (s.tokens && s.tokens[url]) return s.tokens[url];
-  if (String(s.token || '').indexOf('google-oauth:') === 0) return s.token;
   return s.url === url ? (s.token || '') : '';
 }
 
@@ -371,12 +375,6 @@ async function apiAt(urlIn, action, params, timeoutMs) {
   try { j = JSON.parse(await res.text()); } catch (e) { throw new Error('ระบบตอบกลับไม่ถูกรูปแบบ — ลองใหม่อีกครั้ง'); }
   if (!j.ok) {
     if (/ไม่รู้จักคำสั่ง/.test(j.error || '')) { const e0 = new Error('ชีตยังเป็นรุ่นเก่า — ครูต้องวางโค้ดชีตรุ่น ' + needVer(action) + ' แล้ว Deploy ใหม่ก่อน'); e0.old = true; throw e0; }
-    const isGoogleTok = ME.s && String(ME.s.token || '').indexOf('google-oauth:') === 0;
-    if (j.auth && isGoogleTok) {
-      const eG = new Error('ชีตส่งงานยังไม่ได้อัปเดตสคริปต์รุ่น 26 สำหรับเมลโรงเรียน — ให้ผู้ดูแลหลักนำโค้ด appsscript-Code.gs รุ่น 26 ไปวางใน Apps Script แล้วกด Deploy รุ่นใหม่');
-      eG.old = true;
-      throw eG;
-    }
     const err = new Error(String(j.error || 'ทำรายการไม่สำเร็จ').replace(/^AUTH:\s*/, ''));
     err.auth = !!j.auth;
     throw err;

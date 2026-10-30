@@ -602,6 +602,12 @@ function deviceId() {
 }
 function cloudOn() { return !!(DB.cloud && DB.cloud.url); }
 function authValid() { return !!(DB.auth && DB.auth.token && DB.auth.exp > Date.now()); }
+/* บัตรผ่านสำรอง "google-oauth:อีเมล" — แอปรุ่นก่อนสร้างเองตอนชีตยังตรวจเมลไม่ได้ ไม่มีลายเซ็น ชีตไม่รับ
+   เจอเมื่อไรให้ทิ้ง แล้วให้เข้าระบบด้วยเมลใหม่ ไม่งั้นค้างอยู่ในเครื่องและทุกคำสั่งล้มเงียบ ๆ */
+function fakeTok(t) { return String(t || '').indexOf('google-oauth:') === 0; }
+function portalFake(s) {
+  return !!s && (fakeTok(s.token) || Object.values(s.tokens || {}).some(fakeTok));
+}
 function isAdmin()   { return authValid() && DB.auth.role === 'admin'; }
 /* วิชาที่ชีตใบนี้เก็บอยู่ ใช้แสดงเป็นตัวเลือกตอนตั้งสิทธิ์ครูผู้สอนเท่านั้น
    ตัวบังคับจริงคือ SUBJECTS ในไฟล์ appsscript-Code.gs
@@ -701,12 +707,15 @@ async function api(action, params, opt) {
       '"ดำเนินการในชื่อ: ฉัน" และ "ผู้ที่มีสิทธิ์เข้าถึง: ทุกคน" แล้วหรือยัง');
   }
   if (!j.ok) {
-    const isGoogleToken = DB.auth && String(DB.auth.token || '').indexOf('google-oauth:') === 0;
-    if (j.auth && !isGoogleToken) { clearAuth(); renderGate(); }
-    const errMsg = isGoogleToken && j.auth
-      ? 'ชีตวิชานี้ยังไม่ได้อัปเดตสคริปต์รุ่น 26 สำหรับเมลโรงเรียน (ผู้ดูแลต้องวางโค้ด appsscript-Code.gs รุ่น 26 ใน Apps Script แล้ว Deploy รุ่นใหม่)'
-      : (j.error || 'ชีตแจ้งข้อผิดพลาด');
-    throw new ApiError(errMsg, j.auth);
+    const wasFake = j.auth && DB.auth && fakeTok(DB.auth.token);
+    if (j.auth) {
+      clearAuth();
+      if (wasFake) { try { localStorage.removeItem('pcportal.v1'); } catch (e) {} }
+      renderGate();
+    }
+    throw new ApiError(wasFake
+      ? 'การเข้าระบบเดิมใช้กับชีตไม่ได้แล้ว — กดเข้าสู่ระบบด้วยเมลโรงเรียนอีกครั้ง'
+      : (j.error || 'ชีตแจ้งข้อผิดพลาด'), j.auth);
   }
   return j.data;
 }
@@ -724,6 +733,8 @@ async function api(action, params, opt) {
 function adoptPortalSession() {
   let s = null;
   try { s = JSON.parse(localStorage.getItem('pcportal.v1') || 'null'); } catch (e) { s = null; }
+  if (DB.auth && fakeTok(DB.auth.token)) clearAuth();
+  if (portalFake(s)) { try { localStorage.removeItem('pcportal.v1'); } catch (e) {} s = null; }
   const live = s && s.v === 1 && s.token && s.exp && s.exp > Date.now();
   if (!live) {
     if (!BUILTIN.url && DB.cloud.url && !authValid()) { DB.cloud.url = ''; clearAuth(); save(true); }
@@ -1146,34 +1157,8 @@ async function gateGoogleLogin() {
           r = null;
         }
       }
-      if (!r) {
-        /* กรณีชีตยังไม่ได้ Deploy appsscript-Code.gs รุ่น 26 แต่ยืนยันตัวตนกับ Google สำเร็จแล้ว */
-        const fbToken = 'google-oauth:' + email;
-        const tkMap = {};
-        if (DB.cloud.url) tkMap[DB.cloud.url] = fbToken;
-        hubBooks().forEach(b => { if (b && b.url) tkMap[b.url] = fbToken; });
-        if (email === 'theboydz@gmail.com') {
-          const admProf = { name: 'ผู้ดูแลหลัก (' + email + ')', sub: '', email: email, classes: null, subjects: [] };
-          setAuth('admin', fbToken, admProf);
-          hubPortalPut('admin', admProf, tkMap);
-          renderGate(); render();
-          toast('เข้าใช้ผู้ดูแลหลักด้วย ' + email + ' เรียบร้อย', 'ok');
-          return;
-        }
-        if (/^\d{4,6}$/.test(localPart)) {
-          const stuProf = { sid: localPart, name: displayName || ('นักเรียน ' + localPart), cls: '', no: '', email: email };
-          setAuth('student', fbToken, stuProf);
-          DB.mode = 'solo';
-          DB.profile = { name: stuProf.name, room: '', no: '', sid: localPart };
-          save(true);
-          hubPortalPut('student', stuProf, tkMap);
-          devLockSet(localPart, stuProf.name);
-          renderGate(); render();
-          toast('ยินดีต้อนรับ ' + (stuProf.name || email), 'ok');
-          return;
-        }
-        throw err;
-      }
+      /* ไม่สร้างบัตรผ่านสำรองอีกแล้ว (ชีตไม่รับ) — แสดงข้อความจริงจากชีต เช่น ไม่พบเลขประจำตัว */
+      if (!r) throw err;
     }
 
     const isAdm = r.role === 'main' || r.role === 'sub' || email === 'theboydz@gmail.com';

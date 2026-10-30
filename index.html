@@ -328,7 +328,7 @@ footer b{font-weight:700;color:var(--ink)}
 /* เลขรุ่นกับวันเวลาที่สร้างไฟล์ — tools/build-dist.mjs ประทับให้ตอนขึ้นเว็บ
    *** ห้ามลบบรรทัดเครื่องหมาย @@VER@@ ทั้งสองอัน ตัวสร้างไฟล์ใช้หาตำแหน่ง *** */
 /* @@VER@@ */
-const APP_VER = "v8.282", BUILD_AT = "2026-10-24 23:51";
+const APP_VER = "v8.283", BUILD_AT = "2026-10-30 12:57";
 /* @@VER-END@@ */
 
 /* ---- ค่าที่ต้องตั้ง ------------------------------------------------------ */
@@ -611,6 +611,9 @@ function readSession() {
   let s = null;
   try { s = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null'); } catch (e) { return null; }
   if (!s || s.v !== 1 || !s.exp || s.exp < Date.now()) return null;
+  /* บัตรผ่านสำรอง google-oauth: ที่รุ่นก่อนสร้างไว้ ชีตไม่รับ — ทิ้งแล้วให้ลงชื่อใหม่ */
+  const fake = t => String(t || '').indexOf('google-oauth:') === 0;
+  if (fake(s.token) || Object.values(s.tokens || {}).some(fake)) { clearSession(); return null; }
   return s;
 }
 /** เก็บการลงชื่อเข้าใช้ไว้ให้แอปทุกวิชาอ่านต่อ
@@ -1056,11 +1059,12 @@ async function googleSignIn() {
     const good = rs.filter(x => x.data && x.data.token);
     const tokens = {};
     good.forEach(x => { tokens[x.bk.url] = x.data.token; });
-    const fbToken = 'google-oauth:' + email;
+    /* ไม่เติมโทเคนของชีตอื่นหรือบัตรผ่านสำรองให้ชีตที่ลงชื่อไม่ผ่าน — ชีตแต่ละใบมีกุญแจของตัวเอง
+       เติมไปก็ใช้ไม่ได้ แอปจะล้มทีหลังแบบไม่บอกสาเหตุ ปล่อยว่างไว้ให้แอปบอกว่ายังเชื่อมชีตนั้นไม่ได้ */
+    if (!good.length) throw new Error((rs[0] && rs[0].err) || 'เข้าสู่ระบบด้วย Google ไม่สำเร็จ');
 
     if (email === SUPER_ADMIN_EMAIL) {
-      const primaryToken = good.length ? good[0].data.token : fbToken;
-      BOOKS.forEach(b => { if (b && b.url) tokens[b.url] = tokens[b.url] || primaryToken; });
+      const primaryToken = good[0].data.token;
       showPicker(writeSession('admin', primaryToken, {
         name: 'ผู้ดูแลหลัก (' + email + ')',
         sub: '',
@@ -1073,7 +1077,6 @@ async function googleSignIn() {
       const first = good[0], r = first.data;
       if (r.role === 'main' || r.role === 'sub') {
         const isSub = r.role === 'sub';
-        BOOKS.forEach(b => { if (b && b.url) tokens[b.url] = tokens[b.url] || r.token; });
         showPicker(writeSession('admin', r.token, {
           name: isSub ? (r.name || displayName || 'ครูผู้สอน') : 'ผู้ดูแลหลัก',
           sub: isSub ? (r.user || localPart) : '',
@@ -1086,20 +1089,7 @@ async function googleSignIn() {
       const prof = r.profile || { sid: localPart, name: displayName || ('นักเรียน ' + localPart), cls: '', no: '' };
       if (prof.cls) prof.cls = normCls(prof.cls);
       prof.email = email;
-      BOOKS.forEach(b => { if (b && b.url) tokens[b.url] = tokens[b.url] || r.token; });
       showPicker(writeSession('student', r.token, prof, tokens, first.bk.url));
-      return;
-    }
-
-    if (/^\d{4,6}$/.test(localPart)) {
-      BOOKS.forEach(b => { if (b && b.url) tokens[b.url] = tokens[b.url] || fbToken; });
-      showPicker(writeSession('student', fbToken, {
-        sid: localPart,
-        name: displayName || ('นักเรียน ' + localPart),
-        cls: '',
-        no: '',
-        email: email
-      }, tokens, BOOKS[0].url));
       return;
     }
 

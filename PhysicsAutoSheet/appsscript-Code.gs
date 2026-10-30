@@ -20,6 +20,22 @@
  *   4) กลับมาที่แอพ → แท็บตั้งค่า → ปุ่ม "ซ่อมโครงสร้างชีต" หนึ่งครั้ง
  *      เพื่อเติมหัวตารางของคอลัมน์ใหม่ (ข้อมูลเดิมไม่หาย)
  *
+ * ── รุ่น 27 แก้อะไร (เข้าระบบด้วยเมล — นักเรียนใช้เมลโรงเรียน ผู้ดูแลหลักใช้ theboydz@gmail.com) ──
+ *   รุ่น 26 วางแล้วแต่ล็อกอินด้วยเมลไม่ได้ทั้งสามชีต เพราะเจ้าของชีตยังไม่ได้กดอนุญาตสิทธิ์
+ *   "เชื่อมต่อบริการภายนอก" (script.external_request) ที่ใช้ถามกูเกิลว่าเป็นเมลของใครจริง
+ *   ชีตจึงตอบ error ทุกครั้ง แอปถอยไปใช้บัตรสำรองที่ชีตไม่รับ แล้วฟ้องว่า "ยังไม่ได้อัปเดตรุ่น 26"
+ *   - authorizeGoogleLogin — ฟังก์ชันให้เจ้าของชีตกด "เรียกใช้" ครั้งเดียว เพื่อกดอนุญาตสิทธิ์นี้
+ *   - เปิดลิงก์เว็บแอปตรง ๆ (GET) จะบอก googleLogin: "ready" หรือ "needAuth" ตรวจจากนอกชีตได้
+ *   - ข้อความผิดพลาดบอกตรง ๆ ว่าชีตไหนยังไม่ได้กดอนุญาต และต้องทำอะไร
+ *   - ตรวจว่าโทเคนออกให้ปุ่มเข้าสู่ระบบของคลังโจทย์จริง (client ID) โทเคนจากเว็บอื่นใช้แทนไม่ได้
+ *   วิธีวาง: ทำทั้งสามชีต (ศูนย์กลาง · ฟิสิกส์ · ส่งงาน)
+ *     1) วางโค้ดนี้ทับ → บันทึก
+ *     2) แถบเครื่องมือด้านบน เลือกฟังก์ชัน authorizeGoogleLogin → กด "เรียกใช้" → กดอนุญาตทุกข้อ
+ *        (ถ้าขึ้น "Google ไม่ได้ยืนยันแอปนี้" กด ขั้นสูง → ไปที่โปรเจกต์ (ไม่ปลอดภัย) — เป็นสคริปต์ของครูเอง)
+ *        บันทึกการดำเนินการต้องขึ้น "พร้อมแล้ว ✓"
+ *     3) การทำให้ใช้งานได้ → จัดการ → แก้ไข (รูปดินสอ) → เวอร์ชันใหม่ → ทำให้ใช้งานได้
+ *     4) ทุกคนที่เคยกดเข้าด้วยเมลไปแล้วตอนชีตยังใช้ไม่ได้ ต้องกด "ออกจากระบบ" แล้วเข้าใหม่หนึ่งครั้ง
+ *
  * ── รุ่น 25 เพิ่มอะไร (ตรวจต่อเนื่อง) ──────────────────────────────────────
  *   workMarkSave — หน้าที่เขียนตรวจทุกหน้า + คะแนน + ความเห็น ในคำขอเดียว
  *     หน้าเว็บส่งจากคิวเบื้องหลัง ครูพลิกไปตรวจคนถัดไปได้ทันทีไม่ต้องรอ
@@ -2432,7 +2448,8 @@ function json_(o) {
 }
 
 function doGet() {
-  return json_({ ok: true, service: 'quiz-bank', version: 26, subjects: SUBJECTS,
+  return json_({ ok: true, service: 'quiz-bank', version: 27, subjects: SUBJECTS,
+                 googleLogin: googleReady_(),
                  note: 'ใช้งานผ่าน POST จากแอพเท่านั้น' });
 }
 
@@ -2661,30 +2678,80 @@ function apiLogin_(req) {
    - theboydz@gmail.com -> ผู้ดูแลหลัก (Main Admin)
    - รหัสประจำตัว 5 หลัก เช่น 30201@pcschool.ac.th -> นักเรียน (ไม่ต้องใช้รหัสผ่าน และไม่บังคับตั้งรหัสใหม่)
    - อีเมลครู @pcschool.ac.th ที่ชื่อผู้ใช้ตรงกับในแผ่น teachers -> ครูผู้สอน (แอดมินรอง)
-   ตรวจสอบความถูกต้องของโทเคนกับเซิร์ฟเวอร์ Google โดยตรง (tokeninfo / userinfo) ปลอมจากหน้าเว็บไม่ได้ */
+   ตรวจสอบความถูกต้องของโทเคนกับเซิร์ฟเวอร์ Google โดยตรง (tokeninfo / userinfo) ปลอมจากหน้าเว็บไม่ได้
+   รุ่น 27: ตรวจด้วยว่าโทเคนออกให้ปุ่มเข้าสู่ระบบของคลังโจทย์ (GOOGLE_CLIENT_IDS) ไม่ใช่ของเว็บอื่น
+   ⚠ ต้องให้เจ้าของชีตรัน authorizeGoogleLogin หนึ่งครั้ง (ดูหัวไฟล์ "รุ่น 27") ไม่งั้นถามกูเกิลไม่ได้ */
 var GOOGLE_ADMIN_EMAILS = ['theboydz@gmail.com'];
 var GOOGLE_SCHOOL_DOMAIN = 'pcschool.ac.th';
+/** ต้องตรงกับ GOOGLE_CLIENT_ID ในหน้าเว็บ ถ้าสร้างปุ่มเข้าสู่ระบบใหม่ ให้เติม ID ใหม่ไว้ในรายการนี้ด้วย */
+var GOOGLE_CLIENT_IDS = ['125092357274-5q8em74tm3pfhlkvpelk1hdveq4qdlmb.apps.googleusercontent.com'];
+
+/** ให้เจ้าของชีตกด "เรียกใช้" ในหน้า Apps Script ครั้งเดียว — กูเกิลจะถามสิทธิ์เชื่อมต่อบริการภายนอก
+    ที่เว็บแอปต้องใช้ตรวจเมลตอนนักเรียนกดเข้าสู่ระบบ ไม่แตะข้อมูลในชีต */
+function authorizeGoogleLogin() {
+  var r = UrlFetchApp.fetch('https://www.googleapis.com/oauth2/v3/certs', { muteHttpExceptions: true });
+  var ok = r.getResponseCode() === 200;
+  var msg = ok ? 'พร้อมแล้ว ✓ ชีต "' + bookName_() + '" ตรวจบัญชี Google ได้ — ทำขั้นต่อไป: Deploy เวอร์ชันใหม่'
+               : 'กดอนุญาตแล้ว แต่ติดต่อกูเกิลไม่สำเร็จ (รหัส ' + r.getResponseCode() + ') ลองกดเรียกใช้อีกครั้ง';
+  Logger.log(msg);
+  try { SpreadsheetApp.getActive().toast(msg, 'เข้าระบบด้วยเมล (รุ่น 27)', 15); } catch (e) {}
+  return msg;
+}
+
+/** สถานะสำหรับหน้า GET — ลองถามกูเกิลจริงหนึ่งครั้ง จะได้รู้จากนอกชีตว่ากดอนุญาตแล้วหรือยัง */
+function googleReady_() {
+  try {
+    UrlFetchApp.fetch('https://www.googleapis.com/oauth2/v3/certs', { muteHttpExceptions: true });
+    return 'ready';
+  } catch (e) {
+    return 'needAuth';
+  }
+}
+
+/** UrlFetchApp ที่แปลข้อความ "ไม่ได้รับอนุญาต" เป็นคำบอกวิธีแก้ ไม่งั้นผู้ใช้เห็นแค่ข้อความภาษาเครื่อง */
+function googleFetch_(url, opts) {
+  try {
+    return UrlFetchApp.fetch(url, opts);
+  } catch (e) {
+    var m = String(e && e.message ? e.message : e);
+    if (/external_request|UrlFetchApp|permission|อนุญาต|สิทธิ์/i.test(m)) {
+      throw new Error('ชีต "' + bookName_() + '" ยังไม่ได้กดอนุญาตให้ตรวจเมลกับ Google — ' +
+        'ผู้ดูแลหลักต้องเปิด Apps Script ของชีตนี้ เลือกฟังก์ชัน authorizeGoogleLogin กด "เรียกใช้" แล้วกดอนุญาต (ทำครั้งเดียว)');
+    }
+    throw new Error('ติดต่อ Google เพื่อตรวจบัญชีไม่สำเร็จ ลองใหม่อีกครั้ง (' + m + ')');
+  }
+}
+function googleJson_(url, opts) {
+  var o = { muteHttpExceptions: true };
+  if (opts && opts.headers) o.headers = opts.headers;
+  var r = googleFetch_(url, o);
+  if (r.getResponseCode() !== 200) return null;
+  try { return JSON.parse(r.getContentText()); } catch (e) { return null; }
+}
+function googleClientOk_(aud) {
+  return GOOGLE_CLIENT_IDS.indexOf(String(aud || '')) >= 0;
+}
 
 function verifyGoogleToken_(req) {
   var idToken = String(req.idToken || '').trim();
   var accessToken = String(req.accessToken || '').trim();
   var info = null;
   if (accessToken) {
-    var r1 = UrlFetchApp.fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-      headers: { Authorization: 'Bearer ' + accessToken },
-      muteHttpExceptions: true
-    });
-    if (r1.getResponseCode() === 200) {
-      try { info = JSON.parse(r1.getContentText()); } catch (e) {}
+    /* tokeninfo บอกว่าโทเคนออกให้แอปไหน (azp/aud) — userinfo บอกเมลกับชื่อ */
+    var ti = googleJson_('https://oauth2.googleapis.com/tokeninfo?access_token=' + encodeURIComponent(accessToken));
+    if (ti && !googleClientOk_(ti.azp || ti.aud)) {
+      throw new Error('โทเคนนี้ไม่ได้ออกให้คลังโจทย์ออนไลน์ — กดปุ่มเข้าสู่ระบบด้วยเมลโรงเรียนจากหน้าแอปอีกครั้ง');
+    }
+    if (ti) {
+      info = googleJson_('https://www.googleapis.com/oauth2/v3/userinfo', {
+        headers: { Authorization: 'Bearer ' + accessToken }
+      }) || (ti.email ? ti : null);
+      if (info && ti.email && String(info.email).toLowerCase() !== String(ti.email).toLowerCase()) info = null;
     }
   }
   if (!info && idToken) {
-    var r2 = UrlFetchApp.fetch('https://oauth2.googleapis.com/tokeninfo?id_token=' + encodeURIComponent(idToken), {
-      muteHttpExceptions: true
-    });
-    if (r2.getResponseCode() === 200) {
-      try { info = JSON.parse(r2.getContentText()); } catch (e) {}
-    }
+    var it = googleJson_('https://oauth2.googleapis.com/tokeninfo?id_token=' + encodeURIComponent(idToken));
+    if (it && googleClientOk_(it.aud)) info = it;
   }
   if (!info || !info.email) {
     throw new Error('ตรวจสอบบัญชี Google ไม่สำเร็จ กรุณากดเข้าสู่ระบบด้วยเมลโรงเรียนใหม่อีกครั้ง');
