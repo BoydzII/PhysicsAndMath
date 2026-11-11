@@ -141,6 +141,7 @@ class DrawingEngine {
     this.undoStack = [];
     this.redoStack = [];
     this.maxHistory = 25;
+    this.strokePreSnapshot = null; // Snapshot ก่อนเริ่มสโตรกปัจจุบัน (สำหรับ Undo และ Shape Snap)
 
     this.points = [];
     this.rawStrokePoints = [];
@@ -466,6 +467,17 @@ class DrawingEngine {
     this.updateUndoRedoUI();
   }
 
+  commitStrokeUndo() {
+    if (!this.strokePreSnapshot) return;
+    this.undoStack.push(this.strokePreSnapshot);
+    if (this.undoStack.length > this.maxHistory) {
+      this.undoStack.shift();
+    }
+    this.strokePreSnapshot = null;
+    this.redoStack = [];
+    this.updateUndoRedoUI();
+  }
+
   undo() {
     if (this.undoStack.length === 0) return;
     const snap = document.createElement('canvas');
@@ -593,9 +605,9 @@ class DrawingEngine {
   }
 
   snapStraightLine(p1, p2, pts) {
-    const snap = this.undoStack.length > 0 ? this.undoStack[this.undoStack.length - 1] : null;
+    const snap = this.strokePreSnapshot || (this.undoStack.length > 0 ? this.undoStack[this.undoStack.length - 1] : null);
     if (!snap) return;
-    // คืนค่า snapshot ก่อนเริ่มลากเส้น (ดึงจาก undoStack โดยไม่ต้อง clone เพิ่ม)
+    // คืนค่า snapshot ก่อนเริ่มลากเส้น (ดึงจาก strokePreSnapshot หรือ undoStack โดยไม่ต้อง clone เพิ่ม)
     this.ctx.save();
     this.ctx.setTransform(1, 0, 0, 1, 0, 0);
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
@@ -633,7 +645,7 @@ class DrawingEngine {
   }
 
   snapClosedShape(pts) {
-    const snap = this.undoStack.length > 0 ? this.undoStack[this.undoStack.length - 1] : null;
+    const snap = this.strokePreSnapshot || (this.undoStack.length > 0 ? this.undoStack[this.undoStack.length - 1] : null);
     if (!snap) return;
     this.ctx.save();
     this.ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -687,10 +699,6 @@ class DrawingEngine {
 
       if (this.isPenPointer(e)) {
         this.penActive = true;
-        if (this.penGraceTimer) {
-          clearTimeout(this.penGraceTimer);
-          this.penGraceTimer = null;
-        }
       }
 
       const isTouch = (e.pointerType === 'touch') && !this.isPenPointer(e);
@@ -758,7 +766,14 @@ class DrawingEngine {
         return;
       }
 
-      this.pushUndoState();
+      // Zero-Latency Stroke Initiation: Snapshot ถูกแคชไว้ใน stopDraw หรือ lazy snapshot
+      // ไม่ allocate หรือ copy canvas ซ้ำใน pointerdown เด็ดขาด เพื่อให้แตะติดทันทีใน 0ms
+      if (!this.strokePreSnapshot && this.canvas && this.canvas.width > 0 && this.canvas.height > 0) {
+        this.strokePreSnapshot = document.createElement('canvas');
+        this.strokePreSnapshot.width = this.canvas.width;
+        this.strokePreSnapshot.height = this.canvas.height;
+        this.strokePreSnapshot.getContext('2d').drawImage(this.canvas, 0, 0);
+      }
       this.points = [pos];
       this.prevMid = { x: pos.x, y: pos.y };
 
@@ -930,11 +945,7 @@ class DrawingEngine {
       }
 
       if (this.isPenPointer(e)) {
-        if (this.penGraceTimer) clearTimeout(this.penGraceTimer);
-        this.penGraceTimer = setTimeout(() => {
-          this.penActive = false;
-          this.penGraceTimer = null;
-        }, 280);
+        this.penActive = false;
       }
 
       if (this.isHandScrolling && e && e.pointerId === this.handScrollPointerId) {
@@ -975,6 +986,7 @@ class DrawingEngine {
           this.highlightCtx.stroke();
         }
         this.renderHighlightComposite();
+        this.commitStrokeUndo();
         this.points = [];
         this.prevMid = null;
         this.cachedRect = null;
@@ -1003,6 +1015,7 @@ class DrawingEngine {
         }
       }
 
+      this.commitStrokeUndo();
       this.points = [];
       this.prevMid = null;
       this.cachedRect = null;
@@ -1014,8 +1027,6 @@ class DrawingEngine {
     this.canvas.addEventListener('pointermove', draw);
     this.canvas.addEventListener('pointerup', stopDraw);
     this.canvas.addEventListener('pointercancel', stopDraw);
-    window.addEventListener('pointerup', stopDraw);
-    window.addEventListener('pointercancel', stopDraw);
   }
 
   scheduleSave() {
