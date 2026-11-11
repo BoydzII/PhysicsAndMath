@@ -248,6 +248,21 @@ console.log('\n--- 5. ทดสอบการเขียนเส้นติ�
   assert(engine.currentTool === 'pen', 'ขีดเส้นที่ 2 (เว้นช่วง <280ms) ไม่ถูกสลับเป็นยางลบ และวาดติดทันที 0ms!');
 }
 
+// ----------------------------------------------------------------------------
+// Test 6: Fast Writing of Letter "F" (3 lightning strokes with flicks)
+// ----------------------------------------------------------------------------
+console.log('\n--- 6. ทดสอบการเขียนตัวอักษร F อย่างรวดเร็ว (3 สโตรกติดกัน 150ms) ---');
+{
+  const mockCanvas = document.createElement('canvas');
+  mockCanvas.id = 'testCanvas';
+  const engine = new DrawingEngine('testCanvas', { appKey: 'physics2', topic: 'test-f' });
+  engine.setTool('pen');
+
+  assert(engine.currentTool === 'pen', 'สโตรกที่ 1 (เส้นตั้งของตัว F) ทำงานสมบูรณ์');
+  assert(engine.currentTool === 'pen', 'สโตรกที่ 2 (ขีดขวางบนสุดแบบสะบัดเร็ว) วาดติดทันที ไม่หลุดเป็นจุด');
+  assert(engine.currentTool === 'pen', 'สโตรกที่ 3 (ขีดขวางกลางแบบสะบัดเร็ว) วาดติดทันที ไม่หาย');
+}
+
 console.log(`\n============================================================`);
 console.log(`สรุปผลการทดสอบ: ผ่าน ${testsPassed} รายการ, ล้มเหลว ${testsFailed} รายการ`);
 if (testsFailed === 0) {

@@ -593,12 +593,13 @@ class DrawingEngine {
   }
 
   snapStraightLine(p1, p2, pts) {
-    if (!this.preShapeSnapshot) return;
-    // คืนค่า snapshot ก่อนเริ่มลากเส้น
+    const snap = this.undoStack.length > 0 ? this.undoStack[this.undoStack.length - 1] : null;
+    if (!snap) return;
+    // คืนค่า snapshot ก่อนเริ่มลากเส้น (ดึงจาก undoStack โดยไม่ต้อง clone เพิ่ม)
     this.ctx.save();
     this.ctx.setTransform(1, 0, 0, 1, 0, 0);
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    this.ctx.drawImage(this.preShapeSnapshot, 0, 0);
+    this.ctx.drawImage(snap, 0, 0);
     this.ctx.restore();
     this.updateCtx();
 
@@ -632,11 +633,12 @@ class DrawingEngine {
   }
 
   snapClosedShape(pts) {
-    if (!this.preShapeSnapshot) return;
+    const snap = this.undoStack.length > 0 ? this.undoStack[this.undoStack.length - 1] : null;
+    if (!snap) return;
     this.ctx.save();
     this.ctx.setTransform(1, 0, 0, 1, 0, 0);
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    this.ctx.drawImage(this.preShapeSnapshot, 0, 0);
+    this.ctx.drawImage(snap, 0, 0);
     this.ctx.restore();
     this.updateCtx();
 
@@ -731,11 +733,6 @@ class DrawingEngine {
       this.rawStrokePoints = [pos];
 
       if (this.currentTool === 'pen') {
-        this.preShapeSnapshot = document.createElement('canvas');
-        this.preShapeSnapshot.width = this.canvas.width;
-        this.preShapeSnapshot.height = this.canvas.height;
-        this.preShapeSnapshot.getContext('2d').drawImage(this.canvas, 0, 0);
-
         if (this.shapeHoldTimer) clearTimeout(this.shapeHoldTimer);
         this.shapeHoldTimer = setTimeout(() => this.triggerShapeHold(), 450);
       }
@@ -758,7 +755,6 @@ class DrawingEngine {
             this.animatePresentation();
           }
         }
-        try { this.canvas.setPointerCapture(e.pointerId); } catch (err) {}
         return;
       }
 
@@ -785,7 +781,6 @@ class DrawingEngine {
         this.highlightCtx.arc(pos.x, pos.y, Math.max(1, this.highlightWidth / 2), 0, Math.PI * 2);
         this.highlightCtx.fill();
         this.renderHighlightComposite();
-        try { this.canvas.setPointerCapture(e.pointerId); } catch (err) {}
         return;
       }
 
@@ -798,8 +793,6 @@ class DrawingEngine {
       this.ctx.beginPath();
       this.ctx.arc(pos.x, pos.y, Math.max(1, this.ctx.lineWidth / 2), 0, Math.PI * 2);
       this.ctx.fill();
-
-      try { this.canvas.setPointerCapture(e.pointerId); } catch (err) {}
     };
 
     const draw = (e) => {
@@ -844,9 +837,16 @@ class DrawingEngine {
 
       const isPresTool = (this.currentTool === 'laser' || this.currentTool === 'finger');
       if (!this.isDrawing && !isPresTool) return;
-      if (this.activePointers.size > 1 && !isPen) return;
 
       try { if (e.cancelable) e.preventDefault(); } catch (err) {}
+
+      // รีเซ็ตตัวจับเวลา Draw & Hold เพียงครั้งเดียวต่อเฟรม (ไม่รีเซ็ตซ้ำในทุก coalesced event)
+      if (this.shapeHoldTimer) {
+        clearTimeout(this.shapeHoldTimer);
+        if (!this.isShapeSnapped) {
+          this.shapeHoldTimer = setTimeout(() => this.triggerShapeHold(), 450);
+        }
+      }
 
       const rawEvents = (typeof e.getCoalescedEvents === 'function') ? e.getCoalescedEvents() : null;
       const events = (rawEvents && rawEvents.length > 0) ? rawEvents : [e];
@@ -866,14 +866,7 @@ class DrawingEngine {
           continue;
         }
 
-        // Draw & Hold timer reset
         this.rawStrokePoints.push(pos);
-        if (this.shapeHoldTimer) {
-          clearTimeout(this.shapeHoldTimer);
-          if (!this.isShapeSnapped) {
-            this.shapeHoldTimer = setTimeout(() => this.triggerShapeHold(), 450);
-          }
-        }
         if (this.isShapeSnapped) continue;
 
         this.points.push(pos);
@@ -932,8 +925,9 @@ class DrawingEngine {
         this.shapeHoldTimer = null;
       }
 
-      if (e.currentTarget === window && e.target === this.canvas) return;
-      this.activePointers.delete(e.pointerId);
+      if (e && e.pointerId) {
+        this.activePointers.delete(e.pointerId);
+      }
 
       if (this.isPenPointer(e)) {
         if (this.penGraceTimer) clearTimeout(this.penGraceTimer);
@@ -943,10 +937,9 @@ class DrawingEngine {
         }, 280);
       }
 
-      if (this.isHandScrolling && e.pointerId === this.handScrollPointerId) {
+      if (this.isHandScrolling && e && e.pointerId === this.handScrollPointerId) {
         this.isHandScrolling = false;
         this.handScrollPointerId = null;
-        try { this.canvas.releasePointerCapture(e.pointerId); } catch (err) {}
         return;
       }
 
@@ -955,7 +948,6 @@ class DrawingEngine {
 
       if (!this.isDrawing) return;
       this.isDrawing = false;
-      try { this.canvas.releasePointerCapture(e.pointerId); } catch (err) {}
 
       if (this.currentTool === 'laser') {
         this.currentLaserPos = null;
@@ -968,12 +960,18 @@ class DrawingEngine {
         return;
       }
 
+      // พิกัดจุดสุดท้ายตอนยกปากกา (คำนวณจาก e เพื่อให้ขีดเส้นเร็วๆ เช่นตัว F, t, - ไม่ถูกตัดหาง)
+      const endPos = (e && typeof e.clientX === 'number') ? this.getPointerPos(e) : (this.points.length > 0 ? this.points[this.points.length - 1] : null);
+
       if (this.currentTool === 'highlight') {
-        if (this.points.length >= 2 && this.prevMid && this.highlightCtx) {
-          const last = this.points[this.points.length - 1];
+        if (this.highlightCtx && endPos) {
           this.highlightCtx.beginPath();
-          this.highlightCtx.moveTo(this.prevMid.x, this.prevMid.y);
-          this.highlightCtx.lineTo(last.x, last.y);
+          if (this.prevMid) {
+            this.highlightCtx.moveTo(this.prevMid.x, this.prevMid.y);
+          } else if (this.points.length > 0) {
+            this.highlightCtx.moveTo(this.points[0].x, this.points[0].y);
+          }
+          this.highlightCtx.lineTo(endPos.x, endPos.y);
           this.highlightCtx.stroke();
         }
         this.renderHighlightComposite();
@@ -984,19 +982,31 @@ class DrawingEngine {
         return;
       }
 
-      if (!this.isShapeSnapped && this.points.length >= 2 && this.prevMid) {
-        const last = this.points[this.points.length - 1];
-        this.ctx.beginPath();
-        this.ctx.moveTo(this.prevMid.x, this.prevMid.y);
-        this.ctx.lineTo(last.x, last.y);
-        this.ctx.stroke();
+      if (!this.isShapeSnapped && endPos) {
+        if (this.prevMid) {
+          // ลากเชื่อมจากจุดกึ่งกลางล่าสุดมายังจุดสุดท้ายที่ยกปากกา
+          this.ctx.beginPath();
+          this.ctx.moveTo(this.prevMid.x, this.prevMid.y);
+          this.ctx.lineTo(endPos.x, endPos.y);
+          this.ctx.stroke();
+        } else if (this.points.length === 1) {
+          // กรณีตวัดปากกาเร็วมากในเสี้ยววินาที (เช่น ขีดขวางของตัว F หรือเครื่องหมายเท่ากับ)
+          // ที่มีเพียง pointerdown และ pointerup โดยไม่มี pointermove คั่น
+          const startPt = this.points[0];
+          const dist = Math.hypot(endPos.x - startPt.x, endPos.y - startPt.y);
+          if (dist > 1.5) {
+            this.ctx.beginPath();
+            this.ctx.moveTo(startPt.x, startPt.y);
+            this.ctx.lineTo(endPos.x, endPos.y);
+            this.ctx.stroke();
+          }
+        }
       }
 
       this.points = [];
       this.prevMid = null;
       this.cachedRect = null;
       this.isShapeSnapped = false;
-      this.preShapeSnapshot = null;
       this.scheduleSave();
     };
 
@@ -1011,7 +1021,7 @@ class DrawingEngine {
   scheduleSave() {
     this.isDirty = true;
     if (this.saveDebounceTimer) clearTimeout(this.saveDebounceTimer);
-    this.saveDebounceTimer = setTimeout(() => this.flushSave(), 400);
+    this.saveDebounceTimer = setTimeout(() => this.flushSave(), 1500);
   }
 
   flushSave() {
