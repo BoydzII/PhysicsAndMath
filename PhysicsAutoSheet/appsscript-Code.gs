@@ -20,6 +20,13 @@
  *   4) กลับมาที่แอพ → แท็บตั้งค่า → ปุ่ม "ซ่อมโครงสร้างชีต" หนึ่งครั้ง
  *      เพื่อเติมหัวตารางของคอลัมน์ใหม่ (ข้อมูลเดิมไม่หาย)
  *
+ * ── รุ่น 28 เพิ่มอะไร (ส่งกลับให้แก้ · ส่งเพิ่มหน้า) ─────────────────────────
+ *   workReturn — ครูส่งงานกลับให้แก้พร้อมเหตุผล งานกลับไปอยู่ใน "งานที่ต้องส่ง" ของนักเรียน
+ *     และขึ้นแจ้งเตือนบนสุด (แผ่น worknotes ประเภท ret) · ส่งฉบับแก้แล้วไม่ถูกหักความช้าเพิ่ม
+ *   workSubmit รับ append: true — เพิ่มหน้าต่อท้ายชุดเดิม ไม่ต้องถ่ายใหม่ทั้งชุด
+ *   คอลัมน์ใหม่สี่คอลัมน์ต่อท้ายแผ่น worksubs เติมหัวตารางให้เองตอนใช้ครั้งแรก
+ *   ต้องวางรุ่นนี้เฉพาะชีตส่งงาน (ชีตศูนย์กลางและชีตฟิสิกส์ไม่ต้องเปลี่ยน)
+ *
  * ── รุ่น 27 แก้อะไร (เข้าระบบด้วยเมล — นักเรียนใช้เมลโรงเรียน ผู้ดูแลหลักใช้ theboydz@gmail.com) ──
  *   รุ่น 26 วางแล้วแต่ล็อกอินด้วยเมลไม่ได้ทั้งสามชีต เพราะเจ้าของชีตยังไม่ได้กดอนุญาตสิทธิ์
  *   "เชื่อมต่อบริการภายนอก" (script.external_request) ที่ใช้ถามกูเกิลว่าเป็นเมลของใครจริง
@@ -1630,11 +1637,13 @@ HEADERS.works = ['รหัสงาน', 'ชื่องาน', 'รายล
                  'การให้คะแนน', 'หักต่อวัน (%)', 'หักสูงสุด (%)', 'เปิดใช้งาน', 'สร้างเมื่อ', 'ผู้สั่ง',
                  'โฟลเดอร์ไฟล์', 'แก้ล่าสุด', 'ใบงานจากครู'];
 SHEETS.worksubs = ['id', 'code', 'sid', 'name', 'cls', 'ts', 'firstTs', 'files', 'note', 'lateMin',
-                   'raw', 'score', 'comment', 'gradedAt', 'gradedBy', 'n', 'marked', 'markedAt'];
+                   'raw', 'score', 'comment', 'gradedAt', 'gradedBy', 'n', 'marked', 'markedAt',
+                   'lateTs', 'retAt', 'retMsg', 'retBy'];
 HEADERS.worksubs = ['รหัสการส่ง', 'รหัสงาน', 'เลขประจำตัว', 'ชื่อ-นามสกุล', 'ชั้น', 'ส่งล่าสุด',
                     'ส่งครั้งแรก', 'ไฟล์', 'ข้อความถึงครู', 'ช้ากี่นาที (ตอนส่ง)', 'คะแนนที่ครูให้',
                     'คะแนนหลังหัก', 'ความเห็นครู', 'ตรวจเมื่อ', 'ผู้ตรวจ', 'ส่งกี่ครั้ง',
-                    'หน้าที่ครูเขียนตรวจ', 'เขียนตรวจเมื่อ'];
+                    'หน้าที่ครูเขียนตรวจ', 'เขียนตรวจเมื่อ',
+                    'เวลาที่ใช้คิดความช้า', 'ส่งกลับให้แก้เมื่อ', 'เหตุผลที่ส่งกลับ', 'ผู้ส่งกลับ'];
 
 function workClasses_(w) { return parseClasses_(w.cls); }
 function workActive_(w) { return String(w.active) !== 'false' && String(w.active) !== '0'; }
@@ -1687,10 +1696,20 @@ function subMarked_(s) {
 function subFiles_(s) {
   try { var f = JSON.parse(String(s.files || '[]')); return Array.isArray(f) ? f : []; } catch (e) { return []; }
 }
+/** เวลาที่ใช้คิดความช้า (รุ่น 28) — ปกติคือเวลาส่งล่าสุด
+    แต่ถ้าครูส่งกลับให้แก้ นักเรียนส่งฉบับแก้มาเมื่อไรก็ยังนับเวลาของฉบับที่ถูกส่งกลับ ไม่โดนหักเพิ่มเพราะแก้ตามที่ครูขอ */
+function subLateTs_(s) { return s.lateTs || s.ts; }
+/** ครูส่งกลับให้แก้ แล้วนักเรียนยังไม่ได้ส่งฉบับใหม่ (รุ่น 28) */
+function subReturned_(s) {
+  if (!s || !s.retAt) return false;
+  var r = new Date(s.retAt).getTime(), t = s.ts ? new Date(s.ts).getTime() : 0;
+  return !isNaN(r) && !(t > r);
+}
 /** สถานะการส่งของนักเรียนหนึ่งคนในงานหนึ่งงาน ในรูปที่หน้าเว็บใช้ */
 function subPublic_(w, s) {
   if (!s) return null;
-  var files = subFiles_(s), late = lateMinOf_(w, s.ts), graded = s.raw !== '' && s.raw != null;
+  var files = subFiles_(s), late = lateMinOf_(w, subLateTs_(s)), graded = s.raw !== '' && s.raw != null;
+  var ret = subReturned_(s);
   return { ts: isoOf_(s.ts), firstTs: isoOf_(s.firstTs), n: Number(s.n) || (files.length ? 1 : 0),
            files: files, note: String(s.note || ''), lateMin: files.length ? late : 0,
            penalty: files.length ? workPenalty_(w, late) : 0,
@@ -1699,7 +1718,9 @@ function subPublic_(w, s) {
            comment: String(s.comment || ''), gradedAt: isoOf_(s.gradedAt),
            marked: subMarked_(s), markedAt: isoOf_(s.markedAt),
            /* ส่งใหม่หลังครูตรวจไปแล้ว ครูต้องเห็นว่ามีของใหม่ให้ดู */
-           resent: !!(graded && files.length && s.gradedAt && new Date(s.ts) > new Date(s.gradedAt)) };
+           resent: !!(graded && files.length && s.gradedAt && new Date(s.ts) > new Date(s.gradedAt)),
+           /* ส่งกลับให้แก้ (รุ่น 28) — returned = ยังรอนักเรียนส่งฉบับแก้ · retAt ยังอยู่หลังส่งแล้วไว้บอกประวัติ */
+           returned: ret, retAt: isoOf_(s.retAt), retMsg: String(s.retMsg || ''), retBy: String(s.retBy || '') };
 }
 function newWorkCode_() {
   var abc = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789', used = {};
@@ -1798,7 +1819,8 @@ function apiWorkList_(req) {
       if (!p) return;
       if (p.files.length) { st.sent++; if (p.lateMin > 0) st.late++; }
       if (p.graded) st.graded++;
-      if (p.files.length && (!p.graded || p.resent)) st.toGrade++;
+      if (p.files.length && (!p.graded || p.resent) && !p.returned) st.toGrade++;
+      if (p.returned) st.returned = (st.returned || 0) + 1;
     });
     var o = workPublic_(w);
     o.stats = st;
@@ -1850,7 +1872,7 @@ function apiWorkGrade_(req) {
       }
       s.raw = raw;
       if (it.comment != null) s.comment = String(it.comment).slice(0, 1000);
-      var late = subFiles_(s).length ? lateMinOf_(w, s.ts) : 0;
+      var late = subFiles_(s).length ? lateMinOf_(w, subLateTs_(s)) : 0;
       s.score = workFinal_(w, raw, late);
       s.gradedAt = raw === '' ? '' : now; s.gradedBy = raw === '' ? '' : by;
       if (s._row) writeRow_('worksubs', s._row, s); else fresh.push(s);
@@ -1930,7 +1952,9 @@ function apiWorkMine_(req) {
     return o;
   });
   list.sort(function (a, b) { return a.dueAt < b.dueAt ? -1 : a.dueAt > b.dueAt ? 1 : 0; });
-  return { cls: cls, works: list, risk: riskOf_(list, Date.now()), now: Date.now(), notes: myNotes_(k) };
+  /* v บอกหน้าเว็บว่าชีตรองรับอะไร — รุ่น 28 รับการส่งเพิ่มหน้า (append) ชีตรุ่นเก่าจะเพิกเฉยแล้วแทนไฟล์ทั้งชุด
+     หน้าเว็บจึงเปิดตัวเลือกเพิ่มหน้าเฉพาะเมื่อ v >= 28 */
+  return { v: 28, cls: cls, works: list, risk: riskOf_(list, Date.now()), now: Date.now(), notes: myNotes_(k) };
 }
 
 /* ── คะแนนรวมรายวิชา · แจ้งเตือนนักเรียน (รุ่น 22) ─────────────────────────
@@ -2076,10 +2100,11 @@ function apiWorkUpload_(req) {
   return { id: file.getId(), name: name, mime: mime, size: bytes.length };
 }
 
-/** นักเรียนกดส่ง — ไฟล์ชุดใหม่แทนชุดเดิมทั้งหมด ไฟล์เก่าย้ายไปถังขยะของ Drive (กู้คืนได้ 30 วัน) */
+/** นักเรียนกดส่ง — ปกติไฟล์ชุดใหม่แทนชุดเดิมทั้งหมด ไฟล์เก่าย้ายไปถังขยะของ Drive (กู้คืนได้ 30 วัน)
+    append: true (รุ่น 28) = เพิ่มหน้าต่อท้ายชุดเดิม ไม่ลบของเดิม — ลืมหน้าเดียวไม่ต้องถ่ายใหม่ทั้งชุด */
 function apiWorkSubmit_(req) {
   var x = studentWork_(req), me = x.me, w = x.w, key = sidKey_(me.sid);
-  var ids = (req.files || []).map(String);
+  var ids = (req.files || []).map(String), append = req.append === true;
   if (!ids.length) throw new Error('ยังไม่ได้แนบไฟล์');
   if (ids.length > WORK_FILES_PER_SUB) throw new Error('ส่งได้ไม่เกิน ' + WORK_FILES_PER_SUB + ' ไฟล์ต่อครั้ง');
   if (!w.folderId) throw new Error('ยังไม่มีไฟล์ที่อัปโหลดของงานนี้');
@@ -2101,19 +2126,76 @@ function apiWorkSubmit_(req) {
     s = (subsByCode_()[String(w.code).toUpperCase()] || {})[key];
     var old = s ? subFiles_(s) : [];
     if (!s) s = { id: 'S' + Utilities.getUuid().replace(/-/g, '').slice(0, 12), code: String(w.code), raw: '', score: '', comment: '', gradedAt: '', gradedBy: '', n: 0 };
+    /* ส่งฉบับแก้ตามที่ครูส่งกลับ — ความช้ายังนับจากฉบับก่อน (ต้องเช็กก่อนเปลี่ยน ts) */
+    var wasReturned = old.length > 0 && subReturned_(s);
+    var prevLateTs = old.length ? subLateTs_(s) : '';
+    if (append) {
+      var seen = {};
+      old.forEach(function (f) { seen[f.id] = 1; });
+      files = old.concat(files.filter(function (f) { return !seen[f.id]; }));
+      if (files.length > WORK_FILES_PER_SUB) {
+        throw new Error('รวมกับชุดเดิมแล้วเกิน ' + WORK_FILES_PER_SUB + ' ไฟล์ — เลือก “ส่งใหม่ทั้งชุด” แทน');
+      }
+    }
     s.sid = me.sid; s.name = String(me.name || ''); s.cls = me.cls;
     s.ts = now; if (!s.firstTs) s.firstTs = now;
-    s.files = JSON.stringify(files); s.note = String(req.note || '').slice(0, 500);
-    s.lateMin = lateMinOf_(w, now); s.n = (Number(s.n) || 0) + 1;
+    s.lateTs = wasReturned && prevLateTs ? prevLateTs : now;
+    s.files = JSON.stringify(files);
+    /* เพิ่มหน้าโดยไม่ได้พิมพ์ข้อความใหม่ ข้อความเดิมยังอยู่ */
+    if (!append || String(req.note || '').trim()) s.note = String(req.note || '').slice(0, 500);
+    s.lateMin = lateMinOf_(w, s.lateTs); s.n = (Number(s.n) || 0) + 1;
     s.score = workFinal_(w, s.raw, s.lateMin);
+    fillHead_('worksubs');
     if (s._row) writeRow_('worksubs', s._row, s); else appendRow_('worksubs', s);
     var keep = {};
-    ids.forEach(function (id) { keep[id] = 1; });
+    files.forEach(function (f) { keep[f.id] = 1; });
     old.forEach(function (f) { if (!keep[f.id]) { try { DriveApp.getFileById(f.id).setTrashed(true); } catch (e) {} } });
   } finally {
     lock.releaseLock();
   }
   return { work: workPublic_(w), sub: subPublic_(w, s) };
+}
+
+/** ครูส่งงานกลับให้แก้ (รุ่น 28) — เฉพาะคนที่ส่งไฟล์มาแล้ว ต้องมีเหตุผลเสมอ
+    งานกลับไปอยู่ใน "งานที่ต้องส่ง" ของนักเรียนพร้อมเหตุผล และขึ้นแจ้งเตือนบนสุดจนกว่าจะกดรับทราบ
+    ส่งฉบับแก้มาแล้วไม่ถูกหักความช้าเพิ่ม (ดู subLateTs_) · คะแนนที่ให้ไว้แล้วยังอยู่ ครูให้ใหม่ได้ */
+function apiWorkReturn_(req) {
+  var t = needAdmin_(req), sc = scopeOf_(t);
+  var w = findWork_(req.code);
+  if (!w || !workActive_(w) || !workVisible_(sc, w)) throw new Error('ไม่พบงานนี้');
+  var msg = String(req.msg || '').trim().slice(0, 500);
+  if (!msg) throw new Error('ใส่เหตุผลที่ส่งกลับ นักเรียนจะได้รู้ว่าต้องแก้อะไร');
+  var want = {};
+  (req.sids || []).forEach(function (x) { want[sidKey_(x)] = 1; });
+  if (!Object.keys(want).length) throw new Error('ยังไม่ได้เลือกนักเรียน');
+  var roster = {};
+  rosterOf_(workClasses_(w), sc).forEach(function (s) { roster[sidKey_(s.sid)] = s; });
+  var by = t.sub ? (function () { var tt = findTeacher_(t.sub); return tt && tt.name ? String(tt.name) : t.sub; })() : 'ผู้ดูแลหลัก';
+  var now = new Date(), out = [], notes = [];
+  var lock = LockService.getScriptLock();
+  lock.waitLock(25000);
+  try {
+    var mine = subsByCode_()[String(w.code).toUpperCase()] || {};
+    fillHead_('worksubs');
+    Object.keys(want).forEach(function (k) {
+      var st = roster[k], s = mine[k];
+      if (!st) throw new Error('เลขประจำตัว ' + k + ' ไม่อยู่ในชั้นของงานนี้ หรือไม่ได้อยู่ในความดูแลของคุณ');
+      if (!s || !subFiles_(s).length) throw new Error(String(st.name || k) + ' ยังไม่ได้ส่งไฟล์ ส่งกลับไม่ได้');
+      s.retAt = now; s.retMsg = msg; s.retBy = by;
+      writeRow_('worksubs', s._row, s);
+      out.push({ sid: normSid_(st.sid), sub: subPublic_(w, s) });
+      notes.push({ id: 'N' + Utilities.getUuid().replace(/-/g, '').slice(0, 12), code: String(w.code), sid: normSid_(st.sid),
+                   cls: st.cls, kind: 'ret', msg: msg, ts: now, by: by, readAt: '' });
+    });
+    var head = SHEETS.worknotes, sh = sheet_('worknotes');
+    sh.getRange(sh.getLastRow() + 1, 1, notes.length, head.length).setValues(notes.map(function (o) {
+      return head.map(function (k) { return o[k]; });
+    }));
+    dropCache_('worknotes');
+  } finally {
+    lock.releaseLock();
+  }
+  return { rows: out };
 }
 
 /** เปิดไฟล์ — ครูที่ดูแลชั้นของเจ้าของงาน หรือเจ้าของไฟล์เอง */
@@ -2282,7 +2364,7 @@ function apiWorkMarkSave_(req) {
       fillHead_('worksubs');
     }
     if (hasRaw) {
-      var late = subFiles_(s).length ? lateMinOf_(w, s.ts) : 0;
+      var late = subFiles_(s).length ? lateMinOf_(w, subLateTs_(s)) : 0;
       s.raw = raw;
       s.score = workFinal_(w, raw, late);
       s.gradedAt = raw === '' ? '' : new Date();
@@ -2531,6 +2613,7 @@ function route_(action, req) {
     case 'workMine':      return apiWorkMine_(req);
     case 'workUpload':    return apiWorkUpload_(req);
     case 'workSubmit':    return apiWorkSubmit_(req);
+    case 'workReturn':    return apiWorkReturn_(req);
     case 'workFile':      return apiWorkFile_(req);
     case 'workSheetAdd':  return apiWorkSheetAdd_(req);
     case 'workSheetDel':  return apiWorkSheetDel_(req);

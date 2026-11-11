@@ -284,7 +284,7 @@ const LOCK_BOOKS = [
   { url: PHYS_URL, name: 'คลังโจทย์ออนไลน์ · ฟิสิกส์', apps: 'ฟิสิกส์ ม.4–ม.6' }
 ];
 /** รุ่นชีตที่ต้องมีคำสั่งนี้ — ใช้บอกครูว่าต้องวางโค้ดรุ่นไหนเมื่อชีตยังเป็นรุ่นเก่า */
-const needVer = action => action === 'workMarkSave' ? 25 : /^work(Mark|Sign)/.test(action) ? 24 : /^work(Scores|Notify|NoteRead)$/.test(action) ? 22 : /^workSheet/.test(action) ? 21 : 19;
+const needVer = action => action === 'workReturn' ? 28 : action === 'workMarkSave' ? 25 : /^work(Mark|Sign)/.test(action) ? 24 : /^work(Scores|Notify|NoteRead)$/.test(action) ? 22 : /^workSheet/.test(action) ? 21 : 19;
 const SESSION_KEY = 'pcportal.v1';
 
 const IMG_MAX_SIDE = 1600;          /* ด้านยาวของรูปหลังย่อ อ่านลายมือได้ชัด ไฟล์ราว 250–450 KB */
@@ -540,8 +540,11 @@ function studentAutoReload() {
   });
 }
 
+/** งานที่ยังต้องทำ — ยังไม่ส่ง หรือครูส่งกลับให้แก้ (ชีตรุ่น 28) */
+const stuTodo = w => !(w.sub && (w.sub.files.length || w.sub.graded)) || !!(w.sub && w.sub.returned);
 function stuStatus(w, now) {
   const s = w.sub;
+  if (s && s.returned) return '<span class="chip bad">ครูส่งกลับให้แก้</span>';
   if (s && s.graded) {
     return '<span class="chip ok">ได้ ' + fmtN(s.score) + '/' + fmtN(w.max) + '</span>' +
       (s.files.length && s.lateMin > 0 ? ' <span class="chip warn">ส่งช้า</span>' : '');
@@ -557,8 +560,9 @@ function studentRender() {
   const d = STU.data, now = Date.now();
   /* งานที่ต้องส่งเรียงตามกำหนดส่ง — เลยกำหนดนานสุดอยู่บน ตามด้วยงานที่ใกล้ถึงกำหนด */
   const dueMs = w => new Date(w.dueAt).getTime() || Infinity;
-  const todo = d.works.filter(w => !(w.sub && (w.sub.files.length || w.sub.graded))).sort((a, b) => dueMs(a) - dueMs(b));
-  const done = d.works.filter(w => w.sub && (w.sub.files.length || w.sub.graded)).reverse();
+  /* งานที่ครูส่งกลับให้แก้อยู่บนสุด ตามด้วยงานที่ยังไม่ส่งเรียงตามกำหนด */
+  const todo = d.works.filter(stuTodo).sort((a, b) => (b.sub && b.sub.returned ? 1 : 0) - (a.sub && a.sub.returned ? 1 : 0) || dueMs(a) - dueMs(b));
+  const done = d.works.filter(w => !stuTodo(w)).reverse();
   const r = d.risk;
   let h = '';
   /* เตือนนักเรียนเองด้วย ไม่ใช่แค่ครูเห็น — เด็กส่วนใหญ่ไม่รู้ว่าตัวเองค้างกี่งานจนปลายภาค */
@@ -586,7 +590,8 @@ function studentRender() {
   /* ข้อความแจ้งเตือนจากครู — อยู่บนสุดจนกว่านักเรียนจะกดรับทราบ (ชีตรุ่นเก่าไม่ส่ง notes มา ก็ไม่ขึ้นอะไร) */
   const notes = d.notes || [];
   if (notes.length) {
-    const K = { miss: ['bad', '🔔', 'ยังไม่ส่งงาน'], late: ['warn', '⏰', 'ส่งไม่ตรงกำหนด'], ontime: ['ok', '🌟', 'ส่งตรงกำหนด'] };
+    const K = { miss: ['bad', '🔔', 'ยังไม่ส่งงาน'], late: ['warn', '⏰', 'ส่งไม่ตรงกำหนด'], ontime: ['ok', '🌟', 'ส่งตรงกำหนด'],
+                ret: ['warn', '↩️', 'ครูส่งกลับให้แก้'] };
     h = '<div class="panel"><div class="row"><h2 style="margin:0">ข้อความจากครู</h2><span class="chip bad">' + notes.length + '</span></div>' +
       notes.map(n => { const k = K[n.kind] || K.miss;
         return '<div class="notice ' + k[0] + '" style="display:flex;gap:10px;align-items:flex-start"><span style="font-size:20px;line-height:1.3">' + k[1] + '</span>' +
@@ -621,6 +626,12 @@ function peerLine(w) {
 
 /* ไฟล์ที่เลือกไว้แต่ยังไม่ส่ง — เก็บในหน่วยความจำเท่านั้น ปิดหน้าไปแล้วต้องเลือกใหม่ */
 let PENDING = [];
+/* ส่งแบบเพิ่มหน้าต่อท้ายชุดเดิม (true) หรือแทนทั้งชุด (false) — ตั้งใหม่ทุกครั้งที่เปิดงาน */
+let APPEND = false;
+/** ความช้าถ้าส่งตอนนี้ — งานที่ครูส่งกลับให้แก้ ยังนับเวลาของฉบับก่อน (ต้องตรงกับ subLateTs_ ในโค้ดชีต) */
+const lateIfSendNow = w => w.sub && w.sub.returned ? w.sub.lateMin : lateMinAt(w, Date.now());
+/** ไฟล์ทั้งหมดหลังส่ง — ใช้กันเกินจำนวนสูงสุดตอนเพิ่มหน้า */
+const filesAfter = w => PENDING.length + (APPEND && w.sub ? w.sub.files.length : 0);
 
 function studentOpen(code) {
   const w = STU.data.works.find(x => x.code === code);
@@ -631,6 +642,12 @@ function studentOpen(code) {
   let h = '<h2 style="padding-right:56px">' + esc(w.title) + '</h2>' +
     '<div class="muted small">' + (w.subject ? esc(w.subject) + ' · ' : '') + 'คะแนนเต็ม ' + fmtN(w.max) + ' · ' + ruleText(w) + '</div>' +
     '<div class="small" style="margin-top:4px">' + dueLine(w, now) + '</div>';
+  if (s && s.returned) {
+    h += '<div class="notice bad" style="margin-top:12px"><b>↩️ ครูส่งงานนี้กลับให้แก้</b>' +
+      (s.retMsg ? '<div style="margin-top:4px;white-space:pre-wrap">' + esc(s.retMsg) + '</div>' : '') +
+      '<div class="small">' + esc(s.retBy || 'ครู') + ' · ' + thDate(s.retAt, true) + '</div>' +
+      '<div class="small" style="margin-top:4px">แก้แล้วส่งด้านล่าง — ฉบับแก้<b>ไม่ถูกหักคะแนนเพิ่ม</b>เพราะส่งช้า</div></div>';
+  }
   if (w.detail) h += '<div class="detail" style="margin-top:10px">' + esc(w.detail) + '</div>';
   if ((w.sheets || []).length) {
     h += '<h3>ใบงานจากครู</h3><div class="shlist">' + w.sheets.map(f =>
@@ -666,7 +683,14 @@ function studentOpen(code) {
       '<div class="muted small" style="margin-top:6px"><span class="dot y" style="margin-left:0"></span>ส่งแล้ว<span class="dot n"></span>ยังไม่ส่ง · กรอบดำคือคุณ — ช่วยเตือนเพื่อนที่ยังไม่ส่งด้วยนะ</div>';
   }
 
-  h += '<h3>' + (s && s.files.length ? 'ส่งใหม่ <span class="muted small">(แทนไฟล์ชุดเดิมทั้งหมด)</span>' : 'แนบงาน') + '</h3>' +
+  /* ส่งแล้ว เลือกได้ว่าจะเพิ่มหน้าต่อท้ายชุดเดิม หรือส่งใหม่ทั้งชุด (ชีตรุ่น 28 ขึ้นไป — รุ่นเก่าแทนทั้งชุดเสมอ)
+     ค่าตั้งต้น: งานที่ครูส่งกลับให้แก้ = ส่งใหม่ทั้งชุด · อื่น ๆ = เพิ่มหน้า (ลืมหน้าเดียวไม่ต้องถ่ายใหม่หมด) */
+  const canAppend = !!(s && s.files.length && (STU.data.v || 0) >= 28);
+  APPEND = canAppend && !s.returned;
+  h += '<h3>' + (s && s.files.length ? (s.returned ? 'ส่งฉบับแก้' : 'ส่งเพิ่ม / ส่งใหม่') : 'แนบงาน') + '</h3>' +
+    (canAppend ? '<div class="seg2" data-amode style="margin-bottom:6px"><button data-am="add">เพิ่มหน้าต่อจากชุดเดิม (' + s.files.length + ' ไฟล์)</button>' +
+      '<button data-am="new">ส่งใหม่ทั้งชุด</button></div><div class="muted small" data-amhint style="margin-bottom:8px"></div>'
+      : s && s.files.length ? '<div class="muted small" style="margin-bottom:8px">ไฟล์ที่ส่งตอนนี้จะแทนไฟล์ชุดเดิมทั้งหมด</div>' : '') +
     '<div class="pick-btns">' +
       '<label>' + icon('camera', 22) + '<span>ถ่ายรูป / เลือกรูป</span><input type="file" accept="image/*" multiple data-img></label>' +
       '<label>' + icon('doc', 22) + '<span>แนบไฟล์ PDF</span><input type="file" accept="application/pdf" data-pdf></label>' +
@@ -683,6 +707,16 @@ function studentOpen(code) {
   sh.ask = 'งานนี้ยังไม่ได้ส่ง ปิดแล้วรูปที่เลือกและข้อความที่พิมพ์ไว้จะหาย ต้องเลือกใหม่';
   sh.dirty = () => !SENDING && (PENDING.length > 0 || !!$('[data-note]', root).value.trim());
   const paint = () => paintPending(root, w);
+  const paintAm = () => {
+    const box = $('[data-amode]', root);
+    if (!box) return;
+    $$('[data-am]', box).forEach(b => b.classList.toggle('on', (b.dataset.am === 'add') === APPEND));
+    $('[data-amhint]', root).textContent = APPEND
+      ? 'ไฟล์ที่เลือกจะต่อท้ายชุดเดิม ของเดิมยังอยู่ครบ'
+      : 'ไฟล์ที่เลือกจะแทนชุดเดิมทั้งหมด (ชุดเดิมย้ายไปถังขยะ)';
+  };
+  $$('[data-am]', root).forEach(b => b.addEventListener('click', () => { APPEND = b.dataset.am === 'add'; paintAm(); paint(); }));
+  paintAm();
   $('[data-img]', root).addEventListener('change', e => { addFiles(Array.from(e.target.files || []), 'img').then(paint); e.target.value = ''; });
   $('[data-pdf]', root).addEventListener('change', e => { addFiles(Array.from(e.target.files || []), 'pdf').then(paint); e.target.value = ''; });
   $$('[data-see]', root).forEach(b => b.addEventListener('click', () => viewOwnFile(b.dataset.see, b)));
@@ -728,12 +762,17 @@ function paintPending(root, w) {
   }));
   $('[data-send]', root).disabled = !PENDING.length;
   /* บอกล่วงหน้าตั้งแต่ก่อนกดส่ง ว่าตอนนี้ส่งไปจะช้าแค่ไหนและโดนหักเท่าไร */
-  const late = lateMinAt(w, Date.now());
-  $('[data-latewarn]', root).innerHTML = late > 0
+  const over = filesAfter(w) > FILES_MAX;
+  const ret = !!(w.sub && w.sub.returned), late = lateIfSendNow(w);
+  $('[data-latewarn]', root).innerHTML =
+    (over ? '<div class="notice bad">รวมกับชุดเดิมแล้วเกิน ' + FILES_MAX + ' ไฟล์ — เอาออกบางหน้า หรือเลือก “ส่งใหม่ทั้งชุด”</div>' : '') +
+    (ret ? (late > 0 ? '<div class="notice info">ฉบับแก้นับเวลาส่งตามฉบับก่อน (ช้า ' + spanText(late) + ') ไม่ถูกหักเพิ่ม</div>' : '')
+    : late > 0
     ? '<div class="notice warn">ตอนนี้เลยกำหนดส่งมา <b>' + spanText(late) + '</b> — ' +
       (w.mode === 'late' ? 'ส่งตอนนี้คะแนนงานนี้จะถูกหัก <b>' + penaltyOf(w, late) + '%</b>' : 'ส่งได้ งานนี้ไม่หักคะแนน') +
-      (w.sub && w.sub.files.length && !(w.sub.lateMin > 0) ? '<br>คุณเคยส่งทันเวลาแล้ว ถ้าส่งใหม่ตอนนี้จะนับเป็น<b>ส่งช้า</b>' : '') + '</div>'
-    : (w.sub && w.sub.files.length ? '<div class="notice info">ส่งใหม่ได้จนถึงกำหนดส่งโดยไม่ถือว่าช้า</div>' : '');
+      (w.sub && w.sub.files.length && !(w.sub.lateMin > 0) ? '<br>คุณเคยส่งทันเวลาแล้ว ถ้าส่ง' + (APPEND ? 'เพิ่ม' : 'ใหม่') + 'ตอนนี้จะนับเป็น<b>ส่งช้า</b>' : '') + '</div>'
+    : (w.sub && w.sub.files.length ? '<div class="notice info">ส่งเพิ่มหรือส่งใหม่ได้จนถึงกำหนดส่งโดยไม่ถือว่าช้า</div>' : ''));
+  if (over) $('[data-send]', root).disabled = true;
 }
 
 /** ย่อรูปก่อนส่ง — รูปจากกล้องมือถือ 3–6 MB ส่งช้าบนเน็ตโรงเรียน ย่อแล้วยังอ่านลายมือได้ชัด */
@@ -776,10 +815,12 @@ function blobToBase64(blob) {
 let SENDING = false;
 async function studentSend(w, root, sh) {
   if (SENDING || !PENDING.length) return;
-  const late = lateMinAt(w, Date.now());
-  if (late > 0) {
+  if (filesAfter(w) > FILES_MAX) return toast('รวมกับชุดเดิมแล้วเกิน ' + FILES_MAX + ' ไฟล์', 3600);
+  const late = lateIfSendNow(w);
+  /* ฉบับแก้ที่ครูส่งกลับไม่ถูกหักเพิ่ม จึงไม่ต้องถามยืนยันเรื่องส่งช้า */
+  if (late > 0 && !(w.sub && w.sub.returned)) {
     /* กล่องยืนยันเปิดทับแผ่นเดิม พอปิดแล้วต้องเปิดแผ่นงานกลับมาพร้อมไฟล์ที่เลือกไว้ ไม่ว่าจะกดส่งหรือยกเลิก */
-    const keep = PENDING.slice(), keepNote = $('[data-note]', root).value;
+    const keep = PENDING.slice(), keepNote = $('[data-note]', root).value, keepAppend = APPEND;
     const yes = await confirmBox('ส่งช้ากว่ากำหนด',
       '<div class="notice warn">คุณส่งช้ากว่ากำหนด <b>' + spanText(late) + '</b><br>' +
       (w.mode === 'late' ? 'คะแนนงานนี้จะถูกหัก <b>' + penaltyOf(w, late) + '%</b> (' + ruleText(w) + ')' : 'งานนี้ครูตั้งไว้ว่าไม่หักคะแนน') + '</div>' +
@@ -788,6 +829,7 @@ async function studentSend(w, root, sh) {
     PENDING = keep;
     root = sh.root;
     $('[data-note]', root).value = keepNote;      /* ข้อความถึงครูที่พิมพ์ไว้ต้องกลับมาด้วย ไม่ใช่แค่ไฟล์ */
+    if (APPEND !== keepAppend) { const b = $('[data-am="' + (keepAppend ? 'add' : 'new') + '"]', root); if (b) b.click(); }
     paintPending(root, w);
     if (!yes) return;
   }
@@ -821,19 +863,21 @@ async function studentSend(w, root, sh) {
     }
     pt.textContent = 'กำลังบันทึกการส่ง…';
     const note = $('[data-note]', root).value || '';
-    const r = await api('workSubmit', { code: w.code, files: ids, note: note }, 60000);
+    const r = await api('workSubmit', APPEND ? { code: w.code, files: ids, note: note, append: true } : { code: w.code, files: ids, note: note }, 60000);
     bar.style.width = '100%';
     const i = STU.data.works.findIndex(x => x.code === w.code);
     if (i >= 0) STU.data.works[i].sub = r.sub;
     SENDING = false;
     PENDING = [];
+    const wasAppend = APPEND;
     sh.close();
     const s = r.sub;
     await confirmBoxOk(s.lateMin > 0 ? 'ส่งงานแล้ว · ส่งช้า' : 'ส่งงานเรียบร้อย',
-      s.lateMin > 0
+      (s.lateMin > 0
         ? '<div class="notice warn"><b>คุณส่งช้ากว่ากำหนด ' + spanText(s.lateMin) + '</b><br>' +
           (w.mode === 'late' ? 'คะแนนงานนี้ถูกหัก ' + s.penalty + '%' : 'งานนี้ไม่หักคะแนน') + '</div>'
-        : '<div class="notice ok">ครูได้รับงาน “' + esc(w.title) + '” แล้ว เมื่อ ' + thDate(s.ts, true) + '</div>');
+        : '<div class="notice ok">ครูได้รับงาน “' + esc(w.title) + '” แล้ว เมื่อ ' + thDate(s.ts, true) + '</div>') +
+      '<div class="muted small">ไฟล์ของงานนี้ตอนนี้มี ' + s.files.length + ' ไฟล์' + (wasAppend ? ' (เพิ่มต่อจากชุดเดิม)' : '') + '</div>');
     studentLoad();
   } catch (e) {
     SENDING = false;
@@ -982,7 +1026,8 @@ function paneWorks() {
           ((w.sheets || []).length ? ' · <span style="color:var(--brand)">ใบงาน ' + w.sheets.length + ' ไฟล์</span>' : '') + '</div>' +
         '<div class="ln count">ส่งแล้ว <b style="color:var(--ink)">' + st.sent + '/' + st.roster + '</b>' +
           (st.late ? ' · ส่งช้า ' + st.late : '') + ' · ตรวจแล้ว ' + st.graded +
-          (st.toGrade ? ' · <b style="color:var(--brand)">รอตรวจ ' + st.toGrade + '</b>' : '') + '</div>' +
+          (st.toGrade ? ' · <b style="color:var(--brand)">รอตรวจ ' + st.toGrade + '</b>' : '') +
+          (st.returned ? ' · <span style="color:var(--bad)">ส่งกลับให้แก้ ' + st.returned + '</span>' : '') + '</div>' +
         '<div class="bar"><i style="width:' + pct + '%"></i></div></div>' +
         '<div class="row" style="flex-direction:column;align-items:stretch;gap:6px">' +
           '<button class="sm primary" data-grade="' + esc(w.code) + '">ตรวจงาน</button>' +
@@ -1246,7 +1291,10 @@ async function paneGrade() {
 }
 
 const hasFiles = r => !!(r.sub && r.sub.files.length);
-const needsGrade = r => hasFiles(r) && (!r.sub.graded || r.sub.resent);
+/* งานที่ส่งกลับให้แก้แล้วยังรอนักเรียน ไม่นับเป็นรอตรวจ (ชีตรุ่น 28) */
+const needsGrade = r => hasFiles(r) && (!r.sub.graded || r.sub.resent) && !r.sub.returned;
+/** ป้ายสถานะส่งกลับให้แก้ — รอนักเรียนแก้ หรือเป็นฉบับแก้ที่ส่งมาแล้ว */
+const retChip = s => s && s.returned ? ' <span class="chip bad">ส่งกลับให้แก้ · รอนักเรียน</span>' : s && s.retAt ? ' <span class="chip brand">ฉบับแก้</span>' : '';
 /** สถานะการส่ง — ต้องตรงกับ sendState_ ในโค้ดชีต (ontime · late · paper · miss · todo) */
 function stateOf(r, w, now) {
   if (hasFiles(r)) return r.sub.lateMin > 0 ? 'late' : 'ontime';
@@ -1265,6 +1313,7 @@ function gradeRows() {
   if (T.filter === 'late') return rows.filter(r => stateOf(r, w, now) === 'late');
   if (T.filter === 'ontime') return rows.filter(r => stateOf(r, w, now) === 'ontime');
   if (T.filter === 'none') return rows.filter(r => !hasFiles(r) && !(r.sub && r.sub.graded));
+  if (T.filter === 'ret') return rows.filter(r => r.sub && r.sub.retAt);
   return rows;
 }
 
@@ -1294,7 +1343,7 @@ function gradeBody() {
       '<button class="sm" data-notify="late"' + (cnt.late ? '' : ' disabled') + '>⏰ ส่งไม่ตรงกำหนด (' + cnt.late + ')</button>' +
       '<button class="sm" data-notify="ontime"' + (cnt.ontime ? '' : ' disabled') + '>🌟 ส่งตรงกำหนด (' + cnt.ontime + ')</button></div>' +
     '<div class="row" style="margin-top:10px"><div class="seg2">' +
-      [['todo', 'รอตรวจ'], ['all', 'ทั้งหมด'], ['ontime', 'ตรงกำหนด'], ['late', 'ส่งช้า'], ['none', 'ยังไม่ส่ง']].map(x =>
+      [['todo', 'รอตรวจ'], ['all', 'ทั้งหมด'], ['ontime', 'ตรงกำหนด'], ['late', 'ส่งช้า'], ['none', 'ยังไม่ส่ง']].concat(rows.some(r => r.sub && r.sub.retAt) ? [['ret', 'ส่งกลับให้แก้']] : []).map(x =>
         '<button data-flt="' + x[0] + '" class="' + (T.filter === x[0] ? 'on' : '') + '">' + x[1] + '</button>').join('') + '</div>' +
       '<span class="sp"></span>' + (todo ? '<button class="primary" data-start>เริ่มตรวจ (' + todo + ')</button>' : '') +
       '<button class="sm" data-copy>คัดลอกคะแนน</button><button class="sm" data-reload>โหลดใหม่</button></div>' +
@@ -1309,7 +1358,7 @@ function gradeBody() {
       const s = r.sub;
       const when = hasFiles(r)
         ? thDate(s.ts) + (s.lateMin > 0 ? ' <span class="chip warn">ช้า ' + spanText(s.lateMin) + (s.penalty ? ' −' + s.penalty + '%' : '') + '</span>' : '') +
-          (s.resent ? ' <span class="chip brand">ส่งใหม่</span>' : '')
+          (s.resent ? ' <span class="chip brand">ส่งใหม่</span>' : '') + retChip(s)
         : (s && s.graded ? '<span class="chip">ให้คะแนนแล้ว ไม่มีไฟล์</span>' : '<span class="chip bad">ยังไม่ส่ง</span>');
       return '<tr class="pick" data-row="' + esc(r.sid) + '"><td class="num">' + esc(r.no) + '</td><td class="nm">' + esc(r.name) + '</td>' + (multi ? '<td>' + esc(r.cls) + '</td>' : '') +
         '<td class="small">' + when + '</td><td class="num">' + (hasFiles(r) ? s.files.length : '') + '</td>' +
@@ -1378,6 +1427,7 @@ function applyGraded(list) {
     const rows = T.subs.rows;
     w.stats.graded = rows.filter(r => r.sub && r.sub.graded).length;
     w.stats.toGrade = rows.filter(needsGrade).length;
+    w.stats.returned = rows.filter(r => r.sub && r.sub.returned).length;
   }
 }
 
@@ -1476,6 +1526,36 @@ function uiRestore() {
   if (typeof o.onlyRisk === 'boolean') T.onlyRisk = o.onlyRisk;
 }
 
+/* ---- ส่งกลับให้แก้ (ชีตรุ่น 28) ------------------------------------------------
+   ถามเหตุผลในกล่องที่วางทับตัวดูงาน (popup ไม่ใช่ #layer เพราะตัวดูงานอยู่ในนั้น)
+   คืนข้อความ หรือ null ถ้ายกเลิก · เหตุผลบังคับ นักเรียนต้องรู้ว่าต้องแก้อะไร */
+const RET_HINTS = ['ถ่ายรูปไม่ชัด ถ่ายใหม่ให้เห็นทั้งแผ่น', 'ส่งไม่ครบทุกข้อ', 'แสดงวิธีทำให้ครบ', 'ส่งผิดงาน', 'แก้ข้อที่ครูวงไว้แล้วส่งใหม่'];
+function returnAsk(w, rows, prefill) {
+  return new Promise(resolve => {
+    let v = null;
+    const p = popup('<h2 style="padding-right:56px">↩ ส่งกลับให้แก้</h2>' +
+      '<div class="muted small">' + esc(w.title) + ' · ' + rows.map(r => esc(r.name)).join(', ') + '</div>' +
+      '<label class="f">เหตุผล / สิ่งที่ต้องแก้</label>' +
+      '<div class="cmbar" style="margin-bottom:6px">' + RET_HINTS.map(t => '<button type="button" data-rh="' + esc(t) + '">' + esc(t) + '</button>').join('') + '</div>' +
+      '<textarea data-t maxlength="500" style="min-height:80px" placeholder="เช่น ข้อ 3 ยังไม่ได้แสดงวิธีทำ">' + esc(prefill || '') + '</textarea>' +
+      '<p class="muted small">งานกลับไปอยู่ใน “งานที่ต้องส่ง” ของนักเรียนพร้อมข้อความนี้ และขึ้นแจ้งเตือนบนสุด · ฉบับแก้ไม่ถูกหักคะแนนเพิ่มเพราะส่งช้า · คะแนนที่ให้ไว้ยังอยู่</p>' +
+      '<div class="row" style="justify-content:flex-end"><button data-no>ยกเลิก</button><button class="danger" data-yes>ส่งกลับให้แก้</button></div>',
+      () => resolve(v));
+    const t = $('[data-t]', p.root);
+    $$('[data-rh]', p.root).forEach(b => b.addEventListener('click', () => {
+      const cur = t.value.trim();
+      t.value = (cur ? cur + ' · ' : '') + b.dataset.rh; t.focus();
+    }));
+    $('[data-no]', p.root).addEventListener('click', p.close);
+    $('[data-yes]', p.root).addEventListener('click', () => {
+      const m = t.value.trim();
+      if (!m) { toast('ใส่เหตุผลก่อน นักเรียนจะได้รู้ว่าต้องแก้อะไร'); t.focus(); return; }
+      v = m; p.close();
+    });
+    setTimeout(() => t.focus(), 30);
+  });
+}
+
 /* ---- ตัวดูงาน: ดูรูปทีละคน ให้คะแนน กด Enter ไปคนถัดไป ----------------------- */
 let VIEW = null;
 async function openViewer(sid) {
@@ -1486,7 +1566,7 @@ async function openViewer(sid) {
   const layer = $('#layer');
   layer.innerHTML = '<div class="viewer" role="dialog" aria-modal="true">' +
     '<div class="vtop"><button class="sm" data-vclose>ปิด</button><div class="who" data-vwho></div><span class="sp"></span>' +
-    '<button class="sm primary" data-vink>✏️ เขียนตรวจ</button><button class="sm" data-vzoom>ขยาย</button><button class="sm" data-vprev>‹ ก่อนหน้า</button><button class="sm" data-vnext>ถัดไป ›</button></div>' +
+    '<button class="sm danger" data-vret title="ส่งงานกลับให้นักเรียนแก้ พร้อมเหตุผล">↩ ส่งกลับให้แก้</button><button class="sm primary" data-vink>✏️ เขียนตรวจ</button><button class="sm" data-vzoom>ขยาย</button><button class="sm" data-vprev>‹ ก่อนหน้า</button><button class="sm" data-vnext>ถัดไป ›</button></div>' +
     '<div class="vbody" data-vbody></div>' +
     '<div class="vbot"><div class="cmbar" data-vcmbar></div><div class="fld"><span>คะแนน (เต็ม ' + fmtN(w.max) + ')</span><input class="score" data-vscore type="number" min="0" max="' + esc(w.max) + '" step="0.5" inputmode="decimal"></div>' +
     '<button class="sm" data-vfull>เต็ม</button>' +
@@ -1518,12 +1598,16 @@ async function openViewer(sid) {
     $('[data-vwho]', root).innerHTML = esc(r.name) + ' <span class="muted small">เลขที่ ' + esc(r.no) + ' · ' + esc(r.cls) + ' · ' + (i + 1) + '/' + order.length + '</span>' +
       '<div class="small" style="font-weight:400">ส่ง ' + thDate(s.ts, true) + (s.n > 1 ? ' (ครั้งที่ ' + s.n + ')' : '') +
       (s.lateMin > 0 ? ' <span class="chip warn">ช้า ' + spanText(s.lateMin) + '</span>' : ' <span class="chip ok">ทันเวลา</span>') +
-      (s.resent ? ' <span class="chip brand">ส่งใหม่หลังตรวจ</span>' : '') +
+      (s.resent ? ' <span class="chip brand">ส่งใหม่หลังตรวจ</span>' : '') + retChip(s) +
+      (s.returned && s.retMsg ? '<div class="small" style="color:var(--bad)">เหตุผลที่ส่งกลับ: ' + esc(s.retMsg) + '</div>' : '') +
       (marked ? ' <span class="chip brand">' + (qj ? 'เขียนตรวจแล้ว · กำลังส่ง' : 'เขียนตรวจแล้ว') + '</span> <button class="linkb" data-vorig>' + (orig ? 'ดูฉบับที่เขียนตรวจ' : 'ดูต้นฉบับ') + '</button>' : '') + '</div>';
     const vo = $('[data-vorig]', root);
     if (vo) vo.addEventListener('click', () => { orig = !orig; show(); });
     $('[data-vprev]', root).disabled = i === 0;
     $('[data-vnext]', root).disabled = i === order.length - 1;
+    const vr = $('[data-vret]', root);
+    vr.disabled = !!s.returned;
+    vr.textContent = s.returned ? '↩ ส่งกลับแล้ว รอนักเรียนแก้' : '↩ ส่งกลับให้แก้';
     score.value = s.graded ? s.raw : '';
     cm.value = s.comment || '';
     paintPen();
@@ -1571,6 +1655,7 @@ async function openViewer(sid) {
   };
   function onKey(e) {
     if (INK) return;                   /* หน้าต่างเขียนตรวจเปิดทับอยู่ */
+    if (document.querySelector('.overlay[style*="96"]')) return;      /* กล่องส่งกลับให้แก้เปิดทับอยู่ */
     if (e.key === 'Escape') { close(); return; }
     if (e.target === cm || e.target === score) { if (e.key === 'Enter') { e.preventDefault(); saveNext(); } return; }
     if (e.key === 'ArrowRight') go(1);
@@ -1583,6 +1668,22 @@ async function openViewer(sid) {
   $('[data-vnext]', root).addEventListener('click', () => go(1));
   $('[data-vfull]', root).addEventListener('click', () => { score.value = w.max; paintPen(); });
   $('[data-vsave]', root).addEventListener('click', saveNext);
+  /* ส่งกลับให้แก้ — ถามเหตุผล (ตั้งต้นจากช่องความเห็น) แล้วไปคนถัดไปที่รอตรวจ */
+  $('[data-vret]', root).addEventListener('click', async e => {
+    const r = order[i], btn = e.currentTarget;
+    const msg = await returnAsk(w, [r], cm.value.trim());
+    if (msg == null || !VIEW || VIEW.sid !== r.sid) return;
+    btn.disabled = true; busyBtn(btn, 'กำลังส่งกลับ…');
+    try {
+      const res = await api('workReturn', { code: w.code, sids: [r.sid], msg: msg });
+      applyGraded(res.rows);
+      toast('ส่งกลับให้ ' + r.name + ' แก้แล้ว', 2200);
+      let j = order.findIndex((x, k) => k > i && needsGrade(x));
+      if (j < 0) j = order.findIndex(needsGrade);
+      if (j < 0) { toast('ไม่มีงานรอตรวจแล้ว'); close(); return; }
+      i = j; show();
+    } catch (err) { fail(err); if (VIEW && VIEW.sid === r.sid) show(); }
+  });
   $('[data-vink]', root).addEventListener('click', () => {
     openInk({ order: order, i: i, w: w, onClose: j => { i = j; orig = false; VIEW = null; show(); } });
   });
