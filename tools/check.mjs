@@ -196,5 +196,40 @@ for (const [dir, want] of Object.entries(IDENT)) {
   }
 }
 
+/* ตรวจรหัสแม่แบบโจทย์ (Template IDs) ไม่ให้มี id ซ้ำกันในวิชาเดียวกัน
+   หากมี id ซ้ำ จะเกิดปัญหาการ shadow ทับใน TEMPLATES registry ทำให้โจทย์ตัวแรกสุ่มไม่ออก */
+{
+  const subjectsDir = path.join(ROOT, 'subjects');
+  if (fs.existsSync(subjectsDir)) {
+    const subs = fs.readdirSync(subjectsDir);
+    let dupCount = 0;
+    for (const sub of subs) {
+      const subPath = path.join(subjectsDir, sub);
+      if (!fs.statSync(subPath).isDirectory()) continue;
+      const htmlFiles = fs.readdirSync(subPath).filter(f => f.endsWith('.html'));
+      const idMap = new Map();
+      for (const f of htmlFiles) {
+        const content = fs.readFileSync(path.join(subPath, f), 'utf8');
+        const regex = /\bid:\s*['"]([^'"]+)['"]/g;
+        let match;
+        while ((match = regex.exec(content)) !== null) {
+          const id = match[1];
+          if (!idMap.has(id)) idMap.set(id, []);
+          idMap.get(id).push(f);
+        }
+      }
+      for (const [id, list] of idMap.entries()) {
+        if (list.length > 1) {
+          console.error(`✗  แม่แบบซ้ำใน [${sub}] : id '${id}' พบ ${list.length} ครั้งใน ${list.join(', ')}`);
+          fail++; dupCount++;
+        }
+      }
+    }
+    if (dupCount === 0) {
+      console.log('✓  template-ids  (รหัสแม่แบบโจทย์ไม่ซ้ำกันในทุกวิชา · 0 duplicate IDs)');
+    }
+  }
+}
+
 console.log(fail ? '\nไม่ผ่าน ' + fail + ' รายการ — ยังไม่ควรขึ้นเว็บ' : '\nผ่านทั้งหมด พร้อมขึ้นเว็บ');
 process.exit(fail ? 1 : 0);
