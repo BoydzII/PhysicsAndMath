@@ -20,6 +20,15 @@
  *   4) กลับมาที่แอพ → แท็บตั้งค่า → ปุ่ม "ซ่อมโครงสร้างชีต" หนึ่งครั้ง
  *      เพื่อเติมหัวตารางของคอลัมน์ใหม่ (ข้อมูลเดิมไม่หาย)
  *
+ * ── รุ่น 29 เลิกใช้รหัสผ่านทั้งหมด ────────────────────────────────────────
+ *   เข้าระบบได้ทางเดียวคือบัญชี Google — นักเรียนใช้เมลโรงเรียน ครูผู้สอนใช้เมลโรงเรียน
+ *   ผู้ดูแลหลักใช้ theboydz@gmail.com · ไม่มีทางเข้าด้วยรหัสผ่านเหลือแม้แต่ทางสำรอง
+ *   คำสั่งที่ใช้รหัสผ่าน (login · adminLogin · changePass · adminPass · resetAsk · resetList ·
+ *   resetDecide · resetAuto · teacherReset · rosterReset · lockList · unlock) ตอบว่าเลิกใช้แล้ว
+ *   แผ่น teachers มีคอลัมน์ใหม่ "เมลโรงเรียน" — ชีตหาครูจากเมลนี้ก่อน ถ้าว่างจึงเทียบชื่อหน้า @ กับชื่อผู้ใช้
+ *   ⚠ ต้องวางรุ่นนี้ทั้งสามชีต (ศูนย์กลาง · ฟิสิกส์ · ส่งงาน) แล้วกรอกเมลของครูผู้สอนที่ชื่อผู้ใช้ไม่ตรงกับเมล
+ *     ถ้าการเข้าด้วย Google ใช้ไม่ได้ (เช่นยังไม่ได้รัน authorizeGoogleLogin) จะไม่มีใครเข้าระบบได้เลย
+ *
  * ── รุ่น 28 เพิ่มอะไร (ส่งกลับให้แก้ · ส่งเพิ่มหน้า) ─────────────────────────
  *   workReturn — ครูส่งงานกลับให้แก้พร้อมเหตุผล งานกลับไปอยู่ใน "งานที่ต้องส่ง" ของนักเรียน
  *     และขึ้นแจ้งเตือนบนสุด (แผ่น worknotes ประเภท ret) · ส่งฉบับแก้แล้วไม่ถูกหักความช้าเพิ่ม
@@ -248,7 +257,7 @@ var SHEETS = {
   submissions: ['ts', 'code', 'sid', 'status', 'score', 'max', 'pct', 'sec', 'revealed',
                 'answers', 'device', 'subject', 'out', 'outSec', 'autoBy'],
   teachers:    ['user', 'name', 'passHash', 'salt', 'classes', 'mustChange', 'active',
-                'lastLogin', 'createdAt', 'subjects'],
+                'lastLogin', 'createdAt', 'subjects', 'email'],
   /* คลังข้ออัตนัยของครู — หนึ่งข้ออาจกินหลายแถว ดูคำอธิบายที่หัวข้อ "คลังข้ออัตนัย" ด้านล่าง
      คอลัมน์เนื้อข้อมูลต้องอยู่ท้ายสุดเสมอ จะได้อ่านสารบัญโดยไม่ต้องลากเนื้อข้อมูลมาด้วย */
   esbank:      ['id', 'subject', 'topic', 'tags', 'at', 'up', 'use', 'used', 'del',
@@ -276,7 +285,7 @@ var HEADERS = {
                 'ร้อยละ', 'เวลาที่ใช้ (วินาที)', 'เปิดเฉลย', 'คำตอบรายข้อ', 'อุปกรณ์', 'วิชา',
                 'ออกจากแอป (ครั้ง)', 'เวลานอกแอป (วินาที)', 'ระบบส่งให้เพราะ'],
   teachers:    ['ชื่อผู้ใช้', 'ชื่อ-นามสกุล', 'รหัสผ่าน (เข้ารหัสแล้ว)', 'salt', 'ชั้นที่ดูแล',
-                'ต้องเปลี่ยนรหัส', 'เปิดใช้งาน', 'เข้าใช้ล่าสุด', 'สร้างเมื่อ', 'วิชาที่สอน'],
+                'ต้องเปลี่ยนรหัส', 'เปิดใช้งาน', 'เข้าใช้ล่าสุด', 'สร้างเมื่อ', 'วิชาที่สอน', 'เมลโรงเรียน'],
   esbank:      ['รหัสข้อ', 'วิชา', 'บทที่', 'คำค้น', 'สร้างเมื่อ', 'แก้ล่าสุด',
                 'ถูกใช้ (ครั้ง)', 'ใช้ล่าสุด', 'ลบแล้ว', 'ขนาด (ตัวอักษร)',
                 'ท่อนที่', 'ทั้งหมดกี่ท่อน', 'เนื้อข้อสอบ'],
@@ -602,6 +611,15 @@ function bookName_() {
   try { return String(book_().getName() || '').slice(0, 60); } catch (e) { return '?'; }
 }
 
+/** ครูผู้สอนที่ผู้ดูแลกรอกเมลไว้ตรงกับเมลนี้ (รุ่น 29) */
+function findTeacherByEmail_(email) {
+  var e = String(email || '').trim().toLowerCase(), list = readAll_('teachers');
+  if (!e) return null;
+  for (var i = 0; i < list.length; i++) {
+    if (String(list[i].email || '').trim().toLowerCase() === e) return list[i];
+  }
+  return null;
+}
 function findTeacher_(user) {
   var u = normUser_(user), list = readAll_('teachers');
   for (var i = 0; i < list.length; i++) {
@@ -2550,11 +2568,11 @@ function doPost(e) {
 function route_(action, req) {
   switch (action) {
     case 'ping':          return apiPing_(req);
-    case 'login':         return apiLogin_(req);
+    case 'login':         return passOff_();
     case 'googleLogin':   return apiGoogleLogin_(req);
-    case 'changePass':    return apiChangePass_(req);
-    case 'adminLogin':    return apiAdminLogin_(req);
-    case 'adminPass':     return apiAdminPass_(req);
+    case 'changePass':    return passOff_();
+    case 'adminLogin':    return passOff_();
+    case 'adminPass':     return passOff_();
     case 'hubLogin':      return apiHubLogin_(req);
     case 'hubStatus':     return apiHubStatus_(req);
     case 'hubSetup':      return apiHubSetup_(req);
@@ -2567,8 +2585,8 @@ function route_(action, req) {
     case 'teacherList':   return apiTeacherList_(req);
     case 'teacherSave':   return apiTeacherSave_(req);
     case 'teacherRemove': return apiTeacherRemove_(req);
-    case 'teacherReset':  return apiTeacherReset_(req);
-    case 'rosterReset':   return apiRosterReset_(req);
+    case 'teacherReset':  return passOff_();
+    case 'rosterReset':   return passOff_();
     case 'rosterRemove':  return apiRosterRemove_(req);
     case 'assignSave':    return apiAssignSave_(req);
     case 'assignList':    return apiAssignList_(req);
@@ -2588,8 +2606,8 @@ function route_(action, req) {
     case 'esBankDel':     return apiEsBankDel_(req);
     case 'xpPractice':    return apiXpPractice_(req);
     case 'xpSkin':        return apiXpSkin_(req);
-    case 'lockList':      return apiLockList_(req);
-    case 'unlock':        return apiUnlock_(req);
+    case 'lockList':      return passOff_();
+    case 'unlock':        return passOff_();
     case 'examPing':      return apiExamPing_(req);
     case 'examMonitor':   return apiExamMonitor_(req);
     case 'focusSave':     return apiFocusSave_(req);
@@ -2600,10 +2618,10 @@ function route_(action, req) {
     case 'noteGet':       return apiNoteGet_(req);
     case 'noteFeedback':  return apiNoteFeedback_(req);
     case 'noteMine':      return apiNoteMine_(req);
-    case 'resetAsk':      return apiResetAsk_(req);
-    case 'resetList':     return apiResetList_(req);
-    case 'resetDecide':   return apiResetDecide_(req);
-    case 'resetAuto':     return apiResetAuto_(req);
+    case 'resetAsk':      return passOff_();
+    case 'resetList':     return passOff_();
+    case 'resetDecide':   return passOff_();
+    case 'resetAuto':     return passOff_();
     case 'workSave':      return apiWorkSave_(req);
     case 'workRemove':    return apiWorkRemove_(req);
     case 'workList':      return apiWorkList_(req);
@@ -2625,6 +2643,7 @@ function route_(action, req) {
     case 'workMarkSave':  return apiWorkMarkSave_(req);
     case 'workSignGet':   return apiWorkSignGet_(req);
     case 'workSignSet':   return apiWorkSignSet_(req);
+    case 'adminDigest':   return apiAdminDigest_(req);
     default: throw new Error('ไม่รู้จักคำสั่ง: ' + action);
   }
 }
@@ -2698,6 +2717,11 @@ function apiPing_(req) {
 
 function failKey_(sid) { return 'fail_' + sid; }
 
+/** คำสั่งที่ใช้รหัสผ่าน — เลิกใช้แล้วตั้งแต่รุ่น 29 (ฟังก์ชันเดิมยังอยู่ในไฟล์ แต่ไม่มีทางเรียกจากเว็บ) */
+function passOff_() {
+  throw new Error('ระบบเลิกใช้รหัสผ่านแล้ว — เข้าด้วยเมลโรงเรียน (@' + GOOGLE_SCHOOL_DOMAIN + ') ' +
+                  'หรือบัญชี Google ของผู้ดูแล · ถ้าหน้านี้ยังมีช่องรหัสผ่าน ให้โหลดหน้าเว็บใหม่');
+}
 function apiLogin_(req) {
   /* ชีตส่งงาน (รับรายชื่ออัตโนมัติ) ไม่มีรหัสผ่านของตัวเอง — แฮชที่ติดมากับสำเนาใช้ไม่ได้
      เพราะกุญแจลับคนละชุด ส่วนแถวที่ยังไม่มีแฮชจะรับรหัสตั้งต้น ถ้าเปิดทางนี้ไว้
@@ -2868,6 +2892,10 @@ function apiGoogleLogin_(req) {
   var localPart = parts[0] || '';
   var domain = parts[1] || '';
 
+  /* 1.5) ครูผู้สอนที่ผู้ดูแลกรอกเมลไว้ในแผ่น teachers (รุ่น 29) — ตรงเป๊ะทั้งเมล */
+  var te = findTeacherByEmail_(email);
+  if (te) return teacherGoogle_(te, email, g);
+
   if (domain !== GOOGLE_SCHOOL_DOMAIN) {
     throw new Error('กรุณาใช้อีเมลโรงเรียน (@' + GOOGLE_SCHOOL_DOMAIN + ') เช่น 30201@' + GOOGLE_SCHOOL_DOMAIN + ' (สำหรับแอดมินใช้ theboydz@gmail.com)');
   }
@@ -2899,26 +2927,30 @@ function apiGoogleLogin_(req) {
     };
   }
 
-  /* 3) ครูผู้สอนที่ใช้เมล @pcschool.ac.th (เทียบชื่อหน้า @ กับชื่อผู้ใช้ในแผ่น teachers) */
+  /* 3) ครูผู้สอนที่ใช้เมล @pcschool.ac.th และยังไม่ได้กรอกเมล — เทียบชื่อหน้า @ กับชื่อผู้ใช้ในแผ่น teachers
+     ครูที่กรอกเมลไว้แล้วต้องเข้าด้วยเมลนั้นเท่านั้น (คนอื่นที่ชื่อหน้า @ บังเอิญตรงจะเข้าแทนไม่ได้) */
   var t = findTeacher_(normUser_(localPart));
-  if (t) {
-    if (String(t.active) === 'false' || String(t.active) === '0') {
-      throw new Error('บัญชีนี้ถูกระงับการใช้งาน');
-    }
-    var cls = parseClasses_(t.classes);
-    if (!cls.length) throw new Error('บัญชีครู (' + email + ') ยังไม่ได้กำหนดชั้นที่ดูแล — แจ้งผู้ดูแลหลักให้กำหนดก่อน');
-    var sbj = parseSubjects_(t.subjects);
-    sheet_('teachers').getRange(t._row, SHEETS.teachers.indexOf('lastLogin') + 1).setValue(new Date());
-    dropCache_('teachers');
-    return {
-      token: makeToken_({ role: 'admin', sub: normUser_(t.user), cls: cls, sbj: sbj }),
-      role: 'sub', user: normUser_(t.user), name: String(t.name || g.name || ''), classes: cls,
-      subjects: sbj, mustChange: false, email: email,
-      hub: hubMake_({ role: 'admin', sub: normUser_(t.user) })
-    };
-  }
+  if (t && !String(t.email || '').trim()) return teacherGoogle_(t, email, g);
 
-  throw new Error('อีเมล ' + email + ' ไม่ใช่รูปแบบรหัสนักเรียน (เช่น 30201@' + GOOGLE_SCHOOL_DOMAIN + ') และยังไม่ได้ลงทะเบียนเป็นครูผู้สอนในชีตนี้');
+  throw new Error('อีเมล ' + email + ' ไม่ใช่รูปแบบรหัสนักเรียน (เช่น 30201@' + GOOGLE_SCHOOL_DOMAIN + ') ' +
+                  'และยังไม่ได้ลงทะเบียนเป็นครูผู้สอนในชีตนี้ — ให้ผู้ดูแลหลักกรอกเมลนี้ในบัญชีครูผู้สอน');
+}
+/** ออกโทเคนครูผู้สอนที่ยืนยันเมลกับ Google แล้ว */
+function teacherGoogle_(t, email, g) {
+  if (String(t.active) === 'false' || String(t.active) === '0') {
+    throw new Error('บัญชีนี้ถูกระงับการใช้งาน');
+  }
+  var cls = parseClasses_(t.classes);
+  if (!cls.length) throw new Error('บัญชีครู (' + email + ') ยังไม่ได้กำหนดชั้นที่ดูแล — แจ้งผู้ดูแลหลักให้กำหนดก่อน');
+  var sbj = parseSubjects_(t.subjects);
+  sheet_('teachers').getRange(t._row, SHEETS.teachers.indexOf('lastLogin') + 1).setValue(new Date());
+  dropCache_('teachers');
+  return {
+    token: makeToken_({ role: 'admin', sub: normUser_(t.user), cls: cls, sbj: sbj }),
+    role: 'sub', user: normUser_(t.user), name: String(t.name || g.name || ''), classes: cls,
+    subjects: sbj, mustChange: false, email: email,
+    hub: hubMake_({ role: 'admin', sub: normUser_(t.user) })
+  };
 }
 
 
@@ -3049,12 +3081,13 @@ function apiTeacherList_(req) {
              classes: parseClasses_(t.classes),
              subjects: parseSubjects_(t.subjects),
              active: String(t.active) !== 'false' && String(t.active) !== '0',
-             mustChange: String(t.mustChange) !== 'false' && String(t.mustChange) !== '0',
+             email: String(t.email || '').trim().toLowerCase(),
              lastLogin: t.lastLogin ? String(t.lastLogin) : '' };
   });
 }
 
-/** เพิ่มหรือแก้ครูผู้สอนหนึ่งคน — ส่ง pass มาด้วยก็ตั้งรหัสให้ ไม่ส่งก็คงรหัสเดิม */
+/** เพิ่มหรือแก้ครูผู้สอนหนึ่งคน — ครูเข้าด้วยบัญชี Google (รุ่น 29) จึงรับเมลแทนรหัสผ่าน
+    เมลว่าง = ใช้ <ชื่อผู้ใช้>@เมลโรงเรียน */
 function apiTeacherSave_(req) {
   needMain_(req);
   var o = req.teacher || {};
@@ -3073,26 +3106,28 @@ function apiTeacherSave_(req) {
   for (var si = 0; si < sbj.length; si++) {
     if (SUBJECTS.indexOf(sbj[si]) < 0) throw new Error('ไม่รู้จักวิชา ' + sbj[si]);
   }
+  var email = String(o.email || '').trim().toLowerCase();
+  if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw new Error('เมลไม่ถูกต้อง: ' + email);
+  if (email && GOOGLE_ADMIN_EMAILS.indexOf(email) >= 0) throw new Error('เมลนี้เป็นของผู้ดูแลหลัก ใช้เป็นเมลครูผู้สอนไม่ได้');
+  if (email && /^\d{4,6}@/.test(email)) throw new Error('เมลนี้เป็นรูปแบบเมลนักเรียน ใช้เป็นเมลครูผู้สอนไม่ได้');
   var lock = LockService.getScriptLock();
   lock.waitLock(20000);
   try {
     var row = findTeacher_(user);
+    var other = email ? findTeacherByEmail_(email) : null;
+    if (other && normUser_(other.user) !== user) throw new Error('เมล ' + email + ' เป็นของครู ' + other.user + ' อยู่แล้ว');
     var rec = {
       user: user, name: name, classes: cls.join(', '), subjects: sbj.join(', '),
       passHash: row ? row.passHash : '', salt: row ? row.salt : '',
-      mustChange: row ? row.mustChange : true,
+      mustChange: false,
       active: o.active === false ? false : true,
       lastLogin: row ? row.lastLogin : '',
-      createdAt: row ? row.createdAt : new Date()
+      createdAt: row ? row.createdAt : new Date(),
+      email: email
     };
-    var pass = String(o.pass || '');
-    if (pass) {
-      if (pass.length < 6) throw new Error('รหัสผ่านต้องยาวอย่างน้อย 6 ตัว');
-      var st = newSalt_();
-      rec.salt = st; rec.passHash = hashPass_(pass, st); rec.mustChange = true;
-    }
+    fillHead_('teachers');            /* หัวคอลัมน์ "เมลโรงเรียน" ของรุ่น 29 */
     if (row) writeRow_('teachers', row._row, rec); else appendRow_('teachers', rec);
-    return { user: user, updated: !!row, classes: cls, subjects: sbj };
+    return { user: user, updated: !!row, classes: cls, subjects: sbj, email: email };
   } finally { lock.releaseLock(); }
 }
 
@@ -4128,4 +4163,120 @@ function apiResultsList_(req) {
              out: Number(s.out) || 0, outSec: Number(s.outSec) || 0,
              autoBy: String(s.autoBy || '') };
   });
+}
+
+/* ====== ระบบส่งรายงานสรุปอัตโนมัติเข้าเมลแอดมิน (Zero-Config Admin Email Digest) ====== */
+
+/** รวบรวมสรุปผลประจำวันและส่งเข้าเมลแอดมิน (theboydz@gmail.com) อัตโนมัติ */
+function sendDailyAdminDigest_() {
+  var adminEmail = (GOOGLE_ADMIN_EMAILS && GOOGLE_ADMIN_EMAILS[0]) || "theboydz@gmail.com";
+  var now = new Date();
+  var todayStr = Utilities.formatDate(now, "Asia/Bangkok", "yyyy-MM-dd");
+  var todayDisplay = Utilities.formatDate(now, "Asia/Bangkok", "dd/MM/yyyy HH:mm");
+
+  // สรุปการส่งข้อสอบประจำวัน (AutoSheet Submissions)
+  var allSubs = readAll_("submissions") || [];
+  var todaySubs = allSubs.filter(function (s) {
+    if (!s.ts) return false;
+    var d = new Date(s.ts);
+    return Utilities.formatDate(d, "Asia/Bangkok", "yyyy-MM-dd") === todayStr;
+  });
+
+  var bySubj = {};
+  SUBJECTS.forEach(function (sj) { bySubj[sj] = 0; });
+  todaySubs.forEach(function (s) {
+    var sj = normSubject_(s.subject);
+    bySubj[sj] = (bySubj[sj] || 0) + 1;
+  });
+
+  // สรุปงานใน WorkDesk (ถ้ามีแผ่น works และ worksubs)
+  var workSummary = { totalWorks: 0, todaySubmits: 0 };
+  var ss = book_();
+  if (ss.getSheetByName("works")) {
+    workSummary.totalWorks = Math.max(0, sheet_("works").getLastRow() - 1);
+  }
+  if (ss.getSheetByName("worksubs")) {
+    var wsList = readAll_("worksubs") || [];
+    workSummary.todaySubmits = wsList.filter(function (w) {
+      if (!w.ts) return false;
+      return Utilities.formatDate(new Date(w.ts), "Asia/Bangkok", "yyyy-MM-dd") === todayStr;
+    }).length;
+  }
+
+  // ดึงรายชื่อครูผู้สอนที่มีในระบบ
+  var teachersList = readAll_("teachers") || [];
+  var teacherRows = teachersList.filter(function (t) { return String(t.active) !== "false"; }).map(function (t) {
+    return "<tr><td style=\"padding:6px 10px;border-bottom:1px solid #e2e8f0;\">" + (t.name || t.user) + "</td>" +
+           "<td style=\"padding:6px 10px;border-bottom:1px solid #e2e8f0;\">" + (t.email || "-") + "</td>" +
+           "<td style=\"padding:6px 10px;border-bottom:1px solid #e2e8f0;\">" + (t.subjects || "ทุกวิชา") + "</td>" +
+           "<td style=\"padding:6px 10px;border-bottom:1px solid #e2e8f0;\">" + (t.classes || "ทั้งหมด") + "</td></tr>";
+  }).join("");
+
+  var subjNameMap = {
+    physics: "ฟิสิกส์ ม.4", math: "คณิตศาสตร์ ม.ต้น", physci: "วิทยาศาสตร์กายภาพ ม.5",
+    ijso: "IJSO สอวน. ม.ต้น", chem: "เคมี ม.4", science: "วิทยาศาสตร์ ม.ต้น",
+    bio: "ชีววิทยา ม.4", physfound: "ปรับพื้นฐานฟิสิกส์"
+  };
+
+  var subjRows = SUBJECTS.map(function (sj) {
+    var count = bySubj[sj] || 0;
+    return "<tr><td style=\"padding:6px 10px;border-bottom:1px solid #e2e8f0;\">" + (subjNameMap[sj] || sj) + "</td>" +
+           "<td style=\"padding:6px 10px;text-align:right;font-weight:bold;border-bottom:1px solid #e2e8f0;" + (count > 0 ? "color:#1c4b8c;" : "color:#94a3b8;") + "\">" + count + " ชุด</td></tr>";
+  }).join("");
+
+  var html = "<div style=\"font-family:sans-serif;max-width:640px;margin:0 auto;color:#1e293b;border:1px solid #cbd5e1;border-radius:12px;overflow:hidden;\">" +
+    "<div style=\"background:#1c4b8c;color:#ffffff;padding:20px;text-align:center;\">" +
+      "<h2 style=\"margin:0;font-size:20px;\">คลังโจทย์ออนไลน์ โรงเรียนปากช่อง</h2>" +
+      "<p style=\"margin:6px 0 0;font-size:13px;opacity:0.9;\">รายงานสรุปผลการใช้งานประจำวัน · " + todayDisplay + "</p>" +
+    "</div>" +
+    "<div style=\"padding:20px;\">" +
+      "<h3 style=\"margin:0 0 10px;color:#0f172a;font-size:16px;\">📊 การทำข้อสอบวันนี้ (AutoSheet) รวม " + todaySubs.length + " ชุด</h3>" +
+      "<table style=\"width:100%;border-collapse:collapse;font-size:14px;margin-bottom:20px;\">" +
+        "<tr style=\"background:#f1f5f9;text-align:left;\"><th style=\"padding:8px 10px;\">วิชา</th><th style=\"padding:8px 10px;text-align:right;\">จำนวนที่ทำ</th></tr>" +
+        subjRows +
+      "</table>" +
+      (workSummary.totalWorks > 0 ?
+        "<h3 style=\"margin:0 0 10px;color:#0f172a;font-size:16px;\">📝 การส่งงานออนไลน์ (WorkDesk)</h3>" +
+        "<p style=\"font-size:14px;margin:0 0 20px;\">มีการส่งงานวันนี้ <b>" + workSummary.todaySubmits + "</b> รายการ (จากงานที่มอบหมายทั้งหมด " + workSummary.totalWorks + " รายการ)</p>" : "") +
+      "<h3 style=\"margin:0 0 10px;color:#0f172a;font-size:16px;\">👥 ครูผู้สอนในระบบ (" + teachersList.length + " ท่าน)</h3>" +
+      "<table style=\"width:100%;border-collapse:collapse;font-size:13px;\">" +
+        "<tr style=\"background:#f1f5f9;text-align:left;\"><th style=\"padding:8px 10px;\">ชื่อ</th><th style=\"padding:8px 10px;\">อีเมล</th><th style=\"padding:8px 10px;\">วิชา</th><th style=\"padding:8px 10px;\">ชั้นที่ดูแล</th></tr>" +
+        (teacherRows || "<tr><td colspan=\"4\" style=\"padding:8px 10px;color:#64748b;text-align:center;\">ยังไม่มีครูผู้สอนรอง (มีเฉพาะผู้ดูแลหลัก " + adminEmail + ")</td></tr>") +
+      "</table>" +
+      "<div style=\"margin-top:24px;padding:12px;background:#f8fafc;border-radius:8px;font-size:12px;color:#64748b;text-align:center;\">" +
+        "ระบบส่งข้อมูลอัตโนมัติไปยังเมลผู้ดูแลหลัก (" + adminEmail + ") · ไม่ต้องตั้งค่าเพิ่มเติม" +
+      "</div>" +
+    "</div>" +
+  "</div>";
+
+  MailApp.sendEmail({
+    to: adminEmail,
+    subject: "[คลังโจทย์ออนไลน์] สรุปผลประจำวัน (" + todayStr + ") - ทำข้อสอบ " + todaySubs.length + " ชุด",
+    htmlBody: html
+  });
+
+  return { ok: true, to: adminEmail, todaySubs: todaySubs.length, workSubmits: workSummary.todaySubmits };
+}
+
+/** ติดตั้ง Trigger อัตโนมัติให้ส่งสรุปเข้าเมลแอดมินทุกวัน เวลา 17:00-18:00 น. */
+function installDailyDigestTrigger() {
+  var triggers = ScriptApp.getProjectTriggers();
+  for (var i = 0; i < triggers.length; i++) {
+    if (triggers[i].getHandlerFunction() === "sendDailyAdminDigest_") {
+      ScriptApp.deleteTrigger(triggers[i]);
+    }
+  }
+  ScriptApp.newTrigger("sendDailyAdminDigest_")
+    .timeBased()
+    .atHour(17)
+    .everyDays(1)
+    .inTimezone("Asia/Bangkok")
+    .create();
+  return { ok: true, msg: "ติดตั้ง Trigger ส่งสรุปอัตโนมัติเข้าเมลแอดมินเวลา 17:00 น. ทุกวันแล้ว" };
+}
+
+/** API เรียกส่งสรุปทางเมลทันที (สำหรับแอดมิน) */
+function apiAdminDigest_(req) {
+  needMain_(req);
+  return sendDailyAdminDigest_();
 }

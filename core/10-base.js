@@ -562,37 +562,40 @@ function devLockSet(sid, name) {
   devLockWrite({ sid: String(sid || ''), name: String(name || ''), at: Date.now() });
 }
 
-/** กล่องให้ครูปลดล็อกเครื่อง — ตรวจรหัสผู้ดูแลกับชีตจริง
-    ต้องมีทางนี้เสมอ ไอแพดที่ใช้ร่วมกันหลายคาบจะติดล็อกแน่นอน */
+/** กล่องให้ครูปลดล็อกเครื่อง — ครูเข้าด้วยบัญชี Google แล้วชีตยืนยันว่าเป็นครูผู้สอนหรือผู้ดูแลจริง
+    ต้องมีทางนี้เสมอ ไอแพดที่ใช้ร่วมกันหลายคาบจะติดล็อกแน่นอน
+    ไม่เก็บการเข้าใช้ของครูไว้ในเครื่อง — ใช้แค่ยืนยันตัวตนแล้วทิ้ง เครื่องยังเป็นของนักเรียนต่อ */
 function devLockUnlockBox() {
   openModal({
     title: 'ครูปลดล็อกเครื่องนี้',
     bodyHTML:
       '<div class="hint" style="margin-bottom:11px">เครื่องนี้เพิ่งใช้เข้าสอบในชื่อ <b>' +
       esc((devLockRead() || {}).name || '—') + '</b> จึงยังเข้าใช้ในชื่อคนอื่นไม่ได้<br>' +
-      'ถ้าเป็นเครื่องที่ใช้ร่วมกัน ให้ครูใส่รหัสผู้ดูแลเพื่อปลดล็อก</div>' +
-      '<label class="hint" for="dlPass">รหัสผู้ดูแล</label>' +
-      '<input type="password" id="dlPass" style="width:100%;font-size:16px" autocomplete="current-password">' +
+      'ถ้าเป็นเครื่องที่ใช้ร่วมกัน ให้ครูกดปุ่มด้านล่างแล้วเลือก<b>บัญชีของครู</b>เพื่อปลดล็อก</div>' +
       '<div id="dlMsg" style="margin-top:10px"></div>',
     buttons: [
       { label: 'ยกเลิก' },
-      { label: 'ปลดล็อก', cls: 'primary', act: async (close, root) => {
+      { label: 'ครูเข้าด้วย Google เพื่อปลดล็อก', cls: 'primary', act: async (close, root) => {
           const msg = $('#dlMsg', root);
-          msg.innerHTML = '<div class="hint">กำลังตรวจรหัส…</div>';
+          msg.innerHTML = '<div class="hint">กำลังเปิดหน้าต่างเลือกบัญชี…</div>';
           try {
-            // ตรวจกับชีตจริง ไม่ใช่รหัสที่ฝังไว้ในหน้าเว็บซึ่งใครก็เปิดดูได้
-            await api('adminLogin', { user: '', pass: $('#dlPass', root).value || '' }, { noToken: true });
+            const g = await googleSignIn();
+            if (/^\d{4,6}$/.test(g.localPart)) throw new Error('บัญชี ' + g.email + ' เป็นบัญชีนักเรียน — ต้องใช้บัญชีของครู');
+            msg.innerHTML = '<div class="hint">กำลังตรวจกับชีต…</div>';
+            // ตรวจกับชีตจริงว่าเป็นครูผู้สอนหรือผู้ดูแล ไม่ใช่แค่ดูจากเมลในหน้าเว็บ
+            const r = await api('googleLogin', { accessToken: g.token, email: g.email, name: g.name },
+                                { url: hubUrl() || DB.cloud.url, noToken: true });
+            if (r.role !== 'main' && r.role !== 'sub') throw new Error('บัญชีนี้ไม่ใช่ครูผู้สอนหรือผู้ดูแล');
             devLockWrite(null);
             // renderGate() ไม่วาดซ้ำถ้าโหมดเดิม กล่องเตือนเก่าจะค้างอยู่ ต้องล้างธงก่อน
             GATE.shown = '';
             close(); renderGate();
             toast('ปลดล็อกเครื่องนี้แล้ว', 'ok');
           } catch (e) {
-            msg.innerHTML = '<div class="notice bad">' + esc(e.message) + '</div>';
+            msg.innerHTML = '<div class="notice bad">' + esc(e.message || String(e)) + '</div>';
           }
         } }
-    ],
-    onMount: root => { const p = $('#dlPass', root); if (p) p.focus(); }
+    ]
   });
 }
 
@@ -896,28 +899,13 @@ function renderGate() {
     '<h2>' + (stu ? 'ลงชื่อเข้าใช้ (นักเรียน)' : 'เข้าใช้สำหรับครูและผู้ดูแล') + '</h2>' +
     '<div class="lead">' + SUBJECT_INFO.title + '<br>' +
       (stu ? 'เข้าสู่ระบบด้วย<b>เมลโรงเรียน (@pcschool.ac.th)</b> โดยไม่ต้องจำรหัสผ่าน'
-           : 'ผู้ดูแลหลักเข้าด้วย <b>theboydz@gmail.com</b> · ครูผู้สอนเข้าด้วยเมลโรงเรียนหรือรหัสผ่าน') + '</div>' +
+           : 'ผู้ดูแลหลักเข้าด้วย <b>theboydz@gmail.com</b> · ครูผู้สอนเข้าด้วยเมลโรงเรียน') + '</div>' +
     '<button type="button" id="gGoogleBtn" style="width:100%;min-height:48px;margin:4px 0 12px;padding:10px 14px;border-radius:10px;border:1.5px solid var(--brand,#1c4b8c);background:var(--brand,#1c4b8c);color:#fff;font:inherit;font-size:15.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 3px 10px rgba(28,75,140,.18)">' +
       '<svg width="20" height="20" viewBox="0 0 48 48" style="background:#fff;border-radius:50%;padding:2px;flex:none"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>' +
       '<span>' + (stu ? 'เข้าด้วยเมลโรงเรียน (@pcschool.ac.th)' : 'เข้าด้วยบัญชี Google (ผู้ดูแล / ครู)') + '</span></button>' +
-    '<div style="text-align:center;color:var(--muted,#6b7480);font-size:12.5px;margin:4px 0 8px">หรือกรอกรหัสผ่านแบบเดิม</div>' +
-    (stu
-      ? '<label class="f" for="gSid">เลขประจำตัวนักเรียน <span class="hint">(ตัวเลขไม่เกิน ' +
-          SID_MAX + ' หลัก)</span></label>' +
-        '<input type="text" id="gSid" inputmode="numeric" pattern="[0-9]*" maxlength="' + SID_MAX +
-          '" autocomplete="username" placeholder="เช่น 30201">' +
-        '<div id="gSidHint" style="display:none;margin-top:6px;font-size:12.5px;color:var(--bad);line-height:1.5"></div>' +
-        '<label class="f" for="gPass">รหัสผ่าน</label>' +
-        '<input type="password" id="gPass" autocomplete="current-password">'
-      : '<label class="f" for="gUser">ชื่อผู้ใช้ <span class="hint">(ครูผู้สอนกรอกที่นี่ · ผู้ดูแลหลักเว้นว่างได้)</span></label>' +
-        '<input type="text" id="gUser" autocomplete="username" placeholder="เช่น kruaom (ผู้ดูแลหลักไม่ต้องกรอก)">' +
-        '<label class="f" for="gPass">รหัสผ่าน</label>' +
-        '<input type="password" id="gPass" autocomplete="current-password">' +
-        '<div class="hint" style="margin-top:7px">เข้าไม่ได้? ' +
-        'หากเป็นครูผู้สอนให้แจ้งผู้ดูแลหลักเพื่อรีเซ็ตรหัส · ผู้ดูแลหลักให้เปิดชีต → ส่วนขยาย → Apps Script → ' +
-        'เลือกฟังก์ชัน <code>resetAdminPassword</code> → กดเรียกใช้</div>') +
-    '<div class="actions"><button class="primary grow" id="gGo">' +
-      (stu ? 'เข้าสู่ระบบนักเรียน' : 'เข้าสู่ระบบครู / ผู้ดูแล') + '</button></div>' +
+    '<div class="hint" style="text-align:center;margin:0 0 6px">' +
+      (stu ? 'ใช้เมลโรงเรียนของตัวเอง เช่น <b>30201@pcschool.ac.th</b> · ไม่ต้องใช้รหัสผ่าน'
+           : 'เข้าไม่ได้? ครูผู้สอนแจ้งผู้ดูแลหลักให้กรอกเมลของครูไว้ในบัญชีครูผู้สอน') + '</div>' +
     '<div class="msg" id="gateMsg"></div>' +
     /* บอกตั้งแต่ก่อนกรอกว่าเครื่องนี้ยังผูกกับใครอยู่ ดีกว่าให้กรอกจนเสร็จแล้วค่อยถูกปฏิเสธ */
     (stu && devLockLeft('') ? '<div class="notice warn" style="margin-top:9px">' +
@@ -954,109 +942,6 @@ function renderGate() {
   const gBtn = $('#gGoogleBtn');
   if (gBtn) gBtn.addEventListener('click', gateGoogleLogin);
 
-  const sidEl = $('#gSid');
-  if (sidEl) {
-    const chkSid = () => {
-      const v = sidEl.value || '';
-      const hEl = $('#gSidHint');
-      if (!hEl) return;
-      if (/[a-zA-Z]/.test(v)) {
-        hEl.style.display = 'block';
-        hEl.innerHTML = 'ตรวจพบตัวอักษร — หากคุณเป็นครูผู้สอน <a href="#" id="gSidSwitch" style="font-weight:700;text-decoration:underline">กดที่นี่เพื่อสลับไปหน้าครู</a>';
-        const swBtn = $('#gSidSwitch');
-        if (swBtn) swBtn.onclick = (e) => {
-          e.preventDefault();
-          GATE.mode = 'admin';
-          GATE.initUser = v.trim();
-          renderGate();
-        };
-      } else {
-        hEl.style.display = 'none'; hEl.innerHTML = '';
-      }
-    };
-    sidEl.addEventListener('input', chkSid);
-  }
-
-  if (!stu && GATE.initUser) {
-    const uEl = $('#gUser');
-    if (uEl) { uEl.value = GATE.initUser; }
-    GATE.initUser = '';
-  }
-
-  const go = async () => {
-    if (GATE.busy) return;
-    GATE.busy = true;
-    const btn = $('#gGo'); btn.disabled = true; btn.textContent = 'กำลังตรวจสอบ…';
-    gateMsg('');
-    try {
-      if (stu) {
-        const rawSid = ($('#gSid').value || '').trim();
-        if (/[a-zA-Z]/.test(rawSid)) {
-          throw new ApiError('เลขประจำตัวนักเรียนต้องเป็นตัวเลขเท่านั้น — หากคุณเป็นครูผู้สอน กรุณาเลือกแท็บ "ครูผู้สอน / ผู้ดูแล" ด้านบน');
-        }
-        const sid = normSid(rawSid);
-        const pass = $('#gPass').value || '';
-        if (!sid) throw new ApiError('กรอกเลขประจำตัวเป็นตัวเลข ไม่เกิน ' + SID_MAX + ' หลัก');
-        /* กันการทำข้อสอบให้กัน — เครื่องที่เพิ่งใช้สอบ ยังเข้าในชื่อคนอื่นไม่ได้
-           ตรวจก่อนยิงไปที่ชีต จะได้ไม่เปลืองรอบและไม่ไปนับรหัสผิดให้เขา */
-        const lockLeft = devLockLeft(sid);
-        if (lockLeft) {
-          throw new ApiError('เครื่องนี้เพิ่งใช้เข้าสอบในชื่อ ' +
-            ((devLockRead() || {}).name || '—') + ' จึงยังเข้าใช้ในชื่ออื่นไม่ได้ ' +
-            'เหลืออีก ' + devLockText(lockLeft) + ' — ถ้าเป็นเครื่องที่ใช้ร่วมกัน ให้ครูปลดล็อกให้');
-        }
-        const r = await hubAuth('login', { sid: sid, pass: pass });
-        setAuth('student', r.token, r.profile);
-        // ผูกโปรไฟล์ในเครื่องให้ตรงกับบัญชี เพื่อให้เอกสารและผลลัพธ์แสดงชื่อถูก
-        DB.mode = 'solo';
-        DB.profile = { name: r.profile.name || '', room: normCls(r.profile.cls || ''),
-                       no: String(r.profile.no || ''), sid: String(r.profile.sid || '') };
-        save(true);
-        devLockSet(r.profile.sid || sid, r.profile.name || '');
-        renderGate(); render();
-        if (r.mustChange) forceChangePass();
-        else toast('ยินดีต้อนรับ ' + (r.profile.name || ''), 'ok');
-      } else {
-        const uEl = $('#gUser');
-        const userVal = ((uEl ? uEl.value : '') || '').trim();
-        let r;
-        try {
-          r = await hubAuth('adminLogin', { user: userVal, pass: $('#gPass').value || '' });
-        } catch (err) {
-          if (userVal && (err.message || '').indexOf('รหัสผู้ดูแลไม่ถูกต้อง') >= 0) {
-            throw new Error('เข้าใช้งานไม่สำเร็จ: รหัสผ่านไม่ถูกต้อง หรือ Google Apps Script บน Google Drive ยังเป็นเวอร์ชันเก่า (ยังไม่รองรับครูผู้สอน) — ให้ผู้ดูแลหลักนำ appsscript-Code.gs รุ่นล่าสุดไป Deploy เป็นเวอร์ชันใหม่ใน Apps Script');
-          }
-          throw err;
-        }
-        const isSub = r.role === 'sub';
-        /* ครูที่ถูกจำกัดวิชาไว้ ต้องรู้ตั้งแต่ตอนนี้ว่าเข้าผิดวิชา
-           ไม่งั้นจะเข้าได้แต่กดอะไรก็ถูกปฏิเสธทีละคำสั่งจนงง */
-        const mySub = isSub ? (r.subjects || []) : [];
-        if (mySub.length && mySub.indexOf(SUBJECT) < 0) {
-          throw new Error('บัญชีนี้สอน' + mySub.map(subjectName).join(' และ ') +
-            ' จึงเข้าใช้วิชานี้ไม่ได้ — เปิดแอปของวิชาที่สอนแทน');
-        }
-        setAuth('admin', r.token, {
-          name: isSub ? (r.name || 'ครูผู้สอน') : 'ผู้ดูแล',
-          sub: isSub ? (r.user || '') : '', classes: isSub ? (r.classes || []) : null,
-          subjects: mySub
-        });
-        renderGate(); render();
-        if (isSub && r.mustChange) forceChangePass();
-        else toast(isSub ? ('เข้าใช้ในฐานะครูผู้สอน · ดูแล ' + (r.classes || []).join(', '))
-                         : 'เข้าใช้ในฐานะผู้ดูแลแล้ว', 'ok');
-      }
-    } catch (e) {
-      gateMsg(esc(e.message || String(e)));
-    } finally {
-      GATE.busy = false;
-      const b = $('#gGo'); if (b) { b.disabled = false; b.textContent = stu ? 'เข้าสู่ระบบนักเรียน' : 'เข้าสู่ระบบครู / ผู้ดูแล'; }
-    }
-  };
-
-  $('#gGo').addEventListener('click', go);
-  el.querySelectorAll('input').forEach(i =>
-    i.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); go(); } }));
   const sw = $('#gSwap');
   if (sw) sw.addEventListener('click', e => {
     e.preventDefault(); GATE.mode = stu ? 'admin' : 'student'; renderGate();
@@ -1069,8 +954,6 @@ function renderGate() {
       'ข้อมูลในเครื่องยังอยู่ครบ และเชื่อมต่อใหม่ได้ทีหลังที่แท็บตั้งค่า', 'ตัดการเชื่อมต่อ')) return;
     DB.cloud.url = ''; clearAuth(); renderGate(); render();
   });
-  const first = $('#gSid') || $('#gPass');
-  if (first) first.focus();
 }
 
 let __gsiPromise = null;
@@ -1088,6 +971,36 @@ function ensureGateGsi() {
   return __gsiPromise;
 }
 
+/** เปิดหน้าต่างเลือกบัญชี Google แล้วคืน { token, email, name, localPart, domain }
+    ตรวจแค่ว่าเป็นเมลโรงเรียนหรือเมลผู้ดูแล — สิทธิ์จริงชีตเป็นคนตัดสิน */
+async function googleSignIn() {
+  await ensureGateGsi();
+  const tokResp = await new Promise((resolve, reject) => {
+    const client = window.google.accounts.oauth2.initTokenClient({
+      client_id: '125092357274-5q8em74tm3pfhlkvpelk1hdveq4qdlmb.apps.googleusercontent.com',
+      scope: 'openid email profile',
+      prompt: 'select_account',
+      callback: (resp) => {
+        if (resp && resp.access_token) resolve(resp);
+        else reject(new Error('ไม่ได้รับสิทธิ์จาก Google'));
+      },
+      error_callback: (err) => {
+        reject(new Error(err && err.type === 'popup_closed' ? 'ปิดหน้าต่างเลือกบัญชีก่อนเสร็จสิ้น' : 'เปิดหน้าต่าง Google ไม่สำเร็จ'));
+      }
+    });
+    client.requestAccessToken();
+  });
+  const uRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+    headers: { Authorization: 'Bearer ' + tokResp.access_token }
+  });
+  if (!uRes.ok) throw new Error('ตรวจสอบบัญชี Google ไม่สำเร็จ');
+  const info = await uRes.json();
+  const email = String(info.email || '').trim().toLowerCase();
+  const atIdx = email.indexOf('@');
+  return { token: tokResp.access_token, email: email, name: String(info.name || '').trim(),
+           localPart: atIdx > 0 ? email.slice(0, atIdx) : '', domain: atIdx > 0 ? email.slice(atIdx + 1) : '' };
+}
+
 async function gateGoogleLogin() {
   if (GATE.busy) return;
   const btn = $('#gGoogleBtn');
@@ -1095,37 +1008,11 @@ async function gateGoogleLogin() {
   gateMsg('');
   try {
     if (btn) { btn.disabled = true; btn.textContent = 'กำลังเปิดหน้าต่างเลือกบัญชี Google…'; }
-    await ensureGateGsi();
-    const tokResp = await new Promise((resolve, reject) => {
-      const client = window.google.accounts.oauth2.initTokenClient({
-        client_id: '125092357274-5q8em74tm3pfhlkvpelk1hdveq4qdlmb.apps.googleusercontent.com',
-        scope: 'openid email profile',
-        prompt: 'select_account',
-        callback: (resp) => {
-          if (resp && resp.access_token) resolve(resp);
-          else reject(new Error('ไม่ได้รับสิทธิ์จาก Google'));
-        },
-        error_callback: (err) => {
-          reject(new Error(err && err.type === 'popup_closed' ? 'ปิดหน้าต่างเลือกบัญชีก่อนเสร็จสิ้น' : 'เปิดหน้าต่าง Google ไม่สำเร็จ'));
-        }
-      });
-      client.requestAccessToken();
-    });
+    const g = await googleSignIn();
     if (btn) btn.textContent = 'กำลังตรวจสอบเมลโรงเรียน…';
-    const uRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-      headers: { Authorization: 'Bearer ' + tokResp.access_token }
-    });
-    if (!uRes.ok) throw new Error('ตรวจสอบบัญชี Google ไม่สำเร็จ');
-    const info = await uRes.json();
-    const email = String(info.email || '').trim().toLowerCase();
-    const displayName = String(info.name || '').trim();
-    const atIdx = email.indexOf('@');
-    const localPart = atIdx > 0 ? email.slice(0, atIdx) : '';
-    const domain = atIdx > 0 ? email.slice(atIdx + 1) : '';
-
-    if (email !== 'theboydz@gmail.com' && domain !== 'pcschool.ac.th') {
-      throw new Error('บัญชี ' + email + ' ไม่ใช่เมลโรงเรียน (@pcschool.ac.th) กรุณาเลือกเมลโรงเรียนปากช่อง');
-    }
+    const tokResp = { access_token: g.token };
+    const email = g.email, displayName = g.name, localPart = g.localPart, domain = g.domain;
+    /* ครูผู้สอนที่ผู้ดูแลกรอกเมลไว้ อาจใช้เมลนอกโรงเรียน — ชีตเป็นคนตัดสิน หน้าเว็บกันแค่บัญชีที่ไม่ใช่โรงเรียนเลย */
 
     if (studentOnlyBuild() && email === 'theboydz@gmail.com') {
       throw new Error('ไฟล์ฉบับนักเรียนไม่อนุญาตให้เข้าใช้ในฐานะผู้ดูแลหลัก');
@@ -1149,16 +1036,11 @@ async function gateGoogleLogin() {
         name: displayName
       });
     } catch (err) {
-      const msg = err.message || String(err);
-      if (/ไม่รู้จักคำสั่ง/.test(msg) && /^\d{4,6}$/.test(localPart)) {
-        try {
-          r = await hubAuth('login', { sid: localPart, pass: '1111' });
-        } catch (e2) {
-          r = null;
-        }
+      /* แสดงข้อความจริงจากชีต เช่น ไม่พบเลขประจำตัว — ไม่มีทางเข้าด้วยรหัสผ่านสำรองแล้ว */
+      if (/ไม่รู้จักคำสั่ง/.test(err.message || '')) {
+        throw new Error('ชีตยังเป็นรุ่นเก่า ไม่รู้จักการเข้าด้วย Google — ผู้ดูแลต้องวาง appsscript-Code.gs รุ่นล่าสุดแล้ว Deploy ใหม่');
       }
-      /* ไม่สร้างบัตรผ่านสำรองอีกแล้ว (ชีตไม่รับ) — แสดงข้อความจริงจากชีต เช่น ไม่พบเลขประจำตัว */
-      if (!r) throw err;
+      throw err;
     }
 
     const isAdm = r.role === 'main' || r.role === 'sub' || email === 'theboydz@gmail.com';
@@ -1280,70 +1162,6 @@ function hubRemember(role, r, h, own, hub) {
         .catch(function () {});
     });
   }
-}
-
-/** บังคับตั้งรหัสใหม่ตอนเข้าใช้ครั้งแรก — ปิดหน้าต่างนี้ไม่ได้จนกว่าจะตั้งเสร็จ */
-function forceChangePass(optional) {
-  const m = openModal({
-    title: optional ? 'เปลี่ยนรหัสผ่าน' : 'ตั้งรหัสผ่านใหม่ก่อนเริ่มใช้งาน',
-    bodyHTML:
-      (optional ? '' :
-        '<div class="notice warn" style="margin-bottom:11px">รหัสตั้งต้นเหมือนกันทุกคน ' +
-        'ถ้าไม่เปลี่ยน เพื่อนจะเข้าใช้ในชื่อของคุณได้ กรุณาตั้งรหัสใหม่ก่อน</div>') +
-      '<label class="hint" for="cpA">รหัสผ่านใหม่ (อย่างน้อย ' + (isSubAdmin() ? 6 : 4) + ' ตัว)</label>' +
-      '<input type="password" id="cpA" style="width:100%;font-size:16px">' +
-      '<label class="hint" for="cpB" style="display:block;margin-top:9px">พิมพ์ซ้ำอีกครั้ง</label>' +
-      '<input type="password" id="cpB" style="width:100%;font-size:16px">' +
-      '<div id="cpMsg" style="margin-top:10px"></div>',
-    buttons: (optional ? [{ label: 'ยกเลิก' }] : []).concat([
-      { label: 'บันทึกรหัสใหม่', cls: 'primary', act: async (close, root) => {
-          const a = $('#cpA', root).value || '', b = $('#cpB', root).value || '';
-          const msg = $('#cpMsg', root);
-          const least = isSubAdmin() ? 6 : 4;
-          if (a.length < least) { msg.innerHTML = '<div class="notice bad">รหัสสั้นเกินไป</div>'; return; }
-          if (a !== b) { msg.innerHTML = '<div class="notice bad">รหัสสองช่องไม่ตรงกัน</div>'; return; }
-          try {
-            // ครูผู้สอนเปลี่ยนรหัสของตัวเองผ่านคำสั่งของฝั่งผู้ดูแล ไม่ใช่ของนักเรียน
-            const act = isSubAdmin() ? 'adminPass' : 'changePass';
-            await api(act, { newPass: a });
-            // ตั้งให้ตรงกันทุกชีตในคราวเดียว ไม่งั้นวิชาที่อยู่คนละชีตจะเข้าไม่ได้
-            const syn = await passSyncOthers(act, a);
-            close();
-            toast('เปลี่ยนรหัสผ่านเรียบร้อย' +
-              (syn.done ? ' · ตั้งให้ตรงกันอีก ' + syn.done + ' ชีต' : '') +
-              (syn.fail ? ' · อีก ' + syn.fail + ' ชีตยังไม่สำเร็จ' : ''),
-              syn.fail ? 'warn' : 'ok');
-          } catch (e) {
-            msg.innerHTML = '<div class="notice bad">' + esc(e.message) + '</div>';
-          }
-        } }
-    ])
-  });
-  if (!optional) { const x = $('.x', m.root); if (x) x.remove(); }
-}
-
-/** ตั้งรหัสใหม่ให้ตรงกันทุกชีต
-    ชีตแต่ละใบเก็บรหัสแยกกัน และก็อปแฮชข้ามใบไม่ได้เพราะกุญแจของแต่ละใบไม่เหมือนกัน
-    จึงต้องสั่งเปลี่ยนทีละใบด้วยโทเคนของใบนั้น ซึ่งพอร์ทัลเก็บไว้ให้ตอนลงชื่อเข้าใช้
-    ทำแบบ "เท่าที่ทำได้" — ใบไหนไม่มีชื่อนักเรียนคนนี้ถือว่าข้าม ไม่ใช่ล้มเหลว
-    และไม่ว่าจะพลาดใบไหน ก็ไม่ขวางการเปลี่ยนรหัสของวิชานี้ที่สำเร็จไปแล้ว */
-async function passSyncOthers(action, newPass) {
-  let s = null;
-  try { s = JSON.parse(localStorage.getItem('pcportal.v1') || 'null'); } catch (e) { s = null; }
-  const out = { done: 0, skip: 0, fail: 0 };
-  if (!s || !s.tokens || !s.exp || s.exp < Date.now()) return out;
-  const mine = DB.cloud.url;
-  const urls = Object.keys(s.tokens).filter(u => u && u !== mine && s.tokens[u]);
-  for (let i = 0; i < urls.length; i++) {
-    try {
-      await api(action, { newPass: newPass, token: s.tokens[urls[i]] },
-                { url: urls[i], noToken: true });
-      out.done++;
-    } catch (e) {
-      if (/ไม่พบ/.test(e.message || '')) out.skip++; else out.fail++;
-    }
-  }
-  return out;
 }
 
 async function doLogout() {

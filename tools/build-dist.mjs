@@ -78,32 +78,32 @@ const TARGETS = [
   {
     src: 'MathAutoSheet/math.html',
     out: 'MathAutoSheet/index.html',
-    // คณิตยังไม่ได้เชื่อมชีต จึงเป็นฉบับนักเรียนล้วน ไม่มีเฉลยและสถิติชั้นเรียน
-    builtin: { url: '', studentOnly: true, lockCloud: false, logo: '', header: null, about: null }
+    // คณิต — ต่อชีตศูนย์กลาง (PSCI_APPS_URL) เก็บแยกตาม subject: 'math' อัตโนมัติ
+    builtin: { url: PSCI_APPS_URL, studentOnly: false, lockCloud: true, logo: '', header: null, about: null }
   },
   {
     src: 'PhysicsFoundation/foundation.html',
     out: 'PhysicsFoundation/index.html',
-    // ปรับพื้นฐานฟิสิกส์ — ใช้เอนจินเดียวกับคณิต ยังไม่ได้เชื่อมชีต จึงเป็นฉบับนักเรียนล้วน
-    builtin: { url: '', studentOnly: true, lockCloud: false, logo: '', header: null, about: null }
+    // ปรับพื้นฐานฟิสิกส์ — ต่อชีตศูนย์กลาง (PSCI_APPS_URL) เก็บแยกตาม subject: 'physfound' อัตโนมัติ
+    builtin: { url: PSCI_APPS_URL, studentOnly: false, lockCloud: true, logo: '', header: null, about: null }
   },
   {
     src: 'ChemistryAutoSheet/chem.html',
     out: 'ChemistryAutoSheet/index.html',
-    // เคมียังไม่ได้เชื่อมชีต จึงเป็นฉบับนักเรียนล้วนเช่นเดียวกับคณิต
-    builtin: { url: '', studentOnly: true, lockCloud: false, logo: '', header: null, about: null }
+    // เคมี — ต่อชีตศูนย์กลาง (PSCI_APPS_URL) เก็บแยกตาม subject: 'chem' อัตโนมัติ
+    builtin: { url: PSCI_APPS_URL, studentOnly: false, lockCloud: true, logo: '', header: null, about: null }
   },
   {
     src: 'ScienceAutoSheet/science.html',
     out: 'ScienceAutoSheet/index.html',
-    // วิทยาศาสตร์ยังไม่ได้เชื่อมชีตเช่นกัน จึงเป็นฉบับนักเรียนล้วน
-    builtin: { url: '', studentOnly: true, lockCloud: false, logo: '', header: null, about: null }
+    // วิทยาศาสตร์ — ต่อชีตศูนย์กลาง (PSCI_APPS_URL) เก็บแยกตาม subject: 'science' อัตโนมัติ
+    builtin: { url: PSCI_APPS_URL, studentOnly: false, lockCloud: true, logo: '', header: null, about: null }
   },
   {
     src: 'BiologyAutoSheet/bio.html',
     out: 'BiologyAutoSheet/index.html',
-    // ชีววิทยายังไม่ได้เชื่อมชีต จึงเป็นฉบับนักเรียนล้วนเช่นเดียวกับคณิต วิทย์ และเคมี
-    builtin: { url: '', studentOnly: true, lockCloud: false, logo: '', header: null, about: null }
+    // ชีววิทยา — ต่อชีตศูนย์กลาง (PSCI_APPS_URL) เก็บแยกตาม subject: 'bio' อัตโนมัติ
+    builtin: { url: PSCI_APPS_URL, studentOnly: false, lockCloud: true, logo: '', header: null, about: null }
   },
   {
     src: 'PhysicalScienceAutoSheet/physci.html',
@@ -121,7 +121,7 @@ const TARGETS = [
        ครูลงชื่อเป็นผู้ดูแลได้ และยังไม่ล็อกการตัดการเชื่อมต่อ */
     src: 'IJSOAutoSheet/ijso.html',
     out: 'IJSOApp/index.html',
-    builtin: { url: PSCI_APPS_URL, studentOnly: false, lockCloud: false, logo: '', header: null, about: null }
+    builtin: { url: PSCI_APPS_URL, studentOnly: false, lockCloud: true, logo: '', header: null, about: null }
   },
   {
     src: 'EquilibriumLab/equilibrium.html',

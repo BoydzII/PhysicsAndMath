@@ -10535,7 +10535,7 @@ function teacherCardHTML() {
   if (!cloudOn() || !isMainAdmin()) return '';
   return '<div class="card"><h3>ครูผู้สอนคุมสอบ' +
     '<span class="sub">แบ่งให้ครูท่านอื่นดูแลเป็นรายชั้น</span></h3>' +
-    '<div class="hint">ครูผู้สอนเข้าระบบด้วย<b>ชื่อผู้ใช้และรหัสผ่านของตัวเอง</b> ' +
+    '<div class="hint">ครูผู้สอนเข้าระบบด้วย<b>บัญชี Google ของตัวเอง</b> (กรอกเมลไว้ในบัญชี ถ้าเว้นว่างใช้ ชื่อผู้ใช้@pcschool.ac.th) ' +
     'แล้วจะเห็นและแก้ได้<b>เฉพาะวิชาและชั้นที่คุณกำหนดให้</b> — มอบหมายใบงาน ดึงผล ' +
     'และแก้รายชื่อนักเรียนในชั้นนั้น<br>' +
     'สิ่งที่ครูผู้สอนทำไม่ได้ — ซ่อมโครงสร้างชีต ลบรายชื่อซ้ำทั้งแผ่น ' +
@@ -10557,9 +10557,9 @@ function teacherDialog(cur) {
       (cur ? ' disabled' : '') + '>' +
       '<label class="hint" for="tcName" style="display:block;margin-top:9px">ชื่อ-นามสกุลของครู</label>' +
       '<input type="text" id="tcName" style="width:100%" value="' + esc(cur ? cur.name : '') + '">' +
-      '<label class="hint" for="tcPass" style="display:block;margin-top:9px">' +
-      (cur ? 'รหัสผ่านใหม่ (เว้นว่าง = ไม่เปลี่ยน)' : 'รหัสผ่านตั้งต้น (อย่างน้อย 6 ตัว)') + '</label>' +
-      '<input type="password" id="tcPass" style="width:100%">' +
+      '<label class="hint" for="tcEmail" style="display:block;margin-top:9px">เมลที่ครูใช้เข้าระบบ ' +
+      '<span class="hint">(เว้นว่าง = ชื่อผู้ใช้@pcschool.ac.th)</span></label>' +
+      '<input type="email" id="tcEmail" style="width:100%" autocomplete="off" placeholder="เช่น somchai.k@pcschool.ac.th" value="' + esc(cur && cur.email ? cur.email : '') + '">' +
       '<div class="hint" style="margin-top:11px"><b>วิชาที่ให้สอน</b> — ' +
       'ไม่ติ๊กเลย = สอนได้ทุกวิชาในชีตใบนี้</div>' +
       '<div style="margin-top:6px">' +
@@ -10583,9 +10583,7 @@ function teacherDialog(cur) {
           const subs = $$('[data-tcsub]', root).filter(x => x.checked).map(x => x.dataset.tcsub);
           const body = { user: cur ? cur.user : ($('#tcUser', root).value || '').trim().toLowerCase(),
                          name: ($('#tcName', root).value || '').trim(), classes: cls, subjects: subs };
-          const pw = $('#tcPass', root).value || '';
-          if (pw) body.pass = pw;
-          if (!cur && !pw) { msg.innerHTML = '<div class="notice bad">ตั้งรหัสผ่านตั้งต้นให้ด้วย</div>'; return; }
+          body.email = ($('#tcEmail', root).value || '').trim().toLowerCase();
           msg.innerHTML = '<div class="hint">กำลังบันทึก…</div>';
           try {
             await api('teacherSave', { teacher: body });
@@ -10603,25 +10601,18 @@ async function loadTeachers() {
     const rows = await api('teacherList', {});
     if (!rows.length) { box.innerHTML = '<div class="hint">ยังไม่มีครูผู้สอน</div>'; return; }
     box.innerHTML = '<div class="tablewrap"><table><thead><tr><th>ชื่อผู้ใช้</th><th>ชื่อ</th>' +
-      '<th>วิชา</th><th>ชั้นที่ดูแล</th><th>สถานะ</th><th></th></tr></thead><tbody>' +
+      '<th>เมลที่ใช้เข้าระบบ</th><th>วิชา</th><th>ชั้นที่ดูแล</th><th>สถานะ</th><th></th></tr></thead><tbody>' +
       rows.map(t => '<tr><td>' + esc(t.user) + '</td><td>' + esc(t.name) + '</td>' +
+        '<td>' + (t.email ? esc(t.email) : '<span class="hint">' + esc(t.user) + '@pcschool.ac.th</span>') + '</td>' +
         '<td>' + esc((t.subjects || []).length
           ? t.subjects.map(subjectName).join(', ') : 'ทุกวิชา') + '</td>' +
         '<td>' + esc((t.classes || []).join(', ')) + '</td>' +
-        '<td>' + (t.active ? (t.mustChange ? 'ยังไม่เปลี่ยนรหัส' : 'ใช้งานได้') : 'ปิดใช้งาน') + '</td>' +
+        '<td>' + (t.active ? 'ใช้งานได้' : 'ปิดใช้งาน') + '</td>' +
         '<td class="num"><button class="sm" data-tced="' + esc(t.user) + '">แก้</button> ' +
-        '<button class="sm" data-tcrs="' + esc(t.user) + '">รีเซ็ตรหัส</button> ' +
         '<button class="sm" data-tcrm="' + esc(t.user) + '">ลบ</button></td></tr>').join('') +
       '</tbody></table></div>';
     const byUser = u => rows.find(x => x.user === u);
     $$('[data-tced]', box).forEach(b => b.addEventListener('click', () => teacherDialog(byUser(b.dataset.tced))));
-    $$('[data-tcrs]', box).forEach(b => b.addEventListener('click', async () => {
-      if (!await confirmBox('รีเซ็ตรหัสผ่าน', 'ตั้งรหัสของ <b>' + esc(b.dataset.tcrs) +
-          '</b> กลับเป็นรหัสตั้งต้นใช่ไหม', 'รีเซ็ต')) return;
-      try { const r = await api('teacherReset', { user: b.dataset.tcrs });
-        toast('รหัสใหม่คือ ' + r.pass, 'ok'); loadTeachers();
-      } catch (e) { toast(e.message, 'bad'); }
-    }));
     $$('[data-tcrm]', box).forEach(b => b.addEventListener('click', async () => {
       if (!await confirmBox('ลบครูผู้สอน', 'ลบบัญชี <b>' + esc(b.dataset.tcrm) +
           '</b> ออกจากระบบใช่ไหม<br><span class="hint">ผลการทำของนักเรียนไม่ถูกลบ</span>', 'ลบ')) return;
@@ -10645,7 +10636,6 @@ function cloudCardHTML() {
   if (isStudent()) {
     h += '<div class="hint">บัญชีของคุณผูกกับชีตของครูแล้ว ผลการทำจะถูกส่งขึ้นให้อัตโนมัติ</div>' +
       '<div class="row" style="margin-top:11px">' +
-      '<button id="btnChgPass">เปลี่ยนรหัสผ่าน</button>' +
       '<button id="btnFlush">ส่งผลที่ค้างอยู่' + (DB.outbox.length ? ' (' + DB.outbox.length + ')' : '') + '</button>' +
       '</div></div>';
     return h;
@@ -10688,16 +10678,13 @@ function cloudCardHTML() {
       '<button id="btnPullRoster">ดึงรายชื่อจากชีต</button>' +
       '<button id="btnRepair">ซ่อมโครงสร้างชีต</button>' +
       '<button id="btnDedupe">ลบแถวซ้ำในชีต</button>' +
-      '<button id="btnResetPass">รีเซ็ตรหัสนักเรียน</button>' +
-      '<button id="btnUnlock">ปลดล็อกกรอกรหัสผิด</button>' +
-      '<button id="btnPreview">👀 ทดลองดูแบบนักเรียน</button>' +
-      '<button id="btnAdminPass">เปลี่ยนรหัสผู้ดูแล</button></div>' +
+      '<button id="btnPreview">👀 ทดลองดูแบบนักเรียน</button></div>' +
       '<div class="row" style="margin-top:11px"><button class="primary" id="btnMakeStudentFile">' +
       'สร้างไฟล์สำหรับแจกนักเรียน</button>' +
       '<span class="hint grow" style="min-width:200px">ได้ไฟล์ <code>index.html</code> ' +
       'ที่ฝังการเชื่อมต่อไว้แล้ว เอาไปวางบน Netlify แล้วส่งลิงก์ให้นักเรียนได้เลย</span></div>' +
       '<div class="hint" style="margin-top:9px">ส่งรายชื่อขึ้นชีตแล้วนักเรียนจะเข้าใช้ได้ทันที ' +
-      'ด้วย<b>เลขประจำตัว</b>และรหัสตั้งต้น <b>1111</b> — ระบบจะบังคับให้ตั้งรหัสใหม่ตอนเข้าครั้งแรก</div>';
+      'ด้วย<b>เมลโรงเรียน</b> (เลขประจำตัว@pcschool.ac.th) ไม่ต้องใช้รหัสผ่าน</div>';
   } else if (cloudOn() && !authValid()) {
     h += '<div class="notice info" style="margin-top:11px">เชื่อมต่อไว้แล้ว — ' +
       'โหลดหน้านี้ใหม่เพื่อลงชื่อเข้าใช้</div>';
@@ -10772,17 +10759,13 @@ function bindCloudCard() {
     }
   });
 
-  const cp = $('#btnChgPass'); if (cp) cp.addEventListener('click', () => forceChangePass(true));
   const fl = $('#btnFlush');   if (fl) fl.addEventListener('click', () => flushOutbox(true));
   const pr = $('#btnPushRoster'); if (pr) pr.addEventListener('click', pushRoster);
   const gr = $('#btnPullRoster'); if (gr) gr.addEventListener('click', pullRoster);
   const dd = $('#btnDedupe'); if (dd) dd.addEventListener('click', dedupeRoster);
   const fx = $('#btnRepair'); if (fx) fx.addEventListener('click', () => repairSheet(false));
   const mk = $('#btnMakeStudentFile'); if (mk) mk.addEventListener('click', makeStudentFile);
-  const rp = $('#btnResetPass');  if (rp) rp.addEventListener('click', resetStudentPass);
-  const ul = $('#btnUnlock');     if (ul) ul.addEventListener('click', unlockStudents);
   const pv = $('#btnPreview');    if (pv) pv.addEventListener('click', previewAsStudent);
-  const ap = $('#btnAdminPass');  if (ap) ap.addEventListener('click', changeAdminPass);
 }
 /** วินิจฉัยว่าการเชื่อมต่อที่ช้า เกิดจากอะไร แล้วบอกวิธีแก้ให้ตรงจุด
     แยกด้วยการเทียบเวลารอบแรกกับรอบสอง เพราะสองสาเหตุนี้แก้คนละวิธีกันโดยสิ้นเชิง */
@@ -11092,133 +11075,6 @@ async function pullRoster() {
     save(true); render();
     toast('ดึงรายชื่อ ' + list.length + ' คนเรียบร้อย' + (h ? ' (เชื่อมคะแนนเดิม ' + h + ' รายการ)' : ''), 'ok');
   } catch (e) { toast(e.message, 'bad'); }
-}
-/* ── ปลดล็อกนักเรียนที่กรอกรหัสผิดหลายครั้ง ─────────────────────────────
-   ระบบพักการเข้าใช้ไว้สิบนาทีเพื่อกันการเดารหัส แต่ในคาบสอนจริงเด็กที่จำรหัสตัวเอง
-   ไม่ได้จะติดค้างจนหมดคาบ ครูต้องปลดให้ได้เองทันที ไม่ใช่ยืนรอ
-   การปลดลบแค่ตัวนับการกรอกผิด ไม่ได้แตะรหัสผ่าน ต่างจาก "รีเซ็ตรหัสนักเรียน"
-   จึงไม่ต้องให้เด็กตั้งรหัสใหม่ ใช้รหัสเดิมเข้าได้เลย                        */
-async function unlockStudents() {
-  let list;
-  try { list = await api('lockList', {}); }
-  catch (e) {
-    // ชีตที่ยังไม่ได้อัปเดตสคริปต์จะไม่รู้จักคำสั่งนี้ บอกให้ตรงสาเหตุดีกว่าโยนข้อความดิบ
-    toast(/ไม่รู้จักคำสั่ง/.test(e.message)
-      ? 'สคริปต์ในชีตยังเป็นรุ่นเก่า — นำ appsscript-Code.gs ล่าสุดไป Deploy เวอร์ชันใหม่ก่อน'
-      : e.message, 'bad');
-    return;
-  }
-  if (!list.length) {
-    toast('ตอนนี้ไม่มีใครติดล็อกหรือกรอกรหัสผิดค้างไว้', 'ok');
-    return;
-  }
-  const rows = list.slice().sort((a, b) => (b.locked - a.locked) || (b.fails - a.fails));
-  const nLock = rows.filter(r => r.locked).length;
-  openModal({
-    title: 'ปลดล็อกนักเรียนที่กรอกรหัสผิด',
-    wide: true,
-    bodyHTML: '<div class="hint" style="margin-bottom:9px">' +
-      (nLock ? '<b style="color:var(--bad)">ติดล็อกอยู่ ' + nLock + ' คน</b> — เข้าใช้ไม่ได้จนกว่าจะครบ 10 นาที หรือครูกดปลดให้'
-             : 'ยังไม่มีใครติดล็อก') +
-      ' · คนที่ยังไม่ติดคือกรอกผิดไปบ้างแล้ว ปลดตอนนี้ได้เลยเพื่อกันไม่ให้ติด<br>' +
-      'การปลดจะ<b>ไม่เปลี่ยนรหัสผ่าน</b> นักเรียนใช้รหัสเดิมเข้าได้ทันที ' +
-      '(ถ้าจำรหัสไม่ได้จริง ๆ ให้ใช้ปุ่ม <b>รีเซ็ตรหัสนักเรียน</b> แทน)<br>' +
-      /* ศูนย์กลางปลดล็อกรหัสของทุกแอปอยู่ที่ส่งงานออนไลน์ — ปลดครั้งเดียวได้ทุกชีต รวมคำขอลืมรหัสผ่าน */
-      '🔓 ปลดพร้อมกันทุกแอปได้ที่ <a href="../WorkDesk/index.html#reset" target="_blank" rel="noopener">ศูนย์ปลดล็อกรหัส</a> (ส่งงานออนไลน์ → ปลดล็อกรหัส)</div>' +
-      '<div class="row" style="margin-bottom:8px"><button class="sm" id="ukAll">เลือกทั้งหมด</button>' +
-      '<button class="sm" id="ukNone">ไม่เลือกเลย</button></div>' +
-      '<div class="tablewrap" style="max-height:320px"><table><thead><tr><th style="width:40px"></th>' +
-      '<th>เลขประจำตัว</th><th>ชื่อ-นามสกุล</th><th>ชั้น</th><th>สถานะ</th></tr></thead><tbody>' +
-      rows.map(r => '<tr><td><input type="checkbox" data-uk="' + esc(r.sid) + '"' +
-        (r.locked ? ' checked' : '') + '></td>' +
-        '<td>' + esc(r.sid) + '</td><td>' + esc(r.name) + '</td>' +
-        '<td>' + esc(normCls(r.cls) || '—') + '</td><td>' +
-        (r.locked ? '<span style="color:var(--bad);font-weight:700">ติดล็อก</span>'
-                  : '<span class="hint">ผิดไป ' + r.fails + ' ครั้ง · เหลืออีก ' + r.left + '</span>') +
-        '</td></tr>').join('') +
-      '</tbody></table></div>',
-    buttons: [
-      { label: 'ปิด' },
-      { label: 'ปลดล็อกที่เลือก', cls: 'primary', act: async (close, root) => {
-          const sids = $$('[data-uk]', root).filter(c => c.checked).map(c => c.dataset.uk);
-          if (!sids.length) { toast('ยังไม่ได้เลือกใคร', 'bad'); return; }
-          try {
-            const r = await api('unlock', { sids: sids });
-            toast('ปลดล็อกแล้ว ' + r.unlocked + ' คน — ให้ลองเข้าใช้ใหม่ได้เลย', 'ok');
-            close();
-          } catch (e) { toast(e.message, 'bad'); }
-        } }
-    ],
-    onMount: root => {
-      const set = v => $$('[data-uk]', root).forEach(c => { c.checked = v; });
-      $('#ukAll', root).addEventListener('click', () => set(true));
-      $('#ukNone', root).addEventListener('click', () => set(false));
-    }
-  });
-}
-async function resetStudentPass() {
-  let list;
-  try { list = await api('rosterList', {}); }
-  catch (e) { toast(e.message, 'bad'); return; }
-  if (!list.length) { await rosterEmptyBox(); return; }
-  openModal({
-    title: 'รีเซ็ตรหัสผ่านนักเรียน',
-    wide: true,
-    bodyHTML: '<div class="hint" style="margin-bottom:9px">เลือกคนที่ลืมรหัส แล้วกดรีเซ็ต ' +
-      'รหัสจะกลับเป็น <b>1111</b> และระบบจะบังคับให้ตั้งใหม่ตอนเข้าครั้งถัดไป</div>' +
-      '<div class="row" style="margin-bottom:8px"><button class="sm" id="rsAll">เลือกทั้งหมด</button>' +
-      '<button class="sm" id="rsNone">ไม่เลือกเลย</button>' +
-      '<input type="text" id="rsFind" placeholder="ค้นหาชื่อหรือเลขประจำตัว" class="grow" style="max-width:260px"></div>' +
-      '<div class="tablewrap" style="max-height:320px"><table><thead><tr><th style="width:40px"></th>' +
-      '<th>เลขประจำตัว</th><th>ชื่อ-นามสกุล</th><th>ชั้น</th><th>เข้าใช้ล่าสุด</th></tr></thead><tbody id="rsBody">' +
-      list.map(s => '<tr data-k="' + esc(s.sid + ' ' + s.name) + '"><td><input type="checkbox" data-rs="' + esc(s.sid) + '"></td>' +
-        '<td>' + esc(s.sid) + '</td><td>' + esc(s.name) + '</td><td>' + esc(normCls(s.cls) || '—') + '</td>' +
-        '<td class="hint">' + (s.lastLogin ? esc(String(s.lastLogin).slice(0, 16)) : 'ยังไม่เคยเข้า') +
-        (s.mustChange ? ' <span class="tag l1">ยังใช้รหัสตั้งต้น</span>' : '') + '</td></tr>').join('') +
-      '</tbody></table></div>',
-    buttons: [
-      { label: 'ปิด' },
-      { label: 'รีเซ็ตที่เลือก', cls: 'danger', act: async (close, root) => {
-          const sids = $$('[data-rs]', root).filter(c => c.checked).map(c => c.dataset.rs);
-          if (!sids.length) { toast('ยังไม่ได้เลือกใคร', 'bad'); return; }
-          try {
-            const r = await api('rosterReset', { sids: sids });
-            close(); toast('รีเซ็ตรหัส ' + r.reset + ' คนเป็น ' + r.pass + ' แล้ว', 'ok');
-          } catch (e) { toast(e.message, 'bad'); }
-        } }
-    ],
-    onMount: root => {
-      $('#rsAll', root).addEventListener('click', () => $$('[data-rs]', root).forEach(c => {
-        if (c.closest('tr').style.display !== 'none') c.checked = true; }));
-      $('#rsNone', root).addEventListener('click', () => $$('[data-rs]', root).forEach(c => c.checked = false));
-      $('#rsFind', root).addEventListener('input', e => {
-        const q = e.target.value.trim().toLowerCase();
-        $$('#rsBody tr', root).forEach(tr =>
-          tr.style.display = !q || tr.dataset.k.toLowerCase().indexOf(q) >= 0 ? '' : 'none');
-      });
-    }
-  });
-}
-function changeAdminPass() {
-  openModal({
-    title: 'เปลี่ยนรหัสผู้ดูแล',
-    bodyHTML: '<div class="hint" style="margin-bottom:9px">อย่างน้อย 8 ตัวอักษร ' +
-      'ถ้าลืมรหัสนี้ ให้เปิดหน้า Apps Script แล้วเรียกฟังก์ชัน <code>resetAdminPassword</code></div>' +
-      '<label class="hint" for="apA">รหัสใหม่</label><input type="password" id="apA" style="width:100%;font-size:16px">' +
-      '<label class="hint" for="apB" style="display:block;margin-top:9px">พิมพ์ซ้ำ</label>' +
-      '<input type="password" id="apB" style="width:100%;font-size:16px"><div id="apMsg" style="margin-top:10px"></div>',
-    buttons: [
-      { label: 'ยกเลิก' },
-      { label: 'บันทึก', cls: 'primary', act: async (close, root) => {
-          const a = $('#apA', root).value || '', b = $('#apB', root).value || '';
-          const m = $('#apMsg', root);
-          if (a.length < 8) { m.innerHTML = '<div class="notice bad">สั้นเกินไป ต้องอย่างน้อย 8 ตัว</div>'; return; }
-          if (a !== b) { m.innerHTML = '<div class="notice bad">สองช่องไม่ตรงกัน</div>'; return; }
-          try { await api('adminPass', { newPass: a }); close(); toast('เปลี่ยนรหัสผู้ดูแลแล้ว', 'ok'); }
-          catch (e) { m.innerHTML = '<div class="notice bad">' + esc(e.message) + '</div>'; }
-        } }
-    ]
-  });
 }
 /** นำเข้ารายชื่อจากไฟล์ Excel (.xlsx) หรือ CSV พร้อมให้เลือกชีตและจับคู่คอลัมน์เอง */
 async function importRosterFile(classId) {

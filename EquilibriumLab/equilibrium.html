@@ -544,7 +544,7 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 
 <!-- ==========================================================================
      หน้าเข้าใช้งาน — นักเรียนใช้ "รหัสเข้าเรียน" สั้น ๆ ที่ครูแจก
-     ครูเข้าด้วยรหัสผู้ดูแล  ถ้ายังไม่ได้เชื่อมชีตก็ใช้งานได้ครบแบบเครื่องเดียว
+     ครูเข้าด้วยบัญชี Google (ผู้ดูแลหลัก หรือครูผู้สอนที่มีบัญชีในชีตศูนย์กลาง) — ไม่มีรหัสผ่านแล้ว
      ========================================================================== -->
 <div id="gate" class="gate hide">
   <div class="gatebox">
@@ -593,11 +593,8 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
       </div>
 
       <div id="gTeacher" class="hide">
-        <label class="f">รหัสผู้ดูแล</label>
-        <input id="gPass" type="password" autocomplete="current-password" placeholder="รหัสของครู">
-        <button class="btn pri wide" id="gGoT" style="margin-top:17px">เข้าหน้าครู</button>
-        <p class="hint" style="margin-top:13px">ครั้งแรกให้ตั้งรหัสได้เลย ระบบจะจำไว้ในเครื่องนี้
-          และถ้าเชื่อม Google Sheet แล้วจะตรวจกับชีตแทน</p>
+        <p class="hint" style="margin-top:4px">ครูกดปุ่มด้านบนแล้วเลือกบัญชีของครู —
+          ผู้ดูแลหลักใช้ theboydz@gmail.com · ครูผู้สอนใช้เมลที่ผู้ดูแลลงทะเบียนไว้ในคลังโจทย์</p>
       </div>
 
       <div id="gMsg" class="notice bad hide"></div>
@@ -674,7 +671,7 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
    สร้างฉบับนักเรียนด้วย  node tools/build-dist.mjs  (หรือปุ่มในแท็บตั้งค่า)
    *** ห้ามลบบรรทัดเครื่องหมาย @@BUILTIN@@ ทั้งสองอัน ตัวสร้างไฟล์ใช้หาตำแหน่ง *** */
 /* @@BUILTIN@@ */
-const BUILTIN = {"url":"","studentOnly":false,"lockCloud":false,"school":"โรงเรียนปากช่อง","teacher":"นายรังสรรค์ กรีกูล","term":"","build":"2026-10-30 12:57","ver":"v8.283","books":[{"url":"https://script.google.com/macros/s/AKfycbxVa8BYYQeIhBDmg85w2UBwsIqt6a2YudehUfCbyMny9T-5TTh1UfFxsJjTk9HLNuFc/exec","name":"คลังโจทย์ออนไลน์ · วิทยาศาสตร์กายภาพ (ชีตศูนย์กลาง)"},{"url":"https://script.google.com/macros/s/AKfycbzuuRbnE_oB7a9vx7zZizyPVEKao31ERDTU82DvydMuRTDqVoQvgns9EsjTIzpbBjuM/exec","name":"คลังโจทย์ออนไลน์ · ฟิสิกส์"},{"url":"https://script.google.com/macros/s/AKfycbyKZicAzLfUfc7UXPMrGsejrq9DyOU7w3AyinaueUsarp72UZD6w8gYbv_FtpUfasbDkw/exec","name":"ส่งงานออนไลน์ · โรงเรียนปากช่อง","autoRoster":true}]};
+const BUILTIN = {"url":"","studentOnly":false,"lockCloud":false,"school":"โรงเรียนปากช่อง","teacher":"นายรังสรรค์ กรีกูล","term":"","build":"2026-11-11 10:10","ver":"v8.286","books":[{"url":"https://script.google.com/macros/s/AKfycbxVa8BYYQeIhBDmg85w2UBwsIqt6a2YudehUfCbyMny9T-5TTh1UfFxsJjTk9HLNuFc/exec","name":"คลังโจทย์ออนไลน์ · วิทยาศาสตร์กายภาพ (ชีตศูนย์กลาง)"},{"url":"https://script.google.com/macros/s/AKfycbzuuRbnE_oB7a9vx7zZizyPVEKao31ERDTU82DvydMuRTDqVoQvgns9EsjTIzpbBjuM/exec","name":"คลังโจทย์ออนไลน์ · ฟิสิกส์"},{"url":"https://script.google.com/macros/s/AKfycbyKZicAzLfUfc7UXPMrGsejrq9DyOU7w3AyinaueUsarp72UZD6w8gYbv_FtpUfasbDkw/exec","name":"ส่งงานออนไลน์ · โรงเรียนปากช่อง","autoRoster":true}]};
 /* @@BUILTIN-END@@ */
 
 const APPVER   = '1.0.0';
@@ -5176,7 +5173,7 @@ function tabSettings() {
 
   s += '<div class="card"><h3>รหัสผู้ดูแล</h3>' +
     '<p class="hint">ใช้เข้าหน้าครูในเครื่องนี้ เก็บเป็นค่าแฮชไม่ใช่รหัสตรง ๆ</p>' +
-    '<button class="btn" id="sPass2">เปลี่ยนรหัสผู้ดูแล</button></div>';
+    '</div>';
 
   s += '<div class="card"><h3>สร้างไฟล์สำหรับแจกนักเรียน</h3>' +
     '<p class="hint">ได้ไฟล์ HTML ที่<b>ล็อกไม่ให้เข้าหน้าครู</b> และฝังที่อยู่ชีตไว้แล้ว ' +
@@ -5198,13 +5195,6 @@ function tabSettings() {
     S.examMin = clamp(Math.round(Number($('#sMin').value) || 30), 5, 120);
     S.codeLen = clamp(Math.round(Number($('#sCode').value) || 4), 4, 8);
     save(true); toast('บันทึกแล้ว', 'ok');
-  };
-  $('#sPass2').onclick = async () => {
-    const p = await promptBox('เปลี่ยนรหัสผู้ดูแล', 'รหัสใหม่ (อย่างน้อย 4 ตัว)', '');
-    if (!p) return;
-    if (String(p).length < 4) return toast('รหัสสั้นเกินไป', 'bad');
-    DB.teacherHash = await sha256(String(p));
-    save(true); toast('เปลี่ยนรหัสแล้ว', 'ok');
   };
   $('#sBuild').onclick = buildStudentFile;
 }
@@ -5328,7 +5318,7 @@ async function doGoogleLogin() {
     const localPart = atIdx > 0 ? email.slice(0, atIdx) : '';
     const domain = atIdx > 0 ? email.slice(atIdx + 1) : '';
 
-    if (email !== 'theboydz@gmail.com' && domain !== 'pcschool.ac.th') {
+    if (studentOnlyBuild() && domain !== 'pcschool.ac.th') {
       throw new Error('บัญชี ' + email + ' ไม่ใช่เมลโรงเรียน (@pcschool.ac.th) กรุณาเลือกเมลโรงเรียนปากช่อง');
     }
 
@@ -5346,6 +5336,27 @@ async function doGoogleLogin() {
     }
 
     const sid = /^\d{4,6}$/.test(localPart) ? localPart : '';
+    if (!sid) {
+      if (studentOnlyBuild()) throw new Error('ไฟล์ฉบับนักเรียนไม่อนุญาตให้เข้าใช้ในฐานะครู — ใช้เมลนักเรียน (เลขประจำตัว@pcschool.ac.th)');
+      const hub = (BUILTIN.books || [])[0];
+      if (!hub || !hub.url) throw new Error('ยังไม่รู้ที่อยู่ชีตศูนย์กลาง จึงตรวจบัญชีครูไม่ได้');
+      if (lbl) lbl.textContent = 'กำลังตรวจบัญชีครูกับชีตศูนย์กลาง…';
+      const res = await fetch(hub.url, {
+        method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, redirect: 'follow',
+        body: JSON.stringify({ action: 'googleLogin', accessToken: tokResp.access_token, email: email, name: displayName })
+      });
+      let j = null;
+      try { j = JSON.parse(await res.text()); } catch (e) { throw new Error('ชีตศูนย์กลางตอบกลับไม่ถูกรูปแบบ — ลองใหม่อีกครั้ง'); }
+      if (!j.ok) throw new Error(j.error || 'ตรวจบัญชีครูไม่สำเร็จ');
+      const d = j.data || {};
+      if (d.role !== 'sub') throw new Error('บัญชี ' + email + ' ไม่ใช่ครูผู้สอนในคลังโจทย์');
+      DB.auth = { role:'teacher', name:d.name || displayName || 'ครูผู้สอน', room:'', no:'', sid:'',
+                  code:'', token:'google-oauth:' + email, exp:Date.now() + 11.5 * 3600 * 1000 };
+      save(true);
+      enterApp();
+      toast('เข้าใช้ในฐานะครูผู้สอนด้วย ' + email, 'ok');
+      return;
+    }
     const local = sid ? DB.roster.find(x => String(x.sid || '').trim() === sid) : null;
     let nm = (local && local.name) || displayName || (sid ? 'นักเรียน ' + sid : email);
     let room = (local && local.room) || '';
@@ -5388,7 +5399,7 @@ function showGate() {
     $$('button', seg).forEach(x => x.classList.toggle('on', x === b));
     $('#gStudent').classList.toggle('hide', b.dataset.r !== 'student');
     $('#gTeacher').classList.toggle('hide', b.dataset.r !== 'teacher');
-    if (gLbl) gLbl.textContent = b.dataset.r === 'teacher' ? 'เข้าด้วยบัญชี Google (theboydz@gmail.com)' : 'เข้าด้วยเมลโรงเรียน (@pcschool.ac.th)';
+    if (gLbl) gLbl.textContent = b.dataset.r === 'teacher' ? 'เข้าด้วยบัญชี Google ของครู' : 'เข้าด้วยเมลโรงเรียน (@pcschool.ac.th)';
     gateMsg('');
   });
   if (studentOnlyBuild()) seg.classList.add('hide');
@@ -5409,8 +5420,6 @@ function showGate() {
       'ถ้าครูให้รหัสมาภายหลัง ค่อยออกแล้วเข้าใหม่ด้วยรหัสได้', 'info');
     $('#gName').focus();
   };
-  $('#gPass').onkeydown = e => { if (e.key === 'Enter') $('#gGoT').click(); };
-  $('#gGoT').onclick = doTeacherLogin;
   setTimeout(() => { try { code.focus(); } catch (e) {} }, 200);
 }
 
@@ -5469,27 +5478,6 @@ async function doStudentLogin() {
   $('#gNameWrap').classList.remove('hide');
   gateMsg('ยังไม่มีรหัสนี้ในเครื่องนี้ — กรอกชื่อของตัวเองเพิ่มอีกนิดแล้วเข้าเรียนได้เลย', 'info');
   $('#gName').focus();
-}
-
-async function doTeacherLogin() {
-  if (studentOnlyBuild()) return;
-  const p = $('#gPass').value;
-  if (!p) { gateMsg('กรอกรหัสผู้ดูแล'); return; }
-  if (!DB.teacherHash) {
-    if (String(p).length < 4) { gateMsg('ตั้งรหัสอย่างน้อย 4 ตัวอักษร'); return; }
-    DB.teacherHash = await sha256(String(p));
-    DB.auth = { role:'teacher', name:DB.settings.teacher || 'ครูผู้สอน', room:'', no:'', sid:'',
-                code:'', token:'', exp:0 };
-    save(true);
-    enterApp();
-    toast('ตั้งรหัสผู้ดูแลของเครื่องนี้แล้ว', 'ok');
-    return;
-  }
-  const h = await sha256(String(p));
-  if (h !== DB.teacherHash) { gateMsg('รหัสผู้ดูแลไม่ถูกต้อง'); return; }
-  DB.auth = { role:'teacher', name:DB.settings.teacher || 'ครูผู้สอน', room:'', no:'', sid:'',
-              code:'', token:'', exp:0 };
-  save(true); enterApp();
 }
 
 /* ------------------------------------------------------------- เข้าสู่แอป */

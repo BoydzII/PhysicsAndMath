@@ -261,28 +261,18 @@ a.dl{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:1
    การเชื่อมต่อ
    ────────────────────────────────────────────────────────────────────────────
    ใช้การลงชื่อเข้าใช้ของหน้าพอร์ทัล (localStorage คีย์ pcportal.v1) ไม่มีหน้าลงชื่อของตัวเอง
-   คุยกับสองชีต
-     HUB_URL   ชีตศูนย์กลาง — รหัสผ่านอยู่ที่นี่ คำขอลืมรหัสผ่านจึงไปที่นี่ (BOOKS[0] ของหน้าพอร์ทัล)
+   คุยกับชีตส่งงานใบเดียว
      WORK_URL  ชีตส่งงาน — งานที่สั่ง การส่ง และไฟล์ แยกออกมาไม่ให้การอัปโหลดถ่วงการลงชื่อเข้าใช้
                (ใบที่มี autoRoster ใน BOOKS ของหน้าพอร์ทัล) ต้องเป็นที่อยู่เดียวกันเสมอ
 
    ?api= ใช้ได้เฉพาะตอนเปิดจากเครื่องตัวเอง (localhost) ไว้ทดสอบกับชีตจำลอง
    เปิดจากเว็บจริงพารามิเตอร์นี้ไม่มีผล ใครก็ส่งลิงก์หลอกให้ไปคุยกับที่อื่นไม่ได้
    ──────────────────────────────────────────────────────────────────────────── */
-const HUB_URL = 'https://script.google.com/macros/s/AKfycbxVa8BYYQeIhBDmg85w2UBwsIqt6a2YudehUfCbyMny9T-5TTh1UfFxsJjTk9HLNuFc/exec';
 const WORK_URL = 'https://script.google.com/macros/s/AKfycbyKZicAzLfUfc7UXPMrGsejrq9DyOU7w3AyinaueUsarp72UZD6w8gYbv_FtpUfasbDkw/exec';
 const LOCAL = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
 const TEST_API = LOCAL ? new URLSearchParams(location.search).get('api') : '';
-/** คำขอรหัสผ่านไปชีตศูนย์กลาง ที่เหลือไปชีตส่งงาน */
-const urlOf = action => TEST_API || (/^reset/.test(action) ? HUB_URL : WORK_URL);
-/* ชีตที่รับรหัสผ่านตรง จึงมีตัวนับการกรอกผิดของตัวเอง — แท็บปลดล็อกรหัสดึงจากทุกใบมารวมที่เดียว
-   ชีตส่งงานไม่อยู่ในรายการ เพราะไม่รับรหัสผ่านตรง (รับเฉพาะบัตรผ่านจากศูนย์กลาง)
-   ต้องตรงกับ BOOKS ในหน้าพอร์ทัล (index.html) */
-const PHYS_URL = 'https://script.google.com/macros/s/AKfycbzuuRbnE_oB7a9vx7zZizyPVEKao31ERDTU82DvydMuRTDqVoQvgns9EsjTIzpbBjuM/exec';
-const LOCK_BOOKS = [
-  { url: HUB_URL, name: 'คลังโจทย์ออนไลน์ · วิทยาศาสตร์กายภาพ (ชีตศูนย์กลาง)', apps: 'หน้าหลัก · คณิต · วิทย์ · เคมี · ชีวะ · วิทย์กายภาพ · IJSO · ปรับพื้นฐาน' },
-  { url: PHYS_URL, name: 'คลังโจทย์ออนไลน์ · ฟิสิกส์', apps: 'ฟิสิกส์ ม.4–ม.6' }
-];
+/** ทุกคำสั่งไปชีตส่งงาน (ตอนทดสอบในเครื่อง ?api= ชนะเสมอ) */
+const urlOf = () => TEST_API || WORK_URL;
 /** รุ่นชีตที่ต้องมีคำสั่งนี้ — ใช้บอกครูว่าต้องวางโค้ดรุ่นไหนเมื่อชีตยังเป็นรุ่นเก่า */
 const needVer = action => action === 'workReturn' ? 28 : action === 'workMarkSave' ? 25 : /^work(Mark|Sign)/.test(action) ? 24 : /^work(Scores|Notify|NoteRead)$/.test(action) ? 22 : /^workSheet/.test(action) ? 21 : 19;
 const SESSION_KEY = 'pcportal.v1';
@@ -366,7 +356,7 @@ const ME = { s: null, role: '', tok: {} };
 
 /** ยิงคำสั่งไปที่ Apps Script — ต้องเป็น text/plain ไม่งั้นเบราว์เซอร์ยิง preflight ที่ Apps Script ตอบไม่ได้ */
 async function api(action, params, timeoutMs) { return apiAt(urlOf(action), action, params, timeoutMs); }
-/** ยิงคำสั่งไปชีตที่ระบุ — ใช้กับแท็บปลดล็อกรหัสที่ต้องคุยกับหลายชีต (ตอนทดสอบในเครื่อง ?api= ชนะเสมอ) */
+/** ยิงคำสั่งไปชีตที่ระบุ (ตอนทดสอบในเครื่อง ?api= ชนะเสมอ) */
 async function apiAt(urlIn, action, params, timeoutMs) {
   const ctl = new AbortController();
   const timer = setTimeout(() => ctl.abort(), timeoutMs || 45000);
@@ -939,23 +929,20 @@ async function viewOwnFile(id, btn, title, withSave) {
 /* ============================================================================
    ฝั่งครู
    ========================================================================== */
-const T = { tab: 'works', works: null, resets: null, subs: null, board: null, gradeCode: '', filter: 'todo', boardCls: '', onlyRisk: true, timer: 0,
-            fSubj: null, fCls: '', sel: new Set(), gCls: '', scores: null, sSubj: null, sCls: '', locks: null };
+const T = { tab: 'works', works: null, subs: null, board: null, gradeCode: '', filter: 'todo', boardCls: '', onlyRisk: true, timer: 0,
+            fSubj: null, fCls: '', sel: new Set(), gCls: '', scores: null, sSubj: null, sCls: '' };
 
 function teacherShell() {
-  const pend = (T.resets ? T.resets.rows.filter(r => r.status === 'wait').length : 0) + (T.locks ? T.locks.rows.filter(r => r.locked).length : 0);
-  const tabs = [['works', 'งานที่สั่ง'], ['grade', 'ตรวจงาน'], ['scores', 'คะแนนรวมรายวิชา'], ['watch', 'นักเรียนที่ต้องติดตาม'], ['reset', 'ปลดล็อกรหัส']];
+  const tabs = [['works', 'งานที่สั่ง'], ['grade', 'ตรวจงาน'], ['scores', 'คะแนนรวมรายวิชา'], ['watch', 'นักเรียนที่ต้องติดตาม']];
   $('#view').innerHTML = '<div class="tabs" role="tablist">' + tabs.map(t =>
-    '<button data-tab="' + t[0] + '" class="' + (T.tab === t[0] ? 'on' : '') + '">' + t[1] +
-    (t[0] === 'reset' && pend ? '<span class="n">' + pend + '</span>' : '') + '</button>').join('') + '</div><div id="pane"></div>';
+    '<button data-tab="' + t[0] + '" class="' + (T.tab === t[0] ? 'on' : '') + '">' + t[1] + '</button>').join('') + '</div><div id="pane"></div>';
   $$('[data-tab]').forEach(b => b.addEventListener('click', () => { T.tab = b.dataset.tab; teacherShell(); }));
   uiSave();
   clearInterval(T.timer);
   if (T.tab === 'works') paneWorks();
   else if (T.tab === 'grade') paneGrade();
   else if (T.tab === 'scores') paneScores();
-  else if (T.tab === 'watch') paneWatch();
-  else paneReset();
+  else paneWatch();
 }
 
 /** ชื่อวิชาที่แสดง — งานที่ไม่ได้ใส่วิชาไว้รวมกันเป็นกลุ่มเดียว */
@@ -972,21 +959,9 @@ function clsOptions(classes, cur) {
 const byTh = (a, b) => String(a).localeCompare(String(b), 'th', { numeric: true });
 
 async function teacherLoad() {
-  if (T.noWork) {
-    T.tab = 'reset'; T.works = [];
-    try { T.resets = await api('resetList', {}); } catch (e) { T.resets = null; }
-    teacherShell();
-    $('#pane').insertAdjacentHTML('beforebegin', '<div class="notice warn">ยังเชื่อมกับชีตส่งงานไม่ได้ จึงเปิดได้เฉพาะคำขอรหัสผ่าน — ' +
-      'ผู้ดูแลหลักกด “เชื่อมทุกชีต” ที่หน้าหลัก แล้วออกจากระบบและลงชื่อใหม่</div>');
-    return;
-  }
   try {
-    const [works, resets] = await Promise.all([api('workList', {}), api('resetList', {}).catch(e => ({ err: e }))]);
-    T.works = works;
-    T.resets = resets && resets.err ? null : resets;
+    T.works = await api('workList', {});
     teacherShell();
-    /* ตัวเลขบนแท็บปลดล็อกรหัสรวมคนที่ถูกพักจากทุกแอป — ดึงเบื้องหลัง ไม่ให้หน้างานที่สั่งต้องรอ */
-    if (T.tab !== 'reset') loadLocks().then(resetTabBadge, () => {});
   } catch (e) {
     if (e.auth) return fail(e);
     $('#view').innerHTML = '<div class="notice bad">' + esc(e.message) + '</div>';
@@ -1509,7 +1484,6 @@ function cmBar(host, input) {
 const UI_KEYS = ['tab', 'fSubj', 'fCls', 'gradeCode', 'filter', 'gCls', 'sSubj', 'sCls', 'boardCls', 'onlyRisk'];
 const uiKey = () => 'workdesk.ui.' + obAcct();
 function uiSave() {
-  if (T.noWork) return;               /* ยังเชื่อมชีตส่งงานไม่ได้ ถูกบังคับไปแท็บปลดล็อก — ไม่จำ */
   const o = {};
   UI_KEYS.forEach(k => { o[k] = T[k]; });
   lsSet(uiKey(), JSON.stringify(o));
@@ -1519,7 +1493,7 @@ function uiRestore() {
   try { o = JSON.parse(lsGet(uiKey()) || 'null'); } catch (e) {}
   if (!o || typeof o !== 'object') return;
   const str = k => typeof o[k] === 'string';
-  if (['works', 'grade', 'scores', 'watch', 'reset'].indexOf(o.tab) >= 0) T.tab = o.tab;
+  if (['works', 'grade', 'scores', 'watch'].indexOf(o.tab) >= 0) T.tab = o.tab;
   if (['todo', 'all', 'ontime', 'late', 'none'].indexOf(o.filter) >= 0) T.filter = o.filter;
   ['fCls', 'gradeCode', 'gCls', 'sCls', 'boardCls'].forEach(k => { if (str(k)) T[k] = o[k]; });
   ['fSubj', 'sSubj'].forEach(k => { if (str(k) || o[k] === null) T[k] = o[k]; });
@@ -2919,181 +2893,6 @@ function watchBody() {
   });
 }
 
-/* ---- แท็บปลดล็อกรหัส — ศูนย์กลางของทุกแอป ------------------------------------
-   รวมสองเรื่องไว้ที่เดียว ครูไม่ต้องเข้าไปปลดทีละแอปอีก
-     1) ถูกพักการเข้าใช้เพราะกรอกรหัสผิดหลายครั้ง — ตัวนับอยู่ในแคชของแต่ละชีตที่รับรหัสผ่าน (LOCK_BOOKS)
-        ดึงจากทุกใบพร้อมกันแล้วรวมเป็นรายคน ปลดแล้วลบตัวนับในทุกใบที่คนนั้นติดอยู่
-     2) คำขอตั้งรหัสใหม่ (ลืมรหัสผ่าน) และช่วงปลดทันที — อยู่ชีตศูนย์กลาง */
-async function loadLocks() {
-  const books = LOCK_BOOKS.filter(b => ME.tok[TEST_API || b.url]);
-  const out = { rows: [], errs: [], missing: LOCK_BOOKS.filter(b => !ME.tok[TEST_API || b.url]).map(b => b.name) };
-  const got = await Promise.all(books.map(b => apiAt(b.url, 'lockList', {}).then(list => ({ b: b, list: list }), e => ({ b: b, err: e }))));
-  const by = {};
-  got.forEach(g => {
-    if (g.err) { if (!g.err.auth) out.errs.push(g.b.name + ': ' + g.err.message); return; }
-    (g.list || []).forEach(x => {
-      const k = String(x.sid);
-      const r = by[k] || (by[k] = { sid: k, name: x.name, no: x.no, cls: x.cls, books: [], locked: false, fails: 0, left: 99 });
-      r.books.push({ url: g.b.url, name: g.b.name, apps: g.b.apps, fails: x.fails, locked: x.locked });
-      r.locked = r.locked || x.locked; r.fails = Math.max(r.fails, x.fails); r.left = Math.min(r.left, x.left);
-    });
-  });
-  out.rows = Object.values(by).sort((a, b) => (b.locked - a.locked) || byTh(a.cls, b.cls) || (Number(a.no) || 0) - (Number(b.no) || 0));
-  T.locks = out;
-  return out;
-}
-/** ปลดคนที่ระบุ (หรือทุกคนเมื่อไม่ส่ง rows) ในทุกชีตที่ติดอยู่ */
-async function unlockRows(rows) {
-  const per = {};
-  (rows || T.locks.rows).forEach(r => r.books.forEach(b => { (per[b.url] = per[b.url] || []).push(r.sid); }));
-  let n = 0;
-  const bad = [];
-  await Promise.all(Object.keys(per).map(url => apiAt(url, 'unlock', rows ? { sids: per[url] } : {})
-    .then(r => { n += r.unlocked || 0; }, e => bad.push(e.message))));
-  return { n: n, bad: bad };
-}
-function resetTabBadge() {
-  const wait = T.resets ? T.resets.rows.filter(r => r.status === 'wait').length : 0;
-  const locked = T.locks ? T.locks.rows.filter(r => r.locked).length : 0;
-  const tabBtn = $('[data-tab="reset"]');
-  if (tabBtn) tabBtn.innerHTML = 'ปลดล็อกรหัส' + (wait + locked ? '<span class="n">' + (wait + locked) + '</span>' : '');
-}
-
-async function paneReset(silent) {
-  if (T.resetBusy) return;
-  if (!silent) $('#pane').innerHTML = loading('กำลังรวมข้อมูลจากทุกแอป…');
-  T.resetBusy = true;
-  let resetErr = null;
-  const [rs] = await Promise.all([api('resetList', {}).catch(e => ({ err: e })), loadLocks().catch(() => null)]);
-  T.resetBusy = false;
-  if (rs && rs.err) {
-    if (rs.err.auth) return fail(rs.err);
-    resetErr = rs.err;
-    T.resets = { rows: [], auto: { mine: null, others: [], now: Date.now() }, err: resetErr.message };
-  } else T.resets = rs;
-  if (T.tab !== 'reset') return;
-  resetBody();
-  /* ระหว่างเปิดแท็บนี้ ดึงคำขอใหม่ทุก 20 วินาที ครูจะเห็นเด็กที่เพิ่งยื่นโดยไม่ต้องกดโหลด */
-  clearInterval(T.timer);
-  let tick = 0;
-  T.timer = setInterval(() => {
-    if (T.tab !== 'reset' || !$('#pane [data-auto]')) { clearInterval(T.timer); return; }
-    paintCountdown();
-    if (++tick % 20 === 0 && !$('#layer').innerHTML) paneReset(true);
-  }, 1000);
-}
-function paintCountdown() {
-  const el = $('[data-left]');
-  const a = T.resets && T.resets.auto;
-  if (!el || !a || !a.mine) return;
-  const skew = a.now - (T.resets.fetchedAt || a.now);
-  const left = Math.max(0, a.mine.until - Date.now() - skew);
-  el.textContent = Math.floor(left / 60000) + ':' + p2(Math.floor(left / 1000) % 60);
-  if (!left && !T.resetBusy) paneReset(true);
-}
-function resetBody() {
-  const R = T.resets, a = R.auto;
-  R.fetchedAt = R.fetchedAt || Date.now();
-  const wait = R.rows.filter(r => r.status === 'wait'), done = R.rows.filter(r => r.status !== 'wait');
-  resetTabBadge();
-  const L = T.locks || { rows: [], errs: [], missing: [] };
-  const nLock = L.rows.filter(r => r.locked).length;
-  let h = '<div class="notice info small">ศูนย์กลางปลดล็อกรหัสของ<b>ทุกแอปในเครือ</b> — ' +
-    LOCK_BOOKS.map(b => '<b>' + esc(b.name) + '</b> (' + esc(b.apps) + ')').join(' · ') +
-    ' · ครูไม่ต้องเข้าไปปลดในแต่ละแอปอีก</div>';
-  h += '<div class="panel"><div class="row"><h2 style="margin:0">ถูกพักเพราะกรอกรหัสผิด</h2>' +
-    '<span class="chip ' + (nLock ? 'bad' : '') + '">' + nLock + ' คนถูกพัก</span>' +
-    (L.rows.length - nLock ? '<span class="chip warn">' + (L.rows.length - nLock) + ' คนเริ่มผิด</span>' : '') +
-    '<span class="sp"></span><button class="sm" data-lreload>โหลดใหม่</button>' +
-    (L.rows.length > 1 ? '<button class="primary" data-lall>ปลดทุกคน (' + L.rows.length + ')</button>' : '') + '</div>' +
-    (L.missing.length ? '<div class="notice warn small">ยังเชื่อมกับ ' + L.missing.map(esc).join(' · ') + ' ไม่ได้ จึงไม่เห็นคนที่ติดในแอปของชีตนั้น — ' +
-      'ออกจากระบบที่หน้าหลักแล้วลงชื่อใหม่ (ผู้ดูแลหลักกด “เชื่อมทุกชีต” ก่อน)</div>' : '') +
-    (L.errs.length ? '<div class="notice bad small">' + L.errs.map(esc).join('<br>') + '</div>' : '') +
-    (L.rows.length ? '<div class="tw" style="margin-top:10px"><table><thead><tr><th>ชื่อ</th><th>ชั้น</th><th>สถานะ</th><th>ติดที่</th><th></th></tr></thead><tbody>' +
-      L.rows.map(r => '<tr><td>' + esc(r.name) + ' <span class="muted small">' + esc(r.sid) + '</span></td><td class="nw">' + esc(r.cls) + '</td>' +
-        '<td>' + (r.locked ? '<span class="chip bad">ถูกพักการเข้าใช้</span>'
-                           : '<span class="chip warn">ผิด ' + r.fails + ' ครั้ง · เหลือ ' + r.left + '</span>') + '</td>' +
-        '<td class="small">' + r.books.map(b => esc(b.name) + ' <span class="muted">(' + esc(b.apps) + ')</span>').join('<br>') + '</td>' +
-        '<td class="num"><button class="sm primary" data-unl="' + esc(r.sid) + '">ปลด</button></td></tr>').join('') +
-      '</tbody></table></div>' : '<div class="empty">ไม่มีใครติดอยู่ตอนนี้</div>') +
-    '<p class="muted small" style="margin:10px 0 0">ระบบพักการเข้าใช้สิบนาทีเมื่อกรอกรหัสผิดหลายครั้ง เพื่อกันการเดารหัส · ' +
-      'การปลดแค่ล้างตัวนับ ไม่ได้เปลี่ยนรหัส — ถ้านักเรียน<b>จำรหัสไม่ได้จริง</b> ให้กด “ลืมรหัสผ่าน” ที่หน้าลงชื่อ แล้วอนุมัติด้านล่าง</p></div>';
-  if (R.err) h += '<div class="notice bad">โหลดคำขอตั้งรหัสใหม่ไม่ได้: ' + esc(R.err) + '</div>';
-  h += '<div class="panel" data-auto>' +
-    '<h2>ปลดทันที</h2>' +
-    (a.mine
-      ? '<div class="notice ok"><b>เปิดอยู่</b> — นักเรียน' + ((ME.s.profile || {}).sub ? 'ในชั้นที่คุณดูแล' : 'ทุกชั้น') +
-        'ที่ยื่นคำขอตอนนี้ ได้รหัสใหม่ทันทีโดยไม่ต้องรอ · ปิดเองในอีก <b class="count" data-left></b> นาที</div>' +
-        '<button class="danger" data-autooff>ปิดตอนนี้</button>'
-      : '<p class="muted small" style="margin:4px 0 8px">ใช้ตอนอยู่ในห้องกับนักเรียน บอกให้คนที่ลืมรหัสกด “ลืมรหัสผ่าน” ที่หน้าลงชื่อเข้าใช้ แล้วตั้งรหัสใหม่ได้เลย' +
-        '<br>ระหว่างเปิด ใครรู้เลขประจำตัวกับชื่อของเพื่อนก็เปลี่ยนรหัสเพื่อนได้ จึงเปิดได้ครั้งละไม่เกินหนึ่งชั่วโมงและปิดเองเมื่อหมดเวลา</p>' +
-        '<div class="row"><select data-min style="width:auto">' + [10, 15, 30, 60].map(m => '<option value="' + m + '"' + (m === 15 ? ' selected' : '') + '>' + m + ' นาที</option>').join('') + '</select>' +
-        '<button class="primary" data-autoon>เปิดปลดทันที</button></div>') +
-    (a.others.length ? '<div class="small muted" style="margin-top:8px">' + a.others.map(o =>
-      esc(o.name) + ' เปิดปลดทันทีให้ ' + esc(o.cls ? o.cls.join(', ') : 'ทุกชั้น') + ' อยู่ ถึง ' + thDate(new Date(o.until).toISOString())).join('<br>') + '</div>' : '') +
-    '</div>';
-  h += '<div class="panel"><div class="row"><h2 style="margin:0">คำขอตั้งรหัสใหม่ · รออนุมัติ</h2><span class="chip">' + wait.length + '</span><span class="sp"></span>' +
-    (wait.length > 1 ? '<button class="primary" data-all>ปลดทั้งหมด (' + wait.length + ')</button>' : '') + '</div>' +
-    (wait.length ? '<div class="tw" style="margin-top:10px"><table><thead><tr><th>ยื่นเมื่อ</th><th>เลขประจำตัว</th><th>ชื่อ</th><th>ชั้น</th><th></th></tr></thead><tbody>' +
-      wait.map(r => '<tr><td class="small">' + thDate(r.ts) + '</td><td>' + esc(r.sid) + '</td><td>' + esc(r.name) + '</td><td>' + esc(r.cls) + '</td>' +
-        '<td class="num"><button class="sm primary" data-ok="' + esc(r.id) + '">ปลด</button> <button class="sm danger" data-no="' + esc(r.id) + '">ไม่อนุมัติ</button></td></tr>').join('') +
-      '</tbody></table></div>' : '<div class="empty">ไม่มีคำขอที่รออยู่</div>') +
-    '<p class="muted small" style="margin:10px 0 0">ปลดแล้วนักเรียนเข้าด้วย<b>รหัสใหม่ที่ตัวเองตั้งไว้ตอนยื่นคำขอ</b>ได้ทันที ครูไม่ต้องบอกรหัสใคร · ' +
-      'ชื่อที่ไม่ใช่นักเรียนที่มาขอกับครูจริง ให้กดไม่อนุมัติ รหัสเดิมของเจ้าของยังใช้ได้เหมือนเดิม</p></div>';
-  if (done.length) {
-    h += '<div class="panel"><h2>จบแล้ว <span class="muted small">(14 วันล่าสุด)</span></h2><div class="tw" style="margin-top:8px"><table><thead><tr><th>ยื่นเมื่อ</th><th>ชื่อ</th><th>ชั้น</th><th>ผล</th><th>โดย</th></tr></thead><tbody>' +
-      done.map(r => '<tr><td class="small">' + thDate(r.ts) + '</td><td>' + esc(r.name) + ' <span class="muted small">' + esc(r.sid) + '</span></td><td>' + esc(r.cls) + '</td>' +
-        '<td>' + (r.status === 'no' ? '<span class="chip bad">ไม่อนุมัติ</span>' : r.status === 'auto' ? '<span class="chip ok">ปลดทันที</span>' : '<span class="chip ok">ปลดแล้ว</span>') + '</td>' +
-        '<td class="small muted">' + esc(r.by) + (r.doneAt ? ' · ' + thDate(r.doneAt) : '') + '</td></tr>').join('') + '</tbody></table></div></div>';
-  }
-  $('#pane').innerHTML = h;
-  paintCountdown();
-  const unl = async (rows, btn) => {
-    if (btn) btn.disabled = true;
-    try {
-      const r = await unlockRows(rows);
-      toast('ปลดแล้ว ' + r.n + ' รายการ' + (r.bad.length ? ' · ไม่สำเร็จ: ' + r.bad.join(' · ') : ''), 3600);
-    } catch (e) { fail(e); }
-    paneReset(true);
-  };
-  $$('[data-unl]').forEach(b => b.addEventListener('click', () => unl(L.rows.filter(r => r.sid === b.dataset.unl), b)));
-  const lall = $('[data-lall]');
-  if (lall) lall.addEventListener('click', async () => {
-    const yes = await confirmBox('ปลดทุกคน ' + L.rows.length + ' คน',
-      '<p>ล้างตัวนับการกรอกรหัสผิดของทุกคนในรายการ ในทุกแอปที่ติดอยู่ · ไม่ได้เปลี่ยนรหัสของใคร</p>', 'ปลดทุกคน');
-    if (yes) unl(L.rows, lall);
-  });
-  $('[data-lreload]').addEventListener('click', () => paneReset());
-  const decide = async (body, label) => {
-    try {
-      const r = await api('resetDecide', body);
-      toast(label + ' ' + r.done + ' คน' + (r.bad && r.bad.length ? ' · ไม่สำเร็จ ' + r.bad.length : ''), 3200);
-      paneReset(true);
-    } catch (e) { fail(e); }
-  };
-  $$('[data-ok]').forEach(b => b.addEventListener('click', () => { b.disabled = true; decide({ ids: [b.dataset.ok], ok: true }, 'ปลดแล้ว'); }));
-  $$('[data-no]').forEach(b => b.addEventListener('click', () => { b.disabled = true; decide({ ids: [b.dataset.no], ok: false }, 'ไม่อนุมัติ'); }));
-  const all = $('[data-all]');
-  if (all) all.addEventListener('click', async () => {
-    const yes = await confirmBox('ปลดทั้งหมด ' + wait.length + ' คน',
-      '<div class="tw"><table><tbody>' + wait.map(r => '<tr><td>' + esc(r.name) + '</td><td>' + esc(r.cls) + '</td></tr>').join('') + '</tbody></table></div>' +
-      '<p class="muted small">ตรวจชื่อก่อน — ทุกคนในรายการจะเข้าด้วยรหัสใหม่ที่ตั้งไว้ตอนยื่นได้ทันที</p>', 'ปลดทั้งหมด');
-    if (yes) decide({ all: true, ok: true }, 'ปลดแล้ว');
-  });
-  const on = $('[data-autoon]');
-  if (on) on.addEventListener('click', async () => {
-    on.disabled = true;
-    try { await api('resetAuto', { minutes: Number($('[data-min]').value) }); toast('เปิดปลดทันทีแล้ว'); paneReset(true); }
-    catch (e) { on.disabled = false; fail(e); }
-  });
-  const off = $('[data-autooff]');
-  if (off) off.addEventListener('click', async () => {
-    off.disabled = true;
-    try { await api('resetAuto', { minutes: 0 }); toast('ปิดปลดทันทีแล้ว'); paneReset(true); }
-    catch (e) { off.disabled = false; fail(e); }
-  });
-}
-
 /* ============================================================================
    เริ่มทำงาน
    ========================================================================== */
@@ -3103,22 +2902,17 @@ function start() {
   const s = readSession();
   if (!s) return showSignin();
   ME.s = s; ME.role = s.role;
-  [HUB_URL, WORK_URL, PHYS_URL, TEST_API].filter(Boolean).forEach(u => { ME.tok[u] = tokenFor(s, u); });
-  const hasWork = !!ME.tok[urlOf('workMine')], hasHub = !!ME.tok[urlOf('resetList')];
-  if (!hasWork && !(s.role === 'admin' && hasHub)) {
+  [WORK_URL, TEST_API].filter(Boolean).forEach(u => { ME.tok[u] = tokenFor(s, u); });
+  if (!ME.tok[urlOf()]) {
     return showSignin('ยังเชื่อมกับชีตส่งงานไม่ได้ — กดออกจากระบบที่หน้าหลักแล้วลงชื่อใหม่อีกครั้ง' +
       (s.role === 'admin' ? ' (ถ้ายังไม่ได้ ผู้ดูแลหลักต้องกด “เชื่อมทุกชีต” ที่หน้าหลักก่อน)' : ''));
   }
-  /* ครูที่ยังเชื่อมชีตส่งงานไม่ได้ ยังจัดการคำขอรหัสผ่านได้ เพราะคำขออยู่ชีตศูนย์กลาง */
-  T.noWork = !hasWork;
   const p = s.profile || {};
   if (s.role === 'admin') {
     uiRestore();
-    /* ลิงก์จากหน้าพอร์ทัล "เปิดดูคำขอ" พามาที่แท็บคำขอรหัสผ่านตรง ๆ */
-    if (location.hash === '#reset') T.tab = 'reset';
     $('#who').textContent = (p.sub ? (p.name || 'ครูผู้สอน') + ' · ดูแล ' + (p.classes || []).join(', ') : 'ผู้ดูแลหลัก · ทุกชั้น');
     teacherLoad();
-    if (!T.noWork) obRestore();
+    obRestore();
   } else {
     $('#who').textContent = [p.name, p.cls, p.no ? 'เลขที่ ' + p.no : ''].filter(Boolean).join(' · ');
     studentLoad();
