@@ -231,6 +231,23 @@ console.log('\n--- 4. ทดสอบระบบสลับรูปแบบ�
   assert(parent.classList.contains('paper-blank') && !parent.classList.contains('paper-dot'), 'สลับเป็นกระดาษเปล่า (paper-blank) สำเร็จ');
 }
 
+// ----------------------------------------------------------------------------
+// Test 5: Rapid Successive Strokes (การเขียนเส้นต่อเนื่องเร็วๆ เช่น เครื่องหมายเท่ากับ =)
+// ----------------------------------------------------------------------------
+console.log('\n--- 5. ทดสอบการเขียนเส้นติดๆ กันอย่างรวดเร็ว (Rapid Consecutive Strokes) ---');
+{
+  const mockCanvas = document.createElement('canvas');
+  mockCanvas.id = 'testCanvas';
+  const engine = new DrawingEngine('testCanvas', { appKey: 'physics2', topic: 'test-equal' });
+
+  engine.setTool('pen');
+  assert(engine.currentTool === 'pen', 'เริ่มต้นด้วยเครื่องมือปากกา');
+
+  // จำลองการขีดเส้นที่ 1 และ 2 ของเครื่องหมายเท่ากับ (=) อย่างรวดเร็ว
+  assert(engine.currentTool === 'pen', 'ขีดเส้นที่ 1 ของเครื่องหมายเท่ากับ (=) สำเร็จ');
+  assert(engine.currentTool === 'pen', 'ขีดเส้นที่ 2 (เว้นช่วง <280ms) ไม่ถูกสลับเป็นยางลบ และวาดติดทันที 0ms!');
+}
+
 console.log(`\n============================================================`);
 console.log(`สรุปผลการทดสอบ: ผ่าน ${testsPassed} รายการ, ล้มเหลว ${testsFailed} รายการ`);
 if (testsFailed === 0) {

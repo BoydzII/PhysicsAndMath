@@ -675,17 +675,8 @@ class DrawingEngine {
      ========================================================================== */
   initEvents() {
     const startDraw = (e) => {
-      // Apple Pencil Double-Tap detection
-      const now = Date.now();
-      if (this.isPenPointer(e) && (now - this.lastTapTime < 280)) {
-        this.setTool(this.currentTool === 'eraser' ? this.prevTool : 'eraser');
-        const eraserBtn = document.querySelector('[data-tool="eraser"]');
-        const penBtn = document.querySelector('[data-tool="pen"]');
-        if (this.currentTool === 'eraser' && eraserBtn) eraserBtn.click();
-        else if (penBtn) penBtn.click();
-      }
-      this.lastTapTime = now;
-
+      // ป้องกันการสลับเครื่องมือผิดพลาด: ไม่ใช้การแตะหน้าจอซ้อนกันเป็นตัวสลับยางลบ
+      // เพื่อให้สามารถเขียนสัญลักษณ์เร็ว ๆ เช่น เครื่องหมายเท่ากับ (=), สระ, จุดทศนิยม ได้ต่อเนื่อง 100% ไม่มีสะดุด
       this.activePointers.set(e.pointerId, {
         clientX: e.clientX,
         clientY: e.clientY,
