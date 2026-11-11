@@ -192,7 +192,20 @@ for (const [dir, want] of Object.entries(IDENT)) {
         }
       }
     }
-    if (inkOk) console.log('✓  ink-engine.js  (เอนจินสมุดโน้ตมาตรฐาน · ซิงค์ตรงกันทุกแอป ' + inkApps.length + ' แอป)');
+    if (inkOk) {
+      console.log('✓  ink-engine.js  (เอนจินสมุดโน้ตมาตรฐาน · ซิงค์ตรงกันทุกแอป ' + inkApps.length + ' แอป)');
+      const testScript = path.join(ROOT, 'tools', 'test-ink-engine.mjs');
+      if (fs.existsSync(testScript)) {
+        try {
+          const { execSync } = await import('child_process');
+          execSync(`node "${testScript}"`, { stdio: 'ignore' });
+          console.log('✓  ink-tests  (ผ่านการทดสอบ Synthetic Strokes, Shape Snapping & 120 FPS Benchmark)');
+        } catch (e) {
+          console.error('✗  ink-tests  : การทดสอบเอนจินการเขียนไม่ผ่าน');
+          fail++;
+        }
+      }
+    }
   }
 }
 

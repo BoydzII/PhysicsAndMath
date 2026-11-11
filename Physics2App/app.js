@@ -338,6 +338,37 @@ function setupListeners() {
   // Fullscreen Mode
   document.getElementById('btnFullscreen')?.addEventListener('click', toggleFullscreen);
 
+  // Paper Pattern Switcher (Lined -> Grid -> Dot -> Blank)
+  const btnPaperPattern = document.getElementById('btnPaperPattern');
+  if (btnPaperPattern) {
+    const patterns = [
+      { id: 'lined', name: 'สมุดมีเส้น', icon: 'ph-rows' },
+      { id: 'grid', name: 'ตารางกราฟฟิสิกส์', icon: 'ph-grid-four' },
+      { id: 'dot', name: 'กระดาษจุด', icon: 'ph-dots-nine' },
+      { id: 'blank', name: 'กระดาษเปล่า', icon: 'ph-file' }
+    ];
+    let curPatternIdx = 0;
+    const savedPattern = localStorage.getItem('physics_paper_pattern') || 'lined';
+    const foundIdx = patterns.findIndex(p => p.id === savedPattern);
+    if (foundIdx >= 0) curPatternIdx = foundIdx;
+
+    const applyPattern = (idx, showFeedback = true) => {
+      const p = patterns[idx];
+      if (drawingEngine) drawingEngine.setPaperPattern(p.id);
+      localStorage.setItem('physics_paper_pattern', p.id);
+      btnPaperPattern.innerHTML = `<i class="ph ${p.icon}"></i>`;
+      btnPaperPattern.title = `รูปแบบกระดาษปัจจุบัน: ${p.name} (คลิกเพื่อสลับ)`;
+      if (showFeedback) showToast(`📑 รูปแบบกระดาษ: ${p.name}`, 'info');
+    };
+
+    btnPaperPattern.addEventListener('click', () => {
+      curPatternIdx = (curPatternIdx + 1) % patterns.length;
+      applyPattern(curPatternIdx, true);
+    });
+
+    applyPattern(curPatternIdx, false);
+  }
+
   // Toggle Inputs Lock
   document.getElementById('btnToggleInputsLock')?.addEventListener('click', toggleInputsLock);
 

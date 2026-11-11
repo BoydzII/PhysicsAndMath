@@ -17,6 +17,7 @@ tools/*
 !tools/build-dist.mjs
 !tools/check.mjs
 !tools/golden.mjs
+!tools/test-ink-engine.mjs
 !tools/appctx.mjs
 !tools/assemble.mjs
 # แกนกลางของแอปคลังโจทย์ และชิ้นส่วนเฉพาะวิชา (tools/assemble.mjs ประกอบเป็นไฟล์ครู)

@@ -904,7 +904,17 @@ class DrawingEngine {
 
         if (this.currentTool === 'pen') {
           const pr = (ev.pressure && ev.pressure > 0) ? ev.pressure : 0.5;
-          this.ctx.lineWidth = this.baseLineWidth * (0.8 + pr * 0.7);
+          if (this.points.length >= 2) {
+            const pPrev = this.points[this.points.length - 2];
+            const dist = Math.hypot(pos.x - pPrev.x, pos.y - pPrev.y);
+            const dt = Math.max((pos.time || Date.now()) - (pPrev.time || 0), 8);
+            const velocity = Math.min(dist / dt, 4);
+            this.smoothVelocity = this.smoothVelocity * 0.7 + velocity * 0.3;
+            const velFactor = Math.max(0.8, Math.min(1.2, 1.12 - this.smoothVelocity * 0.08));
+            this.ctx.lineWidth = this.baseLineWidth * (0.75 + pr * 0.65) * velFactor;
+          } else {
+            this.ctx.lineWidth = this.baseLineWidth * (0.8 + pr * 0.7);
+          }
         }
 
         if (this.points.length >= 2) {
@@ -1071,6 +1081,12 @@ class DrawingEngine {
     } catch (e) {
       console.warn('Canvas loadData error:', e);
     }
+  }
+
+  /** ส่งออกภาพลายมือความละเอียดสูง (Data URL) สำหรับพิมพ์หรือบันทึกไฟล์ */
+  exportImage(format = 'image/png') {
+    if (!this.canvas || this.canvas.width === 0 || this.canvas.height === 0) return null;
+    return this.canvas.toDataURL(format);
   }
 }
 
