@@ -107,6 +107,17 @@ td.nm{white-space:nowrap}
 .seg2{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
 .seg2 button{border:0;border-radius:0;min-height:32px;font-size:13px;padding:3px 12px;background:transparent}
 .seg2 button.on{background:var(--brand);color:var(--brand-ink)}
+/* ปุ่มเลือกชั้นในฟอร์มสั่งงาน — กดติด/ดับ */
+button.clsb{border-radius:999px}
+button.clsb.on{background:var(--brand);color:var(--brand-ink);border-color:var(--brand);font-weight:700}
+/* ความเห็นสำเร็จรูปเหนือช่องความเห็น (ตัวดูงานและหน้าเขียนตรวจ) */
+.cmbar{flex:1 0 100%;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;align-items:center;padding-bottom:2px}
+.cmbar::-webkit-scrollbar{display:none}
+.cmbar button{flex:none;min-height:30px;padding:2px 11px;font-size:12.5px;border-radius:999px;white-space:nowrap}
+.cmbar .mine{display:inline-flex;flex:none}
+.cmbar .mine button:first-child{border-radius:999px 0 0 999px;border-right:0;padding-right:7px}
+.cmbar .mine button:last-child{border-radius:0 999px 999px 0;padding:2px 9px 2px 6px;color:var(--muted)}
+.cmbar .add{border-style:dashed;color:var(--brand)}
 /* ---------- แผ่นทับหน้า (รายละเอียดงาน / ฟอร์ม / ตัวดูงาน) ---------- */
 .overlay{position:fixed;inset:0;background:rgba(10,14,20,.45);z-index:50;display:flex;justify-content:center;align-items:flex-start;overflow-y:auto;padding:24px 12px}
 .sheet{background:var(--panel);border:1px solid var(--line);border-radius:12px;width:100%;max-width:720px;padding:18px 18px 22px;position:relative}
@@ -453,10 +464,24 @@ function openSheet(html, onClose) {
     '<button class="x sm" data-close>ปิด</button>' + html + '</div></div>';
   const ov = $('.overlay', layer);
   const close = () => { layer.innerHTML = ''; document.body.style.overflow = ''; if (onClose) onClose(); };
-  ov.addEventListener('click', e => { if (e.target === ov) close(); });
-  $$('[data-close]', ov).forEach(b => b.addEventListener('click', close));
+  /* แผ่นที่มีของค้าง (รูปที่เลือกไว้ ฟอร์มที่พิมพ์แล้ว) ตั้ง sh.dirty ไว้ — แตะพื้นหลังจะไม่ปิด
+     กดปุ่มปิด/ยกเลิกจะถามก่อน ของที่เลือกไว้จึงไม่หายเพราะนิ้วพลาด */
+  const sh = { root: $('.sheet', layer), close: close, dirty: null, ask: 'ปิดแล้วสิ่งที่กรอกไว้จะหาย' };
+  let asking = false;
+  const tryClose = async backdrop => {
+    if (sh.dirty && sh.dirty()) {
+      if (backdrop || asking) return;
+      asking = true;
+      const yes = await popupAsk('ยังไม่ได้บันทึก', '<p>' + esc(sh.ask) + '</p>', 'ปิดเลย', true);
+      asking = false;
+      if (!yes || !ov.isConnected) return;
+    }
+    close();
+  };
+  ov.addEventListener('click', e => { if (e.target === ov) tryClose(true); });
+  $$('[data-close]', ov).forEach(b => b.addEventListener('click', () => tryClose(false)));
   document.body.style.overflow = 'hidden';
-  return { root: $('.sheet', layer), close: close };
+  return sh;
 }
 function confirmBox(title, html, okLabel, danger) {
   return new Promise(resolve => {
@@ -483,14 +508,36 @@ function showSignin(reason) {
 /* ============================================================================
    ฝั่งนักเรียน
    ========================================================================== */
-const STU = { data: null, loading: false };
+const STU = { data: null, loading: false, at: 0 };
 
-async function studentLoad() {
+/** quiet: โหลดใหม่เบื้องหลังตอนกลับมาที่หน้า — พลาดก็เงียบ ใช้ข้อมูลเดิมต่อ */
+async function studentLoad(quiet) {
+  if (STU.loading) return;
   STU.loading = true;
-  try { STU.data = await api('workMine', {}); }
-  catch (e) { STU.loading = false; if (e.auth) return fail(e); $('#view').innerHTML = '<div class="notice bad">' + esc(e.message) + '</div>'; return; }
+  let d;
+  try { d = await api('workMine', {}); }
+  catch (e) {
+    STU.loading = false;
+    if (e.auth) return fail(e);
+    if (quiet === true && STU.data) return;
+    $('#view').innerHTML = '<div class="notice bad">' + esc(e.message) + '</div>'; return;
+  }
   STU.loading = false;
+  STU.at = Date.now();
+  /* ระหว่างรอ นักเรียนอาจเปิดงานขึ้นมาแล้ว — ไม่วาดทับ รอรอบหน้า */
+  if (quiet === true && studentBusy()) return;
+  STU.data = d;
   studentRender();
+}
+/** มีแผ่นงานหรือกล่องดูไฟล์เปิดอยู่ หรือกำลังส่ง — ห้ามวาดหน้าใหม่ทับ */
+const studentBusy = () => SENDING || !!$('#layer').firstChild || !!document.querySelector('body > .overlay');
+/** กลับมาที่หน้านี้ (สลับแอป ปลดล็อกจอ) แล้วข้อมูลเก่ากว่าหนึ่งนาที โหลดใหม่ให้เอง */
+function studentAutoReload() {
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState !== 'visible' || !STU.data || studentBusy()) return;
+    if (Date.now() - STU.at < 60000) return;
+    studentLoad(true);
+  });
 }
 
 function stuStatus(w, now) {
@@ -508,7 +555,9 @@ function stuStatus(w, now) {
 
 function studentRender() {
   const d = STU.data, now = Date.now();
-  const todo = d.works.filter(w => !(w.sub && (w.sub.files.length || w.sub.graded)));
+  /* งานที่ต้องส่งเรียงตามกำหนดส่ง — เลยกำหนดนานสุดอยู่บน ตามด้วยงานที่ใกล้ถึงกำหนด */
+  const dueMs = w => new Date(w.dueAt).getTime() || Infinity;
+  const todo = d.works.filter(w => !(w.sub && (w.sub.files.length || w.sub.graded))).sort((a, b) => dueMs(a) - dueMs(b));
   const done = d.works.filter(w => w.sub && (w.sub.files.length || w.sub.graded)).reverse();
   const r = d.risk;
   let h = '';
@@ -555,7 +604,7 @@ function studentRender() {
     } catch (e) { b.disabled = false; fail(e); }
   }));
   $$('[data-open]').forEach(b => b.addEventListener('click', () => studentOpen(b.dataset.open)));
-  const rl = $('[data-reload]'); if (rl) rl.addEventListener('click', studentLoad);
+  const rl = $('[data-reload]'); if (rl) rl.addEventListener('click', () => studentLoad());
 }
 function stuItem(w, now) {
   return '<button class="item" data-open="' + esc(w.code) + '"><span class="mark" style="width:36px;height:36px">' + icon('tray', 19) + '</span>' +
@@ -631,6 +680,8 @@ function studentOpen(code) {
 
   const sh = openSheet(h, () => { PENDING.forEach(p => p.url && URL.revokeObjectURL(p.url)); PENDING = []; });
   const root = sh.root;
+  sh.ask = 'งานนี้ยังไม่ได้ส่ง ปิดแล้วรูปที่เลือกและข้อความที่พิมพ์ไว้จะหาย ต้องเลือกใหม่';
+  sh.dirty = () => !SENDING && (PENDING.length > 0 || !!$('[data-note]', root).value.trim());
   const paint = () => paintPending(root, w);
   $('[data-img]', root).addEventListener('change', e => { addFiles(Array.from(e.target.files || []), 'img').then(paint); e.target.value = ''; });
   $('[data-pdf]', root).addEventListener('change', e => { addFiles(Array.from(e.target.files || []), 'pdf').then(paint); e.target.value = ''; });
@@ -728,7 +779,7 @@ async function studentSend(w, root, sh) {
   const late = lateMinAt(w, Date.now());
   if (late > 0) {
     /* กล่องยืนยันเปิดทับแผ่นเดิม พอปิดแล้วต้องเปิดแผ่นงานกลับมาพร้อมไฟล์ที่เลือกไว้ ไม่ว่าจะกดส่งหรือยกเลิก */
-    const keep = PENDING.slice();
+    const keep = PENDING.slice(), keepNote = $('[data-note]', root).value;
     const yes = await confirmBox('ส่งช้ากว่ากำหนด',
       '<div class="notice warn">คุณส่งช้ากว่ากำหนด <b>' + spanText(late) + '</b><br>' +
       (w.mode === 'late' ? 'คะแนนงานนี้จะถูกหัก <b>' + penaltyOf(w, late) + '%</b> (' + ruleText(w) + ')' : 'งานนี้ครูตั้งไว้ว่าไม่หักคะแนน') + '</div>' +
@@ -736,6 +787,7 @@ async function studentSend(w, root, sh) {
     sh = studentOpen(w.code);
     PENDING = keep;
     root = sh.root;
+    $('[data-note]', root).value = keepNote;      /* ข้อความถึงครูที่พิมพ์ไว้ต้องกลับมาด้วย ไม่ใช่แค่ไฟล์ */
     paintPending(root, w);
     if (!yes) return;
   }
@@ -749,6 +801,8 @@ async function studentSend(w, root, sh) {
     const ids = [];
     for (let i = 0; i < PENDING.length; i++) {
       const p = PENDING[i];
+      /* หน้าที่อัปโหลดขึ้นไปแล้วในรอบก่อน (ก่อนเน็ตหลุด) ไม่ต้องส่งซ้ำ — ไฟล์ยังอยู่ใน Drive รอการกดส่ง */
+      if (p.upId) { ids.push(p.upId); bar.style.width = Math.round((i + 1) / (PENDING.length + 1) * 100) + '%'; continue; }
       pt.textContent = (p.kind === 'img' ? 'กำลังเตรียมรูปหน้า ' : 'กำลังเตรียมไฟล์ ') + (i + 1) + ' จาก ' + PENDING.length;
       let blob = p.file, mime = 'application/pdf';
       if (p.kind === 'img') { const s = await shrinkImage(p.file); blob = s.blob; mime = s.mime; }
@@ -761,6 +815,7 @@ async function studentSend(w, root, sh) {
         catch (e) { lastErr = e; if (e.auth) throw e; }
       }
       if (!up) throw lastErr;
+      p.upId = up.id;
       ids.push(up.id);
       bar.style.width = Math.round((i + 1) / (PENDING.length + 1) * 100) + '%';
     }
@@ -786,7 +841,8 @@ async function studentSend(w, root, sh) {
     pt.textContent = '';
     prog.classList.add('hide');
     $$('input,textarea,button', root).forEach(x => { x.disabled = false; });
-    btn.textContent = 'ลองส่งอีกครั้ง';
+    const upN = PENDING.filter(p => p.upId).length;
+    btn.textContent = upN ? 'ส่งต่อ (ขึ้นแล้ว ' + upN + ' จาก ' + PENDING.length + ' ไฟล์)' : 'ลองส่งอีกครั้ง';
     toast(e.message || String(e), 5000);
   }
 }
@@ -849,6 +905,7 @@ function teacherShell() {
     '<button data-tab="' + t[0] + '" class="' + (T.tab === t[0] ? 'on' : '') + '">' + t[1] +
     (t[0] === 'reset' && pend ? '<span class="n">' + pend + '</span>' : '') + '</button>').join('') + '</div><div id="pane"></div>';
   $$('[data-tab]').forEach(b => b.addEventListener('click', () => { T.tab = b.dataset.tab; teacherShell(); }));
+  uiSave();
   clearInterval(T.timer);
   if (T.tab === 'works') paneWorks();
   else if (T.tab === 'grade') paneGrade();
@@ -897,7 +954,9 @@ function paneWorks() {
   const now = Date.now();
   const classes = Array.from(new Set(T.works.flatMap(w => w.cls))).sort(byTh);
   if (T.fCls && classes.indexOf(T.fCls) < 0) T.fCls = '';
-  const shown = T.works.filter(w => (T.fSubj == null || (w.subject || '') === T.fSubj) && (!T.fCls || w.cls.indexOf(T.fCls) >= 0));
+  /* ตัวกรองวิชาที่จำไว้จากครั้งก่อน ถ้าไม่มีงานของวิชานั้นแล้วให้กลับเป็นทุกวิชา */
+  if (T.fSubj != null && !T.works.some(w => (w.subject || '') === T.fSubj)) T.fSubj = null;
+  const shown =T.works.filter(w => (T.fSubj == null || (w.subject || '') === T.fSubj) && (!T.fCls || w.cls.indexOf(T.fCls) >= 0));
   /* งานที่เลือกไว้แต่ถูกกรองหายไป ไม่นับรวม — ลบเฉพาะที่ครูมองเห็นอยู่ จะได้ไม่เผลอลบของที่ไม่ได้ดู */
   const codes = new Set(shown.map(w => w.code));
   Array.from(T.sel).forEach(c => { if (!codes.has(c)) T.sel.delete(c); });
@@ -927,7 +986,8 @@ function paneWorks() {
         '<div class="bar"><i style="width:' + pct + '%"></i></div></div>' +
         '<div class="row" style="flex-direction:column;align-items:stretch;gap:6px">' +
           '<button class="sm primary" data-grade="' + esc(w.code) + '">ตรวจงาน</button>' +
-          '<button class="sm" data-edit="' + esc(w.code) + '">แก้ไข</button></div></div>';
+          '<button class="sm" data-edit="' + esc(w.code) + '">แก้ไข</button>' +
+          '<button class="sm" data-dup="' + esc(w.code) + '" title="สั่งงานใหม่โดยใช้ข้อมูลของงานนี้เป็นต้นแบบ">คัดลอก</button></div></div>';
     }).join('') : '<div class="empty">ไม่มีงานที่ตรงกับตัวกรอง</div>') + '</div></div>';
   }
   $('#pane').innerHTML = h;
@@ -943,6 +1003,8 @@ function paneWorks() {
   }
   $$('[data-grade]').forEach(b => b.addEventListener('click', () => { T.gradeCode = b.dataset.grade; T.subs = null; T.tab = 'grade'; teacherShell(); }));
   $$('[data-edit]').forEach(b => b.addEventListener('click', () => workForm(T.works.find(w => w.code === b.dataset.edit))));
+  $$('[data-dup]').forEach(b => b.addEventListener('click', () => workForm(null, T.works.find(w => w.code === b.dataset.dup))));
+  uiSave();
 }
 
 /** ลบงานที่ติ๊กไว้ทีละงาน — ชีตตรวจสิทธิ์ทุกงาน งานไหนลบไม่ได้ก็บอกชื่อ ส่วนที่เหลือยังลบต่อ */
@@ -977,30 +1039,69 @@ function knownClasses() {
 }
 const localInput = d => d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate());
 
-function workForm(w) {
-  const due = w ? new Date(w.dueAt) : (() => { const d = new Date(); d.setDate(d.getDate() + 7); d.setHours(16, 30, 0, 0); return d; })();
+/** ค่าที่ครูใช้สั่งงานครั้งล่าสุด (วิชา คะแนนเต็ม วิธีหักคะแนน เวลาส่ง) — เก็บในเครื่อง แยกตามบัญชี */
+const formKey = () => 'workdesk.form.' + obAcct();
+function lastForm() { try { return JSON.parse(lsGet(formKey()) || '{}') || {}; } catch (e) { return {}; } }
+/** เทียบชื่อวิชาแบบไม่สนช่องว่างและตัวพิมพ์ — "ฟิสิกส์ม.4" กับ "ฟิสิกส์ ม.4" คือวิชาเดียวกัน */
+const subjNorm = s => String(s || '').replace(/\s+/g, '').toLowerCase();
+
+/** w = งานที่จะแก้ไข · tpl = งานต้นแบบที่คัดลอกมาเป็นงานใหม่ (ใบงานไม่ตามมา) · ไม่ใส่ทั้งคู่ = งานใหม่จากค่าล่าสุด */
+function workForm(w, tpl) {
+  const last = w ? {} : lastForm();
+  const v = w || tpl || { title: '', subject: last.subject || '', max: last.max || 10, cls: [], detail: '',
+                          mode: last.mode === 'same' ? 'same' : 'late', perDay: last.perDay, cap: last.cap };
+  const lateVal = (k, def) => v.mode === 'late' && v[k] != null && v[k] !== '' ? v[k] : (last[k] != null && last[k] !== '' ? last[k] : def);
+  const due = w ? new Date(w.dueAt) : (() => {
+    const d = new Date(), t = tpl ? new Date(tpl.dueAt) : null, m = /^(\d{1,2}):(\d{2})$/.exec(last.time || '');
+    d.setDate(d.getDate() + 7);
+    if (t && !isNaN(t)) d.setHours(t.getHours(), t.getMinutes(), 0, 0);
+    else if (m) d.setHours(Number(m[1]), Number(m[2]), 0, 0);
+    else d.setHours(16, 30, 0, 0);
+    return d;
+  })();
   const cls = knownClasses();
-  const sh = openSheet('<h2>' + (w ? 'แก้ไขงาน' : 'สั่งงานใหม่') + '</h2>' +
-    '<label class="f">ชื่องาน</label><input data-f="title" maxlength="120" placeholder="เช่น ใบงานที่ 3 กฎการเคลื่อนที่ของนิวตัน" value="' + esc(w ? w.title : '') + '">' +
-    '<div class="grid2"><div><label class="f">วิชา <span class="muted">(ไม่บังคับ)</span></label><input data-f="subject" maxlength="60" placeholder="เช่น ฟิสิกส์ ม.4" value="' + esc(w ? w.subject : '') + '"></div>' +
-    '<div><label class="f">คะแนนเต็ม</label><input data-f="max" type="number" min="0.5" max="1000" step="0.5" inputmode="decimal" value="' + esc(w ? w.max : 10) + '"></div></div>' +
-    '<label class="f">ชั้นที่สั่ง <span class="muted">(คั่นด้วยจุลภาค)</span></label><input data-f="cls" placeholder="เช่น ม.4/1, ม.4/2" value="' + esc(w ? w.cls.join(', ') : '') + '">' +
-    (cls.length ? '<div class="row" style="margin-top:6px;gap:6px">' + cls.map(c => '<button class="sm" data-addcls="' + esc(c) + '">' + esc(c) + '</button>').join('') + '</div>' : '') +
+  const subjects = Array.from(new Set((T.works || []).map(x => x.subject || '').filter(Boolean))).sort(byTh);
+  const sh = openSheet('<h2 style="padding-right:56px">' + (w ? 'แก้ไขงาน' : 'สั่งงานใหม่') + '</h2>' +
+    (tpl ? '<div class="notice info small">คัดลอกจาก “' + esc(tpl.title) + '” — แก้ชื่อ ชั้น และกำหนดส่งแล้วกดสั่งงาน' +
+      ((tpl.sheets || []).length ? ' · ใบงานของงานเดิมไม่ได้คัดลอกมา แทรกใหม่ได้ด้านล่าง' : '') + '</div>' : '') +
+    '<label class="f">ชื่องาน</label><input data-f="title" maxlength="120" placeholder="เช่น ใบงานที่ 3 กฎการเคลื่อนที่ของนิวตัน" value="' + esc(v.title) + '">' +
+    '<div class="grid2"><div><label class="f">วิชา <span class="muted">(ไม่บังคับ' + (subjects.length ? ' · เลือกจากที่เคยใช้ได้' : '') + ')</span></label>' +
+      '<input data-f="subject" maxlength="60" list="wd-subjects" autocomplete="off" placeholder="เช่น ฟิสิกส์ ม.4" value="' + esc(v.subject) + '">' +
+      '<datalist id="wd-subjects">' + subjects.map(s => '<option value="' + esc(s) + '">').join('') + '</datalist></div>' +
+    '<div><label class="f">คะแนนเต็ม</label><input data-f="max" type="number" min="0.5" max="1000" step="0.5" inputmode="decimal" value="' + esc(v.max) + '"></div></div>' +
+    '<label class="f">ชั้นที่สั่ง <span class="muted">(' + (cls.length ? 'กดเลือกชั้นด้านล่าง หรือพิมพ์' : 'พิมพ์') + 'คั่นด้วยจุลภาค)</span></label><input data-f="cls" placeholder="เช่น ม.4/1, ม.4/2" value="' + esc(v.cls.join(', ')) + '">' +
+    (cls.length ? '<div class="row" style="margin-top:6px;gap:6px">' + cls.map(c => '<button class="sm clsb" data-addcls="' + esc(c) + '" aria-pressed="false">' + esc(c) + '</button>').join('') + '</div>' : '') +
     '<div class="grid2"><div><label class="f">กำหนดส่ง (วัน)</label><input data-f="date" type="date" value="' + localInput(due) + '"></div>' +
     '<div><label class="f">เวลา</label><input data-f="time" type="time" value="' + p2(due.getHours()) + ':' + p2(due.getMinutes()) + '"></div></div>' +
-    '<label class="f">รายละเอียด / คำสั่ง <span class="muted">(ไม่บังคับ)</span></label><textarea data-f="detail" maxlength="2000" placeholder="เช่น ทำข้อ 1–10 ถ่ายรูปให้เห็นวิธีทำครบ">' + esc(w ? w.detail : '') + '</textarea>' +
+    '<label class="f">รายละเอียด / คำสั่ง <span class="muted">(ไม่บังคับ)</span></label><textarea data-f="detail" maxlength="2000" placeholder="เช่น ทำข้อ 1–10 ถ่ายรูปให้เห็นวิธีทำครบ">' + esc(v.detail) + '</textarea>' +
     '<label class="f">ใบงานให้นักเรียนโหลด <span class="muted">(ไม่บังคับ · PDF รูป Word Excel PowerPoint ไม่เกิน 10 MB ต่อไฟล์)</span></label>' +
     '<div data-sheets></div>' +
     '<label class="shpick">' + icon('doc', 20) + '<span>แทรกใบงาน</span><input type="file" multiple accept="' + SHEET_ACCEPT + '" data-sheetpick></label>' +
     '<label class="f">การให้คะแนน</label>' +
     '<div class="seg2" data-mode><button data-m="same">คะแนนเท่ากัน ไม่ว่าส่งเมื่อไร</button><button data-m="late">ตามเวลาที่ส่ง</button></div>' +
-    '<div data-lateopts class="grid2" style="margin-top:4px"><div><label class="f">หักต่อวันที่ช้า (%)</label><input data-f="perDay" type="number" min="1" max="100" inputmode="numeric" value="' + esc(w && w.mode === 'late' ? w.perDay : 10) + '"></div>' +
-    '<div><label class="f">หักรวมไม่เกิน (%)</label><input data-f="cap" type="number" min="0" max="100" inputmode="numeric" value="' + esc(w && w.mode === 'late' ? w.cap : 50) + '"></div></div>' +
+    '<div data-lateopts class="grid2" style="margin-top:4px"><div><label class="f">หักต่อวันที่ช้า (%)</label><input data-f="perDay" type="number" min="1" max="100" inputmode="numeric" value="' + esc(lateVal('perDay', 10)) + '"></div>' +
+    '<div><label class="f">หักรวมไม่เกิน (%)</label><input data-f="cap" type="number" min="0" max="100" inputmode="numeric" value="' + esc(lateVal('cap', 50)) + '"></div></div>' +
     '<div class="notice info small" data-ruleprev></div>' +
     '<div class="row" style="margin-top:16px">' + (w ? '<button class="danger" data-del>ลบงาน</button>' : '') +
     '<span class="sp"></span><button data-close>ยกเลิก</button><button class="primary" data-save>' + (w ? 'บันทึก' : 'สั่งงาน') + '</button></div>');
   const root = sh.root, f = k => $('[data-f="' + k + '"]', root);
-  let mode = w ? w.mode : 'late';
+  let mode = v.mode === 'same' ? 'same' : 'late';
+  /* พิมพ์หรือเลือกอะไรไปแล้ว แตะนอกแผ่นจะไม่ปิด กดยกเลิกจะถามก่อน */
+  let dirty = false;
+  sh.ask = w ? 'ยังไม่ได้บันทึกสิ่งที่แก้ไข ปิดแล้วจะหาย' : 'ยังไม่ได้สั่งงานนี้ ปิดแล้วสิ่งที่กรอกไว้จะหาย';
+  sh.dirty = () => dirty;
+  ['input', 'change'].forEach(ev => root.addEventListener(ev, () => { dirty = true; }));
+  root.addEventListener('click', e => { if (e.target.closest('[data-m],[data-addcls],[data-shdrop],[data-shrm]')) dirty = true; });
+  const clsNow = () => f('cls').value.split(/[,\s]+/).filter(Boolean);
+  const paintCls = () => { const cur = clsNow(); $$('[data-addcls]', root).forEach(b => {
+    const on = cur.indexOf(b.dataset.addcls) >= 0; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); }); };
+  f('cls').addEventListener('input', paintCls);
+  /* พิมพ์ชื่อวิชาที่ต่างจากของเดิมแค่ช่องว่างหรือตัวพิมพ์ ใช้ตัวสะกดเดิมให้ — คะแนนรวมจะได้ไม่แยกเป็นสองวิชา */
+  f('subject').addEventListener('change', () => {
+    const cur = f('subject').value.trim(), hit = subjects.find(s => subjNorm(s) === subjNorm(cur));
+    if (hit && hit !== cur) { f('subject').value = hit; toast('ใช้ชื่อวิชาเดิม “' + hit + '” เพื่อให้คะแนนรวมอยู่วิชาเดียวกัน', 3600); }
+    else f('subject').value = cur;
+  });
   const paintMode = () => {
     $$('[data-m]', root).forEach(b => b.classList.toggle('on', b.dataset.m === mode));
     $('[data-lateopts]', root).classList.toggle('hide', mode !== 'late');
@@ -1014,10 +1115,13 @@ function workForm(w) {
   $$('[data-m]', root).forEach(b => b.addEventListener('click', () => { mode = b.dataset.m; paintMode(); }));
   ['perDay', 'cap'].forEach(k => f(k).addEventListener('input', paintMode));
   $$('[data-addcls]', root).forEach(b => b.addEventListener('click', () => {
-    const cur = f('cls').value.split(/[,\s]+/).filter(Boolean);
-    if (cur.indexOf(b.dataset.addcls) < 0) cur.push(b.dataset.addcls);
+    /* กดซ้ำ = เอาชั้นนั้นออก */
+    const cur = clsNow(), at = cur.indexOf(b.dataset.addcls);
+    if (at < 0) cur.push(b.dataset.addcls); else cur.splice(at, 1);
     f('cls').value = cur.join(', ');
+    paintCls();
   }));
+  paintCls();
   paintMode();
 
   /* ใบงาน — ของเดิมกดเอาออกได้ (ขีดฆ่าไว้ กดอีกครั้งเพื่อเก็บไว้) ของใหม่รอในเครื่อง
@@ -1068,6 +1172,9 @@ function workForm(w) {
         perDay: f('perDay').value, cap: f('cap').value
       } });
     } catch (err) { btn.disabled = false; return fail(err); }
+    dirty = false;
+    lsSet(formKey(), JSON.stringify({ subject: f('subject').value.trim(), max: f('max').value, mode: mode,
+      perDay: f('perDay').value, cap: f('cap').value, time: f('time').value }));
     if (drop.size || fresh.length) $$('button,input,textarea,label', root).forEach(x => { x.disabled = true; x.style.pointerEvents = 'none'; });
     /* งานบันทึกแล้ว ต่อจากนี้ถ้าไฟล์ไหนพลาด บอกครูว่าไฟล์ไหน แล้วกดแก้ไขเพื่อแนบใหม่ได้ */
     const failed = [];
@@ -1168,6 +1275,7 @@ function gradeBody() {
   if (opt && ww) opt.textContent = ww.title + ' · ' + ww.cls.join(', ') + (ww.stats.toGrade ? ' (รอตรวจ ' + ww.stats.toGrade + ')' : '');
   const multi = w.cls.length > 1;
   if (!multi || w.cls.indexOf(T.gCls) < 0) T.gCls = '';
+  uiSave();
   const rows = scopedRows();
   const cnt = { ontime: 0, late: 0, paper: 0, miss: 0, todo: 0 };
   rows.forEach(r => { cnt[stateOf(r, w, now)]++; });
@@ -1305,6 +1413,69 @@ async function copyScores() {
   }
 }
 
+/* ---- ความเห็นสำเร็จรูป ---------------------------------------------------------
+   แถวปุ่มเหนือช่องความเห็น กดแล้วเติมข้อความให้ ไม่ต้องพิมพ์ซ้ำทุกคน
+   ชุดตั้งต้นมีให้ทุกคน · ครูกด "＋ จำข้อความนี้" เพื่อเก็บข้อความที่พิมพ์อยู่เป็นปุ่มของตัวเอง (เก็บในเครื่อง แยกตามบัญชี) */
+const CM_BASE = ['ดีมาก', 'เรียบร้อยดี', 'แสดงวิธีทำให้ครบ', 'ตรวจคำตอบอีกครั้ง', 'ลายมืออ่านยาก', 'ถ่ายรูปไม่ชัด ส่งใหม่', 'ส่งไม่ครบทุกข้อ'];
+const CM_MINE_MAX = 12;
+const cmKey = () => 'workdesk.cm.' + obAcct();
+function cmMine() {
+  try { const a = JSON.parse(lsGet(cmKey()) || '[]'); return Array.isArray(a) ? a.filter(x => typeof x === 'string' && x).slice(0, CM_MINE_MAX) : []; }
+  catch (e) { return []; }
+}
+/** วาดแถวปุ่มลงใน host ผูกกับช่องความเห็น input */
+function cmBar(host, input) {
+  const mine = cmMine();
+  host.innerHTML = CM_BASE.map(t => '<button type="button" data-cmt="' + esc(t) + '">' + esc(t) + '</button>').join('') +
+    mine.map((t, i) => '<span class="mine"><button type="button" data-cmt="' + esc(t) + '">' + esc(t.length > 28 ? t.slice(0, 27) + '…' : t) + '</button>' +
+      '<button type="button" data-cmx="' + i + '" aria-label="ลบปุ่ม ' + esc(t) + '" title="ลบปุ่มนี้">×</button></span>').join('') +
+    '<button type="button" class="add" data-cmadd title="เก็บข้อความในช่องความเห็นเป็นปุ่มของครู">＋ จำข้อความนี้</button>';
+  const back = () => { if (window.innerWidth > 700) input.focus(); };
+  $$('[data-cmt]', host).forEach(b => b.addEventListener('click', () => {
+    const t = b.dataset.cmt, cur = input.value.trim();
+    /* กดปุ่มที่มีอยู่แล้วในช่อง = เอาออก · ไม่งั้นต่อท้ายของเดิม */
+    const parts = cur ? cur.split(/\s*·\s*/) : [], at = parts.indexOf(t);
+    if (at >= 0) parts.splice(at, 1); else parts.push(t);
+    input.value = parts.join(' · ').slice(0, 1000);
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    back();
+  }));
+  $$('[data-cmx]', host).forEach(b => b.addEventListener('click', () => {
+    const a = cmMine(); a.splice(Number(b.dataset.cmx), 1);
+    lsSet(cmKey(), JSON.stringify(a)); cmBar(host, input); back();
+  }));
+  $('[data-cmadd]', host).addEventListener('click', () => {
+    const t = input.value.trim(), a = cmMine();
+    if (!t) { toast('พิมพ์ความเห็นในช่องก่อน แล้วกดปุ่มนี้เพื่อเก็บไว้ใช้ครั้งหน้า', 3200); return back(); }
+    if (CM_BASE.indexOf(t) >= 0 || a.indexOf(t) >= 0) { toast('มีปุ่มนี้อยู่แล้ว'); return back(); }
+    if (a.length >= CM_MINE_MAX) { toast('เก็บได้ ' + CM_MINE_MAX + ' ข้อความ ลบของเดิมออกก่อน', 3200); return back(); }
+    a.push(t.slice(0, 200));
+    lsSet(cmKey(), JSON.stringify(a)); cmBar(host, input); toast('เก็บเป็นปุ่มแล้ว'); back();
+  });
+}
+
+/* ---- จำหน้าจอของครู --------------------------------------------------------------
+   แท็บ ตัวกรองวิชา/ห้อง และงานที่กำลังตรวจ เก็บในเครื่องแยกตามบัญชี โหลดหน้าใหม่แล้วกลับมาที่เดิม */
+const UI_KEYS = ['tab', 'fSubj', 'fCls', 'gradeCode', 'filter', 'gCls', 'sSubj', 'sCls', 'boardCls', 'onlyRisk'];
+const uiKey = () => 'workdesk.ui.' + obAcct();
+function uiSave() {
+  if (T.noWork) return;               /* ยังเชื่อมชีตส่งงานไม่ได้ ถูกบังคับไปแท็บปลดล็อก — ไม่จำ */
+  const o = {};
+  UI_KEYS.forEach(k => { o[k] = T[k]; });
+  lsSet(uiKey(), JSON.stringify(o));
+}
+function uiRestore() {
+  let o = null;
+  try { o = JSON.parse(lsGet(uiKey()) || 'null'); } catch (e) {}
+  if (!o || typeof o !== 'object') return;
+  const str = k => typeof o[k] === 'string';
+  if (['works', 'grade', 'scores', 'watch', 'reset'].indexOf(o.tab) >= 0) T.tab = o.tab;
+  if (['todo', 'all', 'ontime', 'late', 'none'].indexOf(o.filter) >= 0) T.filter = o.filter;
+  ['fCls', 'gradeCode', 'gCls', 'sCls', 'boardCls'].forEach(k => { if (str(k)) T[k] = o[k]; });
+  ['fSubj', 'sSubj'].forEach(k => { if (str(k) || o[k] === null) T[k] = o[k]; });
+  if (typeof o.onlyRisk === 'boolean') T.onlyRisk = o.onlyRisk;
+}
+
 /* ---- ตัวดูงาน: ดูรูปทีละคน ให้คะแนน กด Enter ไปคนถัดไป ----------------------- */
 let VIEW = null;
 async function openViewer(sid) {
@@ -1317,7 +1488,7 @@ async function openViewer(sid) {
     '<div class="vtop"><button class="sm" data-vclose>ปิด</button><div class="who" data-vwho></div><span class="sp"></span>' +
     '<button class="sm primary" data-vink>✏️ เขียนตรวจ</button><button class="sm" data-vzoom>ขยาย</button><button class="sm" data-vprev>‹ ก่อนหน้า</button><button class="sm" data-vnext>ถัดไป ›</button></div>' +
     '<div class="vbody" data-vbody></div>' +
-    '<div class="vbot"><div class="fld"><span>คะแนน (เต็ม ' + fmtN(w.max) + ')</span><input class="score" data-vscore type="number" min="0" max="' + esc(w.max) + '" step="0.5" inputmode="decimal"></div>' +
+    '<div class="vbot"><div class="cmbar" data-vcmbar></div><div class="fld"><span>คะแนน (เต็ม ' + fmtN(w.max) + ')</span><input class="score" data-vscore type="number" min="0" max="' + esc(w.max) + '" step="0.5" inputmode="decimal"></div>' +
     '<button class="sm" data-vfull>เต็ม</button>' +
     '<div class="fld" style="flex:1"><span>ความเห็นถึงนักเรียน</span><input class="cm" data-vcm maxlength="1000" placeholder="ไม่บังคับ"></div>' +
     '<div class="fld"><span data-vpen>&nbsp;</span><button class="primary" data-vsave>บันทึก · คนถัดไป</button></div></div></div>';
@@ -1330,6 +1501,7 @@ async function openViewer(sid) {
     gradeBody();
   };
   const score = $('[data-vscore]', root), cm = $('[data-vcm]', root);
+  cmBar($('[data-vcmbar]', root), cm);
   const paintPen = () => {
     const r = order[i], s = r.sub, v = score.value;
     $('[data-vpen]', root).textContent = s.penalty ? 'ช้า −' + s.penalty + '% → ' + (v === '' ? '—' : fmtN(finalOf(w, v, s.lateMin))) : ' ';
@@ -1993,7 +2165,7 @@ async function openInk(ctx) {
     '</div>' +
     '<div class="inknote" data-note></div>' +
     '<div class="inkbody" data-ib></div>' +
-    '<div class="vbot inkbot"><div class="fld"><span>คะแนน (เต็ม ' + fmtN(w.max) + ')</span>' +
+    '<div class="vbot inkbot"><div class="cmbar" data-cmbar></div><div class="fld"><span>คะแนน (เต็ม ' + fmtN(w.max) + ')</span>' +
         '<input class="score" data-sc type="number" min="0" max="' + esc(w.max) + '" step="0.5" inputmode="decimal"></div>' +
       '<button class="sm" data-ik="full">เต็ม</button>' +
       '<div class="fld" style="flex:1"><span>ความเห็นถึงนักเรียน</span><input class="cm" data-cm maxlength="1000" placeholder="ไม่บังคับ"></div>' +
@@ -2008,7 +2180,8 @@ async function openInk(ctx) {
     cur: null, live: null, touches: new Map(), pinch: null, from: 'orig', sc0: '', cm0: ''
   };
   const B = st.body, sc = $('[data-sc]', box), cm = $('[data-cm]', box);
-  const act = n => $('[data-ik="' + n + '"]', box);
+  cmBar($('[data-cmbar]', box), cm);
+  const act =n => $('[data-ik="' + n + '"]', box);
 
   const paintTools = () => {
     $$('[data-tool]', box).forEach(b => b.classList.toggle('on', b.dataset.tool === st.tool));
@@ -2524,6 +2697,8 @@ async function paneScores() {
   /* ดึงทุกห้องมาทีเดียว แล้วกรองห้องฝั่งหน้าเว็บ — สลับห้องจะได้ไม่ต้องรอชีตทุกครั้ง */
   try { T.scores = await api('workScores', T.sSubj == null ? {} : { subject: T.sSubj }, 60000); }
   catch (e) { if (e.auth) return fail(e); $('#pane').innerHTML = '<div class="notice ' + (e.old ? 'warn' : 'bad') + '">' + esc(e.message) + '</div>'; return; }
+  /* วิชาที่จำไว้จากครั้งก่อนไม่มีแล้ว — กลับเป็นทุกวิชาแล้วดึงใหม่หนึ่งรอบ */
+  if (T.sSubj != null && (T.scores.subjects || []).indexOf(T.sSubj) < 0) { T.sSubj = null; return paneScores(); }
   scoresBody();
 }
 const ST_CHIP = {
@@ -2545,6 +2720,7 @@ function scoresTotals(r, works) {
 function scoresBody() {
   const S = T.scores, works = S.works;
   if (T.sCls && S.classes.indexOf(T.sCls) < 0) T.sCls = '';
+  uiSave();
   const rows = T.sCls ? S.rows.filter(r => r.cls === T.sCls) : S.rows;
   let h = '<div class="panel"><div class="row">' +
     '<select data-ssubj style="width:auto;min-width:160px"><option value="*"' + (T.sSubj == null ? ' selected' : '') + '>ทุกวิชา</option>' +
@@ -2600,6 +2776,9 @@ async function paneWatch() {
   $('#pane').innerHTML = loading('กำลังรวมข้อมูลทุกงาน…');
   try { T.board = await api('workBoard', { cls: T.boardCls }); }
   catch (e) { if (e.auth) return fail(e); $('#pane').innerHTML = '<div class="notice bad">' + esc(e.message) + '</div>'; return; }
+  /* ชั้นที่จำไว้จากครั้งก่อนไม่มีแล้ว — กลับเป็นทุกชั้นแล้วดึงใหม่หนึ่งรอบ */
+  if (T.boardCls && (T.board.classes || []).indexOf(T.boardCls) < 0) { T.boardCls = ''; return paneWatch(); }
+  uiSave();
   watchBody();
 }
 function watchBody() {
@@ -2629,7 +2808,7 @@ function watchBody() {
     }).join('') + '</tbody></table>' : '<div class="empty">ไม่มีนักเรียนที่ต้องติดตาม</div>') + '</div></div>';
   $('#pane').innerHTML = h;
   $('[data-bcls]').addEventListener('change', e => { T.boardCls = e.target.value; paneWatch(); });
-  $('[data-only]').addEventListener('change', e => { T.onlyRisk = e.target.checked; watchBody(); });
+  $('[data-only]').addEventListener('change', e => { T.onlyRisk = e.target.checked; uiSave(); watchBody(); });
   $('[data-bcopy]').addEventListener('click', async () => {
     const text = ['ระดับ\tเลขที่\tเลขประจำตัว\tชื่อ\tชั้น\tค้างส่ง\tงานที่เลยกำหนด\tคะแนนงาน (%)\tงานที่ค้าง'].concat(list.map(r =>
       [r.risk.level === 'high' ? 'เสี่ยงติด 0' : r.risk.level === 'mid' ? 'ค้างหลายงาน' : 'ปกติ', r.no, r.sid, r.name, r.cls,
@@ -2833,6 +3012,7 @@ function start() {
   T.noWork = !hasWork;
   const p = s.profile || {};
   if (s.role === 'admin') {
+    uiRestore();
     /* ลิงก์จากหน้าพอร์ทัล "เปิดดูคำขอ" พามาที่แท็บคำขอรหัสผ่านตรง ๆ */
     if (location.hash === '#reset') T.tab = 'reset';
     $('#who').textContent = (p.sub ? (p.name || 'ครูผู้สอน') + ' · ดูแล ' + (p.classes || []).join(', ') : 'ผู้ดูแลหลัก · ทุกชั้น');
@@ -2841,6 +3021,7 @@ function start() {
   } else {
     $('#who').textContent = [p.name, p.cls, p.no ? 'เลขที่ ' + p.no : ''].filter(Boolean).join(' · ');
     studentLoad();
+    studentAutoReload();
   }
 }
 start();
