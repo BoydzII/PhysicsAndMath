@@ -148,6 +148,25 @@ try {
   process.exit(1);
 }
 
+/* ซิงค์เอนจินการเขียนสมุดโน้ต (core/ink-engine.js) ไปยังทุกแอปที่ใช้การเขียน
+   สร้างมาตรฐานเดียวกัน แก้ที่เดียวมีผลทุกแอปทันที */
+const INK_MASTER = path.join(ROOT, 'core', 'ink-engine.js');
+const INK_TARGETS = [
+  'Physics1App/draw.js',
+  'Physics2App/draw.js',
+  'IJSOApp/draw.js'
+];
+if (fs.existsSync(INK_MASTER)) {
+  const inkSrc = fs.readFileSync(INK_MASTER, 'utf8');
+  for (const rel of INK_TARGETS) {
+    const dst = path.join(ROOT, rel);
+    if (fs.existsSync(path.dirname(dst))) {
+      fs.writeFileSync(dst, inkSrc, 'utf8');
+    }
+  }
+  console.log('✓ ซิงค์เอนจินสมุดโน้ตดิจิทัลมาตรฐาน (core/ink-engine.js) ไปยัง ' + INK_TARGETS.length + ' แอปแล้ว');
+}
+
 for (const t of TARGETS) {
   // วิชาที่ต้องต่อชีต ถ้ายังไม่ได้ใส่ที่อยู่เว็บแอป อย่าสร้างไฟล์ให้เด็ดขาด
   // ไม่งั้นจะได้ไฟล์ที่เปิดใช้ได้ตามปกติแต่คะแนนไม่ขึ้นชีต ซึ่งกว่าจะรู้ตัวก็สอบไปแล้ว

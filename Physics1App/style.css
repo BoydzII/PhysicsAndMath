@@ -365,6 +365,21 @@ select#topicSelector {
   transform-origin: top center;
 }
 
+/* รูปแบบกระดาษโน้ต: เส้นบรรทัด (lined) · ตารางกราฟฟิสิกส์ (grid) · จุด (dot) · ว่าง (blank) */
+.notebook-wrapper.paper-grid {
+  background-image: 
+    linear-gradient(var(--paper-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--paper-line) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+.notebook-wrapper.paper-dot {
+  background-image: radial-gradient(var(--paper-line) 1.2px, transparent 1.2px);
+  background-size: 24px 24px;
+}
+.notebook-wrapper.paper-blank {
+  background-image: none;
+}
+
 .zoom-group {
   user-select: none;
 }

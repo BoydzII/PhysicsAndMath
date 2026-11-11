@@ -174,5 +174,27 @@ for (const [dir, want] of Object.entries(IDENT)) {
   }
 }
 
+/* ตรวจความสอดคล้องของเอนจินสมุดโน้ตดิจิทัล (Digital Ink Standard)
+   ทุกแอปที่เขียนได้ต้องตรงกับ core/ink-engine.js เป๊ะ เพื่อให้แก้ที่เดียวมีผลทุกแอป */
+{
+  const inkMaster = path.join(ROOT, 'core', 'ink-engine.js');
+  if (fs.existsSync(inkMaster)) {
+    const masterSrc = fs.readFileSync(inkMaster, 'utf8');
+    const inkApps = ['Physics1App/draw.js', 'Physics2App/draw.js', 'IJSOApp/draw.js'];
+    let inkOk = true;
+    for (const rel of inkApps) {
+      const p = path.join(ROOT, rel);
+      if (fs.existsSync(p)) {
+        const subSrc = fs.readFileSync(p, 'utf8');
+        if (subSrc !== masterSrc) {
+          console.error('✗  ' + rel + '  : ไม่ตรงกับ core/ink-engine.js — สั่ง node tools/build-dist.mjs เพื่อซิงค์');
+          fail++; inkOk = false;
+        }
+      }
+    }
+    if (inkOk) console.log('✓  ink-engine.js  (เอนจินสมุดโน้ตมาตรฐาน · ซิงค์ตรงกันทุกแอป ' + inkApps.length + ' แอป)');
+  }
+}
+
 console.log(fail ? '\nไม่ผ่าน ' + fail + ' รายการ — ยังไม่ควรขึ้นเว็บ' : '\nผ่านทั้งหมด พร้อมขึ้นเว็บ');
 process.exit(fail ? 1 : 0);
