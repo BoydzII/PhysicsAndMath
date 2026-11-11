@@ -2304,14 +2304,14 @@ function initHandwritingPad(k, canvasEl, wrapEl, initialStrokes, onSave) {
     clearTimeout(pad.saveTimer);
     pad.saveTimer = setTimeout(() => {
       try {
-        const dataUrl = canvasEl.toDataURL('image/png');
         if (typeof onSave === 'function') {
-          onSave(pad.strokes, dataUrl);
+          // เซฟเฉพาะข้อมูลเวกเตอร์ strokes ทันทีโดยไม่ต้องสั่ง toDataURL ขวางเธรด
+          onSave(pad.strokes, '');
         }
         const st = $('#esSaveState_' + k);
         if (st) st.textContent = '● บันทึกลายมือแล้ว';
       } catch (e) {}
-    }, 450);
+    }, 1500);
   }
 
   // Pointer event listeners (Apple Pencil + Touch)
@@ -2323,7 +2323,7 @@ function initHandwritingPad(k, canvasEl, wrapEl, initialStrokes, onSave) {
        พอเริ่มเขียน ให้ปล่อยโฟกัสทิ้งก่อน แป้นพิมพ์จะยุบ และไม่มีอะไรให้เลื่อนไปหา */
     const act = document.activeElement;
     if (act && act !== canvasEl && typeof act.blur === 'function') act.blur();
-    try { canvasEl.setPointerCapture(e.pointerId); } catch (err) {}
+    // ไม่ใช้ setPointerCapture เพราะทำให้ระบบ touch/stylus ติด async state transition lock เมื่อยกแล้วแตะเร็วๆ
     // เครื่องมือของสมุด (เลือก รูปทรง ข้อความ เส้นโยง ลบทั้งชิ้น) จัดการเองแล้วจบตรงนี้
     if (pad.rich && typeof nbDown === 'function' && nbDown(pad, e, getPos(e))) return;
     pad.isDrawing = true;
@@ -2338,6 +2338,19 @@ function initHandwritingPad(k, canvasEl, wrapEl, initialStrokes, onSave) {
     };
     pad.strokes.push(pad.curStroke);
     pad.straight = false;
+
+    // Fast-Tap Dot: วาดจุดลงผืนผ้าใบทันทีตั้งแต่แตะสัมผัส (0ms Feedback)
+    if (freeHand && !pad.dash) {
+      ctx.save();
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.fillStyle = pad.color || '#1e293b';
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, (pad.size || 2.5) / 2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
     // ลูกศรตรงอยู่แล้วโดยธรรมชาติ ไม่ต้องรอกดค้างเพื่อดัดให้ตรง
     if (pad.tool !== 'arrow') armHold();
   });
@@ -2377,7 +2390,30 @@ function initHandwritingPad(k, canvasEl, wrapEl, initialStrokes, onSave) {
     /* เส้นประต้องวาดใหม่ทั้งเส้นทุกครั้ง ถ้าต่อทีละท่อนจังหวะขีดจะไม่ต่อเนื่องกัน
        กลายเป็นเส้นทึบตอนลาก แล้วค่อยเด้งเป็นเส้นประตอนยกปากกา ซึ่งดูสับสน */
     if (pad.curStroke.dash) { redraw(); return; }
-    if (len >= 3) {
+    if (len === 2) {
+      // Fast Flick: ลากท่อนแรกทันทีตั้งแต่มี 2 จุด (เช่น ขีดขวางตัว F หรือเครื่องหมายเท่ากับ)
+      ctx.save();
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      if (pad.curStroke.tool === 'highlighter') {
+        ctx.strokeStyle = 'rgba(250, 204, 21, 0.45)';
+        ctx.lineWidth = 16;
+        ctx.globalCompositeOperation = 'multiply';
+      } else if (pad.curStroke.tool === 'eraser') {
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 22;
+        ctx.globalCompositeOperation = 'destination-out';
+      } else {
+        ctx.strokeStyle = pad.curStroke.color;
+        ctx.lineWidth = pad.curStroke.size;
+        ctx.globalCompositeOperation = 'source-over';
+      }
+      ctx.beginPath();
+      ctx.moveTo(pts[0].x, pts[0].y);
+      ctx.lineTo(pts[1].x, pts[1].y);
+      ctx.stroke();
+      ctx.restore();
+    } else if (len >= 3) {
       ctx.save();
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
@@ -2410,8 +2446,27 @@ function initHandwritingPad(k, canvasEl, wrapEl, initialStrokes, onSave) {
     clearTimeout(pad.holdTimer);
     pad.straight = false;
     pad.isDrawing = false;
+
+    // Fast-Flick Catchup on PointerUp: ถ้าตวัดเร็วมากจนมีแค่จุดเดียวและยกเลย ดึงตำแหน่ง e มาต่อเส้น
+    if (pad.curStroke && pad.curStroke.points && pad.curStroke.points.length === 1 && e && typeof e.clientX === 'number') {
+      const pEnd = getPos(e);
+      const p0 = pad.curStroke.points[0];
+      if (Math.hypot(pEnd.x - p0.x, pEnd.y - p0.y) > 1.5) {
+        pad.curStroke.points.push(pEnd);
+        ctx.save();
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.strokeStyle = pad.curStroke.color || '#1e293b';
+        ctx.lineWidth = pad.curStroke.size || 2.5;
+        ctx.beginPath();
+        ctx.moveTo(p0.x, p0.y);
+        ctx.lineTo(pEnd.x, pEnd.y);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
     pad.curStroke = null;
-    redraw();
     scheduleSave();
   };
 
