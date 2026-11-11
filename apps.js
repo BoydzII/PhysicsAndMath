@@ -175,7 +175,8 @@
     work: '<path d="M4 13.5h4.2l1.6 2.6h4.4l1.6-2.6H20"/><path d="M5.6 5.5h12.8L20 13.5v5a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 18.5v-5z"/><path d="M12 3.5v7"/><path d="M9.4 8l2.6 2.6L14.6 8"/>',
     found: '<path d="M3.5 19.5h4.4v-4.2h4.3v-4.2h4.3V6.9h4"/><path d="M3.5 19.5h17"/><path d="M17.8 3.6l2.7 3.3-3.3 2.6"/>',
     home: '<path d="M3.5 11 12 4l8.5 7"/><path d="M5.8 9.2V20h12.4V9.2"/><path d="M10 20v-5.5h4V20"/>',
-    grid: '<rect x="4" y="4" width="6.4" height="6.4" rx="1.4"/><rect x="13.6" y="4" width="6.4" height="6.4" rx="1.4"/><rect x="4" y="13.6" width="6.4" height="6.4" rx="1.4"/><rect x="13.6" y="13.6" width="6.4" height="6.4" rx="1.4"/>'
+    grid: '<rect x="4" y="4" width="6.4" height="6.4" rx="1.4"/><rect x="13.6" y="4" width="6.4" height="6.4" rx="1.4"/><rect x="4" y="13.6" width="6.4" height="6.4" rx="1.4"/><rect x="13.6" y="13.6" width="6.4" height="6.4" rx="1.4"/>',
+    refresh: '<path d="M20.6 12a8.6 8.6 0 1 1-2.7-6.3"/><path d="M20.6 4.2V10h-5.8"/>'
   };
   function icon(n, s) {
     return '<svg width="' + s + '" height="' + s + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" ' +
@@ -222,6 +223,8 @@
     '.open .bd{opacity:1;pointer-events:auto}.open .pn{transform:none}' +
     '.hd{display:flex;align-items:center;gap:8px;padding:0 14px 10px 18px;border-bottom:1px solid var(--ln)}' +
     '.hd b{flex:1;font-size:16px}' +
+    '.rf{border:1px solid var(--br);background:var(--bs);color:var(--br);border-radius:8px;min-height:34px;padding:0 10px;font:inherit;font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:background .15s,color .15s;-webkit-tap-highlight-color:transparent}' +
+    '.rf:hover{background:var(--br);color:#fff}' +
     '.x{border:1px solid var(--ln);background:transparent;color:var(--ink);border-radius:8px;min-height:34px;padding:0 12px;font:inherit;font-size:13.5px;cursor:pointer}' +
     '.ls{flex:1;overflow-y:auto;padding:6px 8px;-webkit-overflow-scrolling:touch}' +
     'a{display:flex;align-items:center;gap:12px;padding:9px 10px;border-radius:10px;color:inherit;text-decoration:none;min-height:48px}' +
@@ -252,7 +255,9 @@
       '<button class="tab" type="button" aria-label="เปลี่ยนแอปในเครือคลังโจทย์" title="เปลี่ยนแอป" aria-expanded="false">' + icon('grid', 15) + '</button>' +
       '<div class="bd"></div>' +
       '<nav class="pn" aria-label="แอปในเครือคลังโจทย์" aria-hidden="true">' +
-        '<div class="hd"><b>แอปในเครือคลังโจทย์</b><button class="x" type="button">ปิด</button></div>' +
+        '<div class="hd"><b>แอปในเครือคลังโจทย์</b>' +
+          '<button class="rf" type="button" title="ล้างแคชและรีเฟรชเพื่อดึงเวอร์ชันล่าสุด">' + icon('refresh', 14) + ' <span>อัปเดต</span></button>' +
+          '<button class="x" type="button">ปิด</button></div>' +
         '<div class="ls">' +
           '<a href="' + esc(ROOT) + '"><span class="i">' + icon('home', 20) + '</span><span class="t">หน้าหลัก<small>ลงชื่อเข้าใช้ · เลือกวิชา</small></span></a>' +
           '<div class="sep"></div>' + items +
@@ -274,6 +279,22 @@
     tab.addEventListener('click', function () { setOpen(!w.classList.contains('open')); });
     root.querySelector('.bd').addEventListener('click', function () { setOpen(false); });
     root.querySelector('.x').addEventListener('click', function () { setOpen(false); });
+    var rf = root.querySelector('.rf');
+    if (rf) {
+      rf.addEventListener('click', async function () {
+        rf.disabled = true;
+        rf.innerHTML = '<span>กำลังอัปเดต…</span>';
+        try {
+          if ('caches' in window) {
+            var names = await caches.keys();
+            await Promise.all(names.map(function (n) { return caches.delete(n); }));
+          }
+        } catch (e) {}
+        var u = new URL(window.location.href);
+        u.searchParams.set('_v', Date.now());
+        window.location.href = u.toString();
+      });
+    }
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape' && w.classList.contains('open')) setOpen(false);
     });

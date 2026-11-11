@@ -338,6 +338,22 @@ function setupListeners() {
   // Fullscreen Mode
   document.getElementById('btnFullscreen')?.addEventListener('click', toggleFullscreen);
 
+  // Refresh & Cache Buster
+  document.getElementById('btnRefreshApp')?.addEventListener('click', async () => {
+    showToast('🔄 กำลังล้างแคชและโหลดเวอร์ชันล่าสุด...', 'info');
+    try {
+      if ('caches' in window) {
+        const names = await caches.keys();
+        await Promise.all(names.map(n => caches.delete(n)));
+      }
+    } catch (e) {}
+    setTimeout(() => {
+      const u = new URL(window.location.href);
+      u.searchParams.set('_v', Date.now());
+      window.location.href = u.toString();
+    }, 250);
+  });
+
   // Paper Pattern Switcher (Lined -> Grid -> Dot -> Blank)
   const btnPaperPattern = document.getElementById('btnPaperPattern');
   if (btnPaperPattern) {
