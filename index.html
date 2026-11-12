@@ -899,6 +899,7 @@ function ensureGsi() {
   return gsiLoaded;
 }
 
+let busy = false;
 async function googleSignIn() {
   if (busy) return;
   const gBtn = $('#btnGoogleLogin');
