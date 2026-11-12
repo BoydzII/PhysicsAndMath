@@ -179,3 +179,9 @@ IJSOAutoSheet/*
 !PhysicsLabHub/
 !PhysicsLabHub/**
 
+# ---- คลังโจทย์ภาษาอังกฤษ 5 ระดับ ----
+!EnglishApp/
+EnglishApp/*
+!EnglishApp/index.html
+!EnglishApp/questions.js
+

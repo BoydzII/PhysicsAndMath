@@ -156,6 +156,8 @@
       dir: 'EquilibriumLab/', teacher: 'equilibrium.html', student: 'index.html' },
           { key: 'ijso',        ic: 'science',     name: 'ข้อสอบ IJSO สอวน. ม.ต้น', level: 'ม.ต้น (สอบแข่งขัน)',
         dir: 'IJSOApp/', teacher: 'index.html', student: 'index.html' },
+    { key: 'english',     ic: 'english',     name: 'ภาษาอังกฤษ 5 ระดับ',   level: 'A1–C2 · พื้นฐานถึงสอบแข่งขัน',
+      dir: 'EnglishApp/', teacher: 'index.html', student: 'index.html' },
       { key: 'figure',      ic: 'figure',      name: 'ห้องวาดรูปโจทย์',     level: 'เครื่องมือของครู',
       dir: 'FigureLab/', teacher: 'figure.html', student: 'figure.html', teacherOnly: true }
   ];
@@ -167,6 +169,7 @@
     physics: '<circle cx="12" cy="12" r="2"/><ellipse cx="12" cy="12" rx="9.6" ry="4.1"/><ellipse cx="12" cy="12" rx="9.6" ry="4.1" transform="rotate(60 12 12)"/><ellipse cx="12" cy="12" rx="9.6" ry="4.1" transform="rotate(120 12 12)"/>',
     chem: '<path d="M9.2 3h5.6"/><path d="M10.2 3v5.6L5.4 18.4A1.7 1.7 0 0 0 7 21h10a1.7 1.7 0 0 0 1.6-2.6L13.8 8.6V3"/><path d="M7.7 15h8.6"/>',
     bio: '<path d="M8.4 2.4c0 4 7.2 6 7.2 9.6s-7.2 5.6-7.2 9.6"/><path d="M15.6 2.4c0 4-7.2 6-7.2 9.6s7.2 5.6 7.2 9.6"/><path d="M9.6 6.4h4.8"/><path d="M8.5 12h7"/><path d="M9.6 17.6h4.8"/>',
+    english: '<circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3.5 9h17"/><path d="M3.5 15h17"/>',
     physci: '<path d="M2 8.4q2.5-4 5 0t5 0 5 0 5 0"/><path d="M2 15.6q2.5-4 5 0t5 0 5 0 5 0"/>',
     equilibrium: '<circle cx="12" cy="3.6" r="1.4"/><path d="M12 5v14"/><path d="M8.4 19h7.2"/><path d="M3.6 7.2h16.8"/><path d="M4.4 7.4 2.2 11.4"/><path d="M19.6 7.4l2.2 4"/><path d="M1.6 11.4a3.4 3.4 0 0 0 5.2 0"/><path d="M17.2 11.4a3.4 3.4 0 0 0 5.2 0"/>',
     figure: '<path d="M4.2 19.8l4.3-1.1 9.7-9.7a2.5 2.5 0 0 0-3.5-3.5L5 15.3z"/><path d="M14.1 6.2l3.5 3.5"/>',

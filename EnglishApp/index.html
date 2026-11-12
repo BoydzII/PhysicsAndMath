@@ -1,0 +1,1045 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1c4b8c">
+<meta name="description" content="คลังโจทย์ภาษาอังกฤษ 5 ระดับ (A1–C2) — ปรนัยและอัตนัย ครบทุกทักษะ พร้อมระบบเก็บสถิติผู้เรียนและไต่ระดับก้าวกระโดด">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@300..700&family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+<title>คลังโจทย์ภาษาอังกฤษ 5 ระดับ</title>
+<style>
+:root {
+  --bg: #f8fafc;
+  --panel: #ffffff;
+  --panel2: #f1f5f9;
+  --ink: #0f172a;
+  --muted: #64748b;
+  --line: #e2e8f0;
+  --brand: #1c4b8c;
+  --brand-soft: rgba(28, 75, 140, .10);
+  --brand-ink: #ffffff;
+  --ok: #059669; --ok-bg: #ecfdf5; --ok-line: #a7f3d0;
+  --bad: #e11d48; --bad-bg: #fff1f2; --bad-line: #fecdd3;
+  --warn: #d97706; --warn-bg: #fffbeb; --warn-line: #fde68a;
+  --l1: #059669; --l2: #0284c7; --l3: #7c3aed; --l4: #d97706; --l5: #e11d48;
+  --r: 12px;
+  --r-sm: 8px;
+  --shadow: 0 4px 18px -4px rgba(15, 23, 42, .07);
+  --font: 'Anuphan', -apple-system, BlinkMacSystemFont, 'Segoe UI', Tahoma, sans-serif;
+  --print-font: 'Sarabun', 'Anuphan', Tahoma, sans-serif;
+}
+[data-theme="dark"] {
+  --bg: #0b1120;
+  --panel: #131c2e;
+  --panel2: #1b273e;
+  --ink: #f1f5f9;
+  --muted: #94a3b8;
+  --line: #25334a;
+  --brand: #60a5fa;
+  --brand-soft: rgba(96, 165, 250, .15);
+  --brand-ink: #0b1120;
+  --ok: #34d399; --ok-bg: #06281e; --ok-line: #065f46;
+  --bad: #fb7185; --bad-bg: #350d17; --bad-line: #881337;
+  --warn: #fbbf24; --warn-bg: #351f05; --warn-line: #78350f;
+  --shadow: 0 6px 24px -4px rgba(0, 0, 0, .45);
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: 15.5px;
+  line-height: 1.65;
+  padding: 0 0 calc(48px + env(safe-area-inset-bottom));
+}
+.wrap { max-width: 960px; margin: 0 auto; padding: 16px 16px 0; }
+.hide { display: none !important; }
+
+/* Header */
+header.top {
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+  position: sticky; top: 0; z-index: 40;
+}
+.top-in {
+  max-width: 960px; margin: 0 auto; padding: 12px 16px;
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+}
+.logo-box {
+  width: 40px; height: 40px; border-radius: 10px;
+  background: var(--brand); color: var(--brand-ink);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 17px; flex: none;
+}
+.top-title { flex: 1; min-width: 180px; }
+.top-title h1 { margin: 0; font-size: 18px; line-height: 1.25; font-weight: 700; }
+.top-title small { color: var(--muted); font-size: 12.5px; display: block; }
+.top-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.pill-stat {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 10px; border-radius: 999px; font-size: 12.5px; font-weight: 700;
+  background: var(--panel2); border: 1px solid var(--line);
+}
+.icon-btn {
+  border: 1px solid var(--line); background: var(--panel); color: var(--ink);
+  border-radius: 8px; min-height: 36px; padding: 0 10px; font: inherit;
+  font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+}
+.icon-btn:hover { border-color: var(--brand); color: var(--brand); }
+
+/* Tabs */
+.tabs {
+  display: flex; gap: 6px; margin: 16px 0; border-bottom: 1px solid var(--line);
+  overflow-x: auto; -webkit-overflow-scrolling: touch;
+}
+.tab-btn {
+  border: none; background: transparent; color: var(--muted);
+  font: inherit; font-size: 14.5px; font-weight: 600;
+  padding: 10px 14px; cursor: pointer; white-space: nowrap;
+  border-bottom: 2.5px solid transparent; margin-bottom: -1px;
+}
+.tab-btn.on { color: var(--brand); border-bottom-color: var(--brand); font-weight: 700; }
+
+/* Cards & Grids */
+.card {
+  background: var(--panel); border: 1px solid var(--line);
+  border-radius: var(--r); padding: 18px; box-shadow: var(--shadow);
+  margin-bottom: 16px;
+}
+.card h2 { margin: 0 0 8px; font-size: 17px; }
+.card h3 { margin: 0 0 8px; font-size: 15.5px; }
+.muted { color: var(--muted); }
+.grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+.grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
+.grid-5 { display: grid; grid-template-columns: repeat(auto-fit, minmax(165px, 1fr)); gap: 10px; }
+
+/* Buttons */
+.btn {
+  border: 1px solid var(--line); background: var(--panel); color: var(--ink);
+  font: inherit; font-size: 14.5px; font-weight: 600;
+  padding: 10px 16px; border-radius: var(--r-sm); cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 42px; transition: all .15s;
+}
+.btn:hover { border-color: var(--brand); }
+.btn.primary { background: var(--brand); color: var(--brand-ink); border-color: var(--brand); }
+.btn.primary:hover { filter: brightness(1.06); }
+.btn.ok { background: var(--ok); color: #fff; border-color: var(--ok); }
+.btn.warn { background: var(--warn-bg); color: var(--warn); border-color: var(--warn-line); }
+.btn.bad { background: var(--bad-bg); color: var(--bad); border-color: var(--bad-line); }
+.btn.sm { min-height: 34px; padding: 6px 12px; font-size: 13px; }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+
+/* Level Cards */
+.lv-card {
+  border: 1.5px solid var(--line); border-radius: var(--r); padding: 12px;
+  cursor: pointer; background: var(--panel); transition: all .15s;
+  display: flex; flex-direction: column; gap: 4px; text-align: left; font: inherit; color: inherit;
+}
+.lv-card:hover { border-color: var(--brand); transform: translateY(-1px); }
+.lv-card.on { border-color: var(--brand); background: var(--brand-soft); }
+.lv-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11.5px; font-weight: 700; padding: 2px 8px; border-radius: 999px;
+  color: #fff; width: fit-content;
+}
+.lv-1 { background: var(--l1); } .lv-2 { background: var(--l2); }
+.lv-3 { background: var(--l3); } .lv-4 { background: var(--l4); } .lv-5 { background: var(--l5); }
+
+/* Chips */
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 14px; }
+.chip {
+  border: 1px solid var(--line); background: var(--panel2); color: var(--ink);
+  border-radius: 999px; padding: 6px 13px; font: inherit; font-size: 13.5px;
+  cursor: pointer; transition: all .15s;
+}
+.chip.on { background: var(--brand); color: var(--brand-ink); border-color: var(--brand); font-weight: 700; }
+
+/* Quiz Arena */
+.q-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; }
+.tag {
+  font-size: 12px; font-weight: 700; padding: 3px 9px; border-radius: 999px;
+  background: var(--panel2); border: 1px solid var(--line); color: var(--ink);
+}
+.prog-bar { height: 8px; background: var(--panel2); border-radius: 999px; overflow: hidden; margin-bottom: 14px; }
+.prog-fill { height: 100%; background: var(--brand); transition: width .25s ease; }
+
+.passage-box {
+  background: var(--panel2); border-left: 4px solid var(--brand);
+  padding: 14px 16px; border-radius: 0 var(--r-sm) var(--r-sm) 0;
+  margin-bottom: 16px; font-size: 15.5px; line-height: 1.75;
+}
+.q-prompt { font-size: 17px; font-weight: 600; margin-bottom: 16px; line-height: 1.65; }
+u.err {
+  text-decoration: underline; text-decoration-color: var(--bad);
+  text-decoration-thickness: 2px; text-underline-offset: 4px; font-weight: 700;
+}
+
+.choices { display: flex; flex-direction: column; gap: 10px; }
+.choice {
+  display: flex; align-items: flex-start; gap: 12px; text-align: left;
+  padding: 12px 14px; border: 1.5px solid var(--line); border-radius: var(--r-sm);
+  background: var(--panel); color: var(--ink); font: inherit; font-size: 15.5px;
+  cursor: pointer; transition: all .12s;
+}
+.choice:hover:not(:disabled) { border-color: var(--brand); background: var(--brand-soft); }
+.choice .ck {
+  width: 26px; height: 26px; border-radius: 6px; flex: none;
+  background: var(--panel2); border: 1px solid var(--line);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 13px; margin-top: 1px;
+}
+.choice.correct { border-color: var(--ok); background: var(--ok-bg); }
+.choice.correct .ck { background: var(--ok); color: #fff; border-color: var(--ok); }
+.choice.wrong { border-color: var(--bad); background: var(--bad-bg); }
+.choice.wrong .ck { background: var(--bad); color: #fff; border-color: var(--bad); }
+
+.sub-input {
+  width: 100%; font: inherit; font-size: 16px; padding: 12px 14px;
+  border: 1.5px solid var(--line); border-radius: var(--r-sm);
+  background: var(--panel); color: var(--ink);
+}
+.sub-input:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-soft); }
+
+.feedback-box {
+  margin-top: 16px; padding: 14px 16px; border-radius: var(--r-sm);
+  border: 1px solid var(--line);
+}
+.feedback-box.ok { background: var(--ok-bg); border-color: var(--ok-line); }
+.feedback-box.bad { background: var(--bad-bg); border-color: var(--bad-line); }
+.tip-box {
+  margin-top: 10px; padding: 9px 12px; border-radius: 6px;
+  background: var(--warn-bg); border: 1px solid var(--warn-line);
+  font-size: 13.5px;
+}
+
+/* Stats */
+.kpi {
+  background: var(--panel2); border: 1px solid var(--line);
+  border-radius: var(--r-sm); padding: 12px 14px;
+}
+.kpi .val { font-size: 24px; font-weight: 700; line-height: 1.2; }
+.kpi .lbl { font-size: 12.5px; color: var(--muted); }
+.bar-row { margin-bottom: 10px; }
+.bar-head { display: flex; justify-content: space-between; font-size: 13.5px; margin-bottom: 4px; }
+.bar-track { height: 10px; background: var(--panel2); border-radius: 999px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 999px; transition: width .3s; }
+
+/* Bank / Print */
+.bank-item {
+  border-bottom: 1px solid var(--line); padding: 12px 0;
+}
+.bank-item:last-child { border-bottom: none; }
+
+@media print {
+  header.top, .tabs, .noprint { display: none !important; }
+  body { background: #fff; color: #000; font-family: var(--print-font); padding: 0; }
+  .card { box-shadow: none; border: none; padding: 0; }
+  .wrap { max-width: 100%; padding: 0; }
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-in">
+    <div class="logo-box">EN</div>
+    <div class="top-title">
+      <h1>คลังโจทย์ภาษาอังกฤษ 5 ระดับ</h1>
+      <small id="userLine">โหมดฝึกฝนอิสระ · A1 Foundation → C2 Competitive</small>
+    </div>
+    <div class="top-actions">
+      <span class="pill-stat" id="pillStreak" title="สถิติตอบถูกต่อเนื่อง">🔥 0</span>
+      <span class="pill-stat" id="pillXP" title="คะแนนประสบการณ์สะสม">⭐ 0 XP</span>
+      <button type="button" class="icon-btn hide" id="btnTeacherMode">👩‍🏫 โหมดครู: ปิด</button>
+      <button type="button" class="icon-btn" id="btnTheme" title="สลับโหมดสว่าง/มืด">🌓 ธีม</button>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <nav class="tabs" role="tablist">
+    <button type="button" class="tab-btn on" data-tab="practice">🎯 ฝึกฝน &amp; ไต่ระดับ</button>
+    <button type="button" class="tab-btn hide" data-tab="quiz" id="tabQuizBtn">📝 กำลังทำโจทย์</button>
+    <button type="button" class="tab-btn" data-tab="stats">📊 สถิติผู้เรียน</button>
+    <button type="button" class="tab-btn" data-tab="bank">📚 คลังโจทย์ &amp; พิมพ์ใบงาน</button>
+  </nav>
+
+  <!-- TAB 1: PRACTICE SETUP -->
+  <section id="pane-practice">
+    <div class="card" id="leapfrogBanner" style="border-left:4px solid var(--brand)">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+        <div>
+          <h2 style="margin-bottom:4px">🚀 เส้นทางพัฒนาแบบก้าวกระโดด (Leapfrog Path)</h2>
+          <div class="muted" id="leapfrogText">ระบบวิเคราะห์ระดับความพร้อมของคุณอัตโนมัติ (แนะนำเริ่มที่ Lv.1 หรือเลือกข้ามระดับได้ทันที)</div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button type="button" class="btn primary" id="btnLeapfrogStart">⚡ เริ่มชุดไต่ระดับแนะนำ</button>
+          <button type="button" class="btn warn hide" id="btnMistakeClinic">🩺 ทบทวนข้อที่ผิด (0)</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>1. เลือกระดับความยาก (5 ระดับ)</h2>
+      <div class="grid-5" id="levelGrid"></div>
+
+      <h2 style="margin-top:18px">2. เลือกหมวดหมู่เนื้อหา</h2>
+      <div class="chips" id="catChips"></div>
+
+      <div class="grid-2">
+        <div>
+          <h3>3. รูปแบบข้อสอบ</h3>
+          <div class="chips" id="typeChips">
+            <button type="button" class="chip on" data-type="all">🔀 ผสม (ปรนัย + อัตนัย)</button>
+            <button type="button" class="chip" data-type="mc">🔘 ปรนัย (Multiple Choice)</button>
+            <button type="button" class="chip" data-type="sub">✍️ อัตนัย (เติมคำ / เขียนแปลงประโยค)</button>
+          </div>
+        </div>
+        <div>
+          <h3>4. จำนวนข้อต่อรอบ</h3>
+          <div class="chips" id="countChips">
+            <button type="button" class="chip" data-count="5">5 ข้อ</button>
+            <button type="button" class="chip on" data-count="10">10 ข้อ</button>
+            <button type="button" class="chip" data-count="15">15 ข้อ</button>
+            <button type="button" class="chip" data-count="999">ทั้งหมดที่ตรงเงื่อนไข</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-top:12px;padding-top:14px;border-top:1px solid var(--line)">
+        <div id="matchCount" class="muted" style="font-size:14px">พบโจทย์ที่ตรงเงื่อนไข: 0 ข้อ</div>
+        <button type="button" class="btn primary" id="btnStartCustom">▶️ เริ่มทำโจทย์ชุดนี้</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- TAB 2: ACTIVE QUIZ ARENA -->
+  <section id="pane-quiz" class="hide">
+    <div class="card" id="quizArena"></div>
+  </section>
+
+  <!-- TAB 3: LEARNER STATISTICS -->
+  <section id="pane-stats" class="hide">
+    <div id="statsContainer"></div>
+  </section>
+
+  <!-- TAB 4: QUESTION BANK & PRINT -->
+  <section id="pane-bank" class="hide">
+    <div class="card noprint">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+        <div>
+          <h2 style="margin-bottom:2px">📚 คลังโจทย์ทั้งหมด &amp; พิมพ์ใบงาน</h2>
+          <small class="muted">ค้นหา กรองตามระดับ/หมวดหมู่ และสั่งพิมพ์เป็นใบงาน PDF ได้ทันที</small>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <label style="display:inline-flex;align-items:center;gap:6px;font-size:13.5px;cursor:pointer">
+            <input type="checkbox" id="chkPrintKey"> พิมพ์พร้อมเฉลย
+          </label>
+          <button type="button" class="btn primary sm" id="btnPrintBank">🖨️ พิมพ์ / บันทึก PDF</button>
+        </div>
+      </div>
+      <div class="grid-3" style="margin-top:12px">
+        <select id="bankFilterLv" class="sub-input" style="padding:8px 10px;font-size:14px">
+          <option value="all">ทุกระดับ (Lv.1 – Lv.5)</option>
+        </select>
+        <select id="bankFilterCat" class="sub-input" style="padding:8px 10px;font-size:14px">
+          <option value="all">ทุกหมวดหมู่เนื้อหา</option>
+        </select>
+        <input type="search" id="bankSearch" class="sub-input" style="padding:8px 10px;font-size:14px" placeholder="ค้นหาคำศัพท์ / ไวยากรณ์...">
+      </div>
+    </div>
+    <div class="card" id="bankList"></div>
+  </section>
+</div>
+
+<script src="questions.js"></script>
+<script src="../apps.js" defer></script>
+<script>
+(function () {
+  'use strict';
+  const LS_KEY = 'englishquiz.v1';
+  const META = window.ENGLISH_META;
+  const BANK = window.ENGLISH_QUESTIONS || [];
+
+  const $ = s => document.querySelector(s);
+  const $$ = s => Array.from(document.querySelectorAll(s));
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  /* ---- 1. State & Storage ---- */
+  function defaultDB() {
+    return {
+      xp: 0,
+      streak: 0,
+      bestStreak: 0,
+      totalTimeSec: 0,
+      byQuestion: {},
+      mistakes: [],
+      sessions: [],
+      theme: ''
+    };
+  }
+
+  function loadDB() {
+    try {
+      const raw = JSON.parse(localStorage.getItem(LS_KEY) || 'null');
+      return Object.assign(defaultDB(), raw || {});
+    } catch (e) {
+      return defaultDB();
+    }
+  }
+  let DB = loadDB();
+  function saveDB() {
+    try { localStorage.setItem(LS_KEY, JSON.stringify(DB)); } catch (e) {}
+    updateHeaderStats();
+  }
+
+  /* ---- 2. Portal Session & Teacher Mode ---- */
+  let isTeacher = false;
+  let teacherShowKey = false;
+  (function initPortalUser() {
+    try {
+      const sess = JSON.parse(localStorage.getItem('pcportal.v1') || 'null');
+      if (sess && sess.v === 1 && sess.exp > Date.now()) {
+        isTeacher = sess.role === 'admin';
+        const p = sess.profile || {};
+        const name = p.name || (isTeacher ? 'ครูผู้สอน / ผู้ดูแล' : 'นักเรียน');
+        const extra = p.cls ? ' · ชั้น ' + p.cls : '';
+        $('#userLine').textContent = (isTeacher ? '👩‍🏫 ' : '🎓 ') + name + extra;
+        if (isTeacher) {
+          $('#btnTeacherMode').classList.remove('hide');
+          $('#chkPrintKey').checked = true;
+        }
+      }
+    } catch (e) {}
+  })();
+
+  /* ---- 3. Theme ---- */
+  function applyTheme(t) {
+    const mode = t || (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    document.documentElement.setAttribute('data-theme', mode);
+  }
+  applyTheme(DB.theme);
+  $('#btnTheme').addEventListener('click', () => {
+    const cur = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    DB.theme = cur;
+    applyTheme(cur);
+    saveDB();
+  });
+
+  $('#btnTeacherMode').addEventListener('click', () => {
+    teacherShowKey = !teacherShowKey;
+    $('#btnTeacherMode').textContent = '👩‍🏫 โหมดครู: ' + (teacherShowKey ? 'เปิดเฉลย' : 'ปิด');
+    if (!$('#pane-bank').classList.contains('hide')) renderBank();
+  });
+
+  /* ---- 4. Header & Tabs ---- */
+  function updateHeaderStats() {
+    $('#pillStreak').textContent = '🔥 ' + (DB.streak || 0);
+    $('#pillXP').textContent = '⭐ ' + (DB.xp || 0) + ' XP';
+    const mc = (DB.mistakes || []).length;
+    const btnM = $('#btnMistakeClinic');
+    if (mc > 0) {
+      btnM.classList.remove('hide');
+      btnM.textContent = '🩺 ทบทวนข้อที่ผิด (' + mc + ')';
+    } else {
+      btnM.classList.add('hide');
+    }
+    updateLeapfrogRecommendation();
+  }
+
+  function switchTab(name) {
+    $$('.tab-btn').forEach(b => b.classList.toggle('on', b.dataset.tab === name));
+    ['practice', 'quiz', 'stats', 'bank'].forEach(p => {
+      $('#pane-' + p).classList.toggle('hide', p !== name);
+    });
+    if (name === 'stats') renderStats();
+    if (name === 'bank') renderBank();
+  }
+  $$('.tab-btn').forEach(b => b.addEventListener('click', () => switchTab(b.dataset.tab)));
+
+  /* ---- 5. Practice Filter Setup ---- */
+  const filter = { level: 'all', cat: 'all', type: 'all', count: 10 };
+
+  function renderPracticeFilters() {
+    const lvGrid = $('#levelGrid');
+    const allCard = `<button type="button" class="lv-card ${filter.level === 'all' ? 'on' : ''}" data-lv="all">
+      <span class="lv-badge" style="background:var(--brand)">ALL · ทุกระดับ</span>
+      <strong>ผสมทุกระดับ (Lv.1–5)</strong>
+      <small class="muted">${BANK.length} ข้อ · คละความยาก</small>
+    </button>`;
+    const lvCards = META.levels.map(l => {
+      const cnt = BANK.filter(q => q.level === l.id).length;
+      return `<button type="button" class="lv-card ${filter.level === l.id ? 'on' : ''}" data-lv="${l.id}">
+        <span class="lv-badge lv-${l.id}">${l.code} · ${l.cefr}</span>
+        <strong>${esc(l.name)}</strong>
+        <small class="muted">${esc(l.th)} (${cnt} ข้อ)</small>
+      </button>`;
+    }).join('');
+    lvGrid.innerHTML = allCard + lvCards;
+    $$('#levelGrid .lv-card').forEach(el => el.addEventListener('click', () => {
+      filter.level = el.dataset.lv === 'all' ? 'all' : Number(el.dataset.lv);
+      renderPracticeFilters();
+    }));
+
+    const catWrap = $('#catChips');
+    catWrap.innerHTML = `<button type="button" class="chip ${filter.cat === 'all' ? 'on' : ''}" data-cat="all">🌐 ทุกเนื้อหา</button>` +
+      META.categories.map(c => `<button type="button" class="chip ${filter.cat === c.id ? 'on' : ''}" data-cat="${c.id}">${c.icon} ${esc(c.th)}</button>`).join('');
+    $$('#catChips .chip').forEach(el => el.addEventListener('click', () => {
+      filter.cat = el.dataset.cat;
+      renderPracticeFilters();
+    }));
+
+    updateMatchCount();
+  }
+
+  $$('#typeChips .chip').forEach(el => el.addEventListener('click', () => {
+    filter.type = el.dataset.type;
+    $$('#typeChips .chip').forEach(c => c.classList.toggle('on', c === el));
+    updateMatchCount();
+  }));
+  $$('#countChips .chip').forEach(el => el.addEventListener('click', () => {
+    filter.count = Number(el.dataset.count);
+    $$('#countChips .chip').forEach(c => c.classList.toggle('on', c === el));
+    updateMatchCount();
+  }));
+
+  function getFilteredQuestions() {
+    return BANK.filter(q => {
+      if (filter.level !== 'all' && q.level !== filter.level) return false;
+      if (filter.cat !== 'all' && q.cat !== filter.cat) return false;
+      if (filter.type === 'mc' && q.type !== 'mc') return false;
+      if (filter.type === 'sub' && q.type === 'mc') return false;
+      return true;
+    });
+  }
+
+  function updateMatchCount() {
+    const n = getFilteredQuestions().length;
+    $('#matchCount').textContent = 'พบโจทย์ที่ตรงเงื่อนไข: ' + n + ' ข้อ';
+    $('#btnStartCustom').disabled = n === 0;
+  }
+
+  function levelMastery(lvId) {
+    const qs = BANK.filter(q => q.level === lvId);
+    let attempted = 0, correct = 0;
+    qs.forEach(q => {
+      const st = DB.byQuestion[q.id];
+      if (st && st.attempts > 0) {
+        attempted++;
+        if (!st.lastWrong) correct++;
+      }
+    });
+    const pct = attempted ? Math.round((correct / attempted) * 100) : 0;
+    return { total: qs.length, attempted, correct, pct };
+  }
+
+  function recommendedLevel() {
+    for (let i = 1; i <= 5; i++) {
+      const m = levelMastery(i);
+      if (m.attempted < 5 || m.pct < 80) return i;
+    }
+    return 5;
+  }
+
+  function updateLeapfrogRecommendation() {
+    const rec = recommendedLevel();
+    const lv = META.levels.find(l => l.id === rec);
+    const m = levelMastery(rec);
+    $('#leapfrogText').innerHTML = `ระดับแนะนำปัจจุบันของคุณคือ <b>${lv.code} (${lv.cefr}) — ${esc(lv.th)}</b> ` +
+      `(ทำแล้ว ${m.attempted}/${m.total} ข้อ · แม่นยำ ${m.pct}%) · ทำได้ ≥ 80% ครบ 5 ข้อขึ้นไปเพื่อปลดล็อกระดับถัดไป!`;
+  }
+
+  /* ---- 6. Quiz Engine ---- */
+  function shuffle(arr) {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  let QUIZ = null;
+
+  function startQuiz(questions, modeLabel) {
+    if (!questions.length) return;
+    QUIZ = {
+      mode: modeLabel,
+      items: questions,
+      idx: 0,
+      results: [],
+      startedAt: Date.now(),
+      qStartedAt: Date.now(),
+      answered: false
+    };
+    $('#tabQuizBtn').classList.remove('hide');
+    switchTab('quiz');
+    renderQuizStep();
+  }
+
+  $('#btnStartCustom').addEventListener('click', () => {
+    const pool = shuffle(getFilteredQuestions()).slice(0, filter.count);
+    const lvName = filter.level === 'all' ? 'ทุกระดับ' : 'Lv.' + filter.level;
+    startQuiz(pool, 'ฝึกฝน · ' + lvName);
+  });
+
+  $('#btnLeapfrogStart').addEventListener('click', () => {
+    const rec = recommendedLevel();
+    const pool = shuffle(BANK.filter(q => q.level === rec)).slice(0, 10);
+    startQuiz(pool, 'ไต่ระดับก้าวกระโดด · Lv.' + rec);
+  });
+
+  $('#btnMistakeClinic').addEventListener('click', () => {
+    const ids = new Set(DB.mistakes || []);
+    const pool = shuffle(BANK.filter(q => ids.has(q.id)));
+    if (pool.length) startQuiz(pool, 'ทบทวนจุดอ่อน (' + pool.length + ' ข้อ)');
+  });
+
+  function normText(s) {
+    return String(s || '')
+      .trim()
+      .toLowerCase()
+      .replace(/[’‘]/g, "'")
+      .replace(/\s+/g, ' ');
+  }
+
+  function normSentence(s) {
+    return normText(s).replace(/[.?!]+$/, '');
+  }
+
+  function renderQuizStep() {
+    if (!QUIZ) return;
+    if (QUIZ.idx >= QUIZ.items.length) {
+      finishQuiz();
+      return;
+    }
+    const q = QUIZ.items[QUIZ.idx];
+    const lv = META.levels.find(l => l.id === q.level);
+    const cat = META.categories.find(c => c.id === q.cat);
+    const pct = Math.round((QUIZ.idx / QUIZ.items.length) * 100);
+    const typeLabel = q.type === 'mc' ? '🔘 ปรนัย' : (q.type === 'fill' ? '✍️ อัตนัย (เติมคำ)' : '✍️ อัตนัย (เขียน/แปลงประโยค)');
+
+    let bodyHTML = '';
+    if (q.passage) {
+      bodyHTML += `<div class="passage-box"><strong>📖 Reading Passage:</strong><br>${esc(q.passage)}</div>`;
+    }
+    bodyHTML += `<div class="q-prompt">${q.prompt}</div>`;
+
+    if (q.type === 'mc') {
+      const letters = ['A', 'B', 'C', 'D'];
+      bodyHTML += `<div class="choices">` + q.choices.map((ch, i) =>
+        `<button type="button" class="choice" data-idx="${i}">
+          <span class="ck">${letters[i]}</span>
+          <span>${esc(ch)}</span>
+        </button>`
+      ).join('') + `</div>`;
+    } else if (q.type === 'fill') {
+      bodyHTML += `<div style="display:flex;gap:8px;flex-wrap:wrap">
+        <input type="text" id="subInput" class="sub-input" placeholder="พิมพ์คำตอบภาษาอังกฤษที่นี่..." autocomplete="off" autocapitalize="none" spellcheck="false">
+        <button type="button" class="btn primary" id="btnSubmitSub">ตรวจคำตอบ</button>
+      </div>`;
+    } else {
+      bodyHTML += `<div>
+        <textarea id="subInput" class="sub-input" rows="3" placeholder="พิมพ์ประโยคคำตอบของคุณที่นี่..." autocapitalize="none" spellcheck="false"></textarea>
+        <div style="margin-top:8px;display:flex;gap:8px;justify-content:flex-end">
+          <button type="button" class="btn primary" id="btnSubmitSub">ตรวจคำตอบ</button>
+        </div>
+      </div>`;
+    }
+
+    $('#quizArena').innerHTML = `
+      <div class="q-meta">
+        <span class="tag">ข้อ ${QUIZ.idx + 1} / ${QUIZ.items.length}</span>
+        <span class="lv-badge lv-${lv.id}">${lv.code} · ${lv.cefr}</span>
+        <span class="tag">${cat.icon} ${esc(cat.th)}</span>
+        <span class="tag">${typeLabel}</span>
+        <button type="button" class="btn sm" id="btnShowHint" style="margin-left:auto">💡 คำใบ้</button>
+      </div>
+      <div class="prog-bar"><div class="prog-fill" style="width:${pct}%"></div></div>
+      <div id="hintArea" class="tip-box hide" style="margin-bottom:14px">💡 <b>คำใบ้:</b> ${esc(q.hint || 'ลองสังเกตคำบอกเวลาและโครงสร้างประโยค')}</div>
+      ${bodyHTML}
+      <div id="feedbackArea"></div>
+    `;
+
+    QUIZ.answered = false;
+    QUIZ.qStartedAt = Date.now();
+
+    $('#btnShowHint').addEventListener('click', () => {
+      $('#hintArea').classList.toggle('hide');
+    });
+
+    if (q.type === 'mc') {
+      $$('.choice').forEach(btn => btn.addEventListener('click', () => handleMC(Number(btn.dataset.idx))));
+    } else {
+      const inp = $('#subInput');
+      inp.focus();
+      $('#btnSubmitSub').addEventListener('click', handleSubjective);
+      if (q.type === 'fill') {
+        inp.addEventListener('keydown', e => { if (e.key === 'Enter') handleSubjective(); });
+      }
+    }
+  }
+
+  function recordAttempt(q, isCorrect, userAns) {
+    const prev = DB.byQuestion[q.id] || { attempts: 0, correct: 0, lastWrong: false };
+    prev.attempts += 1;
+    if (isCorrect) {
+      prev.correct += 1;
+      prev.lastWrong = false;
+      DB.streak = (DB.streak || 0) + 1;
+      if (DB.streak > (DB.bestStreak || 0)) DB.bestStreak = DB.streak;
+      DB.xp = (DB.xp || 0) + (q.level * 10);
+      DB.mistakes = (DB.mistakes || []).filter(id => id !== q.id);
+    } else {
+      prev.lastWrong = true;
+      DB.streak = 0;
+      if (!(DB.mistakes || []).includes(q.id)) DB.mistakes.push(q.id);
+    }
+    prev.lastAt = new Date().toISOString();
+    prev.userAnswer = userAns;
+    DB.byQuestion[q.id] = prev;
+    QUIZ.results.push({ id: q.id, level: q.level, cat: q.cat, type: q.type, ok: isCorrect });
+    saveDB();
+  }
+
+  function showFeedback(q, isCorrect, extraHTML) {
+    const cls = isCorrect ? 'ok' : 'bad';
+    const title = isCorrect ? '✅ ถูกต้อง! (+' + (q.level * 10) + ' XP)' : '❌ ยังไม่ถูกต้อง — มาดูคำอธิบายกัน';
+    const nextLabel = QUIZ.idx + 1 < QUIZ.items.length ? 'ข้อถัดไป ➡️' : 'ดูสรุปผลคะแนน 🏁';
+
+    $('#feedbackArea').innerHTML = `
+      <div class="feedback-box ${cls}">
+        <div style="font-weight:700;font-size:16px;margin-bottom:6px">${title}</div>
+        ${extraHTML || ''}
+        <div style="margin-top:6px"><strong>คำอธิบาย:</strong> ${esc(q.explain)}</div>
+        ${q.tip ? `<div class="tip-box">⚡ <strong>Pro Tip:</strong> ${esc(q.tip)}</div>` : ''}
+        <div style="margin-top:14px;display:flex;justify-content:flex-end">
+          <button type="button" class="btn primary" id="btnNextQ">${nextLabel}</button>
+        </div>
+      </div>
+    `;
+    $('#btnNextQ').addEventListener('click', () => {
+      QUIZ.idx++;
+      renderQuizStep();
+    });
+    $('#btnNextQ').focus();
+  }
+
+  function handleMC(chosenIdx) {
+    if (QUIZ.answered) return;
+    QUIZ.answered = true;
+    const q = QUIZ.items[QUIZ.idx];
+    const ok = chosenIdx === q.answer;
+    $$('.choice').forEach((b, i) => {
+      b.disabled = true;
+      if (i === q.answer) b.classList.add('correct');
+      else if (i === chosenIdx && !ok) b.classList.add('wrong');
+    });
+    recordAttempt(q, ok, q.choices[chosenIdx]);
+    showFeedback(q, ok, '');
+  }
+
+  function handleSubjective() {
+    if (QUIZ.answered) return;
+    const q = QUIZ.items[QUIZ.idx];
+    const inp = $('#subInput');
+    const raw = inp.value.trim();
+    if (!raw) { inp.focus(); return; }
+    QUIZ.answered = true;
+    inp.disabled = true;
+    $('#btnSubmitSub').disabled = true;
+
+    const accepted = (q.answers || []).map(a => q.type === 'fill' ? normText(a) : normSentence(a));
+    const userNorm = q.type === 'fill' ? normText(raw) : normSentence(raw);
+    const exactMatch = accepted.includes(userNorm);
+
+    if (exactMatch || q.type === 'fill') {
+      recordAttempt(q, exactMatch, raw);
+      const ansDisplay = `<div><strong>คำตอบเฉลย:</strong> <code>${esc(q.answers[0])}</code></div>`;
+      showFeedback(q, exactMatch, ansDisplay);
+    } else {
+      // Rewrite question that didn't match verbatim: allow self-verification against model answer
+      $('#feedbackArea').innerHTML = `
+        <div class="feedback-box" style="background:var(--panel2)">
+          <div style="font-weight:700;margin-bottom:6px">🔍 เปรียบเทียบคำตอบของคุณกับเฉลยมาตรฐาน</div>
+          <div><strong>คำตอบของคุณ:</strong> ${esc(raw)}</div>
+          <div style="margin-top:4px"><strong>เฉลยตัวอย่าง:</strong> <code style="color:var(--ok);font-weight:700">${esc(q.answers[0])}</code></div>
+          <div style="margin-top:6px"><strong>คำอธิบาย:</strong> ${esc(q.explain)}</div>
+          ${q.tip ? `<div class="tip-box">⚡ <strong>Pro Tip:</strong> ${esc(q.tip)}</div>` : ''}
+          <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+            <button type="button" class="btn ok sm" id="btnSelfOk">✓ ความหมายและไวยากรณ์ถูกต้อง</button>
+            <button type="button" class="btn bad sm" id="btnSelfNo">✗ ยังไม่ตรง (เก็บไว้ทบทวน)</button>
+          </div>
+        </div>
+      `;
+      $('#btnSelfOk').addEventListener('click', () => {
+        recordAttempt(q, true, raw);
+        QUIZ.idx++;
+        renderQuizStep();
+      });
+      $('#btnSelfNo').addEventListener('click', () => {
+        recordAttempt(q, false, raw);
+        QUIZ.idx++;
+        renderQuizStep();
+      });
+    }
+  }
+
+  function finishQuiz() {
+    const timeSec = Math.max(1, Math.round((Date.now() - QUIZ.startedAt) / 1000));
+    const total = QUIZ.results.length;
+    const correct = QUIZ.results.filter(r => r.ok).length;
+    const pct = total ? Math.round((correct / total) * 100) : 0;
+
+    DB.totalTimeSec = (DB.totalTimeSec || 0) + timeSec;
+    DB.sessions.unshift({
+      date: new Date().toISOString(),
+      mode: QUIZ.mode,
+      total,
+      correct,
+      scorePct: pct,
+      timeSec
+    });
+    if (DB.sessions.length > 40) DB.sessions = DB.sessions.slice(0, 40);
+    saveDB();
+
+    const mins = Math.floor(timeSec / 60);
+    const secs = timeSec % 60;
+    const msg = pct >= 80 ? '🏆 ยอดเยี่ยมมาก! พร้อมก้าวสู่ระดับที่สูงขึ้นแล้ว'
+              : pct >= 60 ? '👍 ทำได้ดี! ทบทวนข้อที่พลาดอีกนิดจะแม่นยำขึ้นมาก'
+              : '💪 เริ่มต้นได้ดี! ลองกด "ทบทวนข้อที่ผิด" เพื่ออุดช่องว่างทันที';
+
+    $('#quizArena').innerHTML = `
+      <div style="text-align:center;padding:10px 0">
+        <div style="font-size:44px;margin-bottom:6px">${pct >= 80 ? '🏆' : pct >= 60 ? '🎯' : '📘'}</div>
+        <h2 style="font-size:22px;margin-bottom:4px">สรุปผล: ${esc(QUIZ.mode)}</h2>
+        <p class="muted">${msg}</p>
+      </div>
+      <div class="grid-3" style="margin:16px 0">
+        <div class="kpi"><div class="val" style="color:var(--ok)">${correct} / ${total}</div><div class="lbl">ตอบถูก (${pct}%)</div></div>
+        <div class="kpi"><div class="val" style="color:var(--brand)">${mins}:${String(secs).padStart(2, '0')}</div><div class="lbl">เวลาที่ใช้</div></div>
+        <div class="kpi"><div class="val" style="color:var(--warn)">🔥 ${DB.streak}</div><div class="lbl">Streak ปัจจุบัน</div></div>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:16px">
+        <button type="button" class="btn primary" id="btnBackPractice">🎯 กลับหน้าฝึกฝน</button>
+        <button type="button" class="btn" id="btnGoStats">📊 ดูสถิติแบบละเอียด</button>
+      </div>
+    `;
+    $('#btnBackPractice').addEventListener('click', () => {
+      $('#tabQuizBtn').classList.add('hide');
+      switchTab('practice');
+    });
+    $('#btnGoStats').addEventListener('click', () => {
+      $('#tabQuizBtn').classList.add('hide');
+      switchTab('stats');
+    });
+  }
+
+  /* ---- 7. Learner Analytics Dashboard ---- */
+  function renderStats() {
+    const entries = Object.values(DB.byQuestion || {});
+    const totalAttempts = entries.reduce((s, e) => s + (e.attempts || 0), 0);
+    const totalCorrect = entries.reduce((s, e) => s + (e.correct || 0), 0);
+    const acc = totalAttempts ? Math.round((totalCorrect / totalAttempts) * 100) : 0;
+    const mins = Math.round((DB.totalTimeSec || 0) / 60);
+
+    const lvBars = META.levels.map(l => {
+      const m = levelMastery(l.id);
+      const status = m.attempted >= 5 && m.pct >= 80 ? '✅ ผ่านเกณฑ์ก้าวกระโดด'
+                   : m.attempted > 0 ? '📈 กำลังฝึกฝน' : '⏳ ยังไม่เริ่ม';
+      return `<div class="bar-row">
+        <div class="bar-head">
+          <span><strong>${l.code} (${l.cefr})</strong> · ${esc(l.th)}</span>
+          <span>${m.correct}/${m.attempted} ข้อ (${m.pct}%) · ${status}</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill" style="width:${m.pct}%;background:${l.color}"></div></div>
+      </div>`;
+    }).join('');
+
+    const catBars = META.categories.map(c => {
+      const qs = BANK.filter(q => q.cat === c.id);
+      let att = 0, cor = 0;
+      qs.forEach(q => {
+        const st = DB.byQuestion[q.id];
+        if (st) { att += st.attempts; cor += st.correct; }
+      });
+      const pct = att ? Math.round((cor / att) * 100) : 0;
+      return `<div class="bar-row">
+        <div class="bar-head">
+          <span>${c.icon} ${esc(c.th)}</span>
+          <span>${cor}/${att} ครั้ง (${pct}%)</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:var(--brand)"></div></div>
+      </div>`;
+    }).join('');
+
+    const sessRows = (DB.sessions || []).slice(0, 10).map(s => {
+      const d = new Date(s.date).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' });
+      return `<tr>
+        <td style="padding:8px;border-bottom:1px solid var(--line)">${esc(d)}</td>
+        <td style="padding:8px;border-bottom:1px solid var(--line)">${esc(s.mode)}</td>
+        <td style="padding:8px;border-bottom:1px solid var(--line)"><strong>${s.correct}/${s.total}</strong> (${s.scorePct}%)</td>
+        <td style="padding:8px;border-bottom:1px solid var(--line)">${s.timeSec} วิ.</td>
+      </tr>`;
+    }).join('') || '<tr><td colspan="4" class="muted" style="padding:12px">ยังไม่มีประวัติการทำแบบฝึกหัด</td></tr>';
+
+    $('#statsContainer').innerHTML = `
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+          <h2 style="margin:0">📊 ภาพรวมสถิติผู้เรียน</h2>
+          <div style="display:flex;gap:8px;flex-wrap:wrap" class="noprint">
+            <button type="button" class="btn sm" id="btnExportStats">💾 สำรองสถิติ (JSON)</button>
+            <button type="button" class="btn sm" id="btnImportStats">📂 นำเข้าสถิติ</button>
+            <button type="button" class="btn sm bad" id="btnResetStats">🗑️ ล้างสถิติ</button>
+          </div>
+        </div>
+        <div class="grid-5">
+          <div class="kpi"><div class="val">${totalAttempts}</div><div class="lbl">ทำโจทย์สะสม (ครั้ง)</div></div>
+          <div class="kpi"><div class="val" style="color:var(--ok)">${acc}%</div><div class="lbl">ความแม่นยำรวม</div></div>
+          <div class="kpi"><div class="val" style="color:var(--warn)">⭐ ${DB.xp}</div><div class="lbl">XP สะสม</div></div>
+          <div class="kpi"><div class="val" style="color:var(--bad)">🔥 ${DB.bestStreak}</div><div class="lbl">Best Streak</div></div>
+          <div class="kpi"><div class="val">${mins} นาที</div><div class="lbl">เวลาฝึกฝนรวม</div></div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <h3>🪜 ความพร้อม 5 ระดับ (Level Ladder)</h3>
+          ${lvBars}
+        </div>
+        <div class="card">
+          <h3>🧠 ความแม่นยำรายทักษะ (6 หมวด)</h3>
+          ${catBars}
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>🕒 ประวัติการฝึกฝนล่าสุด</h3>
+        <div style="overflow-x:auto">
+          <table style="width:100%;border-collapse:collapse;font-size:14px;text-align:left">
+            <thead>
+              <tr style="border-bottom:2px solid var(--line);color:var(--muted)">
+                <th style="padding:8px">วัน-เวลา</th>
+                <th style="padding:8px">โหมด</th>
+                <th style="padding:8px">คะแนน</th>
+                <th style="padding:8px">เวลา</th>
+              </tr>
+            </thead>
+            <tbody>${sessRows}</tbody>
+          </table>
+        </div>
+      </div>
+    `;
+
+    $('#btnExportStats').addEventListener('click', () => {
+      const blob = new Blob([JSON.stringify(DB, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'english-stats-backup.json';
+      a.click();
+    });
+    $('#btnImportStats').addEventListener('click', () => {
+      const inp = document.createElement('input');
+      inp.type = 'file'; inp.accept = '.json';
+      inp.onchange = () => {
+        const f = inp.files[0]; if (!f) return;
+        const r = new FileReader();
+        r.onload = () => {
+          try {
+            const parsed = JSON.parse(r.result);
+            DB = Object.assign(defaultDB(), parsed);
+            saveDB();
+            renderStats();
+          } catch (e) { alert('ไฟล์ไม่ถูกต้อง'); }
+        };
+        r.readAsText(f);
+      };
+      inp.click();
+    });
+    $('#btnResetStats').addEventListener('click', () => {
+      if (confirm('ต้องการล้างสถิติการเรียนทั้งหมดใช่หรือไม่?')) {
+        DB = defaultDB();
+        saveDB();
+        renderStats();
+      }
+    });
+  }
+
+  /* ---- 8. Question Bank & Print ---- */
+  function initBankFilters() {
+    const lvSel = $('#bankFilterLv');
+    META.levels.forEach(l => {
+      const o = document.createElement('option');
+      o.value = l.id; o.textContent = `${l.code} (${l.cefr}) — ${l.th}`;
+      lvSel.appendChild(o);
+    });
+    const catSel = $('#bankFilterCat');
+    META.categories.forEach(c => {
+      const o = document.createElement('option');
+      o.value = c.id; o.textContent = `${c.icon} ${c.th}`;
+      catSel.appendChild(o);
+    });
+    lvSel.addEventListener('change', renderBank);
+    catSel.addEventListener('change', renderBank);
+    $('#bankSearch').addEventListener('input', renderBank);
+    $('#chkPrintKey').addEventListener('change', renderBank);
+    $('#btnPrintBank').addEventListener('click', () => window.print());
+  }
+
+  function renderBank() {
+    const lvVal = $('#bankFilterLv').value;
+    const catVal = $('#bankFilterCat').value;
+    const kw = ($('#bankSearch').value || '').trim().toLowerCase();
+    const showKey = $('#chkPrintKey').checked || teacherShowKey;
+
+    const list = BANK.filter(q => {
+      if (lvVal !== 'all' && q.level !== Number(lvVal)) return false;
+      if (catVal !== 'all' && q.cat !== catVal) return false;
+      if (kw) {
+        const hay = (q.prompt + ' ' + (q.passage || '') + ' ' + q.explain).toLowerCase();
+        if (!hay.includes(kw)) return false;
+      }
+      return true;
+    });
+
+    if (!list.length) {
+      $('#bankList').innerHTML = '<div class="muted">ไม่พบโจทย์ที่ตรงกับเงื่อนไข</div>';
+      return;
+    }
+
+    const letters = ['A', 'B', 'C', 'D'];
+    $('#bankList').innerHTML = list.map((q, idx) => {
+      const lv = META.levels.find(l => l.id === q.level);
+      const cat = META.categories.find(c => c.id === q.cat);
+      const ansText = q.type === 'mc' ? letters[q.answer] + '. ' + q.choices[q.answer] : q.answers[0];
+      return `<div class="bank-item">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px">
+          <strong>ข้อ ${idx + 1}.</strong>
+          <span class="lv-badge lv-${lv.id}">${lv.code}</span>
+          <span class="tag">${cat.icon} ${esc(cat.th)}</span>
+          <span class="tag">${q.type === 'mc' ? 'ปรนัย' : 'อัตนัย'}</span>
+        </div>
+        ${q.passage ? `<div class="passage-box" style="margin:6px 0">${esc(q.passage)}</div>` : ''}
+        <div>${q.prompt}</div>
+        ${q.type === 'mc' ? `<div style="margin:6px 0 0 14px;font-size:14.5px">${q.choices.map((c, i) => `<div>${letters[i]}. ${esc(c)}</div>`).join('')}</div>` : ''}
+        ${showKey ? `<div style="margin-top:8px;padding:8px 10px;background:var(--ok-bg);border-radius:6px;font-size:13.5px">
+          <strong>เฉลย:</strong> ${esc(ansText)}<br><span class="muted">${esc(q.explain)}</span>
+        </div>` : ''}
+      </div>`;
+    }).join('');
+  }
+
+  /* ---- Init ---- */
+  renderPracticeFilters();
+  initBankFilters();
+  updateHeaderStats();
+})();
+</script>
+</body>
+</html>

@@ -31,7 +31,8 @@ const FILES = [
   // ห้องวาดรูปโจทย์เป็นเครื่องมือของครู มีไฟล์เดียว ไม่มีฉบับนักเรียน จึงไม่มีคู่ใน PAIRS
   'FigureLab/figure.html',
   // ส่งงานออนไลน์ ไฟล์เดียวใช้ทั้งครูและนักเรียน ไม่มีคู่ใน PAIRS
-  'WorkDesk/index.html'
+  'WorkDesk/index.html',
+  'EnglishApp/index.html'
 ];
 
 // คู่ที่ต้องเหมือนกันทุกตัวอักษร ยกเว้นบล็อก BUILTIN
@@ -66,7 +67,8 @@ const IDENT = {
   Physics2App:              { title: 'ฟิสิกส์ 2' },
   PhysciSlides:             { title: 'สไลด์วิทยาศาสตร์กายภาพ' },
   FigureLab:                { title: 'ห้องวาดรูปโจทย์' },
-  WorkDesk:                 { title: 'ส่งงานออนไลน์' }
+  WorkDesk:                 { title: 'ส่งงานออนไลน์' },
+  EnglishApp:               { title: 'คลังโจทย์ภาษาอังกฤษ 5 ระดับ', key: 'englishquiz.v1' }
 };
 
 const RE_BUILTIN = /\/\* @@BUILTIN@@ \*\/[\s\S]*?\/\* @@BUILTIN-END@@ \*\//;

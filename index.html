@@ -345,6 +345,8 @@ const ICONS = {
   bio: '<path d="M8.4 2.4c0 4 7.2 6 7.2 9.6s-7.2 5.6-7.2 9.6"/>' +
        '<path d="M15.6 2.4c0 4-7.2 6-7.2 9.6s7.2 5.6 7.2 9.6"/>' +
        '<path d="M9.6 6.4h4.8"/><path d="M8.5 12h7"/><path d="M9.6 17.6h4.8"/>',
+  // ลูกโลกภาษาอังกฤษ
+  english: '<circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3.5 9h17"/><path d="M3.5 15h17"/>',
   // คลื่นสองขบวน
   physci: '<path d="M2 8.4q2.5-4 5 0t5 0 5 0 5 0"/><path d="M2 15.6q2.5-4 5 0t5 0 5 0 5 0"/>',
   // ตราชั่งสองแขน — สมดุลกล
@@ -479,6 +481,11 @@ const SUBJECTS = [
       { key: 'ijso', icon: '🔬', name: 'ข้อสอบ IJSO สอวน. ม.ต้น', level: 'ม.ต้น (สอบแข่งขัน)', grades: [1, 2, 3], sheet: 0,
       dir: 'IJSOApp/', teacher: 'index.html', student: 'index.html', openFree: true,
       desc: 'แอปตะลุยข้อสอบ IJSO และ สอวน. ม.ต้น<br>สุ่มโจทย์ฟิสิกส์ เคมี ชีววิทยา บูรณาการ' },
+
+  { key: 'english', ic: 'english', name: 'ภาษาอังกฤษ 5 ระดับ', level: 'A1–C2 · พื้นฐานถึงสอบแข่งขัน', grades: [1, 2, 3, 4, 5, 6],
+    dir: 'EnglishApp/', teacher: 'index.html', student: 'index.html', openFree: true,
+    desc: 'ครบทุกเนื้อหา: Grammar, Vocab, Conversation, Reading, Error ID และ Writing<br>' +
+          'แบ่ง 5 ระดับความยาก มีทั้งปรนัยและอัตนัย พร้อมระบบเก็บสถิติและทบทวนจุดอ่อน' },
   
     { key: 'figure', name: 'ห้องวาดรูปโจทย์', level: 'เครื่องมือของครู', grades: [],
     dir: 'FigureLab/', teacher: 'figure.html', student: 'figure.html', teacherOnly: true,
