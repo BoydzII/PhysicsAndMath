@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1c4b8c">
-<meta name="description" content="คลังโจทย์ภาษาอังกฤษ 5 ระดับ (A1–C2) — ปรนัยและอัตนัย ครบทุกทักษะ พร้อมระบบเก็บสถิติผู้เรียนและไต่ระดับก้าวกระโดด">
+<meta name="description" content="คลังโจทย์ภาษาอังกฤษ 5 ระดับ (A1–C2) — ปรนัยและอัตนัย เสียงอ่าน AI เหรียญตรา ด่านบอส และสถิติผู้เรียน">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@300..700&family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
@@ -56,7 +56,7 @@ body {
   font-family: var(--font);
   font-size: 15.5px;
   line-height: 1.65;
-  padding: 0 0 calc(48px + env(safe-area-inset-bottom));
+  padding: 0 0 calc(56px + env(safe-area-inset-bottom));
 }
 .wrap { max-width: 960px; margin: 0 auto; padding: 16px 16px 0; }
 .hide { display: none !important; }
@@ -82,7 +82,7 @@ header.top {
 .top-title small { color: var(--muted); font-size: 12.5px; display: block; }
 .top-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .pill-stat {
-  display: inline-flex; align-items: center; gap: 6px;
+  display: inline-flex; align-items: center; gap: 5px;
   padding: 5px 10px; border-radius: 999px; font-size: 12.5px; font-weight: 700;
   background: var(--panel2); border: 1px solid var(--line);
 }
@@ -117,6 +117,7 @@ header.top {
 .muted { color: var(--muted); }
 .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
 .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
+.grid-4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
 .grid-5 { display: grid; grid-template-columns: repeat(auto-fit, minmax(165px, 1fr)); gap: 10px; }
 
 /* Buttons */
@@ -133,6 +134,8 @@ header.top {
 .btn.ok { background: var(--ok); color: #fff; border-color: var(--ok); }
 .btn.warn { background: var(--warn-bg); color: var(--warn); border-color: var(--warn-line); }
 .btn.bad { background: var(--bad-bg); color: var(--bad); border-color: var(--bad-line); }
+.btn.boss { background: linear-gradient(135deg, #be123c, #7c3aed); color: #fff; border-color: transparent; }
+.btn.blitz { background: linear-gradient(135deg, #d97706, #ea580c); color: #fff; border-color: transparent; }
 .btn.sm { min-height: 34px; padding: 6px 12px; font-size: 13px; }
 .btn:disabled { opacity: .45; cursor: not-allowed; }
 
@@ -167,6 +170,8 @@ header.top {
   font-size: 12px; font-weight: 700; padding: 3px 9px; border-radius: 999px;
   background: var(--panel2); border: 1px solid var(--line); color: var(--ink);
 }
+.tag.combo { background: var(--warn-bg); color: var(--warn); border-color: var(--warn-line); }
+.tag.timer { background: var(--bad-bg); color: var(--bad); border-color: var(--bad-line); font-variant-numeric: tabular-nums; }
 .prog-bar { height: 8px; background: var(--panel2); border-radius: 999px; overflow: hidden; margin-bottom: 14px; }
 .prog-fill { height: 100%; background: var(--brand); transition: width .25s ease; }
 
@@ -219,26 +224,42 @@ u.err {
   font-size: 13.5px;
 }
 
-/* Stats */
+/* Badges & Stats */
 .kpi {
   background: var(--panel2); border: 1px solid var(--line);
   border-radius: var(--r-sm); padding: 12px 14px;
 }
-.kpi .val { font-size: 24px; font-weight: 700; line-height: 1.2; }
+.kpi .val { font-size: 23px; font-weight: 700; line-height: 1.2; }
 .kpi .lbl { font-size: 12.5px; color: var(--muted); }
 .bar-row { margin-bottom: 10px; }
 .bar-head { display: flex; justify-content: space-between; font-size: 13.5px; margin-bottom: 4px; }
 .bar-track { height: 10px; background: var(--panel2); border-radius: 999px; overflow: hidden; }
 .bar-fill { height: 100%; border-radius: 999px; transition: width .3s; }
 
-/* Bank / Print */
-.bank-item {
-  border-bottom: 1px solid var(--line); padding: 12px 0;
+.badge-card {
+  border: 1px solid var(--line); border-radius: var(--r-sm); padding: 12px;
+  background: var(--panel2); display: flex; align-items: center; gap: 10px;
+  opacity: .5; filter: grayscale(1); transition: all .2s;
 }
+.badge-card.earned {
+  opacity: 1; filter: none; background: var(--ok-bg); border-color: var(--ok-line);
+}
+.badge-ic { font-size: 26px; flex: none; }
+
+.toast {
+  position: fixed; bottom: 20px; right: 20px; z-index: 100;
+  background: var(--ink); color: var(--bg); padding: 12px 18px;
+  border-radius: 10px; font-weight: 700; box-shadow: var(--shadow);
+  animation: popIn .25s ease;
+}
+@keyframes popIn { from { transform: translateY(16px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+/* Bank / Print */
+.bank-item { border-bottom: 1px solid var(--line); padding: 12px 0; }
 .bank-item:last-child { border-bottom: none; }
 
 @media print {
-  header.top, .tabs, .noprint { display: none !important; }
+  header.top, .tabs, .noprint, .toast { display: none !important; }
   body { background: #fff; color: #000; font-family: var(--print-font); padding: 0; }
   .card { box-shadow: none; border: none; padding: 0; }
   .wrap { max-width: 100%; padding: 0; }
@@ -254,8 +275,10 @@ u.err {
       <small id="userLine">โหมดฝึกฝนอิสระ · A1 Foundation → C2 Competitive</small>
     </div>
     <div class="top-actions">
+      <span class="pill-stat" id="pillRank" title="ยศผู้เรียน">🌱 Rookie</span>
       <span class="pill-stat" id="pillStreak" title="สถิติตอบถูกต่อเนื่อง">🔥 0</span>
       <span class="pill-stat" id="pillXP" title="คะแนนประสบการณ์สะสม">⭐ 0 XP</span>
+      <button type="button" class="icon-btn hide" id="btnCloudSync" title="ซิงค์สถิติขึ้น Google Sheets">☁️ ซิงค์</button>
       <button type="button" class="icon-btn hide" id="btnTeacherMode">👩‍🏫 โหมดครู: ปิด</button>
       <button type="button" class="icon-btn" id="btnTheme" title="สลับโหมดสว่าง/มืด">🌓 ธีม</button>
     </div>
@@ -264,22 +287,24 @@ u.err {
 
 <div class="wrap">
   <nav class="tabs" role="tablist">
-    <button type="button" class="tab-btn on" data-tab="practice">🎯 ฝึกฝน &amp; ไต่ระดับ</button>
+    <button type="button" class="tab-btn on" data-tab="practice">🎯 ฝึกฝน &amp; เกม</button>
     <button type="button" class="tab-btn hide" data-tab="quiz" id="tabQuizBtn">📝 กำลังทำโจทย์</button>
-    <button type="button" class="tab-btn" data-tab="stats">📊 สถิติผู้เรียน</button>
+    <button type="button" class="tab-btn" data-tab="stats">📊 สถิติ &amp; เหรียญตรา</button>
     <button type="button" class="tab-btn" data-tab="bank">📚 คลังโจทย์ &amp; พิมพ์ใบงาน</button>
   </nav>
 
-  <!-- TAB 1: PRACTICE SETUP -->
+  <!-- TAB 1: PRACTICE & GAME MODES -->
   <section id="pane-practice">
     <div class="card" id="leapfrogBanner" style="border-left:4px solid var(--brand)">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
-        <div>
-          <h2 style="margin-bottom:4px">🚀 เส้นทางพัฒนาแบบก้าวกระโดด (Leapfrog Path)</h2>
-          <div class="muted" id="leapfrogText">ระบบวิเคราะห์ระดับความพร้อมของคุณอัตโนมัติ (แนะนำเริ่มที่ Lv.1 หรือเลือกข้ามระดับได้ทันที)</div>
+        <div style="flex:1;min-width:240px">
+          <h2 style="margin-bottom:4px">🚀 เส้นทางพัฒนาแบบก้าวกระโดด (Leapfrog &amp; Game Arena)</h2>
+          <div class="muted" id="leapfrogText">ระบบวิเคราะห์ระดับความพร้อมของคุณอัตโนมัติ</div>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button type="button" class="btn primary" id="btnLeapfrogStart">⚡ เริ่มชุดไต่ระดับแนะนำ</button>
+          <button type="button" class="btn primary" id="btnLeapfrogStart">⚡ ไต่ระดับแนะนำ</button>
+          <button type="button" class="btn blitz" id="btnBlitzStart">⏱️ Time Attack (60 วิ)</button>
+          <button type="button" class="btn boss" id="btnBossStart">🐉 Boss Battle (Lv.4–5)</button>
           <button type="button" class="btn warn hide" id="btnMistakeClinic">🩺 ทบทวนข้อที่ผิด (0)</button>
         </div>
       </div>
@@ -324,7 +349,7 @@ u.err {
     <div class="card" id="quizArena"></div>
   </section>
 
-  <!-- TAB 3: LEARNER STATISTICS -->
+  <!-- TAB 3: LEARNER STATISTICS & BADGES -->
   <section id="pane-stats" class="hide">
     <div id="statsContainer"></div>
   </section>
@@ -335,7 +360,7 @@ u.err {
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
         <div>
           <h2 style="margin-bottom:2px">📚 คลังโจทย์ทั้งหมด &amp; พิมพ์ใบงาน</h2>
-          <small class="muted">ค้นหา กรองตามระดับ/หมวดหมู่ และสั่งพิมพ์เป็นใบงาน PDF ได้ทันที</small>
+          <small class="muted">ค้นหา กรองตามระดับ/หมวดหมู่ ฟังเสียงอ่าน และพิมพ์เป็นใบงาน PDF</small>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <label style="display:inline-flex;align-items:center;gap:6px;font-size:13.5px;cursor:pointer">
@@ -364,12 +389,41 @@ u.err {
 (function () {
   'use strict';
   const LS_KEY = 'englishquiz.v1';
+  const HUB_APPS_URL = 'https://script.google.com/macros/s/AKfycbxVa8BYYQeIhBDmg85w2UBwsIqt6a2YudehUfCbyMny9T-5TTh1UfFxsJjTk9HLNuFc/exec';
   const META = window.ENGLISH_META;
   const BANK = window.ENGLISH_QUESTIONS || [];
+
+  const RANKS = [
+    { min: 0,    name: 'Rookie',      icon: '🌱' },
+    { min: 150,  name: 'Explorer',    icon: '🧭' },
+    { min: 400,  name: 'Challenger',  icon: '⚡' },
+    { min: 800,  name: 'Scholar',     icon: '🎓' },
+    { min: 1500, name: 'Master',      icon: '👑' },
+    { min: 2500, name: 'Grandmaster', icon: '💎' }
+  ];
+
+  const BADGES = [
+    { id: 'first_step',   ic: '🎯', name: 'First Step',      desc: 'ตอบถูกข้อแรกสำเร็จ' },
+    { id: 'streak_5',     ic: '🔥', name: 'Hot Streak',      desc: 'ตอบถูกต่อเนื่อง 5 ข้อ' },
+    { id: 'streak_10',    ic: '☄️', name: 'Unstoppable',     desc: 'ตอบถูกต่อเนื่อง 10 ข้อ' },
+    { id: 'grammar_ace',  ic: '📐', name: 'Grammar Ace',     desc: 'ตอบถูกหมวดไวยากรณ์ 5 ข้อขึ้นไป' },
+    { id: 'vocab_wizard', ic: '📚', name: 'Vocab Wizard',    desc: 'ตอบถูกหมวดคำศัพท์ 5 ข้อขึ้นไป' },
+    { id: 'time_blitz',   ic: '⏱️', name: 'Speed Demon',     desc: 'ทำ Time Attack ได้ ≥ 5 ข้อใน 60 วิ' },
+    { id: 'boss_slayer',  ic: '🐉', name: 'Boss Slayer',     desc: 'พิชิตด่านบอส Lv.4–5 (≥ 75%)' },
+    { id: 'c2_master',    ic: '🏆', name: 'C2 Challenger',   desc: 'ตอบถูกโจทย์ระดับ 5 อย่างน้อย 5 ข้อ' }
+  ];
 
   const $ = s => document.querySelector(s);
   const $$ = s => Array.from(document.querySelectorAll(s));
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  function toast(msg) {
+    const el = document.createElement('div');
+    el.className = 'toast';
+    el.textContent = msg;
+    document.body.appendChild(el);
+    setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity .3s'; setTimeout(() => el.remove(), 350); }, 2600);
+  }
 
   /* ---- 1. State & Storage ---- */
   function defaultDB() {
@@ -378,9 +432,13 @@ u.err {
       streak: 0,
       bestStreak: 0,
       totalTimeSec: 0,
+      bestBlitz: 0,
+      badges: [],
       byQuestion: {},
       mistakes: [],
       sessions: [],
+      pendingSync: [],
+      lastSyncAt: '',
       theme: ''
     };
   }
@@ -399,13 +457,16 @@ u.err {
     updateHeaderStats();
   }
 
-  /* ---- 2. Portal Session & Teacher Mode ---- */
+  /* ---- 2. Portal Session & Cloud Sync ---- */
   let isTeacher = false;
   let teacherShowKey = false;
+  let portalSession = null;
+
   (function initPortalUser() {
     try {
       const sess = JSON.parse(localStorage.getItem('pcportal.v1') || 'null');
       if (sess && sess.v === 1 && sess.exp > Date.now()) {
+        portalSession = sess;
         isTeacher = sess.role === 'admin';
         const p = sess.profile || {};
         const name = p.name || (isTeacher ? 'ครูผู้สอน / ผู้ดูแล' : 'นักเรียน');
@@ -415,11 +476,76 @@ u.err {
           $('#btnTeacherMode').classList.remove('hide');
           $('#chkPrintKey').checked = true;
         }
+        if (sess.tokens && (sess.tokens[HUB_APPS_URL] || sess.token)) {
+          $('#btnCloudSync').classList.remove('hide');
+        }
       }
     } catch (e) {}
   })();
 
-  /* ---- 3. Theme ---- */
+  async function syncToCloud(manual) {
+    if (!portalSession) return;
+    const tok = (portalSession.tokens && portalSession.tokens[HUB_APPS_URL]) || portalSession.token;
+    if (!tok) return;
+    const btn = $('#btnCloudSync');
+    if (btn) btn.textContent = '☁️ กำลังซิงค์…';
+    try {
+      const entries = Object.values(DB.byQuestion || {});
+      const att = entries.reduce((s, e) => s + (e.attempts || 0), 0);
+      const cor = entries.reduce((s, e) => s + (e.correct || 0), 0);
+      const res = await fetch(HUB_APPS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          action: 'saveEnglishProgress',
+          subject: 'english',
+          token: tok,
+          xp: DB.xp,
+          streak: DB.bestStreak,
+          attempts: att,
+          correct: cor,
+          badges: DB.badges || [],
+          sessions: (DB.sessions || []).slice(0, 10)
+        })
+      });
+      if (res.ok) {
+        DB.lastSyncAt = new Date().toISOString();
+        DB.pendingSync = [];
+        saveDB();
+        if (manual) toast('☁️ ซิงค์ข้อมูลขึ้นระบบเรียบร้อย');
+      }
+    } catch (e) {
+      if (manual) toast('⚠️ ยังเชื่อมต่อชีตไม่ได้ (เก็บสถิติในเครื่องไว้แล้ว)');
+    } finally {
+      if (btn) btn.textContent = '☁️ ซิงค์';
+    }
+  }
+  $('#btnCloudSync').addEventListener('click', () => syncToCloud(true));
+
+  /* ---- 3. Speech Synthesis (Read Aloud EN) ---- */
+  let speechRate = 1.0;
+  function speakEnglish(rawHTML) {
+    if (!('speechSynthesis' in window)) {
+      toast('เบราว์เซอร์นี้ไม่รองรับการอ่านออกเสียง');
+      return;
+    }
+    window.speechSynthesis.cancel();
+    const tmp = document.createElement('div');
+    tmp.innerHTML = String(rawHTML || '').replace(/<br\s*\/?>/gi, '. ');
+    let txt = (tmp.textContent || '')
+      .replace(/\[[A-D]\]/g, '')
+      .replace(/______/g, 'blank')
+      .replace(/[^\x00-\x7F]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (!txt) return;
+    const u = new SpeechSynthesisUtterance(txt);
+    u.lang = 'en-US';
+    u.rate = speechRate;
+    window.speechSynthesis.speak(u);
+  }
+
+  /* ---- 4. Theme & Header ---- */
   function applyTheme(t) {
     const mode = t || (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
     document.documentElement.setAttribute('data-theme', mode);
@@ -427,9 +553,7 @@ u.err {
   applyTheme(DB.theme);
   $('#btnTheme').addEventListener('click', () => {
     const cur = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-    DB.theme = cur;
-    applyTheme(cur);
-    saveDB();
+    DB.theme = cur; applyTheme(cur); saveDB();
   });
 
   $('#btnTeacherMode').addEventListener('click', () => {
@@ -438,8 +562,15 @@ u.err {
     if (!$('#pane-bank').classList.contains('hide')) renderBank();
   });
 
-  /* ---- 4. Header & Tabs ---- */
+  function currentRank(xp) {
+    let r = RANKS[0];
+    for (const item of RANKS) if (xp >= item.min) r = item;
+    return r;
+  }
+
   function updateHeaderStats() {
+    const r = currentRank(DB.xp || 0);
+    $('#pillRank').textContent = r.icon + ' ' + r.name;
     $('#pillStreak').textContent = '🔥 ' + (DB.streak || 0);
     $('#pillXP').textContent = '⭐ ' + (DB.xp || 0) + ' XP';
     const mc = (DB.mistakes || []).length;
@@ -454,6 +585,7 @@ u.err {
   }
 
   function switchTab(name) {
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
     $$('.tab-btn').forEach(b => b.classList.toggle('on', b.dataset.tab === name));
     ['practice', 'quiz', 'stats', 'bank'].forEach(p => {
       $('#pane-' + p).classList.toggle('hide', p !== name);
@@ -463,7 +595,7 @@ u.err {
   }
   $$('.tab-btn').forEach(b => b.addEventListener('click', () => switchTab(b.dataset.tab)));
 
-  /* ---- 5. Practice Filter Setup ---- */
+  /* ---- 5. Practice Filters ---- */
   const filter = { level: 'all', cat: 'all', type: 'all', count: 10 };
 
   function renderPracticeFilters() {
@@ -494,7 +626,6 @@ u.err {
       filter.cat = el.dataset.cat;
       renderPracticeFilters();
     }));
-
     updateMatchCount();
   }
 
@@ -551,11 +682,38 @@ u.err {
     const rec = recommendedLevel();
     const lv = META.levels.find(l => l.id === rec);
     const m = levelMastery(rec);
-    $('#leapfrogText').innerHTML = `ระดับแนะนำปัจจุบันของคุณคือ <b>${lv.code} (${lv.cefr}) — ${esc(lv.th)}</b> ` +
-      `(ทำแล้ว ${m.attempted}/${m.total} ข้อ · แม่นยำ ${m.pct}%) · ทำได้ ≥ 80% ครบ 5 ข้อขึ้นไปเพื่อปลดล็อกระดับถัดไป!`;
+    $('#leapfrogText').innerHTML = `ระดับแนะนำ: <b>${lv.code} (${lv.cefr}) — ${esc(lv.th)}</b> ` +
+      `(ทำแล้ว ${m.attempted}/${m.total} ข้อ · แม่นยำ ${m.pct}%) · ลองโหมด Time Attack หรือ Boss Battle เพื่อเก็บเหรียญตรา!`;
   }
 
-  /* ---- 6. Quiz Engine ---- */
+  /* ---- 6. Badges & Achievements ---- */
+  function awardBadge(id) {
+    if (!DB.badges) DB.badges = [];
+    if (DB.badges.includes(id)) return;
+    DB.badges.push(id);
+    const b = BADGES.find(x => x.id === id);
+    if (b) toast('🏅 ปลดล็อกเหรียญตราใหม่: ' + b.ic + ' ' + b.name + '!');
+  }
+
+  function checkBadges(quizSummary) {
+    const entries = Object.entries(DB.byQuestion || {});
+    const anyCorrect = entries.some(([, v]) => v.correct > 0);
+    if (anyCorrect) awardBadge('first_step');
+    if (DB.bestStreak >= 5) awardBadge('streak_5');
+    if (DB.bestStreak >= 10) awardBadge('streak_10');
+
+    const countCatOk = catId => BANK.filter(q => q.cat === catId && DB.byQuestion[q.id]?.correct > 0).length;
+    if (countCatOk('grammar') >= 5) awardBadge('grammar_ace');
+    if (countCatOk('vocab') >= 5) awardBadge('vocab_wizard');
+
+    const c2Ok = BANK.filter(q => q.level === 5 && DB.byQuestion[q.id]?.correct > 0).length;
+    if (c2Ok >= 5) awardBadge('c2_master');
+
+    if (quizSummary && quizSummary.kind === 'blitz' && quizSummary.correct >= 5) awardBadge('time_blitz');
+    if (quizSummary && quizSummary.kind === 'boss' && quizSummary.scorePct >= 75) awardBadge('boss_slayer');
+  }
+
+  /* ---- 7. Quiz Engine (Normal / Blitz / Boss) ---- */
   function shuffle(arr) {
     const a = arr.slice();
     for (let i = a.length - 1; i > 0; i--) {
@@ -566,49 +724,74 @@ u.err {
   }
 
   let QUIZ = null;
+  let blitzInterval = null;
 
-  function startQuiz(questions, modeLabel) {
+  function stopBlitzTimer() {
+    if (blitzInterval) { clearInterval(blitzInterval); blitzInterval = null; }
+  }
+
+  function startQuiz(questions, modeLabel, kind) {
+    stopBlitzTimer();
     if (!questions.length) return;
     QUIZ = {
       mode: modeLabel,
+      kind: kind || 'normal',
       items: questions,
       idx: 0,
+      combo: 0,
       results: [],
       startedAt: Date.now(),
-      qStartedAt: Date.now(),
+      timeLeft: kind === 'blitz' ? 60 : 0,
       answered: false
     };
     $('#tabQuizBtn').classList.remove('hide');
     switchTab('quiz');
+    if (kind === 'blitz') {
+      blitzInterval = setInterval(() => {
+        if (!QUIZ || QUIZ.kind !== 'blitz') { stopBlitzTimer(); return; }
+        QUIZ.timeLeft--;
+        const tEl = $('#blitzTimer');
+        if (tEl) tEl.textContent = '⏱️ ' + QUIZ.timeLeft + 's';
+        if (QUIZ.timeLeft <= 0) {
+          stopBlitzTimer();
+          finishQuiz();
+        }
+      }, 1000);
+    }
     renderQuizStep();
   }
 
   $('#btnStartCustom').addEventListener('click', () => {
     const pool = shuffle(getFilteredQuestions()).slice(0, filter.count);
     const lvName = filter.level === 'all' ? 'ทุกระดับ' : 'Lv.' + filter.level;
-    startQuiz(pool, 'ฝึกฝน · ' + lvName);
+    startQuiz(pool, 'ฝึกฝน · ' + lvName, 'normal');
   });
 
   $('#btnLeapfrogStart').addEventListener('click', () => {
     const rec = recommendedLevel();
     const pool = shuffle(BANK.filter(q => q.level === rec)).slice(0, 10);
-    startQuiz(pool, 'ไต่ระดับก้าวกระโดด · Lv.' + rec);
+    startQuiz(pool, 'ไต่ระดับก้าวกระโดด · Lv.' + rec, 'normal');
+  });
+
+  $('#btnBlitzStart').addEventListener('click', () => {
+    const pool = shuffle(BANK.filter(q => q.type === 'mc' && !q.passage));
+    startQuiz(pool, '⏱️ Time Attack (60 วิ)', 'blitz');
+  });
+
+  $('#btnBossStart').addEventListener('click', () => {
+    const pool = shuffle(BANK.filter(q => q.level >= 4)).slice(0, 8);
+    startQuiz(pool, '🐉 Boss Battle (Lv.4–5)', 'boss');
   });
 
   $('#btnMistakeClinic').addEventListener('click', () => {
     const ids = new Set(DB.mistakes || []);
     const pool = shuffle(BANK.filter(q => ids.has(q.id)));
-    if (pool.length) startQuiz(pool, 'ทบทวนจุดอ่อน (' + pool.length + ' ข้อ)');
+    if (pool.length) startQuiz(pool, 'ทบทวนจุดอ่อน (' + pool.length + ' ข้อ)', 'normal');
   });
 
   function normText(s) {
-    return String(s || '')
-      .trim()
-      .toLowerCase()
-      .replace(/[’‘]/g, "'")
-      .replace(/\s+/g, ' ');
+    return String(s || '').trim().toLowerCase().replace(/[’‘]/g, "'").replace(/\s+/g, ' ');
   }
-
   function normSentence(s) {
     return normText(s).replace(/[.?!]+$/, '');
   }
@@ -624,10 +807,17 @@ u.err {
     const cat = META.categories.find(c => c.id === q.cat);
     const pct = Math.round((QUIZ.idx / QUIZ.items.length) * 100);
     const typeLabel = q.type === 'mc' ? '🔘 ปรนัย' : (q.type === 'fill' ? '✍️ อัตนัย (เติมคำ)' : '✍️ อัตนัย (เขียน/แปลงประโยค)');
+    const mult = QUIZ.combo >= 5 ? 'x2.0' : QUIZ.combo >= 3 ? 'x1.5' : '';
 
     let bodyHTML = '';
     if (q.passage) {
-      bodyHTML += `<div class="passage-box"><strong>📖 Reading Passage:</strong><br>${esc(q.passage)}</div>`;
+      bodyHTML += `<div class="passage-box">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <strong>📖 Reading Passage</strong>
+          <button type="button" class="btn sm" id="btnSpeakPassage">🔊 ฟังเนื้อเรื่อง</button>
+        </div>
+        ${esc(q.passage)}
+      </div>`;
     }
     bodyHTML += `<div class="q-prompt">${q.prompt}</div>`;
 
@@ -655,24 +845,27 @@ u.err {
 
     $('#quizArena').innerHTML = `
       <div class="q-meta">
-        <span class="tag">ข้อ ${QUIZ.idx + 1} / ${QUIZ.items.length}</span>
+        <span class="tag">ข้อ ${QUIZ.idx + 1}${QUIZ.kind === 'blitz' ? '' : ' / ' + QUIZ.items.length}</span>
         <span class="lv-badge lv-${lv.id}">${lv.code} · ${lv.cefr}</span>
         <span class="tag">${cat.icon} ${esc(cat.th)}</span>
         <span class="tag">${typeLabel}</span>
-        <button type="button" class="btn sm" id="btnShowHint" style="margin-left:auto">💡 คำใบ้</button>
+        ${mult ? `<span class="tag combo">⚡ Combo ${QUIZ.combo} (${mult} XP)</span>` : ''}
+        ${QUIZ.kind === 'blitz' ? `<span class="tag timer" id="blitzTimer">⏱️ ${QUIZ.timeLeft}s</span>` : ''}
+        <div style="margin-left:auto;display:flex;gap:6px">
+          <button type="button" class="btn sm" id="btnSpeakPrompt" title="ฟังเสียงอ่านโจทย์ภาษาอังกฤษ">🔊 ฟังโจทย์</button>
+          <button type="button" class="btn sm" id="btnShowHint">💡 คำใบ้</button>
+        </div>
       </div>
-      <div class="prog-bar"><div class="prog-fill" style="width:${pct}%"></div></div>
+      <div class="prog-bar"><div class="prog-fill" style="width:${QUIZ.kind === 'blitz' ? Math.min(100, Math.round((QUIZ.timeLeft / 60) * 100)) : pct}%"></div></div>
       <div id="hintArea" class="tip-box hide" style="margin-bottom:14px">💡 <b>คำใบ้:</b> ${esc(q.hint || 'ลองสังเกตคำบอกเวลาและโครงสร้างประโยค')}</div>
       ${bodyHTML}
       <div id="feedbackArea"></div>
     `;
 
     QUIZ.answered = false;
-    QUIZ.qStartedAt = Date.now();
-
-    $('#btnShowHint').addEventListener('click', () => {
-      $('#hintArea').classList.toggle('hide');
-    });
+    $('#btnSpeakPrompt').addEventListener('click', () => speakEnglish(q.prompt));
+    if ($('#btnSpeakPassage')) $('#btnSpeakPassage').addEventListener('click', () => speakEnglish(q.passage));
+    $('#btnShowHint').addEventListener('click', () => $('#hintArea').classList.toggle('hide'));
 
     if (q.type === 'mc') {
       $$('.choice').forEach(btn => btn.addEventListener('click', () => handleMC(Number(btn.dataset.idx))));
@@ -680,37 +873,49 @@ u.err {
       const inp = $('#subInput');
       inp.focus();
       $('#btnSubmitSub').addEventListener('click', handleSubjective);
-      if (q.type === 'fill') {
-        inp.addEventListener('keydown', e => { if (e.key === 'Enter') handleSubjective(); });
-      }
+      if (q.type === 'fill') inp.addEventListener('keydown', e => { if (e.key === 'Enter') handleSubjective(); });
     }
   }
 
   function recordAttempt(q, isCorrect, userAns) {
     const prev = DB.byQuestion[q.id] || { attempts: 0, correct: 0, lastWrong: false };
     prev.attempts += 1;
+    let earnedXP = 0;
     if (isCorrect) {
       prev.correct += 1;
       prev.lastWrong = false;
       DB.streak = (DB.streak || 0) + 1;
+      QUIZ.combo = (QUIZ.combo || 0) + 1;
       if (DB.streak > (DB.bestStreak || 0)) DB.bestStreak = DB.streak;
-      DB.xp = (DB.xp || 0) + (q.level * 10);
+      const mult = QUIZ.combo >= 5 ? 2 : QUIZ.combo >= 3 ? 1.5 : 1;
+      earnedXP = Math.round(q.level * 10 * mult);
+      DB.xp = (DB.xp || 0) + earnedXP;
       DB.mistakes = (DB.mistakes || []).filter(id => id !== q.id);
     } else {
       prev.lastWrong = true;
       DB.streak = 0;
+      QUIZ.combo = 0;
       if (!(DB.mistakes || []).includes(q.id)) DB.mistakes.push(q.id);
     }
     prev.lastAt = new Date().toISOString();
     prev.userAnswer = userAns;
     DB.byQuestion[q.id] = prev;
     QUIZ.results.push({ id: q.id, level: q.level, cat: q.cat, type: q.type, ok: isCorrect });
+    checkBadges();
     saveDB();
+    return earnedXP;
   }
 
-  function showFeedback(q, isCorrect, extraHTML) {
+  function showFeedback(q, isCorrect, earnedXP, extraHTML) {
+    if (QUIZ.kind === 'blitz') {
+      // Fast transition in Time Attack
+      setTimeout(() => {
+        if (QUIZ && QUIZ.timeLeft > 0) { QUIZ.idx++; renderQuizStep(); }
+      }, 380);
+      return;
+    }
     const cls = isCorrect ? 'ok' : 'bad';
-    const title = isCorrect ? '✅ ถูกต้อง! (+' + (q.level * 10) + ' XP)' : '❌ ยังไม่ถูกต้อง — มาดูคำอธิบายกัน';
+    const title = isCorrect ? `✅ ถูกต้อง! (+${earnedXP} XP)` : '❌ ยังไม่ถูกต้อง — มาดูคำอธิบายกัน';
     const nextLabel = QUIZ.idx + 1 < QUIZ.items.length ? 'ข้อถัดไป ➡️' : 'ดูสรุปผลคะแนน 🏁';
 
     $('#feedbackArea').innerHTML = `
@@ -724,10 +929,7 @@ u.err {
         </div>
       </div>
     `;
-    $('#btnNextQ').addEventListener('click', () => {
-      QUIZ.idx++;
-      renderQuizStep();
-    });
+    $('#btnNextQ').addEventListener('click', () => { QUIZ.idx++; renderQuizStep(); });
     $('#btnNextQ').focus();
   }
 
@@ -741,8 +943,8 @@ u.err {
       if (i === q.answer) b.classList.add('correct');
       else if (i === chosenIdx && !ok) b.classList.add('wrong');
     });
-    recordAttempt(q, ok, q.choices[chosenIdx]);
-    showFeedback(q, ok, '');
+    const xp = recordAttempt(q, ok, q.choices[chosenIdx]);
+    showFeedback(q, ok, xp, '');
   }
 
   function handleSubjective() {
@@ -760,11 +962,10 @@ u.err {
     const exactMatch = accepted.includes(userNorm);
 
     if (exactMatch || q.type === 'fill') {
-      recordAttempt(q, exactMatch, raw);
+      const xp = recordAttempt(q, exactMatch, raw);
       const ansDisplay = `<div><strong>คำตอบเฉลย:</strong> <code>${esc(q.answers[0])}</code></div>`;
-      showFeedback(q, exactMatch, ansDisplay);
+      showFeedback(q, exactMatch, xp, ansDisplay);
     } else {
-      // Rewrite question that didn't match verbatim: allow self-verification against model answer
       $('#feedbackArea').innerHTML = `
         <div class="feedback-box" style="background:var(--panel2)">
           <div style="font-weight:700;margin-bottom:6px">🔍 เปรียบเทียบคำตอบของคุณกับเฉลยมาตรฐาน</div>
@@ -778,46 +979,45 @@ u.err {
           </div>
         </div>
       `;
-      $('#btnSelfOk').addEventListener('click', () => {
-        recordAttempt(q, true, raw);
-        QUIZ.idx++;
-        renderQuizStep();
-      });
-      $('#btnSelfNo').addEventListener('click', () => {
-        recordAttempt(q, false, raw);
-        QUIZ.idx++;
-        renderQuizStep();
-      });
+      $('#btnSelfOk').addEventListener('click', () => { recordAttempt(q, true, raw); QUIZ.idx++; renderQuizStep(); });
+      $('#btnSelfNo').addEventListener('click', () => { recordAttempt(q, false, raw); QUIZ.idx++; renderQuizStep(); });
     }
   }
 
   function finishQuiz() {
+    stopBlitzTimer();
     const timeSec = Math.max(1, Math.round((Date.now() - QUIZ.startedAt) / 1000));
     const total = QUIZ.results.length;
     const correct = QUIZ.results.filter(r => r.ok).length;
     const pct = total ? Math.round((correct / total) * 100) : 0;
 
+    if (QUIZ.kind === 'blitz' && correct > (DB.bestBlitz || 0)) DB.bestBlitz = correct;
+    let bonusMsg = '';
+    if (QUIZ.kind === 'boss' && pct >= 75) {
+      DB.xp = (DB.xp || 0) + 100;
+      bonusMsg = '🎉 พิชิตบอสสำเร็จ! รับโบนัส +100 XP!';
+    }
+
     DB.totalTimeSec = (DB.totalTimeSec || 0) + timeSec;
     DB.sessions.unshift({
       date: new Date().toISOString(),
       mode: QUIZ.mode,
-      total,
-      correct,
-      scorePct: pct,
-      timeSec
+      total, correct, scorePct: pct, timeSec
     });
     if (DB.sessions.length > 40) DB.sessions = DB.sessions.slice(0, 40);
+    checkBadges({ kind: QUIZ.kind, correct, scorePct: pct });
     saveDB();
+    syncToCloud(false);
 
     const mins = Math.floor(timeSec / 60);
     const secs = timeSec % 60;
-    const msg = pct >= 80 ? '🏆 ยอดเยี่ยมมาก! พร้อมก้าวสู่ระดับที่สูงขึ้นแล้ว'
+    const msg = bonusMsg || (pct >= 80 ? '🏆 ยอดเยี่ยมมาก! พร้อมก้าวสู่ระดับที่สูงขึ้นแล้ว'
               : pct >= 60 ? '👍 ทำได้ดี! ทบทวนข้อที่พลาดอีกนิดจะแม่นยำขึ้นมาก'
-              : '💪 เริ่มต้นได้ดี! ลองกด "ทบทวนข้อที่ผิด" เพื่ออุดช่องว่างทันที';
+              : '💪 เริ่มต้นได้ดี! ลองกด "ทบทวนข้อที่ผิด" เพื่ออุดช่องว่างทันที');
 
     $('#quizArena').innerHTML = `
       <div style="text-align:center;padding:10px 0">
-        <div style="font-size:44px;margin-bottom:6px">${pct >= 80 ? '🏆' : pct >= 60 ? '🎯' : '📘'}</div>
+        <div style="font-size:44px;margin-bottom:6px">${QUIZ.kind === 'boss' && pct >= 75 ? '🐉' : pct >= 80 ? '🏆' : '🎯'}</div>
         <h2 style="font-size:22px;margin-bottom:4px">สรุปผล: ${esc(QUIZ.mode)}</h2>
         <p class="muted">${msg}</p>
       </div>
@@ -828,26 +1028,21 @@ u.err {
       </div>
       <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:16px">
         <button type="button" class="btn primary" id="btnBackPractice">🎯 กลับหน้าฝึกฝน</button>
-        <button type="button" class="btn" id="btnGoStats">📊 ดูสถิติแบบละเอียด</button>
+        <button type="button" class="btn" id="btnGoStats">📊 ดูสถิติ &amp; เหรียญตรา</button>
       </div>
     `;
-    $('#btnBackPractice').addEventListener('click', () => {
-      $('#tabQuizBtn').classList.add('hide');
-      switchTab('practice');
-    });
-    $('#btnGoStats').addEventListener('click', () => {
-      $('#tabQuizBtn').classList.add('hide');
-      switchTab('stats');
-    });
+    $('#btnBackPractice').addEventListener('click', () => { $('#tabQuizBtn').classList.add('hide'); switchTab('practice'); });
+    $('#btnGoStats').addEventListener('click', () => { $('#tabQuizBtn').classList.add('hide'); switchTab('stats'); });
   }
 
-  /* ---- 7. Learner Analytics Dashboard ---- */
+  /* ---- 8. Learner Analytics & Badges ---- */
   function renderStats() {
     const entries = Object.values(DB.byQuestion || {});
     const totalAttempts = entries.reduce((s, e) => s + (e.attempts || 0), 0);
     const totalCorrect = entries.reduce((s, e) => s + (e.correct || 0), 0);
     const acc = totalAttempts ? Math.round((totalCorrect / totalAttempts) * 100) : 0;
     const mins = Math.round((DB.totalTimeSec || 0) / 60);
+    const rank = currentRank(DB.xp || 0);
 
     const lvBars = META.levels.map(l => {
       const m = levelMastery(l.id);
@@ -879,6 +1074,17 @@ u.err {
       </div>`;
     }).join('');
 
+    const badgeHTML = BADGES.map(b => {
+      const earned = (DB.badges || []).includes(b.id);
+      return `<div class="badge-card ${earned ? 'earned' : ''}">
+        <div class="badge-ic">${b.ic}</div>
+        <div>
+          <div style="font-weight:700;font-size:14px">${esc(b.name)} ${earned ? '✓' : ''}</div>
+          <div class="muted" style="font-size:12px">${esc(b.desc)}</div>
+        </div>
+      </div>`;
+    }).join('');
+
     const sessRows = (DB.sessions || []).slice(0, 10).map(s => {
       const d = new Date(s.date).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' });
       return `<tr>
@@ -892,7 +1098,7 @@ u.err {
     $('#statsContainer').innerHTML = `
       <div class="card">
         <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px">
-          <h2 style="margin:0">📊 ภาพรวมสถิติผู้เรียน</h2>
+          <h2 style="margin:0">📊 สถิติผู้เรียน (${rank.icon} ${rank.name})</h2>
           <div style="display:flex;gap:8px;flex-wrap:wrap" class="noprint">
             <button type="button" class="btn sm" id="btnExportStats">💾 สำรองสถิติ (JSON)</button>
             <button type="button" class="btn sm" id="btnImportStats">📂 นำเข้าสถิติ</button>
@@ -904,8 +1110,13 @@ u.err {
           <div class="kpi"><div class="val" style="color:var(--ok)">${acc}%</div><div class="lbl">ความแม่นยำรวม</div></div>
           <div class="kpi"><div class="val" style="color:var(--warn)">⭐ ${DB.xp}</div><div class="lbl">XP สะสม</div></div>
           <div class="kpi"><div class="val" style="color:var(--bad)">🔥 ${DB.bestStreak}</div><div class="lbl">Best Streak</div></div>
-          <div class="kpi"><div class="val">${mins} นาที</div><div class="lbl">เวลาฝึกฝนรวม</div></div>
+          <div class="kpi"><div class="val">⏱️ ${DB.bestBlitz || 0}</div><div class="lbl">สถิติ Time Attack (${mins} นาทีรวม)</div></div>
         </div>
+      </div>
+
+      <div class="card">
+        <h3>🏅 เหรียญตราความสำเร็จ (${(DB.badges || []).length} / ${BADGES.length})</h3>
+        <div class="grid-4">${badgeHTML}</div>
       </div>
 
       <div class="grid-2">
@@ -952,10 +1163,8 @@ u.err {
         const r = new FileReader();
         r.onload = () => {
           try {
-            const parsed = JSON.parse(r.result);
-            DB = Object.assign(defaultDB(), parsed);
-            saveDB();
-            renderStats();
+            DB = Object.assign(defaultDB(), JSON.parse(r.result));
+            saveDB(); renderStats();
           } catch (e) { alert('ไฟล์ไม่ถูกต้อง'); }
         };
         r.readAsText(f);
@@ -964,14 +1173,12 @@ u.err {
     });
     $('#btnResetStats').addEventListener('click', () => {
       if (confirm('ต้องการล้างสถิติการเรียนทั้งหมดใช่หรือไม่?')) {
-        DB = defaultDB();
-        saveDB();
-        renderStats();
+        DB = defaultDB(); saveDB(); renderStats();
       }
     });
   }
 
-  /* ---- 8. Question Bank & Print ---- */
+  /* ---- 9. Question Bank & Print ---- */
   function initBankFilters() {
     const lvSel = $('#bankFilterLv');
     META.levels.forEach(l => {
@@ -1024,6 +1231,7 @@ u.err {
           <span class="lv-badge lv-${lv.id}">${lv.code}</span>
           <span class="tag">${cat.icon} ${esc(cat.th)}</span>
           <span class="tag">${q.type === 'mc' ? 'ปรนัย' : 'อัตนัย'}</span>
+          <button type="button" class="btn sm noprint" data-speak="${idx}" style="margin-left:auto">🔊 ฟัง</button>
         </div>
         ${q.passage ? `<div class="passage-box" style="margin:6px 0">${esc(q.passage)}</div>` : ''}
         <div>${q.prompt}</div>
@@ -1033,6 +1241,10 @@ u.err {
         </div>` : ''}
       </div>`;
     }).join('');
+
+    $$('#bankList [data-speak]').forEach(b => {
+      b.addEventListener('click', () => speakEnglish(list[Number(b.dataset.speak)].prompt));
+    });
   }
 
   /* ---- Init ---- */
