@@ -184,4 +184,7 @@ IJSOAutoSheet/*
 EnglishApp/*
 !EnglishApp/index.html
 !EnglishApp/questions.js
+!EnglishApp/questions_l1_l2.js
+!EnglishApp/questions_l3_l4.js
+!EnglishApp/questions_l5.js
 
